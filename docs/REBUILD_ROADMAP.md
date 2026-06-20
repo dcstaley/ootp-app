@@ -24,7 +24,7 @@ core; none recomputes scoring.
 | M1 | Scoring core | One core; reproduce old app scores | ✅ | M0 |
 | M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | ✅ | SP-1 |
 | M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ✅ | SP-2, M1.5 |
-| M3 | Data Grid | First UI consumer of the core | ⬜ | M2, SP-11 |
+| M3 | Data Grid | First UI consumer of the core | 🔜 (scaffold + grid live) | M2, SP-11 |
 | M4 | Optimizer | Roster + lineups + rotation/bullpen | ⬜ | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ⬜ | M4 |
 | M6 | Training + bake-off | Fit models; D3 comparison harness | ⬜ | SP-8/9 |
@@ -318,7 +318,13 @@ trivial and agreed.
 v5 variants (D6) · M2d file-based persistence (D7). 40 tests green; parity bit-identical; capstone
 persists config, reloads from disk, and drives the full chain. The data + config layers are done.
 
-**Next: M3 — Data Grid** (first visible UI consumer) + **SX.1 app shell** (local server + browser).
-Needs the packaging scaffold spike (SP-11). Carried-forward follow-ups: categorise the D4 `extras`
-remainder (ssp/splits → tuning, position weights → tournament); real model-artifact format (M6);
-CSV variant import (S2.4b).
+**In progress: M3 — Data Grid (first slice live).** App shell stood up (SP-11): local Node server
+(`src/server/server.ts`) runs the one core and serves scored cards; React+Vite SPA (`web/`) renders a
+sortable/filterable grid. **Run:** `npm run server` then open http://localhost:8787 (or `npm run dev:web`
+for live-reload dev). Dev config = a local captured bag (real numbers) if present, else `_synthetic`.
+Next grid work: column show/hide + presets, account selector, more columns; then wire real
+model/tournament selection (replaces the dev capture).
+
+Carried-forward follow-ups: categorise the D4 `extras` remainder; real model-artifact format (M6);
+CSV variant import (S2.4b); the engineering stack (React+Vite+Node server) is owned by the assistant
+(not a user decision).
