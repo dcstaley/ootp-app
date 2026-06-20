@@ -88,8 +88,11 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
   per account as an **overlay** on one shared catalog (D6; model N, default 2). `owned` is a quantity.
 - **S2.3** ⬜ As a manager, I select the **active account**; the catalog view, variants, and generation
   scope to it (owned = `owned > 0`); quantity is shown but constrains nothing yet (D6).
-- **S2.4** ⬜ As a manager, I add **account-scoped variants** (levels 1–5) to owned cards; base+variant
-  merge; variant/base mutually exclusive. *Acceptance:* boost formula matches old `dataset.tsx`.
+- **S2.4** ⬜ As a manager, I add **account-scoped variants** to owned cards; base+variant merge;
+  variant/base mutually exclusive. **DECISION (2026-06-20): v5-only** — drop old levels 1–4 and the
+  `vlvl` selector; a variant is just the v5 boost, present or not. *Acceptance:* the L5 boost
+  (`v + floor((5·v+40)/80) + 2`) matches old `applyVariantBoost(row, 5)`. (Deliberate divergence from
+  the old app's 1–5 support, not a parity target.)
 - **S2.5** ⬜ As a manager, I create/edit/save **Tournaments** as the single config source: roster shape,
   cap/slots rules, eligibility (ALL/ANY rule groups), position constraints, metrics, pool sizes,
   ownedOnly, softcaps, position weights (D4). No separate page-level settings object.

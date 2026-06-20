@@ -2,6 +2,9 @@ node_modules/
 dist/
 *.log
 
+# Personal per-machine Claude Code settings (project settings.json IS committed)
+.claude/settings.local.json
+
 # Generated golden reference files (regenerated from captures)
 fixtures/golden/*.json
 
