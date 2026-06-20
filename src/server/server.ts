@@ -43,16 +43,40 @@ const calScales = calibrate(pool, { coeffs: active.coeffs, derived });
 const config = { coeffs: active.coeffs, derived, calScales };
 
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+const round = (x: number) => Math.round(x * 1e4) / 1e4;
+const eligibleKey = (c: Record<string, unknown>) => `${c["Card ID"]}|${String(c["Variant"] ?? "")}`;
+const eligibleSet = new Set(pool.map(eligibleKey));
+
+// Learnable positions (the actual position-eligibility, not the single Pos field).
+const LEARN: [string, string][] = [
+  ["LearnC", "C"], ["Learn1B", "1B"], ["Learn2B", "2B"], ["Learn3B", "3B"],
+  ["LearnSS", "SS"], ["LearnLF", "LF"], ["LearnCF", "CF"], ["LearnRF", "RF"], ["LearnP", "P"],
+];
+// Raw defensive ratings (NOT per-position ratings).
+const DEF_COLS = [
+  "Infield Range", "Infield Error", "Infield Arm", "DP",
+  "CatcherAbil", "CatcherFrame", "Catcher Arm",
+  "OF Range", "OF Error", "OF Arm", "Speed",
+];
+
 const scored = catalog.cards.map((c) => {
   const s = scoreCard(c, config);
+  const positions = LEARN.filter(([col]) => n(c[col]) === 1).map(([, p]) => p).join(",");
+  const def: Record<string, number> = {};
+  for (const k of DEF_COLS) def[k] = n(c[k]);
   return {
-    id: s.cardId, title: s.title, bats: s.bats, throws: s.throws,
-    value: n(c["Card Value"]), owned: n(c["owned"]), position: c["Position"] ?? "",
-    hitVL: round(s.hit.woba_vL), hitVR: round(s.hit.woba_vR),
-    pitchOVR: round(s.pitch.woba_ovr),
+    id: String(s.cardId),
+    variant: String(c["Variant"] ?? "").toUpperCase() === "Y" ? "Y" : "",
+    title: s.title, first: String(c["FirstName"] ?? ""), last: String(c["LastName"] ?? ""),
+    bats: s.bats, throws: s.throws, value: n(c["Card Value"]), owned: n(c["owned"]),
+    positions, eligible: eligibleSet.has(eligibleKey(c)),
+    hitVL: round(s.hit.woba_vL), hitVR: round(s.hit.woba_vR), hitOVR: round(s.hit.woba_ovr),
+    basicHit: round(s.hit.basic_ovr),
+    pitchVL: round(s.pitch.woba_vL), pitchVR: round(s.pitch.woba_vR), pitchOVR: round(s.pitch.woba_ovr),
+    basicPitch: round(s.pitch.basic_ovr),
+    def,
   };
 });
-function round(x: number): number { return Math.round(x * 1e4) / 1e4; }
 
 const meta = {
   configName: active.name, tournament: TOURNAMENT.name,

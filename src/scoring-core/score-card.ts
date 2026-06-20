@@ -19,7 +19,7 @@ export interface CardScores {
   title: unknown;
   bats: number;
   throws: number;
-  hit: { woba_vL: number; woba_vR: number; basic_vL: number; basic_vR: number };
+  hit: { woba_vL: number; woba_vR: number; woba_ovr: number; basic_vL: number; basic_vR: number; basic_ovr: number };
   pitch: {
     woba_vR: number; woba_vL: number; woba_ovr: number;
     basic_vR: number; basic_vL: number; basic_ovr: number;
@@ -111,12 +111,23 @@ export function scoreCard(card: any, config: ScoringConfig, model: EventModel = 
     if (thr === 2) return vr * (1 - coeffs.l_pitch_split) + vl * coeffs.l_pitch_split;
     return (vr + vl) / 2;
   };
+  // Hitting OVR blend, same convention as pitching but on the batter handedness
+  // + hit splits. (Weighting basis is a domain choice — see note; currently the
+  // codebase's existing split convention.)
+  const hitBlend = (vr: number, vl: number): number => {
+    if (bats === 1) return vr * coeffs.r_hit_split + vl * (1 - coeffs.r_hit_split);
+    if (bats === 2) return vr * (1 - coeffs.l_hit_split) + vl * coeffs.l_hit_split;
+    return (vr + vl) / 2;
+  };
 
   return {
     cardId: card["Card ID"],
     title: card["//Card Title"],
     bats, throws: thr,
-    hit: { woba_vL: hVL.woba, woba_vR: hVR.woba, basic_vL: hVL.basic, basic_vR: hVR.basic },
+    hit: {
+      woba_vL: hVL.woba, woba_vR: hVR.woba, woba_ovr: hitBlend(hVR.woba, hVL.woba),
+      basic_vL: hVL.basic, basic_vR: hVR.basic, basic_ovr: hitBlend(hVR.basic, hVL.basic),
+    },
     pitch: {
       woba_vR: pVR.woba, woba_vL: pVL.woba, woba_ovr: blend(pVR.woba, pVL.woba),
       basic_vR: pVR.basic, basic_vL: pVL.basic, basic_ovr: blend(pVR.basic, pVL.basic),

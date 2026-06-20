@@ -322,8 +322,11 @@ persists config, reloads from disk, and drives the full chain. The data + config
 (`src/server/server.ts`) runs the one core and serves scored cards; React+Vite SPA (`web/`) renders a
 sortable/filterable grid. **Run:** `npm run server` then open http://localhost:8787 (or `npm run dev:web`
 for live-reload dev). Dev config = a local captured bag (real numbers) if present, else `_synthetic`.
-Next grid work: column show/hide + presets, account selector, more columns; then wire real
-model/tournament selection (replaces the dev capture).
+Grid now has: views/presets (Hitting/Pitching/Defense/All), Card ID, Variant, learnable Positions
+(replaced Pos), Basic + wOBA OVR + per-side hit/pitch, defensive ratings, player-name sort, highlight
+search + filter search, eligible-only + owned-only. Remaining (user-requested): per-column filters;
+load-a-tournament selector that applies config + eligibility on the grid; account selector; later,
+highlight generated-roster members. Open domain Q: how to weight the wOBA OVR blend (vL/vR).
 
 Carried-forward follow-ups: categorise the D4 `extras` remainder; real model-artifact format (M6);
 CSV variant import (S2.4b); the engineering stack (React+Vite+Node server) is owned by the assistant
