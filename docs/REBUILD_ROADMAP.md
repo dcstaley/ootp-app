@@ -93,6 +93,9 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
   `vlvl` selector; a variant is just the v5 boost, present or not. *Acceptance:* the L5 boost
   (`v + floor((5·v+40)/80) + 2`) matches old `applyVariantBoost(row, 5)`. (Deliberate divergence from
   the old app's 1–5 support, not a parity target.)
+- **S2.4b** ⬜ (future, noted) As a manager, I **bulk-import variants from a CSV** — a list of Card IDs
+  the account has variants for (ignore level/ratings; we generate the v5 boost). Import **replaces** the
+  account's current variant list; keep manual add/delete alongside. Maps to `AccountOverlay.variantCardIds`.
 - **S2.5** ⬜ As a manager, I create/edit/save **Tournaments** as the single config source: roster shape,
   cap/slots rules, eligibility (ALL/ANY rule groups), position constraints, metrics, pool sizes,
   ownedOnly, softcaps, position weights (D4). No separate page-level settings object.
