@@ -22,8 +22,8 @@ core; none recomputes scoring.
 |---|---|---|---|---|
 | M0 | Foundations | TS project, tests, version control | ✅ | — |
 | M1 | Scoring core | One core; reproduce old app scores | ✅ | M0 |
-| M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | 🔜 | SP-1 |
-| M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ⬜ | SP-2, M1.5 |
+| M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | ✅ | SP-1 |
+| M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | 🔜 (a/b done) | SP-2, M1.5 |
 | M3 | Data Grid | First UI consumer of the core | ⬜ | M2, SP-11 |
 | M4 | Optimizer | Roster + lineups + rotation/bullpen | ⬜ | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ⬜ | M4 |
@@ -308,7 +308,13 @@ trivial and agreed.
 
 ## Right now
 
-**Proceeding (approved):** M2 foundation — reconstruct the old frontend's **eligibility + hitter/pitcher
-pool-tagging** (`_inHitterPool`/`_inPitcherPool`), build it in `src`, promote the SP-1 spike to
-`src/scoring-core/calibrate.ts`, and validate the full config→pool→scales→scores chain **bit-exact**
-against captures. Closes M1.5 (self-contained calibration) and lays the M2 config/pool layer.
+**Done:** M1.5 (self-contained `calibrate()`), M2a (card catalog import), M2b (Tournament/Era/Park
+config types, `rowEligible` port, `buildEligiblePool`, tournament→pool→calibrate chain). 25 tests green.
+
+**Next, to finish M2:**
+1. **assemble-coeffs (D4 bag dissolution):** build the scoring `Coeffs` from Era + Park + Softcaps +
+   a model artifact + fixed weights/splits, validated to reconstruct a captured bag. Lets a
+   tournament+libraries+model drive scoring with no pre-merged bag.
+2. **M2c account overlays + variants (D6):** shared catalog + per-account `owned`/variants; this closes
+   the **bit-exact calibration** validation (variant rows enter the pool).
+3. **M2d file-based persistence (D7).**
