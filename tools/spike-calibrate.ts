@@ -11,6 +11,7 @@ import { logLinearModel } from "../src/model/log-linear.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba } from "../src/scoring-core/woba.ts";
 import { computeDerived } from "../src/config/derived.ts";
 import { n, cp, getParkFactor, sameSidePenaltyHitting, sameSidePenaltyPitching } from "../src/scoring-core/helpers.ts";
+import { calibrate } from "../src/scoring-core/calibrate.ts";
 import type { Coeffs, Derived } from "../src/config/types.ts";
 
 const captureName = process.argv[2] ?? "real-parkera";
@@ -137,3 +138,15 @@ for (const maxV of [100, 95, 92, 90, 89, 88, 87, 86, 85, 84, 83, 82, 80, 75, 70]
   const hit = Math.abs(am - Number(target.anchorMeanVR)) < 1e-4 ? "  ← MATCH" : "";
   console.log(`    Card Value <= ${String(maxV).padStart(3)}: anchorMeanVR=${am.toFixed(6)}  (eligible hitters=${hs.length})${hit}`);
 }
+
+// Corrected hitter-pool (everyone) via the real calibrate(), over the eligible pool.
+const eligiblePool = cards.filter((c) => eligible(c));
+const corrected = calibrate(eligiblePool, { coeffs, derived });
+console.log(`\n  CORRECTED def (everyone is a hitter) via calibrate() vs OLD position-gated vs APP-captured:`);
+const cmp = (label: string, corr: number, old: number, app: number) =>
+  console.log(`    ${label.padEnd(14)} corrected=${corr.toFixed(6)}  old-def=${old.toFixed(6)}  app=${app.toFixed(6)}`);
+cmp("anchorMeanVR", corrected.anchorMeanVR as number, anchorMeanVR, target.anchorMeanVR);
+cmp("anchorMeanVL", corrected.anchorMeanVL as number, anchorMeanVL, target.anchorMeanVL);
+cmp("hitScaleVR", corrected.hitScaleVR as number, anchorMeanVR > 0 ? TARGET_WOBA / anchorMeanVR : 1, target.hitScaleVR);
+cmp("hitScaleVL", corrected.hitScaleVL as number, anchorMeanVL > 0 ? TARGET_WOBA / anchorMeanVL : 1, target.hitScaleVL);
+cmp("pitchScale", corrected.pitchScale as number, anchorMeanPOVR > 0 ? TARGET_WOBA / anchorMeanPOVR : 1, target.pitchScale);

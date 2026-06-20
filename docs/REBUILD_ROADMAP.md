@@ -130,7 +130,8 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
   so a chosen set is guaranteed alignable across vL/vR + backups; **backup catcher = a coverage-depth
   constraint** (retire the 3-pass). *(Gated by SP-5.)*
 - **S4.5** ⬜ As a manager, locked/excluded cards, two-way players, and the **bonus slot** (N-slot) are
-  handled inside the optimization, not patched after.
+  handled inside the optimization, not patched after. *Note (user):* `topHitters`/`topPitchers` also
+  define **two-way membership** (a card in both pools), **even in cap mode** — reconstruct that here.
 - **S4.6** ⬜ As maintainer, **cap-reclaim** (unspent support budget → starters) is deterministic.
 - **S4.7** ⬜ As a manager, both-sides hitter bonus + role/slot weights apply in **cap/slots only** (D2).
 - **S4.8** ⬜ As maintainer, the solver is **HiGHS-WASM in-process** (no Python). *(Gated by SP-4/6.)*
@@ -273,8 +274,41 @@ server + React SPA + the data folder; "launch once." *Output:* runnable shell, n
 
 ---
 
+## Flagged old-app issues (parity-preserved; revisit, don't blindly copy)
+
+**Standing policy:** the old app is usable but may contain real logic/calc bugs. We reproduce it for a
+safe parity baseline, but we **scrutinise as we port, flag suspected bugs** (in code comments + here),
+and **surface them** — we never assume the old behavior is correct. Fixes happen post-parity unless
+trivial and agreed.
+
+- **Per-event calibration only scales BB & HR** — the `1B/GAP/nHH` scales are computed but unused, so
+  non-HR-hit and XBH components are never independently re-anchored (see Open Questions). *Suspected
+  issue (user flagged for follow-up).*
+- **`countPitchTypes` name mismatch** (findings §7B/§7.2): `RosterAndLineupPage.countPitchTypes` searches
+  `Circle Change`/`Knuckle Curve` (with spaces) but the CSV uses `Circlechange`/`Knucklecurve`, so those
+  two pitch types are never counted → wrong `min_pitch_types` starter qualification. `tournament.ts` uses
+  the correct names. *Confirmed bug; same logic in two places, one wrong.*
+- **Display ≠ LP scoring** (findings §1.2/§4.4): the grid/display score and the optimizer objective
+  diverge (the `^1.2` power transform + cross-pool mults are LP-only). The rebuild unifies on one value
+  (D2). *Known; fixed by design.*
+- **Anchor wOBA omits ssp + the HBP term** while the display score includes them — looks intentional but
+  worth confirming it isn't an oversight that skews calibration. *Quirk — verify.*
+- **Hitter pool gated on non-DH position eligibility** (`RosterAndLineupPage` ~1243:
+  `_inHitterPool = ALL_POSITIONS(≠DH).some(Learn{pos}===1)`): wrongly excludes DH-only cards and
+  pitchers-who-can-hit. Every player has a hitting score → every player is a potential hitter. This tag
+  gates the **calibration anchor pool**, so it skews the calScales (and thus the display scores).
+  *Confirmed bug (user-flagged).* **Correct design:** hitter pool = all players (everyone has a score);
+  the only narrowing is `topHitters` (non-cap, default 100) or `HARD_POOL_CAP=1500` — and that narrowing
+  is for the **optimization** pool (M4), not calibration. Calibration anchor = top-50 by wOBA over all
+  eligible cards.
+
+(Append here whenever something looks wrong during a port.)
+
+---
+
 ## Right now
 
-**Next story: S1.5.1 (compute our own calibration scales), gated by SP-1** (read the old
-`calcAnchorWoba`), validated against the calibration scales already captured. Completing M1.5 means the
-app no longer depends on the old app for any scoring number.
+**Proceeding (approved):** M2 foundation — reconstruct the old frontend's **eligibility + hitter/pitcher
+pool-tagging** (`_inHitterPool`/`_inPitcherPool`), build it in `src`, promote the SP-1 spike to
+`src/scoring-core/calibrate.ts`, and validate the full config→pool→scales→scores chain **bit-exact**
+against captures. Closes M1.5 (self-contained calibration) and lays the M2 config/pool layer.
