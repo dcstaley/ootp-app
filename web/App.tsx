@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 interface Card {
   id: string; variant: string; title: string; first: string; last: string;
   bats: number; throws: number; value: number; owned: number;
-  positions: string; eligible: boolean;
+  learn: Record<string, number>; eligible: boolean;
   hitVL: number; hitVR: number; hitOVR: number; basicHit: number;
   pitchVL: number; pitchVR: number; pitchOVR: number; basicPitch: number;
   def: Record<string, number>;
@@ -22,7 +22,6 @@ const COLS: Record<string, Col> = {
   id: { key: "id", label: "Card ID", align: "l", get: (c) => c.id },
   variant: { key: "variant", label: "Var", align: "c", get: (c) => c.variant },
   title: { key: "title", label: "Card", align: "l", get: (c) => c.title, sort: (c) => `${c.first} ${c.last}`.toLowerCase() },
-  positions: { key: "positions", label: "Positions", align: "l", get: (c) => c.positions },
   bats: { key: "bats", label: "B", align: "c", get: (c) => BATS[c.bats] ?? "", sort: (c) => c.bats },
   throws: { key: "throws", label: "T", align: "c", get: (c) => THROWS[c.throws] ?? "", sort: (c) => c.throws },
   value: { key: "value", label: "Val", align: "r", get: (c) => c.value, fmt: "int" },
@@ -48,11 +47,18 @@ const COLS: Record<string, Col> = {
   ofA: { key: "ofA", label: "OF Arm", align: "r", get: def("OF Arm"), fmt: "int" },
 };
 
+// One column per learnable position (✓ if the card can learn it) — filterable.
+const POSNS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "P"];
+const FIELD_POS = POSNS.filter((p) => p !== "P").map((p) => "pos" + p);
+for (const p of POSNS) {
+  COLS["pos" + p] = { key: "pos" + p, label: p, align: "c", get: (c) => (c.learn?.[p] ? "✓" : ""), sort: (c) => c.learn?.[p] ?? 0 };
+}
+
 const PRESETS: Record<string, { cols: string[]; sort: string; dir: 1 | -1 }> = {
-  Hitting: { cols: ["title", "variant", "positions", "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit"], sort: "hitOVR", dir: -1 },
-  Pitching: { cols: ["title", "variant", "positions", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch"], sort: "pitchOVR", dir: 1 },
-  Defense: { cols: ["title", "variant", "positions", "value", "owned", "spd", "ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"], sort: "title", dir: 1 },
-  All: { cols: ["id", "variant", "title", "positions", "bats", "throws", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "spd", "ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"], sort: "hitOVR", dir: -1 },
+  Hitting: { cols: ["title", "variant", ...FIELD_POS, "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit"], sort: "hitOVR", dir: -1 },
+  Pitching: { cols: ["title", "variant", "posP", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch"], sort: "pitchOVR", dir: 1 },
+  Defense: { cols: ["title", "variant", ...FIELD_POS, "posP", "value", "owned", "spd", "ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"], sort: "title", dir: 1 },
+  All: { cols: ["id", "variant", "title", ...FIELD_POS, "posP", "bats", "throws", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "spd", "ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"], sort: "hitOVR", dir: -1 },
 };
 
 const sortVal = (col: Col, c: Card) => (col.sort ? col.sort(c) : col.get(c));

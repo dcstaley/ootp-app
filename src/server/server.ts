@@ -61,7 +61,8 @@ const DEF_COLS = [
 
 const scored = catalog.cards.map((c) => {
   const s = scoreCard(c, config);
-  const positions = LEARN.filter(([col]) => n(c[col]) === 1).map(([, p]) => p).join(",");
+  const learn: Record<string, number> = {};
+  for (const [col, pos] of LEARN) learn[pos] = n(c[col]) === 1 ? 1 : 0;
   const def: Record<string, number> = {};
   for (const k of DEF_COLS) def[k] = n(c[k]);
   return {
@@ -69,7 +70,7 @@ const scored = catalog.cards.map((c) => {
     variant: String(c["Variant"] ?? "").toUpperCase() === "Y" ? "Y" : "",
     title: s.title, first: String(c["FirstName"] ?? ""), last: String(c["LastName"] ?? ""),
     bats: s.bats, throws: s.throws, value: n(c["Card Value"]), owned: n(c["owned"]),
-    positions, eligible: eligibleSet.has(eligibleKey(c)),
+    learn, eligible: eligibleSet.has(eligibleKey(c)),
     hitVL: round(s.hit.woba_vL), hitVR: round(s.hit.woba_vR), hitOVR: round(s.hit.woba_ovr),
     basicHit: round(s.hit.basic_ovr),
     pitchVL: round(s.pitch.woba_vL), pitchVR: round(s.pitch.woba_vR), pitchOVR: round(s.pitch.woba_ovr),
