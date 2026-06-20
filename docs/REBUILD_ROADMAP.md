@@ -23,7 +23,7 @@ core; none recomputes scoring.
 | M0 | Foundations | TS project, tests, version control | ✅ | — |
 | M1 | Scoring core | One core; reproduce old app scores | ✅ | M0 |
 | M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | ✅ | SP-1 |
-| M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | 🔜 (a/b done) | SP-2, M1.5 |
+| M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ✅ | SP-2, M1.5 |
 | M3 | Data Grid | First UI consumer of the core | ⬜ | M2, SP-11 |
 | M4 | Optimizer | Roster + lineups + rotation/bullpen | ⬜ | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ⬜ | M4 |
@@ -314,14 +314,11 @@ trivial and agreed.
 
 ## Right now
 
-**Done:** M1.5 (self-contained `calibrate()`), M2a (card catalog import), M2b (Tournament/Era/Park
-config types, `rowEligible` port, `buildEligiblePool`, tournament→pool→calibrate chain). 25 tests green.
+**M2 COMPLETE** — M2a catalog · M2b config + eligibility + pool · assemble-coeffs (D4) · M2c accounts +
+v5 variants (D6) · M2d file-based persistence (D7). 40 tests green; parity bit-identical; capstone
+persists config, reloads from disk, and drives the full chain. The data + config layers are done.
 
-**Next, to finish M2:**
-1. ✅ **assemble-coeffs (D4 bag dissolution):** `splitCoeffs`/`assembleCoeffs` decompose the flat bag into
-   Era + Park + Softcaps + Model (+ extras) and recompose losslessly (round-trip verified on all
-   captures). Remaining: categorise the `extras` remainder (ssp/splits → tuning, position weights →
-   tournament) and a real model-artifact format (M6).
-2. **M2c account overlays + variants (D6):** shared catalog + per-account `owned`/variants; this closes
-   the **bit-exact calibration** validation (variant rows enter the pool).
-3. **M2d file-based persistence (D7).**
+**Next: M3 — Data Grid** (first visible UI consumer) + **SX.1 app shell** (local server + browser).
+Needs the packaging scaffold spike (SP-11). Carried-forward follow-ups: categorise the D4 `extras`
+remainder (ssp/splits → tuning, position weights → tournament); real model-artifact format (M6);
+CSV variant import (S2.4b).
