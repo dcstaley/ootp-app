@@ -312,9 +312,10 @@ trivial and agreed.
 config types, `rowEligible` port, `buildEligiblePool`, tournament→pool→calibrate chain). 25 tests green.
 
 **Next, to finish M2:**
-1. **assemble-coeffs (D4 bag dissolution):** build the scoring `Coeffs` from Era + Park + Softcaps +
-   a model artifact + fixed weights/splits, validated to reconstruct a captured bag. Lets a
-   tournament+libraries+model drive scoring with no pre-merged bag.
+1. ✅ **assemble-coeffs (D4 bag dissolution):** `splitCoeffs`/`assembleCoeffs` decompose the flat bag into
+   Era + Park + Softcaps + Model (+ extras) and recompose losslessly (round-trip verified on all
+   captures). Remaining: categorise the `extras` remainder (ssp/splits → tuning, position weights →
+   tournament) and a real model-artifact format (M6).
 2. **M2c account overlays + variants (D6):** shared catalog + per-account `owned`/variants; this closes
    the **bit-exact calibration** validation (variant rows enter the pool).
 3. **M2d file-based persistence (D7).**
