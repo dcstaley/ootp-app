@@ -1,0 +1,60 @@
+{
+  "label": "_synthetic",
+  "_note": "DEV SMOKE-TEST ONLY. Invented coefficients (NOT the old app's dead defaults), chosen to produce varied, non-degenerate scores that exercise softcaps, era/park, calibration, anchor, ssp, switch-hitters and OVR blends. Proves the rebuilt core == the extracted old code. Replaced by real captures for true parity.",
+  "settings": { "hittingMetric": "woba", "pitchingMetric": "woba", "pitchingSide": "ovr" },
+  "coeffs": {
+    "tournament_hr_adjust": true,
+
+    "park_avg_l": 0.95, "park_avg_r": 1.05, "park_hr_l": 0.85, "park_hr_r": 1.2, "park_gap": 1.1,
+
+    "era_bb": 1.02, "era_k": 0.98, "era_avg": 1.03, "era_hr": 1.1, "era_bip": 1.0, "era_gap": 1.0, "era_thr": 1.25,
+
+    "cap_k_top": 130, "cap_k_bot": 45, "pen_k": 0.30,
+    "cap_babip_top": 125, "cap_babip_bot": 40, "pen_babip": 0.50,
+    "cap_gap_top": 120, "cap_gap_bot": 40, "pen_gap": 0.25,
+    "cap_pow_top": 120, "cap_pow_bot": 40, "pen_pow": 0.50,
+    "cap_eye_top": 120, "cap_eye_bot": 40, "pen_eye": 0.50,
+
+    "cap_p_con_top": 120, "cap_p_con_bot": 40, "pen_p_con": 0.25,
+    "cap_p_stu_top": 125, "cap_p_stu_bot": 40, "pen_p_stu": 0.25,
+    "cap_p_pbabip_top": 120, "cap_p_pbabip_bot": 40, "pen_p_pbabip": 0.25,
+    "cap_p_hrr_top": 120, "cap_p_hrr_bot": 40, "pen_p_hrr": 0.25,
+
+    "ssp_basic_hitting": 0.97, "ssp_adv_hitting": 0.97, "ssp_basic_pitching": 0.97,
+    "l_pitch_split": 0.4, "r_pitch_split": 0.4, "l_hit_split": 0.4, "r_hit_split": 0.4,
+
+    "basic_intercept": 0,
+    "w_babip": 0.24, "w_pow": 0.24, "w_eye": 0.18, "w_k": 0.24, "w_gap": 0.13,
+    "w_speed": 0.01, "w_run": 0.02, "w_steal": 0.01,
+
+    "adv_speed": 0, "adv_run": 0, "adv_steal": 0, "adv_sf": 4, "adv_sh": 4, "adv_hbp": 6,
+
+    "ba": 8, "bipba": 10, "baInt": 0,
+    "gapLogA": -0.30, "gapLogB": 0.13,
+    "k": -15, "kInt": 130, "kbb600": 0,
+    "eye": 8, "eyeInt": 0,
+    "pow": 4, "powInt": 0,
+
+    "p_stuff": 0.15, "p_control": 0.26, "p_babip": 0.265, "p_hr": 0.285, "p_hold": 0.02,
+
+    "hradj_exgb": 1.0, "hradj_gb": 1.0, "hradj_neu": 1.0, "hradj_fb": 1.0, "hradj_exfb": 1.0,
+
+    "p_bb_int": 0, "p_bb_con": 8,
+    "p_k_int": 0, "p_k_stu": 20,
+    "p_hr_int": 0, "p_hr_hrr": 4,
+    "p_nHH_int": 0, "p_nHH_pbabip": 8, "p_nHH_bip": 10,
+    "p_xbh_share": 0.25, "p_xbh_norm": 1,
+    "p_leagueNorm_bb": 1, "p_leagueNorm_hr": 1, "p_leagueNorm_h": 1
+  },
+  "calScales": {
+    "hitBBScaleVR": 1.10, "hitBBScaleVL": 0.90,
+    "hitHRScaleVR": 1.20, "hitHRScaleVL": 0.80,
+    "hitScaleVR": 0.50, "hitScaleVL": 0.55,
+    "pBBScaleVR": 1.05, "pBBScaleVL": 0.95,
+    "pHRScaleVR": 1.15, "pHRScaleVL": 0.85,
+    "pitchScaleVR": 0.60, "pitchScaleVL": 0.62,
+    "crossPoolHitterMultiplier": 1.0,
+    "ssp_adv_hitting": 0.97,
+    "ssp_basic_pitching": 0.97
+  }
+}

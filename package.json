@@ -1,0 +1,20 @@
+{
+  "name": "ootp-optimizer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "OOTP roster optimizer rebuild — one scoring core, computed once, consumed identically.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "golden": "node tools/golden/generate-golden.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/papaparse": "^5.3.15",
+    "papaparse": "^5.4.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
