@@ -64,7 +64,12 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
 - **S1.5.1** 🔜 As maintainer, the core computes per-event calibration scales + the per-pool/side
   **anchor** over the eligible/top-N pool (reproducing the old backend `calcAnchorWoba`), so we no
   longer paste scales. *Acceptance:* reproduces captured `anchorMeanVR/VL`, `hitBB/HR/Scale*`,
-  `pBB/HR/pitchScale*` within tight tolerance on the same pool. *(Gated by SP-1.)*
+  `pBB/HR/pitchScale*` within tight tolerance on the same pool. *(SP-1 done — see below.)*
+  *Notes from SP-1:* only **BB and HR** are per-event scaled (1B/GAP/nHH scales computed but unused —
+  see Open Questions); the anchor wOBA omits **ssp and the HBP term**. Exact scales depend on the
+  eligible pool (card-value range) **+ hitter/pitcher pool-tagging**, so **bit-exact parity lands with
+  M2** (eligibility + pool construction); the math itself is proven (reproduces to ~0.1–0.5% on real
+  eligibility, residual = pool-tagging).
 - **S1.5.2** 🔜 As maintainer, anchor is applied **after** era/park, all cards normalized to 600 PA (D1).
 - **S1.5.3** 🔜 As maintainer, a `valueFor(card, role)` = **signed distance from a common baseline**
   (hitter `wOBA − baseline`, pitcher `baseline − allowedWOBA`), no power transform (D2), exposed as the
@@ -183,7 +188,7 @@ Each spike: the **question**, **why it matters / what it unblocks**, **rough app
 
 | ID | Question | Unblocks |
 |---|---|---|
-| SP-1 | How does the old `calcAnchorWoba` build its anchor pool + per-event scales? | M1.5 |
+| SP-1 ✅ | How does the old `calcAnchorWoba` build its anchor pool + per-event scales? | M1.5 |
 | SP-2 | What's the file-based persistence shape (schema/layout)? | M2, SX.2 |
 | SP-3 | Variant boost + eligibility exact behavior | M2 |
 | SP-4 | Optimizer LP formulation in HiGHS-WASM (starters-first) | M4 |
@@ -195,11 +200,16 @@ Each spike: the **question**, **why it matters / what it unblocks**, **rough app
 | SP-10 | SP Export format + potential-rating fields | M7 |
 | SP-11 | Packaging scaffold (local server + browser) | M3, SX.1 |
 
-**SP-1 — Anchor/calibration internals (next).** *Why:* M1.5 can't compute scales without matching the
-old method; we have captured targets to validate against. *Approach:* read `rosterGenerator.js`
-`calcAnchorWoba` + how the calibration pool / top-N (`anchorN=50`) is selected and sorted, and the
-per-event `evScale` baselines (Section-3 rates). *Output:* a spec + a `calibrate(pool, config)` that
-reproduces captured `anchorMean*`/scale fields.
+**SP-1 — Anchor/calibration internals. ✅ DONE (exploration).** *Findings:* `calcAnchorWoba` + `evScale`
+fully reverse-engineered and reproduced line-for-line (`tools/spike-calibrate.ts`). ANCHOR_N=50,
+TARGET_WOBA=0.320, Section-3 baselines `H_SECTION3`/`P_SECTION3`. Anchor pool = top-50 by raw wOBA over
+the tournament-eligible pool (hitters desc / pitchers asc). **Only BB & HR per-event scales feed the
+result** (1B/GAP/nHH scales computed but unused). Anchor wOBA **omits ssp and the HBP term** (HBP only in
+the BIP subtraction). *Validation:* with the real eligibility (card value ∈ [60,89] for the real-parkera
+tournament; the `1858` is the total cap, a roster constraint, not a pool filter) the scales reproduce to
+~0.1–0.5%; the residual is the frontend's hitter/pitcher pool-tagging (`_inHitterPool`/`_inPitcherPool`),
+which M2 reconstructs → **bit-exact parity is an M2 deliverable.** *Output:* `tools/spike-calibrate.ts`;
+promote to `src/scoring-core/calibrate.ts` for M1.5.
 
 **SP-2 — Persistence design.** *Why:* M2 needs a concrete on-disk shape. *Approach:* decide JSON (and/or
 SQLite) layout for catalog, account overlays, tournaments, eras, parks, models, saved rosters; a
@@ -253,6 +263,13 @@ server + React SPA + the data folder; "launch once." *Output:* runnable shell, n
 - **D3 model form** stays deferred until parity is fully done; don't let it creep into M1.5/M2.
 - **Two-config-source & multi-home duplication** (old app) must not re-emerge — D4 single-source is a
   standing invariant, not a one-time task.
+- **🔬 REVISIT — per-event calibration only scales BB and HR.** The old anchor scales only **BB** and
+  **HR** to the Section-3 baselines; the **1B / GAP / nHH** per-event scales are computed but **unused**,
+  so non-HR-hit and XBH components are never independently re-anchored — they ride the BIP recompute and
+  the final per-pool anchor scalar. Parity preserves this exactly (S1.5.1). **Flagged for follow-up
+  (user request):** this may under-/mis-calibrate the non-HR-hit components and is a candidate scoring
+  issue. Revisit **post-parity**, alongside D1 (per-event calibration design) and the D3 model work —
+  not during M1.5/M2.
 
 ---
 
