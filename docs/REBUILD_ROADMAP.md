@@ -25,7 +25,7 @@ core; none recomputes scoring.
 | M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | ✅ | SP-1 |
 | M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ✅ | SP-2, M1.5 |
 | M3 | Data Grid | First UI consumer of the core | 🔜 (scaffold + grid live) | M2, SP-11 |
-| M4 | Optimizer | Roster + lineups + rotation/bullpen | ⬜ | SP-4/5/6, M2 |
+| M4 | Optimizer | Roster + lineups + rotation/bullpen | 🔜 (spikes done; Phase A hitter lineup MILP live) | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ⬜ | M4 |
 | M6 | Training + bake-off | Fit models; D3 comparison harness | ⬜ | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |
@@ -296,8 +296,15 @@ server + React SPA + the data folder; "launch once." *Output:* runnable shell, n
   vR≈0.61/vL≈0.39). So the platoon effect is real and hand-dependent (justifies a per-hand weight), but
   the code's **RHB** weight is *backwards* (0.60 on vL while RHB actually face RHP more), LHB undershoots,
   and SHB should lean vR not 50/50. (Caveat: realized PA shares are endogenous — managers platoon — so
-  M6 should decide realized-exposure vs neutral weighting.) **Does NOT affect the optimizer** (M4 uses
-  per-side vL/vR directly; OVR is display/sort only). Set from data in **M6**.
+  M6 should decide realized-exposure vs neutral weighting.)
+  **DECISION (user, 2026-06-22): platoon split weighting is a TOURNAMENT setting (D4), not a global
+  constant.** The per-hand league values above are the default, **refreshed each time a model is trained**
+  (the league setting — M6), but **per-tournament overridable** (some tournaments have extreme splits).
+  Two distinct uses of the split: (a) per-card **OVR display** weighting (grid column — per batter hand);
+  (b) the **optimizer objective** — the team's overall RHP/LHP exposure weights the vR vs vL lineup
+  contributions, so an RHP-heavy tournament favors cards good vs RHP. (b) DOES affect roster construction,
+  so M4's objective takes the tournament platoon-exposure weight (defaulting to the league value).
+  Implementation: add platoon-split fields to the Tournament config; seed the league default; allow override.
 
 **Anchoring/scaling correctness audit (2026-06-22):** of the four flagged suspects — (#3) hitter-pool
 gating bug is **already fixed** in `calibrate.ts` (anchor = top-50 by wOBA over the whole eligible pool);
