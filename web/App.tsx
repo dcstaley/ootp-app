@@ -147,7 +147,11 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const variantFileRef = useRef<HTMLInputElement>(null);
   const uploadTarget = useRef<string | null>(null); // account id to import into; null = new account
+  const [variantsOpen, setVariantsOpen] = useState(false);
+  const [variantQuery, setVariantQuery] = useState("");
+  const [variantInfo, setVariantInfo] = useState<string | null>(null);
   const [preset, setPreset] = useState<keyof typeof PRESETS>("Hitting");
   const [filter, setFilter] = useState("");
   const [highlight, setHighlight] = useState("");
@@ -188,6 +192,15 @@ export function App() {
       .then(([m, c]) => { setMeta(m); setCards(c); }).catch((e) => setErr(String(e))).finally(() => setLoading(false));
   }, [tournamentId, accountId]);
 
+  // Re-fetch meta + cards for the current tournament/account (after a mutation
+  // that doesn't change those selections, e.g. a variant or catalog change).
+  const reloadView = () => {
+    if (!tournamentId) return Promise.resolve();
+    const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}`;
+    return Promise.all([fetch("/api/meta" + q).then((r) => r.json()), fetch("/api/cards" + q).then((r) => r.json())])
+      .then(([m, c]) => { setMeta(m); setCards(c); });
+  };
+
   // Persist the active selections (so a reload restores them).
   const persist = (patch: Record<string, string>) =>
     fetch("/api/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }).catch(() => {});
@@ -224,12 +237,33 @@ export function App() {
     const d = await r.json().catch(() => null);
     if (!r.ok) { setErr(d?.error || "import failed"); setBusy(null); return; }
     await loadAccounts();
-    if (!id && d?.accounts?.length) chooseAccount(d.accounts[d.accounts.length - 1].id);
-    // catalog changed → re-fetch current view
-    setTournamentId((t) => t); setAccountId((a) => a || "");
-    const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}`;
-    Promise.all([fetch("/api/meta" + q).then((x) => x.json()), fetch("/api/cards" + q).then((x) => x.json())])
-      .then(([m, c]) => { setMeta(m); setCards(c); }).finally(() => setBusy(null));
+    if (!id && d?.accounts?.length) chooseAccount(d.accounts[d.accounts.length - 1].id); // effect reloads
+    else await reloadView(); // catalog changed → refresh current view
+    setBusy(null);
+  };
+
+  // ── Variants (per account; writes overlay.variantCardIds) ───────────────────
+  const toggleVariant = async (cid: string, on: boolean) => {
+    if (!accountId) return;
+    setBusy("variant");
+    await fetch("/api/accounts/variants/toggle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: accountId, cardId: cid, on }) });
+    await loadAccounts();
+    await reloadView();
+    setBusy(null);
+  };
+  const onVariantFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !accountId) return;
+    setBusy("variant");
+    const text = await file.text();
+    const r = await fetch("/api/accounts/variants/import?id=" + encodeURIComponent(accountId), { method: "POST", headers: { "Content-Type": "text/csv" }, body: text });
+    const d = await r.json().catch(() => null);
+    if (!r.ok) { setErr(d?.error || "variant import failed"); setBusy(null); return; }
+    setVariantInfo(`Imported ${d.matched} variant${d.matched === 1 ? "" : "s"} (${d.unmatched} unmatched) from "${d.column}" column.`);
+    await loadAccounts();
+    await reloadView();
+    setBusy(null);
   };
 
   const choosePreset = (name: keyof typeof PRESETS) => { setPreset(name); setSortKey(PRESETS[name].sort); setSortDir(PRESETS[name].dir); };
@@ -326,9 +360,13 @@ export function App() {
           <button onClick={renameAccount} disabled={!accountId || !!busy} title="Rename this account" style={{ ...inputStyle, cursor: "pointer" }}>Rename</button>
           <button onClick={() => pickUpload(accountId || null)} disabled={!accountId || !!busy} title="Replace this account's ownership from a pt_card_list CSV (also refreshes the shared card list)" style={{ ...inputStyle, cursor: "pointer" }}>Upload CSV…</button>
           <button onClick={() => pickUpload(null)} disabled={!!busy} title="Create a new account from a pt_card_list CSV" style={{ ...inputStyle, cursor: "pointer" }}>+ Account</button>
+          <button onClick={() => { setVariantInfo(null); setVariantQuery(""); setVariantsOpen(true); }} disabled={!accountId || !!busy} title="Manage this account's v5 variants" style={{ ...inputStyle, cursor: "pointer" }}>
+            Variants ({accounts.find((a) => a.id === accountId)?.variantCount ?? 0})
+          </button>
         </span>
-        {(loading || busy) && <span style={{ fontSize: 12, color: C.sub }}>{busy === "upload" ? "importing…" : busy === "rename" ? "saving…" : "scoring…"}</span>}
+        {(loading || busy) && <span style={{ fontSize: 12, color: C.sub }}>{busy === "upload" ? "importing…" : busy === "rename" ? "saving…" : busy === "variant" ? "updating variants…" : "scoring…"}</span>}
         <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
+        <input ref={variantFileRef} type="file" accept=".csv,text/csv" onChange={onVariantFile} style={{ display: "none" }} />
       </div>
 
       {meta && (
@@ -396,6 +434,61 @@ export function App() {
         </table>
       </div>
       {rows.length > 1000 && <p style={{ color: C.sub, fontSize: 12 }}>Showing first 1000 of {rows.length}.</p>}
+
+      {variantsOpen && (() => {
+        const acc = accounts.find((a) => a.id === accountId);
+        const variantRows = cards.filter((c) => c.variant === "Y");
+        const variantIds = new Set(variantRows.map((r) => r.id));
+        const q = variantQuery.trim().toLowerCase();
+        const candidates = q
+          ? cards.filter((c) => c.variant !== "Y" && !variantIds.has(c.id) && haystack(c).includes(q)).slice(0, 12)
+          : [];
+        return (
+          <>
+            <div onClick={() => setVariantsOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(0,0,0,.4)" }} />
+            <div style={{ position: "fixed", left: "50%", top: "8vh", transform: "translateX(-50%)", zIndex: 100, width: 520, maxHeight: "82vh", overflow: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16, boxShadow: "0 10px 40px rgba(0,0,0,.6)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <b style={{ fontSize: 15 }}>Variants — {acc?.name ?? "(account)"} ({variantRows.length})</b>
+                <span onClick={() => setVariantsOpen(false)} style={{ cursor: "pointer", color: C.sub, fontSize: 16 }}>✕</span>
+              </div>
+              <p style={{ margin: "0 0 12px", fontSize: 12, color: C.sub }}>v5 boost is computed in-app. Import a game variant export (replaces the list) or add/remove individually.</p>
+
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+                <button onClick={() => variantFileRef.current?.click()} disabled={!!busy} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>Import variant CSV…</button>
+                {variantRows.length > 0 && <button onClick={async () => { if (window.confirm(`Remove all ${variantRows.length} variants from ${acc?.name}?`)) { setBusy("variant"); await fetch("/api/accounts/variants/import?id=" + encodeURIComponent(accountId), { method: "POST", headers: { "Content-Type": "text/csv" }, body: "CID\n" }); await loadAccounts(); await reloadView(); setBusy(null); } }} disabled={!!busy} style={{ ...inputStyle, cursor: "pointer" }}>Clear all</button>}
+                {variantInfo && <span style={{ fontSize: 12, color: C.sub }}>{variantInfo}</span>}
+              </div>
+
+              <div style={{ fontSize: 12, color: C.sub, marginBottom: 4 }}>Add a variant — search cards</div>
+              <input value={variantQuery} onChange={(e) => setVariantQuery(e.target.value)} placeholder="Search by player or card name…" style={{ ...inputStyle, width: "100%", marginBottom: 6 }} />
+              {q && (
+                <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, marginBottom: 14, maxHeight: 200, overflow: "auto" }}>
+                  {candidates.length === 0 ? <div style={{ padding: 8, fontSize: 13, color: C.sub }}>No matches (already-variant cards are hidden).</div>
+                    : candidates.map((c) => (
+                      <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 8px", borderBottom: `1px solid ${C.border}` }}>
+                        <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title} <span style={{ color: C.sub }}>#{c.id}</span></span>
+                        <button onClick={() => toggleVariant(c.id, true)} disabled={!!busy} style={{ ...inputStyle, cursor: "pointer", padding: "3px 8px" }}>+ Add</button>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              <div style={{ fontSize: 12, color: C.sub, marginBottom: 4 }}>Current variants ({variantRows.length})</div>
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, maxHeight: 280, overflow: "auto" }}>
+                {variantRows.length === 0 ? <div style={{ padding: 8, fontSize: 13, color: C.sub }}>None yet.</div>
+                  : [...variantRows].sort((a, b) => a.title.localeCompare(b.title)).map((c) => (
+                    <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 8px", borderBottom: `1px solid ${C.border}` }}>
+                      <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span style={{ color: C.star }}>★</span>{c.title.replace(/^★\s*/, "").replace(/\s*v5$/, "")} <span style={{ color: C.sub }}>#{c.id}</span>
+                      </span>
+                      <button onClick={() => toggleVariant(c.id, false)} disabled={!!busy} style={{ ...inputStyle, cursor: "pointer", padding: "3px 8px" }}>Remove</button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {fcol && (
         <>

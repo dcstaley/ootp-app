@@ -19,7 +19,7 @@ import { join, extname } from "node:path";
 import { parseCatalogCsv, cardId, type Catalog } from "../data/catalog.ts";
 import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
-import { overlayFromCatalog, type AccountOverlay } from "../data/account.ts";
+import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived } from "../scoring-core/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -269,6 +269,33 @@ const server = createServer(async (req, res) => {
     await saveState();
     refreshCatalog();
     return json(res, accountSummary());
+  }
+
+  if (method === "POST" && url === "/api/accounts/variants/toggle") {
+    const { id, cardId: cid, on } = JSON.parse((await readBody(req)) || "{}");
+    const acc = id && accounts.get(id);
+    const key = String(cid ?? "");
+    if (!acc || !key) return json(res, { error: "id + cardId required" }, 400);
+    const set = new Set(acc.variantCardIds);
+    if (on) { if (catalogById.has(key)) set.add(key); } else set.delete(key);
+    acc.variantCardIds = [...set];
+    await repo.save("accounts", acc.id, acc);
+    return json(res, accountSummary());
+  }
+  if (method === "POST" && url === "/api/accounts/variants/import") {
+    // Raw CSV body (game variant export). REPLACES the account's variant list
+    // (S2.4b): we keep only the Card IDs, ignore in-game level/ratings (v5 is
+    // recomputed), and match against the catalog.
+    const text = await readBody(req);
+    const id = u.searchParams.get("id") || state.activeAccountId;
+    const acc = id ? accounts.get(id) : null;
+    if (!acc) return json(res, { error: "unknown account" }, 400);
+    const { ids, column } = parseVariantExport(text);
+    if (!column) return json(res, { error: "no CID / Card ID column found in CSV" }, 400);
+    const matched = ids.filter((i) => catalogById.has(i));
+    acc.variantCardIds = matched;
+    await repo.save("accounts", acc.id, acc);
+    return json(res, { ...accountSummary(), imported: ids.length, matched: matched.length, unmatched: ids.length - matched.length, column });
   }
 
   // ── Static SPA ──

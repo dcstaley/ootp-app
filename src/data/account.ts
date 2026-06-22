@@ -3,6 +3,7 @@
 // variants. Two accounts are the immediate need but overlays are keyed so N is
 // possible. PT-only (SP keeps its own single collection).
 
+import Papa from "papaparse";
 import type { Card, Catalog } from "./catalog.ts";
 import { cardId } from "./catalog.ts";
 import { makeVariant } from "./variants.ts";
@@ -39,6 +40,30 @@ export function buildAccountRows(catalog: Catalog, overlay: AccountOverlay): Car
     if (base) rows.push({ ...makeVariant(base), owned: String(overlay.owned[id] ?? 0) });
   }
   return rows;
+}
+
+/**
+ * Parse a game "variant export" CSV → the list of Card IDs the account has a
+ * variant for. The game's export uses a `CID` column (mapping to the catalog's
+ * `Card ID`); we ignore the in-game level/ratings entirely and recompute the v5
+ * boost ourselves. Tolerant of column naming: prefers `CID`, then `Card ID`.
+ * Returns the id column it used (null if none found) so callers can report it.
+ */
+export function parseVariantExport(text: string): { ids: string[]; column: string | null } {
+  const parsed = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true });
+  const fields = parsed.meta?.fields ?? [];
+  const column =
+    fields.find((f) => /^cid$/i.test(f.trim())) ??
+    fields.find((f) => /^card\s*id$/i.test(f.trim())) ??
+    fields.find((f) => /\bcid\b|card\s*id/i.test(f)) ??
+    null;
+  if (!column) return { ids: [], column: null };
+  const seen = new Set<string>();
+  for (const row of parsed.data ?? []) {
+    const v = String(row[column] ?? "").trim();
+    if (v) seen.add(v);
+  }
+  return { ids: [...seen], column };
 }
 
 /** Owned filter (owned > 0) — the active-account ownership scope for generation. */

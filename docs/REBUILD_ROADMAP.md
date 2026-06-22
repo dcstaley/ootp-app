@@ -360,10 +360,19 @@ active account + tournament across reloads), `/api/accounts/rename`, `/api/accou
 ownership + refreshes shared catalog; `?id=` updates an account, `?name=` creates one). Grid gains an Account
 dropdown + Rename + Upload CSV… + "+ Account". Verified: CDMX 2984 owned / Oaxaca 3054 (differ on 1864 cards),
 identical scores across accounts, catalog now 3382 cards (from upload, not the stale 3376), active selection
-persists across reload. Per-account **variant management** (add/remove v5 variants) is the next sub-step —
-overlays carry `variantCardIds` (empty for now; the demo variant injection was removed).
+persists across reload. **Per-account variant management — DONE (D6, S2.4b).** Two ways to populate an account's `variantCardIds`,
+both writing the same overlay field; we always recompute the v5 boost ourselves (ignore the game's level/ratings):
+(1) **manual add/remove** via a search-and-select modal (search the catalog by player/card name → + Add; remove
+from the current list) — replaces the old Card-ID-entry flow; (2) **variant CSV import** — the game's "manage
+cards variant export" (a `Name,CID` list); `parseVariantExport` picks the `CID` column (falls back to `Card ID`,
+and deliberately REJECTS an unrelated `ID` column so the wrong export can't be misread), matches against the
+catalog, and REPLACES the account's variant list. Endpoints: `/api/accounts/variants/toggle` (add/remove one,
+deduped, catalog-existence-checked) and `/api/accounts/variants/import` (raw CSV). Variant rows are scored on
+demand from the tournament's cached config (no re-score) and show as ★…v5. Verified: CDMX import 72 matched /
+0 unmatched via `CID`; toggle add/remove/dedupe/bad-id-reject; modal lists 72, hides already-variant cards from
+add-search. 4 parser unit tests (incl. the wrong-`ID`-column rejection).
 
-**M3 remaining:** per-account variant add/remove UI; later, highlight generated-roster members.
+**M3 remaining:** highlight generated-roster members (needs M4). M3 is otherwise complete.
 
 Carried-forward follow-ups: categorise the D4 `extras` remainder; real model-artifact format (M6);
 CSV variant import (S2.4b); revisit BB/HR-only per-event calibration + the OVR vL/vR split weighting
