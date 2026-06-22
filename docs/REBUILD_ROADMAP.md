@@ -318,16 +318,53 @@ trivial and agreed.
 v5 variants (D6) · M2d file-based persistence (D7). 40 tests green; parity bit-identical; capstone
 persists config, reloads from disk, and drives the full chain. The data + config layers are done.
 
-**In progress: M3 — Data Grid (first slice live).** App shell stood up (SP-11): local Node server
-(`src/server/server.ts`) runs the one core and serves scored cards; React+Vite SPA (`web/`) renders a
-sortable/filterable grid. **Run:** `npm run server` then open http://localhost:8787 (or `npm run dev:web`
-for live-reload dev). Dev config = a local captured bag (real numbers) if present, else `_synthetic`.
-Grid now has: views/presets (Hitting/Pitching/Defense/All), Card ID, Variant, learnable Positions
-(replaced Pos), Basic + wOBA OVR + per-side hit/pitch, defensive ratings, player-name sort, highlight
-search + filter search, eligible-only + owned-only. Remaining (user-requested): per-column filters;
-load-a-tournament selector that applies config + eligibility on the grid; account selector; later,
-highlight generated-roster members. Open domain Q: how to weight the wOBA OVR blend (vL/vR).
+**In progress: M3 — Data Grid.** App shell (SP-11): local Node server `src/server/server.ts` runs the one
+core and serves scored cards (`/api/cards`, `/api/meta`); React+Vite SPA in `web/` renders the grid.
+**Dev run:** the Claude_Preview MCP launches two servers from `.claude/launch.json` — `api` (8787, the
+real server) and `web` (5173, Vite hot-reload, proxies /api → 8787). Standalone: `npm run build:web`
+then `npm run server` → http://localhost:8787. Dev scoring config = a local captured bag (real numbers)
+from `fixtures/captures/` if present, else `_synthetic`.
+
+**Grid done so far:** two views (Hitting / Pitching — Defense folded into Hitting); columns = Card, Var
+(purple ★, "v5" suffix), wOBA OVR + vL/vR, Basic OVR + vL/vR (BOTH metrics accurate — server
+double-scores with independent wOBA-anchored and basic-anchored calibration), the 8 real `Learn*`
+position columns (raw 0/1), defensive ratings, Stam + # pitches (pitching, far right); player-name sort
+(last, first); global Search + Highlight; Eligible-only + Owned-only; **Sheets-style per-column filter
+popover** (funnel icon → Filter-by-condition dropdown + Filter-by-values checklist with search /
+Select-all / Clear / (Blanks)); resizable, smart-sized columns; dark theme. Two demo variant rows are
+injected server-side so variant inclusion is visible.
+
+**M3 remaining:** load-a-tournament selector (apply a tournament's eligibility + era/park/softcaps to the
+grid live — needs `resolveCoeffs` = model coeffs (from a capture via `splitCoeffs`) + era/park/softcaps →
+`assembleCoeffs`); account selector (active PT account scopes owned/variants); later, highlight
+generated-roster members.
 
 Carried-forward follow-ups: categorise the D4 `extras` remainder; real model-artifact format (M6);
-CSV variant import (S2.4b); the engineering stack (React+Vite+Node server) is owned by the assistant
-(not a user decision).
+CSV variant import (S2.4b); revisit BB/HR-only per-event calibration + the OVR vL/vR split weighting
+(both flagged). Engineering stack (React+Vite+Node) is the assistant's call (user is not an engineer).
+
+---
+
+## Session handoff (read first on resume)
+
+**State:** M0 / M1 / M1.5 / M2 complete; M3 (Data Grid) well underway (above). Branch `main`, everything
+pushed to GitHub `dcstaley/ootp-app`. ~45 tests green; parity vs the old app bit-identical. The entire
+headless core — scoring, self-contained calibration, eligibility/pool, accounts + v5 variants,
+persistence — is done and validated; current work is the UI.
+
+**Immediate next step:** finish M3 — the **load-a-tournament selector**, then the account selector.
+After M3: **M4 optimizer** is the big one — run its spikes first (SP-4 LP formulation in HiGHS-WASM,
+SP-5 defensive matching/assignment, SP-6 solver perf). Build order continues M5 manual editing, M6
+training + D3 bake-off, M7 Single Player.
+
+**Working agreement (also in auto-memory — `MEMORY.md`):**
+- User is NOT a software engineer: own tooling/implementation decisions; only surface product / domain /
+  UX choices, and when you do, give concrete options + plain-language tradeoffs + a recommendation.
+- NEVER post screenshots — the user watches the live preview; verify via `preview_console_logs` (errors)
+  + `/api` curl. Use the Claude_Preview MCP (`preview_start`/`preview_stop`) to manage servers.
+- Treat the OLD app (`C:\ootp_app`) as suspect, not authoritative — flag suspected bugs (see "Flagged
+  old-app issues"), don't blindly copy.
+- Commit AND push after each milestone, as SEPARATE git commands (compound `&&` chains re-prompt).
+- Parity = equivalence with the old app's trusted Roster & Lineup numbers, NOT endorsement.
+- Real captures in `fixtures/captures/*.json` are gitignored (contain the user's trained model); only
+  `_synthetic.json` is tracked. Validate with: `npm run golden` → `npm test`.
