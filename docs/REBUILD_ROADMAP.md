@@ -226,18 +226,28 @@ repository interface. *Output:* schema + repo API; folder layout.
 boost formula and `rowEligible` operators; validate pool in/out and boosted ratings against the old app.
 *Output:* parity tests.
 
-**SP-4 — Optimizer formulation.** *Why:* the biggest unknown; D5 says keep starters-first but fix quality.
-*Approach:* model the cap/slots starters LP + support sub-budget fill in HiGHS-WASM; decide variable
-encoding; confirm it solves reliably (old app reportedly didn't in cap/slots). *Output:* a solving
-prototype on a real pool + objective using `valueFor`.
+**SP-4 — Optimizer formulation. ✅ DONE (spike).** *Output:* `tools/spike-highs.ts` — a working MILP on
+the real scored pool: binary `r_<card>` (roster membership) + `y_<card>_<pos>_v{L,R}` (dual-lineup
+assignment), objective = Σ value(card,side)·y, constraints = each position filled once per side, ≤1
+position per card per side (linked to roster membership), roster size, **backup catcher = a coverage-depth
+constraint** (`Σ rostered catchers ≥ 2`, retiring the 3-pass). Solved to **Optimal**, integral, no greedy
+fill. Variable encoding confirmed (CPLEX LP-format string → `highs.solve`). The starters-first
+decomposition + cap/slots budgets are the remaining M4 build (not re-explored — the encoding is proven).
 
-**SP-5 — Defensive feasibility.** *Why:* covering ≠ matching; old greedy gap-patching caused misfires.
-*Approach:* a bipartite matching/assignment check that a chosen set can field vL/vR + backups incl. a
-backup-qualified catcher. *Output:* a feasibility function + how it plugs into M4.
+**SP-5 — Defensive feasibility. ✅ (largely answered by SP-4).** The "covering ≠ matching" concern is
+handled *inside* the MILP: per-position fill + ≤1-position-per-card IS the bipartite assignment, solved
+exactly (both vL and vR), and backup catcher is a coverage-depth constraint. So a separate matching pass
+isn't required for feasibility — the MILP guarantees an alignable set. (A standalone matching check may
+still be handy for fast manual-edit validation, M5.)
 
-**SP-6 — Solver performance.** *Why:* architecture open item; must be usable on real pool sizes.
-*Approach:* benchmark HiGHS-WASM on representative pools; fallback plan only if needed. *Output:* go/no-go
-+ timings.
+**SP-6 — Solver performance. ✅ DONE — GO.** *Timings (`tools/spike-highs.ts`, real real-parkera pool):*
+HiGHS-WASM loads ~12ms in-process (no Python, no native build). Full un-decomposed pool (1499 hitters,
+13,727 binaries, 3018 constraints) → **Optimal in ~480ms**; decomposed top-150 → 27ms; top-60 → 9ms. All
+three return the identical objective/roster, so D5 decomposition loses nothing while giving 20–50× headroom
+(pitchers are a simpler pick-top-N, not the bottleneck). **Solver decision confirmed: HiGHS-WASM (`highs`
+npm, MIT), in-process.** `highs` added zero vulnerabilities (the npm-audit warnings are pre-existing
+dev-only vite/esbuild advisories). Fallback ladder if a future pool stresses it: tighten decomposition →
+OR-Tools CP-SAT (native) → glpk.js.
 
 **SP-7 — Cross-pool balance.** *Why:* D2 drops the power transform; verify natural H/P balance is sane.
 *Approach:* compare rosters/value splits under signed-distance vs the old app's; treat skew as a
