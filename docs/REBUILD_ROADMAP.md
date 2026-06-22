@@ -25,7 +25,7 @@ core; none recomputes scoring.
 | M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | ✅ | SP-1 |
 | M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ✅ | SP-2, M1.5 |
 | M3 | Data Grid | First UI consumer of the core | 🔜 (scaffold + grid live) | M2, SP-11 |
-| M4 | Optimizer | Roster + lineups + rotation/bullpen | 🔜 (spikes done; Phase A hitter lineup MILP live) | SP-4/5/6, M2 |
+| M4 | Optimizer | Roster + lineups + rotation/bullpen | 🔜 (headless A–C done: lineups + rotation + cap/slots; UI = Phase D) | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ⬜ | M4 |
 | M6 | Training + bake-off | Fit models; D3 comparison harness | ⬜ | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |
@@ -249,9 +249,15 @@ npm, MIT), in-process.** `highs` added zero vulnerabilities (the npm-audit warni
 dev-only vite/esbuild advisories). Fallback ladder if a future pool stresses it: tighten decomposition →
 OR-Tools CP-SAT (native) → glpk.js.
 
-**SP-7 — Cross-pool balance.** *Why:* D2 drops the power transform; verify natural H/P balance is sane.
-*Approach:* compare rosters/value splits under signed-distance vs the old app's; treat skew as a
-calibration signal. *Output:* confidence note or a flagged calibration fix.
+**SP-7 — Cross-pool balance. ⚠️ MEASURED (M4 Phase C) — skew confirmed.** Under signed-distance (D2, no
+cross-pool normalization), the rostered H/P value split is NOT naturally centered: on a 1858-cap roster,
+hitter value ≈ **+0.234** vs pitcher value ≈ **−0.242**. Both anchors set their top-50 to the 0.320
+baseline, but hitters spread wider-positive (elite bats reach +0.05) while the pool's affordable pitchers
+hover near/below baseline (negative valueFor). *Mitigation shipped:* a tunable per-tournament
+`pitcherEmphasis`/`hitterEmphasis` knob (default 1.0) multiplies the objective value, letting the user
+correct the tilt (user-chosen over re-adding the old auto-normalization). *Proper fix (M6):* recenter the
+pitcher (and hitter) baseline/anchor so signed-distance is naturally balanced — alongside the anchoring
+audit. The optimizer is unaffected structurally (it reads values as coefficients).
 
 **SP-8 — D3 bake-off (deferred form choice).** *Why:* log-linear may be systematically wrong at the
 extremes. *Approach:* fit candidate forms (log/linear/quadratic/cubic, sequential vs not, logistic vs

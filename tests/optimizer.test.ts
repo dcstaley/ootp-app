@@ -11,8 +11,8 @@ import { buildEligiblePool } from "../src/config/eligibility.ts";
 import { scoreCard, calibrate, computeDerived, valueFor, type Coeffs } from "../src/scoring-core/index.ts";
 import type { Tournament } from "../src/config/tournament.ts";
 import {
-  generateHitterRoster, generatePitcherStaff, generateRoster, lineupPositions, qualifiesStarter,
-  type HitterCandidate, type PitcherCandidate,
+  generateHitterRoster, generatePitcherStaff, generateRoster, generateFullRoster,
+  lineupPositions, qualifiesStarter, type HitterCandidate, type PitcherCandidate,
 } from "../src/optimizer/index.ts";
 
 const TOURNAMENT: Tournament = {
@@ -38,7 +38,7 @@ const eligiblePositions = (c: Card): string[] => [...POS.filter(([, col]) => n(c
 const PITCH_TYPES = ["Fastball", "Slider", "Curveball", "Changeup", "Cutter", "Sinker", "Splitter", "Forkball", "Screwball", "Circlechange", "Knucklecurve", "Knuckleball"];
 const pitchCount = (c: Card) => PITCH_TYPES.filter((p) => n(c[p]) > 0).length;
 
-function pitcherCandidates(): PitcherCandidate[] {
+function pitcherCandidates(limit = 120): PitcherCandidate[] {
   const coeffs = loadCoeffs();
   const derived = computeDerived(coeffs);
   const catalog = parseCatalogCsv(readFileSync("docs/pt_card_list.csv", "utf8"));
@@ -51,14 +51,14 @@ function pitcherCandidates(): PitcherCandidate[] {
       return {
         id: String(s.cardId), title: String(s.title), throws: s.throws,
         valueVR: valueFor(s.pitch.woba_vR, "pitcher"), valueVL: valueFor(s.pitch.woba_vL, "pitcher"),
-        stamina: n(c["Stamina"]), pitchTypes: pitchCount(c),
+        stamina: n(c["Stamina"]), pitchTypes: pitchCount(c), cost: n(c["Card Value"]),
       };
     })
     .sort((a, b) => (b.valueVR + b.valueVL) - (a.valueVR + a.valueVL))
-    .slice(0, 120);
+    .slice(0, limit);
 }
 
-function candidates(): HitterCandidate[] {
+function candidates(limit = 250): HitterCandidate[] {
   const coeffs = loadCoeffs();
   const derived = computeDerived(coeffs);
   const catalog = parseCatalogCsv(readFileSync("docs/pt_card_list.csv", "utf8"));
@@ -69,10 +69,10 @@ function candidates(): HitterCandidate[] {
     .filter((x) => x.pos.length > 1)
     .map(({ c, pos }) => {
       const s = scoreCard(c, cfg);
-      return { id: String(s.cardId), title: String(s.title), bats: s.bats, valueVR: valueFor(s.hit.woba_vR, "hitter"), valueVL: valueFor(s.hit.woba_vL, "hitter"), positions: pos };
+      return { id: String(s.cardId), title: String(s.title), bats: s.bats, valueVR: valueFor(s.hit.woba_vR, "hitter"), valueVL: valueFor(s.hit.woba_vL, "hitter"), positions: pos, cost: n(c["Card Value"]) };
     })
     .sort((a, b) => Math.max(b.valueVR, b.valueVL) - Math.max(a.valueVR, a.valueVL))
-    .slice(0, 250); // decomposed pool (D5) — fast + lossless at this scale
+    .slice(0, limit); // decomposed pool (D5) — fast + lossless at this scale
 }
 
 describe("M4 hitter roster + dual lineup", () => {
@@ -163,5 +163,47 @@ describe("M4 combined roster (hitters + pitchers)", () => {
     expect(roster.rotation.length).toBe(5);
     expect(roster.lineupVR.length).toBe(9);
     expect(roster.lineupVL.length).toBe(9);
+  });
+});
+
+describe("M4 Phase C — cap & slots budgets", () => {
+  // Full pools so cheap (low Card Value) cards are available under a tight budget.
+  const H = candidates(1e9);
+  const P = pitcherCandidates(1e9);
+  const base = {
+    nHitters: 13, nPitchers: 13, dh: true, minStarters: 5, minStarterStamina: 70, minPitchTypes: 3,
+    platoonVR: 0.62, platoonVL: 0.38, backupCatcherDepth: 2,
+  } as const;
+
+  it("cap mode keeps the roster within total_cap", async () => {
+    const cap = 1858;
+    const r = await generateFullRoster(H, P, { ...base, mode: "cap", totalCap: cap });
+    expect(r.status).toBe("Optimal");
+    expect(r.hitters.length).toBe(13);
+    expect(r.pitchers.length).toBe(13);
+    expect(r.rotation.length).toBe(5);
+    expect(r.cost!).toBeLessThanOrEqual(cap);
+    expect(r.balance).toBeTruthy();
+  });
+
+  it("slots mode respects cumulative tier limits", async () => {
+    const slotCounts = { gold: 8, silver: 8, bronze: 10 }; // ≤8 cards ≥80, ≤16 ≥70, ≤26 ≥60
+    const r = await generateFullRoster(H, P, { ...base, mode: "slots", slotCounts, rosterSize: 26 });
+    expect(r.status).toBe("Optimal");
+    const costs = [...r.hitters, ...r.pitchers].map((id) =>
+      (H.find((c) => c.id === id) ?? P.find((c) => c.id === id))!.cost);
+    expect(costs.filter((v) => v >= 80).length).toBeLessThanOrEqual(8);
+    expect(costs.filter((v) => v >= 70).length).toBeLessThanOrEqual(16);
+    expect(costs.filter((v) => v >= 60).length).toBeLessThanOrEqual(26);
+  });
+
+  it("pitcher emphasis shifts cap spend toward pitcher value (SP-7 knob)", async () => {
+    const cap = 1858;
+    const lowP = await generateFullRoster(H, P, { ...base, mode: "cap", totalCap: cap, pitcherEmphasis: 0.5 });
+    const highP = await generateFullRoster(H, P, { ...base, mode: "cap", totalCap: cap, pitcherEmphasis: 2.0 });
+    expect(lowP.status).toBe("Optimal");
+    expect(highP.status).toBe("Optimal");
+    // emphasizing pitchers should not decrease the rostered pitcher value share
+    expect(highP.balance!.pitcherValue).toBeGreaterThanOrEqual(lowP.balance!.pitcherValue - 1e-6);
   });
 });

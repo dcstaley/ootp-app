@@ -9,6 +9,7 @@ export interface HitterCandidate {
   valueVR: number;     // per-side hitter value (D2 signed distance from baseline)
   valueVL: number;
   positions: string[]; // eligible lineup positions (field Learn flags + "DH")
+  cost: number;        // Card Value — the cap/slots budget cost
 }
 
 export interface LineupSlot { pos: string; id: string; title: string }
@@ -22,6 +23,7 @@ export interface PitcherCandidate {
   valueVL: number;
   stamina: number;
   pitchTypes: number;  // # distinct pitch types (> 0)
+  cost: number;        // Card Value — the cap/slots budget cost
 }
 
 export interface HitterResult {
@@ -56,7 +58,38 @@ export interface PitcherOptimizeOptions {
 export const qualifiesStarter = (p: PitcherCandidate, minStam: number, minTypes: number): boolean =>
   p.stamina >= minStam && p.pitchTypes >= minTypes;
 
-// ── Combined roster ──────────────────────────────────────────────────────────
+// ── Combined cap/slots roster (Phase C) ─────────────────────────────────────
+export type BudgetMode = "none" | "cap" | "slots";
+
+// Card-Value tiers for slots mode (cumulative limits; a higher tier slot may hold
+// a lower-value card). Mirrors the old app's tier thresholds.
+export const SLOT_TIERS = [
+  { key: "perfect", threshold: 100 }, { key: "diamond", threshold: 90 },
+  { key: "gold", threshold: 80 }, { key: "silver", threshold: 70 },
+  { key: "bronze", threshold: 60 }, { key: "iron", threshold: 40 },
+] as const;
+
+export interface RosterOptimizeOptions {
+  // roster shape
+  nHitters: number; nPitchers: number; dh: boolean;
+  minStarters: number; minStarterStamina: number; minPitchTypes: number;
+  // platoon exposure (weights the vR/vL lineup value)
+  platoonVR: number; platoonVL: number;
+  // D2 H/P emphasis knob — multiplies hitter vs pitcher objective value (default 1).
+  // A lighter, user-controlled stand-in for the old auto cross-pool normalization.
+  hitterEmphasis?: number; pitcherEmphasis?: number;
+  // role/slot weights (cap/slots only)
+  rotationSlotWeights?: number[]; bullpenWeight?: number; benchWeight?: number;
+  backupCatcherDepth?: number;
+  bothSidesBonus?: number;     // multiplier for platoon-neutral hitters (default 1.25)
+  bothSidesThreshold?: number; // min(valueVR,valueVL) ≥ this → "both-sides" (valueFor scale; default 0)
+  // budget
+  mode: BudgetMode;
+  totalCap?: number;
+  slotCounts?: Record<string, number>;
+  rosterSize?: number;         // for implied-iron in slots mode (default nHitters+nPitchers)
+}
+
 export interface Roster {
   status: string;            // solver status ("Optimal", "Infeasible", …)
   objective: number;
@@ -66,6 +99,8 @@ export interface Roster {
   pitchers: string[];
   rotation: RotationSlot[];
   bullpen: string[];
+  cost?: number;             // total roster Card Value (cap/slots modes)
+  balance?: { hitterValue: number; pitcherValue: number }; // SP-7 H/P value split
 }
 
 export interface HitterOptimizeOptions {
