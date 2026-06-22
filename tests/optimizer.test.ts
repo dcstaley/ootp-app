@@ -10,7 +10,10 @@ import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
 import { buildEligiblePool } from "../src/config/eligibility.ts";
 import { scoreCard, calibrate, computeDerived, valueFor, type Coeffs } from "../src/scoring-core/index.ts";
 import type { Tournament } from "../src/config/tournament.ts";
-import { generateHitterRoster, lineupPositions, type HitterCandidate } from "../src/optimizer/index.ts";
+import {
+  generateHitterRoster, generatePitcherStaff, generateRoster, lineupPositions, qualifiesStarter,
+  type HitterCandidate, type PitcherCandidate,
+} from "../src/optimizer/index.ts";
 
 const TOURNAMENT: Tournament = {
   id: "t", name: "t", card_value_min: 60, card_value_max: 89, total_cap: 1858,
@@ -31,6 +34,29 @@ const loadCoeffs = (): Coeffs => {
   throw new Error("no capture");
 };
 const eligiblePositions = (c: Card): string[] => [...POS.filter(([, col]) => n(c[col]) === 1).map(([p]) => p), "DH"];
+
+const PITCH_TYPES = ["Fastball", "Slider", "Curveball", "Changeup", "Cutter", "Sinker", "Splitter", "Forkball", "Screwball", "Circlechange", "Knucklecurve", "Knuckleball"];
+const pitchCount = (c: Card) => PITCH_TYPES.filter((p) => n(c[p]) > 0).length;
+
+function pitcherCandidates(): PitcherCandidate[] {
+  const coeffs = loadCoeffs();
+  const derived = computeDerived(coeffs);
+  const catalog = parseCatalogCsv(readFileSync("docs/pt_card_list.csv", "utf8"));
+  const pool = buildEligiblePool(catalog.cards, TOURNAMENT);
+  const cfg = { coeffs, derived, calScales: calibrate(pool, { coeffs, derived }) };
+  return pool
+    .filter((c) => n(c["Pos Rating P"]) > 0)
+    .map((c) => {
+      const s = scoreCard(c, cfg);
+      return {
+        id: String(s.cardId), title: String(s.title), throws: s.throws,
+        valueVR: valueFor(s.pitch.woba_vR, "pitcher"), valueVL: valueFor(s.pitch.woba_vL, "pitcher"),
+        stamina: n(c["Stamina"]), pitchTypes: pitchCount(c),
+      };
+    })
+    .sort((a, b) => (b.valueVR + b.valueVL) - (a.valueVR + a.valueVL))
+    .slice(0, 120);
+}
 
 function candidates(): HitterCandidate[] {
   const coeffs = loadCoeffs();
@@ -90,5 +116,52 @@ describe("M4 hitter roster + dual lineup", () => {
     expect(vrHeavy.lineupVL.length).toBe(9);
     expect(vrValue).toBeGreaterThan(0);
     expect(vlValue).toBeGreaterThan(0);
+  });
+});
+
+describe("M4 pitcher staff (rotation + bullpen)", () => {
+  const pcands = pitcherCandidates();
+  const pById = new Map(pcands.map((c) => [c.id, c]));
+  const popts = { nPitchers: 13, minStarters: 5, minStarterStamina: 70, minPitchTypes: 3, platoonVR: 0.62, platoonVL: 0.38 };
+
+  it("selects a valid staff with a qualified, slotted rotation", async () => {
+    const staff = await generatePitcherStaff(pcands, popts);
+    expect(staff.status).toBe("Optimal");
+    expect(staff.pitchers.length).toBe(13);
+    expect(new Set(staff.pitchers).size).toBe(13);
+
+    // rotation: 5 slots, ordered 1..5, all starter-qualified, all rostered
+    expect(staff.rotation.map((r) => r.slot)).toEqual([1, 2, 3, 4, 5]);
+    for (const r of staff.rotation) {
+      const p = pById.get(r.id)!;
+      expect(qualifiesStarter(p, 70, 3)).toBe(true);
+      expect(staff.pitchers).toContain(r.id);
+    }
+    // bullpen = rest; rotation ∪ bullpen = pitchers, disjoint
+    expect(staff.bullpen.length).toBe(8);
+    const rotIds = new Set(staff.rotation.map((r) => r.id));
+    expect(staff.bullpen.some((id) => rotIds.has(id))).toBe(false);
+    expect(new Set([...staff.rotation.map((r) => r.id), ...staff.bullpen]).size).toBe(13);
+
+    // SP1 should be the rotation's best by value (slot weighting orders aces first)
+    const rotVals = staff.rotation.map((r) => pById.get(r.id)!).map((p) => popts.platoonVR * p.valueVR + popts.platoonVL * p.valueVL);
+    expect(rotVals[0]).toBe(Math.max(...rotVals));
+  });
+});
+
+describe("M4 combined roster (hitters + pitchers)", () => {
+  it("assembles a full 26-card roster", async () => {
+    const roster = await generateRoster(
+      candidates(), pitcherCandidates(),
+      { nHitters: 13, dh: true, platoonVR: 0.62, platoonVL: 0.38, backupCatcherDepth: 2 },
+      { nPitchers: 13, minStarters: 5, minStarterStamina: 70, minPitchTypes: 3, platoonVR: 0.62, platoonVL: 0.38 },
+    );
+    expect(roster.status).toBe("Optimal");
+    expect(roster.hitters.length).toBe(13);
+    expect(roster.pitchers.length).toBe(13);
+    expect(roster.hitters.length + roster.pitchers.length).toBe(26);
+    expect(roster.rotation.length).toBe(5);
+    expect(roster.lineupVR.length).toBe(9);
+    expect(roster.lineupVL.length).toBe(9);
   });
 });

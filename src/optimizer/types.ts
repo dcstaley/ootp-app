@@ -13,12 +13,59 @@ export interface HitterCandidate {
 
 export interface LineupSlot { pos: string; id: string; title: string }
 
+// ── Pitchers ─────────────────────────────────────────────────────────────────
+export interface PitcherCandidate {
+  id: string;
+  title: string;
+  throws: number;
+  valueVR: number;     // per-side pitcher value (D2 signed distance; higher = allows less)
+  valueVL: number;
+  stamina: number;
+  pitchTypes: number;  // # distinct pitch types (> 0)
+}
+
+export interface HitterResult {
+  status: string;
+  objective: number;
+  hitters: string[];
+  lineupVR: LineupSlot[];
+  lineupVL: LineupSlot[];
+}
+
+export interface RotationSlot { slot: number; id: string; title: string } // slot 1 = SP1 (ace)
+
+export interface PitcherStaff {
+  status: string;
+  objective: number;
+  pitchers: string[];
+  rotation: RotationSlot[];  // ordered SP1..SP(minStarters)
+  bullpen: string[];
+}
+
+export interface PitcherOptimizeOptions {
+  nPitchers: number;
+  minStarters: number;            // rotation size
+  minStarterStamina: number;
+  minPitchTypes: number;
+  platoonVR: number;
+  platoonVL: number;
+  rotationSlotWeights?: number[];  // SP1..SP5 weights (default 1, .95, .9, .8, .75)
+  bullpenWeight?: number;          // weight on rostered non-starters (default 0.15)
+}
+
+export const qualifiesStarter = (p: PitcherCandidate, minStam: number, minTypes: number): boolean =>
+  p.stamina >= minStam && p.pitchTypes >= minTypes;
+
+// ── Combined roster ──────────────────────────────────────────────────────────
 export interface Roster {
   status: string;            // solver status ("Optimal", "Infeasible", …)
   objective: number;
   hitters: string[];         // rostered hitter card ids
   lineupVR: LineupSlot[];    // 9 (or 8) slots vs RHP
   lineupVL: LineupSlot[];    // vs LHP
+  pitchers: string[];
+  rotation: RotationSlot[];
+  bullpen: string[];
 }
 
 export interface HitterOptimizeOptions {
