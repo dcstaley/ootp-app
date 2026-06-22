@@ -91,7 +91,6 @@ type Op = "" | "empty" | "nempty" | "contains" | "ncontains" | "starts" | "ends"
 interface ColFilter { op: Op; v1: string; v2: string; values: string[] | null } // values null = all
 const emptyFilter = (): ColFilter => ({ op: "", v1: "", v2: "", values: null });
 const filterActive = (f?: ColFilter) => !!f && (!!f.op || f.values !== null);
-const COMMON_CONDS: [Op, string][] = [["empty", "Is empty"], ["nempty", "Is not empty"]];
 const TXT_CONDS: [Op, string][] = [["contains", "Text contains"], ["ncontains", "Text does not contain"], ["starts", "Text starts with"], ["ends", "Text ends with"], ["exact", "Text is exactly"]];
 const NUM_CONDS: [Op, string][] = [["gt", "Greater than"], ["ge", "Greater than or equal to"], ["lt", "Less than"], ["le", "Less than or equal to"], ["eq", "Is equal to"], ["ne", "Is not equal to"], ["between", "Is between"], ["nbetween", "Is not between"]];
 const needsV1 = (op: Op) => !["", "empty", "nempty"].includes(op);
@@ -309,7 +308,6 @@ export function App() {
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 4 }}>Filter by condition</div>
             <select value={ff.op} onChange={(e) => setF(fcol.key, { op: e.target.value as Op })} style={{ ...inputStyle, width: "100%" }}>
               <option value="">None</option>
-              {COMMON_CONDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               <optgroup label={isNumeric(fcol) ? "Number" : "Text"}>
                 {condList.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </optgroup>
