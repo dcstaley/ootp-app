@@ -31,7 +31,7 @@ const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
 const DATA_ROOT = process.env.DATA_ROOT ?? "data";
 
-interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null }
+interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[] }
 
 // ── Boot: config DB + accounts + catalog ──────────────────────────────────────
 console.log("[server] loading catalog + tournaments database…");
@@ -181,8 +181,16 @@ function buildMeta(tournamentId: string, accountId: string | null) {
   };
 }
 
+// Display order: explicit state.accountOrder first (user preference / default),
+// then any remaining accounts alphabetically.
+function orderedAccounts(): AccountOverlay[] {
+  const order = state.accountOrder ?? [];
+  const rank = (id: string) => { const i = order.indexOf(id); return i < 0 ? order.length + 1 : i; };
+  return [...accounts.values()].sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+}
+
 const accountSummary = () => ({
-  accounts: [...accounts.values()].map((a) => ({
+  accounts: orderedAccounts().map((a) => ({
     id: a.id, name: a.name,
     ownedCount: Object.values(a.owned).filter((q) => q > 0).length,
     totalQty: Object.values(a.owned).reduce((s, q) => s + (q > 0 ? q : 0), 0),
@@ -236,6 +244,7 @@ const server = createServer(async (req, res) => {
     const body = JSON.parse((await readBody(req)) || "{}");
     if ("activeAccountId" in body) state.activeAccountId = body.activeAccountId;
     if ("activeTournamentId" in body) state.activeTournamentId = body.activeTournamentId;
+    if ("accountOrder" in body && Array.isArray(body.accountOrder)) state.accountOrder = body.accountOrder.map(String);
     await saveState();
     return json(res, state);
   }

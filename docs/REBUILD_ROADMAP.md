@@ -320,10 +320,11 @@ persists config, reloads from disk, and drives the full chain. The data + config
 
 **In progress: M3 — Data Grid.** App shell (SP-11): local Node server `src/server/server.ts` runs the one
 core and serves scored cards (`/api/cards`, `/api/meta`); React+Vite SPA in `web/` renders the grid.
-**Dev run:** the Claude_Preview MCP launches two servers from `.claude/launch.json` — `api` (8787, the
-real server) and `web` (5173, Vite hot-reload, proxies /api → 8787). Standalone: `npm run build:web`
-then `npm run server` → http://localhost:8787. Dev scoring config = a local captured bag (real numbers)
-from `fixtures/captures/` if present, else `_synthetic`.
+**Dev run:** `npm run dev` (`tools/dev.ts`) starts the api (8787) and, once it's listening, Vite (5173,
+hot-reload, proxies /api → 8787) — it's the FIRST `.claude/launch.json` config, so Claude's "Start preview"
+button opens the live-reload UI on 5173 (not the static build on 8787). The api child is pinned to PORT 8787
+inside the launcher (the preview harness injects PORT=5173 for the config). `api`/`web` remain as separate
+configs for granular use. Standalone: `npm run build:web` then `npm run server` → http://localhost:8787.
 
 **Grid done so far:** two views (Hitting / Pitching — Defense folded into Hitting); columns = Card, Var
 (purple ★, "v5" suffix), wOBA OVR + vL/vR, Basic OVR + vL/vR (BOTH metrics accurate — server

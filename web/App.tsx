@@ -358,11 +358,11 @@ export function App() {
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
           <button onClick={renameAccount} disabled={!accountId || !!busy} title="Rename this account" style={{ ...inputStyle, cursor: "pointer" }}>Rename</button>
-          <button onClick={() => pickUpload(accountId || null)} disabled={!accountId || !!busy} title="Replace this account's ownership from a pt_card_list CSV (also refreshes the shared card list)" style={{ ...inputStyle, cursor: "pointer" }}>Upload CSV…</button>
-          <button onClick={() => pickUpload(null)} disabled={!!busy} title="Create a new account from a pt_card_list CSV" style={{ ...inputStyle, cursor: "pointer" }}>+ Account</button>
-          <button onClick={() => { setVariantInfo(null); setVariantQuery(""); setVariantsOpen(true); }} disabled={!accountId || !!busy} title="Manage this account's v5 variants" style={{ ...inputStyle, cursor: "pointer" }}>
-            Variants ({accounts.find((a) => a.id === accountId)?.variantCount ?? 0})
+          <button onClick={() => pickUpload(accountId || null)} disabled={!accountId || !!busy} title="Replace this account's OWNERSHIP from a pt_card_list export (also refreshes the shared card list with any new cards)" style={{ ...inputStyle, cursor: "pointer" }}>Import ownership…</button>
+          <button onClick={() => { setVariantInfo(null); setVariantQuery(""); setVariantsOpen(true); }} disabled={!accountId || !!busy} title="Add/remove this account's v5 variants (search or import a variant export)" style={{ ...inputStyle, cursor: "pointer" }}>
+            Variants ({accounts.find((a) => a.id === accountId)?.variantCount ?? 0})…
           </button>
+          <button onClick={() => pickUpload(null)} disabled={!!busy} title="Create a NEW account from a pt_card_list ownership export" style={{ ...inputStyle, cursor: "pointer" }}>+ New account</button>
         </span>
         {(loading || busy) && <span style={{ fontSize: 12, color: C.sub }}>{busy === "upload" ? "importing…" : busy === "rename" ? "saving…" : busy === "variant" ? "updating variants…" : "scoring…"}</span>}
         <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
