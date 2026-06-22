@@ -288,6 +288,25 @@ server + React SPA + the data folder; "launch once." *Output:* runnable shell, n
   issue. Revisit **post-parity**, alongside D1 (per-event calibration design) and the D3 model work —
   not during M1.5/M2.
 
+- **🔬 REVISIT — OVR vL/vR split weighting is hand-set, and the RHB weight is directionally wrong.**
+  `score-card.ts` blends vL/vR into OVR leaning 0.6 toward the batter's platoon-*advantage* side
+  (RHB → `0.4·vR + 0.6·vL`; LHB → `0.6·vR + 0.4·vL`; SHB 0.5/0.5). **Realized exposure, conditional on
+  batter hand, from the user's leagues** (PEL + HD 450–453, 2037–38, ~1.77M PA): **RHB face RHP 56.6% /
+  LHP 43.4%** (→ vR≈0.57/vL≈0.43); **LHB 72.1% / 27.9%** (→ vR≈0.72/vL≈0.28); **SHB 61.3% / 38.7%** (→
+  vR≈0.61/vL≈0.39). So the platoon effect is real and hand-dependent (justifies a per-hand weight), but
+  the code's **RHB** weight is *backwards* (0.60 on vL while RHB actually face RHP more), LHB undershoots,
+  and SHB should lean vR not 50/50. (Caveat: realized PA shares are endogenous — managers platoon — so
+  M6 should decide realized-exposure vs neutral weighting.) **Does NOT affect the optimizer** (M4 uses
+  per-side vL/vR directly; OVR is display/sort only). Set from data in **M6**.
+
+**Anchoring/scaling correctness audit (2026-06-22):** of the four flagged suspects — (#3) hitter-pool
+gating bug is **already fixed** in `calibrate.ts` (anchor = top-50 by wOBA over the whole eligible pool);
+(#1) BB/HR-only per-event scaling, (#2) anchor omits ssp + HBP vs the display score, and (#4) OVR weight
+above all need **real outcome data to judge** and are **decoupled from M4** (the optimizer reads scoring
+values as objective coefficients; recalibration later just changes the numbers, not the machinery).
+**Decision: M4 first, then evaluate/fix all four against outcome data in M6.** The one composition-relevant
+effect (#2's cross-pool offset) gets an SP-7 H/P-balance guardrail during M4.
+
 ---
 
 ## Flagged old-app issues (parity-preserved; revisit, don't blindly copy)
