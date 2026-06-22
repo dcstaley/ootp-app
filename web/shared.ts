@@ -22,7 +22,25 @@ export interface RosterResult {
   lineupVR: RosterSlotCard[]; lineupVL: RosterSlotCard[];
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
   memberIds: string[];
+  roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever
 }
+
+// Roster role colours (match the old app): both/starter = blue, vL = purple,
+// vR = green, bench/reliever = orange.
+export const ROSTER_COLORS: Record<string, string> = {
+  both: "rgba(59, 130, 246, 0.28)",
+  vL: "rgba(168, 85, 247, 0.28)",
+  vR: "rgba(34, 197, 94, 0.28)",
+  bench: "rgba(249, 115, 22, 0.28)",
+  starter: "rgba(59, 130, 246, 0.28)",
+  reliever: "rgba(249, 115, 22, 0.28)",
+};
+export const ROSTER_BORDER: Record<string, string> = {
+  both: "#3b82f6", vL: "#a855f7", vR: "#22c55e", bench: "#f97316", starter: "#3b82f6", reliever: "#f97316",
+};
+export const ROLE_LABEL: Record<string, string> = {
+  both: "Both", vL: "vL", vR: "vR", bench: "Bench", starter: "Starter", reliever: "Reliever",
+};
 
 export interface TournamentOpt { id: string; name: string }
 export interface AccountOpt { id: string; name: string; ownedCount: number; totalQty: number; variantCount: number }

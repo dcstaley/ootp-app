@@ -12,7 +12,7 @@ interface AppData {
   accounts: AccountOpt[]; accountId: string; chooseAccount: (id: string) => void;
   activeAccount: AccountOpt | undefined;
   cards: Card[]; meta: Meta | null; loading: boolean; busy: string | null; err: string | null;
-  roster: RosterResult | null; rosterLoading: boolean; rosterMemberIds: Set<string>;
+  roster: RosterResult | null; rosterLoading: boolean; rosterRoles: Record<string, string>;
   generateRoster: () => Promise<void>;
   reloadView: () => Promise<void>;
   loadAccounts: () => Promise<unknown>;
@@ -145,7 +145,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     tournaments, tournamentId, chooseTournament,
     accounts, accountId, chooseAccount, activeAccount: accounts.find((a) => a.id === accountId),
     cards, meta, loading, busy, err,
-    roster, rosterLoading, rosterMemberIds: new Set(roster?.memberIds ?? []),
+    roster, rosterLoading, rosterRoles: roster?.roles ?? {},
     generateRoster,
     reloadView, loadAccounts, renameAccount, importOwnership, toggleVariant, importVariants, clearVariants,
   };

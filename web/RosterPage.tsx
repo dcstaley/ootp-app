@@ -5,7 +5,19 @@
 
 import { useEffect } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, type RosterSlotCard } from "./shared.ts";
+import { C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL, type RosterSlotCard } from "./shared.ts";
+
+function Legend({ roles }: { roles: string[] }) {
+  return (
+    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 12, color: C.sub, margin: "0 0 12px" }}>
+      {roles.map((r) => (
+        <span key={r} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 11, height: 11, borderRadius: 2, background: ROSTER_COLORS[r], border: `1px solid ${ROSTER_BORDER[r]}` }} />{ROLE_LABEL[r]}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 const money = (n: number | null) => (n == null ? "—" : n.toLocaleString());
 
@@ -23,6 +35,8 @@ export function RosterPage() {
   const positions = roster ? roster.lineupVR.map((s) => s.pos!) : [];
   const vlByPos = new Map((roster?.lineupVL ?? []).map((s) => [s.pos, s]));
   const vrByPos = new Map((roster?.lineupVR ?? []).map((s) => [s.pos, s]));
+  const roleOf = (id?: string) => (id ? roster?.roles[id.replace(/#V$/, "")] : undefined);
+  const tint = (id?: string): React.CSSProperties => { const r = roleOf(id); return r ? { background: ROSTER_COLORS[r] } : {}; };
 
   const capPct = roster?.cap && roster.cost != null ? Math.round((roster.cost / roster.cap) * 100) : null;
 
@@ -49,6 +63,7 @@ export function RosterPage() {
               : <>Mode: {roster.mode} · </>}
             Pool: {roster.poolHitters}H / {roster.poolPitchers}P · H-value <b style={{ color: C.text }}>{roster.balance?.hitterValue.toFixed(3)}</b> · P-value <b style={{ color: C.text }}>{roster.balance?.pitcherValue.toFixed(3)}</b>
           </p>
+          <Legend roles={["both", "vL", "vR", "bench", "starter", "reliever"]} />
 
           <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
             {/* Lineups (platoon, side by side) */}
@@ -64,15 +79,16 @@ export function RosterPage() {
                   {positions.map((p) => (
                     <tr key={p}>
                       <td style={{ ...cell, color: C.sub }}>{p}</td>
-                      <td style={cell}>{card(vrByPos.get(p))}</td>
-                      <td style={cell}>{card(vlByPos.get(p))}</td>
+                      <td style={{ ...cell, ...tint(vrByPos.get(p)?.id) }}>{card(vrByPos.get(p))}</td>
+                      <td style={{ ...cell, ...tint(vlByPos.get(p)?.id) }}>{card(vlByPos.get(p))}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {roster.bench.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 13 }}>
-                  <span style={{ color: C.sub }}>Bench:</span> {roster.bench.map((b, i) => <span key={b.id}>{i ? ", " : " "}{star(b.title)} <span style={{ color: C.sub }}>${b.cost}</span></span>)}
+                <div style={{ marginTop: 8, fontSize: 13, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  <span style={{ color: C.sub }}>Bench:</span>
+                  {roster.bench.map((b) => <span key={b.id} style={{ background: ROSTER_COLORS.bench, borderRadius: 4, padding: "2px 6px" }}>{star(b.title)} <span style={{ color: C.sub }}>${b.cost}</span></span>)}
                 </div>
               )}
             </div>
@@ -90,7 +106,7 @@ export function RosterPage() {
                   {roster.rotation.map((r) => (
                     <tr key={r.id}>
                       <td style={{ ...cell, color: C.sub }}>SP{r.slot}</td>
-                      <td style={cell}>{card(r)}</td>
+                      <td style={{ ...cell, background: ROSTER_COLORS.starter }}>{card(r)}</td>
                       <td style={{ ...cell, textAlign: "right" }}>{r.stamina}</td>
                     </tr>
                   ))}
@@ -98,7 +114,7 @@ export function RosterPage() {
               </table>
               <h3 style={{ margin: "12px 0 6px", fontSize: 14 }}>Bullpen ({roster.bullpen.length})</h3>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                {roster.bullpen.map((b) => <div key={b.id} style={cell}>{card(b)}</div>)}
+                {roster.bullpen.map((b) => <div key={b.id} style={{ ...cell, background: ROSTER_COLORS.reliever }}>{card(b)}</div>)}
               </div>
             </div>
           </div>

@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, haystack, type Card } from "./shared.ts";
+import { C, inputStyle, haystack, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL, type Card } from "./shared.ts";
 
 const BATS: Record<number, string> = { 1: "R", 2: "L", 3: "S" };
 const THROWS: Record<number, string> = { 1: "R", 2: "L" };
@@ -124,7 +124,7 @@ function Funnel({ active }: { active: boolean }) {
 }
 
 export function CardsPage() {
-  const { cards, meta, loading, rosterMemberIds } = useAppData();
+  const { cards, meta, loading, rosterRoles } = useAppData();
   const [preset, setPreset] = useState<keyof typeof PRESETS>("Hitting");
   const [filter, setFilter] = useState("");
   const [highlight, setHighlight] = useState("");
@@ -228,6 +228,16 @@ export function CardsPage() {
         <label style={{ fontSize: 13 }}><input type="checkbox" checked={ownedOnly} onChange={(e) => setOwnedOnly(e.target.checked)} /> Owned only</label>
         {Object.values(colF).some(filterActive) && <button onClick={() => setColF({})} style={{ ...inputStyle, cursor: "pointer" }}>Clear all filters</button>}
         <span style={{ color: C.sub, fontSize: 13 }}>{rows.length} shown · ⏷ funnel = filter · drag edges to resize</span>
+        {Object.keys(rosterRoles).length > 0 && (
+          <span style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12, color: C.sub }}>
+            <span>Roster:</span>
+            {["both", "vL", "vR", "bench", "starter", "reliever"].map((r) => (
+              <span key={r} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span style={{ width: 11, height: 11, borderRadius: 2, background: ROSTER_COLORS[r], border: `1px solid ${ROSTER_BORDER[r]}` }} />{ROLE_LABEL[r]}
+              </span>
+            ))}
+          </span>
+        )}
       </div>
 
       <div style={{ overflow: "auto", border: `1px solid ${C.border}`, maxHeight: "74vh" }}>
@@ -255,14 +265,14 @@ export function CardsPage() {
           <tbody>
             {rows.slice(0, 1000).map((c, i) => {
               const hot = hq && haystack(c).includes(hq);
-              const onRoster = rosterMemberIds.has(c.id);
+              const role = rosterRoles[c.id];
               return (
-                <tr key={c.id + ":" + c.variant + ":" + i} title={onRoster ? "On the generated roster" : undefined}
-                  style={{ background: hot ? C.hot : onRoster ? "#243524" : i % 2 ? C.stripe : C.row }}>
+                <tr key={c.id + ":" + c.variant + ":" + i} title={role ? `On roster: ${ROLE_LABEL[role] ?? role}` : undefined}
+                  style={{ background: hot ? C.hot : role ? ROSTER_COLORS[role] : i % 2 ? C.stripe : C.row }}>
                   {cols.map((col, ci) => (
                     <td key={col.key} title={col.key === "title" ? c.title : undefined}
                       style={{ textAlign: ta(col.align), padding: "4px 8px", borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                        borderLeft: ci === 0 && onRoster ? `3px solid #4ade80` : undefined }}>
+                        borderLeft: ci === 0 && role ? `3px solid ${ROSTER_BORDER[role]}` : undefined }}>
                       {col.key === "title" && c.title.startsWith("★")
                         ? <><span style={{ color: C.star }}>★</span>{c.title.slice(1)}</>
                         : fmtVal(col, c)}

@@ -270,7 +270,19 @@ async function generateRosterFor(tid: string, aid: string | null) {
   const starterIds = new Set([...r.lineupVR, ...r.lineupVL].map((x) => x.id));
   const bench = r.hitters.filter((id) => !starterIds.has(id)).map(hCard);
 
+  // Per-card roster ROLE (drives the colour coding on the grid + roster page),
+  // keyed by base Card ID. Hitters: both/vL/vR/bench by lineup membership;
+  // pitchers: starter (in rotation) / reliever (bullpen). Matches old-app colours.
+  const strip = (id: string) => id.replace(/#V$/, "");
+  const vrIds = new Set(r.lineupVR.map((x) => x.id));
+  const vlIds = new Set(r.lineupVL.map((x) => x.id));
+  const rotIds = new Set(r.rotation.map((x) => x.id));
+  const roles: Record<string, string> = {};
+  for (const id of r.hitters) roles[strip(id)] = vrIds.has(id) && vlIds.has(id) ? "both" : vlIds.has(id) ? "vL" : vrIds.has(id) ? "vR" : "bench";
+  for (const id of r.pitchers) roles[strip(id)] = rotIds.has(id) ? "starter" : "reliever";
+
   return {
+    roles,
     status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
     objective: r.objective, balance: r.balance ?? null,
     poolHitters: hitters.length, poolPitchers: pitchers.length,

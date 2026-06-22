@@ -146,6 +146,21 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
 "in a reasonable state" per the user; scores are exact). Differences must be explainable as intended
 D5 fixes, not regressions.
 
+## M4/M5 roster-page build-out — shared spec + agreed plan
+
+The Phase-D roster page was a read-only MVP. A full teardown of the old page is in
+**`docs/OLD_ROSTER_PAGE_TEARDOWN.md`** (config §A, generation §B, Next-Best manager §C, lineup editor §D,
+panels §E). **Agreed (user, 2026-06-22):** build the **M4 generation surface FIRST**, then the M5 editor.
+- Most of the page-level `RosterSettings` (metrics, pool sizes, position constraints+backups,
+  positionPriority) **moves into Tournament settings (D4)** — EXCEPT the **Owned-Only toggle, which stays
+  on the roster/generation page** (per-generation choice, not a tournament field).
+- **Roster-member highlighting — DONE:** role-based colours on the grid AND roster page, matching the old
+  app — hitters **Both=blue / vL=purple / vR=green / Bench=orange**, pitchers **Starter=blue /
+  Reliever=orange**, with a legend. Server `/api/roster` returns a per-card `roles` map.
+- **M4 generation surface remaining:** required/locked + excluded cards, two-way players + bonus slot,
+  position min-rating constraints (incl. backups), metric (basic/wOBA) selection, Top-X pool sizes +
+  ownedOnly toggle, richer Cap/Slots Usage panels, and merging RosterSettings into the Tournament.
+
 ## M5 — Manual editing ⬜
 
 - **S5.1** ⬜ As a manager, I drag cards in/out of the roster; a **Next Best Available** pool tabbed by
