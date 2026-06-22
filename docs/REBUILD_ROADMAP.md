@@ -347,8 +347,23 @@ tournament settings → local state). Tournament create/edit/rename UI is a late
 per the user). Note: the shared Model carries `pw_*` position weights from one capture (don't affect grid
 scoring — optimizer-only); categorising `pw_*` → tournament is a carried-forward follow-up.
 
-**M3 remaining:** account selector (active PT account scopes owned/variants); later, highlight
-generated-roster members.
+**Account selector — DONE (D6).** Accounts are a NEW concept (no old-app parity): they share one catalog
+and differ only in `owned` quantities + variants. **Catalog model decision:** the shared catalog is sourced
+from the *latest uploaded* `pt_card_list` CSV (not the committed file), so new card releases flow in on
+upload and a card always scores identically across accounts (single scoring core). The committed
+`docs/pt_card_list.csv` is now only a format reference + fresh-clone fallback. On first run the server seeds
+accounts from the user's OOTP `online_data` folder (`seedAccounts`, idempotent; names from filenames →
+CDMX/Oaxaca, user-renamable); each CSV becomes a saved import + an owned overlay, and the most complete list
+becomes the catalog source. Scoring depends ONLY on tournament + catalog, so switching accounts just stamps
+`owned` and adds that account's variant rows — no re-score. Endpoints: `/api/accounts`, `/api/state` (persists
+active account + tournament across reloads), `/api/accounts/rename`, `/api/accounts/import` (raw CSV → updates
+ownership + refreshes shared catalog; `?id=` updates an account, `?name=` creates one). Grid gains an Account
+dropdown + Rename + Upload CSV… + "+ Account". Verified: CDMX 2984 owned / Oaxaca 3054 (differ on 1864 cards),
+identical scores across accounts, catalog now 3382 cards (from upload, not the stale 3376), active selection
+persists across reload. Per-account **variant management** (add/remove v5 variants) is the next sub-step —
+overlays carry `variantCardIds` (empty for now; the demo variant injection was removed).
+
+**M3 remaining:** per-account variant add/remove UI; later, highlight generated-roster members.
 
 Carried-forward follow-ups: categorise the D4 `extras` remainder; real model-artifact format (M6);
 CSV variant import (S2.4b); revisit BB/HR-only per-event calibration + the OVR vL/vR split weighting

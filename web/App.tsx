@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Card {
   id: string; variant: string; title: string; first: string; last: string;
@@ -9,8 +9,9 @@ interface Card {
   pitchVL: number; pitchVR: number; pitchOVR: number; basicPitch: number; basicPitchVL: number; basicPitchVR: number;
   def: Record<string, number>;
 }
-interface Meta { configName: string; tournament: string; cardCount: number; eligibleCount: number }
+interface Meta { configName: string; tournament: string; account: string; accountId: string | null; catalogSource: string; cardCount: number; eligibleCount: number; ownedCount: number }
 interface TournamentOpt { id: string; name: string }
+interface AccountOpt { id: string; name: string; ownedCount: number; totalQty: number; variantCount: number }
 
 const BATS: Record<number, string> = { 1: "R", 2: "L", 3: "S" };
 const THROWS: Record<number, string> = { 1: "R", 2: "L" };
@@ -141,7 +142,12 @@ export function App() {
   const [err, setErr] = useState<string | null>(null);
   const [tournaments, setTournaments] = useState<TournamentOpt[]>([]);
   const [tournamentId, setTournamentId] = useState<string>("");
+  const [accounts, setAccounts] = useState<AccountOpt[]>([]);
+  const [accountId, setAccountId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const uploadTarget = useRef<string | null>(null); // account id to import into; null = new account
   const [preset, setPreset] = useState<keyof typeof PRESETS>("Hitting");
   const [filter, setFilter] = useState("");
   const [highlight, setHighlight] = useState("");
@@ -155,24 +161,76 @@ export function App() {
   const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [valSearch, setValSearch] = useState("");
 
-  // Load the tournament list once, then default-select; card/meta load reacts to it.
+  // Load tournament + account lists once, then default-select; card/meta react.
+  const loadAccounts = () =>
+    fetch("/api/accounts").then((r) => r.json()).then((d: { accounts: AccountOpt[]; activeId: string | null }) => {
+      setAccounts(d.accounts);
+      setAccountId((cur) => cur || d.activeId || d.accounts[0]?.id || "");
+      return d;
+    });
   useEffect(() => {
     fetch("/api/tournaments").then((r) => r.json())
       .then((d: { tournaments: TournamentOpt[]; defaultId: string }) => {
         setTournaments(d.tournaments);
         setTournamentId(d.defaultId || d.tournaments[0]?.id || "");
       }).catch((e) => setErr(String(e)));
+    loadAccounts().catch((e) => setErr(String(e)));
   }, []);
 
-  // (Re)score for the selected tournament — server resolves era/park/softcaps +
-  // re-calibrates and re-scores; the grid just reads the result.
+  // (Re)load for the selected tournament + account. Tournament drives scoring
+  // (server resolves era/park/softcaps + re-calibrates); account scopes owned +
+  // variants. The grid just reads the result.
   useEffect(() => {
     if (!tournamentId) return;
-    const q = `?tournament=${encodeURIComponent(tournamentId)}`;
+    const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}`;
     setLoading(true);
     Promise.all([fetch("/api/meta" + q).then((r) => r.json()), fetch("/api/cards" + q).then((r) => r.json())])
       .then(([m, c]) => { setMeta(m); setCards(c); }).catch((e) => setErr(String(e))).finally(() => setLoading(false));
-  }, [tournamentId]);
+  }, [tournamentId, accountId]);
+
+  // Persist the active selections (so a reload restores them).
+  const persist = (patch: Record<string, string>) =>
+    fetch("/api/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }).catch(() => {});
+  const chooseTournament = (id: string) => { setTournamentId(id); persist({ activeTournamentId: id }); };
+  const chooseAccount = (id: string) => { setAccountId(id); persist({ activeAccountId: id }); };
+
+  const renameAccount = async () => {
+    const acc = accounts.find((a) => a.id === accountId);
+    const name = window.prompt("Rename account", acc?.name ?? "");
+    if (!name || !name.trim()) return;
+    setBusy("rename");
+    await fetch("/api/accounts/rename", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: accountId, name: name.trim() }) });
+    await loadAccounts();
+    setBusy(null);
+  };
+
+  // Upload a pt_card_list CSV: updates the target account's ownership AND refreshes
+  // the shared catalog (newest full list wins). uploadTarget=null → new account.
+  const pickUpload = (target: string | null) => { uploadTarget.current = target; fileRef.current?.click(); };
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    let id = uploadTarget.current;
+    let name = "";
+    if (!id) {
+      name = window.prompt("New account name", file.name.replace(/^pt_card_list/i, "").replace(/\.csv$/i, "").trim() || "Account") || "";
+      if (!name.trim()) return;
+    }
+    setBusy("upload");
+    const text = await file.text();
+    const qs = id ? `?id=${encodeURIComponent(id)}` : `?name=${encodeURIComponent(name.trim())}`;
+    const r = await fetch("/api/accounts/import" + qs, { method: "POST", headers: { "Content-Type": "text/csv" }, body: text });
+    const d = await r.json().catch(() => null);
+    if (!r.ok) { setErr(d?.error || "import failed"); setBusy(null); return; }
+    await loadAccounts();
+    if (!id && d?.accounts?.length) chooseAccount(d.accounts[d.accounts.length - 1].id);
+    // catalog changed → re-fetch current view
+    setTournamentId((t) => t); setAccountId((a) => a || "");
+    const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}`;
+    Promise.all([fetch("/api/meta" + q).then((x) => x.json()), fetch("/api/cards" + q).then((x) => x.json())])
+      .then(([m, c]) => { setMeta(m); setCards(c); }).finally(() => setBusy(null));
+  };
 
   const choosePreset = (name: keyof typeof PRESETS) => { setPreset(name); setSortKey(PRESETS[name].sort); setSortDir(PRESETS[name].dir); };
   const cols = PRESETS[preset].cols.map((k) => COLS[k]!);
@@ -250,19 +308,34 @@ export function App() {
       <h2 style={{ margin: "0 0 4px" }}>OOTP Optimizer — Data Grid</h2>
       {err && <p style={{ color: "#f87171" }}>Failed to load: {err} — is the server running?</p>}
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-        <label style={{ fontSize: 13, color: C.sub }} htmlFor="tournament">Tournament</label>
-        <select id="tournament" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)}
-          disabled={!tournaments.length} style={{ ...inputStyle, minWidth: 240, cursor: "pointer" }}>
-          {tournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-        {loading && <span style={{ fontSize: 12, color: C.sub }}>scoring…</span>}
+      <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
+        <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <label style={{ fontSize: 13, color: C.sub }} htmlFor="tournament">Tournament</label>
+          <select id="tournament" value={tournamentId} onChange={(e) => chooseTournament(e.target.value)}
+            disabled={!tournaments.length} style={{ ...inputStyle, minWidth: 220, cursor: "pointer" }}>
+            {tournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </span>
+        <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <label style={{ fontSize: 13, color: C.sub }} htmlFor="account">Account</label>
+          <select id="account" value={accountId} onChange={(e) => chooseAccount(e.target.value)}
+            disabled={!accounts.length} style={{ ...inputStyle, minWidth: 150, cursor: "pointer" }}>
+            {!accounts.length && <option value="">(no accounts)</option>}
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+          <button onClick={renameAccount} disabled={!accountId || !!busy} title="Rename this account" style={{ ...inputStyle, cursor: "pointer" }}>Rename</button>
+          <button onClick={() => pickUpload(accountId || null)} disabled={!accountId || !!busy} title="Replace this account's ownership from a pt_card_list CSV (also refreshes the shared card list)" style={{ ...inputStyle, cursor: "pointer" }}>Upload CSV…</button>
+          <button onClick={() => pickUpload(null)} disabled={!!busy} title="Create a new account from a pt_card_list CSV" style={{ ...inputStyle, cursor: "pointer" }}>+ Account</button>
+        </span>
+        {(loading || busy) && <span style={{ fontSize: 12, color: C.sub }}>{busy === "upload" ? "importing…" : busy === "rename" ? "saving…" : "scoring…"}</span>}
+        <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
       </div>
 
       {meta && (
         <p style={{ margin: "0 0 12px", color: C.sub, fontSize: 13 }}>
-          Tournament: <b style={{ color: C.text }}>{meta.tournament}</b> · Config: <b style={{ color: C.text }}>{meta.configName}</b> · {meta.cardCount} cards
-          ({meta.eligibleCount} eligible). Pitch wOBA: lower = better.
+          Tournament: <b style={{ color: C.text }}>{meta.tournament}</b> · Account: <b style={{ color: C.text }}>{meta.account}</b>
+          {" "}({meta.ownedCount} owned) · Config: <b style={{ color: C.text }}>{meta.configName}</b> · {meta.cardCount} cards
+          ({meta.eligibleCount} eligible) · Catalog: {meta.catalogSource}. Pitch wOBA: lower = better.
         </p>
       )}
 

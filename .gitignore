@@ -9,9 +9,10 @@ web/dist/
 # Generated golden reference files (regenerated from captures)
 fixtures/golden/*.json
 
-# File-based tournaments DB (D7): seeded locally from the user's captures, so it
-# embeds the trained model + the user's tournament settings — local state, not source.
-data/
+# File-based app DB (D7): seeded locally from the user's captures + account CSVs,
+# so it embeds the trained model, tournament settings, and ownership — local state.
+# Leading slash anchors to repo root so it does NOT also ignore src/data/.
+/data/
 
 # Real captures embed the user's trained model coefficients + account/economy
 # data — NEVER commit these. Only the safe invented smoke-test fixture is kept.

@@ -1,53 +1,82 @@
 // M3 / SX.1 — local server. Owns the data folder + the scoring core and serves
-// scored cards to the browser SPA (the browser never scores — it reads the one
-// core's output). Built SPA is served from web/dist; /api/* is JSON.
+// scored cards to the browser SPA (the browser never scores). Built SPA is served
+// from web/dist; /api/* is JSON.
 //
-// Tournament-aware (D4): the file-based tournaments DB (data/) is the single
-// config source. Selecting a tournament resolves its Coeffs from the shared
-// Model + its Era/Park (libraries, by id) + its softcaps (resolveCoeffs), then
-// calibrates over its eligible pool and re-scores — no "load into coefficients"
-// step. Per-tournament scored results are computed lazily and cached.
+// Two config axes, both single-sourced:
+//  • Tournament (D4): the file-based tournaments DB drives scoring — selecting one
+//    resolves its Coeffs (shared Model + Era/Park libraries + softcaps) and
+//    re-calibrates/re-scores. Scoring depends ONLY on the tournament + catalog.
+//  • Account (D6): accounts share the catalog and differ only in `owned` + variants.
+//    The active account stamps `owned` onto the (tournament-)scored rows and adds
+//    its variant rows — no re-scoring needed when only the account changes.
+//
+// The catalog itself is sourced from the latest uploaded pt_card_list CSV (never a
+// frozen file), so new card releases flow in on upload.
 
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
-import { parseCatalogCsv } from "../data/catalog.ts";
+import { parseCatalogCsv, cardId, type Catalog } from "../data/catalog.ts";
 import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
+import { overlayFromCatalog, type AccountOverlay } from "../data/account.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived } from "../scoring-core/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
 import { seedDefaults } from "../config/seed.ts";
+import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
 const DATA_ROOT = process.env.DATA_ROOT ?? "data";
 
-// ── Load catalog + the file-based config DB (seed from captures on first run) ──
+interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null }
+
+// ── Boot: config DB + accounts + catalog ──────────────────────────────────────
 console.log("[server] loading catalog + tournaments database…");
-const catalog = parseCatalogCsv(readFileSync("docs/pt_card_list.csv", "utf8"));
 const repo = new Repository(DATA_ROOT);
-const seed = await seedDefaults(repo);
-console.log(`[server] tournaments DB: ${seed.seeded ? "seeded" : "loaded"} — ${seed.tournaments} tournaments, ${seed.eras} eras, ${seed.parks} parks; model: ${seed.modelName}`);
+
+const seedCfg = await seedDefaults(repo);
+console.log(`[server] tournaments DB: ${seedCfg.seeded ? "seeded" : "loaded"} — ${seedCfg.tournaments} tournaments, ${seedCfg.eras} eras, ${seedCfg.parks} parks; model: ${seedCfg.modelName}`);
+const seedAcc = await seedAccounts(repo);
+console.log(`[server] accounts: ${seedAcc.seeded ? "seeded" : "loaded"} — [${seedAcc.accountIds.join(", ")}]; catalog source: ${seedAcc.catalogSourceId ?? "(committed docs sample)"}`);
 
 const model = (await repo.loadAll<Model>("models"))[0];
 const eras = new Map((await repo.loadAll<Era>("eras")).map((e) => [e.id, e]));
 const parks = new Map((await repo.loadAll<Park>("parks")).map((p) => [p.id, p]));
 const tournaments = await repo.loadAll<Tournament>("tournaments");
 const tournamentById = new Map(tournaments.map((t) => [t.id, t]));
-const DEFAULT_ID = tournamentById.has("default-neutral") ? "default-neutral" : tournaments[0]?.id ?? "";
+const DEFAULT_TOURNAMENT_ID = tournamentById.has("default-neutral") ? "default-neutral" : tournaments[0]?.id ?? "";
 
 if (!model || tournaments.length === 0) {
   console.error("[server] No model/tournaments available. Ensure a capture exists in fixtures/captures/.");
   process.exit(1);
 }
 
+let accounts = new Map((await repo.loadAll<AccountOverlay>("accounts")).map((a) => [a.id, a]));
+let state: AppState = (await repo.load<AppState>("state", "app")) ?? { activeAccountId: null, catalogSourceId: null, activeTournamentId: null };
+const saveState = () => repo.save("state", "app", state);
+
+// Shared catalog = the current source import (latest upload); fallback to the
+// committed docs sample on a fresh clone.
+function loadCatalog(): { catalog: Catalog; source: string } {
+  const tryIds = [state.catalogSourceId, ...accounts.keys()].filter(Boolean) as string[];
+  for (const id of tryIds) {
+    const f = join(DATA_ROOT, "imports", `${id}.csv`);
+    if (existsSync(f)) return { catalog: parseCatalogCsv(readFileSync(f, "utf8")), source: id };
+  }
+  return { catalog: parseCatalogCsv(readFileSync("docs/pt_card_list.csv", "utf8")), source: "(committed docs sample)" };
+}
+let { catalog, source: catalogSource } = loadCatalog();
+let catalogById = new Map(catalog.cards.map((c) => [cardId(c), c]));
+
+if (state.activeAccountId == null && accounts.size) { state.activeAccountId = [...accounts.keys()][0]!; await saveState(); }
+
 // ── Column maps (display) ─────────────────────────────────────────────────────
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const round = (x: number) => Math.round(x * 1e4) / 1e4;
 
-// The 8 real "can learn position" columns (raw 0/1). There is no LearnP.
 const LEARN: [string, string][] = [
   ["LearnC", "C"], ["Learn1B", "1B"], ["Learn2B", "2B"], ["Learn3B", "3B"],
   ["LearnSS", "SS"], ["LearnLF", "LF"], ["LearnCF", "CF"], ["LearnRF", "RF"],
@@ -63,13 +92,13 @@ const PITCH_TYPES = [
 ];
 const pitchCount = (c: Record<string, unknown>) => PITCH_TYPES.filter((p) => n(c[p]) > 0).length;
 
-type ScoredRow = ReturnType<typeof toRow>;
 type ScoreCtx = {
   config: Parameters<typeof scoreCard>[1];
   basicConfig: Parameters<typeof scoreCard>[1];
   isEligible: (c: Record<string, unknown>) => boolean;
 };
 
+// owned is account-scoped, stamped at serve time — base rows carry 0.
 function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
   const w = scoreCard(c, ctx.config);          // wOBA-anchored
   const b = scoreCard(c, ctx.basicConfig);     // basic-anchored
@@ -81,7 +110,7 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
     id: String(w.cardId),
     variant: String(c["Variant"] ?? "").toUpperCase() === "Y" ? "Y" : "",
     title: w.title, first: String(c["FirstName"] ?? ""), last: String(c["LastName"] ?? ""),
-    bats: w.bats, throws: w.throws, value: n(c["Card Value"]), owned: n(c["owned"]),
+    bats: w.bats, throws: w.throws, value: n(c["Card Value"]), owned: 0,
     stamina: n(c["Stamina"]), pitches: pitchCount(c),
     learn, eligible: ctx.isEligible(c),
     hitVL: round(w.hit.woba_vL), hitVR: round(w.hit.woba_vR), hitOVR: round(w.hit.woba_ovr),
@@ -91,15 +120,11 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
     def,
   };
 }
-
-// Demo variant rows (one hitter, one pitcher) so variant inclusion is visible.
-const byValueDesc = (a: Record<string, unknown>, b: Record<string, unknown>) => n(b["Card Value"]) - n(a["Card Value"]);
-const demoHitter = catalog.cards.filter((c) => LEARN.some(([col]) => n(c[col]) === 1)).sort(byValueDesc)[0];
-const demoPitcher = catalog.cards.filter((c) => n(c["Pos Rating P"]) > 0).sort(byValueDesc)[0];
+type ScoredRow = ReturnType<typeof toRow>;
 
 // ── Per-tournament scoring (resolve → calibrate → score), cached ──────────────
-interface Scored { rows: ScoredRow[]; meta: { configName: string; tournament: string; cardCount: number; eligibleCount: number } }
-const cache = new Map<string, Scored>();
+interface Scored { rows: ScoredRow[]; ctx: ScoreCtx; eligibleCount: number }
+let cache = new Map<string, Scored>();
 
 function scoreTournament(t: Tournament): Scored {
   const era = eras.get(t.eraId);
@@ -110,7 +135,6 @@ function scoreTournament(t: Tournament): Scored {
   const derived = computeDerived(coeffs);
   const pool = buildEligiblePool(catalog.cards, t);
   const config = { coeffs, derived, calScales: calibrate(pool, { coeffs, derived }) };
-  // Independent basic-metric anchoring so wOBA and basic are both accurate.
   const basicConfig = { coeffs, derived, calScales: calibrateBasic(pool, { coeffs, derived }) };
 
   const inValueRange = (c: Record<string, unknown>) => {
@@ -120,43 +144,134 @@ function scoreTournament(t: Tournament): Scored {
   const isEligible = (c: Record<string, unknown>) => inValueRange(c) && rowEligible(c as any, t);
   const ctx: ScoreCtx = { config, basicConfig, isEligible };
 
-  const rows = catalog.cards.map((c) => toRow(c, ctx));
-  if (demoHitter) rows.push(toRow(makeVariant(demoHitter), ctx));
-  if (demoPitcher) rows.push(toRow(makeVariant(demoPitcher), ctx));
+  return { rows: catalog.cards.map((c) => toRow(c, ctx)), ctx, eligibleCount: pool.length };
+}
 
+function scoredFor(id: string): { t: Tournament; s: Scored } {
+  const t = tournamentById.get(id) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
+  let s = cache.get(t.id);
+  if (!s) { s = scoreTournament(t); cache.set(t.id, s); }
+  return { t, s };
+}
+
+// Assemble the response for a (tournament, account): stamp owned + add this
+// account's variant rows. Scoring is reused from the tournament cache.
+function buildCards(tournamentId: string, accountId: string | null): ScoredRow[] {
+  const { s } = scoredFor(tournamentId);
+  const acc = accountId ? accounts.get(accountId) : null;
+  const owned = acc?.owned ?? {};
+  const rows = s.rows.map((r) => ({ ...r, owned: owned[r.id] ?? 0 }));
+  for (const vid of acc?.variantCardIds ?? []) {
+    const base = catalogById.get(vid);
+    if (base) rows.push({ ...toRow(makeVariant(base), s.ctx), owned: owned[vid] ?? 0 });
+  }
+  return rows;
+}
+
+function buildMeta(tournamentId: string, accountId: string | null) {
+  const { t, s } = scoredFor(tournamentId);
+  const acc = accountId ? accounts.get(accountId) : null;
+  const ownedCount = acc ? Object.values(acc.owned).filter((q) => q > 0).length : 0;
   return {
-    rows,
-    meta: { configName: model!.name, tournament: t.name, cardCount: rows.length, eligibleCount: pool.length },
+    configName: model!.name, tournament: t.name,
+    account: acc?.name ?? "(none)", accountId: acc?.id ?? null,
+    catalogSource: catalogSource,
+    cardCount: catalog.cards.length + (acc?.variantCardIds.length ?? 0),
+    eligibleCount: s.eligibleCount, ownedCount,
   };
 }
 
-function scored(id: string): Scored {
-  const t = tournamentById.get(id) ?? tournamentById.get(DEFAULT_ID)!;
-  let s = cache.get(t.id);
-  if (!s) { s = scoreTournament(t); cache.set(t.id, s); }
-  return s;
+const accountSummary = () => ({
+  accounts: [...accounts.values()].map((a) => ({
+    id: a.id, name: a.name,
+    ownedCount: Object.values(a.owned).filter((q) => q > 0).length,
+    totalQty: Object.values(a.owned).reduce((s, q) => s + (q > 0 ? q : 0), 0),
+    variantCount: a.variantCardIds.length,
+  })),
+  activeId: state.activeAccountId, catalogSource,
+});
+
+// Recompute the shared catalog (after an upload changed the source) + drop caches.
+function refreshCatalog() {
+  ({ catalog, source: catalogSource } = loadCatalog());
+  catalogById = new Map(catalog.cards.map((c) => [cardId(c), c]));
+  cache = new Map();
 }
 
-// Precompute the default so first paint is instant.
-scored(DEFAULT_ID);
+// Precompute the default tournament so first paint is instant.
+scoredFor(DEFAULT_TOURNAMENT_ID);
 
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 const MIME: Record<string, string> = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
   ".json": "application/json", ".svg": "image/svg+xml", ".ico": "image/x-icon",
 };
-
 const tournamentList = tournaments.map((t) => ({ id: t.id, name: t.name }));
 
-const server = createServer((req, res) => {
+const readBody = (req: IncomingMessage): Promise<string> =>
+  new Promise((resolve) => { let d = ""; req.on("data", (c) => (d += c)); req.on("end", () => resolve(d)); });
+
+function json(res: ServerResponse, data: unknown, code = 200) {
+  res.statusCode = code;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(data));
+}
+
+const server = createServer(async (req, res) => {
   const u = new URL(req.url ?? "/", "http://localhost");
   const url = u.pathname;
-  const tid = u.searchParams.get("tournament") || DEFAULT_ID;
+  const method = req.method ?? "GET";
+  const tid = u.searchParams.get("tournament") || state.activeTournamentId || DEFAULT_TOURNAMENT_ID;
+  const aid = u.searchParams.get("account") || state.activeAccountId;
 
-  if (url === "/api/tournaments") return json(res, { tournaments: tournamentList, defaultId: DEFAULT_ID });
-  if (url === "/api/cards") return json(res, scored(tid).rows);
-  if (url === "/api/meta") return json(res, scored(tid).meta);
+  // ── GET API ──
+  if (method === "GET" && url === "/api/tournaments")
+    return json(res, { tournaments: tournamentList, defaultId: state.activeTournamentId || DEFAULT_TOURNAMENT_ID });
+  if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
+  if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
+  if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
 
+  // ── POST API ──
+  if (method === "POST" && url === "/api/state") {
+    const body = JSON.parse((await readBody(req)) || "{}");
+    if ("activeAccountId" in body) state.activeAccountId = body.activeAccountId;
+    if ("activeTournamentId" in body) state.activeTournamentId = body.activeTournamentId;
+    await saveState();
+    return json(res, state);
+  }
+  if (method === "POST" && url === "/api/accounts/rename") {
+    const { id, name } = JSON.parse((await readBody(req)) || "{}");
+    const acc = id && accounts.get(id);
+    if (!acc || !String(name ?? "").trim()) return json(res, { error: "id + name required" }, 400);
+    acc.name = String(name).trim();
+    await repo.save("accounts", acc.id, acc);
+    return json(res, accountSummary());
+  }
+  if (method === "POST" && url === "/api/accounts/import") {
+    // Raw CSV body. ?id= to update an existing account; else ?name= creates one.
+    const text = await readBody(req);
+    if (!text.trim()) return json(res, { error: "empty CSV body" }, 400);
+    let id = u.searchParams.get("id") || "";
+    const name = (u.searchParams.get("name") || "").trim();
+    const existing = id ? accounts.get(id) : null;
+    if (!existing) { id = slug(name || id || "account"); }
+    const finalName = existing?.name ?? name ?? id;
+    const imported = parseCatalogCsv(text);
+    if (!imported.cards.length) return json(res, { error: "no cards parsed from CSV" }, 400);
+    await repo.saveImport(id, text);
+    const overlay = overlayFromCatalog(imported, id, finalName);
+    if (existing) overlay.variantCardIds = existing.variantCardIds; // preserve variants
+    await repo.save("accounts", id, overlay);
+    accounts.set(id, overlay);
+    // This upload is the freshest full card list → make it the shared catalog.
+    state.catalogSourceId = id;
+    if (state.activeAccountId == null) state.activeAccountId = id;
+    await saveState();
+    refreshCatalog();
+    return json(res, accountSummary());
+  }
+
+  // ── Static SPA ──
   const rel = url === "/" ? "/index.html" : url;
   const filePath = join(WEB_DIST, rel);
   if (existsSync(filePath) && !filePath.endsWith("/")) {
@@ -170,11 +285,6 @@ const server = createServer((req, res) => {
   res.end("SPA not built. Run `npm run build:web` (or use `npm run dev:web` for live dev).");
 });
 
-function json(res: import("node:http").ServerResponse, data: unknown) {
-  res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify(data));
-}
-
 server.listen(PORT, () => {
-  console.log(`[server] http://localhost:${PORT}  (${tournaments.length} tournaments; default: ${tournamentById.get(DEFAULT_ID)?.name})`);
+  console.log(`[server] http://localhost:${PORT}  (${tournaments.length} tournaments; ${accounts.size} accounts; catalog: ${catalogSource}, ${catalog.cards.length} cards)`);
 });
