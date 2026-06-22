@@ -4,8 +4,9 @@ interface Card {
   id: string; variant: string; title: string; first: string; last: string;
   bats: number; throws: number; value: number; owned: number;
   learn: Record<string, number>; eligible: boolean;
-  hitVL: number; hitVR: number; hitOVR: number; basicHit: number;
-  pitchVL: number; pitchVR: number; pitchOVR: number; basicPitch: number;
+  stamina: number; pitches: number;
+  hitVL: number; hitVR: number; hitOVR: number; basicHit: number; basicHitVL: number; basicHitVR: number;
+  pitchVL: number; pitchVR: number; pitchOVR: number; basicPitch: number; basicPitchVL: number; basicPitchVR: number;
   def: Record<string, number>;
 }
 interface Meta { configName: string; tournament: string; cardCount: number; eligibleCount: number }
@@ -21,7 +22,7 @@ const def = (k: string) => (c: Card) => c.def?.[k] ?? 0;
 const COLS: Record<string, Col> = {
   id: { key: "id", label: "Card ID", align: "l", get: (c) => c.id },
   variant: { key: "variant", label: "Var", align: "c", get: (c) => c.variant },
-  title: { key: "title", label: "Card", align: "l", get: (c) => c.title, sort: (c) => `${c.first} ${c.last}`.toLowerCase() },
+  title: { key: "title", label: "Card", align: "l", get: (c) => c.title, sort: (c) => `${c.last} ${c.first}`.toLowerCase() },
   bats: { key: "bats", label: "B", align: "c", get: (c) => BATS[c.bats] ?? "", sort: (c) => c.bats },
   throws: { key: "throws", label: "T", align: "c", get: (c) => THROWS[c.throws] ?? "", sort: (c) => c.throws },
   value: { key: "value", label: "Val", align: "r", get: (c) => c.value, fmt: "int" },
@@ -30,10 +31,16 @@ const COLS: Record<string, Col> = {
   hitVL: { key: "hitVL", label: "Hit vL", align: "r", get: (c) => c.hitVL, fmt: "woba" },
   hitVR: { key: "hitVR", label: "Hit vR", align: "r", get: (c) => c.hitVR, fmt: "woba" },
   basicHit: { key: "basicHit", label: "Basic Hit", align: "r", get: (c) => c.basicHit, fmt: "basic" },
+  basicHitVL: { key: "basicHitVL", label: "Basic Hit vL", align: "r", get: (c) => c.basicHitVL, fmt: "basic" },
+  basicHitVR: { key: "basicHitVR", label: "Basic Hit vR", align: "r", get: (c) => c.basicHitVR, fmt: "basic" },
   pitchOVR: { key: "pitchOVR", label: "Pitch wOBA", align: "r", get: (c) => c.pitchOVR, fmt: "woba" },
   pitchVL: { key: "pitchVL", label: "Pitch vL", align: "r", get: (c) => c.pitchVL, fmt: "woba" },
   pitchVR: { key: "pitchVR", label: "Pitch vR", align: "r", get: (c) => c.pitchVR, fmt: "woba" },
   basicPitch: { key: "basicPitch", label: "Basic Pitch", align: "r", get: (c) => c.basicPitch, fmt: "basic" },
+  basicPitchVL: { key: "basicPitchVL", label: "Basic Pitch vL", align: "r", get: (c) => c.basicPitchVL, fmt: "basic" },
+  basicPitchVR: { key: "basicPitchVR", label: "Basic Pitch vR", align: "r", get: (c) => c.basicPitchVR, fmt: "basic" },
+  stamina: { key: "stamina", label: "Stam", align: "r", get: (c) => c.stamina, fmt: "int" },
+  pitches: { key: "pitches", label: "# Pit", align: "r", get: (c) => c.pitches, fmt: "int" },
   ifR: { key: "ifR", label: "IF Rng", align: "r", get: def("Infield Range"), fmt: "int" },
   ifE: { key: "ifE", label: "IF Err", align: "r", get: def("Infield Error"), fmt: "int" },
   ifA: { key: "ifA", label: "IF Arm", align: "r", get: def("Infield Arm"), fmt: "int" },
@@ -56,8 +63,8 @@ for (const p of POSNS) {
 const DEF = ["ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"];
 const PRESETS: Record<string, { cols: string[]; sort: string; dir: 1 | -1 }> = {
   // Hitting view holds it all: hit scores → learnable positions → defensive ratings.
-  Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
-  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch"], sort: "pitchOVR", dir: 1 },
+  Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", "basicHitVL", "basicHitVR", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
+  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "stamina", "pitches", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR"], sort: "pitchOVR", dir: 1 },
 };
 
 const sortVal = (col: Col, c: Card) => (col.sort ? col.sort(c) : col.get(c));

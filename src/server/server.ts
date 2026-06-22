@@ -10,7 +10,8 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
 import { parseCatalogCsv } from "../data/catalog.ts";
-import { buildEligiblePool } from "../config/eligibility.ts";
+import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
+import { makeVariant } from "../data/variants.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, type Coeffs } from "../scoring-core/index.ts";
 import type { Tournament } from "../config/tournament.ts";
 
@@ -47,10 +48,15 @@ const basicConfig = { coeffs: active.coeffs, derived, calScales: basicScales };
 
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const round = (x: number) => Math.round(x * 1e4) / 1e4;
-const eligibleKey = (c: Record<string, unknown>) => `${c["Card ID"]}|${String(c["Variant"] ?? "")}`;
-const eligibleSet = new Set(pool.map(eligibleKey));
 
-// Learnable positions (the actual position-eligibility, not the single Pos field).
+// Eligibility for the display flag (card-value range + rules) — handles variant
+// rows correctly (a variant shares its base's Card Value).
+const inValueRange = (c: Record<string, unknown>) => {
+  const v = n(c["Card Value"]); const { card_value_min: lo, card_value_max: hi } = TOURNAMENT;
+  return (lo == null || v >= lo) && (hi == null || v <= hi);
+};
+const isEligible = (c: Record<string, unknown>) => inValueRange(c) && rowEligible(c as any, TOURNAMENT);
+
 // The 8 real "can learn position" columns (raw 0/1). There is no LearnP.
 const LEARN: [string, string][] = [
   ["LearnC", "C"], ["Learn1B", "1B"], ["Learn2B", "2B"], ["Learn3B", "3B"],
@@ -62,8 +68,14 @@ const DEF_COLS = [
   "CatcherAbil", "CatcherFrame", "Catcher Arm",
   "OF Range", "OF Error", "OF Arm",
 ];
+// Pitch-type columns (no-space spellings) — # pitches = how many are > 0.
+const PITCH_TYPES = [
+  "Fastball", "Slider", "Curveball", "Changeup", "Cutter", "Sinker",
+  "Splitter", "Forkball", "Screwball", "Circlechange", "Knucklecurve", "Knuckleball",
+];
+const pitchCount = (c: Record<string, unknown>) => PITCH_TYPES.filter((p) => n(c[p]) > 0).length;
 
-const scored = catalog.cards.map((c) => {
+function toRow(c: Record<string, unknown>) {
   const w = scoreCard(c, config);          // wOBA-anchored
   const b = scoreCard(c, basicConfig);     // basic-anchored
   const learn: Record<string, number> = {};
@@ -75,14 +87,25 @@ const scored = catalog.cards.map((c) => {
     variant: String(c["Variant"] ?? "").toUpperCase() === "Y" ? "Y" : "",
     title: w.title, first: String(c["FirstName"] ?? ""), last: String(c["LastName"] ?? ""),
     bats: w.bats, throws: w.throws, value: n(c["Card Value"]), owned: n(c["owned"]),
-    learn, eligible: eligibleSet.has(eligibleKey(c)),
+    stamina: n(c["Stamina"]), pitches: pitchCount(c),
+    learn, eligible: isEligible(c),
     hitVL: round(w.hit.woba_vL), hitVR: round(w.hit.woba_vR), hitOVR: round(w.hit.woba_ovr),
-    basicHit: round(b.hit.basic_ovr),
+    basicHit: round(b.hit.basic_ovr), basicHitVL: round(b.hit.basic_vL), basicHitVR: round(b.hit.basic_vR),
     pitchVL: round(w.pitch.woba_vL), pitchVR: round(w.pitch.woba_vR), pitchOVR: round(w.pitch.woba_ovr),
-    basicPitch: round(b.pitch.basic_ovr),
+    basicPitch: round(b.pitch.basic_ovr), basicPitchVL: round(b.pitch.basic_vL), basicPitchVR: round(b.pitch.basic_vR),
     def,
   };
-});
+}
+
+const scored = catalog.cards.map(toRow);
+
+// Demo variant rows (one hitter, one pitcher) so variant inclusion is visible
+// in the grid. Highest-value base card of each kind, boosted to v5.
+const byValueDesc = (a: Record<string, unknown>, b: Record<string, unknown>) => n(b["Card Value"]) - n(a["Card Value"]);
+const demoHitter = catalog.cards.filter((c) => LEARN.some(([col]) => n(c[col]) === 1)).sort(byValueDesc)[0];
+const demoPitcher = catalog.cards.filter((c) => n(c["Pos Rating P"]) > 0).sort(byValueDesc)[0];
+if (demoHitter) scored.push(toRow(makeVariant(demoHitter)));
+if (demoPitcher) scored.push(toRow(makeVariant(demoPitcher)));
 
 const meta = {
   configName: active.name, tournament: TOURNAMENT.name,
