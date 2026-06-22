@@ -10,6 +10,7 @@ interface Card {
   def: Record<string, number>;
 }
 interface Meta { configName: string; tournament: string; cardCount: number; eligibleCount: number }
+interface TournamentOpt { id: string; name: string }
 
 const BATS: Record<number, string> = { 1: "R", 2: "L", 3: "S" };
 const THROWS: Record<number, string> = { 1: "R", 2: "L" };
@@ -138,6 +139,9 @@ export function App() {
   const [cards, setCards] = useState<Card[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [tournaments, setTournaments] = useState<TournamentOpt[]>([]);
+  const [tournamentId, setTournamentId] = useState<string>("");
+  const [loading, setLoading] = useState(false);
   const [preset, setPreset] = useState<keyof typeof PRESETS>("Hitting");
   const [filter, setFilter] = useState("");
   const [highlight, setHighlight] = useState("");
@@ -151,10 +155,24 @@ export function App() {
   const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [valSearch, setValSearch] = useState("");
 
+  // Load the tournament list once, then default-select; card/meta load reacts to it.
   useEffect(() => {
-    Promise.all([fetch("/api/meta").then((r) => r.json()), fetch("/api/cards").then((r) => r.json())])
-      .then(([m, c]) => { setMeta(m); setCards(c); }).catch((e) => setErr(String(e)));
+    fetch("/api/tournaments").then((r) => r.json())
+      .then((d: { tournaments: TournamentOpt[]; defaultId: string }) => {
+        setTournaments(d.tournaments);
+        setTournamentId(d.defaultId || d.tournaments[0]?.id || "");
+      }).catch((e) => setErr(String(e)));
   }, []);
+
+  // (Re)score for the selected tournament — server resolves era/park/softcaps +
+  // re-calibrates and re-scores; the grid just reads the result.
+  useEffect(() => {
+    if (!tournamentId) return;
+    const q = `?tournament=${encodeURIComponent(tournamentId)}`;
+    setLoading(true);
+    Promise.all([fetch("/api/meta" + q).then((r) => r.json()), fetch("/api/cards" + q).then((r) => r.json())])
+      .then(([m, c]) => { setMeta(m); setCards(c); }).catch((e) => setErr(String(e))).finally(() => setLoading(false));
+  }, [tournamentId]);
 
   const choosePreset = (name: keyof typeof PRESETS) => { setPreset(name); setSortKey(PRESETS[name].sort); setSortDir(PRESETS[name].dir); };
   const cols = PRESETS[preset].cols.map((k) => COLS[k]!);
@@ -231,6 +249,16 @@ export function App() {
     <div style={{ fontFamily: "system-ui, sans-serif", padding: 16, color: C.text, background: C.bg, minHeight: "100vh" }}>
       <h2 style={{ margin: "0 0 4px" }}>OOTP Optimizer — Data Grid</h2>
       {err && <p style={{ color: "#f87171" }}>Failed to load: {err} — is the server running?</p>}
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+        <label style={{ fontSize: 13, color: C.sub }} htmlFor="tournament">Tournament</label>
+        <select id="tournament" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)}
+          disabled={!tournaments.length} style={{ ...inputStyle, minWidth: 240, cursor: "pointer" }}>
+          {tournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+        {loading && <span style={{ fontSize: 12, color: C.sub }}>scoring…</span>}
+      </div>
+
       {meta && (
         <p style={{ margin: "0 0 12px", color: C.sub, fontSize: 13 }}>
           Tournament: <b style={{ color: C.text }}>{meta.tournament}</b> · Config: <b style={{ color: C.text }}>{meta.configName}</b> · {meta.cardCount} cards

@@ -27,7 +27,10 @@ export const COLLECTIONS = {
 export type Collection = (typeof COLLECTIONS)[keyof typeof COLLECTIONS] | (string & {});
 
 export class Repository {
-  constructor(private readonly root: string) {}
+  // NB: explicit field (not a TS parameter property) — Node's type-strip mode,
+  // which runs the server, doesn't support parameter properties.
+  private readonly root: string;
+  constructor(root: string) { this.root = root; }
 
   private dir(collection: string): string { return join(this.root, collection); }
   private file(collection: string, id: string): string { return join(this.dir(collection), `${id}.json`); }

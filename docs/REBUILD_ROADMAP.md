@@ -334,9 +334,20 @@ popover** (funnel icon → Filter-by-condition dropdown + Filter-by-values check
 Select-all / Clear / (Blanks)); resizable, smart-sized columns; dark theme. Two demo variant rows are
 injected server-side so variant inclusion is visible.
 
-**M3 remaining:** load-a-tournament selector (apply a tournament's eligibility + era/park/softcaps to the
-grid live — needs `resolveCoeffs` = model coeffs (from a capture via `splitCoeffs`) + era/park/softcaps →
-`assembleCoeffs`); account selector (active PT account scopes owned/variants); later, highlight
+**Tournament selector — DONE.** The file-based tournaments DB (D7) is now live: on first run the server
+seeds `data/{models,eras,parks,tournaments}` from the local captures (one shared Model + reusable Era/Park
+libraries + one Tournament per capture, plus a built-in neutral default) via `seedDefaults` (idempotent —
+skips if the DB is non-empty, so hand-edits survive). `resolveCoeffs(model, era, park, softcaps)` assembles
+the scoring bag from a tournament's parts (built on the lossless split/assembleCoeffs partition); a parity
+test proves it reproduces every capture bag byte-for-byte. The server resolves → re-calibrates → re-scores
+per tournament (lazy + cached); `/api/tournaments`, `/api/cards?tournament=`, `/api/meta?tournament=` serve
+it; the grid has a read-only tournament `<select>` that re-scores live (verified: eligible count 3376→1919
+and per-card wOBA shift across neutral/tHR/park+era). `data/` is gitignored (embeds the trained model +
+tournament settings → local state). Tournament create/edit/rename UI is a later step (read-only for now,
+per the user). Note: the shared Model carries `pw_*` position weights from one capture (don't affect grid
+scoring — optimizer-only); categorising `pw_*` → tournament is a carried-forward follow-up.
+
+**M3 remaining:** account selector (active PT account scopes owned/variants); later, highlight
 generated-roster members.
 
 Carried-forward follow-ups: categorise the D4 `extras` remainder; real model-artifact format (M6);
