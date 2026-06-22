@@ -53,7 +53,7 @@ const COLS: Record<string, Col> = {
   ofA: { key: "ofA", label: "OF Arm", align: "r", get: def("OF Arm"), fmt: "int" },
 };
 
-// One column per real Learn* position, showing the raw 0/1 value (filterable).
+// One column per real Learn* position, raw 0/1 (filterable).
 const POSNS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
 const FIELD_POS = POSNS.map((p) => "pos" + p);
 for (const p of POSNS) {
@@ -62,9 +62,8 @@ for (const p of POSNS) {
 
 const DEF = ["ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"];
 const PRESETS: Record<string, { cols: string[]; sort: string; dir: 1 | -1 }> = {
-  // Hitting view holds it all: hit scores → learnable positions → defensive ratings.
   Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", "basicHitVL", "basicHitVR", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
-  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "stamina", "pitches", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR"], sort: "pitchOVR", dir: 1 },
+  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR", "stamina", "pitches"], sort: "pitchOVR", dir: 1 },
 };
 
 const sortVal = (col: Col, c: Card) => (col.sort ? col.sort(c) : col.get(c));
@@ -75,6 +74,44 @@ const fmtVal = (col: Col, c: Card) => {
   return v ?? "";
 };
 const haystack = (c: Card) => `${c.title} ${c.first} ${c.last} ${c.id}`.toLowerCase();
+
+function defaultWidth(col: Col): number {
+  if (col.key === "title") return 300;
+  if (col.key.startsWith("pos")) return 34;
+  if (col.key === "variant") return 46;
+  if (col.key === "bats" || col.key === "throws") return 34;
+  if (col.fmt === "woba") return 86;
+  if (col.fmt === "basic") return 96;
+  return 60;
+}
+
+// Per-column filter: numeric supports range "a-b", operators >=,>,<=,<,=, or a
+// bare number (int → equals, score → minimum); text is case-insensitive substring.
+function matchFilter(col: Col, c: Card, q: string): boolean {
+  q = q.trim();
+  if (!q) return true;
+  const raw = col.get(c);
+  if (typeof raw === "number") {
+    const range = q.match(/^(-?\d*\.?\d+)\s*-\s*(-?\d*\.?\d+)$/);
+    if (range) return raw >= parseFloat(range[1]!) && raw <= parseFloat(range[2]!);
+    const op = q.match(/^(>=|<=|>|<|=)\s*(-?\d*\.?\d+)$/);
+    if (op) {
+      const x = parseFloat(op[2]!);
+      switch (op[1]) { case ">=": return raw >= x; case "<=": return raw <= x; case ">": return raw > x; case "<": return raw < x; default: return raw === x; }
+    }
+    const num = parseFloat(q);
+    if (!Number.isNaN(num)) return col.fmt === "int" ? raw === num : raw >= num;
+    return true;
+  }
+  return String(raw).toLowerCase().includes(q.toLowerCase());
+}
+
+// ── dark theme ──────────────────────────────────────────────────────────────
+const C = {
+  bg: "#1e2228", text: "#d7dbe0", sub: "#9aa3ad", border: "#3a414b",
+  head: "#2a2f37", headActive: "#3b4657", stripe: "#23282f", row: "#1e2228",
+  input: "#2a2f37", hot: "#4a4326", accent: "#2563eb", star: "#b06bf0",
+};
 
 export function App() {
   const [cards, setCards] = useState<Card[]>([]);
@@ -87,6 +124,8 @@ export function App() {
   const [eligibleOnly, setEligibleOnly] = useState(false);
   const [sortKey, setSortKey] = useState("hitOVR");
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
+  const [colFilters, setColFilters] = useState<Record<string, string>>({});
+  const [widths, setWidths] = useState<Record<string, number>>({});
 
   useEffect(() => {
     Promise.all([fetch("/api/meta").then((r) => r.json()), fetch("/api/cards").then((r) => r.json())])
@@ -94,13 +133,11 @@ export function App() {
   }, []);
 
   const choosePreset = (name: keyof typeof PRESETS) => {
-    setPreset(name);
-    setSortKey(PRESETS[name].sort);
-    setSortDir(PRESETS[name].dir);
+    setPreset(name); setSortKey(PRESETS[name].sort); setSortDir(PRESETS[name].dir);
   };
-
   const cols = PRESETS[preset].cols.map((k) => COLS[k]!);
   const sortCol = COLS[sortKey] ?? COLS.title!;
+  const w = (k: string) => widths[k] ?? defaultWidth(COLS[k]!);
 
   const rows = useMemo(() => {
     const fq = filter.trim().toLowerCase();
@@ -108,27 +145,38 @@ export function App() {
     if (fq) r = r.filter((c) => haystack(c).includes(fq));
     if (ownedOnly) r = r.filter((c) => c.owned > 0);
     if (eligibleOnly) r = r.filter((c) => c.eligible);
+    const active = cols.filter((col) => (colFilters[col.key] ?? "").trim());
+    if (active.length) r = r.filter((c) => active.every((col) => matchFilter(col, c, colFilters[col.key]!)));
     return [...r].sort((a, b) => {
       const av = sortVal(sortCol, a), bv = sortVal(sortCol, b);
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * sortDir;
       return String(av).localeCompare(String(bv)) * sortDir;
     });
-  }, [cards, filter, ownedOnly, eligibleOnly, sortCol, sortDir]);
+  }, [cards, filter, ownedOnly, eligibleOnly, sortCol, sortDir, cols, colFilters]);
 
   const hq = highlight.trim().toLowerCase();
   const sortBy = (key: string) => {
     if (key === sortKey) setSortDir((d) => (d === 1 ? -1 : 1));
     else { setSortKey(key); setSortDir(COLS[key]?.fmt ? -1 : 1); }
   };
+  const startResize = (key: string, e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    const startX = e.clientX, startW = w(key);
+    const move = (ev: MouseEvent) => setWidths((m) => ({ ...m, [key]: Math.max(28, startW + (ev.clientX - startX)) }));
+    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
 
-  const box: React.CSSProperties = { padding: "6px 10px", fontSize: 14, border: "1px solid #ccc", borderRadius: 4 };
+  const inputStyle: React.CSSProperties = { background: C.input, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4, padding: "6px 8px", fontSize: 13 };
+  const ta = (a: Align) => (a === "r" ? "right" : a === "c" ? "center" : "left");
+
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", padding: 16, color: "#111", background: "#fff", minHeight: "100vh" }}>
+    <div style={{ fontFamily: "system-ui, sans-serif", padding: 16, color: C.text, background: C.bg, minHeight: "100vh" }}>
       <h2 style={{ margin: "0 0 4px" }}>OOTP Optimizer — Data Grid</h2>
-      {err && <p style={{ color: "crimson" }}>Failed to load: {err} — is the server running?</p>}
+      {err && <p style={{ color: "#f87171" }}>Failed to load: {err} — is the server running?</p>}
       {meta && (
-        <p style={{ margin: "0 0 12px", color: "#555", fontSize: 13 }}>
-          Tournament: <b>{meta.tournament}</b> · Config: <b>{meta.configName}</b> · {meta.cardCount} cards
+        <p style={{ margin: "0 0 12px", color: C.sub, fontSize: 13 }}>
+          Tournament: <b style={{ color: C.text }}>{meta.tournament}</b> · Config: <b style={{ color: C.text }}>{meta.configName}</b> · {meta.cardCount} cards
           ({meta.eligibleCount} eligible). Pitch wOBA: lower = better.
         </p>
       )}
@@ -136,44 +184,57 @@ export function App() {
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((p) => (
           <button key={p} onClick={() => choosePreset(p)}
-            style={{ ...box, cursor: "pointer", background: preset === p ? "#2563eb" : "#f3f4f6", color: preset === p ? "#fff" : "#111", fontWeight: preset === p ? 600 : 400 }}>
+            style={{ ...inputStyle, cursor: "pointer", background: preset === p ? C.accent : C.input, color: "#fff", fontWeight: preset === p ? 600 : 400 }}>
             {p}
           </button>
         ))}
       </div>
 
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
-        <input placeholder="Filter (hide non-matches)…" value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...box, width: 240 }} />
-        <input placeholder="Highlight (keep all)…" value={highlight} onChange={(e) => setHighlight(e.target.value)} style={{ ...box, width: 220, background: "#fffbe6" }} />
+        <input placeholder="Filter (hide non-matches)…" value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...inputStyle, width: 240 }} />
+        <input placeholder="Highlight (keep all)…" value={highlight} onChange={(e) => setHighlight(e.target.value)} style={{ ...inputStyle, width: 220 }} />
         <label style={{ fontSize: 13 }}><input type="checkbox" checked={eligibleOnly} onChange={(e) => setEligibleOnly(e.target.checked)} /> Eligible only</label>
         <label style={{ fontSize: 13 }}><input type="checkbox" checked={ownedOnly} onChange={(e) => setOwnedOnly(e.target.checked)} /> Owned only</label>
-        <span style={{ color: "#777", fontSize: 13 }}>{rows.length} shown</span>
+        <span style={{ color: C.sub, fontSize: 13 }}>{rows.length} shown · drag column edges to resize · per-column filters below headers</span>
       </div>
 
-      <div style={{ overflow: "auto", border: "1px solid #eee", maxHeight: "75vh" }}>
-        <table style={{ borderCollapse: "collapse", fontSize: 13, width: "100%" }}>
+      <div style={{ overflow: "auto", border: `1px solid ${C.border}`, maxHeight: "74vh" }}>
+        <table style={{ borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed", width: "max-content" }}>
+          <colgroup>{cols.map((c) => <col key={c.key} style={{ width: w(c.key) }} />)}</colgroup>
           <thead>
             <tr>
               {cols.map((c) => (
                 <th key={c.key} onClick={() => sortBy(c.key)}
-                  style={{ textAlign: c.align === "r" ? "right" : c.align === "c" ? "center" : "left", padding: "6px 8px",
-                    borderBottom: "2px solid #ccc", cursor: "pointer", whiteSpace: "nowrap", position: "sticky", top: 0,
-                    background: sortKey === c.key ? "#dbeafe" : "#f3f4f6" }}>
+                  style={{ textAlign: ta(c.align), padding: "6px 8px", borderBottom: `2px solid ${C.border}`, cursor: "pointer",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", position: "sticky", top: 0,
+                    background: sortKey === c.key ? C.headActive : C.head, userSelect: "none" }}>
                   {c.label}{sortKey === c.key ? (sortDir === 1 ? " ▲" : " ▼") : ""}
+                  <span onMouseDown={(e) => startResize(c.key, e)} onClick={(e) => e.stopPropagation()}
+                    style={{ position: "absolute", right: 0, top: 0, height: "100%", width: 6, cursor: "col-resize" }} />
+                </th>
+              ))}
+            </tr>
+            <tr>
+              {cols.map((c) => (
+                <th key={c.key} style={{ padding: "2px 4px", borderBottom: `1px solid ${C.border}`, background: C.head, position: "sticky", top: 30 }}>
+                  <input value={colFilters[c.key] ?? ""} onChange={(e) => setColFilters((m) => ({ ...m, [c.key]: e.target.value }))}
+                    placeholder="…" style={{ ...inputStyle, padding: "2px 4px", fontSize: 11, width: "100%", boxSizing: "border-box" }} />
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.slice(0, 750).map((c, i) => {
+            {rows.slice(0, 1000).map((c, i) => {
               const hot = hq && haystack(c).includes(hq);
               return (
-                <tr key={c.id + ":" + c.variant + ":" + i} style={{ background: hot ? "#fef08a" : i % 2 ? "#fafafa" : "#fff" }}>
+                <tr key={c.id + ":" + c.variant + ":" + i} style={{ background: hot ? C.hot : i % 2 ? C.stripe : C.row }}>
                   {cols.map((col) => (
-                    <td key={col.key} style={{ textAlign: col.align === "r" ? "right" : col.align === "c" ? "center" : "left",
-                      padding: "4px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap",
-                      maxWidth: col.key === "title" ? 340 : undefined, overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {fmtVal(col, c)}
+                    <td key={col.key} title={col.key === "title" ? c.title : undefined}
+                      style={{ textAlign: ta(col.align), padding: "4px 8px", borderBottom: `1px solid ${C.border}`,
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {col.key === "title" && c.title.startsWith("★")
+                        ? <><span style={{ color: C.star }}>★</span>{c.title.slice(1)}</>
+                        : fmtVal(col, c)}
                     </td>
                   ))}
                 </tr>
@@ -182,7 +243,7 @@ export function App() {
           </tbody>
         </table>
       </div>
-      {rows.length > 750 && <p style={{ color: "#777", fontSize: 12 }}>Showing first 750 of {rows.length}.</p>}
+      {rows.length > 1000 && <p style={{ color: C.sub, fontSize: 12 }}>Showing first 1000 of {rows.length}.</p>}
     </div>
   );
 }

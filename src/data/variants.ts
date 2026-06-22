@@ -33,7 +33,7 @@ export function makeVariant(base: Card): Card {
     if (Number.isFinite(n)) out[k] = String(variantBoost(n));
   }
   out["Variant"] = "Y";
-  out["//Card Title"] = `★ ${base["//Card Title"] ?? ""}`;
+  out["//Card Title"] = `★ ${base["//Card Title"] ?? ""} v5`;
   return out;
 }
 
