@@ -373,6 +373,17 @@ demand from the tournament's cached config (no re-score) and show as ★…v5. V
 0 unmatched via `CID`; toggle add/remove/dedupe/bad-id-reject; modal lists 72, hides already-variant cards from
 add-search. 4 parser unit tests (incl. the wrong-`ID`-column rejection).
 
+**Navigation shell — DONE.** Split the monolithic grid into an app shell: a left sidebar (app title, the
+global **Tournament + Account** selectors that scope every page, grouped page nav) + a routed main area
+(hash routing; no server route config — the server already falls back to index.html). New web modules:
+`shared.ts` (types + theme), `state.tsx` (`AppDataProvider`/`useAppData` — all fetching + mutations),
+`CardsPage.tsx` (the grid), `AccountsPage.tsx` (account table: set-active/rename/import-ownership/+new,
+plus inline variant management — moved off the grid header), `App.tsx` (shell + nav + hash router). Nav:
+**Build** group (Cards ✅, Roster & Lineups ⬜M4, Single Player ⬜M7) · **Setup** group (Accounts ✅,
+Tournaments ⬜, Eras & Parks ⬜, Model Training ⬜M6) — unbuilt pages are labeled placeholders. IA matches
+the old app's left-nav concept but D4-correct (no "Coefficients" page; tournaments/eras/parks replace it).
+Verified: nav + routing, sidebar selectors, Accounts set-active syncs the sidebar + variant section.
+
 **M3 remaining:** highlight generated-roster members (needs M4). M3 is otherwise complete.
 
 Carried-forward follow-ups: categorise the D4 `extras` remainder; real model-artifact format (M6);
