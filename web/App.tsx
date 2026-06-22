@@ -34,7 +34,6 @@ const COLS: Record<string, Col> = {
   pitchVL: { key: "pitchVL", label: "Pitch vL", align: "r", get: (c) => c.pitchVL, fmt: "woba" },
   pitchVR: { key: "pitchVR", label: "Pitch vR", align: "r", get: (c) => c.pitchVR, fmt: "woba" },
   basicPitch: { key: "basicPitch", label: "Basic Pitch", align: "r", get: (c) => c.basicPitch, fmt: "basic" },
-  spd: { key: "spd", label: "Spd", align: "r", get: def("Speed"), fmt: "int" },
   ifR: { key: "ifR", label: "IF Rng", align: "r", get: def("Infield Range"), fmt: "int" },
   ifE: { key: "ifE", label: "IF Err", align: "r", get: def("Infield Error"), fmt: "int" },
   ifA: { key: "ifA", label: "IF Arm", align: "r", get: def("Infield Arm"), fmt: "int" },
@@ -47,18 +46,18 @@ const COLS: Record<string, Col> = {
   ofA: { key: "ofA", label: "OF Arm", align: "r", get: def("OF Arm"), fmt: "int" },
 };
 
-// One column per learnable position (✓ if the card can learn it) — filterable.
-const POSNS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "P"];
-const FIELD_POS = POSNS.filter((p) => p !== "P").map((p) => "pos" + p);
+// One column per real Learn* position, showing the raw 0/1 value (filterable).
+const POSNS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
+const FIELD_POS = POSNS.map((p) => "pos" + p);
 for (const p of POSNS) {
-  COLS["pos" + p] = { key: "pos" + p, label: p, align: "c", get: (c) => (c.learn?.[p] ? "✓" : ""), sort: (c) => c.learn?.[p] ?? 0 };
+  COLS["pos" + p] = { key: "pos" + p, label: p, align: "c", get: (c) => c.learn?.[p] ?? 0, sort: (c) => c.learn?.[p] ?? 0 };
 }
 
+const DEF = ["ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"];
 const PRESETS: Record<string, { cols: string[]; sort: string; dir: 1 | -1 }> = {
-  Hitting: { cols: ["title", "variant", ...FIELD_POS, "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit"], sort: "hitOVR", dir: -1 },
-  Pitching: { cols: ["title", "variant", "posP", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch"], sort: "pitchOVR", dir: 1 },
-  Defense: { cols: ["title", "variant", ...FIELD_POS, "posP", "value", "owned", "spd", "ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"], sort: "title", dir: 1 },
-  All: { cols: ["id", "variant", "title", ...FIELD_POS, "posP", "bats", "throws", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "spd", "ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"], sort: "hitOVR", dir: -1 },
+  // Hitting view holds it all: hit scores → learnable positions → defensive ratings.
+  Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
+  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch"], sort: "pitchOVR", dir: 1 },
 };
 
 const sortVal = (col: Col, c: Card) => (col.sort ? col.sort(c) : col.get(c));

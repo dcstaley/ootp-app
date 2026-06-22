@@ -11,7 +11,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
 import { parseCatalogCsv } from "../data/catalog.ts";
 import { buildEligiblePool } from "../config/eligibility.ts";
-import { scoreCard, calibrate, computeDerived, type Coeffs } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, type Coeffs } from "../scoring-core/index.ts";
 import type { Tournament } from "../config/tournament.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -41,6 +41,9 @@ const derived = computeDerived(active.coeffs);
 const pool = buildEligiblePool(catalog.cards, TOURNAMENT);
 const calScales = calibrate(pool, { coeffs: active.coeffs, derived });
 const config = { coeffs: active.coeffs, derived, calScales };
+// Independent basic-metric anchoring so wOBA and basic are both accurate at once.
+const basicScales = calibrateBasic(pool, { coeffs: active.coeffs, derived });
+const basicConfig = { coeffs: active.coeffs, derived, calScales: basicScales };
 
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const round = (x: number) => Math.round(x * 1e4) / 1e4;
@@ -48,33 +51,35 @@ const eligibleKey = (c: Record<string, unknown>) => `${c["Card ID"]}|${String(c[
 const eligibleSet = new Set(pool.map(eligibleKey));
 
 // Learnable positions (the actual position-eligibility, not the single Pos field).
+// The 8 real "can learn position" columns (raw 0/1). There is no LearnP.
 const LEARN: [string, string][] = [
   ["LearnC", "C"], ["Learn1B", "1B"], ["Learn2B", "2B"], ["Learn3B", "3B"],
-  ["LearnSS", "SS"], ["LearnLF", "LF"], ["LearnCF", "CF"], ["LearnRF", "RF"], ["LearnP", "P"],
+  ["LearnSS", "SS"], ["LearnLF", "LF"], ["LearnCF", "CF"], ["LearnRF", "RF"],
 ];
 // Raw defensive ratings (NOT per-position ratings).
 const DEF_COLS = [
   "Infield Range", "Infield Error", "Infield Arm", "DP",
   "CatcherAbil", "CatcherFrame", "Catcher Arm",
-  "OF Range", "OF Error", "OF Arm", "Speed",
+  "OF Range", "OF Error", "OF Arm",
 ];
 
 const scored = catalog.cards.map((c) => {
-  const s = scoreCard(c, config);
+  const w = scoreCard(c, config);          // wOBA-anchored
+  const b = scoreCard(c, basicConfig);     // basic-anchored
   const learn: Record<string, number> = {};
-  for (const [col, pos] of LEARN) learn[pos] = n(c[col]) === 1 ? 1 : 0;
+  for (const [col, pos] of LEARN) learn[pos] = n(c[col]);
   const def: Record<string, number> = {};
   for (const k of DEF_COLS) def[k] = n(c[k]);
   return {
-    id: String(s.cardId),
+    id: String(w.cardId),
     variant: String(c["Variant"] ?? "").toUpperCase() === "Y" ? "Y" : "",
-    title: s.title, first: String(c["FirstName"] ?? ""), last: String(c["LastName"] ?? ""),
-    bats: s.bats, throws: s.throws, value: n(c["Card Value"]), owned: n(c["owned"]),
+    title: w.title, first: String(c["FirstName"] ?? ""), last: String(c["LastName"] ?? ""),
+    bats: w.bats, throws: w.throws, value: n(c["Card Value"]), owned: n(c["owned"]),
     learn, eligible: eligibleSet.has(eligibleKey(c)),
-    hitVL: round(s.hit.woba_vL), hitVR: round(s.hit.woba_vR), hitOVR: round(s.hit.woba_ovr),
-    basicHit: round(s.hit.basic_ovr),
-    pitchVL: round(s.pitch.woba_vL), pitchVR: round(s.pitch.woba_vR), pitchOVR: round(s.pitch.woba_ovr),
-    basicPitch: round(s.pitch.basic_ovr),
+    hitVL: round(w.hit.woba_vL), hitVR: round(w.hit.woba_vR), hitOVR: round(w.hit.woba_ovr),
+    basicHit: round(b.hit.basic_ovr),
+    pitchVL: round(w.pitch.woba_vL), pitchVR: round(w.pitch.woba_vR), pitchOVR: round(w.pitch.woba_ovr),
+    basicPitch: round(b.pitch.basic_ovr),
     def,
   };
 });

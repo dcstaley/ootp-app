@@ -14,10 +14,12 @@
 import type { Coeffs, Derived, CalScales } from "../config/types.ts";
 import type { EventModel, RawHitting, RawPitching } from "../model/types.ts";
 import { logLinearModel } from "../model/log-linear.ts";
+import { scoreCard } from "./score-card.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba, anchorHittingWoba, anchorPitchingWoba } from "./woba.ts";
 
 export const TARGET_WOBA = 0.320;
+export const TARGET_BASIC = 100;
 export const ANCHOR_N = 50;
 // League baseline event rates (per 600). Only BB & HR feed the result; the old
 // 1B/GAP/nHH scales were computed but unused (flagged to revisit post-parity).
@@ -95,4 +97,30 @@ export function calibrate(pool: any[], config: CalibrateConfig, model: EventMode
 /** D2 — cross-pool comparable value: signed distance from a common baseline. */
 export function valueFor(woba: number, role: "hitter" | "pitcher", baseline = TARGET_WOBA): number {
   return role === "hitter" ? woba - baseline : baseline - woba;
+}
+
+/**
+ * Basic-metric calibration: anchor the top-N basic scores to TARGET_BASIC (100),
+ * independent of the wOBA anchoring. Returns a CalScales whose hit/pitch scales
+ * are basic-anchored, so the grid can show accurate basic AND wOBA at once
+ * (score each card with the wOBA scales for wOBA columns and these for basic).
+ */
+export function calibrateBasic(pool: any[], config: CalibrateConfig): CalScales {
+  const { coeffs, derived } = config;
+  const raw = pool.map((c) => scoreCard(c, { coeffs, derived, calScales: null })); // calScales=null → unscaled basic
+  const topMean = (vals: number[]) => {
+    const t = vals.filter((x) => x > 0).sort((a, b) => b - a).slice(0, ANCHOR_N);
+    return t.length ? t.reduce((s, x) => s + x, 0) / t.length : 0;
+  };
+  const mHitVR = topMean(raw.map((s) => s.hit.basic_vR));
+  const mHitVL = topMean(raw.map((s) => s.hit.basic_vL));
+  const mPitch = topMean(raw.map((s) => s.pitch.basic_ovr));
+  const hitScaleVR = mHitVR > 0 ? TARGET_BASIC / mHitVR : 1;
+  const hitScaleVL = mHitVL > 0 ? TARGET_BASIC / mHitVL : 1;
+  const pitchScale = mPitch > 0 ? TARGET_BASIC / mPitch : 1;
+  return {
+    hitScaleVR, hitScaleVL, pitchScale, pitchScaleVR: pitchScale, pitchScaleVL: pitchScale,
+    crossPoolHitterMultiplier: 1, crossPoolPitcherMultiplier: 1,
+    ssp_adv_hitting: coeffs.ssp_adv_hitting, ssp_basic_pitching: coeffs.ssp_basic_pitching,
+  };
 }
