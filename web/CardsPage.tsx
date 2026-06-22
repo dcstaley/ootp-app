@@ -124,7 +124,7 @@ function Funnel({ active }: { active: boolean }) {
 }
 
 export function CardsPage() {
-  const { cards, meta, loading } = useAppData();
+  const { cards, meta, loading, rosterMemberIds } = useAppData();
   const [preset, setPreset] = useState<keyof typeof PRESETS>("Hitting");
   const [filter, setFilter] = useState("");
   const [highlight, setHighlight] = useState("");
@@ -255,11 +255,14 @@ export function CardsPage() {
           <tbody>
             {rows.slice(0, 1000).map((c, i) => {
               const hot = hq && haystack(c).includes(hq);
+              const onRoster = rosterMemberIds.has(c.id);
               return (
-                <tr key={c.id + ":" + c.variant + ":" + i} style={{ background: hot ? C.hot : i % 2 ? C.stripe : C.row }}>
-                  {cols.map((col) => (
+                <tr key={c.id + ":" + c.variant + ":" + i} title={onRoster ? "On the generated roster" : undefined}
+                  style={{ background: hot ? C.hot : onRoster ? "#243524" : i % 2 ? C.stripe : C.row }}>
+                  {cols.map((col, ci) => (
                     <td key={col.key} title={col.key === "title" ? c.title : undefined}
-                      style={{ textAlign: ta(col.align), padding: "4px 8px", borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      style={{ textAlign: ta(col.align), padding: "4px 8px", borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        borderLeft: ci === 0 && onRoster ? `3px solid #4ade80` : undefined }}>
                       {col.key === "title" && c.title.startsWith("★")
                         ? <><span style={{ color: C.star }}>★</span>{c.title.slice(1)}</>
                         : fmtVal(col, c)}

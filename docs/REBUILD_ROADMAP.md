@@ -25,7 +25,7 @@ core; none recomputes scoring.
 | M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | ✅ | SP-1 |
 | M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ✅ | SP-2, M1.5 |
 | M3 | Data Grid | First UI consumer of the core | 🔜 (scaffold + grid live) | M2, SP-11 |
-| M4 | Optimizer | Roster + lineups + rotation/bullpen | 🔜 (headless A–C done: lineups + rotation + cap/slots; UI = Phase D) | SP-4/5/6, M2 |
+| M4 | Optimizer | Roster + lineups + rotation/bullpen | 🔜 (A–D done: cap mode end-to-end + UI; polish remains) | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ⬜ | M4 |
 | M6 | Training + bake-off | Fit models; D3 comparison harness | ⬜ | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |

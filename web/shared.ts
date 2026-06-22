@@ -14,6 +14,16 @@ export interface Meta {
   configName: string; tournament: string; account: string; accountId: string | null;
   catalogSource: string; cardCount: number; eligibleCount: number; ownedCount: number;
 }
+export interface RosterSlotCard { pos?: string; slot?: number; id: string; title: string; cost: number; stamina?: number; pitchTypes?: number }
+export interface RosterResult {
+  status: string; mode: string; cap: number | null; cost: number | null; objective: number;
+  balance: { hitterValue: number; pitcherValue: number } | null;
+  poolHitters: number; poolPitchers: number;
+  lineupVR: RosterSlotCard[]; lineupVL: RosterSlotCard[];
+  rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
+  memberIds: string[];
+}
+
 export interface TournamentOpt { id: string; name: string }
 export interface AccountOpt { id: string; name: string; ownedCount: number; totalQty: number; variantCount: number }
 

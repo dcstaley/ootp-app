@@ -3,7 +3,7 @@
 // active (tournament, account) view and exposes the mutations.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Card, Meta, TournamentOpt, AccountOpt } from "./shared.ts";
+import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult } from "./shared.ts";
 
 interface ImportResult { ok: boolean; error?: string; matched?: number; unmatched?: number; column?: string; newId?: string }
 
@@ -12,6 +12,8 @@ interface AppData {
   accounts: AccountOpt[]; accountId: string; chooseAccount: (id: string) => void;
   activeAccount: AccountOpt | undefined;
   cards: Card[]; meta: Meta | null; loading: boolean; busy: string | null; err: string | null;
+  roster: RosterResult | null; rosterLoading: boolean; rosterMemberIds: Set<string>;
+  generateRoster: () => Promise<void>;
   reloadView: () => Promise<void>;
   loadAccounts: () => Promise<unknown>;
   renameAccount: (id: string, name: string) => Promise<void>;
@@ -41,6 +43,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [roster, setRoster] = useState<RosterResult | null>(null);
+  const [rosterLoading, setRosterLoading] = useState(false);
 
   const loadAccounts = () =>
     fetch("/api/accounts").then((r) => r.json()).then((d: { accounts: AccountOpt[]; activeId: string | null }) => {
@@ -125,10 +129,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const clearVariants = async () => { await importVariants("CID\n"); };
 
+  // Roster is invalidated whenever the (tournament, account) scope changes — clear
+  // it so the page re-generates on demand rather than showing a stale roster.
+  useEffect(() => { setRoster(null); }, [tournamentId, accountId]);
+  const generateRoster = async () => {
+    if (!tournamentId) return;
+    setRosterLoading(true);
+    try {
+      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}`;
+      setRoster(await fetch("/api/roster" + q).then((r) => r.json()));
+    } catch (e) { setErr(String(e)); } finally { setRosterLoading(false); }
+  };
+
   const value: AppData = {
     tournaments, tournamentId, chooseTournament,
     accounts, accountId, chooseAccount, activeAccount: accounts.find((a) => a.id === accountId),
     cards, meta, loading, busy, err,
+    roster, rosterLoading, rosterMemberIds: new Set(roster?.memberIds ?? []),
+    generateRoster,
     reloadView, loadAccounts, renameAccount, importOwnership, toggleVariant, importVariants, clearVariants,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

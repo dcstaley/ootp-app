@@ -20,7 +20,8 @@ import { parseCatalogCsv, cardId, type Catalog } from "../data/catalog.ts";
 import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor } from "../scoring-core/index.ts";
+import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
 import { seedDefaults } from "../config/seed.ts";
@@ -206,6 +207,82 @@ function refreshCatalog() {
   cache = new Map();
 }
 
+// ── Roster generation (M4 Phase D) ────────────────────────────────────────────
+// Owned-scoped candidates (D6: you can only roster cards you own), scored for the
+// active tournament. A card you own AND have a v5 variant of is scored as the
+// variant (it dominates). Two-way handling is a follow-up: a card with Pos Rating
+// P > 0 goes to the pitcher pool only (avoids double-rostering one card).
+function rosterCandidates(t: Tournament, accountId: string | null): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[] } {
+  const { s } = scoredFor(t.id);
+  const ctx = s.ctx;
+  const acc = accountId ? accounts.get(accountId) : null;
+  const owned = acc?.owned ?? {};
+  const variantIds = new Set(acc?.variantCardIds ?? []);
+  const hitters: HitterCandidate[] = [];
+  const pitchers: PitcherCandidate[] = [];
+
+  for (const c0 of catalog.cards) {
+    const id = cardId(c0);
+    if ((owned[id] ?? 0) <= 0 || !ctx.isEligible(c0)) continue;
+    const useVariant = variantIds.has(id) && t.variants_allowed;
+    const c = useVariant ? makeVariant(c0) : c0;
+    const sc = scoreCard(c, ctx.config);
+    const cost = n(c0["Card Value"]);
+    const dispId = useVariant ? `${id}#V` : id;
+    if (n(c0["Pos Rating P"]) > 0) {
+      pitchers.push({
+        id: dispId, title: String(sc.title), throws: sc.throws,
+        valueVR: valueFor(sc.pitch.woba_vR, "pitcher"), valueVL: valueFor(sc.pitch.woba_vL, "pitcher"),
+        stamina: n(c0["Stamina"]), pitchTypes: pitchCount(c0), cost,
+      });
+    } else {
+      const positions = [...LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p), "DH"];
+      hitters.push({
+        id: dispId, title: String(sc.title), bats: sc.bats,
+        valueVR: valueFor(sc.hit.woba_vR, "hitter"), valueVL: valueFor(sc.hit.woba_vL, "hitter"),
+        positions, cost,
+      });
+    }
+  }
+  return { hitters, pitchers };
+}
+
+function rosterOptions(t: Tournament): RosterOptimizeOptions {
+  const mode = t.total_cap && t.total_cap > 0 ? "cap" : "none";
+  return {
+    nHitters: t.hitters, nPitchers: t.pitchers, dh: t.dh,
+    minStarters: t.min_starters, minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
+    platoonVR: 0.62, platoonVL: 0.38, // league default; tournament platoon setting is a later field
+    mode, totalCap: t.total_cap ?? undefined, rosterSize: t.roster_size,
+  };
+}
+
+async function generateRosterFor(tid: string, aid: string | null) {
+  const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
+  const { hitters, pitchers } = rosterCandidates(t, aid);
+  const opts = rosterOptions(t);
+  const r = await generateFullRoster(hitters, pitchers, opts);
+
+  const hById = new Map(hitters.map((c) => [c.id, c]));
+  const pById = new Map(pitchers.map((c) => [c.id, c]));
+  const hCard = (id: string) => { const c = hById.get(id); return { id, title: c?.title ?? id, cost: c?.cost ?? 0 }; };
+  const pCard = (id: string) => { const c = pById.get(id); return { id, title: c?.title ?? id, cost: c?.cost ?? 0, stamina: c?.stamina ?? 0, pitchTypes: c?.pitchTypes ?? 0 }; };
+  const starterIds = new Set([...r.lineupVR, ...r.lineupVL].map((x) => x.id));
+  const bench = r.hitters.filter((id) => !starterIds.has(id)).map(hCard);
+
+  return {
+    status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
+    objective: r.objective, balance: r.balance ?? null,
+    poolHitters: hitters.length, poolPitchers: pitchers.length,
+    lineupVR: r.lineupVR.map((x) => ({ ...x, cost: hById.get(x.id)?.cost ?? 0 })),
+    lineupVL: r.lineupVL.map((x) => ({ ...x, cost: hById.get(x.id)?.cost ?? 0 })),
+    rotation: r.rotation.map((x) => ({ ...x, ...pCard(x.id) })),
+    bullpen: r.bullpen.map(pCard),
+    bench,
+    memberIds: [...r.hitters, ...r.pitchers].map((id) => id.replace(/#V$/, "")),
+  };
+}
+
 // Precompute the default tournament so first paint is instant.
 scoredFor(DEFAULT_TOURNAMENT_ID);
 
@@ -238,6 +315,7 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
+  if (method === "GET" && url === "/api/roster") return json(res, await generateRosterFor(tid, aid));
 
   // ── POST API ──
   if (method === "POST" && url === "/api/state") {
