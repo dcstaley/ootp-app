@@ -85,39 +85,55 @@ function defaultWidth(col: Col): number {
   return 64;
 }
 
-// ── per-column filter (Sheets-style) ────────────────────────────────────────
-type Op = "" | "eq" | "ne" | "gt" | "ge" | "lt" | "le" | "between" | "contains" | "ncontains";
-interface ColFilter { op: Op; v1: string; v2: string; values: string[] } // values: selected display strings ([]=all)
-const emptyFilter = (): ColFilter => ({ op: "", v1: "", v2: "", values: [] });
-const filterActive = (f?: ColFilter) => !!f && (!!f.op || f.values.length > 0);
-const NUM_OPS: [Op, string][] = [["", "(any)"], ["ge", "≥"], ["gt", ">"], ["le", "≤"], ["lt", "<"], ["eq", "="], ["ne", "≠"], ["between", "between"]];
-const TXT_OPS: [Op, string][] = [["", "(any)"], ["contains", "contains"], ["ncontains", "doesn't contain"], ["eq", "is"], ["ne", "is not"]];
+// ── per-column filter (Sheets-style: condition + values) ─────────────────────
+type Op = "" | "empty" | "nempty" | "contains" | "ncontains" | "starts" | "ends" | "exact"
+  | "gt" | "ge" | "lt" | "le" | "eq" | "ne" | "between" | "nbetween";
+interface ColFilter { op: Op; v1: string; v2: string; values: string[] | null } // values null = all
+const emptyFilter = (): ColFilter => ({ op: "", v1: "", v2: "", values: null });
+const filterActive = (f?: ColFilter) => !!f && (!!f.op || f.values !== null);
+const COMMON_CONDS: [Op, string][] = [["empty", "Is empty"], ["nempty", "Is not empty"]];
+const TXT_CONDS: [Op, string][] = [["contains", "Text contains"], ["ncontains", "Text does not contain"], ["starts", "Text starts with"], ["ends", "Text ends with"], ["exact", "Text is exactly"]];
+const NUM_CONDS: [Op, string][] = [["gt", "Greater than"], ["ge", "Greater than or equal to"], ["lt", "Less than"], ["le", "Less than or equal to"], ["eq", "Is equal to"], ["ne", "Is not equal to"], ["between", "Is between"], ["nbetween", "Is not between"]];
+const needsV1 = (op: Op) => !["", "empty", "nempty"].includes(op);
+const needsV2 = (op: Op) => op === "between" || op === "nbetween";
 
-function passesFilter(col: Col, c: Card, f: ColFilter): boolean {
-  if (f.values.length && !f.values.includes(fmtVal(col, c))) return false;
+function passesCond(col: Col, c: Card, f: ColFilter): boolean {
   if (!f.op) return true;
-  if (isNumeric(col)) {
-    const raw = Number(col.get(c)); const x = parseFloat(f.v1); const y = parseFloat(f.v2);
+  const disp = fmtVal(col, c);
+  if (f.op === "empty") return disp.trim() === "";
+  if (f.op === "nempty") return disp.trim() !== "";
+  if (!isNumeric(col)) {
+    const s = disp.toLowerCase(), q = f.v1.toLowerCase();
     switch (f.op) {
-      case "eq": return raw === x; case "ne": return raw !== x;
-      case "gt": return raw > x; case "ge": return raw >= x;
-      case "lt": return raw < x; case "le": return raw <= x;
-      case "between": return raw >= Math.min(x, y) && raw <= Math.max(x, y);
-      default: return true;
+      case "contains": return s.includes(q); case "ncontains": return !s.includes(q);
+      case "starts": return s.startsWith(q); case "ends": return s.endsWith(q);
+      case "exact": return s === q; default: return true;
     }
   }
-  const s = fmtVal(col, c).toLowerCase(); const q = (f.v1 || "").toLowerCase();
+  const raw = Number(col.get(c)), x = parseFloat(f.v1), y = parseFloat(f.v2);
+  const inRange = raw >= Math.min(x, y) && raw <= Math.max(x, y);
   switch (f.op) {
-    case "contains": return s.includes(q); case "ncontains": return !s.includes(q);
-    case "eq": return s === q; case "ne": return s !== q; default: return true;
+    case "gt": return raw > x; case "ge": return raw >= x; case "lt": return raw < x; case "le": return raw <= x;
+    case "eq": return raw === x; case "ne": return raw !== x;
+    case "between": return inRange; case "nbetween": return !inRange; default: return true;
   }
 }
+const passesFilter = (col: Col, c: Card, f: ColFilter) =>
+  (f.values === null || f.values.includes(fmtVal(col, c))) && passesCond(col, c, f);
 
 const C = {
   bg: "#1e2228", text: "#d7dbe0", sub: "#9aa3ad", border: "#3a414b",
   head: "#2a2f37", headActive: "#3b4657", stripe: "#23282f", row: "#1e2228",
-  input: "#2a2f37", hot: "#4a4326", accent: "#2563eb", star: "#b06bf0", panel: "#2a2f37",
+  input: "#2a2f37", hot: "#4a4326", accent: "#2563eb", star: "#b06bf0", panel: "#2a2f37", link: "#7aa2f7",
 };
+
+function Funnel({ active }: { active: boolean }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden style={{ display: "block" }}>
+      <path d="M1.5 2.5h13l-5 6v4.2l-3 1.6V8.5z" fill={active ? "#facc15" : C.sub} stroke={active ? "#facc15" : C.sub} strokeWidth="0.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export function App() {
   const [cards, setCards] = useState<Card[]>([]);
@@ -134,6 +150,7 @@ export function App() {
   const [widths, setWidths] = useState<Record<string, number>>({});
   const [openF, setOpenF] = useState<string | null>(null);
   const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [valSearch, setValSearch] = useState("");
 
   useEffect(() => {
     Promise.all([fetch("/api/meta").then((r) => r.json()), fetch("/api/cards").then((r) => r.json())])
@@ -147,13 +164,14 @@ export function App() {
   const getF = (k: string) => colF[k] ?? emptyFilter();
   const setF = (k: string, patch: Partial<ColFilter>) => setColF((m) => ({ ...m, [k]: { ...getF(k), ...patch } }));
 
-  // distinct display values per column (for the checkbox list), capped.
+  // distinct display values per visible column (for the value checklist), capped.
   const distinct = useMemo(() => {
     const out: Record<string, string[]> = {};
     for (const col of cols) {
       const set = new Set<string>();
-      for (const c of cards) { set.add(fmtVal(col, c)); if (set.size > 40) break; }
-      out[col.key] = set.size <= 40 ? [...set].sort((a, b) => (isNumeric(col) ? Number(a) - Number(b) : a.localeCompare(b))) : [];
+      let over = false;
+      for (const c of cards) { set.add(fmtVal(col, c)); if (set.size > 200) { over = true; break; } }
+      out[col.key] = over ? [] : [...set].sort((a, b) => (isNumeric(col) ? Number(a) - Number(b) : a.localeCompare(b)));
     }
     return out;
   }, [cards, cols]);
@@ -188,14 +206,27 @@ export function App() {
   const openFilter = (key: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setAnchor({ x: Math.min(r.left, window.innerWidth - 280), y: r.bottom + 2 }); setOpenF(key);
+    setAnchor({ x: Math.min(r.left - 20, window.innerWidth - 290), y: r.bottom + 4 });
+    setValSearch(""); setOpenF(key);
   };
 
   const inputStyle: React.CSSProperties = { background: C.input, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4, padding: "6px 8px", fontSize: 13 };
   const ta = (a: Align) => (a === "r" ? "right" : a === "c" ? "center" : "left");
+
+  // Filter popover state for the open column
   const fcol = openF ? COLS[openF]! : null;
   const ff = openF ? getF(openF) : emptyFilter();
-  const ops = fcol && isNumeric(fcol) ? NUM_OPS : TXT_OPS;
+  const condList = fcol && isNumeric(fcol) ? NUM_CONDS : TXT_CONDS;
+  const allVals = fcol ? (distinct[fcol.key] ?? []) : [];
+  const shownVals = allVals.filter((v) => v.toLowerCase().includes(valSearch.toLowerCase()));
+  const isChecked = (v: string) => ff.values === null || ff.values.includes(v);
+  const toggleVal = (v: string, on: boolean) => {
+    if (!fcol) return;
+    const base = ff.values === null ? new Set(allVals) : new Set(ff.values);
+    if (on) base.add(v); else base.delete(v);
+    setF(fcol.key, { values: base.size === allVals.length ? null : [...base] });
+  };
+  const link = { color: C.link, cursor: "pointer", fontSize: 12 } as React.CSSProperties;
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", padding: 16, color: C.text, background: C.bg, minHeight: "100vh" }}>
@@ -220,7 +251,7 @@ export function App() {
         <label style={{ fontSize: 13 }}><input type="checkbox" checked={eligibleOnly} onChange={(e) => setEligibleOnly(e.target.checked)} /> Eligible only</label>
         <label style={{ fontSize: 13 }}><input type="checkbox" checked={ownedOnly} onChange={(e) => setOwnedOnly(e.target.checked)} /> Owned only</label>
         {Object.values(colF).some(filterActive) && <button onClick={() => setColF({})} style={{ ...inputStyle, cursor: "pointer" }}>Clear all filters</button>}
-        <span style={{ color: C.sub, fontSize: 13 }}>{rows.length} shown · click ▾ to filter · drag edges to resize</span>
+        <span style={{ color: C.sub, fontSize: 13 }}>{rows.length} shown · ⏷ funnel = filter · drag edges to resize</span>
       </div>
 
       <div style={{ overflow: "auto", border: `1px solid ${C.border}`, maxHeight: "74vh" }}>
@@ -230,14 +261,17 @@ export function App() {
             <tr>
               {cols.map((c) => (
                 <th key={c.key} onClick={() => sortBy(c.key)}
-                  style={{ textAlign: ta(c.align), padding: "6px 16px 6px 8px", borderBottom: `2px solid ${C.border}`, cursor: "pointer",
+                  style={{ textAlign: ta(c.align), padding: "7px 24px 7px 8px", borderBottom: `2px solid ${C.border}`, cursor: "pointer",
                     whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", position: "sticky", top: 0,
                     background: sortKey === c.key ? C.headActive : C.head, userSelect: "none" }}>
                   {c.label}{sortKey === c.key ? (sortDir === 1 ? " ▲" : " ▼") : ""}
                   <span onClick={(e) => openFilter(c.key, e)} title="Filter"
-                    style={{ position: "absolute", right: 8, top: 5, cursor: "pointer", fontSize: 11, color: filterActive(colF[c.key]) ? "#facc15" : C.sub }}>▾</span>
+                    style={{ position: "absolute", right: 7, top: 0, height: "100%", display: "flex", alignItems: "center", padding: "0 3px", cursor: "pointer",
+                      background: filterActive(colF[c.key]) ? "rgba(250,204,21,.12)" : "transparent", borderRadius: 3 }}>
+                    <Funnel active={filterActive(colF[c.key])} />
+                  </span>
                   <span onMouseDown={(e) => startResize(c.key, e)} onClick={(e) => e.stopPropagation()}
-                    style={{ position: "absolute", right: 0, top: 0, height: "100%", width: 6, cursor: "col-resize" }} />
+                    style={{ position: "absolute", right: 0, top: 0, height: "100%", width: 5, cursor: "col-resize" }} />
                 </th>
               ))}
             </tr>
@@ -266,51 +300,50 @@ export function App() {
       {fcol && (
         <>
           <div onClick={() => setOpenF(null)} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
-          <div style={{ position: "fixed", left: anchor.x, top: anchor.y, zIndex: 100, width: 260, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, boxShadow: "0 8px 24px rgba(0,0,0,.5)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <b>Filter: {fcol.label}</b>
+          <div style={{ position: "fixed", left: anchor.x, top: anchor.y, zIndex: 100, width: 270, maxHeight: "70vh", overflow: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 12, boxShadow: "0 10px 30px rgba(0,0,0,.55)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+              <b>Filter · {fcol.label}</b>
               <span onClick={() => setOpenF(null)} style={{ cursor: "pointer", color: C.sub }}>✕</span>
             </div>
-            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-              <select value={ff.op} onChange={(e) => setF(fcol.key, { op: e.target.value as Op })} style={{ ...inputStyle, flex: 1 }}>
-                {ops.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-              {ff.op && ff.op !== "" && (
-                <input value={ff.v1} placeholder={isNumeric(fcol) ? "value" : "text"} onChange={(e) => setF(fcol.key, { v1: e.target.value })} style={{ ...inputStyle, width: 70 }} />
-              )}
-              {ff.op === "between" && (
-                <input value={ff.v2} placeholder="to" onChange={(e) => setF(fcol.key, { v2: e.target.value })} style={{ ...inputStyle, width: 70 }} />
-              )}
-            </div>
-            {distinct[fcol.key]!.length > 0 && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.sub, marginBottom: 4 }}>
-                  <span>Values</span>
-                  <span>
-                    <a onClick={() => setF(fcol.key, { values: [] })} style={{ cursor: "pointer", marginRight: 8 }}>all</a>
-                    <a onClick={() => setF(fcol.key, { values: [...distinct[fcol.key]!] })} style={{ cursor: "pointer" }}>none-but…</a>
-                  </span>
-                </div>
-                <div style={{ maxHeight: 180, overflow: "auto", border: `1px solid ${C.border}`, borderRadius: 4, padding: 4 }}>
-                  {distinct[fcol.key]!.map((val) => {
-                    const checked = ff.values.length === 0 || ff.values.includes(val);
-                    return (
-                      <label key={val} style={{ display: "block", fontSize: 13, padding: "1px 2px" }}>
-                        <input type="checkbox" checked={checked} onChange={(e) => {
-                          const all = distinct[fcol.key]!;
-                          const cur = ff.values.length === 0 ? new Set(all) : new Set(ff.values);
-                          if (e.target.checked) cur.add(val); else cur.delete(val);
-                          const arr = [...cur];
-                          setF(fcol.key, { values: arr.length === all.length ? [] : arr });
-                        }} /> {val === "" ? "(blank)" : val}
-                      </label>
-                    );
-                  })}
-                </div>
+
+            <div style={{ fontSize: 12, color: C.sub, marginBottom: 4 }}>Filter by condition</div>
+            <select value={ff.op} onChange={(e) => setF(fcol.key, { op: e.target.value as Op })} style={{ ...inputStyle, width: "100%" }}>
+              <option value="">None</option>
+              {COMMON_CONDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              <optgroup label={isNumeric(fcol) ? "Number" : "Text"}>
+                {condList.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </optgroup>
+            </select>
+            {needsV1(ff.op) && (
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <input value={ff.v1} placeholder={isNumeric(fcol) ? "value" : "text"} onChange={(e) => setF(fcol.key, { v1: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
+                {needsV2(ff.op) && <input value={ff.v2} placeholder="and" onChange={(e) => setF(fcol.key, { v2: e.target.value })} style={{ ...inputStyle, flex: 1 }} />}
               </div>
             )}
-            <div style={{ marginTop: 8, textAlign: "right" }}>
-              <button onClick={() => { setColF((m) => ({ ...m, [fcol.key]: emptyFilter() })); }} style={{ ...inputStyle, cursor: "pointer" }}>Clear</button>
+
+            {allVals.length > 0 ? (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: C.sub }}>Filter by values</span>
+                  <span><a style={link} onClick={() => setF(fcol.key, { values: null })}>Select all</a> · <a style={link} onClick={() => setF(fcol.key, { values: [] })}>Clear</a></span>
+                </div>
+                <input value={valSearch} onChange={(e) => setValSearch(e.target.value)} placeholder="Search values…" style={{ ...inputStyle, width: "100%", marginBottom: 6 }} />
+                <div style={{ fontSize: 11, color: C.sub, marginBottom: 4 }}>Displaying {shownVals.length} of {allVals.length}</div>
+                <div style={{ maxHeight: 200, overflow: "auto", border: `1px solid ${C.border}`, borderRadius: 4, padding: 4 }}>
+                  {shownVals.map((v) => (
+                    <label key={v} style={{ display: "block", fontSize: 13, padding: "2px 2px", whiteSpace: "nowrap" }}>
+                      <input type="checkbox" checked={isChecked(v)} onChange={(e) => toggleVal(v, e.target.checked)} /> {v === "" ? "(Blanks)" : v}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginTop: 10, fontSize: 12, color: C.sub }}>Too many distinct values to list — use a condition above.</div>
+            )}
+
+            <div style={{ marginTop: 12, textAlign: "right" }}>
+              <button onClick={() => setColF((m) => ({ ...m, [fcol.key]: emptyFilter() }))} style={{ ...inputStyle, cursor: "pointer", marginRight: 6 }}>Clear</button>
+              <button onClick={() => setOpenF(null)} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>Done</button>
             </div>
           </div>
         </>
