@@ -20,6 +20,7 @@ import { parseCatalogCsv, cardId, type Catalog } from "../data/catalog.ts";
 import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
+import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA } from "../scoring-core/index.ts";
 import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
@@ -475,6 +476,8 @@ const server = createServer(async (req, res) => {
     return t ? json(res, t) : json(res, { error: "unknown tournament" }, 404);
   }
   if (method === "GET" && url === "/api/libraries") return json(res, { eras: eraList(), parks: parkList() });
+  if (method === "GET" && url === "/api/parks") return json(res, { parks: [...parks.values()] });
+  if (method === "GET" && url === "/api/eras") return json(res, { eras: [...eras.values()] });
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
@@ -487,6 +490,18 @@ const server = createServer(async (req, res) => {
       if (id && (role === "hitter" || role === "pitcher" || role === "twoway")) roleOverrides[id] = role;
     }
     return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides));
+  }
+
+  // ── Parks library import (raw pt_ballparks.txt) ──
+  if (method === "POST" && url === "/api/parks/import") {
+    const text = await readBody(req);
+    if (!text.trim()) return json(res, { error: "empty file" }, 400);
+    let parsed: Park[];
+    try { parsed = parseBallparks(text); } catch (e) { return json(res, { error: `parse failed: ${e}` }, 400); }
+    if (!parsed.length) return json(res, { error: "no parks parsed — is this a pt_ballparks.txt export?" }, 400);
+    for (const p of parsed) { await repo.save("parks", p.id, p); parks.set(p.id, p); }
+    cache.clear(); // park factors feed scoring → drop cached scores
+    return json(res, { imported: parsed.length, parks: [...parks.values()] });
   }
 
   // ── Tournaments CRUD (D4 — the single config source is now editable) ──

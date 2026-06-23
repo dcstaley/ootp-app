@@ -82,6 +82,16 @@ export interface TournamentCfg {
   softcaps?: unknown; eligibility?: unknown; // preserved, not edited here
 }
 export const SLOT_TIER_KEYS = ["perfect", "diamond", "gold", "silver", "bronze", "iron"] as const;
+// Reusable run-environment libraries (referenced by tournaments by id).
+export interface ParkCfg {
+  id: string; name: string; avg_l: number; avg_r: number; hr_l: number; hr_r: number; gap: number;
+  gap_l?: number; gap_r?: number; triple?: number; triple_l?: number; triple_r?: number;
+  year?: number; league?: string; team?: string; ptLevel?: number;
+}
+export interface EraCfg {
+  id: string; name: string; bb: number; k: number; avg: number; hr: number; bip: number; gap: number;
+  thr_toggle: boolean; thr?: number;
+}
 export interface AccountOpt { id: string; name: string; ownedCount: number; totalQty: number; variantCount: number }
 
 export const C = {

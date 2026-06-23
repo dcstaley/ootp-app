@@ -10,6 +10,7 @@ import { CardsPage } from "./CardsPage.tsx";
 import { AccountsPage } from "./AccountsPage.tsx";
 import { RosterPage } from "./RosterPage.tsx";
 import { TournamentsPage } from "./TournamentsPage.tsx";
+import { ErasParksPage } from "./ErasParksPage.tsx";
 
 interface Route { id: string; label: string; group: string; element: () => JSX.Element }
 
@@ -28,7 +29,7 @@ const ROUTES: Route[] = [
   { id: "single-player", label: "Single Player", group: "Build", element: () => <Placeholder title="Single Player" note="Single-Player mode (M7): import an SP Export.csv, map its columns to the standard names, and score it through the same core — including current vs potential ratings. Account features don't apply to SP." /> },
   { id: "accounts", label: "Accounts", group: "Setup", element: AccountsPage },
   { id: "tournaments", label: "Tournaments", group: "Setup", element: TournamentsPage },
-  { id: "eras", label: "Eras & Parks", group: "Setup", element: () => <Placeholder title="Eras & Parks" note="Reusable run-environment libraries referenced by tournaments (D4): era factors (BB/K/AVG/HR/BIP/GAP + tHR) and park factors. Editing UI to come." /> },
+  { id: "eras", label: "Eras & Parks", group: "Setup", element: ErasParksPage },
   { id: "training", label: "Model Training", group: "Setup", element: () => <Placeholder title="Model Training" note="Model training + the D3 bake-off (M6): fit the four models from outcome CSVs, diagnostics by weighted volume, recommended softcaps, and a comparison harness behind the swappable model seam." /> },
 ];
 const ROUTE_IDS = new Set(ROUTES.map((r) => r.id));

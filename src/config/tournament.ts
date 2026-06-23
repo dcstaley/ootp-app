@@ -38,6 +38,11 @@ export interface Park {
   id: string;
   name: string;
   avg_l: number; avg_r: number; hr_l: number; hr_r: number; gap: number;
+  // Optional enrichments from the pt_ballparks import. Per-hand gap (2B) + triples
+  // (3B) are stored but not yet consumed by scoring (a future per-hand-gap upgrade
+  // won't need a re-import). Metadata is for navigating/labelling the parks library.
+  gap_l?: number; gap_r?: number; triple?: number; triple_l?: number; triple_r?: number;
+  year?: number; league?: string; team?: string; ptLevel?: number;
 }
 
 // Tournament-scoped softcaps (model-seeded; the right values depend on the pool).
