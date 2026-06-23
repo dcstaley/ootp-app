@@ -24,9 +24,9 @@ core; none recomputes scoring.
 | M1 | Scoring core | One core; reproduce old app scores | ✅ | M0 |
 | M1.5 | Self-contained calibration | Compute our own anchor/calibration scales | ✅ | SP-1 |
 | M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ✅ | SP-2, M1.5 |
-| M3 | Data Grid | First UI consumer of the core | 🔜 (scaffold + grid live) | M2, SP-11 |
-| M4 | Optimizer | Roster + lineups + rotation/bullpen | 🔜 (A–D done: cap mode end-to-end + UI; polish remains) | SP-4/5/6, M2 |
-| M5 | Manual editing | Drag-drop roster/lineup overrides | ⬜ | M4 |
+| M3 | Data Grid | First UI consumer of the core | ✅ | M2, SP-11 |
+| M4 | Optimizer | Roster + lineups + rotation/bullpen | ✅ (cap/slots, two-way, bonus, eligibility, basic/wOBA) | SP-4/5/6, M2 |
+| M5 | Manual editing | Drag-drop roster/lineup overrides | 🔜 (Next Best + manual add done; drag-drop + lineup-editor depth remain) | M4 |
 | M6 | Training + bake-off | Fit models; D3 comparison harness | ⬜ | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |
 | X | Cross-cutting | Packaging, persistence, parity method | ongoing | — |
@@ -57,7 +57,11 @@ out. Spikes gate the milestones that need exploration.
 
 **Parity gate (met):** rebuilt core == old app on the same inputs.
 
-## M1.5 — Self-contained calibration & cross-pool value 🔜
+## M1.5 — Self-contained calibration & cross-pool value ✅
+
+**✅ DONE** — core computes its own anchor/calibration scales (`src/scoring-core/calibrate.ts`); `valueFor`
+signed-distance value live; basic anchoring (target 100) used by the metric toggle. The S-stories below
+predate completion (left for history); status is the header.
 
 Today the core *consumes* `calScales` captured from the old app. To stand alone it must *produce* them.
 
@@ -80,7 +84,11 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
 
 **Parity gate:** our computed scales == old app's captured scales.
 
-## M2 — Data layer + config ⬜
+## M2 — Data layer + config ✅
+
+**✅ DONE** — catalog, account overlays + v5 variants, file persistence (D7), Tournament/Era/Park
+libraries, eligibility engine. (Eras/Parks are now real libraries — BBRef per-year eras baked + OOTP
+park import; see Session update.) The ⬜ S-stories below predate completion; status is the header.
 
 - **S2.1** ⬜ As a manager, I import a `pt_card_list.csv` to build/refresh the shared **card catalog**
   (ratings, value, defense, learn flags, pitch types with no-space spellings).
@@ -111,7 +119,11 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
 
 **Parity gate:** tournament-sourced config reproduces M1 scores; variant boost & eligibility match old.
 
-## M3 — Data Grid ⬜
+## M3 — Data Grid ✅
+
+**✅ DONE** — `CardsPage` grid reads the one core; sort/filter/search, column presets, owned/eligible
+toggles, roster-member highlighting, tournament + account selectors. The ⬜ S-stories below predate
+completion; status is the header.
 
 - **S3.1** ⬜ As a manager, I browse all cards with computed score columns, scoped to the active account,
   reading the one core (grid never scores).
@@ -122,7 +134,13 @@ Today the core *consumes* `calScales` captured from the old app. To stand alone 
 - **S3.5** ⬜ As a manager, rows on the current generated roster are highlighted.
 - **S3.6** ⬜ As maintainer, a guard flags **corrupt rating values** (e.g. 25,000+ Basic Hitting) (new).
 
-## M4 — Optimizer (roster + lineup) ⬜
+## M4 — Optimizer (roster + lineup) ✅
+
+**✅ DONE** — HiGHS-WASM in-process; combined cap/slots MILP; dual lineups + rotation/bullpen;
+two-way players + bonus slot + per-card role toggle; coverage depth + per-position min-ratings;
+locked/excluded/force-include; D2 signed-distance objective; **basic/wOBA metric toggle**. The ⬜
+S-stories below predate completion; status is the header. Lineup-editor depth (batting order, locks,
+defence) is the remaining M5 piece.
 
 - **S4.1** ⬜ As a manager, I generate an optimal **26-card roster + vL/vR lineups + rotation/bullpen**
   under the active tournament's rules, ranked by the one core's values.
@@ -161,7 +179,11 @@ panels §E). **Agreed (user, 2026-06-22):** build the **M4 generation surface FI
   position min-rating constraints (incl. backups), metric (basic/wOBA) selection, Top-X pool sizes +
   ownedOnly toggle, richer Cap/Slots Usage panels, and merging RosterSettings into the Tournament.
 
-## M5 — Manual editing ⬜
+## M5 — Manual editing 🔜 (in progress)
+
+**🔜 IN PROGRESS** — DONE: Next Best Available pool (need-tabs, owned/value filters) + manual add
+(+Add fills an open slot & locks) + per-slot lineup position dropdowns. REMAINING: drag-and-drop
+(`@dnd-kit`) and lineup-editor depth (batting order, position locks, defence-in-lineup).
 
 - **S5.1** ⬜ As a manager, I drag cards in/out of the roster; a **Next Best Available** pool tabbed by
   need (hit vL/vR, owned-only, starters, IF/OF range, catcher ability…), variant/base-aware.
