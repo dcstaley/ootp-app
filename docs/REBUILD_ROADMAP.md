@@ -371,27 +371,40 @@ trivial and agreed.
 
 ## Right now
 
-**CURRENT STATE (2026-06-23): M0–M3 done; M4 optimizer Phases A–D done + roster-page UI built out.**
+**CURRENT STATE (2026-06-23): M0–M3 done; M4 optimizer Phases A–E done (incl. two-way) + roster-page UI built out.**
 - **M4 headless optimizer** (`src/optimizer/`, HiGHS-WASM in-process): combined cap/slots roster MILP —
   binary `rh_i` (hitter rostered) + `yh_i_pos_side` (dual-lineup assignment) + `rp_j` (pitcher) +
   `xp_j_sk` (rotation slot); cap (`Σ cost ≤ total_cap`) or slots (cumulative Card-Value tiers); D2
   signed-distance objective × platoon/role/slot weights + both-sides bonus (NO cross-pool mult/power —
   tunable `pitcherEmphasis` knob instead, SP-7); per-position **coverage depth** (`minPlayersPerPosition`,
   default 2 — backup at every position); **required cards (`lockedIds`)**. `generateFullRoster` →
-  roster + lineups + rotation/bullpen + cost + H/P balance. 56 tests green; parity bit-identical.
-- **Server** (`src/server/server.ts`): `/api/roster?tournament=&account=&ownedOnly=&locked=&excluded=`
-  builds OWNED-scoped candidates (`rosterCandidates`), scores via the one core, runs the optimizer,
-  returns the enriched roster (rostered hitters/pitchers with last name, positions, def ratings, wOBA,
-  value, owned + roles + lineups + rotation/bullpen + thresholds). **Owned-only = SELECTION only**
-  (calibration uses the full eligible pool). **Two-way cards (Pos Rating P>0) currently go to the PITCHER
-  pool ONLY** — they lose their bat. ← the next task.
+  roster + lineups + rotation/bullpen + cost + H/P balance. 59 tests green; parity bit-identical.
+- **Two-way players + bonus slot — DONE.** Every card scores for BOTH sides (position is irrelevant);
+  pools are sliced by rule (non-cap = Top-X union vL/vR hitters + Top-X OVR pitchers; cap/slots = top-1500
+  each). A card in the **Top-X overlap** (a tighter cutoff than the pool, used in all modes) — or forced via
+  the toggle — is a **two-way player**: a single roster entity that fills a hitter AND a pitcher slot,
+  counted ONCE toward roster size + cap, freeing a slot. MILP: shared-id cards matched across pools →
+  two-way `rh_i = rp_j` (always-two-way) with the overlap subtracted from roster-size/cap/slot-tiers;
+  single-role shared cards `rh+rp ≤ 1`; `hsize/psize` relaxed to floors + a distinct-card roster-size
+  equality, so the freed slot flows to a **bonus hitter** (objective-driven, hitter-preferred; else a 13th
+  pitcher). Zero two-way collapses to the prior exact 14H/12P. `tools/make-twoway.ts` injects a synthetic
+  natural two-way card (best bat + best arm) for local testing (data/ is gitignored).
+- **Server** (`src/server/server.ts`): `/api/roster?tournament=&account=&ownedOnly=&locked=&excluded=&roles=`
+  builds candidates (`rosterCandidates` — scores both sides for every eligible card, slices the pools,
+  computes the two-way overlap, applies per-card role overrides `ID:hitter|pitcher|twoway`), runs the
+  optimizer, returns the enriched roster (rostered hitters/pitchers + `twoWay` flags + `twoWayIds` +
+  distinct `rosterSize` + roles + lineups + rotation/bullpen). **Owned-only = SELECTION only** (calibration
+  uses the full eligible pool).
 - **Web** (`web/`): nav shell (`App.tsx`, hash router, sidebar with global Tournament+Account selectors);
   `CardsPage` (the grid, roster-member role colouring), `AccountsPage` (ownership/variant import),
   **`RosterPage`** (one page, 3 sub-tabs Roster/Lineups/Pitching; sortable `DataTable`; role colours;
-  per-card **Lock/Exclude/Remove** actions; manual lineup **position dropdowns**; bench/depth/available
-  views), `state.tsx` (`AppDataProvider` — all fetch + mutations incl. locked/excluded/removed/dirty).
-- **Remaining M4/M5 (roster page):** **two-way Pitch/Hit/2way toggle (NEXT)** · bonus slot · Next Best
-  Available pool · drag-and-drop · manual add players · merge `RosterSettings`→Tournament · slots-config UI.
+  per-card **role dropdown (Hit/Pitch/2way — no Auto; defaults to the LP-assigned role, re-pick to release,
+  pick another to force)** + **Lock/Exclude/Remove** actions; 2W badges + two-way legend/colour + distinct
+  roster count; manual lineup **position dropdowns**; bench/depth/available views), `state.tsx`
+  (`AppDataProvider` — all fetch + mutations incl. locked/excluded/removed/roleOverrides/dirty).
+- **Remaining M4/M5 (roster page):** Next Best Available pool · drag-and-drop · manual add players (default
+  a manually-added card's role to its best side / two-way via the same overlap test) · merge
+  `RosterSettings`→Tournament · slots-config UI · Top-X pool-size controls.
 - **Deferred:** anchoring/scaling correctness audit + OVR split weighting → **M6** with real outcome data
   (see "Flagged old-app issues"); the optimizer reads scoring values as coefficients, so M6 recalibration
   just changes numbers, not the machinery.
