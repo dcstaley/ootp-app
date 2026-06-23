@@ -9,6 +9,7 @@ interface ImportResult { ok: boolean; error?: string; matched?: number; unmatche
 
 interface AppData {
   tournaments: TournamentOpt[]; tournamentId: string; chooseTournament: (id: string) => void;
+  reloadTournaments: () => Promise<void>;
   accounts: AccountOpt[]; accountId: string; chooseAccount: (id: string) => void;
   activeAccount: AccountOpt | undefined;
   cards: Card[]; meta: Meta | null; loading: boolean; busy: string | null; err: string | null;
@@ -98,6 +99,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return Promise.all([fetch("/api/meta" + q).then((r) => r.json()), fetch("/api/cards" + q).then((r) => r.json())])
       .then(([m, c]) => { setMeta(m); setCards(c); });
   };
+
+  const reloadTournaments = () =>
+    fetch("/api/tournaments").then((r) => r.json()).then((d: { tournaments: TournamentOpt[]; defaultId: string }) => {
+      setTournaments(d.tournaments);
+      setTournamentId((cur) => (cur && d.tournaments.some((t) => t.id === cur)) ? cur : (d.defaultId || d.tournaments[0]?.id || ""));
+    });
 
   const persist = (patch: Record<string, string>) => post("/api/state", patch).catch(() => {});
   const chooseTournament = (id: string) => { setTournamentId(id); persist({ activeTournamentId: id }); };
@@ -191,7 +198,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const value: AppData = {
-    tournaments, tournamentId, chooseTournament,
+    tournaments, tournamentId, chooseTournament, reloadTournaments,
     accounts, accountId, chooseAccount, activeAccount: accounts.find((a) => a.id === accountId),
     cards, meta, loading, busy, err,
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},

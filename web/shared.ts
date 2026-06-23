@@ -67,6 +67,21 @@ export const ROLE_LABEL: Record<string, string> = {
 };
 
 export interface TournamentOpt { id: string; name: string }
+// Full tournament config for the editor (Phase 1). softcaps/eligibility ride along
+// opaquely (loaded, preserved on save — not edited in Phase 1).
+export interface TournamentCfg {
+  id: string; name: string;
+  card_value_min?: number | null; card_value_max?: number | null; total_cap?: number | null;
+  roster_size: number; hitters: number; pitchers: number;
+  min_starters: number; min_starter_stamina: number; min_pitch_types: number; dh: boolean;
+  variants_allowed: boolean; max_variants_on_roster: number;
+  eraId: string; parkId: string;
+  topHitters?: number | null; topPitchers?: number | null;
+  budget_mode?: "none" | "cap" | "slots"; slot_counts?: Record<string, number>;
+  platoonVR?: number; platoonVL?: number; minPlayersPerPosition?: number;
+  softcaps?: unknown; eligibility?: unknown; // preserved, not edited here
+}
+export const SLOT_TIER_KEYS = ["perfect", "diamond", "gold", "silver", "bronze", "iron"] as const;
 export interface AccountOpt { id: string; name: string; ownedCount: number; totalQty: number; variantCount: number }
 
 export const C = {

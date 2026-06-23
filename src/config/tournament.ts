@@ -87,4 +87,11 @@ export interface Tournament {
   topHitters?: number | null;
   topPitchers?: number | null;
   ownedOnly?: boolean;
+
+  // Budget + generation knobs (D4 — moved off the old page-level RosterSettings).
+  budget_mode?: "none" | "cap" | "slots"; // explicit; falls back to derived (slots>cap>none)
+  slot_counts?: Record<string, number>;   // slots mode: per Card-Value tier counts
+  platoonVR?: number;                      // team RHP/LHP exposure weights (default league 0.62/0.38)
+  platoonVL?: number;
+  minPlayersPerPosition?: number;          // coverage depth / backups (default 2)
 }

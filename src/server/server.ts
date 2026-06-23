@@ -284,12 +284,12 @@ function rosterCandidates(
     lastByDisp[dispId] = String(c0["LastName"] ?? "");
   }
 
-  // Pool slicing + two-way overlap (see header). N = top-X (non-cap) / 1500 (cap).
-  const mode = t.total_cap && t.total_cap > 0 ? "cap" : "none";
+  // Pool slicing + two-way overlap (see header). N = top-X (non-budgeted) / 1500 (cap/slots).
+  const budgeted = budgetMode(t) !== "none";
   const xH = t.topHitters && t.topHitters > 0 ? t.topHitters : 100;
   const xP = t.topPitchers && t.topPitchers > 0 ? t.topPitchers : 100;
-  const poolH = mode === "none" ? xH : HARD_POOL_CAP;
-  const poolP = mode === "none" ? xP : HARD_POOL_CAP;
+  const poolH = budgeted ? HARD_POOL_CAP : xH;
+  const poolP = budgeted ? HARD_POOL_CAP : xP;
 
   // Optimizer pool is owned-scoped (you can only roster owned cards) when ownedOnly;
   // ranking + slicing happen over this set so Top-X = top owned.
@@ -332,14 +332,22 @@ function rosterCandidates(
   return { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp };
 }
 
+// Effective budget mode: explicit field, else derived (slots > cap > none).
+function budgetMode(t: Tournament): "none" | "cap" | "slots" {
+  if (t.budget_mode) return t.budget_mode;
+  if (t.slot_counts && Object.keys(t.slot_counts).length) return "slots";
+  if (t.total_cap && t.total_cap > 0) return "cap";
+  return "none";
+}
+
 function rosterOptions(t: Tournament): RosterOptimizeOptions {
-  const mode = t.total_cap && t.total_cap > 0 ? "cap" : "none";
   return {
     nHitters: t.hitters, nPitchers: t.pitchers, dh: t.dh,
     minStarters: t.min_starters, minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
-    platoonVR: 0.62, platoonVL: 0.38, // league default; tournament platoon setting is a later field
-    minPlayersPerPosition: 2, // coverage depth — backup at every position (later a tournament/RosterSettings field)
-    mode, totalCap: t.total_cap ?? undefined, rosterSize: t.roster_size,
+    platoonVR: t.platoonVR ?? 0.62, platoonVL: t.platoonVL ?? 0.38, // tournament platoon split (league default)
+    minPlayersPerPosition: t.minPlayersPerPosition ?? 2,            // coverage depth / backups
+    mode: budgetMode(t), totalCap: t.total_cap ?? undefined, slotCounts: t.slot_counts,
+    rosterSize: t.roster_size,
   };
 }
 
@@ -438,7 +446,10 @@ const MIME: Record<string, string> = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
   ".json": "application/json", ".svg": "image/svg+xml", ".ico": "image/x-icon",
 };
-const tournamentList = tournaments.map((t) => ({ id: t.id, name: t.name }));
+// Dynamic so create/edit/delete are reflected without a restart.
+const tournamentListNow = () => [...tournamentById.values()].map((t) => ({ id: t.id, name: t.name }));
+const eraList = () => [...eras.values()].map((e) => ({ id: e.id, name: e.name }));
+const parkList = () => [...parks.values()].map((p) => ({ id: p.id, name: p.name }));
 
 const readBody = (req: IncomingMessage): Promise<string> =>
   new Promise((resolve) => { let d = ""; req.on("data", (c) => (d += c)); req.on("end", () => resolve(d)); });
@@ -458,7 +469,12 @@ const server = createServer(async (req, res) => {
 
   // ── GET API ──
   if (method === "GET" && url === "/api/tournaments")
-    return json(res, { tournaments: tournamentList, defaultId: state.activeTournamentId || DEFAULT_TOURNAMENT_ID });
+    return json(res, { tournaments: tournamentListNow(), defaultId: state.activeTournamentId || DEFAULT_TOURNAMENT_ID });
+  if (method === "GET" && url === "/api/tournament") { // full object for the editor
+    const t = tournamentById.get(u.searchParams.get("id") || "");
+    return t ? json(res, t) : json(res, { error: "unknown tournament" }, 404);
+  }
+  if (method === "GET" && url === "/api/libraries") return json(res, { eras: eraList(), parks: parkList() });
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
@@ -471,6 +487,49 @@ const server = createServer(async (req, res) => {
       if (id && (role === "hitter" || role === "pitcher" || role === "twoway")) roleOverrides[id] = role;
     }
     return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides));
+  }
+
+  // ── Tournaments CRUD (D4 — the single config source is now editable) ──
+  if (method === "POST" && url === "/api/tournaments/save") {
+    // Body = a full Tournament. Create (new id from name) or update in place.
+    const body = JSON.parse((await readBody(req)) || "{}") as Tournament;
+    const name = String(body.name ?? "").trim();
+    if (!name) return json(res, { error: "name required" }, 400);
+    const existing = body.id ? tournamentById.get(body.id) : null;
+    let id = body.id || slug(name);
+    if (!existing) { while (tournamentById.has(id)) id += "-2"; } // avoid id collision on create
+    // Preserve softcaps/eligibility from the existing record unless the body carries them
+    // (the Phase-1 editor doesn't touch those, so don't let it blow them away).
+    const base = existing ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
+    const t: Tournament = {
+      ...base, ...body, id, name,
+      softcaps: body.softcaps ?? base.softcaps,
+      eligibility: body.eligibility ?? base.eligibility,
+    };
+    await repo.save("tournaments", id, t);
+    tournamentById.set(id, t);
+    cache.delete(id); // era/park/softcaps/value-range affect scoring → re-score on next read
+    return json(res, { id, tournaments: tournamentListNow() });
+  }
+  if (method === "POST" && url === "/api/tournaments/duplicate") {
+    const src = tournamentById.get(u.searchParams.get("id") || "");
+    if (!src) return json(res, { error: "unknown tournament" }, 400);
+    let id = slug(`${src.name} copy`); while (tournamentById.has(id)) id += "-2";
+    const t: Tournament = { ...src, id, name: `${src.name} (copy)` };
+    await repo.save("tournaments", id, t);
+    tournamentById.set(id, t);
+    return json(res, { id, tournaments: tournamentListNow() });
+  }
+  if (method === "POST" && url === "/api/tournaments/delete") {
+    const id = u.searchParams.get("id") || "";
+    if (!tournamentById.has(id)) return json(res, { error: "unknown tournament" }, 400);
+    if (tournamentById.size <= 1) return json(res, { error: "can't delete the last tournament" }, 400);
+    if (id === DEFAULT_TOURNAMENT_ID) return json(res, { error: "can't delete the built-in default tournament" }, 400);
+    await repo.delete("tournaments", id);
+    tournamentById.delete(id);
+    cache.delete(id);
+    if (state.activeTournamentId === id) { state.activeTournamentId = DEFAULT_TOURNAMENT_ID; await saveState(); }
+    return json(res, { tournaments: tournamentListNow(), defaultId: state.activeTournamentId || DEFAULT_TOURNAMENT_ID });
   }
 
   // ── POST API ──
