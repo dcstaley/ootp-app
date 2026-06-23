@@ -9,7 +9,7 @@ import { useAppData } from "./state.tsx";
 import { DataTable, type Column } from "./DataTable.tsx";
 import {
   C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL,
-  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride,
+  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride, type AvailHitterRow,
 } from "./shared.ts";
 
 const star = (t: string) => (t.startsWith("★") ? <><span style={{ color: C.star }}>★</span>{t.slice(1)}</> : t);
@@ -35,7 +35,7 @@ function defStr(d: CardDef, pos: string): string {
   if (OF.includes(pos)) return `R${d.ofR} E${d.ofE} A${d.ofA}`;
   return "";
 }
-function defSummary(h: RosterHitterRow): string {
+function defSummary(h: { positions: string[]; def: CardDef }): string {
   const parts: string[] = [];
   if (h.positions.includes("C")) parts.push(`C ${defStr(h.def, "C")}`);
   if (IF.some((p) => h.positions.includes(p))) parts.push(`IF ${defStr(h.def, "1B")}`);
@@ -56,6 +56,7 @@ function Legend({ roles }: { roles: string[] }) {
 }
 
 type Tab = "roster" | "lineups" | "pitching";
+type AvailCat = "hitVL" | "hitVR";
 type Side = "vR" | "vL";
 type PStaffRow = RosterPitcherRow & { slotLabel: string };
 
@@ -66,6 +67,7 @@ export function RosterPage() {
     roles: roleOverrides, setRole, cards,
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
+  const [availCat, setAvailCat] = useState<AvailCat>("hitVR");
   const [side, setSide] = useState<Side>("vR");
   const [assignVR, setAssignVR] = useState<Record<string, string>>({});
   const [assignVL, setAssignVL] = useState<Record<string, string>>({});
@@ -146,27 +148,62 @@ export function RosterPage() {
   );
   const actionsCol = <T extends { id: string }>(): Column<T> => ({ key: "act", label: "Actions", align: "r", value: () => 0, render: (r) => actionsCell(r.id) });
 
-  // ── Roster-tab columns (Value after Player; Actions last) ──
+  // ── Roster-tab columns (fit mode — never scroll; shrink Pos → Def → Player) ──
+  // Numeric/action columns are protected (fixed width); Pos/Def/Player absorb the
+  // squeeze in priority order via `shrink` (1 = shrink first).
   const hitterCols: Column<RosterHitterRow>[] = [
-    { key: "player", label: "Player", value: (h) => h.last || h.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", value: (h) => h.cost },
-    { key: "b", label: "B", align: "c", value: (h) => h.bats },
-    { key: "pos", label: "Pos", value: (h) => posStr(h.positions) },
-    { key: "def", label: "Defense", value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
-    { key: "vL", label: "vL", align: "r", value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
-    { key: "vR", label: "vR", align: "r", value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
-    actionsCol<RosterHitterRow>(),
+    { key: "player", label: "Player", width: 240, min: 86, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
+    { key: "value", label: "Value", align: "r", width: 56, value: (h) => h.cost },
+    { key: "b", label: "B", align: "c", width: 32, value: (h) => h.bats },
+    { key: "vL", label: "vL", align: "r", width: 66, value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
+    { key: "vR", label: "vR", align: "r", width: 66, value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
+    { key: "pos", label: "Pos", width: 96, min: 40, shrink: 1, value: (h) => posStr(h.positions) },
+    { key: "def", label: "Defense", width: 200, min: 60, shrink: 2, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
+    { ...actionsCol<RosterHitterRow>(), width: 156 },
   ];
   const pitcherCols: Column<RosterPitcherRow>[] = [
-    { key: "player", label: "Player", value: (p) => p.last || p.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", value: (p) => p.cost },
-    { key: "t", label: "T", align: "c", value: (p) => p.throws },
-    { key: "role", label: "Role", value: (p) => p.role, render: (p) => ROLE_LABEL[p.role] },
-    { key: "woba", label: "wOBA", align: "r", value: (p) => p.woba, render: (p) => num(p.woba) },
-    { key: "stam", label: "Stam", align: "r", value: (p) => p.stamina },
-    { key: "pit", label: "# Pit", align: "r", value: (p) => p.pitchTypes },
-    actionsCol<RosterPitcherRow>(),
+    { key: "player", label: "Player", width: 260, min: 90, shrink: 1, value: (p) => p.last || p.title, render: nameCell },
+    { key: "value", label: "Value", align: "r", width: 56, value: (p) => p.cost },
+    { key: "t", label: "T", align: "c", width: 32, value: (p) => p.throws },
+    { key: "woba", label: "OVR", align: "r", width: 70, value: (p) => p.woba, render: (p) => num(p.woba) },
+    { key: "stam", label: "Stam", align: "r", width: 56, value: (p) => p.stamina },
+    { key: "pit", label: "# Pit", align: "r", width: 56, value: (p) => p.pitchTypes },
+    { ...actionsCol<RosterPitcherRow>(), width: 156 },
   ];
+
+  // ── Next Best Available (left rail) — compact card list, +Add = lock the card.
+  // Tabs by need (Hit vR / Hit vL now; Pitch/SP/defence/value filter to follow).
+  const availHitters = roster?.nextBest?.hitters ?? [];
+  const sortedAvail = [...availHitters].sort((a, b) => (availCat === "hitVR" ? b.wobaVR - a.wobaVR : b.wobaVL - a.wobaVL));
+  const catBtn = (id: AvailCat, label: string) => (
+    <button onClick={() => setAvailCat(id)} style={{ ...inputStyle, padding: "4px 0", cursor: "pointer", background: availCat === id ? C.accent : C.input, color: availCat === id ? "#fff" : C.sub, fontWeight: availCat === id ? 700 : 400, border: `1px solid ${availCat === id ? C.accent : C.border}` }}>{label}</button>
+  );
+  const availCard = (h: AvailHitterRow): ReactNode => {
+    const added = locked.has(h.id);
+    const active = (v: AvailCat) => v === availCat;
+    return (
+      <div key={h.id} style={{ border: `1px solid ${added ? "#22c55e" : C.border}`, borderRadius: 6, padding: "5px 7px", background: added ? "rgba(34,197,94,0.08)" : "transparent" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+          <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+            {h.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(h.title)}
+          </span>
+          <button onClick={() => toggleLock(h.id)}
+            title={added ? "Queued to add (locked) — click to undo, then Regenerate" : "Add to roster (locks the card; press Regenerate)"}
+            style={{ ...inputStyle, flex: "0 0 auto", padding: "1px 7px", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
+              background: added ? "rgba(34,197,94,0.25)" : C.input, color: added ? "#86efac" : C.text, border: `1px solid ${added ? "#22c55e" : C.border}` }}>
+            {added ? "✓ Added" : "+ Add"}
+          </button>
+        </div>
+        <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
+          <span style={{ color: active("hitVL") ? C.text : C.sub, fontWeight: active("hitVL") ? 700 : 400 }}>vL {num(h.wobaVL, 3)}</span>
+          {" · "}
+          <span style={{ color: active("hitVR") ? C.text : C.sub, fontWeight: active("hitVR") ? 700 : 400 }}>vR {num(h.wobaVR, 3)}</span>
+          {" · "}Val {h.cost} · {posStr(h.positions)} {h.bats && `· ${h.bats}`}
+        </div>
+        {defSummary(h) && <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{defSummary(h)}</div>}
+      </div>
+    );
+  };
 
   // ── Lineups (editable assignment, per side) ──
   const assign = side === "vR" ? assignVR : assignVL;
@@ -263,14 +300,32 @@ export function RosterPage() {
           </div>
 
           {tab === "roster" && (
-            <div style={{ display: "flex", gap: 22, alignItems: "flex-start" }}>
-              <div style={{ maxWidth: 1320, flex: "1 1 auto", minWidth: 0 }}>
-                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
-                <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} />
-                <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
-                <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} />
+            <div style={{ display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
+              {/* Left rail: Next Best Available */}
+              <div style={{ flex: "1 1 290px", minWidth: 280, maxWidth: 340 }}>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Next Best Available</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                  {catBtn("hitVR", "Hit vR")}{catBtn("hitVL", "Hit vL")}
+                </div>
+                <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>
+                  Top available {ownedOnly ? "owned " : ""}hitters not on the roster, by {availCat === "hitVR" ? "vs-RHP" : "vs-LHP"} value. <b style={{ color: "#86efac" }}>+ Add</b> locks → Regenerate.
+                </p>
+                {sortedAvail.length === 0
+                  ? <p style={{ fontSize: 12, color: C.sub }}>None — every eligible card is rostered or excluded.</p>
+                  : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 220px)", overflowY: "auto", paddingRight: 4 }}>{sortedAvail.map(availCard)}</div>}
+                <p style={{ margin: "8px 0 0", fontSize: 10, color: C.sub }}>More need-tabs (Pitch, SP, defence, owned-only, value filter) coming.</p>
               </div>
-              <div style={{ flex: "0 0 290px", minWidth: 290 }}>
+
+              {/* Center: roster tables */}
+              <div style={{ flex: "999 1 500px", minWidth: 0, maxWidth: 1320 }}>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
+                <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} fit />
+                <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
+                <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} fit />
+              </div>
+
+              {/* Right rail: Excluded */}
+              <div style={{ flex: "1 1 240px", minWidth: 220, maxWidth: 320 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Excluded ({excludedList.length})</h3>
                 {excludedList.length === 0
                   ? <p style={{ fontSize: 12, color: C.sub }}>None. Use the <span style={{ color: "#ef4444" }}>⊘</span> action to keep a card out of generation.</p>
@@ -340,6 +395,7 @@ export function RosterPage() {
               </div>
             </div>
           )}
+
         </>
       )}
     </div>

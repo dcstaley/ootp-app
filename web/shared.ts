@@ -18,6 +18,8 @@ export interface RosterSlotCard { pos?: string; slot?: number; id: string; title
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
 export interface RosterHitterRow { id: string; title: string; last: string; bats: string; role: string; twoWay: boolean; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
 export interface RosterPitcherRow { id: string; title: string; last: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
+// Next Best Available pool (M5) — top available cards for manual roster editing.
+export interface AvailHitterRow { id: string; title: string; last: string; bats: string; positions: string[]; def: CardDef; cost: number; owned: number; wobaVL: number; wobaVR: number }
 export interface RosterResult {
   status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean;
   minStarterStamina: number; minPitchTypes: number;
@@ -27,6 +29,7 @@ export interface RosterResult {
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
   rosterHitters: RosterHitterRow[]; rosterPitchers: RosterPitcherRow[];
   memberIds: string[]; twoWayIds: string[];
+  nextBest: { hitters: AvailHitterRow[] };
   roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever|twoway
 }
 

@@ -229,24 +229,28 @@ const defOf = (c: Record<string, unknown>) => ({
 });
 type Def = ReturnType<typeof defOf>;
 
+// A fully-scored candidate (both sides) before any pool slicing. The Next Best
+// Available pool reads these directly (unsliced); the optimizer reads the sliced
+// subsets built below.
+interface Entry {
+  dispId: string;
+  hitVR: number; hitVL: number; pitVR: number; pitVL: number; pitOVR: number;
+  positions: string[]; stamina: number; pitchTypes: number;
+  bats: number; throws: number; title: string; cost: number;
+  role: RoleOverride | "auto";
+}
+
 function rosterCandidates(
   t: Tournament, accountId: string | null, ownedOnly: boolean,
   excluded: Set<string>, roleOverrides: Record<string, RoleOverride>,
   platoonVR: number, platoonVL: number,
-): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
+): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; entries: Entry[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
   const { s } = scoredFor(t.id);
   const ctx = s.ctx;
   const acc = accountId ? accounts.get(accountId) : null;
   const owned = acc?.owned ?? {};
   const variantIds = new Set(acc?.variantCardIds ?? []);
 
-  interface Entry {
-    dispId: string;
-    hitVR: number; hitVL: number; pitVR: number; pitVL: number; pitOVR: number;
-    positions: string[]; stamina: number; pitchTypes: number;
-    bats: number; throws: number; title: string; cost: number;
-    role: RoleOverride | "auto";
-  }
   const entries: Entry[] = [];
   const ownedByDisp: Record<string, number> = {};
   const defByDisp: Record<string, Def> = {};
@@ -308,7 +312,7 @@ function rosterCandidates(
     const isTwoWay = useH && useP && (e.role === "twoway" || (e.role === "auto" && twHit.has(e.dispId) && twPit.has(e.dispId)));
     if (isTwoWay) twoWayIds.push(e.dispId);
   }
-  return { hitters, pitchers, twoWayIds, ownedByDisp, defByDisp, lastByDisp };
+  return { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp };
 }
 
 function rosterOptions(t: Tournament): RosterOptimizeOptions {
@@ -325,7 +329,7 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
 async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
   const opts0 = rosterOptions(t);
-  const { hitters, pitchers, twoWayIds, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, opts0.platoonVR, opts0.platoonVL);
+  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, opts0.platoonVR, opts0.platoonVL);
   const opts = { ...opts0, lockedIds: locked, twoWayIds };
   const r = await generateFullRoster(hitters, pitchers, opts);
 
@@ -370,8 +374,27 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
       woba: round(TARGET_WOBA - combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || a.woba - b.woba);
 
+  // ── Next Best Available pool (M5) ──────────────────────────────────────────
+  // The top AVAILABLE cards (eligible + owned-scoped, NOT on the current roster),
+  // for manual roster editing. Returned UNSLICED (the whole owned/eligible pool,
+  // not just the optimizer's Top-X) so the user can pull in any owned card. The
+  // client tabs/sorts this by need (Hit vL/vR now; Pitch/SP/defence/value later)
+  // and +Add = lock the card → Regenerate. Bounded to the top of each pool.
+  const rosteredDisp = new Set([...r.hitters, ...r.pitchers]);
+  const available = entries.filter((e) => !rosteredDisp.has(e.dispId));
+  const NEXT_BEST_N = 80;
+  const availHitters = [...available]
+    .sort((a, b) => Math.max(b.hitVL, b.hitVR) - Math.max(a.hitVL, a.hitVR))
+    .slice(0, NEXT_BEST_N)
+    .map((e) => ({
+      id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", bats: BATS[e.bats] ?? "",
+      positions: e.positions, def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
+      wobaVL: round(e.hitVL + TARGET_WOBA), wobaVR: round(e.hitVR + TARGET_WOBA),
+    }));
+  const nextBest = { hitters: availHitters };
+
   return {
-    roles, rosterHitters, rosterPitchers, ownedOnly, twoWayIds: [...twoWaySet],
+    roles, rosterHitters, rosterPitchers, ownedOnly, twoWayIds: [...twoWaySet], nextBest,
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
     status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
     objective: r.objective, balance: r.balance ?? null,
