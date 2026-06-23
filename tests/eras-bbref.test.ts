@@ -30,7 +30,7 @@ describe("BBRef era modifiers", () => {
     expect(e.avg).toBeCloseTo(0.9405, 3);  // hits down ~6%
     expect(e.gap).toBeCloseTo(0.9829, 3);
     expect(e.hbp).toBeCloseTo(1.3866, 3);  // HBP way up
-    expect(e.bip).toBeCloseTo(0.9352, 3);
+    expect(e.bip).toBe(1);                  // bip pinned neutral (removed from scoring)
   });
 
   it("stores raw per-PA rates for future recompute", () => {

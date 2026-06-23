@@ -150,17 +150,15 @@ export async function seedDefaults(repo: Repository): Promise<SeedResult> {
 }
 
 /**
- * Seed the per-year BBRef era library (baseline 2010). Static historical data, so
- * it's baked from the committed CSV rather than imported. Idempotent + additive:
- * only writes era ids not already present, so the capture-derived eras
- * (era-neutral/era-thr/era-full) and any hand-edits are untouched. Runs every boot.
+ * Seed the per-year BBRef era library (baseline 2010). Static historical data baked
+ * from the committed CSV (not imported). The per-year `era-<year>` records are
+ * DERIVED, so they're re-synced from the CSV/logic every boot (keeps them current
+ * if the formula changes); the capture-derived eras (era-neutral/era-thr/era-full)
+ * are never in this set, so they — and hand-edits to them — are untouched.
  */
-export async function seedEras(repo: Repository): Promise<{ added: number; total: number }> {
-  if (!existsSync(ERA_CSV)) return { added: 0, total: (await repo.list("eras")).length };
-  const existing = new Set(await repo.list("eras"));
-  let added = 0;
-  for (const e of computeEras(readFileSync(ERA_CSV, "utf8"))) {
-    if (!existing.has(e.id)) { await repo.save("eras", e.id, e); added++; }
-  }
-  return { added, total: (await repo.list("eras")).length };
+export async function seedEras(repo: Repository): Promise<{ synced: number; total: number }> {
+  if (!existsSync(ERA_CSV)) return { synced: 0, total: (await repo.list("eras")).length };
+  const computed = computeEras(readFileSync(ERA_CSV, "utf8"));
+  for (const e of computed) await repo.save("eras", e.id, e); // re-sync derived per-year eras
+  return { synced: computed.length, total: (await repo.list("eras")).length };
 }

@@ -42,7 +42,7 @@ const repo = new Repository(DATA_ROOT);
 const seedCfg = await seedDefaults(repo);
 console.log(`[server] tournaments DB: ${seedCfg.seeded ? "seeded" : "loaded"} — ${seedCfg.tournaments} tournaments, ${seedCfg.eras} eras, ${seedCfg.parks} parks; model: ${seedCfg.modelName}`);
 const seedEra = await seedEras(repo);
-console.log(`[server] era library: +${seedEra.added} BBRef eras seeded (${seedEra.total} total)`);
+console.log(`[server] era library: ${seedEra.synced} BBRef per-year eras synced (${seedEra.total} total)`);
 const seedAcc = await seedAccounts(repo);
 console.log(`[server] accounts: ${seedAcc.seeded ? "seeded" : "loaded"} — [${seedAcc.accountIds.join(", ")}]; catalog source: ${seedAcc.catalogSourceId ?? "(committed docs sample)"}`);
 

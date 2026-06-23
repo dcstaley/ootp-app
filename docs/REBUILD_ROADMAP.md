@@ -365,6 +365,17 @@ trivial and agreed.
   is for the **optimization** pool (M4), not calibration. Calibration anchor = top-50 by wOBA over all
   eligible cards.
 
+- **Era `gap` denominator — REVISIT.** Per-year era modifiers (BBRef import, baseline
+  2010) are per-PA for bb/k/avg(H)/hr. `gap` = the XBH (2B+3B) share of **non-HR hits**
+  vs 2010 — chosen to match how scoring applies `era_gap` (it scales the XBH content of
+  non-HR hits), but whether that's the right run-environment signal is unconfirmed.
+  Alternatives: per-PA `(2B+3B)/PA`, or doubles-only. *(User-flagged; revisit when the
+  scoring/gap handling is reviewed.)*
+- **Era `bip` modifier — REMOVED.** A BIP modifier was intentionally pulled from scoring
+  (caused problems, likely conceptually wrong). The era library pins `bip` to neutral 1
+  (raw BIP rate kept in `rates` for reference only). Open question whether a BIP modifier
+  belongs at all — don't re-add without resolving that.
+
 (Append here whenever something looks wrong during a port.)
 
 ---
