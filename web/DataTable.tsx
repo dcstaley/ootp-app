@@ -48,7 +48,7 @@ export function DataTable<T>({ rows, cols, getKey, initialSort, rowStyle }: {
         <tr>
           {cols.map((c) => (
             <th key={c.key} onClick={() => clickSort(c.key)} title={c.title}
-              style={{ ...cell, textAlign: ta(c.align), background: sort?.key === c.key ? C.headActive : C.head, cursor: "pointer", userSelect: "none", position: "sticky", top: 0 }}>
+              style={{ ...cell, textAlign: ta(c.align), background: sort?.key === c.key ? C.headActive : C.head, cursor: "pointer", userSelect: "none" }}>
               {c.label}{sort?.key === c.key ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
             </th>
           ))}

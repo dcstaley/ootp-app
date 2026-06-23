@@ -81,6 +81,7 @@ export interface RosterOptimizeOptions {
   // role/slot weights (cap/slots only)
   rotationSlotWeights?: number[]; bullpenWeight?: number; benchWeight?: number;
   backupCatcherDepth?: number;
+  minPlayersPerPosition?: number; // coverage depth: ≥ this many rostered can play EACH field position (default 2)
   bothSidesBonus?: number;     // multiplier for platoon-neutral hitters (default 1.25)
   bothSidesThreshold?: number; // min(valueVR,valueVL) ≥ this → "both-sides" (valueFor scale; default 0)
   // budget

@@ -267,6 +267,7 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
     nHitters: t.hitters, nPitchers: t.pitchers, dh: t.dh,
     minStarters: t.min_starters, minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
     platoonVR: 0.62, platoonVL: 0.38, // league default; tournament platoon setting is a later field
+    minPlayersPerPosition: 2, // coverage depth — backup at every position (later a tournament/RosterSettings field)
     mode, totalCap: t.total_cap ?? undefined, rosterSize: t.roster_size,
   };
 }

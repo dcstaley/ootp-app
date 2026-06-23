@@ -11,7 +11,7 @@
 //   slots: per Card-Value tier, Σ rostered with cost ≥ threshold ≤ cumulative limit
 
 import type { HitterCandidate, PitcherCandidate, RosterOptimizeOptions } from "./types.ts";
-import { lineupPositions, qualifiesStarter, SLOT_TIERS } from "./types.ts";
+import { lineupPositions, qualifiesStarter, SLOT_TIERS, FIELD_POSITIONS } from "./types.ts";
 
 export interface BuiltRosterLp { lp: string; vars: number; constraints: number }
 
@@ -81,8 +81,16 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     }
   });
   cons.push(` hsize: ${rhVars.join(" + ")} = ${opts.nHitters}`);
-  const catchers = hitters.map((c, i) => ({ c, i })).filter((x) => x.c.positions.includes("C")).map((x) => `rh_${x.i}`);
-  if (catchers.length >= depth) cons.push(` backupC: ${catchers.join(" + ")} >= ${depth}`);
+  // Coverage depth: ≥ minPlayersPerPosition rostered hitters can play EACH field
+  // position (so every position has a backup, not just catcher). Catcher may use a
+  // higher backupCatcherDepth. Skipped where the pool can't satisfy it (avoids
+  // guaranteed infeasibility — the shortage is then visible in the result).
+  const minPos = opts.minPlayersPerPosition ?? 2;
+  for (const pos of FIELD_POSITIONS) {
+    const eligible = hitters.map((c, i) => ({ c, i })).filter((x) => x.c.positions.includes(pos)).map((x) => `rh_${x.i}`);
+    const need = pos === "C" ? Math.max(minPos, depth) : minPos;
+    if (eligible.length >= need) cons.push(` cover_${pos}: ${eligible.join(" + ")} >= ${need}`);
+  }
 
   // ── Pitchers ──
   const rpVars = pitchers.map((_, j) => `rp_${j}`);
