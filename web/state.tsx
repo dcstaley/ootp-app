@@ -14,6 +14,11 @@ interface AppData {
   cards: Card[]; meta: Meta | null; loading: boolean; busy: string | null; err: string | null;
   roster: RosterResult | null; rosterLoading: boolean; rosterRoles: Record<string, string>;
   ownedOnly: boolean; setOwnedOnly: (v: boolean) => void;
+  // generation controls (lock = required, exclude = forbidden — both persist + need
+  // Regenerate) and removed = client-side drop from the CURRENT roster (resets on
+  // Regenerate). dirty = generation params changed since the last generate.
+  locked: Set<string>; excluded: Set<string>; removed: Set<string>; dirty: boolean;
+  toggleLock: (id: string) => void; toggleExclude: (id: string) => void; removeCard: (id: string) => void;
   generateRoster: () => Promise<void>;
   reloadView: () => Promise<void>;
   loadAccounts: () => Promise<unknown>;
@@ -46,7 +51,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [err, setErr] = useState<string | null>(null);
   const [roster, setRoster] = useState<RosterResult | null>(null);
   const [rosterLoading, setRosterLoading] = useState(false);
-  const [ownedOnly, setOwnedOnly] = useState(true);
+  const [ownedOnlyState, setOwnedOnlyState] = useState(true);
+  const [locked, setLocked] = useState<Set<string>>(new Set());
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [dirty, setDirty] = useState(false);
 
   const loadAccounts = () =>
     fetch("/api/accounts").then((r) => r.json()).then((d: { accounts: AccountOpt[]; activeId: string | null }) => {
@@ -131,15 +140,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const clearVariants = async () => { await importVariants("CID\n"); };
 
-  // Roster is invalidated whenever the (tournament, account) scope changes — clear
-  // it so the page re-generates on demand rather than showing a stale roster.
-  useEffect(() => { setRoster(null); }, [tournamentId, accountId]);
+  // Roster + generation controls reset whenever the (tournament, account) scope
+  // changes — locks/excludes are card-specific to the active account.
+  useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setDirty(false); }, [tournamentId, accountId]);
+
+  const setOwnedOnly = (v: boolean) => { setOwnedOnlyState(v); setDirty(true); };
+  const toggleLock = (id: string) => { setLocked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setExcluded((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
+  const toggleExclude = (id: string) => { setExcluded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setLocked((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
+  const removeCard = (id: string) => setRemoved((s) => { const n = new Set(s); n.add(id); return n; }); // client-side, resets on Regenerate
+
   const generateRoster = async () => {
     if (!tournamentId) return;
     setRosterLoading(true);
     try {
-      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnly}`;
+      const enc = (s: Set<string>) => [...s].join(",");
+      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&locked=${enc(locked)}&excluded=${enc(excluded)}`;
       setRoster(await fetch("/api/roster" + q).then((r) => r.json()));
+      setRemoved(new Set()); // fresh roster — clear manual removals
+      setDirty(false);
     } catch (e) { setErr(String(e)); } finally { setRosterLoading(false); }
   };
 
@@ -148,7 +166,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     accounts, accountId, chooseAccount, activeAccount: accounts.find((a) => a.id === accountId),
     cards, meta, loading, busy, err,
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},
-    ownedOnly, setOwnedOnly,
+    ownedOnly: ownedOnlyState, setOwnedOnly,
+    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
     generateRoster,
     reloadView, loadAccounts, renameAccount, importOwnership, toggleVariant, importVariants, clearVariants,
   };

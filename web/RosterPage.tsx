@@ -1,8 +1,8 @@
 // M4 — Roster & Lineups page. One page, three sub-tabs (Roster / Lineups /
 // Pitching) over the same generated roster; all tables sortable. Generation
-// controls (Generate + Owned-only) live here. The Lineups tab supports manual
-// position assignment via per-player dropdowns (one player per position); bench
-// players sit in a separate Bench table (drag-into-lineup is the next step).
+// controls live here: Owned-only, plus per-card Lock (required) / Exclude
+// (forbidden) / Remove (drop from the current roster — returns on Regenerate).
+// Lineups support manual position assignment via per-player dropdowns.
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
@@ -26,7 +26,6 @@ function defStr(d: CardDef, pos: string): string {
   if (OF.includes(pos)) return `R${d.ofR} E${d.ofE} A${d.ofA}`;
   return "";
 }
-// All defensive ratings the card has (every position group it can field).
 function defSummary(h: RosterHitterRow): string {
   const parts: string[] = [];
   if (h.positions.includes("C")) parts.push(`C ${defStr(h.def, "C")}`);
@@ -52,7 +51,10 @@ type Side = "vR" | "vL";
 type PStaffRow = RosterPitcherRow & { slotLabel: string };
 
 export function RosterPage() {
-  const { roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly } = useAppData();
+  const {
+    roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly,
+    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
+  } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
   const [side, setSide] = useState<Side>("vR");
   const [assignVR, setAssignVR] = useState<Record<string, string>>({});
@@ -71,6 +73,10 @@ export function RosterPage() {
     setAssignVL(mk(roster.lineupVL));
   }, [roster]);
 
+  // Filtered rosters (manual Remove drops a card from the current view everywhere).
+  const hitters = (roster?.rosterHitters ?? []).filter((h) => !removed.has(h.id));
+  const pitchers = (roster?.rosterPitchers ?? []).filter((p) => !removed.has(p.id));
+
   const roleBg = (role: string): React.CSSProperties => ({ background: ROSTER_COLORS[role] });
   const tabBtn = (id: Tab, label: string) => (
     <button onClick={() => setTab(id)} style={{ ...inputStyle, cursor: "pointer", background: tab === id ? C.accent : C.input, color: "#fff", fontWeight: tab === id ? 600 : 400 }}>{label}</button>
@@ -81,9 +87,22 @@ export function RosterPage() {
   const capPct = roster?.cap && roster.cost != null ? Math.round((roster.cost / roster.cap) * 100) : null;
   const money = (n: number | null) => (n == null ? "—" : n.toLocaleString());
   const num = (v: number, d = 4) => v.toFixed(d);
-  const stale = !!roster && roster.ownedOnly !== ownedOnly;
 
-  // ── Roster-tab columns (Value right after Player) ──
+  // Per-card actions (Lock / Exclude / Remove).
+  const iconBtn = (active: boolean, color = "#ef4444"): React.CSSProperties => ({
+    ...inputStyle, padding: "1px 5px", fontSize: 12, cursor: "pointer", lineHeight: 1.4,
+    background: active ? `${color}40` : C.input, border: `1px solid ${active ? color : C.border}`,
+  });
+  const actionsCell = (id: string): ReactNode => (
+    <span style={{ display: "inline-flex", gap: 3 }}>
+      <button onClick={() => toggleLock(id)} title="Lock to roster (required on regenerate)" style={iconBtn(locked.has(id), "#22c55e")}>{locked.has(id) ? "🔒" : "🔓"}</button>
+      <button onClick={() => toggleExclude(id)} title="Exclude from generation (never selected)" style={iconBtn(excluded.has(id), "#ef4444")}>{excluded.has(id) ? "🚫" : "⊘"}</button>
+      <button onClick={() => removeCard(id)} title="Remove from the current roster (returns on Regenerate)" style={iconBtn(false)}>✕</button>
+    </span>
+  );
+  const actionsCol = <T extends { id: string }>(): Column<T> => ({ key: "act", label: "Actions", align: "r", value: () => 0, render: (r) => actionsCell(r.id) });
+
+  // ── Roster-tab columns (Value after Player; Actions last) ──
   const hitterCols: Column<RosterHitterRow>[] = [
     { key: "player", label: "Player", value: (h) => h.last || h.title, render: nameCell },
     { key: "value", label: "Value", align: "r", value: (h) => h.cost },
@@ -92,6 +111,7 @@ export function RosterPage() {
     { key: "def", label: "Defense", value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
     { key: "vL", label: "vL", align: "r", value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
     { key: "vR", label: "vR", align: "r", value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
+    actionsCol<RosterHitterRow>(),
   ];
   const pitcherCols: Column<RosterPitcherRow>[] = [
     { key: "player", label: "Player", value: (p) => p.last || p.title, render: nameCell },
@@ -101,6 +121,7 @@ export function RosterPage() {
     { key: "woba", label: "wOBA", align: "r", value: (p) => p.woba, render: (p) => num(p.woba) },
     { key: "stam", label: "Stam", align: "r", value: (p) => p.stamina },
     { key: "pit", label: "# Pit", align: "r", value: (p) => p.pitchTypes },
+    actionsCol<RosterPitcherRow>(),
   ];
 
   // ── Lineups (editable assignment, per side) ──
@@ -109,12 +130,12 @@ export function RosterPage() {
   const scoreH = (h: RosterHitterRow) => (side === "vR" ? h.wobaVR : h.wobaVL);
   const changePos = (id: string, pos: string) => setAssign((a) => {
     const next = { ...a };
-    if (pos !== "-") for (const k of Object.keys(next)) if (next[k] === pos) next[k] = "-"; // one player per position
+    if (pos !== "-") for (const k of Object.keys(next)) if (next[k] === pos) next[k] = "-";
     next[id] = pos;
     return next;
   });
-  const assigned = (roster?.rosterHitters ?? []).filter((h) => (assign[h.id] ?? "-") !== "-");
-  const benched = (roster?.rosterHitters ?? []).filter((h) => (assign[h.id] ?? "-") === "-");
+  const assigned = hitters.filter((h) => (assign[h.id] ?? "-") !== "-");
+  const benched = hitters.filter((h) => (assign[h.id] ?? "-") === "-");
   const sel: React.CSSProperties = { ...inputStyle, padding: "2px 4px", fontSize: 12, width: 62, cursor: "pointer" };
   const lineupCols: Column<RosterHitterRow>[] = [
     { key: "player", label: "Player", value: (h) => h.last || h.title, render: nameCell },
@@ -140,10 +161,10 @@ export function RosterPage() {
     { key: "pos", label: "Position", align: "c", value: () => "BEN", render: () => <span style={{ color: C.sub }}>BEN</span> },
     { key: "score", label: "Score", align: "r", value: (h) => scoreH(h), render: (h) => num(scoreH(h)) },
   ];
-  const backupsAt = (pos: string) => (roster?.rosterHitters ?? [])
+  const backupsAt = (pos: string) => hitters
     .filter((h) => h.positions.includes(pos) && assign[h.id] !== pos).sort((a, b) => scoreH(b) - scoreH(a)).slice(0, 2);
 
-  // ── Pitching (Rotation + Bullpen share columns/widths so they line up) ──
+  // ── Pitching (Rotation + Bullpen share fixed widths so they line up) ──
   const pStaffCols: Column<PStaffRow>[] = [
     { key: "slot", label: "", align: "c", width: 50, value: (p) => p.slotLabel, render: (p) => <span style={{ color: C.sub }}>{p.slotLabel}</span> },
     { key: "player", label: "Player", width: 320, value: (p) => p.last || p.title, render: nameCell },
@@ -154,27 +175,30 @@ export function RosterPage() {
     { key: "pit", label: "# Pit", align: "r", width: 58, value: (p) => p.pitchTypes },
   ];
   const rotRows: PStaffRow[] = useMemo(() => (roster?.rotation ?? []).map((rt) => {
-    const p = (roster?.rosterPitchers ?? []).find((x) => x.id === rt.id.replace(/#V$/, ""));
-    return { ...(p as RosterPitcherRow), slotLabel: `SP${rt.slot}`, slot: rt.slot } as PStaffRow & { slot: number };
-  }).filter((r) => r.id), [roster]);
-  const bullpenRows: PStaffRow[] = (roster?.rosterPitchers ?? []).filter((p) => p.role === "reliever").map((p) => ({ ...p, slotLabel: "RP" }));
+    const p = pitchers.find((x) => x.id === rt.id.replace(/#V$/, ""));
+    return p ? { ...p, slotLabel: `SP${rt.slot}` } : null;
+  }).filter((r): r is PStaffRow => !!r), [roster, removed]);
+  const bullpenRows: PStaffRow[] = pitchers.filter((p) => p.role === "reliever").map((p) => ({ ...p, slotLabel: "RP" }));
   const availSP: PStaffRow[] = bullpenRows.filter((p) => p.stamina >= (roster?.minStarterStamina ?? 70) && p.pitchTypes >= (roster?.minPitchTypes ?? 3));
+
+  const nLock = locked.size, nExcl = excluded.size, nRem = removed.size;
 
   return (
     <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Roster & Lineups</h2>
-        <button onClick={generateRoster} disabled={rosterLoading} style={{ ...inputStyle, cursor: "pointer", background: stale ? "#b45309" : C.accent, color: "#fff" }}>{rosterLoading ? "Generating…" : roster ? "Regenerate" : "Generate"}</button>
-        <label style={{ fontSize: 13, color: C.sub }} title="Off = consider every eligible card, even unowned, for the best possible roster (SELECTION only — calibration always uses all eligible cards). Press Regenerate to apply.">
+        <button onClick={generateRoster} disabled={rosterLoading} style={{ ...inputStyle, cursor: "pointer", background: dirty ? "#b45309" : C.accent, color: "#fff" }}>{rosterLoading ? "Generating…" : roster ? "Regenerate" : "Generate"}</button>
+        <label style={{ fontSize: 13, color: C.sub }} title="Off = consider every eligible card, even unowned (SELECTION only — calibration always uses all eligible cards). Press Regenerate to apply.">
           <input type="checkbox" checked={ownedOnly} onChange={(e) => setOwnedOnly(e.target.checked)} disabled={rosterLoading} /> Owned only
         </label>
-        {stale && <span style={{ fontSize: 12, color: "#f59e0b" }}>⚠ press Regenerate to apply</span>}
+        {(nLock > 0 || nExcl > 0) && <span style={{ fontSize: 12, color: C.sub }}>{nLock} locked · {nExcl} excluded</span>}
+        {dirty && <span style={{ fontSize: 12, color: "#f59e0b" }}>⚠ press Regenerate to apply</span>}
         {meta && <span style={{ fontSize: 13, color: C.sub }}>{meta.tournament} · {meta.account}</span>}
       </div>
 
       {!roster && !rosterLoading && <p style={{ color: C.sub }}>Click Generate to build the optimal roster.</p>}
       {rosterLoading && <p style={{ color: C.sub }}>Optimizing… (this can take a moment)</p>}
-      {roster && roster.status !== "Optimal" && <p style={{ color: "#f87171" }}>Solver status: {roster.status}. (Pool: {roster.poolHitters}H / {roster.poolPitchers}P — too few cards for the constraints, e.g. backup depth at a scarce position?)</p>}
+      {roster && roster.status !== "Optimal" && <p style={{ color: "#f87171" }}>Solver status: {roster.status}. (Pool: {roster.poolHitters}H / {roster.poolPitchers}P — too few cards for the constraints, e.g. too many locks, or backup depth at a scarce position?)</p>}
 
       {roster && roster.status === "Optimal" && (
         <>
@@ -183,26 +207,25 @@ export function RosterPage() {
               ? <>Cap: <b style={{ color: (capPct ?? 0) > 100 ? "#f87171" : C.text }}>{money(roster.cost)}/{money(roster.cap)}</b> ({capPct}%) · </>
               : <>Mode: {roster.mode} · </>}
             Pool: {roster.poolHitters}H / {roster.poolPitchers}P · H-value <b style={{ color: C.text }}>{roster.balance?.hitterValue.toFixed(3)}</b> · P-value <b style={{ color: C.text }}>{roster.balance?.pitcherValue.toFixed(3)}</b>
+            {nRem > 0 && <> · <span style={{ color: "#f59e0b" }}>{nRem} removed</span></>}
           </p>
           <Legend roles={["both", "vL", "vR", "bench", "starter", "reliever"]} />
 
           <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-            {tabBtn("roster", `Roster (${roster.rosterHitters.length + roster.rosterPitchers.length})`)}
+            {tabBtn("roster", `Roster (${hitters.length + pitchers.length})`)}
             {tabBtn("lineups", "Lineups")}
-            {tabBtn("pitching", `Pitching (${roster.rosterPitchers.length})`)}
+            {tabBtn("pitching", `Pitching (${pitchers.length})`)}
           </div>
 
-          {/* ── ROSTER (stacked) ── */}
           {tab === "roster" && (
-            <div style={{ maxWidth: 1280 }}>
-              <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({roster.rosterHitters.length})</h3>
-              <DataTable rows={roster.rosterHitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} />
-              <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({roster.rosterPitchers.length})</h3>
-              <DataTable rows={roster.rosterPitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} />
+            <div style={{ maxWidth: 1320 }}>
+              <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
+              <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} />
+              <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
+              <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} />
             </div>
           )}
 
-          {/* ── LINEUPS ── */}
           {tab === "lineups" && (
             <div>
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>{sideBtn("vL", "vs LHP")}{sideBtn("vR", "vs RHP")}</div>
@@ -238,7 +261,6 @@ export function RosterPage() {
             </div>
           )}
 
-          {/* ── PITCHING ── */}
           {tab === "pitching" && (
             <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
               <div style={{ flex: "1 1 560px", minWidth: 0, maxWidth: 760 }}>

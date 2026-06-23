@@ -81,6 +81,13 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     }
   });
   cons.push(` hsize: ${rhVars.join(" + ")} = ${opts.nHitters}`);
+  // Required cards (locks): force the candidate onto the roster.
+  const locked = new Set(opts.lockedIds ?? []);
+  const strip = (id: string) => id.replace(/#V$/, "");
+  if (locked.size) {
+    hitters.forEach((c, i) => { if (locked.has(strip(c.id))) cons.push(` lock_h_${i}: rh_${i} = 1`); });
+    pitchers.forEach((c, j) => { if (locked.has(strip(c.id))) cons.push(` lock_p_${j}: rp_${j} = 1`); });
+  }
   // Coverage depth: ≥ minPlayersPerPosition rostered hitters can play EACH field
   // position (so every position has a backup, not just catcher). Catcher may use a
   // higher backupCatcherDepth. Skipped where the pool can't satisfy it (avoids

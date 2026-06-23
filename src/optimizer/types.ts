@@ -84,6 +84,10 @@ export interface RosterOptimizeOptions {
   minPlayersPerPosition?: number; // coverage depth: ≥ this many rostered can play EACH field position (default 2)
   bothSidesBonus?: number;     // multiplier for platoon-neutral hitters (default 1.25)
   bothSidesThreshold?: number; // min(valueVR,valueVL) ≥ this → "both-sides" (valueFor scale; default 0)
+  // required cards (locks) — these candidates are forced onto the roster (matched
+  // by base card id; variant rows count). Excluded cards are filtered before the
+  // pool is built, so they never appear here.
+  lockedIds?: string[];
   // budget
   mode: BudgetMode;
   totalCap?: number;

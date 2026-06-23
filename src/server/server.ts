@@ -219,7 +219,7 @@ const defOf = (c: Record<string, unknown>) => ({
 });
 type Def = ReturnType<typeof defOf>;
 
-function rosterCandidates(t: Tournament, accountId: string | null, ownedOnly: boolean): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
+function rosterCandidates(t: Tournament, accountId: string | null, ownedOnly: boolean, excluded: Set<string>): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
   const { s } = scoredFor(t.id);
   const ctx = s.ctx;
   const acc = accountId ? accounts.get(accountId) : null;
@@ -234,7 +234,7 @@ function rosterCandidates(t: Tournament, accountId: string | null, ownedOnly: bo
   for (const c0 of catalog.cards) {
     const id = cardId(c0);
     const qty = owned[id] ?? 0;
-    if ((ownedOnly && qty <= 0) || !ctx.isEligible(c0)) continue;
+    if (excluded.has(id) || (ownedOnly && qty <= 0) || !ctx.isEligible(c0)) continue;
     const useVariant = variantIds.has(id) && t.variants_allowed;
     const c = useVariant ? makeVariant(c0) : c0;
     const sc = scoreCard(c, ctx.config);
@@ -272,10 +272,10 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
   };
 }
 
-async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean) {
+async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[]) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
-  const { hitters, pitchers, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly);
-  const opts = rosterOptions(t);
+  const { hitters, pitchers, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded));
+  const opts = { ...rosterOptions(t), lockedIds: locked };
   const r = await generateFullRoster(hitters, pitchers, opts);
 
   const hById = new Map(hitters.map((c) => [c.id, c]));
@@ -360,7 +360,10 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
-  if (method === "GET" && url === "/api/roster") return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false"));
+  if (method === "GET" && url === "/api/roster") {
+    const list = (k: string) => (u.searchParams.get(k) || "").split(",").filter(Boolean);
+    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded")));
+  }
 
   // ── POST API ──
   if (method === "POST" && url === "/api/state") {
