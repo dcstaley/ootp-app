@@ -371,6 +371,33 @@ trivial and agreed.
 
 ## Right now
 
+**CURRENT STATE (2026-06-23): M0–M3 done; M4 optimizer Phases A–D done + roster-page UI built out.**
+- **M4 headless optimizer** (`src/optimizer/`, HiGHS-WASM in-process): combined cap/slots roster MILP —
+  binary `rh_i` (hitter rostered) + `yh_i_pos_side` (dual-lineup assignment) + `rp_j` (pitcher) +
+  `xp_j_sk` (rotation slot); cap (`Σ cost ≤ total_cap`) or slots (cumulative Card-Value tiers); D2
+  signed-distance objective × platoon/role/slot weights + both-sides bonus (NO cross-pool mult/power —
+  tunable `pitcherEmphasis` knob instead, SP-7); per-position **coverage depth** (`minPlayersPerPosition`,
+  default 2 — backup at every position); **required cards (`lockedIds`)**. `generateFullRoster` →
+  roster + lineups + rotation/bullpen + cost + H/P balance. 56 tests green; parity bit-identical.
+- **Server** (`src/server/server.ts`): `/api/roster?tournament=&account=&ownedOnly=&locked=&excluded=`
+  builds OWNED-scoped candidates (`rosterCandidates`), scores via the one core, runs the optimizer,
+  returns the enriched roster (rostered hitters/pitchers with last name, positions, def ratings, wOBA,
+  value, owned + roles + lineups + rotation/bullpen + thresholds). **Owned-only = SELECTION only**
+  (calibration uses the full eligible pool). **Two-way cards (Pos Rating P>0) currently go to the PITCHER
+  pool ONLY** — they lose their bat. ← the next task.
+- **Web** (`web/`): nav shell (`App.tsx`, hash router, sidebar with global Tournament+Account selectors);
+  `CardsPage` (the grid, roster-member role colouring), `AccountsPage` (ownership/variant import),
+  **`RosterPage`** (one page, 3 sub-tabs Roster/Lineups/Pitching; sortable `DataTable`; role colours;
+  per-card **Lock/Exclude/Remove** actions; manual lineup **position dropdowns**; bench/depth/available
+  views), `state.tsx` (`AppDataProvider` — all fetch + mutations incl. locked/excluded/removed/dirty).
+- **Remaining M4/M5 (roster page):** **two-way Pitch/Hit/2way toggle (NEXT)** · bonus slot · Next Best
+  Available pool · drag-and-drop · manual add players · merge `RosterSettings`→Tournament · slots-config UI.
+- **Deferred:** anchoring/scaling correctness audit + OVR split weighting → **M6** with real outcome data
+  (see "Flagged old-app issues"); the optimizer reads scoring values as coefficients, so M6 recalibration
+  just changes numbers, not the machinery.
+
+---
+
 **M2 COMPLETE** — M2a catalog · M2b config + eligibility + pool · assemble-coeffs (D4) · M2c accounts +
 v5 variants (D6) · M2d file-based persistence (D7). 40 tests green; parity bit-identical; capstone
 persists config, reloads from disk, and drives the full chain. The data + config layers are done.
