@@ -210,7 +210,7 @@ export function RosterPage() {
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
                 <div style={{ flex: "3 1 700px", minWidth: 0, maxWidth: 1000 }}>
                   <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Lineup ({assigned.length}) — vs {side === "vR" ? "RHP" : "LHP"}</h3>
-                  <DataTable rows={assigned} cols={lineupCols} getKey={(h) => h.id} initialSort={{ key: "pos", dir: 1 }} rowStyle={(h) => roleBg(h.role)} />
+                  <DataTable rows={assigned} cols={lineupCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={(h) => roleBg(h.role)} />
                   <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Bench ({benched.length})</h3>
                   {benched.length === 0 ? <p style={{ fontSize: 13, color: C.sub }}>No bench — every rostered hitter is in the lineup.</p>
                     : <DataTable rows={benched} cols={benchCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={() => roleBg("bench")} />}
