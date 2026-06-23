@@ -16,6 +16,12 @@ const star = (t: string) => (t.startsWith("★") ? <><span style={{ color: C.sta
 const twoWayBadge = (
   <span title="Two-way: fills a hitter and a pitcher slot" style={{ marginLeft: 5, padding: "0 4px", borderRadius: 3, fontSize: 10, fontWeight: 700, background: ROSTER_COLORS.twoway, border: `1px solid ${ROSTER_BORDER.twoway}`, color: "#fde68a" }}>2W</span>
 );
+// Role-override dropdown colours (Hit = green, Pitch = blue, 2way = amber).
+const ROLE_OV: Record<string, { bg: string; bd: string; fg: string }> = {
+  hitter: { bg: "rgba(34,197,94,0.20)", bd: "#22c55e", fg: "#86efac" },
+  pitcher: { bg: "rgba(59,130,246,0.22)", bd: "#3b82f6", fg: "#93c5fd" },
+  twoway: { bg: "rgba(234,179,8,0.22)", bd: "#eab308", fg: "#fde68a" },
+};
 const IF = ["1B", "2B", "3B", "SS"], OF = ["LF", "CF", "RF"], FIELD = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
 const POS_ORDER = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
 const posRank = (p: string) => { const i = POS_ORDER.indexOf(p); return i < 0 ? 99 : i; };
@@ -57,7 +63,7 @@ export function RosterPage() {
   const {
     roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
-    roles: roleOverrides, setRole,
+    roles: roleOverrides, setRole, cards,
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
   const [side, setSide] = useState<Side>("vR");
@@ -88,6 +94,10 @@ export function RosterPage() {
   const lpRoleById = new Map<string, RoleOverride>();
   for (const h of roster?.rosterHitters ?? []) lpRoleById.set(h.id, h.twoWay ? "twoway" : "hitter");
   for (const p of roster?.rosterPitchers ?? []) if (!lpRoleById.has(p.id)) lpRoleById.set(p.id, "pitcher");
+  // Excluded players (kept out of generation) — surfaced so they can be un-excluded.
+  const cardById = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards]);
+  const excludedList = [...excluded].map((id) => ({ id, title: cardById.get(id)?.title ?? id }))
+    .sort((a, b) => a.title.localeCompare(b.title));
 
   const roleBg = (role: string): React.CSSProperties => ({ background: ROSTER_COLORS[role] });
   const tabBtn = (id: Tab, label: string) => (
@@ -102,7 +112,8 @@ export function RosterPage() {
 
   // Per-card actions (Lock / Exclude / Remove).
   const iconBtn = (active: boolean, color = "#ef4444"): React.CSSProperties => ({
-    ...inputStyle, padding: "1px 5px", fontSize: 12, cursor: "pointer", lineHeight: 1.4,
+    ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box",
+    fontSize: 12, cursor: "pointer", lineHeight: 1.4,
     background: active ? `${color}40` : C.input, border: `1px solid ${active ? color : C.border}`,
   });
   // Per-card pool override (single dropdown): Hit / Pitch / 2way. No "auto" — the
@@ -114,10 +125,11 @@ export function RosterPage() {
     const lp = lpRoleById.get(id) ?? "hitter";
     const shown = roleOverrides.get(id) ?? lp;
     const forced = roleOverrides.has(id);
+    const col = ROLE_OV[shown]!;
     return (
       <select value={shown} onChange={(e) => { const v = e.target.value as RoleOverride; setRole(id, v === shown ? null : v); }}
-        title={`Role (pool) for this card${forced ? " — FORCED" : ""}. Pick a different role to force it; re-pick the shown role to let the optimizer decide.`}
-        style={{ ...roleSel, border: `1px solid ${forced ? "#eab308" : C.border}`, color: forced ? "#fde68a" : C.text }}>
+        title={`Role (pool) for this card${forced ? " — FORCED" : " — chosen by the optimizer"}. Pick a different role to force it; re-pick the shown role to let the optimizer decide.`}
+        style={{ ...roleSel, background: col.bg, color: col.fg, fontWeight: forced ? 700 : 400, border: `${forced ? 2 : 1}px solid ${col.bd}` }}>
         <option value="hitter">Hit</option>
         <option value="pitcher">Pitch</option>
         <option value="twoway">2way</option>
@@ -251,11 +263,29 @@ export function RosterPage() {
           </div>
 
           {tab === "roster" && (
-            <div style={{ maxWidth: 1320 }}>
-              <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
-              <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} />
-              <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
-              <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} />
+            <div style={{ display: "flex", gap: 22, alignItems: "flex-start" }}>
+              <div style={{ maxWidth: 1320, flex: "1 1 auto", minWidth: 0 }}>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
+                <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} />
+                <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
+                <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} />
+              </div>
+              <div style={{ flex: "0 0 240px", minWidth: 0 }}>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Excluded ({excludedList.length})</h3>
+                {excludedList.length === 0
+                  ? <p style={{ fontSize: 12, color: C.sub }}>None. Use the <span style={{ color: "#ef4444" }}>⊘</span> action to keep a card out of generation.</p>
+                  : <>
+                      <p style={{ margin: "0 0 6px", fontSize: 11, color: C.sub }}>Never selected. Click ✕ to un-exclude, then Regenerate.</p>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        {excludedList.map((e) => (
+                          <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                            <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={e.title}>{star(e.title)}</span>
+                            <button onClick={() => toggleExclude(e.id)} title="Un-exclude (returns to generation on Regenerate)" style={{ ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", flex: "0 0 auto" }}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    </>}
+              </div>
             </div>
           )}
 
