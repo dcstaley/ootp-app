@@ -18,7 +18,15 @@ export interface RosterSlotCard { pos?: string; slot?: number; id: string; title
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
 export interface RosterHitterRow { id: string; title: string; last: string; bats: string; role: string; twoWay: boolean; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
 export interface RosterPitcherRow { id: string; title: string; last: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
-// Next Best Available pool (M5) — top available cards for manual roster editing.
+// Next Best Available pool (M5) — every available card as one unified row (both
+// hit + pitch values); the client derives hitter/pitcher cards per tab.
+export interface AvailRow {
+  id: string; title: string; last: string; bats: string; throws: string;
+  positions: string[]; def: CardDef; cost: number; owned: number;
+  hitVL: number; hitVR: number; pitOVR: number; pitVL: number; pitVR: number;
+  stamina: number; pitchTypes: number;
+}
+// Per-card shapes the Available cards + manual-add use (derived from AvailRow).
 export interface AvailHitterRow { id: string; title: string; last: string; bats: string; positions: string[]; def: CardDef; cost: number; owned: number; wobaVL: number; wobaVR: number }
 export interface AvailPitcherRow { id: string; title: string; last: string; throws: string; cost: number; owned: number; stamina: number; pitchTypes: number; woba: number; wobaVL: number; wobaVR: number }
 // A manually-added card (fills an open roster slot); tagged by which table it joins.
@@ -32,7 +40,8 @@ export interface RosterResult {
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
   rosterHitters: RosterHitterRow[]; rosterPitchers: RosterPitcherRow[];
   memberIds: string[]; twoWayIds: string[];
-  nextBest: { hitters: AvailHitterRow[]; pitchers: AvailPitcherRow[] };
+  nextBest: { available: AvailRow[] };
+  cardValueMin: number; cardValueMax: number | null;
   roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever|twoway
 }
 

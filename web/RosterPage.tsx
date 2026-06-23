@@ -9,7 +9,7 @@ import { useAppData } from "./state.tsx";
 import { DataTable, type Column } from "./DataTable.tsx";
 import {
   C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL,
-  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride, type AvailHitterRow, type AvailPitcherRow,
+  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride, type AvailRow, type AvailHitterRow, type AvailPitcherRow,
 } from "./shared.ts";
 
 const star = (t: string) => (t.startsWith("★") ? <><span style={{ color: C.star }}>★</span>{t.slice(1)}</> : t);
@@ -74,6 +74,8 @@ export function RosterPage() {
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
   const [availCat, setAvailCat] = useState<AvailCat>("hitVR");
+  const [nbOwnedOnly, setNbOwnedOnly] = useState(true); // Next Best: owned-only view
+  const [nbMaxValue, setNbMaxValue] = useState("");      // Next Best: max Card Value filter
   const [side, setSide] = useState<Side>("vR");
   const [assignVR, setAssignVR] = useState<Record<string, string>>({});
   const [assignVL, setAssignVL] = useState<Record<string, string>>({});
@@ -188,25 +190,32 @@ export function RosterPage() {
   // ── Next Best Available (left rail) — compact card list, +Add = lock the card.
   // Tabs by need (Hit vR / Hit vL now; Pitch/SP/defence/value filter to follow).
   const addedIds = new Set(added.map((a) => a.row.id));
-  const availH = (roster?.nextBest?.hitters ?? []).filter((h) => !addedIds.has(h.id) && !removed.has(h.id));
-  const availP = (roster?.nextBest?.pitchers ?? []).filter((p) => !addedIds.has(p.id) && !removed.has(p.id));
+  const maxV = nbMaxValue.trim() === "" ? null : Number(nbMaxValue);
+  // The full available pool; filter (owned, value, tab) then render only the top slice.
+  const availAll: AvailRow[] = (roster?.nextBest?.available ?? []).filter((x) =>
+    !addedIds.has(x.id) && !removed.has(x.id)
+    && (!nbOwnedOnly || x.owned > 0)
+    && (maxV == null || !Number.isFinite(maxV) || x.cost <= maxV));
+  const NB_RENDER = 100; // cap rendered cards (keeps the DOM light; filter scans all)
   const activeCat = AVAIL_CATS.find((c) => c.id === availCat)!;
   const catDesc = ({ hitVR: "by vs-RHP value", hitVL: "by vs-LHP value", pitch: "pitchers by overall value", sp: "SP-qualified pitchers", ifRng: "by infield range", ofRng: "by OF range", cAbil: "by catcher ability" } as Record<AvailCat, string>)[availCat];
   const minStam = roster?.minStarterStamina ?? 70, minPit = roster?.minPitchTypes ?? 3;
-  // Per-tab available list: filter to position/role relevance, sort by the metric.
+  const toHitter = (a: AvailRow): AvailHitterRow => ({ id: a.id, title: a.title, last: a.last, bats: a.bats, positions: a.positions, def: a.def, cost: a.cost, owned: a.owned, wobaVL: a.hitVL, wobaVR: a.hitVR });
+  const toPitcher = (a: AvailRow): AvailPitcherRow => ({ id: a.id, title: a.title, last: a.last, throws: a.throws, cost: a.cost, owned: a.owned, stamina: a.stamina, pitchTypes: a.pitchTypes, woba: a.pitOVR, wobaVL: a.pitVL, wobaVR: a.pitVR });
+  // Per-tab list: filter to position/role relevance, sort by the metric, top slice.
   const hitterList = (): AvailHitterRow[] => {
-    let list = availH;
-    if (availCat === "ifRng") list = list.filter((h) => IF.some((p) => h.positions.includes(p)));
-    else if (availCat === "ofRng") list = list.filter((h) => OF.some((p) => h.positions.includes(p)));
-    else if (availCat === "cAbil") list = list.filter((h) => h.positions.includes("C"));
-    const key: (h: AvailHitterRow) => number =
-      availCat === "hitVL" ? (h) => h.wobaVL : availCat === "hitVR" ? (h) => h.wobaVR :
-      availCat === "ifRng" ? (h) => h.def.ifR : availCat === "ofRng" ? (h) => h.def.ofR : (h) => h.def.cAb;
-    return [...list].sort((a, b) => key(b) - key(a));
+    let list = availAll;
+    if (availCat === "ifRng") list = list.filter((a) => IF.some((p) => a.positions.includes(p)));
+    else if (availCat === "ofRng") list = list.filter((a) => OF.some((p) => a.positions.includes(p)));
+    else if (availCat === "cAbil") list = list.filter((a) => a.positions.includes("C"));
+    const key: (a: AvailRow) => number =
+      availCat === "hitVL" ? (a) => a.hitVL : availCat === "hitVR" ? (a) => a.hitVR :
+      availCat === "ifRng" ? (a) => a.def.ifR : availCat === "ofRng" ? (a) => a.def.ofR : (a) => a.def.cAb;
+    return [...list].sort((a, b) => key(b) - key(a)).slice(0, NB_RENDER).map(toHitter);
   };
   const pitcherList = (): AvailPitcherRow[] => {
-    const list = availCat === "sp" ? availP.filter((p) => p.stamina >= minStam && p.pitchTypes >= minPit) : availP;
-    return [...list].sort((a, b) => a.woba - b.woba); // lower allowed wOBA = better
+    const list = availCat === "sp" ? availAll.filter((a) => a.stamina >= minStam && a.pitchTypes >= minPit) : availAll;
+    return [...list].sort((a, b) => a.pitOVR - b.pitOVR).slice(0, NB_RENDER).map(toPitcher); // lower allowed = better
   };
   const catBtn = (id: AvailCat, label: string) => (
     <button key={id} onClick={() => setAvailCat(id)} style={{ ...inputStyle, padding: "4px 0", fontSize: 12, cursor: "pointer", background: availCat === id ? C.accent : C.input, color: availCat === id ? "#fff" : C.sub, fontWeight: availCat === id ? 700 : 400, border: `1px solid ${availCat === id ? C.accent : C.border}` }}>{label}</button>
@@ -270,42 +279,44 @@ export function RosterPage() {
   const assigned = hitters.filter((h) => (assign[h.id] ?? "-") !== "-");
   const benched = hitters.filter((h) => (assign[h.id] ?? "-") === "-");
   const sel: React.CSSProperties = { ...inputStyle, padding: "2px 4px", fontSize: 12, width: 62, cursor: "pointer" };
+  // Lineup/bench columns mirror the roster-tab order (Score next to B, like vL/vR)
+  // and use fit mode (shrink Learn → Defense → Player; never scroll).
   const lineupCols: Column<RosterHitterRow>[] = [
-    { key: "player", label: "Player", value: (h) => h.last || h.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", value: (h) => h.cost },
-    { key: "b", label: "B", align: "c", value: (h) => h.bats },
-    { key: "learn", label: "Learn", value: (h) => posStr(h.positions) },
-    { key: "def", label: "Defense", value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
-    { key: "pos", label: "Position", align: "c", value: (h) => posRank(assign[h.id] ?? "-"),
+    { key: "player", label: "Player", width: 200, min: 80, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
+    { key: "value", label: "Value", align: "r", width: 56, value: (h) => h.cost },
+    { key: "b", label: "B", align: "c", width: 32, value: (h) => h.bats },
+    { key: "score", label: "Score", align: "r", width: 66, value: (h) => scoreH(h), render: (h) => num(scoreH(h)) },
+    { key: "learn", label: "Learn", width: 90, min: 40, shrink: 1, value: (h) => posStr(h.positions) },
+    { key: "def", label: "Defense", width: 190, min: 60, shrink: 2, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
+    { key: "pos", label: "Position", align: "c", width: 78, value: (h) => posRank(assign[h.id] ?? "-"),
       render: (h) => (
         <select value={assign[h.id] ?? "-"} onChange={(e) => changePos(h.id, e.target.value)} style={sel}>
           <option value="-">-</option>
           {h.positions.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
       ) },
-    { key: "score", label: "Score", align: "r", value: (h) => scoreH(h), render: (h) => num(scoreH(h)) },
   ];
   const benchCols: Column<RosterHitterRow>[] = [
-    { key: "player", label: "Player", value: (h) => h.last || h.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", value: (h) => h.cost },
-    { key: "b", label: "B", align: "c", value: (h) => h.bats },
-    { key: "learn", label: "Learn", value: (h) => posStr(h.positions) },
-    { key: "def", label: "Defense", value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
-    { key: "pos", label: "Position", align: "c", value: () => "BEN", render: () => <span style={{ color: C.sub }}>BEN</span> },
-    { key: "score", label: "Score", align: "r", value: (h) => scoreH(h), render: (h) => num(scoreH(h)) },
+    { key: "player", label: "Player", width: 200, min: 80, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
+    { key: "value", label: "Value", align: "r", width: 56, value: (h) => h.cost },
+    { key: "b", label: "B", align: "c", width: 32, value: (h) => h.bats },
+    { key: "score", label: "Score", align: "r", width: 66, value: (h) => scoreH(h), render: (h) => num(scoreH(h)) },
+    { key: "learn", label: "Learn", width: 90, min: 40, shrink: 1, value: (h) => posStr(h.positions) },
+    { key: "def", label: "Defense", width: 190, min: 60, shrink: 2, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
+    { key: "pos", label: "Position", align: "c", width: 56, value: () => "BEN", render: () => <span style={{ color: C.sub }}>BEN</span> },
   ];
   const backupsAt = (pos: string) => hitters
     .filter((h) => h.positions.includes(pos) && assign[h.id] !== pos).sort((a, b) => scoreH(b) - scoreH(a)).slice(0, 2);
 
   // ── Pitching (Rotation + Bullpen share fixed widths so they line up) ──
   const pStaffCols: Column<PStaffRow>[] = [
-    { key: "slot", label: "", align: "c", width: 50, value: (p) => p.slotLabel, render: (p) => <span style={{ color: C.sub }}>{p.slotLabel}</span> },
-    { key: "player", label: "Player", width: 320, value: (p) => p.last || p.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", width: 64, value: (p) => p.cost },
-    { key: "t", label: "T", align: "c", width: 38, value: (p) => p.throws },
-    { key: "woba", label: "wOBA", align: "r", width: 80, value: (p) => p.woba, render: (p) => num(p.woba) },
-    { key: "stam", label: "Stam", align: "r", width: 58, value: (p) => p.stamina },
-    { key: "pit", label: "# Pit", align: "r", width: 58, value: (p) => p.pitchTypes },
+    { key: "slot", label: "", align: "c", width: 46, value: (p) => p.slotLabel, render: (p) => <span style={{ color: C.sub }}>{p.slotLabel}</span> },
+    { key: "player", label: "Player", width: 320, min: 110, shrink: 1, value: (p) => p.last || p.title, render: nameCell },
+    { key: "value", label: "Value", align: "r", width: 60, value: (p) => p.cost },
+    { key: "t", label: "T", align: "c", width: 36, value: (p) => p.throws },
+    { key: "woba", label: "OVR", align: "r", width: 76, value: (p) => p.woba, render: (p) => num(p.woba) },
+    { key: "stam", label: "Stam", align: "r", width: 56, value: (p) => p.stamina },
+    { key: "pit", label: "# Pit", align: "r", width: 56, value: (p) => p.pitchTypes },
   ];
   const rotRows: PStaffRow[] = useMemo(() => (roster?.rotation ?? []).map((rt) => {
     const p = pitchers.find((x) => x.id === rt.id.replace(/#V$/, ""));
@@ -359,16 +370,26 @@ export function RosterPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5, marginBottom: 8 }}>
                   {AVAIL_CATS.map((c) => catBtn(c.id, c.label))}
                 </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
+                  <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <input type="checkbox" checked={nbOwnedOnly} onChange={(e) => setNbOwnedOnly(e.target.checked)} /> Owned only
+                  </label>
+                  <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }} title={`Show only cards at or below this Card Value (for cap rosters). Min ${roster.cardValueMin}; blank = no limit.`}>
+                    ≤ Value
+                    <input type="number" value={nbMaxValue} min={roster.cardValueMin} max={roster.cardValueMax ?? undefined} step={1}
+                      onChange={(e) => setNbMaxValue(e.target.value)} placeholder="—"
+                      style={{ ...inputStyle, width: 54, padding: "2px 5px", fontSize: 12 }} />
+                  </label>
+                </div>
                 <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>
-                  Top available {ownedOnly ? "owned " : ""}cards, {catDesc}.{" "}
+                  Top available cards, {catDesc}.{" "}
                   {emptySpace > 0
                     ? <><b style={{ color: "#86efac" }}>+ Add</b> fills an open slot ({emptySpace}) and locks the card.</>
                     : <>Roster full — <span style={{ color: "#f87171" }}>remove</span> a card to open a slot.</>}
                 </p>
                 {availItems.length === 0
                   ? <p style={{ fontSize: 12, color: C.sub }}>None available for this tab.</p>
-                  : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 220px)", overflowY: "auto", paddingRight: 4 }}>{availItems}</div>}
-                <p style={{ margin: "8px 0 0", fontSize: 10, color: C.sub }}>Owned-only variants + a value filter (cap rosters) coming.</p>
+                  : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 260px)", overflowY: "auto", paddingRight: 4 }}>{availItems}</div>}
               </div>
 
               {/* Center: roster tables */}
@@ -406,10 +427,10 @@ export function RosterPage() {
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
                 <div style={{ flex: "3 1 700px", minWidth: 0, maxWidth: 1000 }}>
                   <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Lineup ({assigned.length}) — vs {side === "vR" ? "RHP" : "LHP"}</h3>
-                  <DataTable rows={assigned} cols={lineupCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={(h) => roleBg(h.role)} />
+                  <DataTable rows={assigned} cols={lineupCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={(h) => roleBg(h.role)} fit />
                   <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Bench ({benched.length})</h3>
                   {benched.length === 0 ? <p style={{ fontSize: 13, color: C.sub }}>No bench — every rostered hitter is in the lineup.</p>
-                    : <DataTable rows={benched} cols={benchCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={() => roleBg("bench")} />}
+                    : <DataTable rows={benched} cols={benchCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={() => roleBg("bench")} fit />}
                 </div>
                 <div style={{ flex: "1 1 260px", minWidth: 0 }}>
                   <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Depth (vs {side === "vR" ? "RHP" : "LHP"})</h3>
@@ -438,15 +459,15 @@ export function RosterPage() {
             <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
               <div style={{ flex: "1 1 560px", minWidth: 0, maxWidth: 760 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Rotation</h3>
-                <DataTable rows={rotRows} cols={pStaffCols} getKey={(r) => r.id} rowStyle={() => ({ background: ROSTER_COLORS.starter })} />
+                <DataTable rows={rotRows} cols={pStaffCols} getKey={(r) => r.id} rowStyle={() => ({ background: ROSTER_COLORS.starter })} fit />
                 <h3 style={{ margin: "14px 0 6px", fontSize: 14 }}>Bullpen ({bullpenRows.length})</h3>
-                <DataTable rows={bullpenRows} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} rowStyle={() => ({ background: ROSTER_COLORS.reliever })} />
+                <DataTable rows={bullpenRows} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} rowStyle={() => ({ background: ROSTER_COLORS.reliever })} fit />
               </div>
               <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 760 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Available Starters</h3>
                 <p style={{ margin: "0 0 6px", fontSize: 12, color: C.sub }}>Rostered bullpen arms that qualify as SP (stamina ≥ {roster.minStarterStamina}, ≥ {roster.minPitchTypes} pitch types).</p>
                 {availSP.length === 0 ? <p style={{ fontSize: 13, color: C.sub }}>None — no spare qualified starters.</p>
-                  : <DataTable rows={availSP} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} />}
+                  : <DataTable rows={availSP} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} fit />}
               </div>
             </div>
           )}

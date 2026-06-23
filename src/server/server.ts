@@ -259,7 +259,10 @@ function rosterCandidates(
   for (const c0 of catalog.cards) {
     const id = cardId(c0);
     const qty = owned[id] ?? 0;
-    if (excluded.has(id) || (ownedOnly && qty <= 0) || !ctx.isEligible(c0)) continue;
+    // entries = ALL eligible (owned + unowned), so the Next Best pool can show
+    // unowned cards independently of the generation owned-only flag. Owned-scoping
+    // is applied below to the OPTIMIZER pool only (rankable).
+    if (excluded.has(id) || !ctx.isEligible(c0)) continue;
     const useVariant = variantIds.has(id) && t.variants_allowed;
     const c = useVariant ? makeVariant(c0) : c0;
     const sc = scoreCard(c, ctx.config);
@@ -288,9 +291,12 @@ function rosterCandidates(
   const poolH = mode === "none" ? xH : HARD_POOL_CAP;
   const poolP = mode === "none" ? xP : HARD_POOL_CAP;
 
-  const byVL = [...entries].sort((a, b) => b.hitVL - a.hitVL);
-  const byVR = [...entries].sort((a, b) => b.hitVR - a.hitVR);
-  const byPit = [...entries].sort((a, b) => b.pitOVR - a.pitOVR);
+  // Optimizer pool is owned-scoped (you can only roster owned cards) when ownedOnly;
+  // ranking + slicing happen over this set so Top-X = top owned.
+  const rankable = ownedOnly ? entries.filter((e) => (ownedByDisp[e.dispId] ?? 0) > 0) : entries;
+  const byVL = [...rankable].sort((a, b) => b.hitVL - a.hitVL);
+  const byVR = [...rankable].sort((a, b) => b.hitVR - a.hitVR);
+  const byPit = [...rankable].sort((a, b) => b.pitOVR - a.pitOVR);
   const unionTopHit = (k: number) => new Set([...byVL.slice(0, k), ...byVR.slice(0, k)].map((e) => e.dispId));
   const topPit = (k: number) => new Set(byPit.slice(0, k).map((e) => e.dispId));
 
@@ -303,7 +309,7 @@ function rosterCandidates(
   const pitchers: PitcherCandidate[] = [];
   const twoWayIds: string[] = [];
 
-  for (const e of entries) {
+  for (const e of rankable) {
     // Forced Hit/Pitch wins over ranking; forced/auto 2way needs both pools.
     const useH = e.role === "hitter" || e.role === "twoway" || (e.role === "auto" && hitterPool.has(e.dispId));
     const useP = e.role === "pitcher" || e.role === "twoway" || (e.role === "auto" && pitcherPool.has(e.dispId));
@@ -381,28 +387,23 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   // client tabs/sorts this by need (Hit vL/vR, Pitch, SP, defence; value filter
   // later) and +Add fills an open roster slot. Bounded to the top of each pool.
   const rosteredDisp = new Set([...r.hitters, ...r.pitchers]);
-  const available = entries.filter((e) => !rosteredDisp.has(e.dispId));
-  const NEXT_BEST_N = 80;
-  const availHitters = [...available]
-    .sort((a, b) => Math.max(b.hitVL, b.hitVR) - Math.max(a.hitVL, a.hitVR))
-    .slice(0, NEXT_BEST_N)
-    .map((e) => ({
-      id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", bats: BATS[e.bats] ?? "",
-      positions: e.positions, def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
-      wobaVL: round(e.hitVL + TARGET_WOBA), wobaVR: round(e.hitVR + TARGET_WOBA),
-    }));
-  const availPitchers = [...available]
-    .sort((a, b) => b.pitOVR - a.pitOVR)
-    .slice(0, NEXT_BEST_N)
-    .map((e) => ({
-      id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", throws: THROWS[e.throws] ?? "",
-      cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0, stamina: e.stamina, pitchTypes: e.pitchTypes,
-      woba: round(TARGET_WOBA - e.pitOVR), wobaVL: round(TARGET_WOBA - e.pitVL), wobaVR: round(TARGET_WOBA - e.pitVR),
-    }));
-  const nextBest = { hitters: availHitters, pitchers: availPitchers };
+  // The FULL available pool: every eligible card not on the roster, as one unified
+  // row carrying both hit + pitch values. The client sorts/filters per tab (owned,
+  // value, position) and renders only the top slice — so a value filter down to the
+  // tournament's card-value min still reaches the cheapest cards (cap-roster need).
+  const available = entries.filter((e) => !rosteredDisp.has(e.dispId)).map((e) => ({
+    id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "",
+    bats: BATS[e.bats] ?? "", throws: THROWS[e.throws] ?? "",
+    positions: e.positions, def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
+    hitVL: round(e.hitVL + TARGET_WOBA), hitVR: round(e.hitVR + TARGET_WOBA),
+    pitOVR: round(TARGET_WOBA - e.pitOVR), pitVL: round(TARGET_WOBA - e.pitVL), pitVR: round(TARGET_WOBA - e.pitVR),
+    stamina: e.stamina, pitchTypes: e.pitchTypes,
+  }));
+  const nextBest = { available };
 
   return {
     roles, rosterHitters, rosterPitchers, ownedOnly, twoWayIds: [...twoWaySet], nextBest,
+    cardValueMin: t.card_value_min ?? 40, cardValueMax: t.card_value_max ?? null,
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
     status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
     objective: r.objective, balance: r.balance ?? null,
