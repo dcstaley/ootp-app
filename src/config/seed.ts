@@ -13,8 +13,10 @@ import type { Repository } from "../persistence/repository.ts";
 import type { Coeffs } from "./types.ts";
 import type { Era, Park, Softcaps, Tournament } from "./tournament.ts";
 import { eraFromCoeffs, parkFromCoeffs, softcapsFromCoeffs, modelFromCoeffs, type Model } from "./coeff-resolve.ts";
+import { computeEras } from "../data/eras-bbref.ts";
 
 const CAPTURE_DIR = "fixtures/captures";
+const ERA_CSV = "docs/bbref_batting_league.csv";
 
 // Which captures become tournaments, in display order. (real-parkera-basic is a
 // basic-metric variant of real-parkera — same era/park — so it is not a separate
@@ -145,4 +147,20 @@ export async function seedDefaults(repo: Repository): Promise<SeedResult> {
   for (const t of tournaments) await repo.save("tournaments", t.id, t);
 
   return { seeded: true, tournaments: tournaments.length, eras: eraIds.size, parks: parkIds.size, modelName: model.name };
+}
+
+/**
+ * Seed the per-year BBRef era library (baseline 2010). Static historical data, so
+ * it's baked from the committed CSV rather than imported. Idempotent + additive:
+ * only writes era ids not already present, so the capture-derived eras
+ * (era-neutral/era-thr/era-full) and any hand-edits are untouched. Runs every boot.
+ */
+export async function seedEras(repo: Repository): Promise<{ added: number; total: number }> {
+  if (!existsSync(ERA_CSV)) return { added: 0, total: (await repo.list("eras")).length };
+  const existing = new Set(await repo.list("eras"));
+  let added = 0;
+  for (const e of computeEras(readFileSync(ERA_CSV, "utf8"))) {
+    if (!existing.has(e.id)) { await repo.save("eras", e.id, e); added++; }
+  }
+  return { added, total: (await repo.list("eras")).length };
 }

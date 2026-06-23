@@ -25,7 +25,7 @@ import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_
 import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
-import { seedDefaults } from "../config/seed.ts";
+import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
 
@@ -41,6 +41,8 @@ const repo = new Repository(DATA_ROOT);
 
 const seedCfg = await seedDefaults(repo);
 console.log(`[server] tournaments DB: ${seedCfg.seeded ? "seeded" : "loaded"} — ${seedCfg.tournaments} tournaments, ${seedCfg.eras} eras, ${seedCfg.parks} parks; model: ${seedCfg.modelName}`);
+const seedEra = await seedEras(repo);
+console.log(`[server] era library: +${seedEra.added} BBRef eras seeded (${seedEra.total} total)`);
 const seedAcc = await seedAccounts(repo);
 console.log(`[server] accounts: ${seedAcc.seeded ? "seeded" : "loaded"} — [${seedAcc.accountIds.join(", ")}]; catalog source: ${seedAcc.catalogSourceId ?? "(committed docs sample)"}`);
 

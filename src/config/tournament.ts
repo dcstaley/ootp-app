@@ -32,6 +32,10 @@ export interface Era {
   bb: number; k: number; avg: number; hr: number; bip: number; gap: number;
   thr_toggle: boolean; // tournament-HR multiplier toggle
   thr?: number;        // the tHR multiplier (e.g. 1.15); applied when thr_toggle
+  // Optional enrichments from the BBRef per-year import (baseline = 2010).
+  year?: number;
+  hbp?: number;        // HBP modifier (stored; not consumed by scoring yet, like bip)
+  rates?: { bb: number; k: number; hr: number; h: number; b2: number; b3: number; hbp: number; bip: number }; // raw per-PA league rates (recompute-without-refetch)
 }
 
 export interface Park {

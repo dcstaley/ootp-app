@@ -56,14 +56,16 @@ export function ErasParksPage() {
     { key: "gap", label: "Gap", align: "r", width: 62, value: (p) => p.gap, render: (p) => f3(p.gap) },
   ];
   const eraCols: Column<EraCfg>[] = [
-    { key: "name", label: "Era", width: 220, min: 100, shrink: 1, value: (e) => e.name },
+    { key: "name", label: "Era", width: 150, min: 80, shrink: 1, value: (e) => e.name },
+    { key: "yr", label: "Yr", align: "r", width: 54, value: (e) => e.year ?? 0 },
     { key: "bb", label: "BB", align: "r", width: 64, value: (e) => e.bb, render: (e) => f3(e.bb) },
     { key: "k", label: "K", align: "r", width: 64, value: (e) => e.k, render: (e) => f3(e.k) },
     { key: "avg", label: "AVG", align: "r", width: 64, value: (e) => e.avg, render: (e) => f3(e.avg) },
     { key: "hr", label: "HR", align: "r", width: 64, value: (e) => e.hr, render: (e) => f3(e.hr) },
     { key: "bip", label: "BIP", align: "r", width: 64, value: (e) => e.bip, render: (e) => f3(e.bip) },
     { key: "gap", label: "Gap", align: "r", width: 64, value: (e) => e.gap, render: (e) => f3(e.gap) },
-    { key: "thr", label: "tHR", align: "r", width: 64, value: (e) => (e.thr_toggle ? e.thr ?? 1 : 0), render: (e) => (e.thr_toggle ? `×${f3(e.thr ?? 1)}` : "—") },
+    { key: "hbp", label: "HBP", align: "r", width: 64, value: (e) => e.hbp ?? 1, render: (e) => (e.hbp == null ? "—" : f3(e.hbp)) },
+    { key: "thr", label: "tHR", align: "r", width: 60, value: (e) => (e.thr_toggle ? e.thr ?? 1 : 0), render: (e) => (e.thr_toggle ? `×${f3(e.thr ?? 1)}` : "—") },
   ];
 
   return (
@@ -86,8 +88,8 @@ export function ErasParksPage() {
         : <div style={{ maxWidth: 1100 }}><DataTable rows={filtered} cols={parkCols} getKey={(p) => p.id} initialSort={{ key: "year", dir: -1 }} fit /></div>}
 
       <h3 style={{ margin: "20px 0 6px", fontSize: 15 }}>Eras ({eras.length})</h3>
-      <p style={{ margin: "0 0 8px", fontSize: 12, color: C.sub }}>Run-environment factors (BB/K/AVG/HR/BIP/Gap + optional tournament-HR). Editing & import to come.</p>
-      <div style={{ maxWidth: 720 }}><DataTable rows={eras} cols={eraCols} getKey={(e) => e.id} initialSort={{ key: "name", dir: 1 }} fit /></div>
+      <p style={{ margin: "0 0 8px", fontSize: 12, color: C.sub }}>Run-environment factors vs the 2010 baseline (BB/K/AVG/HR/BIP/Gap consumed by scoring; HBP stored, not yet consumed; tHR is a per-tournament knob). Per-year eras are baked from Baseball-Reference league batting.</p>
+      <div style={{ maxWidth: 880 }}><DataTable rows={eras} cols={eraCols} getKey={(e) => e.id} initialSort={{ key: "yr", dir: -1 }} fit /></div>
     </div>
   );
 }

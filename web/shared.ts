@@ -90,7 +90,7 @@ export interface ParkCfg {
 }
 export interface EraCfg {
   id: string; name: string; bb: number; k: number; avg: number; hr: number; bip: number; gap: number;
-  thr_toggle: boolean; thr?: number;
+  thr_toggle: boolean; thr?: number; year?: number; hbp?: number;
 }
 export interface AccountOpt { id: string; name: string; ownedCount: number; totalQty: number; variantCount: number }
 
