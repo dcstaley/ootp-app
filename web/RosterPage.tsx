@@ -141,7 +141,7 @@ export function RosterPage() {
       {roleControl(id)}
       <button onClick={() => toggleLock(id)} title="Lock to roster (required on regenerate)" style={iconBtn(locked.has(id), "#22c55e")}>{locked.has(id) ? "🔒" : "🔓"}</button>
       <button onClick={() => toggleExclude(id)} title="Exclude from generation (never selected)" style={iconBtn(excluded.has(id), "#ef4444")}>{excluded.has(id) ? "🚫" : "⊘"}</button>
-      <button onClick={() => removeCard(id)} title="Remove from the current roster (returns on Regenerate)" style={iconBtn(false)}>✕</button>
+      <button onClick={() => removeCard(id)} title="Remove from the current roster (returns on Regenerate)" style={{ ...iconBtn(false), color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
     </span>
   );
   const actionsCol = <T extends { id: string }>(): Column<T> => ({ key: "act", label: "Actions", align: "r", value: () => 0, render: (r) => actionsCell(r.id) });
@@ -279,7 +279,7 @@ export function RosterPage() {
                       <div style={{ display: "grid", gap: 4 }}>
                         {excludedList.map((e) => (
                           <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "4px 6px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                            <button onClick={() => toggleExclude(e.id)} title="Un-exclude (returns to generation on Regenerate)" style={{ ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", flex: "0 0 auto" }}>✕</button>
+                            <button onClick={() => toggleExclude(e.id)} title="Un-exclude (returns to generation on Regenerate)" style={{ ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", flex: "0 0 auto", color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
                             <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, lineHeight: 1.3, overflowWrap: "anywhere" }}>{star(e.title)}</span>
                           </div>
                         ))}
