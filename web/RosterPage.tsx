@@ -9,16 +9,19 @@ import { useAppData } from "./state.tsx";
 import { DataTable, type Column } from "./DataTable.tsx";
 import {
   C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL,
-  type RosterHitterRow, type RosterPitcherRow, type CardDef,
+  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride,
 } from "./shared.ts";
 
 const star = (t: string) => (t.startsWith("★") ? <><span style={{ color: C.star }}>★</span>{t.slice(1)}</> : t);
+const twoWayBadge = (
+  <span title="Two-way: fills a hitter and a pitcher slot" style={{ marginLeft: 5, padding: "0 4px", borderRadius: 3, fontSize: 10, fontWeight: 700, background: ROSTER_COLORS.twoway, border: `1px solid ${ROSTER_BORDER.twoway}`, color: "#fde68a" }}>2W</span>
+);
 const IF = ["1B", "2B", "3B", "SS"], OF = ["LF", "CF", "RF"], FIELD = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
 const POS_ORDER = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
 const posRank = (p: string) => { const i = POS_ORDER.indexOf(p); return i < 0 ? 99 : i; };
 const posStr = (positions: string[]) => { const f = positions.filter((p) => p !== "DH"); return f.length ? f.join("/") : "DH"; };
-const nameCell = (r: { title: string; owned: number }): ReactNode => (
-  <span>{r.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 4 }} title="Not owned">!</span>}{star(r.title)}</span>
+const nameCell = (r: { title: string; owned: number; twoWay?: boolean }): ReactNode => (
+  <span>{r.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 4 }} title="Not owned">!</span>}{star(r.title)}{r.twoWay && twoWayBadge}</span>
 );
 function defStr(d: CardDef, pos: string): string {
   if (pos === "C") return `Ab${d.cAb} Fr${d.cFr} Ar${d.cAr}`;
@@ -54,6 +57,7 @@ export function RosterPage() {
   const {
     roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
+    roles: roleOverrides, setRole,
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
   const [side, setSide] = useState<Side>("vR");
@@ -76,6 +80,14 @@ export function RosterPage() {
   // Filtered rosters (manual Remove drops a card from the current view everywhere).
   const hitters = (roster?.rosterHitters ?? []).filter((h) => !removed.has(h.id));
   const pitchers = (roster?.rosterPitchers ?? []).filter((p) => !removed.has(p.id));
+  // Distinct cards (a two-way card is in BOTH tables under one id — count once).
+  const distinctCount = new Set([...hitters, ...pitchers].map((r) => r.id)).size;
+  const nTwoWay = (roster?.twoWayIds ?? []).filter((id) => !removed.has(id)).length;
+  // The role each card was assigned by the LP (drives the per-card role dropdown's
+  // default — there is no "auto" choice; the shown value IS the current role).
+  const lpRoleById = new Map<string, RoleOverride>();
+  for (const h of roster?.rosterHitters ?? []) lpRoleById.set(h.id, h.twoWay ? "twoway" : "hitter");
+  for (const p of roster?.rosterPitchers ?? []) if (!lpRoleById.has(p.id)) lpRoleById.set(p.id, "pitcher");
 
   const roleBg = (role: string): React.CSSProperties => ({ background: ROSTER_COLORS[role] });
   const tabBtn = (id: Tab, label: string) => (
@@ -93,8 +105,28 @@ export function RosterPage() {
     ...inputStyle, padding: "1px 5px", fontSize: 12, cursor: "pointer", lineHeight: 1.4,
     background: active ? `${color}40` : C.input, border: `1px solid ${active ? color : C.border}`,
   });
+  // Per-card pool override (single dropdown): Hit / Pitch / 2way. No "auto" — the
+  // shown value is the card's current role (override if set, else the LP's pick).
+  // Re-selecting the shown value releases the override (lets the optimizer decide);
+  // picking a different value forces it. Forced cards get an amber border.
+  const roleSel: React.CSSProperties = { ...inputStyle, padding: "1px 3px", fontSize: 11, cursor: "pointer", lineHeight: 1.4 };
+  const roleControl = (id: string): ReactNode => {
+    const lp = lpRoleById.get(id) ?? "hitter";
+    const shown = roleOverrides.get(id) ?? lp;
+    const forced = roleOverrides.has(id);
+    return (
+      <select value={shown} onChange={(e) => { const v = e.target.value as RoleOverride; setRole(id, v === shown ? null : v); }}
+        title={`Role (pool) for this card${forced ? " — FORCED" : ""}. Pick a different role to force it; re-pick the shown role to let the optimizer decide.`}
+        style={{ ...roleSel, border: `1px solid ${forced ? "#eab308" : C.border}`, color: forced ? "#fde68a" : C.text }}>
+        <option value="hitter">Hit</option>
+        <option value="pitcher">Pitch</option>
+        <option value="twoway">2way</option>
+      </select>
+    );
+  };
   const actionsCell = (id: string): ReactNode => (
-    <span style={{ display: "inline-flex", gap: 3 }}>
+    <span style={{ display: "inline-flex", gap: 3, alignItems: "center" }}>
+      {roleControl(id)}
       <button onClick={() => toggleLock(id)} title="Lock to roster (required on regenerate)" style={iconBtn(locked.has(id), "#22c55e")}>{locked.has(id) ? "🔒" : "🔓"}</button>
       <button onClick={() => toggleExclude(id)} title="Exclude from generation (never selected)" style={iconBtn(excluded.has(id), "#ef4444")}>{excluded.has(id) ? "🚫" : "⊘"}</button>
       <button onClick={() => removeCard(id)} title="Remove from the current roster (returns on Regenerate)" style={iconBtn(false)}>✕</button>
@@ -207,12 +239,13 @@ export function RosterPage() {
               ? <>Cap: <b style={{ color: (capPct ?? 0) > 100 ? "#f87171" : C.text }}>{money(roster.cost)}/{money(roster.cap)}</b> ({capPct}%) · </>
               : <>Mode: {roster.mode} · </>}
             Pool: {roster.poolHitters}H / {roster.poolPitchers}P · H-value <b style={{ color: C.text }}>{roster.balance?.hitterValue.toFixed(3)}</b> · P-value <b style={{ color: C.text }}>{roster.balance?.pitcherValue.toFixed(3)}</b>
+            {nTwoWay > 0 && <> · <span style={{ color: "#fde68a" }}>{nTwoWay} two-way</span></>}
             {nRem > 0 && <> · <span style={{ color: "#f59e0b" }}>{nRem} removed</span></>}
           </p>
-          <Legend roles={["both", "vL", "vR", "bench", "starter", "reliever"]} />
+          <Legend roles={["both", "vL", "vR", "bench", "starter", "reliever", ...(nTwoWay > 0 ? ["twoway"] : [])]} />
 
           <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-            {tabBtn("roster", `Roster (${hitters.length + pitchers.length})`)}
+            {tabBtn("roster", `Roster (${distinctCount})`)}
             {tabBtn("lineups", "Lineups")}
             {tabBtn("pitching", `Pitching (${pitchers.length})`)}
           </div>

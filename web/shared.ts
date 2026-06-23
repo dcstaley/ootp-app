@@ -16,19 +16,22 @@ export interface Meta {
 }
 export interface RosterSlotCard { pos?: string; slot?: number; id: string; title: string; cost: number; stamina?: number; pitchTypes?: number }
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
-export interface RosterHitterRow { id: string; title: string; last: string; bats: string; role: string; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
-export interface RosterPitcherRow { id: string; title: string; last: string; throws: string; role: string; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
+export interface RosterHitterRow { id: string; title: string; last: string; bats: string; role: string; twoWay: boolean; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
+export interface RosterPitcherRow { id: string; title: string; last: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 export interface RosterResult {
   status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean;
   minStarterStamina: number; minPitchTypes: number;
   balance: { hitterValue: number; pitcherValue: number } | null;
-  poolHitters: number; poolPitchers: number;
+  poolHitters: number; poolPitchers: number; rosterSize: number;
   lineupVR: RosterSlotCard[]; lineupVL: RosterSlotCard[];
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
   rosterHitters: RosterHitterRow[]; rosterPitchers: RosterPitcherRow[];
-  memberIds: string[];
-  roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever
+  memberIds: string[]; twoWayIds: string[];
+  roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever|twoway
 }
+
+// Per-card pool override (Roster page Actions). "auto" = no override (default).
+export type RoleOverride = "hitter" | "pitcher" | "twoway";
 
 // Roster role colours (match the old app): both/starter = blue, vL = purple,
 // vR = green, bench/reliever = orange.
@@ -39,12 +42,13 @@ export const ROSTER_COLORS: Record<string, string> = {
   bench: "rgba(249, 115, 22, 0.28)",
   starter: "rgba(59, 130, 246, 0.28)",
   reliever: "rgba(249, 115, 22, 0.28)",
+  twoway: "rgba(234, 179, 8, 0.30)", // two-way = amber/gold
 };
 export const ROSTER_BORDER: Record<string, string> = {
-  both: "#3b82f6", vL: "#a855f7", vR: "#22c55e", bench: "#f97316", starter: "#3b82f6", reliever: "#f97316",
+  both: "#3b82f6", vL: "#a855f7", vR: "#22c55e", bench: "#f97316", starter: "#3b82f6", reliever: "#f97316", twoway: "#eab308",
 };
 export const ROLE_LABEL: Record<string, string> = {
-  both: "Both", vL: "vL", vR: "vR", bench: "Bench", starter: "Starter", reliever: "Reliever",
+  both: "Both", vL: "vL", vR: "vR", bench: "Bench", starter: "Starter", reliever: "Reliever", twoway: "Two-way",
 };
 
 export interface TournamentOpt { id: string; name: string }

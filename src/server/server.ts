@@ -210,8 +210,18 @@ function refreshCatalog() {
 // ── Roster generation (M4 Phase D) ────────────────────────────────────────────
 // Owned-scoped candidates (D6: you can only roster cards you own), scored for the
 // active tournament. A card you own AND have a v5 variant of is scored as the
-// variant (it dominates). Two-way handling is a follow-up: a card with Pos Rating
-// P > 0 goes to the pitcher pool only (avoids double-rostering one card).
+// variant (it dominates).
+//
+// EVERY card has both a hit score and a pitch score (position is irrelevant) — so
+// every eligible card is a candidate for BOTH pools. The pools are then SLICED by
+// rule: non-cap = Top-X (hitters: union of top-X by vL and by vR; pitchers: top-X
+// by OVR), cap/slots = top-1500 each. A card landing in BOTH the top-X hitter and
+// top-X pitcher sets is a TWO-WAY player (this Top-X overlap cutoff is used even in
+// cap/slots mode, where the pools themselves are 1500). The per-card role override
+// forces a card into Hit-only / Pitch-only / two-way regardless of ranking.
+const HARD_POOL_CAP = 1500;
+type RoleOverride = "hitter" | "pitcher" | "twoway";
+
 const defOf = (c: Record<string, unknown>) => ({
   ifR: n(c["Infield Range"]), ifE: n(c["Infield Error"]), ifA: n(c["Infield Arm"]), dp: n(c["DP"]),
   cAb: n(c["CatcherAbil"]), cFr: n(c["CatcherFrame"]), cAr: n(c["Catcher Arm"]),
@@ -219,14 +229,25 @@ const defOf = (c: Record<string, unknown>) => ({
 });
 type Def = ReturnType<typeof defOf>;
 
-function rosterCandidates(t: Tournament, accountId: string | null, ownedOnly: boolean, excluded: Set<string>): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
+function rosterCandidates(
+  t: Tournament, accountId: string | null, ownedOnly: boolean,
+  excluded: Set<string>, roleOverrides: Record<string, RoleOverride>,
+  platoonVR: number, platoonVL: number,
+): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
   const { s } = scoredFor(t.id);
   const ctx = s.ctx;
   const acc = accountId ? accounts.get(accountId) : null;
   const owned = acc?.owned ?? {};
   const variantIds = new Set(acc?.variantCardIds ?? []);
-  const hitters: HitterCandidate[] = [];
-  const pitchers: PitcherCandidate[] = [];
+
+  interface Entry {
+    dispId: string;
+    hitVR: number; hitVL: number; pitVR: number; pitVL: number; pitOVR: number;
+    positions: string[]; stamina: number; pitchTypes: number;
+    bats: number; throws: number; title: string; cost: number;
+    role: RoleOverride | "auto";
+  }
+  const entries: Entry[] = [];
   const ownedByDisp: Record<string, number> = {};
   const defByDisp: Record<string, Def> = {};
   const lastByDisp: Record<string, string> = {};
@@ -240,25 +261,54 @@ function rosterCandidates(t: Tournament, accountId: string | null, ownedOnly: bo
     const sc = scoreCard(c, ctx.config);
     const cost = n(c0["Card Value"]);
     const dispId = useVariant ? `${id}#V` : id;
+    const positions = [...LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p), "DH"];
+    const pitVR = valueFor(sc.pitch.woba_vR, "pitcher");
+    const pitVL = valueFor(sc.pitch.woba_vL, "pitcher");
+    entries.push({
+      dispId,
+      hitVR: valueFor(sc.hit.woba_vR, "hitter"), hitVL: valueFor(sc.hit.woba_vL, "hitter"),
+      pitVR, pitVL, pitOVR: platoonVR * pitVR + platoonVL * pitVL,
+      positions, stamina: n(c0["Stamina"]), pitchTypes: pitchCount(c0),
+      bats: sc.bats, throws: sc.throws, title: String(sc.title), cost,
+      role: roleOverrides[id] ?? "auto",
+    });
     ownedByDisp[dispId] = qty;
     defByDisp[dispId] = defOf(c);
     lastByDisp[dispId] = String(c0["LastName"] ?? "");
-    if (n(c0["Pos Rating P"]) > 0) {
-      pitchers.push({
-        id: dispId, title: String(sc.title), throws: sc.throws,
-        valueVR: valueFor(sc.pitch.woba_vR, "pitcher"), valueVL: valueFor(sc.pitch.woba_vL, "pitcher"),
-        stamina: n(c0["Stamina"]), pitchTypes: pitchCount(c0), cost,
-      });
-    } else {
-      const positions = [...LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p), "DH"];
-      hitters.push({
-        id: dispId, title: String(sc.title), bats: sc.bats,
-        valueVR: valueFor(sc.hit.woba_vR, "hitter"), valueVL: valueFor(sc.hit.woba_vL, "hitter"),
-        positions, cost,
-      });
-    }
   }
-  return { hitters, pitchers, ownedByDisp, defByDisp, lastByDisp };
+
+  // Pool slicing + two-way overlap (see header). N = top-X (non-cap) / 1500 (cap).
+  const mode = t.total_cap && t.total_cap > 0 ? "cap" : "none";
+  const xH = t.topHitters && t.topHitters > 0 ? t.topHitters : 100;
+  const xP = t.topPitchers && t.topPitchers > 0 ? t.topPitchers : 100;
+  const poolH = mode === "none" ? xH : HARD_POOL_CAP;
+  const poolP = mode === "none" ? xP : HARD_POOL_CAP;
+
+  const byVL = [...entries].sort((a, b) => b.hitVL - a.hitVL);
+  const byVR = [...entries].sort((a, b) => b.hitVR - a.hitVR);
+  const byPit = [...entries].sort((a, b) => b.pitOVR - a.pitOVR);
+  const unionTopHit = (k: number) => new Set([...byVL.slice(0, k), ...byVR.slice(0, k)].map((e) => e.dispId));
+  const topPit = (k: number) => new Set(byPit.slice(0, k).map((e) => e.dispId));
+
+  const hitterPool = unionTopHit(poolH);
+  const pitcherPool = topPit(poolP);
+  const twHit = unionTopHit(xH);  // top-X cutoff for two-way (tighter than the pool)
+  const twPit = topPit(xP);
+
+  const hitters: HitterCandidate[] = [];
+  const pitchers: PitcherCandidate[] = [];
+  const twoWayIds: string[] = [];
+
+  for (const e of entries) {
+    // Forced Hit/Pitch wins over ranking; forced/auto 2way needs both pools.
+    const useH = e.role === "hitter" || e.role === "twoway" || (e.role === "auto" && hitterPool.has(e.dispId));
+    const useP = e.role === "pitcher" || e.role === "twoway" || (e.role === "auto" && pitcherPool.has(e.dispId));
+    if (useH) hitters.push({ id: e.dispId, title: e.title, bats: e.bats, valueVR: e.hitVR, valueVL: e.hitVL, positions: e.positions, cost: e.cost });
+    if (useP) pitchers.push({ id: e.dispId, title: e.title, throws: e.throws, valueVR: e.pitVR, valueVL: e.pitVL, stamina: e.stamina, pitchTypes: e.pitchTypes, cost: e.cost });
+    const isTwoWay = useH && useP && (e.role === "twoway" || (e.role === "auto" && twHit.has(e.dispId) && twPit.has(e.dispId)));
+    if (isTwoWay) twoWayIds.push(e.dispId);
+  }
+  return { hitters, pitchers, twoWayIds, ownedByDisp, defByDisp, lastByDisp };
 }
 
 function rosterOptions(t: Tournament): RosterOptimizeOptions {
@@ -272,10 +322,11 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
   };
 }
 
-async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[]) {
+async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
-  const { hitters, pitchers, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded));
-  const opts = { ...rosterOptions(t), lockedIds: locked };
+  const opts0 = rosterOptions(t);
+  const { hitters, pitchers, twoWayIds, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, opts0.platoonVR, opts0.platoonVL);
+  const opts = { ...opts0, lockedIds: locked, twoWayIds };
   const r = await generateFullRoster(hitters, pitchers, opts);
 
   const hById = new Map(hitters.map((c) => [c.id, c]));
@@ -287,14 +338,20 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
 
   // Per-card roster ROLE (drives the colour coding on the grid + roster page),
   // keyed by base Card ID. Hitters: both/vL/vR/bench by lineup membership;
-  // pitchers: starter (in rotation) / reliever (bullpen). Matches old-app colours.
+  // pitchers: starter (in rotation) / reliever (bullpen). Two-way cards get the
+  // dedicated "twoway" colour on the grid (the per-table role still shows their
+  // lineup / rotation slot). Matches old-app colours.
   const strip = (id: string) => id.replace(/#V$/, "");
   const vrIds = new Set(r.lineupVR.map((x) => x.id));
   const vlIds = new Set(r.lineupVL.map((x) => x.id));
   const rotIds = new Set(r.rotation.map((x) => x.id));
+  const twoWaySet = new Set((r.twoWay ?? []).map(strip));
+  const hitRole = (id: string) => vrIds.has(id) && vlIds.has(id) ? "both" : vlIds.has(id) ? "vL" : vrIds.has(id) ? "vR" : "bench";
+  const pitRole = (id: string) => rotIds.has(id) ? "starter" : "reliever";
   const roles: Record<string, string> = {};
-  for (const id of r.hitters) roles[strip(id)] = vrIds.has(id) && vlIds.has(id) ? "both" : vlIds.has(id) ? "vL" : vrIds.has(id) ? "vR" : "bench";
-  for (const id of r.pitchers) roles[strip(id)] = rotIds.has(id) ? "starter" : "reliever";
+  for (const id of r.hitters) roles[strip(id)] = hitRole(id);
+  for (const id of r.pitchers) if (!roles[strip(id)]) roles[strip(id)] = pitRole(id);
+  for (const id of twoWaySet) roles[id] = "twoway";
 
   // Roster LIST detail (the 26-card tables). wOBA reconstructed from valueFor
   // (hitter = value + baseline; pitcher allowed = baseline − value), matching the grid.
@@ -302,29 +359,30 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const THROWS: Record<number, string> = { 1: "R", 2: "L" };
   const roleRank: Record<string, number> = { both: 0, vL: 1, vR: 1, bench: 2, starter: 0, reliever: 1 };
   const rosterHitters = r.hitters.map((id) => {
-    const c = hById.get(id)!; const role = roles[strip(id)] ?? "bench";
-    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, positions: c.positions, def: defByDisp[id],
+    const c = hById.get(id)!; const role = hitRole(id);
+    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, def: defByDisp[id],
       wobaVL: round(c.valueVL + TARGET_WOBA), wobaVR: round(c.valueVR + TARGET_WOBA), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
   const rosterPitchers = r.pitchers.map((id) => {
-    const c = pById.get(id)!; const role = roles[strip(id)] ?? "reliever";
+    const c = pById.get(id)!; const role = pitRole(id);
     const combined = opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL;
-    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", throws: THROWS[c.throws] ?? "", role,
+    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", throws: THROWS[c.throws] ?? "", role, twoWay: twoWaySet.has(strip(id)),
       woba: round(TARGET_WOBA - combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || a.woba - b.woba);
 
   return {
-    roles, rosterHitters, rosterPitchers, ownedOnly,
+    roles, rosterHitters, rosterPitchers, ownedOnly, twoWayIds: [...twoWaySet],
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
     status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
     objective: r.objective, balance: r.balance ?? null,
     poolHitters: hitters.length, poolPitchers: pitchers.length,
+    rosterSize: new Set([...r.hitters, ...r.pitchers].map(strip)).size,
     lineupVR: r.lineupVR.map((x) => ({ ...x, cost: hById.get(x.id)?.cost ?? 0 })),
     lineupVL: r.lineupVL.map((x) => ({ ...x, cost: hById.get(x.id)?.cost ?? 0 })),
     rotation: r.rotation.map((x) => ({ ...x, ...pCard(x.id) })),
     bullpen: r.bullpen.map(pCard),
     bench,
-    memberIds: [...r.hitters, ...r.pitchers].map((id) => id.replace(/#V$/, "")),
+    memberIds: [...new Set([...r.hitters, ...r.pitchers].map((id) => id.replace(/#V$/, "")))],
   };
 }
 
@@ -362,7 +420,13 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
   if (method === "GET" && url === "/api/roster") {
     const list = (k: string) => (u.searchParams.get(k) || "").split(",").filter(Boolean);
-    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded")));
+    // roles=ID:hitter,ID:pitcher,ID:twoway — per-card pool override (base Card ID).
+    const roleOverrides: Record<string, RoleOverride> = {};
+    for (const pair of list("roles")) {
+      const [id, role] = pair.split(":");
+      if (id && (role === "hitter" || role === "pitcher" || role === "twoway")) roleOverrides[id] = role;
+    }
+    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides));
   }
 
   // ── POST API ──

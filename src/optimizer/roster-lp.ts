@@ -80,14 +80,11 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
       if (t?.length) cons.push(` hone_${i}_v${side}: ${t.join(" + ")} - rh_${i} <= 0`);
     }
   });
-  cons.push(` hsize: ${rhVars.join(" + ")} = ${opts.nHitters}`);
-  // Required cards (locks): force the candidate onto the roster.
-  const locked = new Set(opts.lockedIds ?? []);
-  const strip = (id: string) => id.replace(/#V$/, "");
-  if (locked.size) {
-    hitters.forEach((c, i) => { if (locked.has(strip(c.id))) cons.push(` lock_h_${i}: rh_${i} = 1`); });
-    pitchers.forEach((c, j) => { if (locked.has(strip(c.id))) cons.push(` lock_p_${j}: rp_${j} = 1`); });
-  }
+  // hsize/psize are FLOORS (≥), not equalities — two-way players free roster slots
+  // that flow to bonus picks (extra hitter who'd start, else a 13th pitcher). The
+  // distinct-card roster size (rsize, below) is the hard equality; with zero
+  // two-way cards the floors collapse to exact 14H/12P (today's behavior).
+  cons.push(` hsize: ${rhVars.join(" + ")} >= ${opts.nHitters}`);
   // Coverage depth: ≥ minPlayersPerPosition rostered hitters can play EACH field
   // position (so every position has a backup, not just catcher). Catcher may use a
   // higher backupCatcherDepth. Skipped where the pool can't satisfy it (avoids
@@ -117,7 +114,7 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     }
   });
   bin.push(...rpVars);
-  cons.push(` psize: ${rpVars.join(" + ")} = ${opts.nPitchers}`);
+  cons.push(` psize: ${rpVars.join(" + ")} >= ${opts.nPitchers}`);
   for (let k = 1; k <= slots; k++) {
     const t = pSlot[k];
     if (t?.length) cons.push(` slot_s${k}: ${t.join(" + ")} = 1`);
@@ -127,21 +124,65 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     if (t?.length) cons.push(` prot_${j}: ${t.join(" + ")} - rp_${j} <= 0`);
   });
 
+  // ── Two-way players ──────────────────────────────────────────────────────────
+  // A physical card present in BOTH pools is matched by id. Two of them:
+  //   • two-way (Top-X overlap or forced toggle): rh_i = rp_j — used as both sides
+  //     or neither (always-two-way per the user); counted ONCE toward roster + cap.
+  //   • single-role (in both pools but not two-way): rh_i + rp_j ≤ 1 — pick one.
+  const strip = (id: string) => id.replace(/#V$/, "");
+  const hIdxById = new Map<string, number>(); hitters.forEach((c, i) => hIdxById.set(c.id, i));
+  const twoWaySet = new Set(opts.twoWayIds ?? []);
+  const overlapTerms: { i: number; j: number; cost: number; twoWay: boolean }[] = [];
+  pitchers.forEach((c, j) => {
+    const i = hIdxById.get(c.id);
+    if (i == null) return; // pitcher-only card
+    const twoWay = twoWaySet.has(c.id) || twoWaySet.has(strip(c.id));
+    overlapTerms.push({ i, j, cost: c.cost, twoWay });
+    if (twoWay) cons.push(` tw_${i}_${j}: rh_${i} - rp_${j} = 0`);
+    else cons.push(` sr_${i}_${j}: rh_${i} + rp_${j} <= 1`);
+  });
+  // The freed slot = the overlap. For a two-way card rh_i = rp_j, so subtracting
+  // rh_i once removes the double-count from roster size + cost.
+  const twoWay = overlapTerms.filter((o) => o.twoWay);
+  const overlapCount = twoWay.map((o) => `rh_${o.i}`);
+
+  // ── Roster size (distinct cards) — the hard equality ──
+  const rosterSize = opts.rosterSize ?? opts.nHitters + opts.nPitchers;
+  const sizeTerms = [...rhVars, ...rpVars, ...overlapCount.map((v) => `- ${v}`)];
+  cons.push(` rsize: ${sizeTerms.join(" + ").replace(/\+ -/g, "-")} = ${rosterSize}`);
+
+  // ── Required cards (locks): force the entity onto the roster ──
+  const locked = new Set(opts.lockedIds ?? []);
+  if (locked.size) {
+    // A two-way card is locked via its hitter var (rp_j follows from rh_i = rp_j);
+    // a pure hitter/pitcher via its own membership.
+    const lockedH = new Set<number>();
+    hitters.forEach((c, i) => { if (locked.has(strip(c.id)) || locked.has(c.id)) { cons.push(` lock_h_${i}: rh_${i} = 1`); lockedH.add(i); } });
+    const twoWayHIdx = new Set(twoWay.map((o) => o.i));
+    pitchers.forEach((c, j) => {
+      const i = hIdxById.get(c.id);
+      if (i != null && (lockedH.has(i) || twoWayHIdx.has(i))) return; // covered by hitter lock / rh=rp
+      if (locked.has(strip(c.id)) || locked.has(c.id)) cons.push(` lock_p_${j}: rp_${j} = 1`);
+    });
+  }
+
   // ── Budget ──
   if (opts.mode === "cap" && opts.totalCap != null) {
     const terms = [
       ...hitters.map((c, i) => `${c.cost} rh_${i}`),
       ...pitchers.map((c, j) => `${c.cost} rp_${j}`),
+      ...twoWay.map((o) => `- ${o.cost} rh_${o.i}`), // two-way card costs once
     ];
-    cons.push(` cap: ${terms.join(" + ")} <= ${opts.totalCap}`);
+    cons.push(` cap: ${terms.join(" + ").replace(/\+ -/g, "-")} <= ${opts.totalCap}`);
   } else if (opts.mode === "slots" && opts.slotCounts) {
-    const rosterSize = opts.rosterSize ?? opts.nHitters + opts.nPitchers;
     for (const { threshold, limit } of cumulativeSlotLimits(opts.slotCounts, rosterSize)) {
       const terms = [
         ...hitters.map((c, i) => ({ cost: c.cost, v: `rh_${i}` })),
         ...pitchers.map((c, j) => ({ cost: c.cost, v: `rp_${j}` })),
       ].filter((x) => x.cost >= threshold).map((x) => x.v);
-      if (terms.length) cons.push(` tier_${threshold}: ${terms.join(" + ")} <= ${limit}`);
+      // subtract two-way overlaps that clear the tier (counted once)
+      const subs = twoWay.filter((o) => o.cost >= threshold).map((o) => `- rh_${o.i}`);
+      if (terms.length) cons.push(` tier_${threshold}: ${[...terms, ...subs].join(" + ").replace(/\+ -/g, "-")} <= ${limit}`);
     }
   }
 

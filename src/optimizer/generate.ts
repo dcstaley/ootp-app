@@ -94,14 +94,20 @@ export async function generateFullRoster(
   const inRot = new Set(rotation.map((r) => r.id));
   const bullpen = pitchers_.map((c) => c.id).filter((id) => !inRot.has(id));
 
-  const cost = hitters_.reduce((s, c) => s + c.cost, 0) + pitchers_.reduce((s, c) => s + c.cost, 0);
+  // Two-way cards are rostered as BOTH a hitter and a pitcher (same id in both
+  // sub-results). Count each physical card ONCE toward cost / roster size.
+  const hIds = new Set(hitters_.map((c) => c.id));
+  const twoWay = pitchers_.filter((c) => hIds.has(c.id)).map((c) => c.id);
+  const twoWaySet = new Set(twoWay);
+  const cost = hitters_.reduce((s, c) => s + c.cost, 0)
+    + pitchers_.filter((c) => !twoWaySet.has(c.id)).reduce((s, c) => s + c.cost, 0);
   const hitterValue = hitters_.reduce((s, c) => s + Math.max(c.valueVR, c.valueVL), 0);
   const pitcherValue = pitchers_.reduce((s, c) => s + (opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL), 0);
 
   return {
     status: "Optimal", objective: sol.ObjectiveValue,
     hitters: hitters_.map((c) => c.id), lineupVR: lineup("R"), lineupVL: lineup("L"),
-    pitchers: pitchers_.map((c) => c.id), rotation, bullpen,
+    pitchers: pitchers_.map((c) => c.id), rotation, bullpen, twoWay,
     cost, balance: { hitterValue, pitcherValue },
   };
 }

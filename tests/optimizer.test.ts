@@ -207,3 +207,58 @@ describe("M4 Phase C — cap & slots budgets", () => {
     expect(highP.balance!.pitcherValue).toBeGreaterThanOrEqual(lowP.balance!.pitcherValue - 1e-6);
   });
 });
+
+// ── Two-way players (synthetic, controlled pool) ──────────────────────────────
+const ALLPOS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
+const synthHitters = (n: number, base = 0.05): HitterCandidate[] =>
+  Array.from({ length: n }, (_, i) => ({ id: `H${i}`, title: `H${i}`, bats: 1, valueVR: base - i * 0.001, valueVL: base - i * 0.001, positions: ALLPOS, cost: 50 }));
+const synthPitchers = (n: number, base = 0.05): PitcherCandidate[] =>
+  Array.from({ length: n }, (_, i) => ({ id: `P${i}`, title: `P${i}`, throws: 1, valueVR: base - i * 0.001, valueVL: base - i * 0.001, stamina: 100, pitchTypes: 5, cost: 50 }));
+
+describe("M4 two-way players", () => {
+  // TW is a strong hitter AND a usable pitcher, present in both pools with one id.
+  const twHit: HitterCandidate = { id: "TW", title: "TW", bats: 1, valueVR: 0.09, valueVL: 0.09, positions: ALLPOS, cost: 50 };
+  const twPit: PitcherCandidate = { id: "TW", title: "TW", throws: 1, valueVR: 0.04, valueVL: 0.04, stamina: 100, pitchTypes: 5, cost: 50 };
+  const H = [...synthHitters(12), twHit];
+  const P = [...synthPitchers(12), twPit];
+  const base = {
+    nHitters: 9, nPitchers: 3, dh: true, minStarters: 1, minStarterStamina: 70, minPitchTypes: 3,
+    platoonVR: 0.62, platoonVL: 0.38, rosterSize: 12, minPlayersPerPosition: 2,
+  } as const;
+
+  it("uses a designated two-way card on both sides, frees a slot for a bonus hitter, counts cost once", async () => {
+    // totalCap = 12 distinct × 50 = 600: only feasible if TW's cost is counted ONCE.
+    const r = await generateFullRoster(H, P, { ...base, mode: "cap", totalCap: 600, twoWayIds: ["TW"] });
+    expect(r.status).toBe("Optimal");
+    expect(r.twoWay).toEqual(["TW"]);
+    // TW appears in both sub-rosters; distinct roster = exactly rosterSize
+    expect(r.hitters).toContain("TW");
+    expect(r.pitchers).toContain("TW");
+    expect(new Set([...r.hitters, ...r.pitchers]).size).toBe(12);
+    // freed slot → an extra hitter (10H + 3P = 13 role-fills over 12 distinct cards)
+    expect(r.hitters.length).toBe(10);
+    expect(r.pitchers.length).toBe(3);
+    // cost counts the two-way card once
+    expect(r.cost).toBe(600);
+  });
+
+  it("treats a shared-id card as single-role when NOT designated two-way", async () => {
+    const r = await generateFullRoster(H, P, { ...base, mode: "cap", totalCap: 600, twoWayIds: [] });
+    expect(r.status).toBe("Optimal");
+    expect(r.twoWay).toEqual([]);
+    // TW may be a hitter or a pitcher, but never both
+    expect(r.hitters.includes("TW") && r.pitchers.includes("TW")).toBe(false);
+    expect(r.hitters.length + r.pitchers.length).toBe(12); // no freed slot
+    expect(new Set([...r.hitters, ...r.pitchers]).size).toBe(12);
+  });
+
+  it("forces a locked two-way card onto the roster as both", async () => {
+    // A weak-hitting TW that wouldn't be auto-selected, but locked + two-way.
+    const weakTwHit: HitterCandidate = { id: "TW", title: "TW", bats: 1, valueVR: -0.2, valueVL: -0.2, positions: ALLPOS, cost: 50 };
+    const r = await generateFullRoster([...synthHitters(12), weakTwHit], P, { ...base, mode: "none", twoWayIds: ["TW"], lockedIds: ["TW"] });
+    expect(r.status).toBe("Optimal");
+    expect(r.hitters).toContain("TW");
+    expect(r.pitchers).toContain("TW");
+    expect(r.twoWay).toEqual(["TW"]);
+  });
+});

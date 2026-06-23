@@ -88,6 +88,13 @@ export interface RosterOptimizeOptions {
   // by base card id; variant rows count). Excluded cards are filtered before the
   // pool is built, so they never appear here.
   lockedIds?: string[];
+  // two-way players: candidate ids that appear in BOTH the hitter and pitcher
+  // pools AND are designated two-way (Top-X overlap, or forced via the per-card
+  // toggle). Such a card fills a hitter slot AND a pitcher slot with one entity —
+  // counted ONCE toward roster size + cap (the freed slot flows to a bonus pick).
+  // A card present in both pools but NOT listed here is single-role (rh+rp ≤ 1):
+  // it can be chosen as a hitter OR a pitcher, never both.
+  twoWayIds?: string[];
   // budget
   mode: BudgetMode;
   totalCap?: number;
@@ -104,6 +111,7 @@ export interface Roster {
   pitchers: string[];
   rotation: RotationSlot[];
   bullpen: string[];
+  twoWay?: string[];         // ids used as BOTH a hitter and a pitcher (freed a slot)
   cost?: number;             // total roster Card Value (cap/slots modes)
   balance?: { hitterValue: number; pitcherValue: number }; // SP-7 H/P value split
 }
