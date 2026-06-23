@@ -8,7 +8,8 @@ export interface HitterCandidate {
   bats: number;
   valueVR: number;     // per-side hitter value (D2 signed distance from baseline)
   valueVL: number;
-  positions: string[]; // eligible lineup positions (field Learn flags + "DH")
+  positions: string[]; // STARTER-eligible lineup positions (Learn flags + "DH", filtered by per-position starter mins)
+  coverPositions?: string[]; // BACKUP-eligible field positions (coverage depth); defaults to `positions` when absent
   cost: number;        // Card Value — the cap/slots budget cost
 }
 

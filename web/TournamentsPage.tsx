@@ -5,7 +5,7 @@
 
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, SLOT_TIER_KEYS, SOFTCAP_GROUPS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp } from "./shared.ts";
+import { C, inputStyle, SLOT_TIER_KEYS, SOFTCAP_GROUPS, POSITION_RATING_KEYS, FIELD_POS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp } from "./shared.ts";
 
 type Lib = { id: string; name: string };
 
@@ -27,6 +27,7 @@ export function TournamentsPage() {
   const [draft, setDraft] = useState<TournamentCfg | null>(null);
   const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[] }>({ eras: [], parks: [], columns: [] });
   const [isNew, setIsNew] = useState(false);
+  const [expandedPos, setExpandedPos] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -100,6 +101,22 @@ export function TournamentsPage() {
   const setSc = (key: string, v: string) => set("softcaps", { ...sc, [key]: v === "" ? 0 : Number(v) });
   const scIn = (key: string, opts: { step?: number; max?: number } = {}): ReactNode => (
     <input type="number" min={0} max={opts.max} step={opts.step ?? 1} value={sc[key] ?? ""} onChange={(e) => setSc(key, e.target.value)} style={{ ...smIn, width: 72 }} />
+  );
+
+  // ── Position constraints ──
+  const pm = draft?.positionMins ?? {};
+  const posActive = (pos: string) => {
+    const m = pm[pos]; return !!m && (Object.keys(m.starter ?? {}).length > 0 || Object.keys(m.backup ?? {}).length > 0);
+  };
+  const setPosMin = (pos: string, tier: "starter" | "backup", key: string, v: string) => {
+    const cur = pm[pos] ?? {};
+    const tierObj: Record<string, number> = { ...(cur[tier] ?? {}) };
+    if (v === "") delete tierObj[key]; else tierObj[key] = Number(v);
+    set("positionMins", { ...pm, [pos]: { ...cur, [tier]: tierObj } });
+  };
+  const togglePos = (pos: string) => setExpandedPos((s) => { const n = new Set(s); n.has(pos) ? n.delete(pos) : n.add(pos); return n; });
+  const posMinIn = (pos: string, tier: "starter" | "backup", key: string): ReactNode => (
+    <input type="number" min={0} value={pm[pos]?.[tier]?.[key] ?? ""} onChange={(e) => setPosMin(pos, tier, key, e.target.value)} placeholder="—" style={{ ...smIn, width: 62 }} />
   );
 
   return (
@@ -232,6 +249,36 @@ export function TournamentsPage() {
                     {scIn(`pen_${g.key}`, { step: 0.05, max: 1 })}
                   </Fragment>
                 ))}
+              </div>
+            </>)}
+
+            {section("Position constraints", <>
+              <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>Per-position min defensive ratings. <b>Starter</b> = bar to start there; <b>Backup</b> = bar to count toward depth (a starter always backs up). Blank = no limit. Click a position to edit.</p>
+              <div style={{ display: "grid", gap: 4, maxWidth: 420 }}>
+                {FIELD_POS.map((pos) => {
+                  const open = expandedPos.has(pos);
+                  return (
+                    <div key={pos} style={{ border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                      <div onClick={() => togglePos(pos)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", cursor: "pointer" }}>
+                        <span style={{ width: 10, color: C.sub }}>{open ? "▾" : "▸"}</span>
+                        <span style={{ fontWeight: 700, fontSize: 13 }}>{pos}</span>
+                        {posActive(pos) && <span style={{ fontSize: 11, color: "#86efac" }}>· set</span>}
+                      </div>
+                      {open && (
+                        <div style={{ padding: "0 8px 8px 26px", display: "grid", gridTemplateColumns: "70px 62px 62px", gap: 6, alignItems: "center", fontSize: 12 }}>
+                          <span /><span style={{ color: C.sub, fontWeight: 600 }}>Starter</span><span style={{ color: C.sub, fontWeight: 600 }}>Backup</span>
+                          {POSITION_RATING_KEYS[pos]!.map((r) => (
+                            <Fragment key={r.key}>
+                              <span style={{ color: C.sub }}>{r.label}</span>
+                              {posMinIn(pos, "starter", r.key)}
+                              {posMinIn(pos, "backup", r.key)}
+                            </Fragment>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </>)}
 

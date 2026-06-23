@@ -87,7 +87,17 @@ export interface TournamentCfg {
   platoonVR?: number; platoonVL?: number; minPlayersPerPosition?: number;
   eligibility?: EligibilityGroup;
   softcaps?: Record<string, number>; // cap_<grp>_top/_bot + pen_<grp>
+  positionMins?: Record<string, PositionMin>;
 }
+// Per-position min defensive ratings (starter = bar to start, backup = bar to cover).
+export interface PositionMin { starter?: Record<string, number>; backup?: Record<string, number> }
+const IF_KEYS = [{ key: "range", label: "Range" }, { key: "error", label: "Error" }, { key: "arm", label: "Arm" }, { key: "dp", label: "DP" }];
+const OF_KEYS = [{ key: "range", label: "Range" }, { key: "error", label: "Error" }, { key: "arm", label: "Arm" }];
+const C_KEYS = [{ key: "ability", label: "Ability" }, { key: "frame", label: "Frame" }, { key: "arm", label: "Arm" }];
+export const POSITION_RATING_KEYS: Record<string, { key: string; label: string }[]> = {
+  C: C_KEYS, "1B": IF_KEYS, "2B": IF_KEYS, "3B": IF_KEYS, SS: IF_KEYS, LF: OF_KEYS, CF: OF_KEYS, RF: OF_KEYS,
+};
+export const FIELD_POS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"] as const;
 // Softcap rating groups: per group, ratings above _top get diminishing returns and
 // below _bot get penalized, by strength pen_<grp>. 5 hitting + 4 pitching.
 export const SOFTCAP_GROUPS: { key: string; label: string }[] = [

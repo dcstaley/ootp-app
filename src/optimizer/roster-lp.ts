@@ -91,7 +91,8 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // guaranteed infeasibility — the shortage is then visible in the result).
   const minPos = opts.minPlayersPerPosition ?? 2;
   for (const pos of FIELD_POSITIONS) {
-    const eligible = hitters.map((c, i) => ({ c, i })).filter((x) => x.c.positions.includes(pos)).map((x) => `rh_${x.i}`);
+    // Coverage counts cards that can BACK UP the position (starter-or-backup tier).
+    const eligible = hitters.map((c, i) => ({ c, i })).filter((x) => (x.c.coverPositions ?? x.c.positions).includes(pos)).map((x) => `rh_${x.i}`);
     const need = pos === "C" ? Math.max(minPos, depth) : minPos;
     if (eligible.length >= need) cons.push(` cover_${pos}: ${eligible.join(" + ")} >= ${need}`);
   }

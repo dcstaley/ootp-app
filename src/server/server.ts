@@ -232,6 +232,25 @@ const defOf = (c: Record<string, unknown>) => ({
 });
 type Def = ReturnType<typeof defOf>;
 
+// Per-position defensive ratings (rating id → Def field) for the per-position min
+// constraints. IF positions share one rating set, OF another, C another.
+type RatingSpec = { key: string; field: keyof Def };
+const IF_RATINGS: RatingSpec[] = [{ key: "range", field: "ifR" }, { key: "error", field: "ifE" }, { key: "arm", field: "ifA" }, { key: "dp", field: "dp" }];
+const OF_RATINGS: RatingSpec[] = [{ key: "range", field: "ofR" }, { key: "error", field: "ofE" }, { key: "arm", field: "ofA" }];
+const C_RATINGS: RatingSpec[] = [{ key: "ability", field: "cAb" }, { key: "frame", field: "cFr" }, { key: "arm", field: "cAr" }];
+const POSITION_RATINGS: Record<string, RatingSpec[]> = {
+  C: C_RATINGS, "1B": IF_RATINGS, "2B": IF_RATINGS, "3B": IF_RATINGS, SS: IF_RATINGS, LF: OF_RATINGS, CF: OF_RATINGS, RF: OF_RATINGS,
+};
+/** Does a card's defense meet every min for a position tier? (no mins → yes) */
+const meetsPositionMins = (def: Def, pos: string, mins?: Record<string, number>): boolean => {
+  if (!mins) return true;
+  for (const spec of POSITION_RATINGS[pos] ?? []) {
+    const m = mins[spec.key];
+    if (m != null && (def[spec.field] ?? 0) < m) return false;
+  }
+  return true;
+};
+
 // A fully-scored candidate (both sides) before any pool slicing. The Next Best
 // Available pool reads these directly (unsliced); the optimizer reads the sliced
 // subsets built below.
@@ -311,6 +330,19 @@ function rosterCandidates(
   const hitters: HitterCandidate[] = [];
   const pitchers: PitcherCandidate[] = [];
   const twoWayIds: string[] = [];
+  const posMins = t.positionMins ?? {};
+  // Starter-eligible positions (lineup) + backup-eligible (coverage), per the
+  // tournament's per-position min defensive ratings. A starter automatically backs
+  // up too; DH has no defensive min.
+  const qualifiedPositions = (dispId: string, raw: string[]): { starter: string[]; cover: string[] } => {
+    const def = defByDisp[dispId]!;
+    const field = raw.filter((p) => p !== "DH");
+    const canStart = (p: string) => meetsPositionMins(def, p, posMins[p]?.starter);
+    return {
+      starter: ["DH", ...field.filter(canStart)],
+      cover: field.filter((p) => canStart(p) || meetsPositionMins(def, p, posMins[p]?.backup)),
+    };
+  };
 
   // Force-include locked / role-overridden cards even if they fell outside the Top-X
   // slice or are unowned — so a manually-added/locked card actually binds on solve.
@@ -327,7 +359,10 @@ function rosterCandidates(
     // force-included card with no explicit role defaults to a hitter candidate.
     const useH = e.role === "hitter" || e.role === "twoway" || (e.role === "auto" && (forcedIn || hitterPool.has(e.dispId)));
     const useP = e.role === "pitcher" || e.role === "twoway" || (e.role === "auto" && pitcherPool.has(e.dispId));
-    if (useH) hitters.push({ id: e.dispId, title: e.title, bats: e.bats, valueVR: e.hitVR, valueVL: e.hitVL, positions: e.positions, cost: e.cost });
+    if (useH) {
+      const q = qualifiedPositions(e.dispId, e.positions);
+      hitters.push({ id: e.dispId, title: e.title, bats: e.bats, valueVR: e.hitVR, valueVL: e.hitVL, positions: q.starter, coverPositions: q.cover, cost: e.cost });
+    }
     if (useP) pitchers.push({ id: e.dispId, title: e.title, throws: e.throws, valueVR: e.pitVR, valueVL: e.pitVL, stamina: e.stamina, pitchTypes: e.pitchTypes, cost: e.cost });
     const isTwoWay = useH && useP && (e.role === "twoway" || (e.role === "auto" && twHit.has(e.dispId) && twPit.has(e.dispId)));
     if (isTwoWay) twoWayIds.push(e.dispId);

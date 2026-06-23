@@ -103,4 +103,8 @@ export interface Tournament {
   platoonVR?: number;                      // team RHP/LHP exposure weights (default league 0.62/0.38)
   platoonVL?: number;
   minPlayersPerPosition?: number;          // coverage depth / backups (default 2)
+  // Per-position min defensive ratings. starter = bar to START there (lineup); backup
+  // = bar to count toward coverage depth. Keys are rating ids relevant to the position
+  // group (C: ability/frame/arm · IF: range/error/arm/dp · OF: range/error/arm).
+  positionMins?: Record<string, { starter?: Record<string, number>; backup?: Record<string, number> }>;
 }
