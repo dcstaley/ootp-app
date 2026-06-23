@@ -5,15 +5,27 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, SLOT_TIER_KEYS, type TournamentCfg } from "./shared.ts";
+import { C, inputStyle, SLOT_TIER_KEYS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp } from "./shared.ts";
 
 type Lib = { id: string; name: string };
+
+const ELIG_OPS: { value: RuleOp; label: string }[] = [
+  { value: "num_ge", label: "≥ (num)" }, { value: "num_gt", label: "> (num)" },
+  { value: "num_le", label: "≤ (num)" }, { value: "num_lt", label: "< (num)" },
+  { value: "num_eq", label: "= (num)" }, { value: "num_between", label: "between (num)" },
+  { value: "set_in", label: "is one of" }, { value: "set_not_in", label: "is not one of" },
+  { value: "text_contains", label: "contains" }, { value: "text_equals", label: "equals" },
+  { value: "is_blank", label: "is blank" }, { value: "is_not_blank", label: "is not blank" },
+];
+const opKind = (op: RuleOp): "ab" | "num" | "text" | "values" | "none" =>
+  op === "num_between" ? "ab" : op.startsWith("num_") ? "num" : (op === "set_in" || op === "set_not_in") ? "values"
+    : (op === "text_contains" || op === "text_equals") ? "text" : "none";
 
 export function TournamentsPage() {
   const { tournaments, tournamentId, reloadTournaments, reloadView } = useAppData();
   const [selId, setSelId] = useState(tournamentId);
   const [draft, setDraft] = useState<TournamentCfg | null>(null);
-  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[] }>({ eras: [], parks: [] });
+  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[] }>({ eras: [], parks: [], columns: [] });
   const [isNew, setIsNew] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -72,6 +84,14 @@ export function TournamentsPage() {
       {children}
     </div>
   );
+
+  // ── Eligibility rule helpers ──
+  const elig: EligibilityGroup = draft?.eligibility ?? { mode: "ALL", rules: [] };
+  const setElig = (g: EligibilityGroup) => set("eligibility", g);
+  const addRule = () => setElig({ ...elig, rules: [...elig.rules, { id: `r${Date.now()}-${elig.rules.length}`, column: libs.columns[0] ?? "", op: "num_ge" }] });
+  const updRule = (id: string, patch: Partial<EligibilityRule>) => setElig({ ...elig, rules: elig.rules.map((r) => (r.id === id ? { ...r, ...patch } : r)) });
+  const delRule = (id: string) => setElig({ ...elig, rules: elig.rules.filter((r) => r.id !== id) });
+  const smIn: React.CSSProperties = { ...inputStyle, padding: "3px 5px", fontSize: 12 };
 
   return (
     <div style={{ width: "100%" }}>
@@ -155,10 +175,46 @@ export function TournamentsPage() {
               {row("Max variants on roster", numIn("max_variants_on_roster", { min: 0 }))}
             </>)}
 
+            {section("Eligibility rules", <>
+              <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 8 }}>
+                {(["ALL", "ANY"] as const).map((m) => (
+                  <label key={m} style={{ display: "inline-flex", gap: 4, alignItems: "center", cursor: "pointer", fontSize: 13 }}>
+                    <input type="radio" name="eligmode" checked={elig.mode === m} onChange={() => setElig({ ...elig, mode: m })} /> Match {m === "ALL" ? "ALL rules" : "ANY rule"}
+                  </label>
+                ))}
+              </div>
+              <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>Card-value min/max (above) is applied separately. No rules = every card in the value range is eligible.</p>
+              <div style={{ display: "grid", gap: 6 }}>
+                {elig.rules.map((r) => {
+                  const kind = opKind(r.op);
+                  const cols = libs.columns.includes(r.column) || !r.column ? libs.columns : [r.column, ...libs.columns];
+                  return (
+                    <div key={r.id} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <select value={r.column} onChange={(e) => updRule(r.id, { column: e.target.value })} style={{ ...smIn, flex: "1 1 200px", maxWidth: 240, cursor: "pointer" }}>
+                        {cols.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <select value={r.op} onChange={(e) => updRule(r.id, { op: e.target.value as RuleOp, a: undefined, b: undefined, values: undefined })} style={{ ...smIn, width: 130, cursor: "pointer" }}>
+                        {ELIG_OPS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      {kind === "ab" && <>
+                        <input type="number" value={r.a ?? ""} onChange={(e) => updRule(r.id, { a: e.target.value })} placeholder="min" style={{ ...smIn, width: 70 }} />
+                        <input type="number" value={r.b ?? ""} onChange={(e) => updRule(r.id, { b: e.target.value })} placeholder="max" style={{ ...smIn, width: 70 }} />
+                      </>}
+                      {kind === "num" && <input type="number" value={r.a ?? ""} onChange={(e) => updRule(r.id, { a: e.target.value })} placeholder="value" style={{ ...smIn, width: 90 }} />}
+                      {kind === "text" && <input value={r.a ?? ""} onChange={(e) => updRule(r.id, { a: e.target.value })} placeholder="text" style={{ ...smIn, width: 160 }} />}
+                      {kind === "values" && <input value={(r.values ?? []).join(", ")} onChange={(e) => updRule(r.id, { values: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} placeholder="a, b, c" style={{ ...smIn, flex: "1 1 160px", maxWidth: 240 }} />}
+                      <button onClick={() => delRule(r.id)} title="Remove rule" style={{ ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+              <button onClick={addRule} style={{ ...inputStyle, marginTop: 8, cursor: "pointer" }}>+ Add rule</button>
+            </>)}
+
             <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
               <button onClick={save} disabled={busy} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff", fontWeight: 600 }}>{busy ? "Saving…" : isNew ? "Create" : "Save"}</button>
               {msg && <span style={{ fontSize: 13, color: msg.ok ? "#86efac" : "#f87171" }}>{msg.text}</span>}
-              <span style={{ fontSize: 11, color: C.sub }}>Softcaps & eligibility rules are preserved (Phase-2 editors).</span>
+              <span style={{ fontSize: 11, color: C.sub }}>Softcaps are preserved (Phase-2 editor).</span>
             </div>
           </div>
         ) : <p style={{ color: C.sub }}>Select a tournament to edit.</p>}

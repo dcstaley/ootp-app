@@ -67,6 +67,12 @@ export const ROLE_LABEL: Record<string, string> = {
 };
 
 export interface TournamentOpt { id: string; name: string }
+// Eligibility rules (mirror the server engine — rowEligible).
+export type RuleOp =
+  | "num_between" | "num_ge" | "num_gt" | "num_le" | "num_lt" | "num_eq"
+  | "set_in" | "set_not_in" | "text_contains" | "text_equals" | "is_blank" | "is_not_blank";
+export interface EligibilityRule { id: string; column: string; op: RuleOp; a?: string; b?: string; values?: string[] }
+export interface EligibilityGroup { mode: "ALL" | "ANY"; rules: EligibilityRule[] }
 // Full tournament config for the editor (Phase 1). softcaps/eligibility ride along
 // opaquely (loaded, preserved on save — not edited in Phase 1).
 export interface TournamentCfg {
@@ -79,7 +85,8 @@ export interface TournamentCfg {
   topHitters?: number | null; topPitchers?: number | null;
   budget_mode?: "none" | "cap" | "slots"; slot_counts?: Record<string, number>;
   platoonVR?: number; platoonVL?: number; minPlayersPerPosition?: number;
-  softcaps?: unknown; eligibility?: unknown; // preserved, not edited here
+  eligibility?: EligibilityGroup;
+  softcaps?: unknown; // preserved, not edited here
 }
 export const SLOT_TIER_KEYS = ["perfect", "diamond", "gold", "silver", "bronze", "iron"] as const;
 // Reusable run-environment libraries (referenced by tournaments by id).

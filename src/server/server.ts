@@ -477,7 +477,7 @@ const server = createServer(async (req, res) => {
     const t = tournamentById.get(u.searchParams.get("id") || "");
     return t ? json(res, t) : json(res, { error: "unknown tournament" }, 404);
   }
-  if (method === "GET" && url === "/api/libraries") return json(res, { eras: eraList(), parks: parkList() });
+  if (method === "GET" && url === "/api/libraries") return json(res, { eras: eraList(), parks: parkList(), columns: [...catalog.columns].sort((a, b) => a.localeCompare(b)) });
   if (method === "GET" && url === "/api/parks") return json(res, { parks: [...parks.values()] });
   if (method === "GET" && url === "/api/eras") return json(res, { eras: [...eras.values()] });
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
