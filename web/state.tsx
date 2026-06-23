@@ -159,15 +159,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (added.some((a) => a.row.id === id)) {
       setAdded((a) => a.filter((x) => x.row.id !== id));
       setLocked((l) => { const n = new Set(l); n.delete(id); return n; });
+      setRoleOv((m) => { const n = new Map(m); n.delete(id); return n; }); // clear the add's role tag
     } else {
       setRemoved((s) => { const n = new Set(s); n.add(id); return n; });
     }
   };
-  // Add a card into an OPEN roster slot (caller gates on available space) + lock it
-  // so a later Regenerate keeps it. Shown immediately; no Regenerate needed to see it.
+  // Add a card into an OPEN roster slot (caller gates on available space): lock it AND
+  // tag its role (hitter/pitcher) so Regenerate force-includes it in the right pool —
+  // even if it's below the optimizer's Top-X cut or unowned. Shown immediately.
   const addCard = (card: AddedCard) => {
     setAdded((a) => (a.some((x) => x.row.id === card.row.id) ? a : [...a, card]));
     setLocked((l) => { const n = new Set(l); n.add(card.row.id); return n; });
+    setRoleOv((m) => { const n = new Map(m); n.set(card.row.id, card.kind); return n; });
   };
   const setRole = (id: string, role: RoleOverride | null) => { setRoleOv((m) => { const n = new Map(m); if (role) n.set(id, role); else n.delete(id); return n; }); setDirty(true); };
 

@@ -242,7 +242,7 @@ interface Entry {
 
 function rosterCandidates(
   t: Tournament, accountId: string | null, ownedOnly: boolean,
-  excluded: Set<string>, roleOverrides: Record<string, RoleOverride>,
+  excluded: Set<string>, roleOverrides: Record<string, RoleOverride>, locked: Set<string>,
   platoonVR: number, platoonVL: number,
 ): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; entries: Entry[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
   const { s } = scoredFor(t.id);
@@ -309,9 +309,20 @@ function rosterCandidates(
   const pitchers: PitcherCandidate[] = [];
   const twoWayIds: string[] = [];
 
-  for (const e of rankable) {
-    // Forced Hit/Pitch wins over ranking; forced/auto 2way needs both pools.
-    const useH = e.role === "hitter" || e.role === "twoway" || (e.role === "auto" && hitterPool.has(e.dispId));
+  // Force-include locked / role-overridden cards even if they fell outside the Top-X
+  // slice or are unowned — so a manually-added/locked card actually binds on solve.
+  const strip0 = (id: string) => id.replace(/#V$/, "");
+  const rankableSet = new Set(rankable.map((e) => e.dispId));
+  const forcedBase = new Set<string>([...locked, ...Object.keys(roleOverrides)]);
+  const poolEntries = forcedBase.size
+    ? [...rankable, ...entries.filter((e) => !rankableSet.has(e.dispId) && forcedBase.has(strip0(e.dispId)))]
+    : rankable;
+
+  for (const e of poolEntries) {
+    const forcedIn = !rankableSet.has(e.dispId); // a force-included card (below cut / unowned)
+    // Forced Hit/Pitch wins over ranking; forced/auto 2way needs both pools. A
+    // force-included card with no explicit role defaults to a hitter candidate.
+    const useH = e.role === "hitter" || e.role === "twoway" || (e.role === "auto" && (forcedIn || hitterPool.has(e.dispId)));
     const useP = e.role === "pitcher" || e.role === "twoway" || (e.role === "auto" && pitcherPool.has(e.dispId));
     if (useH) hitters.push({ id: e.dispId, title: e.title, bats: e.bats, valueVR: e.hitVR, valueVL: e.hitVL, positions: e.positions, cost: e.cost });
     if (useP) pitchers.push({ id: e.dispId, title: e.title, throws: e.throws, valueVR: e.pitVR, valueVL: e.pitVL, stamina: e.stamina, pitchTypes: e.pitchTypes, cost: e.cost });
@@ -335,7 +346,7 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
 async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
   const opts0 = rosterOptions(t);
-  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, opts0.platoonVR, opts0.platoonVL);
+  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, new Set(locked), opts0.platoonVR, opts0.platoonVL);
   const opts = { ...opts0, lockedIds: locked, twoWayIds };
   const r = await generateFullRoster(hitters, pitchers, opts);
 
