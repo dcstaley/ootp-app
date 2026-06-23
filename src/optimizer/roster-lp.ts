@@ -167,6 +167,20 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     });
   }
 
+  // ── Lineup position locks (S5.3): pin a hitter to a position in one platoon
+  // lineup. yh_i_pos_vS = 1 → the fill_pos_vS = 1 constraint forces every other
+  // candidate at that (pos, side) to 0, displacing whoever the LP would have
+  // placed there; hone links it to rh_i so the locked card is rostered. A lock to
+  // a position the card can't start (var never emitted) is silently skipped. ──
+  const hIdxByBase = new Map<string, number>(); hitters.forEach((c, i) => hIdxByBase.set(strip(c.id), i));
+  for (const lk of opts.lineupLocks ?? []) {
+    const i = hIdxByBase.get(strip(lk.id));
+    if (i == null) continue;
+    const c = hitters[i]!;
+    if (!positions.includes(lk.pos) || !c.positions.includes(lk.pos)) continue;
+    cons.push(` lkpos_${i}_${lk.pos}_v${lk.side}: yh_${i}_${lk.pos}_v${lk.side} = 1`);
+  }
+
   // ── Budget ──
   if (opts.mode === "cap" && opts.totalCap != null) {
     const terms = [

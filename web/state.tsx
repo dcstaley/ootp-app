@@ -3,7 +3,8 @@
 // active (tournament, account) view and exposes the mutations.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AddedCard } from "./shared.ts";
+import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AddedCard, LineupLock } from "./shared.ts";
+import { lockKey } from "./shared.ts";
 
 interface ImportResult { ok: boolean; error?: string; matched?: number; unmatched?: number; column?: string; newId?: string }
 
@@ -25,6 +26,9 @@ interface AppData {
   added: AddedCard[]; addCard: (card: AddedCard) => void;
   // per-card pool override (Pitch/Hit/2way); absent = auto. Needs Regenerate.
   roles: Map<string, RoleOverride>; setRole: (id: string, role: RoleOverride | null) => void;
+  // lineup position locks (S5.3), keyed `side:id`. Survive Regenerate (sent to the
+  // optimizer); toggling marks the roster dirty.
+  lineupLocks: Map<string, LineupLock>; toggleLineupLock: (id: string, pos: string, side: "L" | "R") => void;
   generateRoster: () => Promise<void>;
   reloadView: () => Promise<void>;
   loadAccounts: () => Promise<unknown>;
@@ -64,6 +68,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [added, setAdded] = useState<AddedCard[]>([]);
   const [roleOv, setRoleOv] = useState<Map<string, RoleOverride>>(new Map());
+  const [lineupLocks, setLineupLocks] = useState<Map<string, LineupLock>>(new Map());
   const [dirty, setDirty] = useState(false);
 
   const loadAccounts = () =>
@@ -157,7 +162,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   // Roster + generation controls reset whenever the (tournament, account) scope
   // changes — locks/excludes are card-specific to the active account.
-  useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setAdded([]); setRoleOv(new Map()); setDirty(false); }, [tournamentId, accountId]);
+  useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setAdded([]); setRoleOv(new Map()); setLineupLocks(new Map()); setDirty(false); }, [tournamentId, accountId]);
 
   const setOwnedOnly = (v: boolean) => { setOwnedOnlyState(v); setDirty(true); };
   const setMetric = (m: "woba" | "basic") => { setMetricState(m); setDirty(true); };
@@ -170,6 +175,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   // generated card is hidden via `removed`.
   const removeCard = (id: string) => {
     setLocked((l) => { if (!l.has(id)) return l; const n = new Set(l); n.delete(id); return n; });
+    // drop any lineup locks for this card (both sides) — it's leaving the roster.
+    setLineupLocks((m) => { const n = new Map(m); n.delete(lockKey("L", id)); n.delete(lockKey("R", id)); return m.size === n.size ? m : n; });
     if (added.some((a) => a.row.id === id)) {
       setAdded((a) => a.filter((x) => x.row.id !== id));
       setRoleOv((m) => { const n = new Map(m); n.delete(id); return n; });
@@ -186,6 +193,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setRoleOv((m) => { const n = new Map(m); n.set(card.row.id, card.kind); return n; });
   };
   const setRole = (id: string, role: RoleOverride | null) => { setRoleOv((m) => { const n = new Map(m); if (role) n.set(id, role); else n.delete(id); return n; }); setDirty(true); };
+  // Lock a hitter to a position in one platoon lineup. Re-locking the same
+  // (id, pos, side) clears it; locking to a new position replaces. Marks dirty —
+  // the lock binds on the next Regenerate (it's an LP constraint).
+  const toggleLineupLock = (id: string, pos: string, side: "L" | "R") => {
+    setLineupLocks((m) => { const n = new Map(m); const k = lockKey(side, id); const cur = n.get(k); if (cur && cur.pos === pos) n.delete(k); else n.set(k, { id, pos, side }); return n; });
+    setDirty(true);
+  };
 
   const generateRoster = async () => {
     if (!tournamentId) return;
@@ -193,7 +207,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     try {
       const enc = (s: Set<string>) => [...s].join(",");
       const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
-      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(locked)}&excluded=${enc(excluded)}&roles=${encodeURIComponent(encRoles)}`;
+      const encLocks = [...lineupLocks.values()].map((l) => `${l.id}:${l.pos}:${l.side}`).join(",");
+      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(locked)}&excluded=${enc(excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}`;
       setRoster(await fetch("/api/roster" + q).then((r) => r.json()));
       setRemoved(new Set()); setAdded([]); // fresh roster — clear manual edits
       setDirty(false);
@@ -209,6 +224,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
     added, addCard,
     roles: roleOv, setRole,
+    lineupLocks, toggleLineupLock,
     generateRoster,
     reloadView, loadAccounts, renameAccount, importOwnership, toggleVariant, importVariants, clearVariants,
   };

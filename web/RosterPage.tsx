@@ -5,43 +5,15 @@
 // Lineups support manual position assignment via per-player dropdowns.
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { useAppData } from "./state.tsx";
 import { DataTable, type Column } from "./DataTable.tsx";
+import { LineupTab } from "./LineupTab.tsx";
 import {
   C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL,
-  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride, type AvailRow, type AvailHitterRow, type AvailPitcherRow,
+  type RosterHitterRow, type RosterPitcherRow, type RoleOverride, type AvailRow, type AvailHitterRow, type AvailPitcherRow, type AddedCard,
 } from "./shared.ts";
-
-const star = (t: string) => (t.startsWith("★") ? <><span style={{ color: C.star }}>★</span>{t.slice(1)}</> : t);
-const twoWayBadge = (
-  <span title="Two-way: fills a hitter and a pitcher slot" style={{ marginLeft: 5, padding: "0 4px", borderRadius: 3, fontSize: 10, fontWeight: 700, background: ROSTER_COLORS.twoway, border: `1px solid ${ROSTER_BORDER.twoway}`, color: "#fde68a" }}>2W</span>
-);
-// Role-override dropdown colours (Hit = green, Pitch = blue, 2way = amber).
-const ROLE_OV: Record<string, { bg: string; bd: string; fg: string }> = {
-  hitter: { bg: "rgba(34,197,94,0.20)", bd: "#22c55e", fg: "#86efac" },
-  pitcher: { bg: "rgba(59,130,246,0.22)", bd: "#3b82f6", fg: "#93c5fd" },
-  twoway: { bg: "rgba(234,179,8,0.22)", bd: "#eab308", fg: "#fde68a" },
-};
-const IF = ["1B", "2B", "3B", "SS"], OF = ["LF", "CF", "RF"], FIELD = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
-const POS_ORDER = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
-const posRank = (p: string) => { const i = POS_ORDER.indexOf(p); return i < 0 ? 99 : i; };
-const posStr = (positions: string[]) => { const f = positions.filter((p) => p !== "DH"); return f.length ? f.join("/") : "DH"; };
-const nameCell = (r: { title: string; owned: number; twoWay?: boolean }): ReactNode => (
-  <span>{r.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 4 }} title="Not owned">!</span>}{star(r.title)}{r.twoWay && twoWayBadge}</span>
-);
-function defStr(d: CardDef, pos: string): string {
-  if (pos === "C") return `Ab${d.cAb} Fr${d.cFr} Ar${d.cAr}`;
-  if (IF.includes(pos)) return `R${d.ifR} E${d.ifE} A${d.ifA} DP${d.dp}`;
-  if (OF.includes(pos)) return `R${d.ofR} E${d.ofE} A${d.ofA}`;
-  return "";
-}
-function defSummary(h: { positions: string[]; def: CardDef }): string {
-  const parts: string[] = [];
-  if (h.positions.includes("C")) parts.push(`C ${defStr(h.def, "C")}`);
-  if (IF.some((p) => h.positions.includes(p))) parts.push(`IF ${defStr(h.def, "1B")}`);
-  if (OF.some((p) => h.positions.includes(p))) parts.push(`OF ${defStr(h.def, "LF")}`);
-  return parts.join("   ");
-}
+import { IF, OF, posStr, star, nameCell, defSummary, ROLE_OV } from "./roster-cells.tsx";
 
 function Legend({ roles }: { roles: string[] }) {
   return (
@@ -55,6 +27,23 @@ function Legend({ roles }: { roles: string[] }) {
   );
 }
 
+// Pool→roster drag: a Next Best card you can drag onto the roster tables to add +
+// lock it (mirrors the +Add button). 5px activation so the +Add click and the rail
+// scroll still work. Disabled when the roster is full.
+function PoolDraggable({ id, disabled, children }: { id: string; disabled?: boolean; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `pool:${id}`, disabled });
+  return (
+    <div ref={setNodeRef} {...attributes} {...(disabled ? {} : listeners)}
+      style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 7px", cursor: disabled ? "default" : "grab", touchAction: "none", opacity: isDragging ? 0.4 : 1, transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined, zIndex: isDragging ? 50 : undefined, position: isDragging ? "relative" : undefined }}>
+      {children}
+    </div>
+  );
+}
+function RosterDropZone({ children }: { children: ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "roster-drop" });
+  return <div ref={setNodeRef} style={{ flex: "999 1 500px", minWidth: 0, maxWidth: 1320, borderRadius: 10, outline: isOver ? `2px dashed ${C.accent}` : "none", outlineOffset: 4 }}>{children}</div>;
+}
+
 type Tab = "roster" | "lineups" | "pitching";
 type AvailCat = "hitVR" | "hitVL" | "pitch" | "sp" | "ifRng" | "ofRng" | "cAbil";
 const AVAIL_CATS: { id: AvailCat; label: string; kind: "hitter" | "pitcher" }[] = [
@@ -63,7 +52,6 @@ const AVAIL_CATS: { id: AvailCat; label: string; kind: "hitter" | "pitcher" }[] 
   { id: "ifRng", label: "IF Rng", kind: "hitter" }, { id: "ofRng", label: "OF Rng", kind: "hitter" },
   { id: "cAbil", label: "C Abil", kind: "hitter" },
 ];
-type Side = "vR" | "vL";
 type PStaffRow = RosterPitcherRow & { slotLabel: string };
 
 export function RosterPage() {
@@ -76,22 +64,8 @@ export function RosterPage() {
   const [availCat, setAvailCat] = useState<AvailCat>("hitVR");
   const [nbOwnedOnly, setNbOwnedOnly] = useState(true); // Next Best: owned-only view
   const [nbMaxValue, setNbMaxValue] = useState("");      // Next Best: max Card Value filter
-  const [side, setSide] = useState<Side>("vR");
-  const [assignVR, setAssignVR] = useState<Record<string, string>>({});
-  const [assignVL, setAssignVL] = useState<Record<string, string>>({});
 
   useEffect(() => { if (!roster && !rosterLoading) generateRoster(); }, []);
-  useEffect(() => {
-    if (!roster) return;
-    const mk = (lineup: { id: string; pos?: string }[]) => {
-      const m: Record<string, string> = {};
-      for (const h of roster.rosterHitters) m[h.id] = "-";
-      for (const s of lineup) m[s.id.replace(/#V$/, "")] = s.pos ?? "-";
-      return m;
-    };
-    setAssignVR(mk(roster.lineupVR));
-    setAssignVL(mk(roster.lineupVL));
-  }, [roster]);
 
   // Manually-added cards shown on the roster — hitters as bench bats, pitchers as relievers.
   const addedHitterRows: RosterHitterRow[] = added.filter((a) => a.kind === "hitter")
@@ -120,9 +94,6 @@ export function RosterPage() {
   const roleBg = (role: string): React.CSSProperties => ({ background: ROSTER_COLORS[role] });
   const tabBtn = (id: Tab, label: string) => (
     <button onClick={() => setTab(id)} style={{ ...inputStyle, cursor: "pointer", background: tab === id ? C.accent : C.input, color: "#fff", fontWeight: tab === id ? 600 : 400 }}>{label}</button>
-  );
-  const sideBtn = (id: Side, label: string) => (
-    <button onClick={() => setSide(id)} style={{ ...inputStyle, cursor: "pointer", background: side === id ? "#374151" : C.input, color: side === id ? "#fff" : C.sub, fontWeight: side === id ? 700 : 400, border: side === id ? `2px solid ${C.accent}` : `1px solid ${C.border}` }}>{label}</button>
   );
   const capPct = roster?.cap && roster.cost != null ? Math.round((roster.cost / roster.cap) * 100) : null;
   const money = (n: number | null) => (n == null ? "—" : n.toLocaleString());
@@ -232,7 +203,7 @@ export function RosterPage() {
     const canAdd = emptySpace > 0;
     const act = (v: AvailCat) => v === availCat;
     return (
-      <div key={h.id} style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 7px" }}>
+      <PoolDraggable key={h.id} id={h.id} disabled={!canAdd}>
         <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
           <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
             {h.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(h.title)}
@@ -246,13 +217,13 @@ export function RosterPage() {
           {" · "}Val {h.cost} · {posStr(h.positions)} {h.bats && `· ${h.bats}`}
         </div>
         {defSummary(h) && <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{defSummary(h)}</div>}
-      </div>
+      </PoolDraggable>
     );
   };
   const availPitcherCard = (p: AvailPitcherRow): ReactNode => {
     const canAdd = emptySpace > 0;
     return (
-      <div key={p.id} style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 7px" }}>
+      <PoolDraggable key={p.id} id={p.id} disabled={!canAdd}>
         <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
           <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
             {p.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(p.title)}
@@ -263,52 +234,27 @@ export function RosterPage() {
           <b style={{ color: C.text }}>OVR {num(p.woba)}</b> · vL {num(p.wobaVL)} · vR {num(p.wobaVR)}
         </div>
         <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{p.throws && `T ${p.throws} · `}Stam {p.stamina} · {p.pitchTypes} pit · Val {p.cost}</div>
-      </div>
+      </PoolDraggable>
     );
   };
-  const availItems: ReactNode[] = activeCat.kind === "hitter" ? hitterList().map(availHitterCard) : pitcherList().map(availPitcherCard);
-
-  // ── Lineups (editable assignment, per side) ──
-  const assign = side === "vR" ? assignVR : assignVL;
-  const setAssign = side === "vR" ? setAssignVR : setAssignVL;
-  const scoreH = (h: RosterHitterRow) => (side === "vR" ? h.wobaVR : h.wobaVL);
-  const changePos = (id: string, pos: string) => setAssign((a) => {
-    const next = { ...a };
-    if (pos !== "-") for (const k of Object.keys(next)) if (next[k] === pos) next[k] = "-";
-    next[id] = pos;
-    return next;
-  });
-  const assigned = hitters.filter((h) => (assign[h.id] ?? "-") !== "-");
-  const benched = hitters.filter((h) => (assign[h.id] ?? "-") === "-");
-  const sel: React.CSSProperties = { ...inputStyle, padding: "2px 4px", fontSize: 12, width: 62, cursor: "pointer" };
-  // Lineup/bench columns mirror the roster-tab order (Score next to B, like vL/vR)
-  // and use fit mode (shrink Learn → Defense → Player; never scroll).
-  const lineupCols: Column<RosterHitterRow>[] = [
-    { key: "player", label: "Player", width: 200, min: 80, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", width: 56, value: (h) => h.cost },
-    { key: "b", label: "B", align: "c", width: 32, value: (h) => h.bats },
-    { key: "score", label: "Score", align: "r", width: 66, value: (h) => scoreH(h), render: (h) => num(scoreH(h)) },
-    { key: "learn", label: "Learn", width: 90, min: 40, shrink: 1, value: (h) => posStr(h.positions) },
-    { key: "def", label: "Defense", width: 190, min: 60, shrink: 2, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
-    { key: "pos", label: "Position", align: "c", width: 78, value: (h) => posRank(assign[h.id] ?? "-"),
-      render: (h) => (
-        <select value={assign[h.id] ?? "-"} onChange={(e) => changePos(h.id, e.target.value)} style={sel}>
-          <option value="-">-</option>
-          {h.positions.map((p) => <option key={p} value={p}>{p}</option>)}
-        </select>
-      ) },
-  ];
-  const benchCols: Column<RosterHitterRow>[] = [
-    { key: "player", label: "Player", width: 200, min: 80, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", width: 56, value: (h) => h.cost },
-    { key: "b", label: "B", align: "c", width: 32, value: (h) => h.bats },
-    { key: "score", label: "Score", align: "r", width: 66, value: (h) => scoreH(h), render: (h) => num(scoreH(h)) },
-    { key: "learn", label: "Learn", width: 90, min: 40, shrink: 1, value: (h) => posStr(h.positions) },
-    { key: "def", label: "Defense", width: 190, min: 60, shrink: 2, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
-    { key: "pos", label: "Position", align: "c", width: 56, value: () => "BEN", render: () => <span style={{ color: C.sub }}>BEN</span> },
-  ];
-  const backupsAt = (pos: string) => hitters
-    .filter((h) => h.positions.includes(pos) && assign[h.id] !== pos).sort((a, b) => scoreH(b) - scoreH(a)).slice(0, 2);
+  // Current tab's cards + an id→AddedCard lookup so a pool→roster drop resolves the
+  // dragged card (the +Add path uses the same AddedCard shape).
+  const curHitters = activeCat.kind === "hitter" ? hitterList() : [];
+  const curPitchers = activeCat.kind === "pitcher" ? pitcherList() : [];
+  const addById = useMemo(() => {
+    const m = new Map<string, AddedCard>();
+    for (const h of curHitters) m.set(h.id, { kind: "hitter", row: h });
+    for (const p of curPitchers) m.set(p.id, { kind: "pitcher", row: p });
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availCat, curHitters.length, curPitchers.length, nbOwnedOnly, nbMaxValue, added.length, removed.size]);
+  const availItems: ReactNode[] = activeCat.kind === "hitter" ? curHitters.map(availHitterCard) : curPitchers.map(availPitcherCard);
+  const poolSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const onPoolDragEnd = (e: DragEndEvent) => {
+    const a = String(e.active.id); if (!a.startsWith("pool:") || !e.over || e.over.id !== "roster-drop") return;
+    const add = addById.get(a.slice(5));
+    if (add && emptySpace > 0) addCard(add);
+  };
 
   // ── Pitching (Rotation + Bullpen share fixed widths so they line up) ──
   const pStaffCols: Column<PStaffRow>[] = [
@@ -382,6 +328,7 @@ export function RosterPage() {
           </div>
 
           {tab === "roster" && (
+            <DndContext sensors={poolSensors} onDragEnd={onPoolDragEnd}>
             <div style={{ display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
               {/* Left rail: Next Best Available */}
               <div style={{ flex: "1 1 290px", minWidth: 280, maxWidth: 340 }}>
@@ -411,13 +358,13 @@ export function RosterPage() {
                   : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 260px)", overflowY: "auto", paddingRight: 4 }}>{availItems}</div>}
               </div>
 
-              {/* Center: roster tables */}
-              <div style={{ flex: "999 1 500px", minWidth: 0, maxWidth: 1320 }}>
+              {/* Center: roster tables (drop target for pool→roster drag) */}
+              <RosterDropZone>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
                 <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} fit />
                 <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
                 <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} fit />
-              </div>
+              </RosterDropZone>
 
               {/* Right rail: Excluded */}
               <div style={{ flex: "1 1 240px", minWidth: 220, maxWidth: 320 }}>
@@ -437,41 +384,11 @@ export function RosterPage() {
                     </>}
               </div>
             </div>
+            </DndContext>
           )}
 
           {tab === "lineups" && (
-            <div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>{sideBtn("vL", "vs LHP")}{sideBtn("vR", "vs RHP")}</div>
-              <p style={{ margin: "0 0 8px", fontSize: 12, color: C.sub }}>Set a player's position with the dropdown — one player per position; choose “-” to move them to the bench. Edits are kept until you Regenerate.</p>
-              <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
-                <div style={{ flex: "3 1 700px", minWidth: 0, maxWidth: 1000 }}>
-                  <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Lineup ({assigned.length}) — vs {side === "vR" ? "RHP" : "LHP"}</h3>
-                  <DataTable rows={assigned} cols={lineupCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={(h) => roleBg(h.role)} fit />
-                  <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Bench ({benched.length})</h3>
-                  {benched.length === 0 ? <p style={{ fontSize: 13, color: C.sub }}>No bench — every rostered hitter is in the lineup.</p>
-                    : <DataTable rows={benched} cols={benchCols} getKey={(h) => h.id} initialSort={{ key: "score", dir: -1 }} rowStyle={() => roleBg("bench")} fit />}
-                </div>
-                <div style={{ flex: "1 1 260px", minWidth: 0 }}>
-                  <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Depth (vs {side === "vR" ? "RHP" : "LHP"})</h3>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    {FIELD.map((pos) => {
-                      const backups = backupsAt(pos);
-                      return (
-                        <div key={pos} style={{ padding: "6px 8px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                          <div style={{ fontWeight: 700, fontSize: 12, color: C.link }}>{pos}</div>
-                          {backups.length === 0 ? <div style={{ fontSize: 11, color: "#ef4444", fontStyle: "italic" }}>No backups</div>
-                            : backups.map((b, i) => (
-                              <div key={b.id} style={{ fontSize: 11, paddingLeft: 6 }}>
-                                {i + 1}. {b.title.replace(/^★\s*/, "")} <span style={{ color: C.sub }}>· {defStr(b.def, pos)} · {scoreH(b).toFixed(3)}</span>
-                              </div>
-                            ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <LineupTab hitters={hitters} seedVR={roster.lineupVR} seedVL={roster.lineupVL} num={num} roleBg={roleBg} />
           )}
 
           {tab === "pitching" && (

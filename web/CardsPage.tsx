@@ -138,8 +138,8 @@ export function CardsPage() {
   const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [valSearch, setValSearch] = useState("");
 
-  const choosePreset = (name: keyof typeof PRESETS) => { setPreset(name); setSortKey(PRESETS[name].sort); setSortDir(PRESETS[name].dir); };
-  const cols = PRESETS[preset].cols.map((k) => COLS[k]!);
+  const choosePreset = (name: keyof typeof PRESETS) => { setPreset(name); setSortKey(PRESETS[name]!.sort); setSortDir(PRESETS[name]!.dir); };
+  const cols = PRESETS[preset]!.cols.map((k) => COLS[k]!);
   const sortCol = COLS[sortKey] ?? COLS.title!;
   const w = (k: string) => widths[k] ?? defaultWidth(COLS[k]!);
   const getF = (k: string) => colF[k] ?? emptyFilter();

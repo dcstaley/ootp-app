@@ -48,6 +48,12 @@ export interface RosterResult {
 // Per-card pool override (Roster page Actions). "auto" = no override (default).
 export type RoleOverride = "hitter" | "pitcher" | "twoway";
 
+// Lineup position lock (S5.3): pin a hitter to a defensive position in one platoon
+// lineup (vL/vR independent). Round-trips to the optimizer on Regenerate so the
+// LP keeps the locked player at that position (displacing whoever it would pick).
+export interface LineupLock { id: string; pos: string; side: "L" | "R" }
+export const lockKey = (side: "L" | "R", id: string) => `${side}:${id}`;
+
 // Roster role colours (match the old app): both/starter = blue, vL = purple,
 // vR = green, bench/reliever = orange.
 export const ROSTER_COLORS: Record<string, string> = {

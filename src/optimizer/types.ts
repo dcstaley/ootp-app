@@ -89,6 +89,12 @@ export interface RosterOptimizeOptions {
   // by base card id; variant rows count). Excluded cards are filtered before the
   // pool is built, so they never appear here.
   lockedIds?: string[];
+  // lineup position locks (S5.3) — pin a hitter to a defensive position in a
+  // specific platoon lineup (vL/vR can differ). Forces yh_i_pos_vS = 1, so the
+  // per-position fill constraint displaces whoever the LP would have placed there
+  // (and rosters the locked card). Matched by base card id; a lock to a position
+  // the card can't start is ignored (the var doesn't exist).
+  lineupLocks?: { id: string; pos: string; side: "L" | "R" }[];
   // two-way players: candidate ids that appear in BOTH the hitter and pitcher
   // pools AND are designated two-way (Top-X overlap, or forced via the per-card
   // toggle). Such a card fills a hitter slot AND a pitcher slot with one entity —

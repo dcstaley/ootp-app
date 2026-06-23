@@ -399,11 +399,16 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
   };
 }
 
-async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>, metric: Metric) {
+type LineupLock = { id: string; pos: string; side: "L" | "R" };
+async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>, metric: Metric, lineupLocks: LineupLock[]) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
   const opts0 = rosterOptions(t);
-  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, new Set(locked), opts0.platoonVR, opts0.platoonVL, metric);
-  const opts = { ...opts0, lockedIds: locked, twoWayIds };
+  // A position-locked card must survive pool slicing — force-include it like a
+  // roster lock. (The yh=1 lock then forces it rostered, so it need not also be
+  // in lockedIds.)
+  const forceInclude = new Set([...locked, ...lineupLocks.map((l) => l.id)]);
+  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
+  const opts = { ...opts0, lockedIds: locked, twoWayIds, lineupLocks };
   const r = await generateFullRoster(hitters, pitchers, opts);
   // Reconstruct the DISPLAY score from the signed-distance value, per metric.
   // hitter: value + baseline (both metrics). pitcher: woba → baseline − value
@@ -543,7 +548,13 @@ const server = createServer(async (req, res) => {
       if (id && (role === "hitter" || role === "pitcher" || role === "twoway")) roleOverrides[id] = role;
     }
     const metric: Metric = u.searchParams.get("metric") === "basic" ? "basic" : "woba";
-    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides, metric));
+    // lineupLocks=ID:pos:side — pin a hitter to a position in one platoon (side L|R).
+    const lineupLocks: LineupLock[] = [];
+    for (const trip of list("lineupLocks")) {
+      const [id, pos, side] = trip.split(":");
+      if (id && pos && (side === "L" || side === "R")) lineupLocks.push({ id, pos, side });
+    }
+    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides, metric, lineupLocks));
   }
 
   // ── Parks library import (raw pt_ballparks.txt) ──
