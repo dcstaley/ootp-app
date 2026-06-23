@@ -20,7 +20,7 @@ import { parseCatalogCsv, cardId, type Catalog } from "../data/catalog.ts";
 import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA } from "../scoring-core/index.ts";
 import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -212,7 +212,7 @@ function refreshCatalog() {
 // active tournament. A card you own AND have a v5 variant of is scored as the
 // variant (it dominates). Two-way handling is a follow-up: a card with Pos Rating
 // P > 0 goes to the pitcher pool only (avoids double-rostering one card).
-function rosterCandidates(t: Tournament, accountId: string | null): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[] } {
+function rosterCandidates(t: Tournament, accountId: string | null, ownedOnly: boolean): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; ownedByDisp: Record<string, number> } {
   const { s } = scoredFor(t.id);
   const ctx = s.ctx;
   const acc = accountId ? accounts.get(accountId) : null;
@@ -220,15 +220,18 @@ function rosterCandidates(t: Tournament, accountId: string | null): { hitters: H
   const variantIds = new Set(acc?.variantCardIds ?? []);
   const hitters: HitterCandidate[] = [];
   const pitchers: PitcherCandidate[] = [];
+  const ownedByDisp: Record<string, number> = {};
 
   for (const c0 of catalog.cards) {
     const id = cardId(c0);
-    if ((owned[id] ?? 0) <= 0 || !ctx.isEligible(c0)) continue;
+    const qty = owned[id] ?? 0;
+    if ((ownedOnly && qty <= 0) || !ctx.isEligible(c0)) continue;
     const useVariant = variantIds.has(id) && t.variants_allowed;
     const c = useVariant ? makeVariant(c0) : c0;
     const sc = scoreCard(c, ctx.config);
     const cost = n(c0["Card Value"]);
     const dispId = useVariant ? `${id}#V` : id;
+    ownedByDisp[dispId] = qty;
     if (n(c0["Pos Rating P"]) > 0) {
       pitchers.push({
         id: dispId, title: String(sc.title), throws: sc.throws,
@@ -244,7 +247,7 @@ function rosterCandidates(t: Tournament, accountId: string | null): { hitters: H
       });
     }
   }
-  return { hitters, pitchers };
+  return { hitters, pitchers, ownedByDisp };
 }
 
 function rosterOptions(t: Tournament): RosterOptimizeOptions {
@@ -257,9 +260,9 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
   };
 }
 
-async function generateRosterFor(tid: string, aid: string | null) {
+async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
-  const { hitters, pitchers } = rosterCandidates(t, aid);
+  const { hitters, pitchers, ownedByDisp } = rosterCandidates(t, aid, ownedOnly);
   const opts = rosterOptions(t);
   const r = await generateFullRoster(hitters, pitchers, opts);
 
@@ -281,8 +284,25 @@ async function generateRosterFor(tid: string, aid: string | null) {
   for (const id of r.hitters) roles[strip(id)] = vrIds.has(id) && vlIds.has(id) ? "both" : vlIds.has(id) ? "vL" : vrIds.has(id) ? "vR" : "bench";
   for (const id of r.pitchers) roles[strip(id)] = rotIds.has(id) ? "starter" : "reliever";
 
+  // Roster LIST detail (the 26-card tables). wOBA reconstructed from valueFor
+  // (hitter = value + baseline; pitcher allowed = baseline − value), matching the grid.
+  const BATS: Record<number, string> = { 1: "R", 2: "L", 3: "S" };
+  const THROWS: Record<number, string> = { 1: "R", 2: "L" };
+  const roleRank: Record<string, number> = { both: 0, vL: 1, vR: 1, bench: 2, starter: 0, reliever: 1 };
+  const rosterHitters = r.hitters.map((id) => {
+    const c = hById.get(id)!; const role = roles[strip(id)] ?? "bench";
+    return { id: strip(id), title: c.title, bats: BATS[c.bats] ?? "", role,
+      wobaVL: round(c.valueVL + TARGET_WOBA), wobaVR: round(c.valueVR + TARGET_WOBA), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
+  }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
+  const rosterPitchers = r.pitchers.map((id) => {
+    const c = pById.get(id)!; const role = roles[strip(id)] ?? "reliever";
+    const combined = opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL;
+    return { id: strip(id), title: c.title, throws: THROWS[c.throws] ?? "", role,
+      woba: round(TARGET_WOBA - combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
+  }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || a.woba - b.woba);
+
   return {
-    roles,
+    roles, rosterHitters, rosterPitchers, ownedOnly,
     status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
     objective: r.objective, balance: r.balance ?? null,
     poolHitters: hitters.length, poolPitchers: pitchers.length,
@@ -327,7 +347,7 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
-  if (method === "GET" && url === "/api/roster") return json(res, await generateRosterFor(tid, aid));
+  if (method === "GET" && url === "/api/roster") return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false"));
 
   // ── POST API ──
   if (method === "POST" && url === "/api/state") {

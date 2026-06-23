@@ -13,6 +13,7 @@ interface AppData {
   activeAccount: AccountOpt | undefined;
   cards: Card[]; meta: Meta | null; loading: boolean; busy: string | null; err: string | null;
   roster: RosterResult | null; rosterLoading: boolean; rosterRoles: Record<string, string>;
+  ownedOnly: boolean; setOwnedOnly: (v: boolean) => void;
   generateRoster: () => Promise<void>;
   reloadView: () => Promise<void>;
   loadAccounts: () => Promise<unknown>;
@@ -45,6 +46,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [err, setErr] = useState<string | null>(null);
   const [roster, setRoster] = useState<RosterResult | null>(null);
   const [rosterLoading, setRosterLoading] = useState(false);
+  const [ownedOnly, setOwnedOnly] = useState(true);
 
   const loadAccounts = () =>
     fetch("/api/accounts").then((r) => r.json()).then((d: { accounts: AccountOpt[]; activeId: string | null }) => {
@@ -136,7 +138,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (!tournamentId) return;
     setRosterLoading(true);
     try {
-      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}`;
+      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnly}`;
       setRoster(await fetch("/api/roster" + q).then((r) => r.json()));
     } catch (e) { setErr(String(e)); } finally { setRosterLoading(false); }
   };
@@ -146,6 +148,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     accounts, accountId, chooseAccount, activeAccount: accounts.find((a) => a.id === accountId),
     cards, meta, loading, busy, err,
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},
+    ownedOnly, setOwnedOnly,
     generateRoster,
     reloadView, loadAccounts, renameAccount, importOwnership, toggleVariant, importVariants, clearVariants,
   };

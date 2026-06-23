@@ -15,12 +15,15 @@ export interface Meta {
   catalogSource: string; cardCount: number; eligibleCount: number; ownedCount: number;
 }
 export interface RosterSlotCard { pos?: string; slot?: number; id: string; title: string; cost: number; stamina?: number; pitchTypes?: number }
+export interface RosterHitterRow { id: string; title: string; bats: string; role: string; wobaVL: number; wobaVR: number; cost: number; owned: number }
+export interface RosterPitcherRow { id: string; title: string; throws: string; role: string; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 export interface RosterResult {
-  status: string; mode: string; cap: number | null; cost: number | null; objective: number;
+  status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean;
   balance: { hitterValue: number; pitcherValue: number } | null;
   poolHitters: number; poolPitchers: number;
   lineupVR: RosterSlotCard[]; lineupVL: RosterSlotCard[];
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
+  rosterHitters: RosterHitterRow[]; rosterPitchers: RosterPitcherRow[];
   memberIds: string[];
   roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever
 }
