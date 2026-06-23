@@ -26,7 +26,7 @@ core; none recomputes scoring.
 | M2 | Data layer + config | Catalog, account overlays, Tournament/Era/Park libraries | ✅ | SP-2, M1.5 |
 | M3 | Data Grid | First UI consumer of the core | ✅ | M2, SP-11 |
 | M4 | Optimizer | Roster + lineups + rotation/bullpen | ✅ (cap/slots, two-way, bonus, eligibility, basic/wOBA) | SP-4/5/6, M2 |
-| M5 | Manual editing | Drag-drop roster/lineup overrides | 🔜 (Next Best + manual add done; drag-drop + lineup-editor depth remain) | M4 |
+| M5 | Manual editing | Drag-drop roster/lineup overrides | ✅ (Next Best + manual add + @dnd-kit drag + lineup editor w/ server-honored locks) | M4 |
 | M6 | Training + bake-off | Fit models; D3 comparison harness | ⬜ | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |
 | X | Cross-cutting | Packaging, persistence, parity method | ongoing | — |
@@ -179,11 +179,15 @@ panels §E). **Agreed (user, 2026-06-22):** build the **M4 generation surface FI
   position min-rating constraints (incl. backups), metric (basic/wOBA) selection, Top-X pool sizes +
   ownedOnly toggle, richer Cap/Slots Usage panels, and merging RosterSettings into the Tournament.
 
-## M5 — Manual editing 🔜 (in progress)
+## M5 — Manual editing ✅
 
-**🔜 IN PROGRESS** — DONE: Next Best Available pool (need-tabs, owned/value filters) + manual add
-(+Add fills an open slot & locks) + per-slot lineup position dropdowns. REMAINING: drag-and-drop
-(`@dnd-kit`) and lineup-editor depth (batting order, position locks, defence-in-lineup).
+**✅ DONE** — Next Best Available pool (need-tabs, owned/value filters) + manual add (+Add fills an
+open slot & locks) + `@dnd-kit` drag (pool→roster = add+lock; lineup batting-order reorder + bench↔
+lineup) + a full lineup editor (`web/LineupTab.tsx`): per-side batting order 1–9, position dropdowns
+with swap, position-specific defense, Auto-fill/Clear, and **server-honored position locks (S5.3)** —
+a lock emits `yh_i_pos_vS = 1` in the MILP so the optimizer keeps the player there and displaces
+whoever it would have picked (per-side vL/vR; locked cards force-included in the pool). Lineup edits
+(order + non-locked positions) reset on Regenerate; locks persist.
 
 - **S5.1** ⬜ As a manager, I drag cards in/out of the roster; a **Next Best Available** pool tabbed by
   need (hit vL/vR, owned-only, starters, IF/OF range, catcher ability…), variant/base-aware.
@@ -587,3 +591,34 @@ pool→roster = lock, drag-out = remove, lineup drag) · lineup-editor depth (ba
 locks, defence-in-lineup; position dropdowns exist) · then **M6** model training + D3 bake-off with
 the real `Model 2037 and 2038/` outcome data (anchoring/scaling audit + OVR vL/vR split weighting +
 BB/HR-only per-event calibration + the gap-denominator revisit all live here) · **M7** Single Player.
+
+## Session update (2026-06-24b) — M5 manual-editing complete
+
+All committed + pushed (`dcstaley/ootp-app` main); 67 tests green; parity bit-identical; src + **new
+web** typecheck clean; build clean.
+
+- **Lineup editor** (`web/LineupTab.tsx`, new): per-side (vL/vR) batting order 1–9 you drag (`@dnd-kit`
+  sortable) to reorder; drag players between bench and lineup; per-slot position dropdown with swap;
+  **position-specific defense** (rating for the assigned position, not the generic summary);
+  Auto-fill / Clear. Buttons mirror every drag action. Seeded from the generated lineup (batting order
+  by score desc); manual edits reset on Regenerate, locks persist.
+- **Position locks (S5.3) — server-honored.** A lock round-trips: `lineupLocks {id,pos,side}` in
+  `RosterOptimizeOptions` → `buildRosterLp` emits `yh_i_pos_vS = 1`, so the `fill_pos_vS = 1`
+  constraint forces every other candidate at that (pos, side) to 0 — displacing whoever the LP would
+  have placed there and rostering the locked card (verified via curl: locking a SS swaps the
+  incumbent). Per-side (vL/vR independent, matches the old app); locked cards force-included in the
+  candidate pool; ineligible-position locks silently skipped. Lineup edits clear a lock on
+  position-change/remove.
+- **Pool→roster drag** (`@dnd-kit`): Next Best cards drag onto the roster tables = add + lock (mirrors
+  `+Add`); 5px activation distance so the `+Add` click and rail scroll still work.
+- **Refactor:** shared cell helpers → `web/roster-cells.tsx` (reused by RosterPage + LineupTab).
+- **Tooling gap closed:** `web/*.tsx` was **never type-checked** — the root `tsconfig.json` only
+  includes `src/tools/tests`, and `vite build` transpiles without type-checking. Added
+  `web/tsconfig.json` (DOM lib + `react-jsx`) + an `npm run typecheck:web` script. It immediately
+  caught a missing-import bug (a removed `ROSTER_BORDER` import that crashed `<Legend>` at runtime) and
+  3 pre-existing `noUncheckedIndexedAccess` errors in `CardsPage` — all fixed. **Run `typecheck:web`
+  alongside `typecheck` for any web change going forward.**
+
+**Next up:** **M6** model training + the D3 bake-off on the real `Model 2037 and 2038/` outcome data —
+where the deferred audits live (anchoring/scaling, OVR vL/vR split weighting, BB/HR-only per-event
+calibration, gap-denominator revisit). Then **M7** Single Player.
