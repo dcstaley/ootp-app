@@ -32,7 +32,7 @@ export interface AvailPitcherRow { id: string; title: string; last: string; thro
 // A manually-added card (fills an open roster slot); tagged by which table it joins.
 export type AddedCard = { kind: "hitter"; row: AvailHitterRow } | { kind: "pitcher"; row: AvailPitcherRow };
 export interface RosterResult {
-  status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean;
+  status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean; metric: string;
   minStarterStamina: number; minPitchTypes: number;
   balance: { hitterValue: number; pitcherValue: number } | null;
   poolHitters: number; poolPitchers: number; rosterSize: number; nHitters: number; nPitchers: number;

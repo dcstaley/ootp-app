@@ -21,7 +21,7 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC } from "../scoring-core/index.ts";
 import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -262,13 +262,23 @@ interface Entry {
   role: RoleOverride | "auto";
 }
 
+type Metric = "woba" | "basic";
+
 function rosterCandidates(
   t: Tournament, accountId: string | null, ownedOnly: boolean,
   excluded: Set<string>, roleOverrides: Record<string, RoleOverride>, locked: Set<string>,
-  platoonVR: number, platoonVL: number,
+  platoonVR: number, platoonVL: number, metric: Metric,
 ): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; entries: Entry[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
   const { s } = scoredFor(t.id);
   const ctx = s.ctx;
+  // Signed-distance value (D2) in the active metric. basic: score − 100 for BOTH
+  // roles (basic-hit and basic-pitch are both higher-is-better). woba: hitter
+  // woba − baseline, pitcher baseline − allowedWoba.
+  const cfg = metric === "basic" ? ctx.basicConfig : ctx.config;
+  const hitVal = (sc: ReturnType<typeof scoreCard>, side: "vR" | "vL") =>
+    metric === "basic" ? (side === "vR" ? sc.hit.basic_vR : sc.hit.basic_vL) - TARGET_BASIC : valueFor(side === "vR" ? sc.hit.woba_vR : sc.hit.woba_vL, "hitter");
+  const pitVal = (sc: ReturnType<typeof scoreCard>, side: "vR" | "vL") =>
+    metric === "basic" ? (side === "vR" ? sc.pitch.basic_vR : sc.pitch.basic_vL) - TARGET_BASIC : valueFor(side === "vR" ? sc.pitch.woba_vR : sc.pitch.woba_vL, "pitcher");
   const acc = accountId ? accounts.get(accountId) : null;
   const owned = acc?.owned ?? {};
   const variantIds = new Set(acc?.variantCardIds ?? []);
@@ -287,15 +297,15 @@ function rosterCandidates(
     if (excluded.has(id) || !ctx.isEligible(c0)) continue;
     const useVariant = variantIds.has(id) && t.variants_allowed;
     const c = useVariant ? makeVariant(c0) : c0;
-    const sc = scoreCard(c, ctx.config);
+    const sc = scoreCard(c, cfg);
     const cost = n(c0["Card Value"]);
     const dispId = useVariant ? `${id}#V` : id;
     const positions = [...LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p), "DH"];
-    const pitVR = valueFor(sc.pitch.woba_vR, "pitcher");
-    const pitVL = valueFor(sc.pitch.woba_vL, "pitcher");
+    const pitVR = pitVal(sc, "vR");
+    const pitVL = pitVal(sc, "vL");
     entries.push({
       dispId,
-      hitVR: valueFor(sc.hit.woba_vR, "hitter"), hitVL: valueFor(sc.hit.woba_vL, "hitter"),
+      hitVR: hitVal(sc, "vR"), hitVL: hitVal(sc, "vL"),
       pitVR, pitVL, pitOVR: platoonVR * pitVR + platoonVL * pitVL,
       positions, stamina: n(c0["Stamina"]), pitchTypes: pitchCount(c0),
       bats: sc.bats, throws: sc.throws, title: String(sc.title), cost,
@@ -389,12 +399,18 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
   };
 }
 
-async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>) {
+async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>, metric: Metric) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
   const opts0 = rosterOptions(t);
-  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, new Set(locked), opts0.platoonVR, opts0.platoonVL);
+  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, new Set(locked), opts0.platoonVR, opts0.platoonVL, metric);
   const opts = { ...opts0, lockedIds: locked, twoWayIds };
   const r = await generateFullRoster(hitters, pitchers, opts);
+  // Reconstruct the DISPLAY score from the signed-distance value, per metric.
+  // hitter: value + baseline (both metrics). pitcher: woba → baseline − value
+  // (allowed wOBA); basic → value + baseline (quality, higher = better).
+  const BASE = metric === "basic" ? TARGET_BASIC : TARGET_WOBA;
+  const hScore = (v: number) => round(v + BASE);
+  const pScore = (v: number) => round(metric === "basic" ? v + BASE : BASE - v);
 
   const hById = new Map(hitters.map((c) => [c.id, c]));
   const pById = new Map(pitchers.map((c) => [c.id, c]));
@@ -428,13 +444,13 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const rosterHitters = r.hitters.map((id) => {
     const c = hById.get(id)!; const role = hitRole(id);
     return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, def: defByDisp[id],
-      wobaVL: round(c.valueVL + TARGET_WOBA), wobaVR: round(c.valueVR + TARGET_WOBA), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
+      wobaVL: hScore(c.valueVL), wobaVR: hScore(c.valueVR), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
   const rosterPitchers = r.pitchers.map((id) => {
     const c = pById.get(id)!; const role = pitRole(id);
     const combined = opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL;
     return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", throws: THROWS[c.throws] ?? "", role, twoWay: twoWaySet.has(strip(id)),
-      woba: round(TARGET_WOBA - combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
+      woba: pScore(combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || a.woba - b.woba);
 
   // ── Next Best Available pool (M5) ──────────────────────────────────────────
@@ -452,14 +468,14 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "",
     bats: BATS[e.bats] ?? "", throws: THROWS[e.throws] ?? "",
     positions: e.positions, def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
-    hitVL: round(e.hitVL + TARGET_WOBA), hitVR: round(e.hitVR + TARGET_WOBA),
-    pitOVR: round(TARGET_WOBA - e.pitOVR), pitVL: round(TARGET_WOBA - e.pitVL), pitVR: round(TARGET_WOBA - e.pitVR),
+    hitVL: hScore(e.hitVL), hitVR: hScore(e.hitVR),
+    pitOVR: pScore(e.pitOVR), pitVL: pScore(e.pitVL), pitVR: pScore(e.pitVR),
     stamina: e.stamina, pitchTypes: e.pitchTypes,
   }));
   const nextBest = { available };
 
   return {
-    roles, rosterHitters, rosterPitchers, ownedOnly, twoWayIds: [...twoWaySet], nextBest,
+    roles, rosterHitters, rosterPitchers, ownedOnly, metric, twoWayIds: [...twoWaySet], nextBest,
     cardValueMin: t.card_value_min ?? 40, cardValueMax: t.card_value_max ?? null,
     nHitters: t.hitters, nPitchers: t.pitchers,
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
@@ -526,7 +542,8 @@ const server = createServer(async (req, res) => {
       const [id, role] = pair.split(":");
       if (id && (role === "hitter" || role === "pitcher" || role === "twoway")) roleOverrides[id] = role;
     }
-    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides));
+    const metric: Metric = u.searchParams.get("metric") === "basic" ? "basic" : "woba";
+    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides, metric));
   }
 
   // ── Parks library import (raw pt_ballparks.txt) ──

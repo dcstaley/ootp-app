@@ -15,6 +15,7 @@ interface AppData {
   cards: Card[]; meta: Meta | null; loading: boolean; busy: string | null; err: string | null;
   roster: RosterResult | null; rosterLoading: boolean; rosterRoles: Record<string, string>;
   ownedOnly: boolean; setOwnedOnly: (v: boolean) => void;
+  metric: "woba" | "basic"; setMetric: (m: "woba" | "basic") => void;
   // generation controls (lock = required, exclude = forbidden — both persist + need
   // Regenerate) and removed = client-side drop from the CURRENT roster (resets on
   // Regenerate). dirty = generation params changed since the last generate.
@@ -57,6 +58,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [roster, setRoster] = useState<RosterResult | null>(null);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [ownedOnlyState, setOwnedOnlyState] = useState(true);
+  const [metricState, setMetricState] = useState<"woba" | "basic">("woba");
   const [locked, setLocked] = useState<Set<string>>(new Set());
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [removed, setRemoved] = useState<Set<string>>(new Set());
@@ -158,6 +160,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setAdded([]); setRoleOv(new Map()); setDirty(false); }, [tournamentId, accountId]);
 
   const setOwnedOnly = (v: boolean) => { setOwnedOnlyState(v); setDirty(true); };
+  const setMetric = (m: "woba" | "basic") => { setMetricState(m); setDirty(true); };
   const toggleLock = (id: string) => { setLocked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setExcluded((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
   const toggleExclude = (id: string) => { setExcluded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setLocked((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
   // Remove from the current roster. A manually-added card is pulled out of `added`
@@ -190,7 +193,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     try {
       const enc = (s: Set<string>) => [...s].join(",");
       const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
-      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&locked=${enc(locked)}&excluded=${enc(excluded)}&roles=${encodeURIComponent(encRoles)}`;
+      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(locked)}&excluded=${enc(excluded)}&roles=${encodeURIComponent(encRoles)}`;
       setRoster(await fetch("/api/roster" + q).then((r) => r.json()));
       setRemoved(new Set()); setAdded([]); // fresh roster — clear manual edits
       setDirty(false);
@@ -202,7 +205,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     accounts, accountId, chooseAccount, activeAccount: accounts.find((a) => a.id === accountId),
     cards, meta, loading, busy, err,
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},
-    ownedOnly: ownedOnlyState, setOwnedOnly,
+    ownedOnly: ownedOnlyState, setOwnedOnly, metric: metricState, setMetric,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
     added, addCard,
     roles: roleOv, setRole,

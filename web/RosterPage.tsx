@@ -68,7 +68,7 @@ type PStaffRow = RosterPitcherRow & { slotLabel: string };
 
 export function RosterPage() {
   const {
-    roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly,
+    roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly, metric, setMetric,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
     added, addCard, roles: roleOverrides, setRole, cards,
   } = useAppData();
@@ -126,7 +126,9 @@ export function RosterPage() {
   );
   const capPct = roster?.cap && roster.cost != null ? Math.round((roster.cost / roster.cap) * 100) : null;
   const money = (n: number | null) => (n == null ? "—" : n.toLocaleString());
-  const num = (v: number, d = 4) => v.toFixed(d);
+  // Score formatter — basic scores are ~100 (1 decimal), wOBA ~0.3 (4 decimals).
+  // Uses the GENERATED roster's metric so numbers don't change until Regenerate.
+  const num = (v: number, d?: number) => v.toFixed(d ?? (roster?.metric === "basic" ? 1 : 4));
 
   // Per-card actions (Lock / Exclude / Remove).
   const iconBtn = (active: boolean, color = "#ef4444"): React.CSSProperties => ({
@@ -238,9 +240,9 @@ export function RosterPage() {
           <button onClick={() => canAdd && addCard({ kind: "hitter", row: h })} disabled={!canAdd} title={addTitle(canAdd)} style={addBtnStyle(canAdd)}>+ Add</button>
         </div>
         <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
-          <span style={{ color: act("hitVL") ? C.text : C.sub, fontWeight: act("hitVL") ? 700 : 400 }}>vL {num(h.wobaVL, 3)}</span>
+          <span style={{ color: act("hitVL") ? C.text : C.sub, fontWeight: act("hitVL") ? 700 : 400 }}>vL {num(h.wobaVL)}</span>
           {" · "}
-          <span style={{ color: act("hitVR") ? C.text : C.sub, fontWeight: act("hitVR") ? 700 : 400 }}>vR {num(h.wobaVR, 3)}</span>
+          <span style={{ color: act("hitVR") ? C.text : C.sub, fontWeight: act("hitVR") ? 700 : 400 }}>vR {num(h.wobaVR)}</span>
           {" · "}Val {h.cost} · {posStr(h.positions)} {h.bats && `· ${h.bats}`}
         </div>
         {defSummary(h) && <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{defSummary(h)}</div>}
@@ -258,7 +260,7 @@ export function RosterPage() {
           <button onClick={() => canAdd && addCard({ kind: "pitcher", row: p })} disabled={!canAdd} title={addTitle(canAdd)} style={addBtnStyle(canAdd)}>+ Add</button>
         </div>
         <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
-          <b style={{ color: C.text }}>OVR {num(p.woba, 3)}</b> · vL {num(p.wobaVL, 3)} · vR {num(p.wobaVR, 3)}
+          <b style={{ color: C.text }}>OVR {num(p.woba)}</b> · vL {num(p.wobaVL)} · vR {num(p.wobaVR)}
         </div>
         <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{p.throws && `T ${p.throws} · `}Stam {p.stamina} · {p.pitchTypes} pit · Val {p.cost}</div>
       </div>
@@ -335,6 +337,14 @@ export function RosterPage() {
         <label style={{ fontSize: 13, color: C.sub }} title="Off = consider every eligible card, even unowned (SELECTION only — calibration always uses all eligible cards). Press Regenerate to apply.">
           <input type="checkbox" checked={ownedOnly} onChange={(e) => setOwnedOnly(e.target.checked)} disabled={rosterLoading} /> Owned only
         </label>
+        <span style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }} title="Metric the optimizer maximizes + displays. Press Regenerate to apply.">
+          {(["woba", "basic"] as const).map((m) => (
+            <button key={m} onClick={() => setMetric(m)} disabled={rosterLoading}
+              style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: "pointer", padding: "5px 9px", background: metric === m ? C.accent : C.input, color: metric === m ? "#fff" : C.sub, fontWeight: metric === m ? 700 : 400 }}>
+              {m === "woba" ? "wOBA" : "Basic"}
+            </button>
+          ))}
+        </span>
         {(nLock > 0 || nExcl > 0) && <span style={{ fontSize: 12, color: C.sub }}>{nLock} locked · {nExcl} excluded</span>}
         {dirty && <span style={{ fontSize: 12, color: "#f59e0b" }}>⚠ press Regenerate to apply</span>}
         {meta && <span style={{ fontSize: 13, color: C.sub }}>{meta.tournament} · {meta.account}</span>}
