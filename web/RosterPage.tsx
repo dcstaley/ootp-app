@@ -270,7 +270,7 @@ export function RosterPage() {
                 <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
                 <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} />
               </div>
-              <div style={{ flex: "0 0 240px", minWidth: 0 }}>
+              <div style={{ flex: "0 0 290px", minWidth: 290 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Excluded ({excludedList.length})</h3>
                 {excludedList.length === 0
                   ? <p style={{ fontSize: 12, color: C.sub }}>None. Use the <span style={{ color: "#ef4444" }}>⊘</span> action to keep a card out of generation.</p>
@@ -278,9 +278,9 @@ export function RosterPage() {
                       <p style={{ margin: "0 0 6px", fontSize: 11, color: C.sub }}>Never selected. Click ✕ to un-exclude, then Regenerate.</p>
                       <div style={{ display: "grid", gap: 4 }}>
                         {excludedList.map((e) => (
-                          <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                            <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={e.title}>{star(e.title)}</span>
+                          <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "4px 6px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
                             <button onClick={() => toggleExclude(e.id)} title="Un-exclude (returns to generation on Regenerate)" style={{ ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", flex: "0 0 auto" }}>✕</button>
+                            <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, lineHeight: 1.3, overflowWrap: "anywhere" }}>{star(e.title)}</span>
                           </div>
                         ))}
                       </div>
