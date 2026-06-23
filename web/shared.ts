@@ -20,6 +20,9 @@ export interface RosterHitterRow { id: string; title: string; last: string; bats
 export interface RosterPitcherRow { id: string; title: string; last: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 // Next Best Available pool (M5) — top available cards for manual roster editing.
 export interface AvailHitterRow { id: string; title: string; last: string; bats: string; positions: string[]; def: CardDef; cost: number; owned: number; wobaVL: number; wobaVR: number }
+export interface AvailPitcherRow { id: string; title: string; last: string; throws: string; cost: number; owned: number; stamina: number; pitchTypes: number; woba: number; wobaVL: number; wobaVR: number }
+// A manually-added card (fills an open roster slot); tagged by which table it joins.
+export type AddedCard = { kind: "hitter"; row: AvailHitterRow } | { kind: "pitcher"; row: AvailPitcherRow };
 export interface RosterResult {
   status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean;
   minStarterStamina: number; minPitchTypes: number;
@@ -29,7 +32,7 @@ export interface RosterResult {
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
   rosterHitters: RosterHitterRow[]; rosterPitchers: RosterPitcherRow[];
   memberIds: string[]; twoWayIds: string[];
-  nextBest: { hitters: AvailHitterRow[] };
+  nextBest: { hitters: AvailHitterRow[]; pitchers: AvailPitcherRow[] };
   roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever|twoway
 }
 

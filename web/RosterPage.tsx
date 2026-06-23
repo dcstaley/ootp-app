@@ -9,7 +9,7 @@ import { useAppData } from "./state.tsx";
 import { DataTable, type Column } from "./DataTable.tsx";
 import {
   C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL,
-  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride, type AvailHitterRow,
+  type RosterHitterRow, type RosterPitcherRow, type CardDef, type RoleOverride, type AvailHitterRow, type AvailPitcherRow,
 } from "./shared.ts";
 
 const star = (t: string) => (t.startsWith("★") ? <><span style={{ color: C.star }}>★</span>{t.slice(1)}</> : t);
@@ -56,7 +56,13 @@ function Legend({ roles }: { roles: string[] }) {
 }
 
 type Tab = "roster" | "lineups" | "pitching";
-type AvailCat = "hitVL" | "hitVR";
+type AvailCat = "hitVR" | "hitVL" | "pitch" | "sp" | "ifRng" | "ofRng" | "cAbil";
+const AVAIL_CATS: { id: AvailCat; label: string; kind: "hitter" | "pitcher" }[] = [
+  { id: "hitVR", label: "Hit vR", kind: "hitter" }, { id: "hitVL", label: "Hit vL", kind: "hitter" },
+  { id: "pitch", label: "Pitch", kind: "pitcher" }, { id: "sp", label: "SP", kind: "pitcher" },
+  { id: "ifRng", label: "IF Rng", kind: "hitter" }, { id: "ofRng", label: "OF Rng", kind: "hitter" },
+  { id: "cAbil", label: "C Abil", kind: "hitter" },
+];
 type Side = "vR" | "vL";
 type PStaffRow = RosterPitcherRow & { slotLabel: string };
 
@@ -85,11 +91,14 @@ export function RosterPage() {
     setAssignVL(mk(roster.lineupVL));
   }, [roster]);
 
-  // Manually-added cards (currently hitters) shown as bench rows on the roster.
-  const addedRows: RosterHitterRow[] = added.map((a) => ({ ...a, role: "bench", twoWay: false }));
-  // Filtered rosters (manual Remove drops a card; manual Add appends a bench bat).
-  const hitters = [...(roster?.rosterHitters ?? []), ...addedRows].filter((h) => !removed.has(h.id));
-  const pitchers = (roster?.rosterPitchers ?? []).filter((p) => !removed.has(p.id));
+  // Manually-added cards shown on the roster — hitters as bench bats, pitchers as relievers.
+  const addedHitterRows: RosterHitterRow[] = added.filter((a) => a.kind === "hitter")
+    .map((a) => ({ ...(a.row as AvailHitterRow), role: "bench", twoWay: false }));
+  const addedPitcherRows: RosterPitcherRow[] = added.filter((a) => a.kind === "pitcher")
+    .map((a) => { const p = a.row as AvailPitcherRow; return { id: p.id, title: p.title, last: p.last, throws: p.throws, role: "reliever", twoWay: false, woba: p.woba, stamina: p.stamina, pitchTypes: p.pitchTypes, cost: p.cost, owned: p.owned }; });
+  // Filtered rosters (manual Remove drops a card; manual Add appends one).
+  const hitters = [...(roster?.rosterHitters ?? []), ...addedHitterRows].filter((h) => !removed.has(h.id));
+  const pitchers = [...(roster?.rosterPitchers ?? []), ...addedPitcherRows].filter((p) => !removed.has(p.id));
   // Distinct cards (a two-way card is in BOTH tables under one id — count once).
   const distinctCount = new Set([...hitters, ...pitchers].map((r) => r.id)).size;
   const nTwoWay = (roster?.twoWayIds ?? []).filter((id) => !removed.has(id)).length;
@@ -178,39 +187,75 @@ export function RosterPage() {
 
   // ── Next Best Available (left rail) — compact card list, +Add = lock the card.
   // Tabs by need (Hit vR / Hit vL now; Pitch/SP/defence/value filter to follow).
-  const addedIds = new Set(added.map((a) => a.id));
-  const availHitters = (roster?.nextBest?.hitters ?? []).filter((h) => !addedIds.has(h.id) && !removed.has(h.id));
-  const sortedAvail = [...availHitters].sort((a, b) => (availCat === "hitVR" ? b.wobaVR - a.wobaVR : b.wobaVL - a.wobaVL));
+  const addedIds = new Set(added.map((a) => a.row.id));
+  const availH = (roster?.nextBest?.hitters ?? []).filter((h) => !addedIds.has(h.id) && !removed.has(h.id));
+  const availP = (roster?.nextBest?.pitchers ?? []).filter((p) => !addedIds.has(p.id) && !removed.has(p.id));
+  const activeCat = AVAIL_CATS.find((c) => c.id === availCat)!;
+  const catDesc = ({ hitVR: "by vs-RHP value", hitVL: "by vs-LHP value", pitch: "pitchers by overall value", sp: "SP-qualified pitchers", ifRng: "by infield range", ofRng: "by OF range", cAbil: "by catcher ability" } as Record<AvailCat, string>)[availCat];
+  const minStam = roster?.minStarterStamina ?? 70, minPit = roster?.minPitchTypes ?? 3;
+  // Per-tab available list: filter to position/role relevance, sort by the metric.
+  const hitterList = (): AvailHitterRow[] => {
+    let list = availH;
+    if (availCat === "ifRng") list = list.filter((h) => IF.some((p) => h.positions.includes(p)));
+    else if (availCat === "ofRng") list = list.filter((h) => OF.some((p) => h.positions.includes(p)));
+    else if (availCat === "cAbil") list = list.filter((h) => h.positions.includes("C"));
+    const key: (h: AvailHitterRow) => number =
+      availCat === "hitVL" ? (h) => h.wobaVL : availCat === "hitVR" ? (h) => h.wobaVR :
+      availCat === "ifRng" ? (h) => h.def.ifR : availCat === "ofRng" ? (h) => h.def.ofR : (h) => h.def.cAb;
+    return [...list].sort((a, b) => key(b) - key(a));
+  };
+  const pitcherList = (): AvailPitcherRow[] => {
+    const list = availCat === "sp" ? availP.filter((p) => p.stamina >= minStam && p.pitchTypes >= minPit) : availP;
+    return [...list].sort((a, b) => a.woba - b.woba); // lower allowed wOBA = better
+  };
   const catBtn = (id: AvailCat, label: string) => (
-    <button onClick={() => setAvailCat(id)} style={{ ...inputStyle, padding: "4px 0", cursor: "pointer", background: availCat === id ? C.accent : C.input, color: availCat === id ? "#fff" : C.sub, fontWeight: availCat === id ? 700 : 400, border: `1px solid ${availCat === id ? C.accent : C.border}` }}>{label}</button>
+    <button key={id} onClick={() => setAvailCat(id)} style={{ ...inputStyle, padding: "4px 0", fontSize: 12, cursor: "pointer", background: availCat === id ? C.accent : C.input, color: availCat === id ? "#fff" : C.sub, fontWeight: availCat === id ? 700 : 400, border: `1px solid ${availCat === id ? C.accent : C.border}` }}>{label}</button>
   );
-  const availCard = (h: AvailHitterRow): ReactNode => {
+  const addBtnStyle = (canAdd: boolean): React.CSSProperties => ({
+    ...inputStyle, flex: "0 0 auto", padding: "1px 7px", fontSize: 11, whiteSpace: "nowrap",
+    cursor: canAdd ? "pointer" : "not-allowed", opacity: canAdd ? 1 : 0.45,
+    background: canAdd ? "rgba(34,197,94,0.18)" : C.input, color: canAdd ? "#86efac" : C.sub, border: `1px solid ${canAdd ? "#22c55e" : C.border}`,
+  });
+  const addTitle = (canAdd: boolean) => canAdd ? "Add to an open roster slot (locks the card)" : "Roster full — remove a card first to open a slot";
+  const availHitterCard = (h: AvailHitterRow): ReactNode => {
     const canAdd = emptySpace > 0;
-    const active = (v: AvailCat) => v === availCat;
+    const act = (v: AvailCat) => v === availCat;
     return (
       <div key={h.id} style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 7px" }}>
         <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
           <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
             {h.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(h.title)}
           </span>
-          <button onClick={() => canAdd && addCard(h)} disabled={!canAdd}
-            title={canAdd ? "Add to an open roster slot (locks the card)" : "Roster full — remove a card first to open a slot"}
-            style={{ ...inputStyle, flex: "0 0 auto", padding: "1px 7px", fontSize: 11, whiteSpace: "nowrap",
-              cursor: canAdd ? "pointer" : "not-allowed", opacity: canAdd ? 1 : 0.45,
-              background: canAdd ? "rgba(34,197,94,0.18)" : C.input, color: canAdd ? "#86efac" : C.sub, border: `1px solid ${canAdd ? "#22c55e" : C.border}` }}>
-            + Add
-          </button>
+          <button onClick={() => canAdd && addCard({ kind: "hitter", row: h })} disabled={!canAdd} title={addTitle(canAdd)} style={addBtnStyle(canAdd)}>+ Add</button>
         </div>
         <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
-          <span style={{ color: active("hitVL") ? C.text : C.sub, fontWeight: active("hitVL") ? 700 : 400 }}>vL {num(h.wobaVL, 3)}</span>
+          <span style={{ color: act("hitVL") ? C.text : C.sub, fontWeight: act("hitVL") ? 700 : 400 }}>vL {num(h.wobaVL, 3)}</span>
           {" · "}
-          <span style={{ color: active("hitVR") ? C.text : C.sub, fontWeight: active("hitVR") ? 700 : 400 }}>vR {num(h.wobaVR, 3)}</span>
+          <span style={{ color: act("hitVR") ? C.text : C.sub, fontWeight: act("hitVR") ? 700 : 400 }}>vR {num(h.wobaVR, 3)}</span>
           {" · "}Val {h.cost} · {posStr(h.positions)} {h.bats && `· ${h.bats}`}
         </div>
         {defSummary(h) && <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{defSummary(h)}</div>}
       </div>
     );
   };
+  const availPitcherCard = (p: AvailPitcherRow): ReactNode => {
+    const canAdd = emptySpace > 0;
+    return (
+      <div key={p.id} style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 7px" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+          <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
+            {p.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(p.title)}
+          </span>
+          <button onClick={() => canAdd && addCard({ kind: "pitcher", row: p })} disabled={!canAdd} title={addTitle(canAdd)} style={addBtnStyle(canAdd)}>+ Add</button>
+        </div>
+        <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
+          <b style={{ color: C.text }}>OVR {num(p.woba, 3)}</b> · vL {num(p.wobaVL, 3)} · vR {num(p.wobaVR, 3)}
+        </div>
+        <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{p.throws && `T ${p.throws} · `}Stam {p.stamina} · {p.pitchTypes} pit · Val {p.cost}</div>
+      </div>
+    );
+  };
+  const availItems: ReactNode[] = activeCat.kind === "hitter" ? hitterList().map(availHitterCard) : pitcherList().map(availPitcherCard);
 
   // ── Lineups (editable assignment, per side) ──
   const assign = side === "vR" ? assignVR : assignVL;
@@ -311,19 +356,19 @@ export function RosterPage() {
               {/* Left rail: Next Best Available */}
               <div style={{ flex: "1 1 290px", minWidth: 280, maxWidth: 340 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Next Best Available</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
-                  {catBtn("hitVR", "Hit vR")}{catBtn("hitVL", "Hit vL")}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5, marginBottom: 8 }}>
+                  {AVAIL_CATS.map((c) => catBtn(c.id, c.label))}
                 </div>
                 <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>
-                  Top available {ownedOnly ? "owned " : ""}hitters, by {availCat === "hitVR" ? "vs-RHP" : "vs-LHP"} value.{" "}
+                  Top available {ownedOnly ? "owned " : ""}cards, {catDesc}.{" "}
                   {emptySpace > 0
                     ? <><b style={{ color: "#86efac" }}>+ Add</b> fills an open slot ({emptySpace}) and locks the card.</>
                     : <>Roster full — <span style={{ color: "#f87171" }}>remove</span> a card to open a slot.</>}
                 </p>
-                {sortedAvail.length === 0
-                  ? <p style={{ fontSize: 12, color: C.sub }}>None — every eligible card is rostered or excluded.</p>
-                  : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 220px)", overflowY: "auto", paddingRight: 4 }}>{sortedAvail.map(availCard)}</div>}
-                <p style={{ margin: "8px 0 0", fontSize: 10, color: C.sub }}>More need-tabs (Pitch, SP, defence, owned-only, value filter) coming.</p>
+                {availItems.length === 0
+                  ? <p style={{ fontSize: 12, color: C.sub }}>None available for this tab.</p>
+                  : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 220px)", overflowY: "auto", paddingRight: 4 }}>{availItems}</div>}
+                <p style={{ margin: "8px 0 0", fontSize: 10, color: C.sub }}>Owned-only variants + a value filter (cap rosters) coming.</p>
               </div>
 
               {/* Center: roster tables */}

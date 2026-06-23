@@ -378,8 +378,8 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   // The top AVAILABLE cards (eligible + owned-scoped, NOT on the current roster),
   // for manual roster editing. Returned UNSLICED (the whole owned/eligible pool,
   // not just the optimizer's Top-X) so the user can pull in any owned card. The
-  // client tabs/sorts this by need (Hit vL/vR now; Pitch/SP/defence/value later)
-  // and +Add = lock the card → Regenerate. Bounded to the top of each pool.
+  // client tabs/sorts this by need (Hit vL/vR, Pitch, SP, defence; value filter
+  // later) and +Add fills an open roster slot. Bounded to the top of each pool.
   const rosteredDisp = new Set([...r.hitters, ...r.pitchers]);
   const available = entries.filter((e) => !rosteredDisp.has(e.dispId));
   const NEXT_BEST_N = 80;
@@ -391,7 +391,15 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
       positions: e.positions, def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
       wobaVL: round(e.hitVL + TARGET_WOBA), wobaVR: round(e.hitVR + TARGET_WOBA),
     }));
-  const nextBest = { hitters: availHitters };
+  const availPitchers = [...available]
+    .sort((a, b) => b.pitOVR - a.pitOVR)
+    .slice(0, NEXT_BEST_N)
+    .map((e) => ({
+      id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", throws: THROWS[e.throws] ?? "",
+      cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0, stamina: e.stamina, pitchTypes: e.pitchTypes,
+      woba: round(TARGET_WOBA - e.pitOVR), wobaVL: round(TARGET_WOBA - e.pitVL), wobaVR: round(TARGET_WOBA - e.pitVR),
+    }));
+  const nextBest = { hitters: availHitters, pitchers: availPitchers };
 
   return {
     roles, rosterHitters, rosterPitchers, ownedOnly, twoWayIds: [...twoWaySet], nextBest,
