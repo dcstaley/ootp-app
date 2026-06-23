@@ -86,8 +86,16 @@ export interface TournamentCfg {
   budget_mode?: "none" | "cap" | "slots"; slot_counts?: Record<string, number>;
   platoonVR?: number; platoonVL?: number; minPlayersPerPosition?: number;
   eligibility?: EligibilityGroup;
-  softcaps?: unknown; // preserved, not edited here
+  softcaps?: Record<string, number>; // cap_<grp>_top/_bot + pen_<grp>
 }
+// Softcap rating groups: per group, ratings above _top get diminishing returns and
+// below _bot get penalized, by strength pen_<grp>. 5 hitting + 4 pitching.
+export const SOFTCAP_GROUPS: { key: string; label: string }[] = [
+  { key: "k", label: "Avoid K" }, { key: "babip", label: "BABIP" }, { key: "gap", label: "Gap" },
+  { key: "pow", label: "Power" }, { key: "eye", label: "Eye" },
+  { key: "p_con", label: "Control (P)" }, { key: "p_stu", label: "Stuff (P)" },
+  { key: "p_pbabip", label: "pBABIP (P)" }, { key: "p_hrr", label: "HR rate (P)" },
+];
 export const SLOT_TIER_KEYS = ["perfect", "diamond", "gold", "silver", "bronze", "iron"] as const;
 // Reusable run-environment libraries (referenced by tournaments by id).
 export interface ParkCfg {

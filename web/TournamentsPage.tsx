@@ -3,9 +3,9 @@
 // coverage depth, era/park refs, variants. softcaps + eligibility rules ride
 // along untouched (Phase 2 editors). Create / duplicate / rename / delete.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, SLOT_TIER_KEYS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp } from "./shared.ts";
+import { C, inputStyle, SLOT_TIER_KEYS, SOFTCAP_GROUPS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp } from "./shared.ts";
 
 type Lib = { id: string; name: string };
 
@@ -31,6 +31,8 @@ export function TournamentsPage() {
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => { fetch("/api/libraries").then((r) => r.json()).then(setLibs).catch(() => {}); }, []);
+  // If the page mounts before the active tournament is known, adopt it once it arrives.
+  useEffect(() => { if (!selId && tournamentId) setSelId(tournamentId); }, [tournamentId, selId]);
   useEffect(() => {
     if (isNew || !selId) return;
     fetch("/api/tournament?id=" + encodeURIComponent(selId)).then((r) => r.json()).then((t) => { if (!t.error) { setDraft(t); setMsg(null); } }).catch(() => {});
@@ -92,6 +94,13 @@ export function TournamentsPage() {
   const updRule = (id: string, patch: Partial<EligibilityRule>) => setElig({ ...elig, rules: elig.rules.map((r) => (r.id === id ? { ...r, ...patch } : r)) });
   const delRule = (id: string) => setElig({ ...elig, rules: elig.rules.filter((r) => r.id !== id) });
   const smIn: React.CSSProperties = { ...inputStyle, padding: "3px 5px", fontSize: 12 };
+
+  // ── Softcaps ──
+  const sc = draft?.softcaps ?? {};
+  const setSc = (key: string, v: string) => set("softcaps", { ...sc, [key]: v === "" ? 0 : Number(v) });
+  const scIn = (key: string, opts: { step?: number; max?: number } = {}): ReactNode => (
+    <input type="number" min={0} max={opts.max} step={opts.step ?? 1} value={sc[key] ?? ""} onChange={(e) => setSc(key, e.target.value)} style={{ ...smIn, width: 72 }} />
+  );
 
   return (
     <div style={{ width: "100%" }}>
@@ -211,10 +220,25 @@ export function TournamentsPage() {
               <button onClick={addRule} style={{ ...inputStyle, marginTop: 8, cursor: "pointer" }}>+ Add rule</button>
             </>)}
 
+            {section("Softcaps", <>
+              <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>Per rating group: ratings above <b>Top</b> get diminishing returns, below <b>Bottom</b> get penalized, by <b>Penalty</b> strength (0–1). Model-seeded — these directly shape scoring.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "120px 72px 72px 72px", gap: 6, alignItems: "center", fontSize: 12 }}>
+                <span style={{ color: C.sub }} /> <span style={{ color: C.sub, fontWeight: 600 }}>Top</span> <span style={{ color: C.sub, fontWeight: 600 }}>Bottom</span> <span style={{ color: C.sub, fontWeight: 600 }}>Penalty</span>
+                {SOFTCAP_GROUPS.map((g) => (
+                  <Fragment key={g.key}>
+                    <span style={{ color: C.sub }}>{g.label}</span>
+                    {scIn(`cap_${g.key}_top`)}
+                    {scIn(`cap_${g.key}_bot`)}
+                    {scIn(`pen_${g.key}`, { step: 0.05, max: 1 })}
+                  </Fragment>
+                ))}
+              </div>
+            </>)}
+
             <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
               <button onClick={save} disabled={busy} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff", fontWeight: 600 }}>{busy ? "Saving…" : isNew ? "Create" : "Save"}</button>
               {msg && <span style={{ fontSize: 13, color: msg.ok ? "#86efac" : "#f87171" }}>{msg.text}</span>}
-              <span style={{ fontSize: 11, color: C.sub }}>Softcaps are preserved (Phase-2 editor).</span>
+              <span style={{ fontSize: 11, color: C.sub }}>Era/Park factors are edited in Eras & Parks.</span>
             </div>
           </div>
         ) : <p style={{ color: C.sub }}>Select a tournament to edit.</p>}
