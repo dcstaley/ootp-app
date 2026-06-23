@@ -16,8 +16,8 @@ export interface Meta {
 }
 export interface RosterSlotCard { pos?: string; slot?: number; id: string; title: string; cost: number; stamina?: number; pitchTypes?: number }
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
-export interface RosterHitterRow { id: string; title: string; bats: string; role: string; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
-export interface RosterPitcherRow { id: string; title: string; throws: string; role: string; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
+export interface RosterHitterRow { id: string; title: string; last: string; bats: string; role: string; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
+export interface RosterPitcherRow { id: string; title: string; last: string; throws: string; role: string; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 export interface RosterResult {
   status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean;
   minStarterStamina: number; minPitchTypes: number;
