@@ -3,7 +3,7 @@
 // active (tournament, account) view and exposes the mutations.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride } from "./shared.ts";
+import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AvailHitterRow } from "./shared.ts";
 
 interface ImportResult { ok: boolean; error?: string; matched?: number; unmatched?: number; column?: string; newId?: string }
 
@@ -19,6 +19,8 @@ interface AppData {
   // Regenerate). dirty = generation params changed since the last generate.
   locked: Set<string>; excluded: Set<string>; removed: Set<string>; dirty: boolean;
   toggleLock: (id: string) => void; toggleExclude: (id: string) => void; removeCard: (id: string) => void;
+  // manually-added cards (fill an open roster slot + lock); shown immediately.
+  added: AvailHitterRow[]; addCard: (card: AvailHitterRow) => void;
   // per-card pool override (Pitch/Hit/2way); absent = auto. Needs Regenerate.
   roles: Map<string, RoleOverride>; setRole: (id: string, role: RoleOverride | null) => void;
   generateRoster: () => Promise<void>;
@@ -57,6 +59,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [locked, setLocked] = useState<Set<string>>(new Set());
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [added, setAdded] = useState<AvailHitterRow[]>([]);
   const [roleOv, setRoleOv] = useState<Map<string, RoleOverride>>(new Map());
   const [dirty, setDirty] = useState(false);
 
@@ -145,12 +148,27 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   // Roster + generation controls reset whenever the (tournament, account) scope
   // changes — locks/excludes are card-specific to the active account.
-  useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setRoleOv(new Map()); setDirty(false); }, [tournamentId, accountId]);
+  useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setAdded([]); setRoleOv(new Map()); setDirty(false); }, [tournamentId, accountId]);
 
   const setOwnedOnly = (v: boolean) => { setOwnedOnlyState(v); setDirty(true); };
   const toggleLock = (id: string) => { setLocked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setExcluded((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
   const toggleExclude = (id: string) => { setExcluded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setLocked((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
-  const removeCard = (id: string) => setRemoved((s) => { const n = new Set(s); n.add(id); return n; }); // client-side, resets on Regenerate
+  // Remove from the current roster. A manually-added card is pulled out of `added`
+  // (re-opening its slot + unlocking); a generated card goes to `removed`.
+  const removeCard = (id: string) => {
+    if (added.some((a) => a.id === id)) {
+      setAdded((a) => a.filter((x) => x.id !== id));
+      setLocked((l) => { const n = new Set(l); n.delete(id); return n; });
+    } else {
+      setRemoved((s) => { const n = new Set(s); n.add(id); return n; });
+    }
+  };
+  // Add a card into an OPEN roster slot (caller gates on available space) + lock it
+  // so a later Regenerate keeps it. Shown immediately; no Regenerate needed to see it.
+  const addCard = (card: AvailHitterRow) => {
+    setAdded((a) => (a.some((x) => x.id === card.id) ? a : [...a, card]));
+    setLocked((l) => { const n = new Set(l); n.add(card.id); return n; });
+  };
   const setRole = (id: string, role: RoleOverride | null) => { setRoleOv((m) => { const n = new Map(m); if (role) n.set(id, role); else n.delete(id); return n; }); setDirty(true); };
 
   const generateRoster = async () => {
@@ -161,7 +179,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
       const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&locked=${enc(locked)}&excluded=${enc(excluded)}&roles=${encodeURIComponent(encRoles)}`;
       setRoster(await fetch("/api/roster" + q).then((r) => r.json()));
-      setRemoved(new Set()); // fresh roster — clear manual removals
+      setRemoved(new Set()); setAdded([]); // fresh roster — clear manual edits
       setDirty(false);
     } catch (e) { setErr(String(e)); } finally { setRosterLoading(false); }
   };
@@ -173,6 +191,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},
     ownedOnly: ownedOnlyState, setOwnedOnly,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
+    added, addCard,
     roles: roleOv, setRole,
     generateRoster,
     reloadView, loadAccounts, renameAccount, importOwnership, toggleVariant, importVariants, clearVariants,

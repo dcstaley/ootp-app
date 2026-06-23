@@ -64,7 +64,7 @@ export function RosterPage() {
   const {
     roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
-    roles: roleOverrides, setRole, cards,
+    added, addCard, roles: roleOverrides, setRole, cards,
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
   const [availCat, setAvailCat] = useState<AvailCat>("hitVR");
@@ -85,12 +85,17 @@ export function RosterPage() {
     setAssignVL(mk(roster.lineupVL));
   }, [roster]);
 
-  // Filtered rosters (manual Remove drops a card from the current view everywhere).
-  const hitters = (roster?.rosterHitters ?? []).filter((h) => !removed.has(h.id));
+  // Manually-added cards (currently hitters) shown as bench rows on the roster.
+  const addedRows: RosterHitterRow[] = added.map((a) => ({ ...a, role: "bench", twoWay: false }));
+  // Filtered rosters (manual Remove drops a card; manual Add appends a bench bat).
+  const hitters = [...(roster?.rosterHitters ?? []), ...addedRows].filter((h) => !removed.has(h.id));
   const pitchers = (roster?.rosterPitchers ?? []).filter((p) => !removed.has(p.id));
   // Distinct cards (a two-way card is in BOTH tables under one id — count once).
   const distinctCount = new Set([...hitters, ...pitchers].map((r) => r.id)).size;
   const nTwoWay = (roster?.twoWayIds ?? []).filter((id) => !removed.has(id)).length;
+  // Open roster slots come from Removing cards; +Add fills them (and locks).
+  const rosterSize = roster?.rosterSize ?? 26;
+  const emptySpace = roster ? Math.max(0, rosterSize - distinctCount) : 0;
   // The role each card was assigned by the LP (drives the per-card role dropdown's
   // default — there is no "auto" choice; the shown value IS the current role).
   const lpRoleById = new Map<string, RoleOverride>();
@@ -173,25 +178,27 @@ export function RosterPage() {
 
   // ── Next Best Available (left rail) — compact card list, +Add = lock the card.
   // Tabs by need (Hit vR / Hit vL now; Pitch/SP/defence/value filter to follow).
-  const availHitters = roster?.nextBest?.hitters ?? [];
+  const addedIds = new Set(added.map((a) => a.id));
+  const availHitters = (roster?.nextBest?.hitters ?? []).filter((h) => !addedIds.has(h.id) && !removed.has(h.id));
   const sortedAvail = [...availHitters].sort((a, b) => (availCat === "hitVR" ? b.wobaVR - a.wobaVR : b.wobaVL - a.wobaVL));
   const catBtn = (id: AvailCat, label: string) => (
     <button onClick={() => setAvailCat(id)} style={{ ...inputStyle, padding: "4px 0", cursor: "pointer", background: availCat === id ? C.accent : C.input, color: availCat === id ? "#fff" : C.sub, fontWeight: availCat === id ? 700 : 400, border: `1px solid ${availCat === id ? C.accent : C.border}` }}>{label}</button>
   );
   const availCard = (h: AvailHitterRow): ReactNode => {
-    const added = locked.has(h.id);
+    const canAdd = emptySpace > 0;
     const active = (v: AvailCat) => v === availCat;
     return (
-      <div key={h.id} style={{ border: `1px solid ${added ? "#22c55e" : C.border}`, borderRadius: 6, padding: "5px 7px", background: added ? "rgba(34,197,94,0.08)" : "transparent" }}>
+      <div key={h.id} style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 7px" }}>
         <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
           <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
             {h.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(h.title)}
           </span>
-          <button onClick={() => toggleLock(h.id)}
-            title={added ? "Queued to add (locked) — click to undo, then Regenerate" : "Add to roster (locks the card; press Regenerate)"}
-            style={{ ...inputStyle, flex: "0 0 auto", padding: "1px 7px", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
-              background: added ? "rgba(34,197,94,0.25)" : C.input, color: added ? "#86efac" : C.text, border: `1px solid ${added ? "#22c55e" : C.border}` }}>
-            {added ? "✓ Added" : "+ Add"}
+          <button onClick={() => canAdd && addCard(h)} disabled={!canAdd}
+            title={canAdd ? "Add to an open roster slot (locks the card)" : "Roster full — remove a card first to open a slot"}
+            style={{ ...inputStyle, flex: "0 0 auto", padding: "1px 7px", fontSize: 11, whiteSpace: "nowrap",
+              cursor: canAdd ? "pointer" : "not-allowed", opacity: canAdd ? 1 : 0.45,
+              background: canAdd ? "rgba(34,197,94,0.18)" : C.input, color: canAdd ? "#86efac" : C.sub, border: `1px solid ${canAdd ? "#22c55e" : C.border}` }}>
+            + Add
           </button>
         </div>
         <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
@@ -308,7 +315,10 @@ export function RosterPage() {
                   {catBtn("hitVR", "Hit vR")}{catBtn("hitVL", "Hit vL")}
                 </div>
                 <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>
-                  Top available {ownedOnly ? "owned " : ""}hitters not on the roster, by {availCat === "hitVR" ? "vs-RHP" : "vs-LHP"} value. <b style={{ color: "#86efac" }}>+ Add</b> locks → Regenerate.
+                  Top available {ownedOnly ? "owned " : ""}hitters, by {availCat === "hitVR" ? "vs-RHP" : "vs-LHP"} value.{" "}
+                  {emptySpace > 0
+                    ? <><b style={{ color: "#86efac" }}>+ Add</b> fills an open slot ({emptySpace}) and locks the card.</>
+                    : <>Roster full — <span style={{ color: "#f87171" }}>remove</span> a card to open a slot.</>}
                 </p>
                 {sortedAvail.length === 0
                   ? <p style={{ fontSize: 12, color: C.sub }}>None — every eligible card is rostered or excluded.</p>
