@@ -342,7 +342,16 @@ export function RosterPage() {
 
       {!roster && !rosterLoading && <p style={{ color: C.sub }}>Click Generate to build the optimal roster.</p>}
       {rosterLoading && <p style={{ color: C.sub }}>Optimizing… (this can take a moment)</p>}
-      {roster && roster.status !== "Optimal" && <p style={{ color: "#f87171" }}>Solver status: {roster.status}. (Pool: {roster.poolHitters}H / {roster.poolPitchers}P — too few cards for the constraints, e.g. too many locks, or backup depth at a scarce position?)</p>}
+      {roster && roster.status !== "Optimal" && (
+        <div style={{ margin: "8px 0", padding: "10px 12px", border: "1px solid #ef4444", borderRadius: 8, background: "rgba(239,68,68,0.12)" }}>
+          <div style={{ color: "#f87171", fontWeight: 700, marginBottom: 4 }}>⚠ No valid roster — solver returned “{roster.status}”.</div>
+          <div style={{ fontSize: 13, color: C.text }}>
+            {(locked.size > 0 || added.length > 0)
+              ? <>Your <b>locked / added</b> cards over-constrain the roster. This tournament needs <b>{roster.nHitters} hitters + {roster.nPitchers} pitchers</b> ({roster.nHitters + roster.nPitchers} total){roster.mode === "cap" ? <> within the <b>{roster.cap?.toLocaleString()}</b> cap</> : null}. You have <b>{locked.size} locked</b>{added.length > 0 && <> · <b>{added.length} added</b></>} — locking too many of one role (or too much value for the cap) makes a valid roster impossible. Remove some and Regenerate.</>
+              : <>Pool: {roster.poolHitters}H / {roster.poolPitchers}P — too few eligible cards for the constraints (e.g. backup depth at a scarce position). Loosen eligibility or position requirements.</>}
+          </div>
+        </div>
+      )}
 
       {roster && roster.status === "Optimal" && (
         <>

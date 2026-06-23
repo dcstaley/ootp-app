@@ -155,11 +155,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const toggleExclude = (id: string) => { setExcluded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setLocked((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
   // Remove from the current roster. A manually-added card is pulled out of `added`
   // (re-opening its slot + unlocking); a generated card goes to `removed`.
+  // Removing a card always UNLOCKS it (you don't want it back on Regenerate). A
+  // manually-added card is pulled out of `added` (+ its role tag cleared); a
+  // generated card is hidden via `removed`.
   const removeCard = (id: string) => {
+    setLocked((l) => { if (!l.has(id)) return l; const n = new Set(l); n.delete(id); return n; });
     if (added.some((a) => a.row.id === id)) {
       setAdded((a) => a.filter((x) => x.row.id !== id));
-      setLocked((l) => { const n = new Set(l); n.delete(id); return n; });
-      setRoleOv((m) => { const n = new Map(m); n.delete(id); return n; }); // clear the add's role tag
+      setRoleOv((m) => { const n = new Map(m); n.delete(id); return n; });
     } else {
       setRemoved((s) => { const n = new Set(s); n.add(id); return n; });
     }

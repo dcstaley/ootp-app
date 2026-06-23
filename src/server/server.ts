@@ -415,6 +415,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   return {
     roles, rosterHitters, rosterPitchers, ownedOnly, twoWayIds: [...twoWaySet], nextBest,
     cardValueMin: t.card_value_min ?? 40, cardValueMax: t.card_value_max ?? null,
+    nHitters: t.hitters, nPitchers: t.pitchers,
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
     status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
     objective: r.objective, balance: r.balance ?? null,

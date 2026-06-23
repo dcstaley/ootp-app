@@ -35,7 +35,7 @@ export interface RosterResult {
   status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean;
   minStarterStamina: number; minPitchTypes: number;
   balance: { hitterValue: number; pitcherValue: number } | null;
-  poolHitters: number; poolPitchers: number; rosterSize: number;
+  poolHitters: number; poolPitchers: number; rosterSize: number; nHitters: number; nPitchers: number;
   lineupVR: RosterSlotCard[]; lineupVL: RosterSlotCard[];
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
   rosterHitters: RosterHitterRow[]; rosterPitchers: RosterPitcherRow[];
