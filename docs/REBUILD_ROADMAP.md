@@ -523,3 +523,45 @@ training + D3 bake-off, M7 Single Player.
 - Parity = equivalence with the old app's trusted Roster & Lineup numbers, NOT endorsement.
 - Real captures in `fixtures/captures/*.json` are gitignored (contain the user's trained model); only
   `_synthetic.json` is tracked. Validate with: `npm run golden` → `npm test`.
+
+---
+
+## Session update (2026-06-24) — M4/M5 generation surface + Tournament editor + libraries
+
+All committed + pushed to `dcstaley/ootp-app` main; 67 tests green; parity bit-identical.
+
+- **Two-way players + bonus slot + per-card Pitch/Hit/2way toggle** — MILP: shared-id cards
+  matched across pools; two-way `rh=rp` (counted once toward roster/cap, frees a slot →
+  hitter-preferred bonus); single-role `rh+rp≤1`; pools sliced (non-cap top-X / cap top-1500),
+  two-way = top-X overlap. `tools/make-twoway.ts` injects a synthetic natural two-way card
+  (local `data/`).
+- **Next Best Available pool** (roster-page left rail): need-tabs Hit vR/vL · Pitch · SP · IF/OF/C;
+  **+Add = fill an OPEN slot** (gated on Remove, locks the card); owned toggle; **value filter**
+  over the FULL eligible pool (down to the tourney value-min); locked/role-overridden cards
+  force-included in the candidate pool (survive Regenerate even below the cut / unowned).
+- **Roster-page polish**: red ✕; fixed-width action buttons; coloured role dropdown (no "Auto" —
+  shows the LP role); Excluded panel; white-border fix (`web/index.css`); column reorder + a
+  no-scroll **fit** mode in DataTable (roster/lineup/pitching: shrink Pos/Learn→Def→Player);
+  unlock-on-remove; clear infeasible-roster error.
+- **Tournament editor** (`web/TournamentsPage.tsx`, replaces placeholder) — fully editable D4:
+  Phase 1 (shape, budget cap/slots, value range, Top-X pool, platoon split, coverage depth,
+  era/park refs, variants) + CRUD (`/api/tournaments/{save,duplicate,delete}`, `/api/tournament`,
+  `/api/libraries`); **2a eligibility rule builder** (ALL/ANY × column/op/value); **2b softcaps
+  editor** (9 groups × top/bot/pen); **2c per-position min-ratings** (Starter + Backup tiers →
+  `positionMins`; implemented as a candidate-build position-eligibility filter +
+  `HitterCandidate.coverPositions` for coverage depth; no scoring change).
+- **Parks library**: import OOTP `pt_ballparks.txt` (`src/data/ballparks.ts`, `POST /api/parks/import`)
+  + **Eras & Parks page** (`web/ErasParksPage.tsx`). Park type gained per-hand gap/triples + metadata.
+- **Eras**: baked per-year run-env library from BBRef league batting (`src/data/eras-bbref.ts`,
+  `docs/bbref_batting_league.csv`, `seedEras`), **baseline = 2010**, per-PA modifiers
+  (bb/k/avg(H)/hr; gap = XBH-share-of-non-HR-hits). `era_bip` **REMOVED** (pinned neutral 1 —
+  was problematic/likely wrong); `hbp` stored-only. **gap denominator FLAGGED to revisit** with a
+  scoring review.
+- **basic/wOBA metric toggle** (roster page): optimizer maximises basic-anchored values
+  (`score−100`, both roles higher-is-better) or wOBA; `/api/roster?metric=`; scores format by metric.
+
+**Next up (M5 polish, then M6/M7):** drag-and-drop (buttons already cover the function — `@dnd-kit`
+pool→roster = lock, drag-out = remove, lineup drag) · lineup-editor depth (batting order, position
+locks, defence-in-lineup; position dropdowns exist) · then **M6** model training + D3 bake-off with
+the real `Model 2037 and 2038/` outcome data (anchoring/scaling audit + OVR vL/vR split weighting +
+BB/HR-only per-event calibration + the gap-denominator revisit all live here) · **M7** Single Player.
