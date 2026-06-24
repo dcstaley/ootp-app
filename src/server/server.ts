@@ -29,7 +29,7 @@ import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
 import { loadTrainingDir, loadWindow, availableYears, type LoadedTraining, type TrainObs } from "../training/loader.ts";
-import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingFit, type WobaPitchingFit, type BasicFit, type BasicHittingCoeffs, type BasicPitchingCoeffs } from "../training/fit.ts";
+import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingFit, type WobaPitchingFit, type BasicFit, type BasicHittingCoeffs, type BasicPitchingCoeffs, type WobaHittingCoeffs, type WobaPitchingCoeffs } from "../training/fit.ts";
 import { buildScoreboard, defaultWindow, type Scoreboard } from "../training/evaluate.ts";
 import { HITTER, PITCHER, predictHitWoba, predictPitWoba, actualHitWoba, actualPitWoba } from "../training/bakeoff.ts";
 import { evalMetrics, type EvalMetrics } from "../training/metrics.ts";
@@ -590,6 +590,42 @@ function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number
   return { available: true, residuals: r };
 }
 
+// ── Saved trained models (M6 / S6.5) ──────────────────────────────────────────
+// A named, persisted snapshot of the four fitted coefficient sets + the config they
+// were trained on (dataset + window + min + variants). Lets us keep MULTIPLE
+// parallel models (e.g. a league model and, later, a tournament model). Scoring-core
+// integration (a model becoming the active scoring model) is a separate later step.
+interface TrainedModel {
+  id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
+  coefficients: { woba_hitting: WobaHittingCoeffs; woba_pitching: WobaPitchingCoeffs; basic_hitting: BasicHittingCoeffs; basic_pitching: BasicPitchingCoeffs };
+  diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
+  trainedAt: string; notes?: string;
+}
+type TrainedModelSummary = Omit<TrainedModel, "coefficients">;
+const modelSummary = (m: TrainedModel): TrainedModelSummary => { const { coefficients, ...rest } = m; return rest; };
+const listModels = async (): Promise<TrainedModelSummary[]> =>
+  (await repo.loadAll<TrainedModel>("trained-models")).sort((a, b) => b.trainedAt.localeCompare(a.trainedAt)).map(modelSummary);
+
+async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?: number; includeVariants?: boolean; notes?: string }): Promise<TrainedModelSummary> {
+  const name = String(body.name ?? "").trim();
+  if (!name) throw new Error("name required");
+  const window = Array.isArray(body.window) && body.window.length ? body.window.map(Number) : defaultWindow(trainingYears());
+  const minPA = Math.max(0, Number(body.minPA ?? 1000) || 1000);
+  const includeVariants = body.includeVariants !== false;
+  const f = getFit(window, minPA, includeVariants);
+  if (!f.available || !f.woba_hitting || !f.woba_pitching || !f.basic_hitting || !f.basic_pitching) throw new Error(f.error ?? "fit unavailable");
+  const existing = await repo.loadAll<TrainedModel>("trained-models");
+  let id = slug(name) || "model"; while (existing.some((m) => m.id === id)) id += "-2";
+  const model: TrainedModel = {
+    id, name, datasetRoot: TRAINING_DIR, window, minPA, includeVariants,
+    coefficients: { woba_hitting: f.woba_hitting.coefficients, woba_pitching: f.woba_pitching.coefficients, basic_hitting: f.basic_hitting.coefficients, basic_pitching: f.basic_pitching.coefficients },
+    diag: { hitPearson: f.wobaDiagHit?.pearson ?? null, pitPearson: f.wobaDiagPit?.pearson ?? null, rowsHit: f.woba_hitting.rowCount, rowsPit: f.woba_pitching.rowCount },
+    trainedAt: new Date().toISOString(), notes: body.notes ? String(body.notes) : undefined,
+  };
+  await repo.save("trained-models", id, model);
+  return modelSummary(model);
+}
+
 // Precompute the default tournament so first paint is instant.
 scoredFor(DEFAULT_TOURNAMENT_ID);
 
@@ -652,6 +688,18 @@ const server = createServer(async (req, res) => {
     const includeVariants = u.searchParams.get("variants") !== "base";
     const weighted = u.searchParams.get("weighted") !== "false";
     return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, includeVariants, weighted, u.searchParams.get("reload") === "true"));
+  }
+  if (method === "GET" && url === "/api/training/models") return json(res, { models: await listModels() });
+  if (method === "POST" && url === "/api/training/models/save") {
+    const body = JSON.parse((await readBody(req)) || "{}");
+    try { const model = await saveTrainedModel(body); return json(res, { ok: true, model, models: await listModels() }); }
+    catch (e) { return json(res, { ok: false, error: String(e) }, 400); }
+  }
+  if (method === "POST" && url === "/api/training/models/delete") {
+    const id = u.searchParams.get("id") || "";
+    if (!id) return json(res, { ok: false, error: "id required" }, 400);
+    await repo.delete("trained-models", id);
+    return json(res, { ok: true, models: await listModels() });
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
