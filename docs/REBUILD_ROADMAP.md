@@ -310,11 +310,12 @@ parity-complete (per the user: parity first, modeling after).
 Loads the 18 per-(league, side, year) CSVs in `Model 2037 and 2038/`; **filename split detection robust
 to token order** (`HD 452 2038 vR.csv` parses). Grouping (decided 2026-06-24, parity-first): observations
 keyed by **(CID, variant-flag, side)** — base and variant of a player SEPARATE; all variant levels pool
-(VLvl ignored); vL/vR separate; outcomes summed across every league/year, with per-source provenance kept
-so a later fit can **neutralize each source's era/park before aggregating** (model fit in a neutral league,
-"as close as we can get"). Real dataset → 710 observations (514 base / 196 variant), 1.77M PA / BF. Still
-TODO for the fit: per-source neutralization, PA/BF threshold, per-event independent fits, parity vs the old
-trainer's log fit.
+(VLvl ignored); vL/vR separate; outcomes summed across every league/year. **The data was collected in a
+neutral league environment** (no park, neutral era), so every file shares one run environment and outcomes
+sum directly — NO per-source neutralization; era/park apply on top of the model's neutral prediction at
+inference. Per-source provenance kept only for diagnostics. Real dataset → 710 observations (514 base / 196
+variant), 1.77M PA / BF. Still TODO for the fit: PA/BF threshold, per-event independent fits, parity vs the
+old trainer's log fit.
 
 **SP-10 — SP format.** *Why:* M7 needs the real column set. *Approach:* read `Export.csv` (old repo) as
 the authoritative SP format; enumerate current vs potential rating fields + any extra SP dimensions.
@@ -637,16 +638,18 @@ clean; build clean. **Ingestion only — no model is fit yet.**
 - **Grouping/modeling logic confirmed with the user (parity-first; revisit when dissecting the model):**
   observations keyed by **(CID, variant-flag, side)** — base vs. variant SEPARATE, all variant levels
   pool (VLvl ignored); vL/vR are separate observations (side-specific ratings → side-specific outcomes);
-  outcomes sum across all leagues/years. **Model fit in a neutral league** (neutralize each source's
-  era/park, "as close as we can get"). **Per-event rates fit independently.** None of this is final.
+  outcomes sum across all leagues/years. **The training data was collected in a neutral league
+  environment** (no park, neutral era), so outcomes sum directly — there is NO neutralization step;
+  era/park apply on top of the model's neutral prediction at inference. **Per-event rates fit
+  independently.** None of this is final.
 - **Loader** (`src/training/loader.ts`, SP-9): token-order-robust filename parse; normalizes each row's
   side-specific hit/pitch ratings + realized outcomes; aggregates to 710 observations (514 base / 196
-  variant) over 18 files / 5 leagues / 2037–38 / 1.77M PA. Per-source provenance retained for later
-  neutralization.
+  variant) over 18 files / 5 leagues / 2037–38 / 1.77M PA. Per-source provenance retained for per-league
+  diagnostics.
 - **Server:** `GET /api/training/summary` (lazy + cached; `?reload=true`).
 - **Page:** `web/ModelTrainingPage.tsx` replaces the placeholder — stat cards + a league×year×side
   coverage matrix (partial coverage handled). Wired into nav.
-- **Next M6 steps:** per-source era/park neutralization → per-event fits (log-linear port first, for
+- **Next M6 steps:** per-event fits over the neutral-environment outcomes (log-linear port first, for
   parity vs the old trainer) → diagnostics (residuals by weighted volume, over-valuation, recommended
   softcaps) → the D3 bake-off. The deferred audits (anchoring/scaling, OVR vL/vR split, BB/HR-only
   per-event calibration, gap-denominator) get evaluated here against this data.

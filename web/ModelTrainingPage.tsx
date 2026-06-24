@@ -1,8 +1,9 @@
 // M6 — Model Training page. First slice (SP-9): load the real per-(league, side,
 // year) outcome CSVs and show what the trainer will fit against. Ingestion only —
-// no model is fit here yet (the fit, neutralization, diagnostics, and the D3
-// bake-off are the next steps). The dataset is grouped by (CID, variant, side):
-// base and variant of a player are separate observations; vL/vR stay separate.
+// no model is fit here yet (the fit, diagnostics, and the D3 bake-off are the next
+// steps). The data was collected in a neutral league environment, so outcomes sum
+// directly. The dataset is grouped by (CID, variant, side): base and variant of a
+// player are separate observations; vL/vR stay separate.
 
 import { useEffect, useState } from "react";
 import { C, inputStyle } from "./shared.ts";
@@ -58,11 +59,12 @@ export function ModelTrainingPage() {
         {data?.dir && <span style={{ fontSize: 13, color: C.sub }}>source: <code style={{ color: C.text }}>{data.dir}</code></span>}
       </div>
       <p style={{ margin: "0 0 16px", color: C.sub, fontSize: 13, maxWidth: 820 }}>
-        The real per-(league, side, year) season-outcome dataset the trainer fits against. Observations are
-        grouped by <b style={{ color: C.text }}>(card, variant, side)</b> — base and variant of a player are
-        separate; vL and vR stay separate; outcomes are summed across every league/year a card appears in.
-        This page is <b style={{ color: C.text }}>ingestion only</b> for now — fitting, league-neutralization,
-        diagnostics, and the D3 bake-off come next.
+        The real per-(league, side, year) season-outcome dataset the trainer fits against, collected in a
+        <b style={{ color: C.text }}> neutral league environment</b> (no park, neutral era) so outcomes sum
+        directly. Observations are grouped by <b style={{ color: C.text }}>(card, variant, side)</b> — base
+        and variant of a player are separate; vL and vR stay separate; outcomes are summed across every
+        league/year a card appears in. This page is <b style={{ color: C.text }}>ingestion only</b> for now —
+        fitting, diagnostics, and the D3 bake-off come next.
       </p>
 
       {err && <div style={{ padding: "10px 12px", border: "1px solid #ef4444", borderRadius: 8, background: "rgba(239,68,68,0.12)", color: "#f87171", marginBottom: 12 }}>{err}</div>}

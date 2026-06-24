@@ -10,8 +10,12 @@
 //   • Outcomes (counting stats) are SUMMED across every league/year a card-side
 //     appears in. Ratings are constant per card, so only outcomes accumulate; we
 //     keep the highest-PA source's ratings as representative (variant pooling can
-//     mix levels — a parity-revisit). Each source league/year is retained so a
-//     later fit can neutralize per-source era/park before aggregating.
+//     mix levels — a parity-revisit). The data was collected in a NEUTRAL league
+//     environment (no park, neutral era), so every file shares one run environment
+//     and outcomes sum directly — no per-source neutralization. Era/park are
+//     applied on top of the model's neutral prediction at inference, not removed
+//     from the training data. Each source league/year is retained only for
+//     provenance / per-league diagnostics.
 //
 // Filename detection is robust to token order: `HD 450 vL 2037.csv` and
 // `HD 452 2038 vR.csv` (year before side) both parse.
