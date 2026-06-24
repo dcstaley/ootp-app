@@ -30,6 +30,7 @@ import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
 import { loadTrainingDir, type LoadedTraining } from "../training/loader.ts";
 import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingFit, type WobaPitchingFit, type BasicFit, type BasicHittingCoeffs, type BasicPitchingCoeffs } from "../training/fit.ts";
+import { buildScoreboard, type Scoreboard } from "../training/evaluate.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -543,6 +544,16 @@ function getFit(threshold: number, reload = false): { available: boolean; error?
   }
   return { available: true, ...fitCache };
 }
+// Bake-off scoreboard (in-sample + 5-fold CV + forward/backward OOT), cached by (minN,k).
+let sbCache = new Map<string, Scoreboard>();
+function getScoreboard(minN: number, k: number, reload = false): { available: boolean; error?: string; scoreboard?: Scoreboard } {
+  if (reload) sbCache = new Map();
+  if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
+  const key = `${minN}|${k}`;
+  let sb = sbCache.get(key);
+  if (!sb) { try { sb = buildScoreboard(TRAINING_DIR, { minN, k }); sbCache.set(key, sb); } catch (e) { return { available: false, error: String(e) }; } }
+  return { available: true, scoreboard: sb };
+}
 
 // Precompute the default tournament so first paint is instant.
 scoredFor(DEFAULT_TOURNAMENT_ID);
@@ -592,6 +603,11 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/training/fit") {
     const minPA = Math.max(0, Number(u.searchParams.get("minPA") ?? 1000) || 1000);
     return json(res, getFit(minPA, u.searchParams.get("reload") === "true"));
+  }
+  if (method === "GET" && url === "/api/training/scoreboard") {
+    const minN = Math.max(0, Number(u.searchParams.get("minN") ?? 1000) || 1000);
+    const k = Math.min(20, Math.max(2, Number(u.searchParams.get("k") ?? 5) || 5));
+    return json(res, getScoreboard(minN, k, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
