@@ -68,7 +68,37 @@ export function pearson(a: number[], b: number[]): number {
   return da * db < 1e-12 ? 0 : num / (da * db);
 }
 
-export interface EventDiag { r2: number | null; rmse: number | null; spearman: number | null; pearson?: number | null; n: number; note?: string }
+// Residual-by-weighted-volume diagnostic. Bins per-card residuals (predicted −
+// actual) across the driving rating using WEIGHT-BALANCED (quantile) bins — each
+// bin holds ~equal total weight, so the tails are as well-sampled as the middle
+// (the old app's equal-width bins left the tails sparse/noisy). `signal` =
+// meanResidual × sign(slope): positive ⇒ the model OVER-values that rating region
+// (predicts more good-event / fewer K than reality). No softcap recommendation —
+// this is a pure diagnostic; the over/under-valuation structure is the scoring
+// function the D3 bake-off compares model forms against.
+export interface ResidualBin { lo: number; hi: number; mid: number; n: number; sumW: number; meanResidual: number; signal: number }
+export function residualBins(rating: number[], residual: number[], weight: number[], slope: number, nBins = 10): ResidualBin[] {
+  const pts = rating.map((r, i) => ({ r, res: residual[i]!, w: weight[i]! }))
+    .filter((p) => Number.isFinite(p.r) && Number.isFinite(p.res)).sort((a, b) => a.r - b.r);
+  if (!pts.length) return [];
+  const totalW = pts.reduce((s, p) => s + p.w, 0);
+  const target = totalW / nBins;
+  const sign = slope >= 0 ? 1 : -1;
+  const mk = (group: typeof pts): ResidualBin => {
+    const sumW = group.reduce((s, p) => s + p.w, 0);
+    const meanResidual = group.reduce((s, p) => s + p.res * p.w, 0) / sumW;
+    const lo = group[0]!.r, hi = group[group.length - 1]!.r;
+    return { lo: +lo.toFixed(1), hi: +hi.toFixed(1), mid: +((lo + hi) / 2).toFixed(1), n: group.length, sumW: +sumW.toFixed(0), meanResidual: +meanResidual.toFixed(3), signal: +(meanResidual * sign).toFixed(3) };
+  };
+  // Weighted-quantile bucketing: assign each point by the cumulative weight at its
+  // midpoint, so bins carry ~equal weight and the last bin isn't a leftover remainder.
+  const groups: (typeof pts)[] = Array.from({ length: nBins }, () => []);
+  let cum = 0;
+  for (const p of pts) { groups[Math.min(Math.floor((cum + p.w / 2) / target), nBins - 1)]!.push(p); cum += p.w; }
+  return groups.filter((g) => g.length).map(mk);
+}
+
+export interface EventDiag { r2: number | null; rmse: number | null; spearman: number | null; pearson?: number | null; n: number; note?: string; bins?: ResidualBin[] }
 export interface WobaHittingCoeffs {
   bb: { intercept: number; eye: number; eye2: number; eye3: number };
   k: { intercept: number; k: number; k2: number };
@@ -188,6 +218,13 @@ export function trainWobaHitting(obs: TrainObs[], minPA = 1000): WobaHittingFit 
   const xbhB = runModel("xbh", players.map((_, i) => [1, ln1(GAP[i]!)]), xbhShareY);
   const xbhPred = players.map((_, i) => Math.max((xbhB[0]! + xbhB[1]! * ln1(GAP[i]!)) * hPred[i]!, 0));
 
+  // Residual-by-weighted-volume bins per event (diagnostic only; no softcap rec).
+  diagnostics.bb!.bins = residualBins(EYE, bbPred.map((p, i) => p - BB[i]!), weights, bbB[1]!);
+  diagnostics.k!.bins = residualBins(Krat, kPred.map((p, i) => p - K[i]!), weights, kB[1]!);
+  diagnostics.hr!.bins = residualBins(POW, hrPred.map((p, i) => p - HR[i]!), weights, hrB[1]!);
+  diagnostics.h!.bins = residualBins(BABIP, hPred.map((p, i) => p - nonHRH[i]!), weights, hB[1]!);
+  diagnostics.xbh!.bins = residualBins(GAP, xbhPred.map((p, i) => p - XBH[i]!), weights, xbhB[1]!);
+
   diagnostics.hbp = { r2: null, rmse: null, spearman: null, n, note: "Fixed constant = 6.0" };
 
   const totalW = weights.reduce((s, w) => s + w, 0);
@@ -262,6 +299,11 @@ export function trainWobaPitching(obs: TrainObs[], minBF = 1000): WobaPitchingFi
 
   const hB = runModel("h", players.map((_, i) => [1, ln1(PBABIP[i]!), ln1(bipPred[i]!)]), nHH);
   const hPred = players.map((_, i) => Math.max(hB[0]! + hB[1]! * ln1(PBABIP[i]!) + hB[2]! * ln1(bipPred[i]!), 0));
+
+  diagnostics.bb!.bins = residualBins(CON, bbPred.map((p, i) => p - BB[i]!), weights, bbB[1]!);
+  diagnostics.k!.bins = residualBins(STU, kPred.map((p, i) => p - K[i]!), weights, kB[1]!);
+  diagnostics.hr!.bins = residualBins(HRR, hrPred.map((p, i) => p - HR[i]!), weights, hrB[1]!);
+  diagnostics.h!.bins = residualBins(PBABIP, hPred.map((p, i) => p - nHH[i]!), weights, hB[1]!);
 
   const totalW = weights.reduce((s, w) => s + w, 0);
   const wavg = (arr: number[]) => arr.reduce((s, v, i) => s + weights[i]! * v, 0) / totalW;

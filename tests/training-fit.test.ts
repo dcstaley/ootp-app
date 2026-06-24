@@ -52,6 +52,21 @@ describe.skipIf(!existsSync(DIR))("trainWobaHitting — parity vs old trainer", 
       expect(fit.diagnostics[ev]!.r2!).toBeLessThanOrEqual(1);
     }
   });
+  it("attaches weight-balanced residual bins per event", () => {
+    for (const ev of ["bb", "k", "hr", "h", "xbh"]) {
+      const bins = fit.diagnostics[ev]!.bins!;
+      expect(bins.length).toBeGreaterThan(1);
+      // every observation lands in exactly one bin
+      expect(bins.reduce((s, b) => s + b.n, 0)).toBe(fit.rowCount);
+      // bins ascend by rating; quantile binning leaves NO starved bin — every bin
+      // carries a healthy share of the target weight (the tail-sparsity that
+      // equal-width binning suffers). Heavy bins are fine (heavy-tailed PA weights).
+      for (let i = 1; i < bins.length; i++) expect(bins[i]!.lo).toBeGreaterThanOrEqual(bins[i - 1]!.lo);
+      const ws = bins.map((b) => b.sumW);
+      const target = ws.reduce((s, w) => s + w, 0) / bins.length;
+      expect(Math.min(...ws)).toBeGreaterThan(0.3 * target);
+    }
+  });
 });
 
 // Oracle: "37-38" woba_pitching (minBF=1000).

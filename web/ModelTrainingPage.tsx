@@ -19,7 +19,8 @@ interface TrainingSummary {
   baseObs: number; variantObs: number; totalPA: number; totalBF: number;
 }
 
-interface EventDiag { r2: number | null; rmse: number | null; spearman: number | null; pearson?: number | null; n: number; note?: string }
+interface ResidualBin { lo: number; hi: number; mid: number; n: number; sumW: number; meanResidual: number; signal: number }
+interface EventDiag { r2: number | null; rmse: number | null; spearman: number | null; pearson?: number | null; n: number; note?: string; bins?: ResidualBin[] }
 interface LeagueNorm { bb: number; k: number; hr: number; h: number; xbh: number }
 interface WobaHittingFit {
   modelType: string; split: string; minPA: number; rowCount: number;
@@ -88,6 +89,43 @@ function DiagTable({ rows }: { rows: { label: string; e: EventDiag }[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// Residual-by-rating heat strip for one event: low→high rating, left→right; each
+// cell is a weight-balanced bin coloured by the over-valuation signal (red = model
+// over-values that region, green = under-values). Intensity scaled within the event.
+function ResidualHeat({ label, rating, bins }: { label: string; rating: string; bins: ResidualBin[] }) {
+  const maxAbs = Math.max(1e-9, ...bins.map((b) => Math.abs(b.signal)));
+  const cell = (b: ResidualBin, i: number) => {
+    const a = Math.min(1, Math.abs(b.signal) / maxAbs) * 0.8;
+    const bg = b.signal >= 0 ? `rgba(239,68,68,${a})` : `rgba(34,197,94,${a})`; // red over, green under
+    return (
+      <div key={i} title={`${rating} ${b.lo}–${b.hi} · signal ${b.signal >= 0 ? "+" : ""}${b.signal} (${b.signal >= 0 ? "over" : "under"}-values) · N=${b.n} · sumW=${b.sumW}`}
+        style={{ flex: 1, minWidth: 0, height: 26, background: bg, borderRight: `1px solid ${C.bg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: C.text }}>
+        {b.signal >= 0 ? "+" : ""}{b.signal.toFixed(1)}
+      </div>
+    );
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+      <span style={{ width: 34, fontSize: 11, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>{label}</span>
+      <div style={{ flex: 1, display: "flex", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }}>{bins.map(cell)}</div>
+    </div>
+  );
+}
+
+function ResidualPanel({ d, events }: { d: Record<string, EventDiag>; events: [string, string][] }) {
+  return (
+    <div style={{ marginTop: 16 }}>
+      <h4 style={{ margin: "0 0 6px", fontSize: 13 }}>Residual by rating — over-valuation diagnostic</h4>
+      {events.map(([ev, rt]) => (d[ev]?.bins ? <ResidualHeat key={ev} label={ev} rating={rt} bins={d[ev]!.bins!} /> : null))}
+      <p style={{ margin: "6px 0 0", fontSize: 11, color: C.sub, maxWidth: 760 }}>
+        Weight-balanced bins, low→high rating left→right. <span style={{ color: "#ef4444" }}>Red</span> = the model
+        over-values that region (predicts more good-event / fewer K than reality); <span style={{ color: "#22c55e" }}>green</span> = under-values.
+        Diagnostic only — no softcap is derived (the softcap concept is under review).
+      </p>
     </div>
   );
 }
@@ -235,31 +273,37 @@ export function ModelTrainingPage() {
 
               {fitTab === "woba_hitting" && fit.woba_hitting && (() => {
                 const c = fit.woba_hitting.coefficients; const d = fit.woba_hitting.diagnostics;
-                return <ModelView
-                  formulas={[
-                    <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.eye} />·ln(EYE)</>,
-                    <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.k} />·ln(K)</>,
-                    <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.pow} />·ln(POW)</>,
-                    <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.ba} />·ln(BABIP) + <Coef v={c.h.bipba} />·ln(predBIP)</>,
-                    <>XBH/H = <Coef v={c.xbh.logA} /> + <Coef v={c.xbh.logB} />·ln(GAP)</>,
-                    <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</>,
-                  ]}
-                  note={<>{fmt(fit.woba_hitting.rowCount)} obs (PA ≥ {fit.woba_hitting.minPA}), split {fit.woba_hitting.split}. Per-event log-linear WLS (weight = PA<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
-                  diagRows={["bb", "k", "hr", "h", "xbh"].map((ev) => ({ label: ev, e: d[ev]! }))} />;
+                return <>
+                  <ModelView
+                    formulas={[
+                      <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.eye} />·ln(EYE)</>,
+                      <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.k} />·ln(K)</>,
+                      <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.pow} />·ln(POW)</>,
+                      <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.ba} />·ln(BABIP) + <Coef v={c.h.bipba} />·ln(predBIP)</>,
+                      <>XBH/H = <Coef v={c.xbh.logA} /> + <Coef v={c.xbh.logB} />·ln(GAP)</>,
+                      <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</>,
+                    ]}
+                    note={<>{fmt(fit.woba_hitting.rowCount)} obs (PA ≥ {fit.woba_hitting.minPA}), split {fit.woba_hitting.split}. Per-event log-linear WLS (weight = PA<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
+                    diagRows={["bb", "k", "hr", "h", "xbh"].map((ev) => ({ label: ev, e: d[ev]! }))} />
+                  <ResidualPanel d={d} events={[["bb", "EYE"], ["k", "K"], ["hr", "POW"], ["h", "BABIP"], ["xbh", "GAP"]]} />
+                </>;
               })()}
 
               {fitTab === "woba_pitching" && fit.woba_pitching && (() => {
                 const c = fit.woba_pitching.coefficients; const d = fit.woba_pitching.diagnostics;
-                return <ModelView
-                  formulas={[
-                    <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.con} />·ln(CON)</>,
-                    <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.stu} />·ln(STU)</>,
-                    <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.hrr} />·ln(HRR)</>,
-                    <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.pbabip} />·ln(PBABIP) + <Coef v={c.h.bip} />·ln(predBIP)</>,
-                    <>XBH = <Coef v={c.xbh.share} />·H (fixed share)</>,
-                  ]}
-                  note={<>{fmt(fit.woba_pitching.rowCount)} obs (BF ≥ {fit.woba_pitching.minBF}), split {fit.woba_pitching.split}. Per-event log-linear WLS (weight = BF<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
-                  diagRows={["bb", "k", "hr", "h"].map((ev) => ({ label: ev, e: d[ev]! }))} />;
+                return <>
+                  <ModelView
+                    formulas={[
+                      <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.con} />·ln(CON)</>,
+                      <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.stu} />·ln(STU)</>,
+                      <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.hrr} />·ln(HRR)</>,
+                      <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.pbabip} />·ln(PBABIP) + <Coef v={c.h.bip} />·ln(predBIP)</>,
+                      <>XBH = <Coef v={c.xbh.share} />·H (fixed share)</>,
+                    ]}
+                    note={<>{fmt(fit.woba_pitching.rowCount)} obs (BF ≥ {fit.woba_pitching.minBF}), split {fit.woba_pitching.split}. Per-event log-linear WLS (weight = BF<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
+                    diagRows={["bb", "k", "hr", "h"].map((ev) => ({ label: ev, e: d[ev]! }))} />
+                  <ResidualPanel d={d} events={[["bb", "CON"], ["k", "STU"], ["hr", "HRR"], ["h", "PBABIP"]]} />
+                </>;
               })()}
 
               {fitTab === "basic_hitting" && fit.basic_hitting && (() => {

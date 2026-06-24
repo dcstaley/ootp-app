@@ -409,6 +409,18 @@ trivial and agreed.
   (raw BIP rate kept in `rates` for reference only). Open question whether a BIP modifier
   belongs at all — don't re-add without resolving that.
 
+- **Softcaps — REEVALUATE THE WHOLE CONCEPT (user-flagged 2026-06-24).** The old app's softcap
+  recommendation (`residualBinReport`) is essentially a one-parameter band-aid for log-linear
+  *misspecification*: it bins per-event residuals by the driving rating, finds where the model
+  systematically over-predicts (over-values), and bends the rating→score curve there. Concerns: it's
+  correcting a curve-shape problem that a better model FORM should fix (D3 bake-off); equal-width bins put
+  caps where data is thinnest; it's a one-point calibration of a piecewise-linear correction; and
+  per-(model,event) recs seed per-group SHARED softcaps (ambiguous). **Decision:** build the residual
+  diagnostic now (weight-balanced/quantile bins, no auto-softcap); after the D3 bake-off, decide whether a
+  better form removes the bias entirely — and **reconsider whether softcaps should exist at all** vs. a
+  cleaner mechanism (direct softcap-param fit, prediction shrinkage, or none). Softcaps remain a manual
+  tournament knob (D4) meanwhile; we just stop auto-seeding them from the fragile heuristic.
+
 - **Two WLS solvers (rebuild tech-debt) — REVISIT, down the road.** `src/training/fit.ts` ports BOTH the
   old app's solvers: `wls` (Gauss-Jordan normal equations) for the wOBA models and `wlsSolve` (Jacobi
   eigendecomposition + pseudo-inverse) for the basic models — only because the old app used two and we
