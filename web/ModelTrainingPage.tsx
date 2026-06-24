@@ -52,9 +52,12 @@ interface Scoreboard { minN: number; k: number; topN: number; years: number[]; t
 interface ScoreboardResp { available: boolean; error?: string; scoreboard?: Scoreboard }
 
 interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number }
-interface Bucket { name: string; desc: string; n: number; meanValErrPts: number; sumW: number }
-interface ResidGrid { rowRating: string; colRating: string; bands: string[]; cells: { n: number; meanValErrPts: number; sumW: number }[][] }
-interface ResidualAnalysis { role: "hitter" | "pitcher"; window: number[]; n: number; over: CardResidual[]; under: CardResidual[]; archetypes: Bucket[]; grid: ResidGrid }
+interface Bucket { name: string; desc: string; n: number; meanValErrPts: number; sumVol: number; members: CardResidual[] }
+interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; sumVol: number }[][] }
+interface ResidualAnalysis {
+  role: "hitter" | "pitcher"; window: number[]; n: number; minN: number; includeVariants: boolean;
+  ratings: string[]; bands: string[]; over: CardResidual[]; under: CardResidual[]; archetypes: Bucket[]; grids: ResidGrid[];
+}
 interface ResidResp { available: boolean; error?: string; residuals?: ResidualAnalysis }
 
 type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitching";
@@ -173,57 +176,76 @@ const errBg = (pts: number) => `rgba(${pts >= 0 ? "239,68,68" : "34,197,94"},${M
 const errFg = (pts: number) => (pts >= 0 ? "#fca5a5" : "#86efac");
 const pm = (pts: number) => `${pts >= 0 ? "+" : ""}${pts.toFixed(1)}`;
 
-// "Where the model misses": leaderboards + archetype buckets + a 2D interaction grid.
+// "Where the model misses": leaderboards + archetype buckets (expandable) + a
+// selectable 2D interaction grid.
 function MissesView({ a }: { a: ResidualAnalysis }) {
-  const card = (c: CardResidual) => (
-    <div key={c.cid + c.variant + c.side} title={`pred ${c.pred.toFixed(3)} · actual ${c.actual.toFixed(3)} · vol ${c.vol} · v${c.side}`}
+  const vol = a.role === "hitter" ? "PA" : "BF";
+  const [gi, setGi] = useState(0);
+  const [open, setOpen] = useState<string | null>(null);
+  const grid = a.grids[Math.min(gi, a.grids.length - 1)];
+  const card = (c: CardResidual, k: number) => (
+    <div key={k} title={`pred ${c.pred.toFixed(3)} · actual ${c.actual.toFixed(3)}`}
       style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 6px", borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
-      <span style={{ width: 44, textAlign: "right", fontWeight: 700, color: errFg(c.valErrPts) }}>{pm(c.valErrPts)}</span>
-      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.variant && <span style={{ color: C.star }}>★</span>}{c.name}</span>
+      <span style={{ width: 42, textAlign: "right", fontWeight: 700, color: errFg(c.valErrPts) }}>{pm(c.valErrPts)}</span>
+      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.variant && <span style={{ color: C.star }} title="variant">★</span>}{c.name} <span style={{ color: C.sub, fontSize: 10 }}>v{c.side}</span></span>
       <span style={{ color: C.sub, fontSize: 11 }}>{c.pred.toFixed(3)}→{c.actual.toFixed(3)}</span>
+      <span style={{ width: 46, textAlign: "right", color: C.sub, fontSize: 11 }}>{fmt(c.vol)}</span>
     </div>
   );
   return (
     <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start", marginTop: 8 }}>
       {/* Leaderboards */}
-      <div style={{ flex: "1 1 300px", minWidth: 280 }}>
+      <div style={{ flex: "1 1 320px", minWidth: 300 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#fca5a5", margin: "0 0 2px" }}>Most over-valued (model &gt; reality)</div>
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 6 }}>{a.over.map(card)}</div>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#86efac", margin: "10px 0 2px" }}>Most under-valued (model &lt; reality)</div>
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 6 }}>{a.under.map(card)}</div>
-        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}>Valuation error in wOBA points; pred→actual wOBA. ★ = variant.</p>
+        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}>err in wOBA points · pred→actual wOBA · v-side · {vol}. ★ = variant. vL/vR are separate observations.</p>
       </div>
-      {/* Archetypes */}
-      <div style={{ flex: "1 1 320px", minWidth: 300 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "0 0 4px" }}>Card-shape archetypes (mean valuation error)</div>
+      {/* Archetypes (expandable) + selectable grid */}
+      <div style={{ flex: "1 1 340px", minWidth: 320 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "0 0 4px" }}>Card-shape archetypes — click to list players</div>
         <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 6 }}>
           <table style={{ borderCollapse: "collapse", width: "100%" }}>
-            <thead><tr><th style={{ ...th, textAlign: "left" }}>Archetype</th><th style={{ ...th, textAlign: "left" }}>Profile</th><th style={th}>n</th><th style={th}>err (pts)</th></tr></thead>
-            <tbody>{a.archetypes.map((b) => (
-              <tr key={b.name}>
-                <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{b.name}</td>
-                <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 11 }}>{b.desc}</td>
+            <thead><tr><th style={{ ...th, textAlign: "left" }}>Archetype</th><th style={th}>n</th><th style={th}>{vol}</th><th style={th}>err (pts)</th></tr></thead>
+            <tbody>{a.archetypes.map((b) => [
+              <tr key={b.name} onClick={() => b.n && setOpen(open === b.name ? null : b.name)} style={{ cursor: b.n ? "pointer" : "default" }}>
+                <td style={{ ...td, textAlign: "left" }}><span style={{ fontWeight: 600 }}>{b.n ? (open === b.name ? "▾ " : "▸ ") : ""}{b.name}</span><div style={{ color: C.sub, fontSize: 10 }}>{b.desc}</div></td>
                 <td style={{ ...td, color: C.sub }}>{b.n}</td>
+                <td style={{ ...td, color: C.sub, fontSize: 11 }}>{fmt(b.sumVol)}</td>
                 <td style={{ ...td, fontWeight: 700, color: errFg(b.meanValErrPts), background: errBg(b.meanValErrPts) }}>{b.n ? pm(b.meanValErrPts) : "—"}</td>
-              </tr>
-            ))}</tbody>
+              </tr>,
+              open === b.name && b.members.length ? (
+                <tr key={b.name + "-m"}><td colSpan={4} style={{ padding: 0, borderBottom: `1px solid ${C.border}` }}>
+                  <div style={{ maxHeight: 200, overflowY: "auto", background: C.bg }}>{b.members.map(card)}</div>
+                </td></tr>
+              ) : null,
+            ])}</tbody>
           </table>
         </div>
-        {/* 2D interaction grid */}
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "12px 0 4px" }}>Interaction grid — {a.grid.rowRating.toUpperCase()} (rows) × {a.grid.colRating.toUpperCase()} (cols)</div>
-        <div style={{ display: "grid", gridTemplateColumns: `28px repeat(3, 1fr)`, gap: 2, maxWidth: 320 }}>
-          <span />{a.grid.bands.map((b) => <span key={b} style={{ textAlign: "center", fontSize: 10, color: C.sub }}>{a.grid.colRating.toUpperCase()} {b}</span>)}
-          {a.grid.cells.map((row, ri) => [
-            <span key={`r${ri}`} style={{ fontSize: 10, color: C.sub, alignSelf: "center" }}>{a.grid.bands[ri]}</span>,
-            ...row.map((cell, ci) => (
-              <div key={`${ri}-${ci}`} title={`${a.grid.rowRating} ${a.grid.bands[ri]} × ${a.grid.colRating} ${a.grid.bands[ci]} · n=${cell.n}`}
-                style={{ height: 34, borderRadius: 3, background: cell.n ? errBg(cell.meanValErrPts) : C.input, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: cell.n ? errFg(cell.meanValErrPts) : C.sub }}>
-                {cell.n ? pm(cell.meanValErrPts) : "—"}<span style={{ fontSize: 9, fontWeight: 400, color: C.sub }}>n{cell.n}</span>
-              </div>
-            )),
-          ])}
+        {/* Selectable 2D interaction grid (any rating pair) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0 4px" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Interaction grid</span>
+          <select value={gi} onChange={(e) => setGi(Number(e.target.value))} style={{ ...inputStyle, padding: "2px 6px", fontSize: 12 }}>
+            {a.grids.map((g, i) => <option key={i} value={i}>{g.row.toUpperCase()} × {g.col.toUpperCase()}</option>)}
+          </select>
         </div>
-        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}><span style={{ color: "#fca5a5" }}>red</span> = over-valued, <span style={{ color: "#86efac" }}>green</span> = under-valued (PA-weighted mean, wOBA pts). Corners reveal interactions an additive model can't capture.</p>
+        {grid && (
+          <div style={{ display: "grid", gridTemplateColumns: `34px repeat(3, 1fr)`, gap: 2, maxWidth: 340 }}>
+            <span style={{ fontSize: 9, color: C.sub, alignSelf: "end", textAlign: "right" }}>{grid.row.toUpperCase()}↓</span>
+            {a.bands.map((b) => <span key={b} style={{ textAlign: "center", fontSize: 10, color: C.sub }}>{grid.col.toUpperCase()} {b}</span>)}
+            {grid.cells.map((row, ri) => [
+              <span key={`r${ri}`} style={{ fontSize: 10, color: C.sub, alignSelf: "center", textAlign: "right" }}>{a.bands[ri]}</span>,
+              ...row.map((cell, ci) => (
+                <div key={`${ri}-${ci}`} title={`${grid.row} ${a.bands[ri]} × ${grid.col} ${a.bands[ci]} · n=${cell.n} · ${vol} ${fmt(cell.sumVol)}`}
+                  style={{ height: 34, borderRadius: 3, background: cell.n ? errBg(cell.meanValErrPts) : C.input, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: cell.n ? errFg(cell.meanValErrPts) : C.sub }}>
+                  {cell.n ? pm(cell.meanValErrPts) : "—"}<span style={{ fontSize: 9, fontWeight: 400, color: C.sub }}>n{cell.n}</span>
+                </div>
+              )),
+            ])}
+          </div>
+        )}
+        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}><span style={{ color: "#fca5a5" }}>red</span> = over-valued, <span style={{ color: "#86efac" }}>green</span> = under-valued ({vol}-weighted mean, wOBA pts). Pick any rating pair; corners reveal interactions an additive model can't capture.</p>
       </div>
     </div>
   );
@@ -271,6 +293,7 @@ export function ModelTrainingPage() {
   const [years, setYears] = useState<number[]>([]); // selected training window (empty ⇒ server default: recent 2yr)
   const [resid, setResid] = useState<ResidResp | null>(null);
   const [residRole, setResidRole] = useState<"hitter" | "pitcher">("hitter");
+  const [inclVariants, setInclVariants] = useState(true);
 
   const yq = (ys: number[]) => (ys.length ? `&years=${ys.join(",")}` : "");
   const load = (reload = false) => {
@@ -291,8 +314,8 @@ export function ModelTrainingPage() {
       .then((r) => r.json()).then((d: ScoreboardResp) => setSb(d))
       .catch((e) => setErr(String(e))).finally(() => setSbLoading(false));
   };
-  const loadResid = (role: "hitter" | "pitcher", ys: number[], reload = false) =>
-    fetch(`/api/training/residuals?role=${role}&minN=${minPA}${yq(ys)}${reload ? "&reload=true" : ""}`)
+  const loadResid = (role: "hitter" | "pitcher", ys: number[], incl = inclVariants, pa = minPA, reload = false) =>
+    fetch(`/api/training/residuals?role=${role}&minN=${pa}&variants=${incl ? "all" : "base"}${yq(ys)}${reload ? "&reload=true" : ""}`)
       .then((r) => r.json()).then((d: ResidResp) => setResid(d)).catch((e) => setErr(String(e)));
   useEffect(() => { load(); loadFit(1000, []); loadSb(1000, []); loadResid("hitter", []); }, []);
   // Toggle a year in the training window; refit + rescore + re-analyze on the new window.
@@ -302,6 +325,9 @@ export function ModelTrainingPage() {
     setYears(next); loadFit(minPA, next); loadSb(minPA, next); loadResid(residRole, next);
   };
   const chooseResidRole = (role: "hitter" | "pitcher") => { setResidRole(role); loadResid(role, years); };
+  const toggleInclVariants = () => { const v = !inclVariants; setInclVariants(v); loadResid(residRole, years, v); };
+  // Apply a new min PA/BF everywhere (fit + scoreboard + residuals).
+  const applyMin = (pa: number) => { setMinPA(pa); loadFit(pa, years); loadSb(pa, years); loadResid(residRole, years, inclVariants, pa); };
 
   // Pivot the cells into a league-row × (year/side)-column matrix for the table.
   const colKeys = data ? [...new Set(data.cells.map((c) => `${c.year} v${c.side}`))].sort() : [];
@@ -311,7 +337,7 @@ export function ModelTrainingPage() {
     <div style={{ width: "100%", maxWidth: 1100 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Model Training</h2>
-        <button onClick={() => { load(true); loadFit(minPA, years, true); loadSb(minPA, years, true); loadResid(residRole, years, true); }} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
+        <button onClick={() => { load(true); loadFit(minPA, years, true); loadSb(minPA, years, true); loadResid(residRole, years, inclVariants, minPA, true); }} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
         {data?.dir && <span style={{ fontSize: 13, color: C.sub }}>source: <code style={{ color: C.text }}>{data.dir}</code></span>}
       </div>
       <p style={{ margin: "0 0 16px", color: C.sub, fontSize: 13, maxWidth: 820 }}>
@@ -426,6 +452,16 @@ export function ModelTrainingPage() {
                 <button key={r} onClick={() => chooseResidRole(r)} style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: "pointer", padding: "5px 11px", textTransform: "capitalize", background: residRole === r ? C.accent : C.input, color: residRole === r ? "#fff" : C.sub, fontWeight: residRole === r ? 700 : 400 }}>{r}</button>
               ))}
             </span>
+            <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }} title="Minimum PA (hitters) / BF (pitchers) for a card to enter the leaderboards, archetypes, and grid — and the fit they're based on.">
+              min PA/BF
+              <input type="number" defaultValue={minPA} min={0} step={100}
+                onKeyDown={(e) => { if (e.key === "Enter") applyMin(Math.max(0, Number((e.target as HTMLInputElement).value) || 0)); }}
+                onBlur={(e) => { const v = Math.max(0, Number(e.target.value) || 0); if (v !== minPA) applyMin(v); }}
+                style={{ ...inputStyle, width: 70, padding: "3px 6px", fontSize: 12 }} />
+            </label>
+            <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }} title="Off = base cards only (excludes variants from the leaderboards AND the model fit they're based on).">
+              <input type="checkbox" checked={inclVariants} onChange={toggleInclVariants} /> include variants
+            </label>
             {resid?.residuals && <span style={{ fontSize: 12, color: C.sub }}>{resid.residuals.n} cards · window {resid.residuals.window.join("+")}</span>}
           </div>
           {resid && !resid.available && <p style={{ color: "#f87171", fontSize: 13 }}>Unavailable: {resid.error}</p>}

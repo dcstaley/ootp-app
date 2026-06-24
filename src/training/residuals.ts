@@ -4,22 +4,28 @@
 //   • over/under-prediction LEADERBOARDS — the specific cards behind the top-N gap.
 //   • named ARCHETYPE buckets — does the additive model systematically mis-value a
 //     card profile (low-BABIP/high-POW slugger, high-avoid-K/low-POW contact, …)?
-//   • a 2D rating-pair GRID — interaction corners an additive form can't represent.
+//     Each bucket carries its member cards (expandable) + total volume.
+//   • a 2D rating-pair GRID for EVERY pair of the role's core ratings (the UI picks
+//     the axes) — interaction corners an additive form can't represent.
 // Valuation error = how much the model over-rates a card in VALUE (wOBA points;
-// + = over-valued, − = under-valued). Bucket means are PA^0.75 / BF^0.75 weighted.
+// + = over-valued, − = under-valued). Bucket/cell means are PA^0.75 / BF^0.75
+// weighted. vL and vR are SEPARATE observations (per-side ratings), so a card shows
+// once per side — the leaderboards label the side.
 
 import type { TrainObs } from "./loader.ts";
 import { HITTER, PITCHER, wobaHitting, wobaPitching, type RoleSpec, type BakeoffModel } from "./bakeoff.ts";
 
 export interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number }
-export interface Bucket { name: string; desc: string; n: number; meanValErrPts: number; sumW: number }
-export interface ResidGrid { rowRating: string; colRating: string; bands: string[]; cells: { n: number; meanValErrPts: number; sumW: number }[][] }
+export interface Bucket { name: string; desc: string; n: number; meanValErrPts: number; sumVol: number; members: CardResidual[] }
+export interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; sumVol: number }[][] }
 export interface ResidualAnalysis {
-  role: "hitter" | "pitcher"; window: number[]; n: number;
-  over: CardResidual[]; under: CardResidual[]; archetypes: Bucket[]; grid: ResidGrid;
+  role: "hitter" | "pitcher"; window: number[]; n: number; minN: number; includeVariants: boolean;
+  ratings: string[]; bands: string[];
+  over: CardResidual[]; under: CardResidual[]; archetypes: Bucket[]; grids: ResidGrid[];
 }
 
 type Band = "L" | "M" | "H";
+const BANDS: Band[] = ["L", "M", "H"];
 function terciles(vals: number[]): [number, number] {
   const s = [...vals].sort((a, b) => a - b);
   const q = (p: number) => s[Math.min(s.length - 1, Math.floor(p * s.length))]!;
@@ -28,17 +34,14 @@ function terciles(vals: number[]): [number, number] {
 const band = (v: number, t: [number, number]): Band => (v <= t[0] ? "L" : v >= t[1] ? "H" : "M");
 const wmean = (xs: number[], ws: number[]) => { const W = ws.reduce((s, w) => s + w, 0); return W < 1e-9 ? 0 : xs.reduce((s, x, i) => s + x * ws[i]!, 0) / W; };
 
-// Per-role rating accessors + archetype/grid definitions. All ratings are
-// higher-is-better in both roles, so band "H" = strong in that dimension.
 interface RoleCfg {
   spec: RoleSpec; model: BakeoffModel;
-  ratings: Record<string, (o: TrainObs) => number>;
+  ratings: Record<string, (o: TrainObs) => number>; // the role's CORE ratings (grid axes + archetype bands)
   archetypes: { name: string; desc: string; match: (b: Record<string, Band>) => boolean }[];
-  grid: { row: string; col: string };
 }
 const HIT_CFG: RoleCfg = {
   spec: HITTER, model: wobaHitting,
-  ratings: { babip: (o) => o.ratings.hit.babip, pow: (o) => o.ratings.hit.pow, eye: (o) => o.ratings.hit.eye, k: (o) => o.ratings.hit.kRat, gap: (o) => o.ratings.hit.gap },
+  ratings: { babip: (o) => o.ratings.hit.babip, pow: (o) => o.ratings.hit.pow, eye: (o) => o.ratings.hit.eye, k: (o) => o.ratings.hit.kRat },
   archetypes: [
     { name: "Power, weak contact", desc: "high POW · low BABIP", match: (b) => b.pow === "H" && b.babip === "L" },
     { name: "Contact, no power", desc: "high BABIP · low POW", match: (b) => b.babip === "H" && b.pow === "L" },
@@ -47,7 +50,6 @@ const HIT_CFG: RoleCfg = {
     { name: "Free swinger", desc: "low EYE · low avoid-K", match: (b) => b.eye === "L" && b.k === "L" },
     { name: "Elite all-around", desc: "high POW · high BABIP · high EYE", match: (b) => b.pow === "H" && b.babip === "H" && b.eye === "H" },
   ],
-  grid: { row: "babip", col: "pow" },
 };
 const PIT_CFG: RoleCfg = {
   spec: PITCHER, model: wobaPitching,
@@ -59,12 +61,14 @@ const PIT_CFG: RoleCfg = {
     { name: "HR-prone", desc: "low HR-avoid", match: (b) => b.hrr === "L" },
     { name: "Ace", desc: "high STU · high CON · high HR-avoid", match: (b) => b.stu === "H" && b.con === "H" && b.hrr === "H" },
   ],
-  grid: { row: "con", col: "stu" },
 };
 
-export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", minN = 1000, topK = 12): ResidualAnalysis {
+export interface ResidOpts { includeVariants?: boolean; topK?: number }
+export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", minN = 1000, opts: ResidOpts = {}): ResidualAnalysis {
+  const { includeVariants = true, topK = 12 } = opts;
   const cfg = role === "hitter" ? HIT_CFG : PIT_CFG;
-  const qual = obs.filter((o) => cfg.spec.qualifies(o, minN));
+  const ratingNames = Object.keys(cfg.ratings);
+  const qual = obs.filter((o) => cfg.spec.qualifies(o, minN) && (includeVariants || !o.variant));
   const params = cfg.model.fit(qual);
   const pred = cfg.model.predict(params, qual);
   const w = qual.map((o) => cfg.spec.weight(o));
@@ -73,29 +77,35 @@ export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", mi
     const valErr = (cfg.spec.higherBetter ? pred[i]! - actual : actual - pred[i]!) * 1000; // + = over-valued (pts)
     return { name: o.name, cid: o.cid, variant: o.variant, side: o.side, pred: pred[i]!, actual, valErrPts: +valErr.toFixed(1), vol: Math.round(role === "hitter" ? o.hit.PA : o.pitch.BF) };
   });
-  const byErr = cards.map((c, i) => ({ c, w: w[i]! })).sort((a, b) => b.c.valErrPts - a.c.valErrPts);
-  const over = byErr.slice(0, topK).map((x) => x.c);
-  const under = byErr.slice(-topK).reverse().map((x) => x.c);
+  const byErr = [...cards.keys()].sort((a, b) => cards[b]!.valErrPts - cards[a]!.valErrPts);
+  const over = byErr.slice(0, topK).map((i) => cards[i]!);
+  const under = byErr.slice(-topK).reverse().map((i) => cards[i]!);
 
-  // Band each card on every rating (within-window terciles).
-  const ratingNames = Object.keys(cfg.ratings);
+  // Band each card on every core rating (within-window terciles).
   const ts: Record<string, [number, number]> = {};
   for (const r of ratingNames) ts[r] = terciles(qual.map(cfg.ratings[r]!));
   const bandsOf = qual.map((o) => { const b: Record<string, Band> = {}; for (const r of ratingNames) b[r] = band(cfg.ratings[r]!(o), ts[r]!); return b; });
 
   const archetypes: Bucket[] = cfg.archetypes.map((a) => {
     const idx = bandsOf.map((b, i) => (a.match(b) ? i : -1)).filter((i) => i >= 0);
-    const sumW = idx.reduce((s, i) => s + w[i]!, 0);
-    return { name: a.name, desc: a.desc, n: idx.length, meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => w[i]!)).toFixed(1), sumW: Math.round(sumW) };
+    const members = idx.map((i) => cards[i]!).sort((x, y) => y.valErrPts - x.valErrPts);
+    return {
+      name: a.name, desc: a.desc, n: idx.length,
+      meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => w[i]!)).toFixed(1),
+      sumVol: idx.reduce((s, i) => s + cards[i]!.vol, 0), members,
+    };
   });
 
-  // 2D residual grid (row × col rating, terciles).
-  const BANDS: Band[] = ["L", "M", "H"];
-  const cells = BANDS.map((rb) => BANDS.map((cb) => {
-    const idx = qual.map((_, i) => i).filter((i) => bandsOf[i]![cfg.grid.row] === rb && bandsOf[i]![cfg.grid.col] === cb);
-    return { n: idx.length, meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => w[i]!)).toFixed(1), sumW: Math.round(idx.reduce((s, i) => s + w[i]!, 0)) };
-  }));
-  const grid: ResidGrid = { rowRating: cfg.grid.row, colRating: cfg.grid.col, bands: BANDS, cells };
+  // A 3×3 residual grid for EVERY pair of core ratings (UI picks the axes).
+  const grids: ResidGrid[] = [];
+  for (let a = 0; a < ratingNames.length; a++) for (let b = a + 1; b < ratingNames.length; b++) {
+    const row = ratingNames[a]!, col = ratingNames[b]!;
+    const cells = BANDS.map((rb) => BANDS.map((cb) => {
+      const idx = qual.map((_, i) => i).filter((i) => bandsOf[i]![row] === rb && bandsOf[i]![col] === cb);
+      return { n: idx.length, meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => w[i]!)).toFixed(1), sumVol: idx.reduce((s, i) => s + cards[i]!.vol, 0) };
+    }));
+    grids.push({ row, col, cells });
+  }
 
-  return { role, window: [], n: qual.length, over, under, archetypes, grid };
+  return { role, window: [], n: qual.length, minN, includeVariants, ratings: ratingNames, bands: BANDS, over, under, archetypes, grids };
 }

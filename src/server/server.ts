@@ -581,12 +581,12 @@ function getScoreboard(window: number[], minN: number, k: number, reload = false
 // Per-card residual analysis (over/under leaderboards + archetypes + grid) for the
 // wOBA model of a role, on a window. Cached by (role,window,minN).
 const residCache = new Map<string, ResidualAnalysis>();
-function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number, reload = false): { available: boolean; error?: string; residuals?: ResidualAnalysis } {
+function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number, includeVariants: boolean, reload = false): { available: boolean; error?: string; residuals?: ResidualAnalysis } {
   if (reload) residCache.clear();
   if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
-  const key = `${role}|${window.join(",")}|${minN}`;
+  const key = `${role}|${window.join(",")}|${minN}|${includeVariants}`;
   let r = residCache.get(key);
-  if (!r) { try { r = { ...analyzeResiduals(windowObs(window), role, minN), window }; residCache.set(key, r); } catch (e) { return { available: false, error: String(e) }; } }
+  if (!r) { try { r = { ...analyzeResiduals(windowObs(window), role, minN, { includeVariants }), window }; residCache.set(key, r); } catch (e) { return { available: false, error: String(e) }; } }
   return { available: true, residuals: r };
 }
 
@@ -647,7 +647,8 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/training/residuals") {
     const role = u.searchParams.get("role") === "pitcher" ? "pitcher" : "hitter";
     const minN = Math.max(0, Number(u.searchParams.get("minN") ?? 1000) || 1000);
-    return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, u.searchParams.get("reload") === "true"));
+    const includeVariants = u.searchParams.get("variants") !== "base";
+    return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, includeVariants, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));

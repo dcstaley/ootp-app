@@ -86,10 +86,20 @@ describe.skipIf(!existsSync(FIXTURE))("analyzeResiduals — leaderboards + arche
     expect(a.archetypes.length).toBe(6);
     expect(a.archetypes.some((b) => b.n > 0)).toBe(true);
   });
-  it("the 2D grid is 3×3 and partitions every card", () => {
-    expect(a.grid.cells.length).toBe(3);
-    expect(a.grid.cells.every((row) => row.length === 3)).toBe(true);
-    const gridN = a.grid.cells.flat().reduce((s, c) => s + c.n, 0);
-    expect(gridN).toBe(a.n); // each qualifying card lands in exactly one (row,col) cell
+  it("a 2D grid exists for every rating pair, 3×3, partitioning every card", () => {
+    expect(a.grids.length).toBe(6); // C(4,2) pairs of the 4 core ratings
+    for (const g of a.grids) {
+      expect(g.cells.length).toBe(3);
+      expect(g.cells.every((row) => row.length === 3)).toBe(true);
+      expect(g.cells.flat().reduce((s, c) => s + c.n, 0)).toBe(a.n); // each card in exactly one cell
+    }
+  });
+  it("archetypes carry members + total volume; variants can be excluded", () => {
+    const withN = a.archetypes.find((b) => b.n > 0)!;
+    expect(withN.members.length).toBe(withN.n);
+    expect(withN.sumVol).toBeGreaterThan(0);
+    const baseOnly = analyzeResiduals(obs, "hitter", 1000, { includeVariants: false });
+    expect(baseOnly.over.every((c) => !c.variant)).toBe(true);
+    expect(baseOnly.n).toBeLessThanOrEqual(a.n);
   });
 });
