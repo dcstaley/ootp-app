@@ -409,6 +409,13 @@ trivial and agreed.
   (raw BIP rate kept in `rates` for reference only). Open question whether a BIP modifier
   belongs at all — don't re-add without resolving that.
 
+- **Two WLS solvers (rebuild tech-debt) — REVISIT, down the road.** `src/training/fit.ts` ports BOTH the
+  old app's solvers: `wls` (Gauss-Jordan normal equations) for the wOBA models and `wlsSolve` (Jacobi
+  eigendecomposition + pseudo-inverse) for the basic models — only because the old app used two and we
+  chased bit-parity. They solve the same problem; this is an anti-pattern. **Consolidate to one solver**
+  once we're past parity (user-flagged 2026-06-24). Numerically they should agree to ~machine-eps on
+  well-conditioned designs, so unification shouldn't move scores.
+
 (Append here whenever something looks wrong during a port.)
 
 ---
