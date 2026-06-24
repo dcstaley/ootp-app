@@ -28,10 +28,12 @@ import { Repository } from "../persistence/repository.ts";
 import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
+import { loadTrainingDir, type LoadedTraining } from "../training/loader.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
 const DATA_ROOT = process.env.DATA_ROOT ?? "data";
+const TRAINING_DIR = process.env.TRAINING_DIR ?? "Model 2037 and 2038";
 
 interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[] }
 
@@ -497,6 +499,22 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   };
 }
 
+// ── Training data (M6 / SP-9) ──────────────────────────────────────────────────
+// Lazy-loaded + cached: the real per-(league, side, year) outcome CSVs grouped
+// into observations. Ingestion only — no model is trained here yet.
+let trainingCache: LoadedTraining | null = null;
+let trainingErr: string | null = null;
+function getTraining(reload = false): LoadedTraining | null {
+  if (reload) { trainingCache = null; trainingErr = null; }
+  if (trainingCache) return trainingCache;
+  try {
+    if (!existsSync(TRAINING_DIR)) { trainingErr = `training dir not found: ${TRAINING_DIR}`; return null; }
+    trainingCache = loadTrainingDir(TRAINING_DIR);
+    trainingErr = null;
+  } catch (e) { trainingErr = String(e); trainingCache = null; }
+  return trainingCache;
+}
+
 // Precompute the default tournament so first paint is instant.
 scoredFor(DEFAULT_TOURNAMENT_ID);
 
@@ -537,6 +555,11 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/parks") return json(res, { parks: [...parks.values()] });
   if (method === "GET" && url === "/api/eras") return json(res, { eras: [...eras.values()] });
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
+  if (method === "GET" && url === "/api/training/summary") {
+    const t = getTraining(u.searchParams.get("reload") === "true");
+    if (!t) return json(res, { available: false, dir: TRAINING_DIR, error: trainingErr }, 200);
+    return json(res, { available: true, ...t.summary });
+  }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
   if (method === "GET" && url === "/api/roster") {
