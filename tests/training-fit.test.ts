@@ -4,10 +4,14 @@
 
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
-import { loadTrainingDir } from "../src/training/loader.ts";
+import { loadWindow } from "../src/training/loader.ts";
 import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching } from "../src/training/fit.ts";
 
+// Parity uses the committed, frozen 37-38 oracle fixture (League Files is local +
+// gitignored, so it can't back a clone's parity run). Window-selection itself is
+// covered in training.test.ts against League Files.
 const DIR = "Model 2037 and 2038";
+const PARITY_WINDOW = [2037, 2038];
 
 // Oracle: trained_models.json "37-38" woba_hitting (C:\ootp_app\backend).
 const ORACLE = {
@@ -21,7 +25,7 @@ const ORACLE = {
 };
 
 describe.skipIf(!existsSync(DIR))("trainWobaHitting — parity vs old trainer", () => {
-  const { observations } = loadTrainingDir(DIR);
+  const { observations } = loadWindow(DIR, PARITY_WINDOW);
   const fit = trainWobaHitting(observations, 1000);
   const c = fit.coefficients;
   // Regression coefficients are exact maths on the same data → very tight tolerance.
@@ -79,7 +83,7 @@ const ORACLE_P = {
   leagueNorm: { bb: 0.977922, k: 1.003271, hr: 0.988549, h: 0.986275, xbh: 0.984286 },
 };
 describe.skipIf(!existsSync(DIR))("trainWobaPitching — parity vs old trainer", () => {
-  const { observations } = loadTrainingDir(DIR);
+  const { observations } = loadWindow(DIR, PARITY_WINDOW);
   const fit = trainWobaPitching(observations, 1000);
   const c = fit.coefficients;
   const near = (a: number, b: number, tol = 1e-6) => expect(Math.abs(a - b)).toBeLessThan(tol);
@@ -101,7 +105,7 @@ describe.skipIf(!existsSync(DIR))("trainWobaPitching — parity vs old trainer",
 
 // Oracle: "37-38" basic models (intercept clamped to 0). Jacobi solver → looser tol.
 describe.skipIf(!existsSync(DIR))("basic models — parity vs old trainer", () => {
-  const { observations } = loadTrainingDir(DIR);
+  const { observations } = loadWindow(DIR, PARITY_WINDOW);
   const near = (a: number, b: number, tol = 1e-5) => expect(Math.abs(a - b)).toBeLessThan(tol);
   it("trainBasicHitting reproduces the weight coefficients", () => {
     const c = trainBasicHitting(observations, 1000).coefficients;

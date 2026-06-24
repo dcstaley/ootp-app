@@ -3,17 +3,20 @@
 
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
-import { parseTrainingFilename, loadTrainingDir } from "../src/training/loader.ts";
+import { parseTrainingFilename, loadTrainingDir, loadWindow, availableYears } from "../src/training/loader.ts";
 
-const DIR = "Model 2037 and 2038";
+const DIR = "League Files";
 
-describe("parseTrainingFilename — robust to token order", () => {
-  it("parses league / side / year in the normal order", () => {
-    expect(parseTrainingFilename("HD 450 vL 2037.csv")).toEqual({ league: "HD 450", side: "L", year: 2037 });
+describe("parseTrainingFilename — robust to token order + naming", () => {
+  it("parses league / side / year in the normal order (league spaces stripped)", () => {
+    expect(parseTrainingFilename("HD 450 vL 2037.csv")).toEqual({ league: "HD450", side: "L", year: 2037 });
     expect(parseTrainingFilename("PEL vR 2038.csv")).toEqual({ league: "PEL", side: "R", year: 2038 });
   });
   it("parses year-before-side (HD 452 2038 vR.csv)", () => {
-    expect(parseTrainingFilename("HD 452 2038 vR.csv")).toEqual({ league: "HD 452", side: "R", year: 2038 });
+    expect(parseTrainingFilename("HD 452 2038 vR.csv")).toEqual({ league: "HD452", side: "R", year: 2038 });
+  });
+  it("parses the 2039 year-first format (2039 HD450 vL.csv) to the same league key", () => {
+    expect(parseTrainingFilename("2039 HD450 vL.csv")).toEqual({ league: "HD450", side: "L", year: 2039 });
   });
   it("is case-insensitive on the side token", () => {
     expect(parseTrainingFilename("HD 453 VL 2037.csv")?.side).toBe("L");
@@ -29,15 +32,26 @@ describe.skipIf(!existsSync(DIR))("loadTrainingDir — real dataset", () => {
 
   it("loads every CSV with no unparsed filenames", () => {
     expect(summary.unparsedFiles).toEqual([]);
-    expect(summary.files.length).toBeGreaterThanOrEqual(18);
+    expect(summary.files.length).toBeGreaterThanOrEqual(27);
   });
 
   it("detects the expected leagues, sides, and years", () => {
-    expect(summary.years).toEqual([2037, 2038]);
+    expect(summary.years).toEqual([2037, 2038, 2039]);
     expect(summary.leagues).toContain("PEL");
-    expect(summary.leagues).toContain("HD 452");
+    expect(summary.leagues).toContain("HD452"); // canonical (spaces stripped) — unifies 37/38 "HD 452" + 39 "HD452"
     // both platoon sides present across the cells
     expect(new Set(summary.cells.map((c) => c.side))).toEqual(new Set(["L", "R"]));
+  });
+
+  it("selects a window by year; full load = union of windows", () => {
+    expect(availableYears(DIR)).toEqual([2037, 2038, 2039]);
+    const w38 = loadWindow(DIR, [2038]);
+    expect(w38.summary.years).toEqual([2038]);
+    expect(w38.observations.every((o) => o.sources.every((s) => s.year === 2038))).toBe(true);
+    // the 37-38 window reproduces the parity oracle's hitter/pitcher counts
+    const w3738 = loadWindow(DIR, [2037, 2038]);
+    expect(w3738.observations.filter((o) => o.hit.PA >= 1000).length).toBe(159);
+    expect(w3738.observations.filter((o) => o.pitch.BF >= 1000).length).toBe(129);
   });
 
   it("groups by (CID, variant, side) — base and variant separate", () => {

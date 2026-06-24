@@ -22,7 +22,7 @@
 
 import Papa from "papaparse";
 import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, basename } from "node:path";
 import type { HittingRatings, PitchingRatings } from "../model/types.ts";
 
 export type Side = "L" | "R";
@@ -44,7 +44,10 @@ export function parseTrainingFilename(name: string): { league: string; side: Sid
     rest.push(tok);
   }
   if (side == null || year == null || rest.length === 0) return null;
-  return { league: rest.join(" "), side, year };
+  // Canonicalize the league name across the (inconsistent) per-year naming: 37/38
+  // use "HD 450", 39 uses "HD450". Strip internal spaces so the same league keys
+  // identically across years (needed for combined windows + leave-one-pool-out).
+  return { league: rest.join(" ").replace(/\s+/g, ""), side, year };
 }
 
 export interface HitOutcomes { PA: number; AB: number; H: number; b1: number; b2: number; b3: number; HR: number; BB: number; IBB: number; HP: number; SH: number; SF: number; K: number; GIDP: number }
@@ -87,6 +90,7 @@ const zeroPitch = (): PitchOutcomes => ({ BF: 0, IP: 0, AB: 0, b1: 0, b2: 0, b3:
 export interface CellStat { league: string; side: Side; year: number; rows: number; pa: number; bf: number }
 export interface TrainingSummary {
   dir: string;
+  window?: number[]; // selected year set (undefined = all years)
   files: (FileTag & { rows: number; pa: number; bf: number })[];
   unparsedFiles: string[];
   leagues: string[]; years: number[];
@@ -98,20 +102,35 @@ export interface TrainingSummary {
 
 export interface LoadedTraining { summary: TrainingSummary; observations: TrainObs[] }
 
-/** Load + aggregate every training CSV in a directory into grouped observations. */
-export function loadTrainingDir(dir: string): LoadedTraining {
-  const names = readdirSync(dir).filter((f) => /\.csv$/i.test(f)).sort();
+// Recursively discover training CSVs under a root (per-year folders OR a flat
+// folder — the year is parsed from each filename either way). Files whose name
+// doesn't yield (league, side, year) are reported as unparsed.
+interface FoundFile { file: string; abs: string; tag: { league: string; side: Side; year: number } | null }
+function discover(root: string): FoundFile[] {
+  const rels = readdirSync(root, { recursive: true }) as string[];
+  return rels.filter((r) => /\.csv$/i.test(r))
+    .map((rel) => ({ file: rel.replace(/\\/g, "/"), abs: join(root, rel), tag: parseTrainingFilename(basename(rel)) }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+/** Years present under a root (for the window selector). */
+export function availableYears(root: string): number[] {
+  return [...new Set(discover(root).filter((f) => f.tag).map((f) => f.tag!.year))].sort();
+}
+
+// Aggregate a set of parsed files into grouped (CID, variant, side) observations.
+function aggregate(found: FoundFile[], root: string, window: number[] | null): LoadedTraining {
   const obs = new Map<string, TrainObs>();
   const repPA = new Map<string, number>(); // highest hitting PA seen per key (rating pick)
   const files: (FileTag & { rows: number; pa: number; bf: number })[] = [];
-  const unparsedFiles: string[] = [];
+  const unparsedFiles = found.filter((f) => !f.tag).map((f) => f.file);
   const cells: CellStat[] = [];
 
-  for (const file of names) {
-    const tag = parseTrainingFilename(file);
-    if (!tag) { unparsedFiles.push(file); continue; }
-    const text = readFileSync(join(dir, file), "utf8");
-    const parsed = Papa.parse<Row>(text, { header: true, skipEmptyLines: true });
+  for (const f of found) {
+    if (!f.tag) continue;
+    if (window && !window.includes(f.tag.year)) continue;
+    const tag = f.tag;
+    const parsed = Papa.parse<Row>(readFileSync(f.abs, "utf8"), { header: true, skipEmptyLines: true });
     const rows = (parsed.data ?? []).filter((r) => r && r["CID"]);
     let fpa = 0, fbf = 0;
     for (const r of rows) {
@@ -135,13 +154,13 @@ export function loadTrainingDir(dir: string): LoadedTraining {
       addHit(o.hit, h); addPitch(o.pitch, p);
       o.sources.push({ league: tag.league, year: tag.year, pa: h.PA, bf: p.BF });
     }
-    files.push({ file, ...tag, rows: rows.length, pa: fpa, bf: fbf });
+    files.push({ file: f.file, ...tag, rows: rows.length, pa: fpa, bf: fbf });
     cells.push({ league: tag.league, side: tag.side, year: tag.year, rows: rows.length, pa: fpa, bf: fbf });
   }
 
   const observations = [...obs.values()];
   const summary: TrainingSummary = {
-    dir,
+    dir: root, window: window ?? undefined,
     files, unparsedFiles,
     leagues: [...new Set(files.map((f) => f.league))].sort(),
     years: [...new Set(files.map((f) => f.year))].sort(),
@@ -155,4 +174,14 @@ export function loadTrainingDir(dir: string): LoadedTraining {
     totalBF: observations.reduce((s, o) => s + o.pitch.BF, 0),
   };
   return { summary, observations };
+}
+
+/** Load a specific window (year set) from a root; omit `years` for all of them. */
+export function loadWindow(root: string, years?: number[]): LoadedTraining {
+  return aggregate(discover(root), root, years && years.length ? years : null);
+}
+
+/** Load + aggregate every training CSV under a directory (all years). */
+export function loadTrainingDir(dir: string): LoadedTraining {
+  return aggregate(discover(dir), dir, null);
 }

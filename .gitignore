@@ -19,3 +19,6 @@ fixtures/golden/*.json
 fixtures/captures/*.json
 !fixtures/captures/.gitkeep
 !fixtures/captures/_synthetic.json
+
+# Live training data (per-year league CSVs; grows weekly — keep local)
+League Files/

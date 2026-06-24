@@ -283,7 +283,7 @@ export function ModelTrainingPage() {
                       <>XBH/H = <Coef v={c.xbh.logA} /> + <Coef v={c.xbh.logB} />·ln(GAP)</>,
                       <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</>,
                     ]}
-                    note={<>{fmt(fit.woba_hitting.rowCount)} obs (PA ≥ {fit.woba_hitting.minPA}), split {fit.woba_hitting.split}. Per-event log-linear WLS (weight = PA<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
+                    note={<>{fmt(fit.woba_hitting.rowCount)} obs (PA ≥ {fit.woba_hitting.minPA}), split {fit.woba_hitting.split}. Per-event log-linear WLS (weight = PA<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Parity with the old trainer is test-pinned on the 37-38 window.</>}
                     diagRows={["bb", "k", "hr", "h", "xbh"].map((ev) => ({ label: ev, e: d[ev]! }))} />
                   <ResidualPanel d={d} events={[["bb", "EYE"], ["k", "K"], ["hr", "POW"], ["h", "BABIP"], ["xbh", "GAP"]]} />
                 </>;
@@ -300,7 +300,7 @@ export function ModelTrainingPage() {
                       <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.pbabip} />·ln(PBABIP) + <Coef v={c.h.bip} />·ln(predBIP)</>,
                       <>XBH = <Coef v={c.xbh.share} />·H (fixed share)</>,
                     ]}
-                    note={<>{fmt(fit.woba_pitching.rowCount)} obs (BF ≥ {fit.woba_pitching.minBF}), split {fit.woba_pitching.split}. Per-event log-linear WLS (weight = BF<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
+                    note={<>{fmt(fit.woba_pitching.rowCount)} obs (BF ≥ {fit.woba_pitching.minBF}), split {fit.woba_pitching.split}. Per-event log-linear WLS (weight = BF<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Parity with the old trainer is test-pinned on the 37-38 window.</>}
                     diagRows={["bb", "k", "hr", "h"].map((ev) => ({ label: ev, e: d[ev]! }))} />
                   <ResidualPanel d={d} events={[["bb", "CON"], ["k", "STU"], ["hr", "HRR"], ["h", "PBABIP"]]} />
                 </>;

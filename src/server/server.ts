@@ -34,7 +34,10 @@ import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitch
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
 const DATA_ROOT = process.env.DATA_ROOT ?? "data";
-const TRAINING_DIR = process.env.TRAINING_DIR ?? "Model 2037 and 2038";
+// Live training data (local, gitignored). Falls back to the committed frozen
+// 37-38 fixture so a fresh clone still has something to load.
+const TRAINING_DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"]
+  .find((d): d is string => !!d && existsSync(d)) ?? "League Files";
 
 interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[] }
 
