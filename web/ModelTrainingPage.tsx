@@ -52,12 +52,13 @@ interface Scoreboard { minN: number; k: number; topN: number; years: number[]; t
 interface ScoreboardResp { available: boolean; error?: string; scoreboard?: Scoreboard }
 
 interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number; ratings: Record<string, number> }
-interface Bucket { name: string; desc: string; n: number; meanValErrPts: number; stdValErrPts: number; sumVol: number; members: CardResidual[] }
 interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; sumVol: number }[][] }
+interface RatingDist { rating: string; min: number; max: number; median: number; terciles: [number, number]; tierCounts: { L: number; M: number; H: number }; hist: number[] }
+interface SignatureBucket { sig: Record<string, "L" | "M" | "H">; n: number; sumVol: number; meanValErrPts: number; stdValErrPts: number; members: CardResidual[] }
 interface ResidualAnalysis {
   role: "hitter" | "pitcher"; window: number[]; n: number; minN: number; includeVariants: boolean; weighted: boolean;
-  ratings: string[]; bands: string[]; thresholds: Record<string, [number, number]>;
-  over: CardResidual[]; under: CardResidual[]; archetypes: Bucket[]; grids: ResidGrid[];
+  ratings: string[]; sigRatings: string[]; bands: string[]; thresholds: Record<string, [number, number]>;
+  distributions: RatingDist[]; over: CardResidual[]; under: CardResidual[]; signatures: SignatureBucket[]; grids: ResidGrid[];
 }
 interface ResidResp { available: boolean; error?: string; residuals?: ResidualAnalysis }
 
@@ -209,6 +210,29 @@ function SectionControls({ min, onMin, variants, onVariants, weighted, onWeighte
 
 // "Where the model misses": leaderboards + archetype buckets (expandable) + a
 // selectable 2D interaction grid.
+const BAND_C: Record<string, { bg: string; fg: string; bd: string }> = {
+  H: { bg: "rgba(34,197,94,0.16)", fg: "#86efac", bd: "#22c55e" },
+  L: { bg: "rgba(239,68,68,0.16)", fg: "#fca5a5", bd: "#ef4444" },
+  M: { bg: "rgba(154,163,173,0.14)", fg: "#9aa3ad", bd: "#3a414b" },
+};
+const bandChip = (r: string, b: string) => (
+  <span key={r} style={{ display: "inline-block", padding: "0 4px", borderRadius: 3, fontSize: 10, fontWeight: 700, marginRight: 3, background: BAND_C[b]?.bg, color: BAND_C[b]?.fg, border: `1px solid ${BAND_C[b]?.bd}` }}>{r.slice(0, 4).toUpperCase()}·{b}</span>
+);
+// One rating's pool distribution: histogram (bars coloured by L/M/H tercile) + counts.
+function DistView({ d }: { d: RatingDist }) {
+  const maxH = Math.max(1, ...d.hist);
+  const tierOf = (i: number) => { const c = d.min + (i + 0.5) * (d.max - d.min) / d.hist.length; return c <= d.terciles[0] ? "L" : c >= d.terciles[1] ? "H" : "M"; };
+  return (
+    <div style={{ flex: "1 1 130px", minWidth: 118, border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 7px" }}>
+      <div style={{ fontSize: 11, fontWeight: 700 }}>{d.rating.toUpperCase()} <span style={{ color: C.sub, fontWeight: 400 }}>{d.min}–{d.max}</span></div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 1, height: 30, margin: "3px 0" }}>
+        {d.hist.map((h, i) => <div key={i} title={`~${Math.round(d.min + (i / d.hist.length) * (d.max - d.min))} · n${h}`} style={{ flex: 1, height: `${Math.max(3, (h / maxH) * 100)}%`, background: BAND_C[tierOf(i)]!.bd, opacity: 0.85, borderRadius: 1 }} />)}
+      </div>
+      <div style={{ fontSize: 10, color: C.sub }}><span style={{ color: "#fca5a5" }}>L {d.tierCounts.L}</span> · M {d.tierCounts.M} · <span style={{ color: "#86efac" }}>H {d.tierCounts.H}</span> · cuts ≤{d.terciles[0]}/≥{d.terciles[1]}</div>
+    </div>
+  );
+}
+
 function MissesView({ a }: { a: ResidualAnalysis }) {
   const vol = a.role === "hitter" ? "PA" : "BF";
   const [gi, setGi] = useState(0);
@@ -241,7 +265,12 @@ function MissesView({ a }: { a: ResidualAnalysis }) {
     );
   };
   return (
-    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start", marginTop: 8 }}>
+    <div style={{ marginTop: 8 }}>
+      {/* Pool distribution per rating — judge the cuts / re-binning */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "0 0 4px" }}>Rating distribution of this pool ({a.n} cards) — bars coloured by <span style={{ color: "#fca5a5" }}>L</span>/M/<span style={{ color: "#86efac" }}>H</span> tercile</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>{a.distributions.map((d) => <DistView key={d.rating} d={d} />)}</div>
+
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
       {/* Leaderboards */}
       <div style={{ flex: "1 1 320px", minWidth: 300 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#fca5a5", margin: "0 0 2px" }}>Most over-valued (model &gt; reality)</div>
@@ -250,30 +279,32 @@ function MissesView({ a }: { a: ResidualAnalysis }) {
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 6 }}>{a.under.map(card)}</div>
         <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}>err in wOBA points · pred→actual wOBA · {vol} · <span style={{ color: "#d8b4fe" }}>vL</span>/<span style={{ color: "#86efac" }}>vR</span> are separate observations · ★ = variant · <b style={{ color: C.text }}>click a row for ratings</b>.</p>
       </div>
-      {/* Archetypes (expandable) + selectable grid */}
-      <div style={{ flex: "1 1 340px", minWidth: 320 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "0 0 2px" }}>Card-shape archetypes — click to list players</div>
-        <div style={{ fontSize: 10, color: C.sub, margin: "0 0 4px" }}>L/M/H terciles of this pool: {a.ratings.map((r) => `${r.toUpperCase()} ≤${a.thresholds[r]?.[0]}/≥${a.thresholds[r]?.[1]}`).join(" · ")}</div>
-        <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 6 }}>
+      {/* Full-signature buckets (expandable) */}
+      <div style={{ flex: "1 1 380px", minWidth: 340 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "0 0 2px" }}>Card-shape signatures — full {a.sigRatings.map((r) => r.toUpperCase()).join("·")} combos · {a.signatures.length} groups (n≥2) · click to list players</div>
+        <div style={{ maxHeight: 360, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6 }}>
           <table style={{ borderCollapse: "collapse", width: "100%" }}>
-            <thead><tr><th style={{ ...th, textAlign: "left" }}>Archetype</th><th style={th}>n</th><th style={th}>{vol}</th><th style={th} title="weighted mean ± within-bucket spread (high spread ⇒ the 2–3-rating archetype is mixing different cards)">err ± σ</th></tr></thead>
-            <tbody>{a.archetypes.map((b) => [
-              <tr key={b.name} onClick={() => b.n && setOpen(open === b.name ? null : b.name)} style={{ cursor: b.n ? "pointer" : "default" }}>
-                <td style={{ ...td, textAlign: "left" }}><span style={{ fontWeight: 600 }}>{b.n ? (open === b.name ? "▾ " : "▸ ") : ""}{b.name}</span><div style={{ color: C.sub, fontSize: 10 }}>{b.desc}</div></td>
+            <thead><tr><th style={{ ...th, textAlign: "left" }}>Signature</th><th style={th}>n</th><th style={th}>{vol}</th><th style={th} title="weighted mean ± within-bucket spread">err ± σ</th></tr></thead>
+            <tbody>{a.signatures.map((b) => { const key = a.sigRatings.map((r) => b.sig[r]).join(""); return [
+              <tr key={key} onClick={() => setOpen(open === key ? null : key)} style={{ cursor: "pointer" }}>
+                <td style={{ ...td, textAlign: "left", whiteSpace: "nowrap" }}>{open === key ? "▾ " : "▸ "}{a.sigRatings.map((r) => bandChip(r, b.sig[r]!))}</td>
                 <td style={{ ...td, color: C.sub }}>{b.n}</td>
                 <td style={{ ...td, color: C.sub, fontSize: 11 }}>{fmt(b.sumVol)}</td>
-                <td style={{ ...td, fontWeight: 700, color: errFg(b.meanValErrPts), background: errBg(b.meanValErrPts) }}>{b.n ? <>{pm(b.meanValErrPts)} <span style={{ fontWeight: 400, color: C.sub, fontSize: 11 }}>±{b.stdValErrPts}</span></> : "—"}</td>
+                <td style={{ ...td, fontWeight: 700, color: errFg(b.meanValErrPts), background: errBg(b.meanValErrPts) }}>{pm(b.meanValErrPts)} <span style={{ fontWeight: 400, color: C.sub, fontSize: 11 }}>±{b.stdValErrPts}</span></td>
               </tr>,
-              open === b.name && b.members.length ? (
-                <tr key={b.name + "-m"}><td colSpan={4} style={{ padding: 0, borderBottom: `1px solid ${C.border}` }}>
+              open === key ? (
+                <tr key={key + "-m"}><td colSpan={4} style={{ padding: 0, borderBottom: `1px solid ${C.border}` }}>
                   <div style={{ maxHeight: 200, overflowY: "auto", background: C.bg }}>{b.members.map(card)}</div>
                 </td></tr>
               ) : null,
-            ])}</tbody>
+            ]; })}</tbody>
           </table>
         </div>
-        {/* Selectable 2D interaction grid (any rating pair) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0 4px" }}>
+        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}>Every populated combination of the {a.sigRatings.length} ratings (each L/M/H) — a card shares its whole profile with its bucket. err ± σ in wOBA pts, {a.weighted ? `${vol}-weighted` : "unweighted"}. gap shown on click (its XBH effect is in the trained-model residual panel).</p>
+      </div>
+      {/* Selectable 2D interaction grid (any rating pair, incl gap) */}
+      <div style={{ flex: "1 1 300px", minWidth: 280 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px" }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Interaction grid</span>
           <select value={gi} onChange={(e) => setGi(Number(e.target.value))} style={{ ...inputStyle, padding: "2px 6px", fontSize: 12 }}>
             {a.grids.map((g, i) => <option key={i} value={i}>{g.row.toUpperCase()} × {g.col.toUpperCase()}</option>)}
@@ -294,7 +325,8 @@ function MissesView({ a }: { a: ResidualAnalysis }) {
             ])}
           </div>
         )}
-        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}><span style={{ color: "#fca5a5" }}>red</span> = over-valued, <span style={{ color: "#86efac" }}>green</span> = under-valued ({a.weighted ? `${vol}-weighted` : "unweighted"} mean, wOBA pts). Pick any rating pair; corners reveal interactions an additive model can't capture.</p>
+        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}><span style={{ color: "#fca5a5" }}>red</span> = over-valued, <span style={{ color: "#86efac" }}>green</span> = under-valued ({a.weighted ? `${vol}-weighted` : "unweighted"} mean, wOBA pts). Pick any rating pair (incl gap); corners reveal interactions an additive model can't capture.</p>
+      </div>
       </div>
     </div>
   );

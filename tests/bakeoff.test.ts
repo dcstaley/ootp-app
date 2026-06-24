@@ -75,30 +75,33 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
   });
 });
 
-describe.skipIf(!existsSync(FIXTURE))("analyzeResiduals — leaderboards + archetypes + grid", () => {
+describe.skipIf(!existsSync(FIXTURE))("analyzeResiduals — leaderboards + signatures + distributions + grid", () => {
   const obs = loadTrainingDir(FIXTURE).observations;
   const a = analyzeResiduals(obs, "hitter", 1000);
   it("over-valued leaderboard is sorted above under-valued", () => {
     expect(a.over.length).toBeGreaterThan(0);
     expect(a.over[0]!.valErrPts).toBeGreaterThanOrEqual(a.under[0]!.valErrPts);
   });
-  it("archetypes (corners + balanced + standout) carry weighted mean ± spread", () => {
-    expect(a.archetypes.length).toBe(8); // 6 corners + Balanced + One standout
-    expect(a.archetypes.map((b) => b.name)).toContain("Balanced (average)");
-    expect(a.archetypes.some((b) => b.n > 0 && b.stdValErrPts >= 0)).toBe(true);
+  it("hitter ratings include gap; distributions cover every rating", () => {
+    expect(a.ratings).toEqual(["babip", "pow", "eye", "k", "gap"]);
+    expect(a.over[0]!.ratings).toHaveProperty("gap");
+    expect(a.distributions.map((d) => d.rating)).toEqual(a.ratings);
+    for (const d of a.distributions) expect(d.tierCounts.L + d.tierCounts.M + d.tierCounts.H).toBe(a.n);
   });
-  it("a 2D grid exists for every rating pair, 3×3, partitioning every card", () => {
-    expect(a.grids.length).toBe(6); // C(4,2) pairs of the 4 core ratings
-    for (const g of a.grids) {
-      expect(g.cells.length).toBe(3);
-      expect(g.cells.every((row) => row.length === 3)).toBe(true);
-      expect(g.cells.flat().reduce((s, c) => s + c.n, 0)).toBe(a.n); // each card in exactly one cell
-    }
+  it("a 2D grid exists for every rating pair (incl gap), 3×3, partitioning every card", () => {
+    expect(a.grids.length).toBe(10); // C(5,2) pairs of the 5 ratings
+    for (const g of a.grids) expect(g.cells.flat().reduce((s, c) => s + c.n, 0)).toBe(a.n);
   });
-  it("archetypes carry members + total volume; variants can be excluded", () => {
-    const withN = a.archetypes.find((b) => b.n > 0)!;
-    expect(withN.members.length).toBe(withN.n);
-    expect(withN.sumVol).toBeGreaterThan(0);
+  it("signatures are FULL band combos of the 4 sig-ratings, members + volume", () => {
+    expect(a.sigRatings).toEqual(["babip", "pow", "eye", "k"]);
+    const big = a.signatures[0]!; // sorted by volume desc
+    expect(Object.keys(big.sig)).toEqual(a.sigRatings);
+    expect(big.members.length).toBe(big.n);
+    expect(big.n).toBeGreaterThanOrEqual(2);
+    // every populated bucket's cards share the bucket's full signature
+    for (const b of a.signatures) expect(b.members.length).toBe(b.n);
+  });
+  it("variants can be excluded", () => {
     const baseOnly = analyzeResiduals(obs, "hitter", 1000, { includeVariants: false });
     expect(baseOnly.over.every((c) => !c.variant)).toBe(true);
     expect(baseOnly.n).toBeLessThanOrEqual(a.n);
