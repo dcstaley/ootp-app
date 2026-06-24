@@ -653,3 +653,23 @@ clean; build clean. **Ingestion only — no model is fit yet.**
   parity vs the old trainer) → diagnostics (residuals by weighted volume, over-valuation, recommended
   softcaps) → the D3 bake-off. The deferred audits (anchoring/scaling, OVR vL/vR split, BB/HR-only
   per-event calibration, gap-denominator) get evaluated here against this data.
+
+## Session update (2026-06-24d) — M6 first model fit (wOBA hitting) with parity
+
+Committed + pushed; 81 tests green; parity bit-identical; src + web typecheck clean; build clean.
+
+- **Parity oracle found.** The OLD trainer lives in `C:\ootp_app\backend\server.js` (functions `wls`,
+  `trainWobaHitting`/`trainWobaPitching`, `residualBinReport`; route `/api/train-model`), and
+  `C:\ootp_app\backend\trained_models.json` holds models trained on THIS dataset — the **"37-38"**
+  models (`minPA=1000`, `split:"both"`) are the bit-level oracle. Model form is **per-event log-linear**:
+  `event/600 = max(intercept + coef·ln(max(rating,1)), 0)` (the cubic slots in the artifact are unused).
+- **`src/training/fit.ts`** (parity port): `wls` (Gauss-Jordan WLS) + r²/RMSE/Spearman/Pearson +
+  `trainWobaHitting(obs, minPA)`. Per-event fits weighted by PA^0.75; the **non-HR-hit model uses
+  predicted BIP** (training mirrors inference, S6.2); `leagueNorm` scales each event to fixed Section-3
+  targets `{BB 48.43, K 117.40, HR 14.87, H 124.75, XBH 31.26}`. Our `(CID,variant,side)` grouping yields
+  the oracle's exact **rowCount 159**; every coefficient matches within **1e-6**, leagueNorm within 5e-7.
+- **Server** `GET /api/training/fit?minPA=&reload=` (cached). **Page** gains a "Trained model — wOBA
+  Hitting" section: per-event log-linear formulas, league-norm scales, a min-PA control + Refit, and a
+  diagnostics table (R²/RMSE/Spearman/Pearson/N).
+- **Next:** port `trainWobaPitching` + the two basic models (same oracle), then `residualBinReport`
+  (residual bins by weighted volume + recommended softcaps), then the D3 bake-off.
