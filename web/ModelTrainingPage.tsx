@@ -132,14 +132,17 @@ function ScoreboardView({ sb }: { sb: Scoreboard }) {
   const evalLabel: Record<string, string> = { "in-sample": "in-sample", cv: `${sb.k}-fold CV`, forward: "forward (OOT)", backward: "backward (OOT)" };
   const pearColor = (p: number) => { const a = Math.max(0, Math.min(1, (p - 0.5) / 0.5)) * 0.6; return `rgba(34,197,94,${a})`; };
   const rowTint = (e: string) => (e === "forward" ? "rgba(234,179,8,0.07)" : e === "backward" ? "rgba(59,130,246,0.07)" : "transparent");
+  // gap RMSE & Regret are in wOBA units (~0.004) — show as wOBA POINTS (×1000) for readability.
+  const PTS = new Set<keyof SbMetrics>(["gapRmse", "valueRegret"]);
   const cols: [keyof SbMetrics, string][] = [["r2", "R²"], ["spearman", "Spearman"], ["gapRmse", "gap RMSE"], ["valueRegret", "Regret"], ["topNOverlap", `Top${sb.topN} ovl`], ["n", "N"]];
+  const fmtCell = (k: keyof SbMetrics, v: number) => (k === "n" ? v : PTS.has(k) ? (v * 1000).toFixed(1) : sig(v, 3));
   return (
     <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
       <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead><tr>
           <th style={{ ...th, textAlign: "left" }}>Model</th><th style={{ ...th, textAlign: "left" }}>Role</th><th style={{ ...th, textAlign: "left" }}>Evaluation</th><th style={{ ...th, textAlign: "left" }}>Window</th>
           <th style={th} title="Weighted Pearson — headline gap-fidelity (affine-invariant)">Pearson</th>
-          {cols.map(([, label]) => <th key={label} style={th}>{label}</th>)}
+          {cols.map(([k, label]) => <th key={label} style={th} title={PTS.has(k) ? "wOBA points (×1000)" : undefined}>{label}{PTS.has(k) ? " (pts)" : ""}</th>)}
         </tr></thead>
         <tbody>
           {sb.rows.map((r, i) => (
@@ -149,7 +152,7 @@ function ScoreboardView({ sb }: { sb: Scoreboard }) {
               <td style={{ ...td, textAlign: "left" }}>{evalLabel[r.evaluation] ?? r.evaluation}</td>
               <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 12 }}>{r.window}</td>
               <td style={{ ...td, fontWeight: 700, background: pearColor(r.metrics.pearson) }}>{sig(r.metrics.pearson, 3)}</td>
-              {cols.map(([k]) => <td key={k} style={{ ...td, color: k === "n" ? C.sub : C.text }}>{k === "n" ? r.metrics[k] : sig(r.metrics[k] as number, k === "gapRmse" || k === "valueRegret" ? 4 : 3)}</td>)}
+              {cols.map(([k]) => <td key={k} style={{ ...td, color: k === "n" ? C.sub : C.text }}>{fmtCell(k, r.metrics[k] as number)}</td>)}
             </tr>
           ))}
         </tbody>
@@ -332,9 +335,11 @@ export function ModelTrainingPage() {
               Out-of-sample fidelity of the log-linear baseline (the bake-off compares candidate forms here).
               <b style={{ color: C.text }}> Pearson</b> is the headline — affine-invariant, so it rewards preserving
               relative gaps, not hitting exact wOBA (a uniform shift/scale doesn't change the roster). <b style={{ color: C.text }}>R²</b>
-              {" "}is diagnostic: R² ≪ Pearson² means harmless level bias. <b style={{ color: C.text }}>Regret</b> = actual-wOBA shortfall
-              if you pick the model's top-{sb.scoreboard.topN}. <span style={{ color: "#eab308" }}>Forward</span> trains older→newest
-              (drift to new releases); <span style={{ color: "#60a5fa" }}>backward</span> trains newest→older (weaker cards / limited-pool,
+              {" "}is diagnostic: R² ≪ Pearson² means harmless level bias. <b style={{ color: C.text }}>gap RMSE</b> &amp;
+              {" "}<b style={{ color: C.text }}>Regret</b> are in <b style={{ color: C.text }}>wOBA points</b> (×1000, so 4.0 = .004);
+              gap RMSE = gap distortion after affine alignment, Regret = per-card actual-wOBA shortfall if you pick the model's
+              top-{sb.scoreboard.topN}. <span style={{ color: "#eab308" }}>Forward</span> trains the 2 oldest→newest (drift to new
+              releases); <span style={{ color: "#60a5fa" }}>backward</span> trains the 2 newest→oldest (weaker cards / limited-pool,
               tournament-like). Evaluated in wOBA space, upstream of softcaps/anchoring.
             </p>
           </>}
