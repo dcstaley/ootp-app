@@ -52,13 +52,17 @@ interface Scoreboard { minN: number; k: number; topN: number; years: number[]; t
 interface ScoreboardResp { available: boolean; error?: string; scoreboard?: Scoreboard }
 
 interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number; ratings: Record<string, number> }
-interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; sumVol: number }[][] }
+interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; interErrPts: number; sumVol: number }[][] }
 interface RatingDist { rating: string; min: number; max: number; median: number; terciles: [number, number]; tierCounts: { L: number; M: number; H: number }; hist: number[] }
 interface SignatureBucket { sig: Record<string, "L" | "M" | "H">; n: number; sumVol: number; meanValErrPts: number; stdValErrPts: number; members: CardResidual[] }
+interface MarginalTier { band: string; n: number; sumVol: number; meanErr: number }
+interface RatingMarginal { rating: string; bands3: MarginalTier[]; bands5: MarginalTier[] }
+interface ResidualModel { n: number; r2: number; weighted: boolean; intercept: number; perRating: { rating: string; linear: number; quad: number }[]; interactions: { a: string; b: string; coef: number }[] }
 interface ResidualAnalysis {
   role: "hitter" | "pitcher"; window: number[]; n: number; minN: number; includeVariants: boolean; weighted: boolean;
   ratings: string[]; sigRatings: string[]; bands: string[]; thresholds: Record<string, [number, number]>;
-  distributions: RatingDist[]; over: CardResidual[]; under: CardResidual[]; signatures: SignatureBucket[]; grids: ResidGrid[];
+  distributions: RatingDist[]; marginals: RatingMarginal[]; residualModel: ResidualModel;
+  over: CardResidual[]; under: CardResidual[]; signatures: SignatureBucket[]; grids: ResidGrid[];
 }
 interface ResidResp { available: boolean; error?: string; residuals?: ResidualAnalysis }
 
@@ -233,11 +237,60 @@ function DistView({ d }: { d: RatingDist }) {
   );
 }
 
+// 1-D marginal table: mean valuation error per rating × tier (3- or 5-band).
+function MarginalTable({ marginals, mode }: { marginals: RatingMarginal[]; mode: "bands3" | "bands5" }) {
+  const bands = mode === "bands5" ? ["XL", "L", "M", "H", "XH"] : ["L", "M", "H"];
+  return (
+    <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 6 }}>
+      <table style={{ borderCollapse: "collapse", width: "100%" }}>
+        <thead><tr><th style={{ ...th, textAlign: "left" }}>Rating</th>{bands.map((b) => <th key={b} style={th}>{b}</th>)}</tr></thead>
+        <tbody>{marginals.map((m) => (
+          <tr key={m.rating}>
+            <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{m.rating.toUpperCase()}</td>
+            {m[mode].map((t, i) => <td key={i} title={`n${t.n} · ${fmt(t.sumVol)} vol`} style={{ ...td, fontWeight: 700, color: t.n ? errFg(t.meanErr) : C.sub, background: t.n ? errBg(t.meanErr) : undefined }}>{t.n ? pm(t.meanErr) : "—"}</td>)}
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+  );
+}
+
+// The fitted residual meta-model: r² + per-rating linear/quad + top interactions.
+function ResidualModelView({ rm }: { rm: ResidualModel }) {
+  const coefCell = (v: number) => <td style={{ ...td, fontWeight: 700, color: errFg(v), background: errBg(v) }}>{pm(v)}</td>;
+  return (
+    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
+      <div style={{ flex: "1 1 300px", minWidth: 280 }}>
+        <div style={{ fontSize: 13, marginBottom: 6 }}><b style={{ color: rm.r2 > 0.2 ? "#fbbf24" : C.text }}>{(rm.r2 * 100).toFixed(0)}%</b> of the model's mis-valuation is <b>systematic</b> (ratings-explainable, r²={rm.r2.toFixed(2)}); the rest is card-specific noise.</div>
+        <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 6 }}>
+          <table style={{ borderCollapse: "collapse", width: "100%" }}>
+            <thead><tr><th style={{ ...th, textAlign: "left" }}>Rating</th><th style={th} title="over-valuation change per +1 SD of the rating">linear</th><th style={th} title="curvature: negative = the miss worsens at the extremes">quad</th></tr></thead>
+            <tbody>{rm.perRating.map((p) => <tr key={p.rating}><td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{p.rating.toUpperCase()}</td>{coefCell(p.linear)}{coefCell(p.quad)}</tr>)}</tbody>
+          </table>
+        </div>
+        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}>wOBA points per ±1 SD. <span style={{ color: "#fca5a5" }}>+</span> = model over-values as the rating rises; <span style={{ color: "#86efac" }}>−</span> = under-values. Negative quad = the miss accelerates at the extremes.</p>
+      </div>
+      <div style={{ flex: "1 1 240px", minWidth: 220 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 4 }}>Top interactions (pts per SD·SD)</div>
+        {rm.interactions.slice(0, 8).map((x) => (
+          <div key={x.a + x.b} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, padding: "2px 6px", borderBottom: `1px solid ${C.border}` }}>
+            <span style={{ flex: 1 }}>{x.a.toUpperCase()} × {x.b.toUpperCase()}</span>
+            <span style={{ width: 46, textAlign: "right", fontWeight: 700, color: errFg(x.coef) }}>{pm(x.coef)}</span>
+          </div>
+        ))}
+        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}>Non-zero = a true 2-way interaction the additive model can't capture (combination valued beyond the sum of its parts).</p>
+      </div>
+    </div>
+  );
+}
+
 function MissesView({ a }: { a: ResidualAnalysis }) {
   const vol = a.role === "hitter" ? "PA" : "BF";
   const [gi, setGi] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<string | null>(null);
+  const [marginMode, setMarginMode] = useState<"bands3" | "bands5">("bands3");
+  const [gridMode, setGridMode] = useState<"meanValErrPts" | "interErrPts">("interErrPts");
   const grid = a.grids[Math.min(gi, a.grids.length - 1)];
   // band a rating value vs the pool terciles, for colour (H = strong → green).
   const ratingColor = (r: string, v: number) => { const t = a.thresholds[r]; if (!t) return C.text; return v <= t[0] ? "#fca5a5" : v >= t[1] ? "#86efac" : C.sub; };
@@ -269,6 +322,24 @@ function MissesView({ a }: { a: ResidualAnalysis }) {
       {/* Pool distribution per rating — judge the cuts / re-binning */}
       <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "0 0 4px" }}>Rating distribution of this pool ({a.n} cards) — bars coloured by <span style={{ color: "#fca5a5" }}>L</span>/M/<span style={{ color: "#86efac" }}>H</span> tercile</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>{a.distributions.map((d) => <DistView key={d.rating} d={d} />)}</div>
+
+      {/* Systematic error structure — the app-fitted residual model + the 1-D marginals */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: "0 0 6px" }}>Systematic error structure (computed) — what the model gets wrong, and how much is real</div>
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start", marginBottom: 14 }}>
+        <div style={{ flex: "2 1 540px", minWidth: 320 }}><ResidualModelView rm={a.residualModel} /></div>
+        <div style={{ flex: "1 1 280px", minWidth: 260 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Marginal err by tier</span>
+            <span style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }}>
+              {([["bands3", "3-band"], ["bands5", "5-band"]] as const).map(([m, lbl]) => (
+                <button key={m} onClick={() => setMarginMode(m)} style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: "pointer", padding: "3px 8px", fontSize: 11, background: marginMode === m ? C.accent : C.input, color: marginMode === m ? "#fff" : C.sub }}>{lbl}</button>
+              ))}
+            </span>
+          </div>
+          <MarginalTable marginals={a.marginals} mode={marginMode} />
+          <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}>One rating's effect, averaging over the rest. <span style={{ color: "#fca5a5" }}>+</span> over-values, <span style={{ color: "#86efac" }}>−</span> under-values. 5-band exposes the tails.</p>
+        </div>
+      </div>
 
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
       {/* Leaderboards */}
@@ -304,11 +375,16 @@ function MissesView({ a }: { a: ResidualAnalysis }) {
       </div>
       {/* Selectable 2D interaction grid (any rating pair, incl gap) */}
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px", flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Interaction grid</span>
           <select value={gi} onChange={(e) => setGi(Number(e.target.value))} style={{ ...inputStyle, padding: "2px 6px", fontSize: 12 }}>
             {a.grids.map((g, i) => <option key={i} value={i}>{g.row.toUpperCase()} × {g.col.toUpperCase()}</option>)}
           </select>
+          <span style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }}>
+            {([["interErrPts", "interaction"], ["meanValErrPts", "raw"]] as const).map(([m, lbl]) => (
+              <button key={m} onClick={() => setGridMode(m)} title={m === "interErrPts" ? "raw − (row+col marginals): true 2-way interaction" : "raw mean error (mostly the 1-D marginals)"} style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: "pointer", padding: "3px 8px", fontSize: 11, background: gridMode === m ? C.accent : C.input, color: gridMode === m ? "#fff" : C.sub }}>{lbl}</button>
+            ))}
+          </span>
         </div>
         {grid && (
           <div style={{ display: "grid", gridTemplateColumns: `34px repeat(3, 1fr)`, gap: 2, maxWidth: 340 }}>
@@ -316,16 +392,16 @@ function MissesView({ a }: { a: ResidualAnalysis }) {
             {a.bands.map((b) => <span key={b} style={{ textAlign: "center", fontSize: 10, color: C.sub }}>{grid.col.toUpperCase()} {b}</span>)}
             {grid.cells.map((row, ri) => [
               <span key={`r${ri}`} style={{ fontSize: 10, color: C.sub, alignSelf: "center", textAlign: "right" }}>{a.bands[ri]}</span>,
-              ...row.map((cell, ci) => (
-                <div key={`${ri}-${ci}`} title={`${grid.row} ${a.bands[ri]} × ${grid.col} ${a.bands[ci]} · n=${cell.n} · ${vol} ${fmt(cell.sumVol)}`}
-                  style={{ height: 34, borderRadius: 3, background: cell.n ? errBg(cell.meanValErrPts) : C.input, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: cell.n ? errFg(cell.meanValErrPts) : C.sub }}>
-                  {cell.n ? pm(cell.meanValErrPts) : "—"}<span style={{ fontSize: 9, fontWeight: 400, color: C.sub }}>n{cell.n}</span>
+              ...row.map((cell, ci) => { const v = cell[gridMode]; return (
+                <div key={`${ri}-${ci}`} title={`${grid.row} ${a.bands[ri]} × ${grid.col} ${a.bands[ci]} · n=${cell.n} · raw ${pm(cell.meanValErrPts)} · interaction ${pm(cell.interErrPts)} · ${vol} ${fmt(cell.sumVol)}`}
+                  style={{ height: 34, borderRadius: 3, background: cell.n ? errBg(v) : C.input, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: cell.n ? errFg(v) : C.sub }}>
+                  {cell.n ? pm(v) : "—"}<span style={{ fontSize: 9, fontWeight: 400, color: C.sub }}>n{cell.n}</span>
                 </div>
-              )),
+              ); }),
             ])}
           </div>
         )}
-        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}><span style={{ color: "#fca5a5" }}>red</span> = over-valued, <span style={{ color: "#86efac" }}>green</span> = under-valued ({a.weighted ? `${vol}-weighted` : "unweighted"} mean, wOBA pts). Pick any rating pair (incl gap); corners reveal interactions an additive model can't capture.</p>
+        <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}><b style={{ color: C.text }}>{gridMode === "interErrPts" ? "Interaction" : "Raw"}</b> view · <span style={{ color: "#fca5a5" }}>red</span> over / <span style={{ color: "#86efac" }}>green</span> under (wOBA pts, {a.weighted ? `${vol}-wt` : "unwt"}). <b style={{ color: C.text }}>interaction</b> = raw − the 1-D marginals, so non-zero = a true 2-way effect; <b style={{ color: C.text }}>raw</b> mostly re-shows the marginals.</p>
       </div>
       </div>
     </div>

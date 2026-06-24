@@ -14,13 +14,46 @@ import type { TrainObs } from "./loader.ts";
 import { HITTER, PITCHER, wobaHitting, wobaPitching, type RoleSpec, type BakeoffModel } from "./bakeoff.ts";
 
 export interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number; ratings: Record<string, number> }
-export interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; sumVol: number }[][] }
+// grid cells carry both the RAW mean error and the INTERACTION residual (raw minus
+// the additive row+col marginals) — the latter isolates true 2-way interactions.
+export interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; interErrPts: number; sumVol: number }[][] }
 export interface RatingDist { rating: string; min: number; max: number; median: number; terciles: [number, number]; tierCounts: { L: number; M: number; H: number }; hist: number[] }
 export interface SignatureBucket { sig: Record<string, "L" | "M" | "H">; n: number; sumVol: number; meanValErrPts: number; stdValErrPts: number; members: CardResidual[] }
+export interface MarginalTier { band: string; n: number; sumVol: number; meanErr: number }
+export interface RatingMarginal { rating: string; bands3: MarginalTier[]; bands5: MarginalTier[] }
+// App-fitted residual model: regress valuation error on z-scored ratings with
+// quadratic + pairwise-interaction terms (ridge-stabilised, vol-weighted). Reports
+// the SYSTEMATIC structure of the model's misses — and what fraction (r²) is
+// systematic vs noise — using ALL cards jointly (no sparse-cell problem).
+export interface ResidualModel {
+  n: number; r2: number; weighted: boolean; intercept: number;
+  perRating: { rating: string; linear: number; quad: number }[]; // points per ±1 SD
+  interactions: { a: string; b: string; coef: number }[];        // sorted by |coef|
+}
 export interface ResidualAnalysis {
   role: "hitter" | "pitcher"; window: number[]; n: number; minN: number; includeVariants: boolean; weighted: boolean;
   ratings: string[]; sigRatings: string[]; bands: string[]; thresholds: Record<string, [number, number]>;
-  distributions: RatingDist[]; over: CardResidual[]; under: CardResidual[]; signatures: SignatureBucket[]; grids: ResidGrid[];
+  distributions: RatingDist[]; marginals: RatingMarginal[]; residualModel: ResidualModel;
+  over: CardResidual[]; under: CardResidual[]; signatures: SignatureBucket[]; grids: ResidGrid[];
+}
+
+// Ridge-regularised weighted least squares (self-scaled λ; intercept unpenalised).
+// Used for the residual meta-model, where z and z² + interactions are collinear.
+function ridgeWls(X: number[][], y: number[], w: number[], frac: number): number[] {
+  const n = X.length, p = X[0]!.length;
+  const A = Array.from({ length: p }, () => new Array(p).fill(0));
+  const b = new Array(p).fill(0);
+  for (let i = 0; i < n; i++) { const wi = w[i]!; for (let j = 0; j < p; j++) { b[j] += wi * X[i]![j]! * y[i]!; for (let k = 0; k < p; k++) A[j]![k] += wi * X[i]![j]! * X[i]![k]!; } }
+  let md = 0; for (let j = 1; j < p; j++) md += A[j]![j]!; md /= Math.max(1, p - 1);
+  const lam = frac * md; for (let j = 1; j < p; j++) A[j]![j] += lam;
+  const aug = A.map((r, i) => [...r, b[i]]);
+  for (let col = 0; col < p; col++) {
+    let mr = col; for (let r = col + 1; r < p; r++) if (Math.abs(aug[r]![col]!) > Math.abs(aug[mr]![col]!)) mr = r;
+    [aug[col], aug[mr]] = [aug[mr]!, aug[col]!];
+    const piv = aug[col]![col]!; if (Math.abs(piv) < 1e-12) continue;
+    for (let r = 0; r < p; r++) { if (r === col) continue; const f = aug[r]![col]! / piv; for (let k = col; k <= p; k++) aug[r]![k] -= f * aug[col]![k]!; }
+  }
+  return aug.map((r, i) => Math.abs(r[i]!) < 1e-12 ? 0 : r[p]! / r[i]!);
 }
 
 type Band = "L" | "M" | "H";
@@ -87,6 +120,46 @@ export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", mi
     return { rating: r, min: Math.round(min), max: Math.round(max), median: Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0), terciles: thresholds[r]!, tierCounts: tc, hist };
   });
 
+  // 1-D MARGINALS: vol-weighted mean valuation error per rating tier — 3-band
+  // (terciles) + 5-band (extremes). The reliable per-rating "main effect".
+  const tierMeans = (r: string, ps: number[], labels: string[]): MarginalTier[] => {
+    const s = [...vals[r]!].sort((a, b) => a - b);
+    const cs = ps.map((p) => s[Math.min(s.length - 1, Math.floor(p * s.length))]!);
+    const tierIdx = (v: number) => { let i = 0; while (i < cs.length && v > cs[i]!) i++; return i; };
+    return labels.map((bandLabel, ti) => {
+      const idx = qual.map((_, i) => i).filter((i) => tierIdx(vals[r]![i]!) === ti);
+      return { band: bandLabel, n: idx.length, sumVol: idx.reduce((acc, i) => acc + cards[i]!.vol, 0), meanErr: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => ew[i]!)).toFixed(1) };
+    });
+  };
+  const marginals: RatingMarginal[] = ratingNames.map((r) => ({ rating: r, bands3: tierMeans(r, [1 / 3, 2 / 3], ["L", "M", "H"]), bands5: tierMeans(r, [0.1, 0.3, 0.7, 0.9], ["XL", "L", "M", "H", "XH"]) }));
+
+  // RESIDUAL META-MODEL: regress valErr on z-scored ratings + quadratics + pairwise
+  // interactions (ridge-stabilised, weighted). r² = fraction of the mis-valuation
+  // that is SYSTEMATIC (ratings-explainable) vs noise — using all cards jointly.
+  const mean: Record<string, number> = {}, std: Record<string, number> = {};
+  for (const r of ratingNames) { mean[r] = wmean(vals[r]!, ew); std[r] = Math.max(wstd(vals[r]!, ew), 1e-6); }
+  const pN = ratingNames.length;
+  const Xr = qual.map((_, i) => {
+    const z = ratingNames.map((r) => (vals[r]![i]! - mean[r]!) / std[r]!);
+    const row = [1, ...z, ...z.map((v) => v * v)];
+    for (let aI = 0; aI < pN; aI++) for (let bI = aI + 1; bI < pN; bI++) row.push(z[aI]! * z[bI]!);
+    return row;
+  });
+  const yv = cards.map((c) => c.valErrPts);
+  const beta = ridgeWls(Xr, yv, ew, 0.15);
+  const predY = Xr.map((row) => row.reduce((s, x, j) => s + x * beta[j]!, 0));
+  const yMean = wmean(yv, ew);
+  let ssRes = 0, ssTot = 0;
+  for (let i = 0; i < yv.length; i++) { ssRes += ew[i]! * (yv[i]! - predY[i]!) ** 2; ssTot += ew[i]! * (yv[i]! - yMean) ** 2; }
+  const interactions: { a: string; b: string; coef: number }[] = [];
+  { let k = 1 + 2 * pN; for (let aI = 0; aI < pN; aI++) for (let bI = aI + 1; bI < pN; bI++) { interactions.push({ a: ratingNames[aI]!, b: ratingNames[bI]!, coef: +beta[k]!.toFixed(2) }); k++; } }
+  interactions.sort((a, b) => Math.abs(b.coef) - Math.abs(a.coef));
+  const residualModel: ResidualModel = {
+    n: qual.length, r2: ssTot < 1e-9 ? 0 : +(1 - ssRes / ssTot).toFixed(3), weighted, intercept: +beta[0]!.toFixed(2),
+    perRating: ratingNames.map((r, i) => ({ rating: r, linear: +beta[1 + i]!.toFixed(2), quad: +beta[1 + pN + i]!.toFixed(2) })),
+    interactions,
+  };
+
   // FULL-signature buckets over the signature ratings (every observed L/M/H combo).
   const groups = new Map<string, number[]>();
   qual.forEach((_, i) => { const key = cfg.sig.map((r) => bandsOf[i]![r]).join(""); (groups.get(key) ?? groups.set(key, []).get(key)!).push(i); });
@@ -99,16 +172,23 @@ export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", mi
     })
     .sort((a, b) => b.sumVol - a.sumVol);
 
-  // A 3×3 residual grid for every pair of ratings (UI picks the axes).
+  // A 3×3 residual grid for every pair of ratings. Each cell carries the RAW mean
+  // AND the interaction residual = raw − (row marginal + col marginal − overall),
+  // which strips the additive 1-D effects so only true 2-way interactions remain.
+  const overall = wmean(cards.map((c) => c.valErrPts), ew);
+  const margFor = (r: string) => { const m: Record<string, number> = {}; for (const bnd of BANDS) { const idx = qual.map((_, i) => i).filter((i) => bandsOf[i]![r] === bnd); m[bnd] = wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => ew[i]!)); } return m; };
   const grids: ResidGrid[] = [];
   for (let a = 0; a < ratingNames.length; a++) for (let b = a + 1; b < ratingNames.length; b++) {
     const row = ratingNames[a]!, col = ratingNames[b]!;
+    const rowM = margFor(row), colM = margFor(col);
     const cells = BANDS.map((rb) => BANDS.map((cb) => {
       const idx = qual.map((_, i) => i).filter((i) => bandsOf[i]![row] === rb && bandsOf[i]![col] === cb);
-      return { n: idx.length, meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => ew[i]!)).toFixed(1), sumVol: idx.reduce((s, i) => s + cards[i]!.vol, 0) };
+      const m = idx.length ? wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => ew[i]!)) : 0;
+      const inter = idx.length ? m - rowM[rb]! - colM[cb]! + overall : 0;
+      return { n: idx.length, meanValErrPts: +m.toFixed(1), interErrPts: +inter.toFixed(1), sumVol: idx.reduce((s, i) => s + cards[i]!.vol, 0) };
     }));
     grids.push({ row, col, cells });
   }
 
-  return { role, window: [], n: qual.length, minN, includeVariants, weighted, ratings: ratingNames, sigRatings: cfg.sig, bands: BANDS, thresholds, distributions, over, under, signatures, grids };
+  return { role, window: [], n: qual.length, minN, includeVariants, weighted, ratings: ratingNames, sigRatings: cfg.sig, bands: BANDS, thresholds, distributions, marginals, residualModel, over, under, signatures, grids };
 }

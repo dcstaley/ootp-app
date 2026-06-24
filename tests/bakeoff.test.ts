@@ -101,6 +101,25 @@ describe.skipIf(!existsSync(FIXTURE))("analyzeResiduals — leaderboards + signa
     // every populated bucket's cards share the bucket's full signature
     for (const b of a.signatures) expect(b.members.length).toBe(b.n);
   });
+  it("computes 1-D marginals (3-band + 5-band) per rating", () => {
+    expect(a.marginals.map((m) => m.rating)).toEqual(a.ratings);
+    const pow = a.marginals.find((m) => m.rating === "pow")!;
+    expect(pow.bands3.map((t) => t.band)).toEqual(["L", "M", "H"]);
+    expect(pow.bands5.map((t) => t.band)).toEqual(["XL", "L", "M", "H", "XH"]);
+    expect(pow.bands3.reduce((s, t) => s + t.n, 0)).toBe(a.n);
+  });
+  it("fits a residual meta-model: r² in [0,1], coef per rating + interactions", () => {
+    const rm = a.residualModel;
+    expect(rm.r2).toBeGreaterThanOrEqual(0); expect(rm.r2).toBeLessThanOrEqual(1);
+    expect(rm.perRating.map((p) => p.rating)).toEqual(a.ratings);
+    expect(rm.interactions.length).toBe((a.ratings.length * (a.ratings.length - 1)) / 2); // C(5,2)=10
+    // sorted by |coef| desc
+    for (let i = 1; i < rm.interactions.length; i++) expect(Math.abs(rm.interactions[i - 1]!.coef)).toBeGreaterThanOrEqual(Math.abs(rm.interactions[i]!.coef));
+  });
+  it("grid cells carry an interaction residual (raw minus marginals)", () => {
+    const g = a.grids[0]!;
+    expect(g.cells[0]![0]!).toHaveProperty("interErrPts");
+  });
   it("variants can be excluded", () => {
     const baseOnly = analyzeResiduals(obs, "hitter", 1000, { includeVariants: false });
     expect(baseOnly.over.every((c) => !c.variant)).toBe(true);
