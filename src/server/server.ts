@@ -29,6 +29,7 @@ import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
 import { loadTrainingDir, type LoadedTraining } from "../training/loader.ts";
+import { trainWobaHitting, type WobaHittingFit } from "../training/fit.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -504,8 +505,9 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
 // into observations. Ingestion only — no model is trained here yet.
 let trainingCache: LoadedTraining | null = null;
 let trainingErr: string | null = null;
+let fitCache: { woba_hitting?: WobaHittingFit } = {};
 function getTraining(reload = false): LoadedTraining | null {
-  if (reload) { trainingCache = null; trainingErr = null; }
+  if (reload) { trainingCache = null; trainingErr = null; fitCache = {}; }
   if (trainingCache) return trainingCache;
   try {
     if (!existsSync(TRAINING_DIR)) { trainingErr = `training dir not found: ${TRAINING_DIR}`; return null; }
@@ -513,6 +515,17 @@ function getTraining(reload = false): LoadedTraining | null {
     trainingErr = null;
   } catch (e) { trainingErr = String(e); trainingCache = null; }
   return trainingCache;
+}
+// Fit the per-event models over the loaded observations (cached). Currently only
+// wOBA-hitting (parity-validated vs the old trainer); pitching + basic to follow.
+function getFit(minPA: number, reload = false): { available: boolean; error?: string; woba_hitting?: WobaHittingFit } {
+  const t = getTraining(reload);
+  if (!t) return { available: false, error: trainingErr ?? "no training data" };
+  if (!fitCache.woba_hitting || fitCache.woba_hitting.minPA !== minPA) {
+    try { fitCache.woba_hitting = trainWobaHitting(t.observations, minPA); }
+    catch (e) { return { available: false, error: String(e) }; }
+  }
+  return { available: true, woba_hitting: fitCache.woba_hitting };
 }
 
 // Precompute the default tournament so first paint is instant.
@@ -559,6 +572,10 @@ const server = createServer(async (req, res) => {
     const t = getTraining(u.searchParams.get("reload") === "true");
     if (!t) return json(res, { available: false, dir: TRAINING_DIR, error: trainingErr }, 200);
     return json(res, { available: true, ...t.summary });
+  }
+  if (method === "GET" && url === "/api/training/fit") {
+    const minPA = Math.max(0, Number(u.searchParams.get("minPA") ?? 1000) || 1000);
+    return json(res, getFit(minPA, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));

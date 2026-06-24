@@ -19,7 +19,20 @@ interface TrainingSummary {
   baseObs: number; variantObs: number; totalPA: number; totalBF: number;
 }
 
+interface EventDiag { r2: number | null; rmse: number | null; spearman: number | null; pearson?: number | null; n: number; note?: string }
+interface WobaHittingFit {
+  modelType: string; split: string; minPA: number; rowCount: number;
+  coefficients: {
+    bb: { intercept: number; eye: number }; k: { intercept: number; k: number }; hr: { intercept: number; pow: number };
+    h: { intercept: number; ba: number; bipba: number }; xbh: { logA: number; logB: number }; hbp: { constant: number };
+    leagueNorm: { bb: number; k: number; hr: number; h: number; xbh: number };
+  };
+  diagnostics: Record<string, EventDiag>;
+}
+interface FitResp { available: boolean; error?: string; woba_hitting?: WobaHittingFit }
+
 const fmt = (n: number) => n.toLocaleString();
+const sig = (n: number, d = 3) => n.toFixed(d);
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -35,6 +48,9 @@ export function ModelTrainingPage() {
   const [data, setData] = useState<TrainingSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [fit, setFit] = useState<FitResp | null>(null);
+  const [fitLoading, setFitLoading] = useState(false);
+  const [minPA, setMinPA] = useState(1000);
 
   const load = (reload = false) => {
     setLoading(true); setErr(null);
@@ -42,7 +58,13 @@ export function ModelTrainingPage() {
       .then((r) => r.json()).then((d: TrainingSummary) => setData(d))
       .catch((e) => setErr(String(e))).finally(() => setLoading(false));
   };
-  useEffect(() => { load(); }, []);
+  const loadFit = (pa: number, reload = false) => {
+    setFitLoading(true);
+    fetch(`/api/training/fit?minPA=${pa}${reload ? "&reload=true" : ""}`)
+      .then((r) => r.json()).then((d: FitResp) => setFit(d))
+      .catch((e) => setErr(String(e))).finally(() => setFitLoading(false));
+  };
+  useEffect(() => { load(); loadFit(1000); }, []);
 
   // Pivot the cells into a league-row × (year/side)-column matrix for the table.
   const colKeys = data ? [...new Set(data.cells.map((c) => `${c.year} v${c.side}`))].sort() : [];
@@ -55,7 +77,7 @@ export function ModelTrainingPage() {
     <div style={{ width: "100%", maxWidth: 1100 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Model Training</h2>
-        <button onClick={() => load(true)} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
+        <button onClick={() => { load(true); loadFit(minPA, true); }} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
         {data?.dir && <span style={{ fontSize: 13, color: C.sub }}>source: <code style={{ color: C.text }}>{data.dir}</code></span>}
       </div>
       <p style={{ margin: "0 0 16px", color: C.sub, fontSize: 13, maxWidth: 820 }}>
@@ -126,6 +148,75 @@ export function ModelTrainingPage() {
             (card, variant, side) observation.
             {data.unparsedFiles.length > 0 && <> · <span style={{ color: "#f59e0b" }}>{data.unparsedFiles.length} file(s) skipped (unrecognized name): {data.unparsedFiles.join(", ")}</span></>}
           </p>
+
+          {/* Trained model — wOBA hitting (parity-validated vs the old trainer) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 8px", flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, fontSize: 14 }}>Trained model — wOBA Hitting</h3>
+            <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 5 }}>
+              min PA
+              <input type="number" value={minPA} min={0} step={100} onChange={(e) => setMinPA(Number(e.target.value))}
+                style={{ ...inputStyle, width: 76, padding: "3px 6px", fontSize: 12 }} />
+            </label>
+            <button onClick={() => loadFit(minPA)} disabled={fitLoading} style={{ ...inputStyle, cursor: "pointer" }}>{fitLoading ? "Fitting…" : "Refit"}</button>
+            {fit?.woba_hitting && <span style={{ fontSize: 12, color: C.sub }}>{fmt(fit.woba_hitting.rowCount)} observations (PA ≥ {fit.woba_hitting.minPA}) · split {fit.woba_hitting.split}</span>}
+          </div>
+
+          {fit && !fit.available && <p style={{ color: "#f87171", fontSize: 13 }}>Fit unavailable: {fit.error}</p>}
+          {fit?.woba_hitting && (() => {
+            const c = fit.woba_hitting.coefficients; const d = fit.woba_hitting.diagnostics;
+            const Coef = ({ v }: { v: number }) => <code style={{ color: C.link }}>{sig(v)}</code>;
+            const lines: { ev: string; form: React.ReactNode }[] = [
+              { ev: "BB", form: <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.eye} />·ln(EYE)</> },
+              { ev: "K", form: <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.k} />·ln(K)</> },
+              { ev: "HR", form: <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.pow} />·ln(POW)</> },
+              { ev: "H", form: <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.ba} />·ln(BABIP) + <Coef v={c.h.bipba} />·ln(predBIP)</> },
+              { ev: "XBH", form: <>XBH/H = <Coef v={c.xbh.logA} /> + <Coef v={c.xbh.logB} />·ln(GAP)</> },
+              { ev: "HBP", form: <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</> },
+            ];
+            return (
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div style={{ flex: "1 1 380px", minWidth: 320 }}>
+                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", background: C.panel, fontSize: 13, lineHeight: 1.9 }}>
+                    {lines.map((l) => <div key={l.ev}>{l.form}</div>)}
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: 11, color: C.sub }}>
+                    Per-event log-linear fits (weighted least squares, weight = PA<sup>0.75</sup>). League-norm scales:
+                    BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />,
+                    H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Reproduces the old trainer's
+                    “37-38” model bit-for-bit.
+                  </p>
+                </div>
+                <div style={{ flex: "1 1 360px", minWidth: 300 }}>
+                  <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
+                    <table style={{ borderCollapse: "collapse", width: "100%" }}>
+                      <thead><tr>
+                        <th style={{ ...th, textAlign: "left" }}>Event</th><th style={th}>R²</th><th style={th}>RMSE</th><th style={th}>Spearman</th><th style={th}>Pearson</th><th style={th}>N</th>
+                      </tr></thead>
+                      <tbody>
+                        {["bb", "k", "hr", "h", "xbh"].map((ev) => {
+                          const e = d[ev]!;
+                          return (
+                            <tr key={ev}>
+                              <td style={{ ...td, textAlign: "left", textTransform: "uppercase" }}>{ev}</td>
+                              <td style={td}>{e.r2 != null ? sig(e.r2, 4) : "—"}</td>
+                              <td style={td}>{e.rmse != null ? sig(e.rmse, 3) : "—"}</td>
+                              <td style={td}>{e.spearman != null ? sig(e.spearman, 4) : "—"}</td>
+                              <td style={td}>{e.pearson != null ? sig(e.pearson, 4) : "—"}</td>
+                              <td style={{ ...td, color: C.sub }}>{e.n}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: 11, color: C.sub }}>
+                    Pitching-wOBA and the two basic models, plus residual-bin diagnostics and recommended softcaps,
+                    are the next M6 steps.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
     </div>
