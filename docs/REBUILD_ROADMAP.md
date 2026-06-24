@@ -673,3 +673,12 @@ Committed + pushed; 81 tests green; parity bit-identical; src + web typecheck cl
   diagnostics table (R²/RMSE/Spearman/Pearson/N).
 - **Next:** port `trainWobaPitching` + the two basic models (same oracle), then `residualBinReport`
   (residual bins by weighted volume + recommended softcaps), then the D3 bake-off.
+
+**Update (2026-06-24e) — all FOUR models fit at parity.** Added `trainWobaPitching` (uses `wls`; oracle
+rowCount 129 matches) and `trainBasicHitting`/`trainBasicPitching` (use `wlsSolve`, a faithful port of the
+old Jacobi-eigendecomposition solver; single WLS fit of wOBA×333 / (0.64−wOBA-allowed)×333 on log ratings,
+intercept clamped ≥ 0). 6 more parity tests (woba_pitching within 1e-6; basic weights within 1e-5). The
+`/api/training/fit` endpoint fits + caches all four; the page has a model selector (wOBA Hitting/Pitching,
+Basic Hitting/Pitching) showing per-model formulas + diagnostics. 87 tests green. **Remaining M6:**
+`residualBinReport` (residual bins by weighted volume → over-valuation signal + recommended softcaps), then
+the D3 bake-off.
