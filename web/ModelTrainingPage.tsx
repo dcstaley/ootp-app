@@ -20,16 +20,35 @@ interface TrainingSummary {
 }
 
 interface EventDiag { r2: number | null; rmse: number | null; spearman: number | null; pearson?: number | null; n: number; note?: string }
+interface LeagueNorm { bb: number; k: number; hr: number; h: number; xbh: number }
 interface WobaHittingFit {
   modelType: string; split: string; minPA: number; rowCount: number;
   coefficients: {
     bb: { intercept: number; eye: number }; k: { intercept: number; k: number }; hr: { intercept: number; pow: number };
     h: { intercept: number; ba: number; bipba: number }; xbh: { logA: number; logB: number }; hbp: { constant: number };
-    leagueNorm: { bb: number; k: number; hr: number; h: number; xbh: number };
+    leagueNorm: LeagueNorm;
   };
   diagnostics: Record<string, EventDiag>;
 }
-interface FitResp { available: boolean; error?: string; woba_hitting?: WobaHittingFit }
+interface WobaPitchingFit {
+  modelType: string; split: string; minBF: number; rowCount: number;
+  coefficients: {
+    bb: { intercept: number; con: number }; k: { intercept: number; stu: number }; hr: { intercept: number; hrr: number };
+    h: { intercept: number; pbabip: number; bip: number }; xbh: { share: number }; leagueNorm: LeagueNorm;
+  };
+  diagnostics: Record<string, EventDiag>;
+}
+interface BasicHittingFit { modelType: string; rowCount: number; minPA?: number; coefficients: { basic_intercept: number; w_babip: number; w_pow: number; w_eye: number; w_k: number; w_gap: number }; diagnostics: { weights: EventDiag } }
+interface BasicPitchingFit { modelType: string; rowCount: number; minBF?: number; coefficients: { basic_intercept: number; p_stuff: number; p_control: number; p_babip: number; p_hr: number }; diagnostics: { weights: EventDiag } }
+interface FitResp {
+  available: boolean; error?: string; threshold?: number;
+  woba_hitting?: WobaHittingFit; woba_pitching?: WobaPitchingFit; basic_hitting?: BasicHittingFit; basic_pitching?: BasicPitchingFit;
+}
+type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitching";
+const FIT_TABS: { id: FitTab; label: string }[] = [
+  { id: "woba_hitting", label: "wOBA Hitting" }, { id: "woba_pitching", label: "wOBA Pitching" },
+  { id: "basic_hitting", label: "Basic Hitting" }, { id: "basic_pitching", label: "Basic Pitching" },
+];
 
 const fmt = (n: number) => n.toLocaleString();
 const sig = (n: number, d = 3) => n.toFixed(d);
@@ -44,6 +63,50 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
+const th: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 11, color: C.sub, textTransform: "uppercase", letterSpacing: 0.3, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
+const td: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 13, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
+const Coef = ({ v }: { v: number }) => <code style={{ color: C.link }}>{sig(v)}</code>;
+
+// Diagnostics table shared by all four models (per-event rows, or one "weights" row).
+function DiagTable({ rows }: { rows: { label: string; e: EventDiag }[] }) {
+  return (
+    <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
+      <table style={{ borderCollapse: "collapse", width: "100%" }}>
+        <thead><tr>
+          <th style={{ ...th, textAlign: "left" }}>Model</th><th style={th}>R²</th><th style={th}>RMSE</th><th style={th}>Spearman</th><th style={th}>Pearson</th><th style={th}>N</th>
+        </tr></thead>
+        <tbody>
+          {rows.map(({ label, e }) => (
+            <tr key={label}>
+              <td style={{ ...td, textAlign: "left", textTransform: "uppercase" }}>{label}</td>
+              <td style={td}>{e.r2 != null ? sig(e.r2, 4) : "—"}</td>
+              <td style={td}>{e.rmse != null ? sig(e.rmse, 3) : "—"}</td>
+              <td style={td}>{e.spearman != null ? sig(e.spearman, 4) : "—"}</td>
+              <td style={td}>{e.pearson != null ? sig(e.pearson, 4) : "—"}</td>
+              <td style={{ ...td, color: C.sub }}>{e.n}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Two-column layout: formula card + note (left) and diagnostics table (right).
+function ModelView({ formulas, note, diagRows }: { formulas: React.ReactNode[]; note: React.ReactNode; diagRows: { label: string; e: EventDiag }[] }) {
+  return (
+    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
+      <div style={{ flex: "1 1 380px", minWidth: 320 }}>
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", background: C.panel, fontSize: 13, lineHeight: 1.9 }}>
+          {formulas.map((f, i) => <div key={i}>{f}</div>)}
+        </div>
+        <p style={{ margin: "8px 0 0", fontSize: 11, color: C.sub }}>{note}</p>
+      </div>
+      <div style={{ flex: "1 1 360px", minWidth: 300 }}><DiagTable rows={diagRows} /></div>
+    </div>
+  );
+}
+
 export function ModelTrainingPage() {
   const [data, setData] = useState<TrainingSummary | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,6 +114,7 @@ export function ModelTrainingPage() {
   const [fit, setFit] = useState<FitResp | null>(null);
   const [fitLoading, setFitLoading] = useState(false);
   const [minPA, setMinPA] = useState(1000);
+  const [fitTab, setFitTab] = useState<FitTab>("woba_hitting");
 
   const load = (reload = false) => {
     setLoading(true); setErr(null);
@@ -69,9 +133,6 @@ export function ModelTrainingPage() {
   // Pivot the cells into a league-row × (year/side)-column matrix for the table.
   const colKeys = data ? [...new Set(data.cells.map((c) => `${c.year} v${c.side}`))].sort() : [];
   const cellAt = (league: string, col: string) => data?.cells.find((c) => c.league === league && `${c.year} v${c.side}` === col);
-
-  const th: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 11, color: C.sub, textTransform: "uppercase", letterSpacing: 0.3, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
-  const td: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 13, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
 
   return (
     <div style={{ width: "100%", maxWidth: 1100 }}>
@@ -149,74 +210,81 @@ export function ModelTrainingPage() {
             {data.unparsedFiles.length > 0 && <> · <span style={{ color: "#f59e0b" }}>{data.unparsedFiles.length} file(s) skipped (unrecognized name): {data.unparsedFiles.join(", ")}</span></>}
           </p>
 
-          {/* Trained model — wOBA hitting (parity-validated vs the old trainer) */}
+          {/* Trained models — all four parity-validated bit-for-bit vs the old trainer */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 8px", flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0, fontSize: 14 }}>Trained model — wOBA Hitting</h3>
-            <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 5 }}>
-              min PA
+            <h3 style={{ margin: 0, fontSize: 14 }}>Trained models</h3>
+            <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 5 }} title="Minimum PA (hitting) / BF (pitching) for an observation to enter the fit.">
+              min PA / BF
               <input type="number" value={minPA} min={0} step={100} onChange={(e) => setMinPA(Number(e.target.value))}
                 style={{ ...inputStyle, width: 76, padding: "3px 6px", fontSize: 12 }} />
             </label>
             <button onClick={() => loadFit(minPA)} disabled={fitLoading} style={{ ...inputStyle, cursor: "pointer" }}>{fitLoading ? "Fitting…" : "Refit"}</button>
-            {fit?.woba_hitting && <span style={{ fontSize: 12, color: C.sub }}>{fmt(fit.woba_hitting.rowCount)} observations (PA ≥ {fit.woba_hitting.minPA}) · split {fit.woba_hitting.split}</span>}
           </div>
 
           {fit && !fit.available && <p style={{ color: "#f87171", fontSize: 13 }}>Fit unavailable: {fit.error}</p>}
-          {fit?.woba_hitting && (() => {
-            const c = fit.woba_hitting.coefficients; const d = fit.woba_hitting.diagnostics;
-            const Coef = ({ v }: { v: number }) => <code style={{ color: C.link }}>{sig(v)}</code>;
-            const lines: { ev: string; form: React.ReactNode }[] = [
-              { ev: "BB", form: <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.eye} />·ln(EYE)</> },
-              { ev: "K", form: <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.k} />·ln(K)</> },
-              { ev: "HR", form: <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.pow} />·ln(POW)</> },
-              { ev: "H", form: <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.ba} />·ln(BABIP) + <Coef v={c.h.bipba} />·ln(predBIP)</> },
-              { ev: "XBH", form: <>XBH/H = <Coef v={c.xbh.logA} /> + <Coef v={c.xbh.logB} />·ln(GAP)</> },
-              { ev: "HBP", form: <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</> },
-            ];
-            return (
-              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
-                <div style={{ flex: "1 1 380px", minWidth: 320 }}>
-                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", background: C.panel, fontSize: 13, lineHeight: 1.9 }}>
-                    {lines.map((l) => <div key={l.ev}>{l.form}</div>)}
-                  </div>
-                  <p style={{ margin: "8px 0 0", fontSize: 11, color: C.sub }}>
-                    Per-event log-linear fits (weighted least squares, weight = PA<sup>0.75</sup>). League-norm scales:
-                    BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />,
-                    H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Reproduces the old trainer's
-                    “37-38” model bit-for-bit.
-                  </p>
-                </div>
-                <div style={{ flex: "1 1 360px", minWidth: 300 }}>
-                  <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
-                    <table style={{ borderCollapse: "collapse", width: "100%" }}>
-                      <thead><tr>
-                        <th style={{ ...th, textAlign: "left" }}>Event</th><th style={th}>R²</th><th style={th}>RMSE</th><th style={th}>Spearman</th><th style={th}>Pearson</th><th style={th}>N</th>
-                      </tr></thead>
-                      <tbody>
-                        {["bb", "k", "hr", "h", "xbh"].map((ev) => {
-                          const e = d[ev]!;
-                          return (
-                            <tr key={ev}>
-                              <td style={{ ...td, textAlign: "left", textTransform: "uppercase" }}>{ev}</td>
-                              <td style={td}>{e.r2 != null ? sig(e.r2, 4) : "—"}</td>
-                              <td style={td}>{e.rmse != null ? sig(e.rmse, 3) : "—"}</td>
-                              <td style={td}>{e.spearman != null ? sig(e.spearman, 4) : "—"}</td>
-                              <td style={td}>{e.pearson != null ? sig(e.pearson, 4) : "—"}</td>
-                              <td style={{ ...td, color: C.sub }}>{e.n}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p style={{ margin: "8px 0 0", fontSize: 11, color: C.sub }}>
-                    Pitching-wOBA and the two basic models, plus residual-bin diagnostics and recommended softcaps,
-                    are the next M6 steps.
-                  </p>
-                </div>
+          {fit?.available && (
+            <>
+              <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                {FIT_TABS.map((t) => (
+                  <button key={t.id} onClick={() => setFitTab(t.id)}
+                    style={{ ...inputStyle, cursor: "pointer", background: fitTab === t.id ? C.accent : C.input, color: fitTab === t.id ? "#fff" : C.sub, fontWeight: fitTab === t.id ? 700 : 400, border: `1px solid ${fitTab === t.id ? C.accent : C.border}` }}>
+                    {t.label}
+                  </button>
+                ))}
               </div>
-            );
-          })()}
+
+              {fitTab === "woba_hitting" && fit.woba_hitting && (() => {
+                const c = fit.woba_hitting.coefficients; const d = fit.woba_hitting.diagnostics;
+                return <ModelView
+                  formulas={[
+                    <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.eye} />·ln(EYE)</>,
+                    <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.k} />·ln(K)</>,
+                    <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.pow} />·ln(POW)</>,
+                    <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.ba} />·ln(BABIP) + <Coef v={c.h.bipba} />·ln(predBIP)</>,
+                    <>XBH/H = <Coef v={c.xbh.logA} /> + <Coef v={c.xbh.logB} />·ln(GAP)</>,
+                    <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</>,
+                  ]}
+                  note={<>{fmt(fit.woba_hitting.rowCount)} obs (PA ≥ {fit.woba_hitting.minPA}), split {fit.woba_hitting.split}. Per-event log-linear WLS (weight = PA<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
+                  diagRows={["bb", "k", "hr", "h", "xbh"].map((ev) => ({ label: ev, e: d[ev]! }))} />;
+              })()}
+
+              {fitTab === "woba_pitching" && fit.woba_pitching && (() => {
+                const c = fit.woba_pitching.coefficients; const d = fit.woba_pitching.diagnostics;
+                return <ModelView
+                  formulas={[
+                    <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.con} />·ln(CON)</>,
+                    <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.stu} />·ln(STU)</>,
+                    <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.hrr} />·ln(HRR)</>,
+                    <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.pbabip} />·ln(PBABIP) + <Coef v={c.h.bip} />·ln(predBIP)</>,
+                    <>XBH = <Coef v={c.xbh.share} />·H (fixed share)</>,
+                  ]}
+                  note={<>{fmt(fit.woba_pitching.rowCount)} obs (BF ≥ {fit.woba_pitching.minBF}), split {fit.woba_pitching.split}. Per-event log-linear WLS (weight = BF<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Matches the old “37-38” model bit-for-bit.</>}
+                  diagRows={["bb", "k", "hr", "h"].map((ev) => ({ label: ev, e: d[ev]! }))} />;
+              })()}
+
+              {fitTab === "basic_hitting" && fit.basic_hitting && (() => {
+                const c = fit.basic_hitting.coefficients;
+                return <ModelView
+                  formulas={[
+                    <>score = <Coef v={c.basic_intercept} /> + <Coef v={c.w_babip} />·ln(BABIP) + <Coef v={c.w_pow} />·ln(POW)</>,
+                    <>{"    "}+ <Coef v={c.w_eye} />·ln(EYE) + <Coef v={c.w_k} />·ln(K) + <Coef v={c.w_gap} />·ln(GAP)</>,
+                  ]}
+                  note={<>{fmt(fit.basic_hitting.rowCount)} obs (PA ≥ {fit.basic_hitting.minPA}). One WLS fit (weight = PA<sup>0.75</sup>) of wOBA×333 on log ratings; intercept clamped ≥ 0. Matches the old “37-38” model.</>}
+                  diagRows={[{ label: "score", e: fit.basic_hitting.diagnostics.weights }]} />;
+              })()}
+
+              {fitTab === "basic_pitching" && fit.basic_pitching && (() => {
+                const c = fit.basic_pitching.coefficients;
+                return <ModelView
+                  formulas={[
+                    <>score = <Coef v={c.basic_intercept} /> + <Coef v={c.p_stuff} />·ln(STU) + <Coef v={c.p_control} />·ln(CON)</>,
+                    <>{"    "}+ <Coef v={c.p_babip} />·ln(PBABIP) + <Coef v={c.p_hr} />·ln(HRR)</>,
+                  ]}
+                  note={<>{fmt(fit.basic_pitching.rowCount)} obs (BF ≥ {fit.basic_pitching.minBF}). One WLS fit (weight = BF<sup>0.75</sup>) of (0.64 − wOBA allowed)×333 on log ratings; intercept clamped ≥ 0. Matches the old “37-38” model.</>}
+                  diagRows={[{ label: "score", e: fit.basic_pitching.diagnostics.weights }]} />;
+              })()}
+            </>
+          )}
         </>
       )}
     </div>

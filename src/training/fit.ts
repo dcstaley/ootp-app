@@ -84,8 +84,57 @@ export interface WobaHittingFit {
   diagnostics: Record<string, EventDiag>;
 }
 
+// Alternate WLS solver (parity port of the old `wlsSolve`): sqrt-weighted normal
+// equations solved via Jacobi eigendecomposition + pseudo-inverse. The BASIC models
+// were fit with this (numerically distinct from the Gauss-Jordan `wls` the wOBA
+// models use), so reproduce it exactly.
+export function wlsSolve(X: number[][], y: number[], w: number[]): number[] {
+  const n = X.length, p = X[0]!.length;
+  const sw = w.map((wi) => Math.sqrt(wi));
+  const Xw = X.map((row, i) => row.map((x) => x * sw[i]!));
+  const yw = y.map((yi, i) => yi * sw[i]!);
+  const A = Array.from({ length: p }, () => new Array(p).fill(0));
+  const b = new Array(p).fill(0);
+  for (let i = 0; i < n; i++) for (let j = 0; j < p; j++) {
+    b[j] += Xw[i]![j]! * yw[i]!;
+    for (let k = 0; k < p; k++) A[j]![k] += Xw[i]![j]! * Xw[i]![k]!;
+  }
+  const V: number[][] = Array.from({ length: p }, (_, i) => Array.from({ length: p }, (_, j) => (i === j ? 1 : 0)));
+  const D: number[][] = A.map((row) => [...row]);
+  for (let sweep = 0; sweep < 100; sweep++) {
+    let maxOff = 0;
+    for (let i = 0; i < p; i++) for (let j = i + 1; j < p; j++) maxOff = Math.max(maxOff, Math.abs(D[i]![j]!));
+    if (maxOff < 1e-14) break;
+    for (let i = 0; i < p; i++) for (let j = i + 1; j < p; j++) {
+      if (Math.abs(D[i]![j]!) < 1e-15) continue;
+      const tau = (D[j]![j]! - D[i]![i]!) / (2 * D[i]![j]!);
+      const t = tau >= 0 ? 1 / (tau + Math.sqrt(1 + tau * tau)) : 1 / (tau - Math.sqrt(1 + tau * tau));
+      const c = 1 / Math.sqrt(1 + t * t), s2 = t * c;
+      const Dii = D[i]![i]!, Djj = D[j]![j]!, Dij = D[i]![j]!;
+      D[i]![i] = Dii - t * Dij; D[j]![j] = Djj + t * Dij; D[i]![j] = D[j]![i] = 0;
+      for (let k = 0; k < p; k++) {
+        if (k !== i && k !== j) {
+          const Dki = D[k]![i]!, Dkj = D[k]![j]!;
+          D[k]![i] = D[i]![k] = c * Dki - s2 * Dkj;
+          D[k]![j] = D[j]![k] = s2 * Dki + c * Dkj;
+        }
+        const Vki = V[k]![i]!, Vkj = V[k]![j]!;
+        V[k]![i] = c * Vki - s2 * Vkj;
+        V[k]![j] = s2 * Vki + c * Vkj;
+      }
+    }
+  }
+  const eig = D.map((row, i) => row[i]!);
+  const maxEig = Math.max(...eig.map(Math.abs));
+  const rcond = maxEig * 1e-12;
+  const Vtb = V[0]!.map((_, j) => V.reduce((s, row, k) => s + row[j]! * b[k]!, 0));
+  const scaled = Vtb.map((v, i) => (Math.abs(eig[i]!) > rcond ? v / eig[i]! : 0));
+  return V.map((row) => row.reduce((s, v, i) => s + v * scaled[i]!, 0));
+}
+
 // PA-weighted Section-3 baseline targets (per 600 PA) used for league normalization.
 const H_SECTION3 = { BB: 48.43, K: 117.40, HR: 14.87, H: 124.75, XBH: 31.26 };
+const P_SECTION3 = { BB: 47.80, K: 117.40, HR: 14.96, H: 123.97, XBH: 30.93 };
 const ln1 = (x: number) => Math.log(Math.max(x, 1));
 const r6 = (x: number) => +x.toFixed(6);
 
@@ -161,4 +210,129 @@ export function trainWobaHitting(obs: TrainObs[], minPA = 1000): WobaHittingFit 
   };
 
   return { modelType: "woba_hitting", split: "both", minPA, rowCount: n, coefficients, diagnostics };
+}
+
+// ── wOBA pitching (parity port of trainWobaPitching; uses `wls`) ───────────────
+export interface WobaPitchingCoeffs {
+  bb: { intercept: number; con: number; con2: number; con3: number };
+  k: { intercept: number; stu: number; stu2: number; stu3: number };
+  hr: { intercept: number; hrr: number; hrr2: number; hrr_exgb: number; hrr_gb: number; hrr_fb: number; hrr_exfb: number };
+  h: { intercept: number; pbabip: number; bip: number };
+  xbh: { share: number };
+  leagueNorm: { bb: number; k: number; hr: number; h: number; xbh: number };
+}
+export interface WobaPitchingFit {
+  modelType: "woba_pitching"; split: "both"; minBF: number; rowCount: number;
+  coefficients: WobaPitchingCoeffs; diagnostics: Record<string, EventDiag>;
+}
+
+export function trainWobaPitching(obs: TrainObs[], minBF = 1000): WobaPitchingFit {
+  const players = obs.filter((o) => o.pitch.BF >= minBF);
+  if (players.length < 10) throw new Error(`Only ${players.length} observations meet minBF=${minBF} (need 10+)`);
+  const n = players.length;
+  const weights = players.map((p) => Math.pow(p.pitch.BF, 0.75));
+  const per600 = (f: (o: TrainObs) => number) => players.map((p) => f(p) / p.pitch.BF * 600);
+
+  const BB = per600((p) => p.pitch.BB);
+  const K = per600((p) => p.pitch.K);
+  const HR = per600((p) => p.pitch.HR);
+  const nHH = per600((p) => p.pitch.b1 + p.pitch.b2 + p.pitch.b3);
+
+  const CON = players.map((p) => p.ratings.pitch.con);
+  const STU = players.map((p) => p.ratings.pitch.stu);
+  const HRR = players.map((p) => p.ratings.pitch.hrr);
+  const PBABIP = players.map((p) => p.ratings.pitch.pbabip);
+
+  const diagnostics: Record<string, EventDiag> = {};
+  const runModel = (name: string, X: number[][], y: number[]): number[] => {
+    const beta = wls(X, y, weights);
+    const pred = X.map((row) => row.reduce((s, x, j) => s + x * beta[j]!, 0));
+    diagnostics[name] = { r2: +rSquared(y, pred, weights).toFixed(4), rmse: +rmse(y, pred).toFixed(4), spearman: +spearman(y, pred).toFixed(4), pearson: +pearson(y, pred).toFixed(4), n };
+    return beta;
+  };
+
+  const bbB = runModel("bb", players.map((_, i) => [1, ln1(CON[i]!)]), BB);
+  const kB = runModel("k", players.map((_, i) => [1, ln1(STU[i]!)]), K);
+  const hrB = runModel("hr", players.map((_, i) => [1, ln1(HRR[i]!)]), HR);
+
+  const bbPred = players.map((_, i) => Math.max(bbB[0]! + bbB[1]! * ln1(CON[i]!), 0));
+  const kPred = players.map((_, i) => Math.max(kB[0]! + kB[1]! * ln1(STU[i]!), 0));
+  const hrPred = players.map((_, i) => Math.max(hrB[0]! + hrB[1]! * ln1(HRR[i]!), 0));
+  const bipPred = players.map((_, i) => Math.max(600 - bbPred[i]! - kPred[i]! - hrPred[i]! - 6, 1)); // HBP=6
+
+  const hB = runModel("h", players.map((_, i) => [1, ln1(PBABIP[i]!), ln1(bipPred[i]!)]), nHH);
+  const hPred = players.map((_, i) => Math.max(hB[0]! + hB[1]! * ln1(PBABIP[i]!) + hB[2]! * ln1(bipPred[i]!), 0));
+
+  const totalW = weights.reduce((s, w) => s + w, 0);
+  const wavg = (arr: number[]) => arr.reduce((s, v, i) => s + weights[i]! * v, 0) / totalW;
+  const xbhPred = hPred.map((h) => h * 0.25);
+
+  const coefficients: WobaPitchingCoeffs = {
+    bb: { intercept: bbB[0]!, con: bbB[1]!, con2: 0, con3: 0 },
+    k: { intercept: kB[0]!, stu: kB[1]!, stu2: 0, stu3: 0 },
+    hr: { intercept: hrB[0]!, hrr: hrB[1]!, hrr2: 0, hrr_exgb: 0, hrr_gb: 0, hrr_fb: 0, hrr_exfb: 0 },
+    h: { intercept: hB[0]!, pbabip: hB[1]!, bip: hB[2]! },
+    xbh: { share: 0.25 },
+    leagueNorm: {
+      bb: r6(P_SECTION3.BB / wavg(bbPred)), k: r6(P_SECTION3.K / wavg(kPred)), hr: r6(P_SECTION3.HR / wavg(hrPred)),
+      h: r6(P_SECTION3.H / wavg(hPred)), xbh: r6(P_SECTION3.XBH / wavg(xbhPred)),
+    },
+  };
+  return { modelType: "woba_pitching", split: "both", minBF, rowCount: n, coefficients, diagnostics };
+}
+
+// ── Basic models (parity port; use `wlsSolve`; intercept clamped ≥ 0) ──────────
+export interface BasicHittingCoeffs {
+  basic_intercept: number; w_babip: number; w_babip2: number; w_pow: number; w_pow2: number;
+  w_eye: number; w_eye2: number; w_k: number; w_k2: number; w_gap: number; w_gap2: number;
+}
+export interface BasicPitchingCoeffs {
+  basic_intercept: number; p_stuff: number; p_stuff2: number; p_control: number; p_control2: number;
+  p_babip: number; p_babip2: number; p_hr: number; p_hr2: number;
+}
+export interface BasicFit<C> { modelType: string; minPA?: number; minBF?: number; rowCount: number; coefficients: C; diagnostics: { weights: EventDiag } }
+
+export function trainBasicHitting(obs: TrainObs[], minPA = 1000): BasicFit<BasicHittingCoeffs> {
+  const players = obs.filter((o) => o.hit.PA >= minPA);
+  if (players.length < 10) throw new Error(`Only ${players.length} observations with PA>=${minPA}`);
+  const weights = players.map((p) => Math.pow(p.hit.PA, 0.75));
+  // Y: actual wOBA × 333 (per PA, matching the basic-hitting score scale).
+  const y = players.map((p) => {
+    const b1 = Math.max(p.hit.H - p.hit.HR - p.hit.b2 - p.hit.b3, 0);
+    return (0.704 * p.hit.BB + 0.8992 * b1 + 1.29 * (p.hit.b2 + p.hit.b3) + 2.0759 * p.hit.HR) / Math.max(p.hit.PA, 1) * 333;
+  });
+  const r = players.map((p) => p.ratings.hit);
+  const X = players.map((_, i) => [1, ln1(r[i]!.babip), ln1(r[i]!.pow), ln1(r[i]!.eye), ln1(r[i]!.kRat), ln1(r[i]!.gap)]);
+  const beta = wlsSolve(X, y, weights);
+  const pred = X.map((row) => row.reduce((s, x, j) => s + beta[j]! * x, 0)); // pred uses the UNCLAMPED beta
+  if (beta[0]! < 0) beta[0] = 0;
+  const coefficients: BasicHittingCoeffs = {
+    basic_intercept: beta[0]!, w_babip: beta[1]!, w_babip2: 0, w_pow: beta[2]!, w_pow2: 0,
+    w_eye: beta[3]!, w_eye2: 0, w_k: beta[4]!, w_k2: 0, w_gap: beta[5]!, w_gap2: 0,
+  };
+  const diagnostics = { weights: { r2: +rSquared(y, pred, weights).toFixed(4), rmse: +rmse(y, pred).toFixed(4), spearman: +spearman(y, pred).toFixed(4), pearson: +pearson(y, pred).toFixed(4), n: players.length } };
+  return { modelType: "basic_hitting", minPA, rowCount: players.length, coefficients, diagnostics };
+}
+
+export function trainBasicPitching(obs: TrainObs[], minBF = 1000): BasicFit<BasicPitchingCoeffs> {
+  const players = obs.filter((o) => o.pitch.BF >= minBF);
+  if (players.length < 10) throw new Error(`Only ${players.length} observations with BF>=${minBF}`);
+  const weights = players.map((p) => Math.pow(p.pitch.BF, 0.75));
+  // Y: (0.64 − wOBA allowed) × 333 — higher = better pitcher.
+  const y = players.map((p) => {
+    const xbh = p.pitch.b2 + p.pitch.b3;
+    const wobaAllowed = (0.704 * p.pitch.BB + 0.8992 * p.pitch.b1 + 1.29 * xbh + 2.0759 * p.pitch.HR) / Math.max(p.pitch.BF, 1);
+    return (0.64 - wobaAllowed) * 333;
+  });
+  const r = players.map((p) => p.ratings.pitch);
+  const X = players.map((_, i) => [1, ln1(r[i]!.stu), ln1(r[i]!.con), ln1(r[i]!.pbabip), ln1(r[i]!.hrr)]);
+  const beta = wlsSolve(X, y, weights);
+  const pred = X.map((row) => row.reduce((s, x, j) => s + beta[j]! * x, 0));
+  if (beta[0]! < 0) beta[0] = 0;
+  const coefficients: BasicPitchingCoeffs = {
+    basic_intercept: beta[0]!, p_stuff: beta[1]!, p_stuff2: 0, p_control: beta[2]!, p_control2: 0,
+    p_babip: beta[3]!, p_babip2: 0, p_hr: beta[4]!, p_hr2: 0,
+  };
+  const diagnostics = { weights: { r2: +rSquared(y, pred, weights).toFixed(4), rmse: +rmse(y, pred).toFixed(4), spearman: +spearman(y, pred).toFixed(4), pearson: +pearson(y, pred).toFixed(4), n: players.length } };
+  return { modelType: "basic_pitching", minBF, rowCount: players.length, coefficients, diagnostics };
 }

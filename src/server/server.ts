@@ -29,7 +29,7 @@ import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
 import { loadTrainingDir, type LoadedTraining } from "../training/loader.ts";
-import { trainWobaHitting, type WobaHittingFit } from "../training/fit.ts";
+import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingFit, type WobaPitchingFit, type BasicFit, type BasicHittingCoeffs, type BasicPitchingCoeffs } from "../training/fit.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -505,7 +505,12 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
 // into observations. Ingestion only — no model is trained here yet.
 let trainingCache: LoadedTraining | null = null;
 let trainingErr: string | null = null;
-let fitCache: { woba_hitting?: WobaHittingFit } = {};
+interface FitBag {
+  threshold?: number;
+  woba_hitting?: WobaHittingFit; woba_pitching?: WobaPitchingFit;
+  basic_hitting?: BasicFit<BasicHittingCoeffs>; basic_pitching?: BasicFit<BasicPitchingCoeffs>;
+}
+let fitCache: FitBag = {};
 function getTraining(reload = false): LoadedTraining | null {
   if (reload) { trainingCache = null; trainingErr = null; fitCache = {}; }
   if (trainingCache) return trainingCache;
@@ -516,16 +521,24 @@ function getTraining(reload = false): LoadedTraining | null {
   } catch (e) { trainingErr = String(e); trainingCache = null; }
   return trainingCache;
 }
-// Fit the per-event models over the loaded observations (cached). Currently only
-// wOBA-hitting (parity-validated vs the old trainer); pitching + basic to follow.
-function getFit(minPA: number, reload = false): { available: boolean; error?: string; woba_hitting?: WobaHittingFit } {
+// Fit all four per-event models over the loaded observations (cached by threshold).
+// The single threshold is min PA for the hitting models, min BF for pitching — all
+// parity-validated bit-for-bit vs the old trainer's "37-38" models.
+function getFit(threshold: number, reload = false): { available: boolean; error?: string } & FitBag {
   const t = getTraining(reload);
   if (!t) return { available: false, error: trainingErr ?? "no training data" };
-  if (!fitCache.woba_hitting || fitCache.woba_hitting.minPA !== minPA) {
-    try { fitCache.woba_hitting = trainWobaHitting(t.observations, minPA); }
-    catch (e) { return { available: false, error: String(e) }; }
+  if (fitCache.threshold !== threshold) {
+    try {
+      fitCache = {
+        threshold,
+        woba_hitting: trainWobaHitting(t.observations, threshold),
+        woba_pitching: trainWobaPitching(t.observations, threshold),
+        basic_hitting: trainBasicHitting(t.observations, threshold),
+        basic_pitching: trainBasicPitching(t.observations, threshold),
+      };
+    } catch (e) { return { available: false, error: String(e) }; }
   }
-  return { available: true, woba_hitting: fitCache.woba_hitting };
+  return { available: true, ...fitCache };
 }
 
 // Precompute the default tournament so first paint is instant.
