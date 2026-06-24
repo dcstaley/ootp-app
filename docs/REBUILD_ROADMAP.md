@@ -693,6 +693,22 @@ Committed + pushed; 81 tests green; parity bit-identical; src + web typecheck cl
 - **Next:** port `trainWobaPitching` + the two basic models (same oracle), then `residualBinReport`
   (residual bins by weighted volume + recommended softcaps), then the D3 bake-off.
 
+**Update (2026-06-24h) — archetype methodology, independent controls, model registry.**
+Archetypes: thresholds = within-pool TERCILES (cut values shown); each bucket now shows mean ± σ (spread
+flags a heterogeneous 2–3-rating archetype — e.g. Free swinger σ≈±7 vs mean −0.8, the Mays/Sheckard case);
+added "Balanced (average)" + "One standout" ("med"-based shapes); PA^0.75-weighted by default with an
+unweighted toggle. **Independent per-section controls:** trained-models / scoreboard / misses each have
+their OWN min PA/BF + variants (default 1000 + on); fit + scoreboard endpoints gained variant filtering;
+the year window stays global. **Miss UI:** vL/vR are colour-coded chips (the "duplicates" were vL/vR
+separate observations, NOT a bug); click a player row to expand its ratings; per-card + per-archetype
+volume shown. **Trained-model REGISTRY (S6.5):** named `TrainedModel` artifacts (4 coefficient sets +
+dataset/window/min/variants + wOBA-Pearson snapshot) persisted to `data/trained-models/` (gitignored);
+`GET/POST /api/training/models[/save|/delete]`; page "Saved models" table with Save-current / Load /
+Delete. Multiple parallel models (league now, tournament later) — each tagged with its source dataset.
+Scoring-core integration (active model → scoring) is the deferred next step. 105 tests. **Still remaining:**
+inter-model disagreement, drift tracking, bootstrap CIs, null baseline, fold significance → candidate model
+FORMS → scoring-core hookup → softcaps' fate.
+
 **Update (2026-06-24g) — harness refinements + "where the model misses".** Live fit + scoreboard
 in-sample/CV now run on a SELECTABLE year window (default recent 2yr; page has a year selector) — all-years
 was wrong given drift. wOBA models report assembled-wOBA fidelity (a "→ wOBA" diag row). Scoreboard runs
