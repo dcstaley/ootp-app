@@ -693,6 +693,26 @@ Committed + pushed; 81 tests green; parity bit-identical; src + web typecheck cl
 - **Next:** port `trainWobaPitching` + the two basic models (same oracle), then `residualBinReport`
   (residual bins by weighted volume + recommended softcaps), then the D3 bake-off.
 
+**Update (2026-06-24f) — evaluation harness (bake-off core) + multi-year data.** Training data moved to
+`League Files/` (per-year folders, gitignored; grows weekly) — loader recurses + `loadWindow(root, years)`,
+handles the 2039 year-first filename format, canonicalizes league names (strip spaces). Committed
+`Model 2037 and 2038/` stays as the frozen parity oracle + clone fallback. **Harness** (`src/training/`):
+`metrics.ts` (weighted Pearson = headline gap-fidelity, affine-invariant; R² as level-bias diagnostic;
+gap-distortion RMSE; top-N overlap + value-regret; bias/MAE), `bakeoff.ts` (`BakeoffModel` fit→predict
+seam + raw-wOBA assembly, evaluated UPSTREAM of softcaps/leagueNorm/anchor — all under review),
+`evaluate.ts` (deterministic key-hash folds; 5-fold CV + in-sample + **bidirectional out-of-time**: forward
+older→newest = drift, backward newest→older = weak-card/limited-pool stress). `GET /api/training/scoreboard`
++ a scoreboard table on the page. Baseline log-linear on 2037-39: in-sample≈CV (stiff form, low overfit);
+forward hitter Pearson 0.75/R² 0.34 (drift = mostly harmless level bias); backward Pearson 0.92, top-26
+overlap 0.81 (predicting up to new elite cards is the hard direction). **Design decisions (user):** headline
+= Pearson + regret (NOT raw RMSE — uniform shift/scale is harmless to the optimizer); evaluate in wOBA
+space, don't lock pool-baseline/top-50/anchor; residual analysis targets EXTREMES + rating-PROFILE
+interactions (low-BABIP/high-HR, high-avoidK/low-HR …), NOT external covariates (noise). **Remaining
+(extras):** archetype + 2D-interaction residual maps · inter-model disagreement (most-divergently-modeled
+cards) · over/under-prediction leaderboards · drift tracking (coef movement + staleness cost) · bootstrap
+stability + minPA/weight sensitivity · null-baseline row · paired-fold significance — THEN add candidate
+model FORMS behind the seam and run the bake-off.
+
 **Update (2026-06-24e) — all FOUR models fit at parity.** Added `trainWobaPitching` (uses `wls`; oracle
 rowCount 129 matches) and `trainBasicHitting`/`trainBasicPitching` (use `wlsSolve`, a faithful port of the
 old Jacobi-eigendecomposition solver; single WLS fit of wOBA×333 / (0.64−wOBA-allowed)×333 on log ratings,
