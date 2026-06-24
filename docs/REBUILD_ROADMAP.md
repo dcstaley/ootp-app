@@ -27,7 +27,7 @@ core; none recomputes scoring.
 | M3 | Data Grid | First UI consumer of the core | ✅ | M2, SP-11 |
 | M4 | Optimizer | Roster + lineups + rotation/bullpen | ✅ (cap/slots, two-way, bonus, eligibility, basic/wOBA) | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ✅ (Next Best + manual add + @dnd-kit drag + lineup editor w/ server-honored locks) | M4 |
-| M6 | Training + bake-off | Fit models; D3 comparison harness | ⬜ | SP-8/9 |
+| M6 | Training + bake-off | Fit models; D3 comparison harness | 🔜 (SP-9 loader + training page stood up; fit/diagnostics next) | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |
 | X | Cross-cutting | Packaging, persistence, parity method | ongoing | — |
 
@@ -306,9 +306,15 @@ rate) behind the `EventModel` seam; score vs residual diagnostics on `Model 2037
 evaluate `recalibrate_pt_model.py`'s sequential cubic-logit. *Output:* a chosen form + evidence. ⏸ until
 parity-complete (per the user: parity first, modeling after).
 
-**SP-9 — Training loader.** *Why:* M6 needs robust ingestion. *Approach:* load per-(pool, split, year)
-CSVs; **filename split detection robust to token order** (e.g. `HD 452 2038 vR.csv`); aggregate dup
-cards; PA/BF threshold. *Output:* loader + parity vs old trainer's log fit.
+**SP-9 — Training loader. ✅ DONE (ingestion).** *Output:* `src/training/loader.ts` + `tests/training.test.ts`.
+Loads the 18 per-(league, side, year) CSVs in `Model 2037 and 2038/`; **filename split detection robust
+to token order** (`HD 452 2038 vR.csv` parses). Grouping (decided 2026-06-24, parity-first): observations
+keyed by **(CID, variant-flag, side)** — base and variant of a player SEPARATE; all variant levels pool
+(VLvl ignored); vL/vR separate; outcomes summed across every league/year, with per-source provenance kept
+so a later fit can **neutralize each source's era/park before aggregating** (model fit in a neutral league,
+"as close as we can get"). Real dataset → 710 observations (514 base / 196 variant), 1.77M PA / BF. Still
+TODO for the fit: per-source neutralization, PA/BF threshold, per-event independent fits, parity vs the old
+trainer's log fit.
 
 **SP-10 — SP format.** *Why:* M7 needs the real column set. *Approach:* read `Export.csv` (old repo) as
 the authoritative SP format; enumerate current vs potential rating fields + any extra SP dimensions.
@@ -622,3 +628,25 @@ web** typecheck clean; build clean.
 **Next up:** **M6** model training + the D3 bake-off on the real `Model 2037 and 2038/` outcome data —
 where the deferred audits live (anchoring/scaling, OVR vL/vR split weighting, BB/HR-only per-event
 calibration, gap-denominator revisit). Then **M7** Single Player.
+
+## Session update (2026-06-24c) — M6 stood up (SP-9 loader + training page)
+
+Committed + pushed; 76 tests green (67 + 9 new loader tests); parity bit-identical; src + web typecheck
+clean; build clean. **Ingestion only — no model is fit yet.**
+
+- **Grouping/modeling logic confirmed with the user (parity-first; revisit when dissecting the model):**
+  observations keyed by **(CID, variant-flag, side)** — base vs. variant SEPARATE, all variant levels
+  pool (VLvl ignored); vL/vR are separate observations (side-specific ratings → side-specific outcomes);
+  outcomes sum across all leagues/years. **Model fit in a neutral league** (neutralize each source's
+  era/park, "as close as we can get"). **Per-event rates fit independently.** None of this is final.
+- **Loader** (`src/training/loader.ts`, SP-9): token-order-robust filename parse; normalizes each row's
+  side-specific hit/pitch ratings + realized outcomes; aggregates to 710 observations (514 base / 196
+  variant) over 18 files / 5 leagues / 2037–38 / 1.77M PA. Per-source provenance retained for later
+  neutralization.
+- **Server:** `GET /api/training/summary` (lazy + cached; `?reload=true`).
+- **Page:** `web/ModelTrainingPage.tsx` replaces the placeholder — stat cards + a league×year×side
+  coverage matrix (partial coverage handled). Wired into nav.
+- **Next M6 steps:** per-source era/park neutralization → per-event fits (log-linear port first, for
+  parity vs the old trainer) → diagnostics (residuals by weighted volume, over-valuation, recommended
+  softcaps) → the D3 bake-off. The deferred audits (anchoring/scaling, OVR vL/vR split, BB/HR-only
+  per-event calibration, gap-denominator) get evaluated here against this data.
