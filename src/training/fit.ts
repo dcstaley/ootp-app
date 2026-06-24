@@ -334,7 +334,7 @@ export interface BasicPitchingCoeffs {
 }
 export interface BasicFit<C> { modelType: string; minPA?: number; minBF?: number; rowCount: number; coefficients: C; diagnostics: { weights: EventDiag } }
 
-export function trainBasicHitting(obs: TrainObs[], minPA = 1000): BasicFit<BasicHittingCoeffs> {
+export function trainBasicHitting(obs: TrainObs[], minPA = 1000, clampIntercept = true): BasicFit<BasicHittingCoeffs> {
   const players = obs.filter((o) => o.hit.PA >= minPA);
   if (players.length < 10) throw new Error(`Only ${players.length} observations with PA>=${minPA}`);
   const weights = players.map((p) => Math.pow(p.hit.PA, 0.75));
@@ -347,7 +347,10 @@ export function trainBasicHitting(obs: TrainObs[], minPA = 1000): BasicFit<Basic
   const X = players.map((_, i) => [1, ln1(r[i]!.babip), ln1(r[i]!.pow), ln1(r[i]!.eye), ln1(r[i]!.kRat), ln1(r[i]!.gap)]);
   const beta = wlsSolve(X, y, weights);
   const pred = X.map((row) => row.reduce((s, x, j) => s + beta[j]! * x, 0)); // pred uses the UNCLAMPED beta
-  if (beta[0]! < 0) beta[0] = 0;
+  // The old app clamps a negative intercept to 0 for the scoring pipeline (parity).
+  // Predictive evaluation must NOT clamp — it only shifts the level (fold-dependent),
+  // which corrupts pooled cross-validation. Bake-off callers pass clampIntercept=false.
+  if (clampIntercept && beta[0]! < 0) beta[0] = 0;
   const coefficients: BasicHittingCoeffs = {
     basic_intercept: beta[0]!, w_babip: beta[1]!, w_babip2: 0, w_pow: beta[2]!, w_pow2: 0,
     w_eye: beta[3]!, w_eye2: 0, w_k: beta[4]!, w_k2: 0, w_gap: beta[5]!, w_gap2: 0,
@@ -356,7 +359,7 @@ export function trainBasicHitting(obs: TrainObs[], minPA = 1000): BasicFit<Basic
   return { modelType: "basic_hitting", minPA, rowCount: players.length, coefficients, diagnostics };
 }
 
-export function trainBasicPitching(obs: TrainObs[], minBF = 1000): BasicFit<BasicPitchingCoeffs> {
+export function trainBasicPitching(obs: TrainObs[], minBF = 1000, clampIntercept = true): BasicFit<BasicPitchingCoeffs> {
   const players = obs.filter((o) => o.pitch.BF >= minBF);
   if (players.length < 10) throw new Error(`Only ${players.length} observations with BF>=${minBF}`);
   const weights = players.map((p) => Math.pow(p.pitch.BF, 0.75));
@@ -370,7 +373,7 @@ export function trainBasicPitching(obs: TrainObs[], minBF = 1000): BasicFit<Basi
   const X = players.map((_, i) => [1, ln1(r[i]!.stu), ln1(r[i]!.con), ln1(r[i]!.pbabip), ln1(r[i]!.hrr)]);
   const beta = wlsSolve(X, y, weights);
   const pred = X.map((row) => row.reduce((s, x, j) => s + beta[j]! * x, 0));
-  if (beta[0]! < 0) beta[0] = 0;
+  if (clampIntercept && beta[0]! < 0) beta[0] = 0; // see trainBasicHitting — predictive eval must not clamp
   const coefficients: BasicPitchingCoeffs = {
     basic_intercept: beta[0]!, p_stuff: beta[1]!, p_stuff2: 0, p_control: beta[2]!, p_control2: 0,
     p_babip: beta[3]!, p_babip2: 0, p_hr: beta[4]!, p_hr2: 0,

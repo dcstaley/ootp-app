@@ -28,9 +28,11 @@ import { Repository } from "../persistence/repository.ts";
 import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
-import { loadTrainingDir, type LoadedTraining } from "../training/loader.ts";
+import { loadTrainingDir, loadWindow, availableYears, type LoadedTraining, type TrainObs } from "../training/loader.ts";
 import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingFit, type WobaPitchingFit, type BasicFit, type BasicHittingCoeffs, type BasicPitchingCoeffs } from "../training/fit.ts";
-import { buildScoreboard, type Scoreboard } from "../training/evaluate.ts";
+import { buildScoreboard, defaultWindow, type Scoreboard } from "../training/evaluate.ts";
+import { HITTER, PITCHER, predictHitWoba, predictPitWoba, actualHitWoba, actualPitWoba } from "../training/bakeoff.ts";
+import { evalMetrics, type EvalMetrics } from "../training/metrics.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -509,14 +511,10 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
 // into observations. Ingestion only — no model is trained here yet.
 let trainingCache: LoadedTraining | null = null;
 let trainingErr: string | null = null;
-interface FitBag {
-  threshold?: number;
-  woba_hitting?: WobaHittingFit; woba_pitching?: WobaPitchingFit;
-  basic_hitting?: BasicFit<BasicHittingCoeffs>; basic_pitching?: BasicFit<BasicPitchingCoeffs>;
-}
-let fitCache: FitBag = {};
+const windowCache = new Map<string, TrainObs[]>(); // observations per year-window
+function clearTrainingCaches() { trainingCache = null; trainingErr = null; windowCache.clear(); fitCache = {}; sbCache = new Map(); }
 function getTraining(reload = false): LoadedTraining | null {
-  if (reload) { trainingCache = null; trainingErr = null; fitCache = {}; }
+  if (reload) clearTrainingCaches();
   if (trainingCache) return trainingCache;
   try {
     if (!existsSync(TRAINING_DIR)) { trainingErr = `training dir not found: ${TRAINING_DIR}`; return null; }
@@ -525,33 +523,58 @@ function getTraining(reload = false): LoadedTraining | null {
   } catch (e) { trainingErr = String(e); trainingCache = null; }
   return trainingCache;
 }
-// Fit all four per-event models over the loaded observations (cached by threshold).
-// The single threshold is min PA for the hitting models, min BF for pitching — all
-// parity-validated bit-for-bit vs the old trainer's "37-38" models.
-function getFit(threshold: number, reload = false): { available: boolean; error?: string } & FitBag {
-  const t = getTraining(reload);
-  if (!t) return { available: false, error: trainingErr ?? "no training data" };
-  if (fitCache.threshold !== threshold) {
+function trainingYears(): number[] { try { return existsSync(TRAINING_DIR) ? availableYears(TRAINING_DIR) : []; } catch { return []; } }
+// Parse a ?years=2038,2039 list to a valid window; empty/invalid ⇒ default recent 2yr.
+function parseYears(param: string | null): number[] {
+  const avail = trainingYears();
+  const want = (param ?? "").split(",").map((s) => Number(s.trim())).filter((y) => avail.includes(y));
+  return want.length ? [...new Set(want)].sort((a, b) => a - b) : defaultWindow(avail);
+}
+function windowObs(years: number[]): TrainObs[] {
+  const key = years.join(",");
+  let o = windowCache.get(key);
+  if (!o) { o = loadWindow(TRAINING_DIR, years).observations; windowCache.set(key, o); }
+  return o;
+}
+
+interface FitBag {
+  key?: string; window?: number[];
+  woba_hitting?: WobaHittingFit; woba_pitching?: WobaPitchingFit;
+  basic_hitting?: BasicFit<BasicHittingCoeffs>; basic_pitching?: BasicFit<BasicPitchingCoeffs>;
+  wobaDiagHit?: EvalMetrics; wobaDiagPit?: EvalMetrics; // assembled-wOBA fidelity (in-sample)
+}
+let fitCache: FitBag = {};
+let sbCache = new Map<string, Scoreboard>(); // bake-off scoreboards, keyed by (window,minN,k)
+// Fit all four models over the SELECTED YEAR WINDOW (default: recent 2yr, limiting
+// cross-year drift) at the given PA/BF threshold. Also computes each wOBA model's
+// assembled-wOBA fidelity (events → wOBA → vs actual), since wOBA is the bottom line.
+function getFit(window: number[], threshold: number, reload = false): { available: boolean; error?: string } & FitBag {
+  if (reload) clearTrainingCaches();
+  if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
+  const key = `${window.join(",")}|${threshold}`;
+  if (fitCache.key !== key) {
     try {
+      const obs = windowObs(window);
+      const wh = trainWobaHitting(obs, threshold), wp = trainWobaPitching(obs, threshold);
+      const hq = obs.filter((o) => HITTER.qualifies(o, threshold)), pq = obs.filter((o) => PITCHER.qualifies(o, threshold));
       fitCache = {
-        threshold,
-        woba_hitting: trainWobaHitting(t.observations, threshold),
-        woba_pitching: trainWobaPitching(t.observations, threshold),
-        basic_hitting: trainBasicHitting(t.observations, threshold),
-        basic_pitching: trainBasicPitching(t.observations, threshold),
+        key, window,
+        woba_hitting: wh, woba_pitching: wp,
+        basic_hitting: trainBasicHitting(obs, threshold), basic_pitching: trainBasicPitching(obs, threshold),
+        wobaDiagHit: evalMetrics(hq.map((o) => predictHitWoba(wh.coefficients, o)), hq.map(actualHitWoba), hq.map(HITTER.weight), true),
+        wobaDiagPit: evalMetrics(pq.map((o) => predictPitWoba(wp.coefficients, o)), pq.map(actualPitWoba), pq.map(PITCHER.weight), false),
       };
     } catch (e) { return { available: false, error: String(e) }; }
   }
   return { available: true, ...fitCache };
 }
-// Bake-off scoreboard (in-sample + 5-fold CV + forward/backward OOT), cached by (minN,k).
-let sbCache = new Map<string, Scoreboard>();
-function getScoreboard(minN: number, k: number, reload = false): { available: boolean; error?: string; scoreboard?: Scoreboard } {
+// Bake-off scoreboard (in-sample + 5-fold CV + forward/backward OOT), cached by (window,minN,k).
+function getScoreboard(window: number[], minN: number, k: number, reload = false): { available: boolean; error?: string; scoreboard?: Scoreboard } {
   if (reload) sbCache = new Map();
   if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
-  const key = `${minN}|${k}`;
+  const key = `${window.join(",")}|${minN}|${k}`;
   let sb = sbCache.get(key);
-  if (!sb) { try { sb = buildScoreboard(TRAINING_DIR, { minN, k }); sbCache.set(key, sb); } catch (e) { return { available: false, error: String(e) }; } }
+  if (!sb) { try { sb = buildScoreboard(TRAINING_DIR, { window, minN, k }); sbCache.set(key, sb); } catch (e) { return { available: false, error: String(e) }; } }
   return { available: true, scoreboard: sb };
 }
 
@@ -602,12 +625,12 @@ const server = createServer(async (req, res) => {
   }
   if (method === "GET" && url === "/api/training/fit") {
     const minPA = Math.max(0, Number(u.searchParams.get("minPA") ?? 1000) || 1000);
-    return json(res, getFit(minPA, u.searchParams.get("reload") === "true"));
+    return json(res, getFit(parseYears(u.searchParams.get("years")), minPA, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/training/scoreboard") {
     const minN = Math.max(0, Number(u.searchParams.get("minN") ?? 1000) || 1000);
     const k = Math.min(20, Math.max(2, Number(u.searchParams.get("k") ?? 5) || 5));
-    return json(res, getScoreboard(minN, k, u.searchParams.get("reload") === "true"));
+    return json(res, getScoreboard(parseYears(u.searchParams.get("years")), minN, k, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));

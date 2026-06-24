@@ -42,12 +42,13 @@ interface WobaPitchingFit {
 interface BasicHittingFit { modelType: string; rowCount: number; minPA?: number; coefficients: { basic_intercept: number; w_babip: number; w_pow: number; w_eye: number; w_k: number; w_gap: number }; diagnostics: { weights: EventDiag } }
 interface BasicPitchingFit { modelType: string; rowCount: number; minBF?: number; coefficients: { basic_intercept: number; p_stuff: number; p_control: number; p_babip: number; p_hr: number }; diagnostics: { weights: EventDiag } }
 interface FitResp {
-  available: boolean; error?: string; threshold?: number;
+  available: boolean; error?: string; window?: number[];
   woba_hitting?: WobaHittingFit; woba_pitching?: WobaPitchingFit; basic_hitting?: BasicHittingFit; basic_pitching?: BasicPitchingFit;
+  wobaDiagHit?: SbMetrics; wobaDiagPit?: SbMetrics; // assembled-wOBA fidelity (in-sample)
 }
 interface SbMetrics { n: number; pearson: number; r2: number; spearman: number; gapRmse: number; rmse: number; mae: number; bias: number; topNOverlap: number; valueRegret: number; topN: number }
 interface ScoreRow { model: string; role: "hitter" | "pitcher"; evaluation: string; window: string; metrics: SbMetrics }
-interface Scoreboard { minN: number; k: number; topN: number; years: number[]; rows: ScoreRow[] }
+interface Scoreboard { minN: number; k: number; topN: number; years: number[]; trainWindow: number[]; rows: ScoreRow[] }
 interface ScoreboardResp { available: boolean; error?: string; scoreboard?: Scoreboard }
 
 type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitching";
@@ -72,6 +73,10 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 const th: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 11, color: C.sub, textTransform: "uppercase", letterSpacing: 0.3, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
 const td: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 13, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
 const Coef = ({ v }: { v: number }) => <code style={{ color: C.link }}>{sig(v)}</code>;
+// The assembled-wOBA fidelity as a DiagTable row (the bottom line: events → wOBA →
+// vs actual). RMSE is in wOBA units (~0.006), unlike the per-event rows (per-600).
+const wobaRow = (w?: SbMetrics): { label: string; e: EventDiag }[] =>
+  w ? [{ label: "→ wOBA", e: { r2: w.r2, rmse: w.rmse, spearman: w.spearman, pearson: w.pearson, n: w.n } }] : [];
 
 // Diagnostics table shared by all four models (per-event rows, or one "weights" row).
 function DiagTable({ rows }: { rows: { label: string; e: EventDiag }[] }) {
@@ -132,13 +137,14 @@ function ScoreboardView({ sb }: { sb: Scoreboard }) {
     <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
       <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead><tr>
-          <th style={{ ...th, textAlign: "left" }}>Role</th><th style={{ ...th, textAlign: "left" }}>Evaluation</th><th style={{ ...th, textAlign: "left" }}>Window</th>
+          <th style={{ ...th, textAlign: "left" }}>Model</th><th style={{ ...th, textAlign: "left" }}>Role</th><th style={{ ...th, textAlign: "left" }}>Evaluation</th><th style={{ ...th, textAlign: "left" }}>Window</th>
           <th style={th} title="Weighted Pearson — headline gap-fidelity (affine-invariant)">Pearson</th>
           {cols.map(([, label]) => <th key={label} style={th}>{label}</th>)}
         </tr></thead>
         <tbody>
           {sb.rows.map((r, i) => (
-            <tr key={i} style={{ background: rowTint(r.evaluation) }}>
+            <tr key={i} style={{ background: rowTint(r.evaluation), borderTop: i > 0 && r.evaluation === "in-sample" ? `2px solid ${C.border}` : undefined }}>
+              <td style={{ ...td, textAlign: "left", fontWeight: 700, textTransform: "uppercase", color: r.model === "woba" ? "#86efac" : "#93c5fd" }}>{r.model}</td>
               <td style={{ ...td, textAlign: "left", textTransform: "capitalize" }}>{r.role}</td>
               <td style={{ ...td, textAlign: "left" }}>{evalLabel[r.evaluation] ?? r.evaluation}</td>
               <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 12 }}>{r.window}</td>
@@ -191,26 +197,34 @@ export function ModelTrainingPage() {
   const [fitTab, setFitTab] = useState<FitTab>("woba_hitting");
   const [sb, setSb] = useState<ScoreboardResp | null>(null);
   const [sbLoading, setSbLoading] = useState(false);
+  const [years, setYears] = useState<number[]>([]); // selected training window (empty ⇒ server default: recent 2yr)
 
+  const yq = (ys: number[]) => (ys.length ? `&years=${ys.join(",")}` : "");
   const load = (reload = false) => {
     setLoading(true); setErr(null);
     fetch(`/api/training/summary${reload ? "?reload=true" : ""}`)
-      .then((r) => r.json()).then((d: TrainingSummary) => setData(d))
+      .then((r) => r.json()).then((d: TrainingSummary) => { setData(d); setYears((cur) => (cur.length ? cur : (d.years ?? []).slice(-2))); })
       .catch((e) => setErr(String(e))).finally(() => setLoading(false));
   };
-  const loadFit = (pa: number, reload = false) => {
+  const loadFit = (pa: number, ys: number[], reload = false) => {
     setFitLoading(true);
-    fetch(`/api/training/fit?minPA=${pa}${reload ? "&reload=true" : ""}`)
+    fetch(`/api/training/fit?minPA=${pa}${yq(ys)}${reload ? "&reload=true" : ""}`)
       .then((r) => r.json()).then((d: FitResp) => setFit(d))
       .catch((e) => setErr(String(e))).finally(() => setFitLoading(false));
   };
-  const loadSb = (pa: number, reload = false) => {
+  const loadSb = (pa: number, ys: number[], reload = false) => {
     setSbLoading(true);
-    fetch(`/api/training/scoreboard?minN=${pa}&k=5${reload ? "&reload=true" : ""}`)
+    fetch(`/api/training/scoreboard?minN=${pa}&k=5${yq(ys)}${reload ? "&reload=true" : ""}`)
       .then((r) => r.json()).then((d: ScoreboardResp) => setSb(d))
       .catch((e) => setErr(String(e))).finally(() => setSbLoading(false));
   };
-  useEffect(() => { load(); loadFit(1000); loadSb(1000); }, []);
+  useEffect(() => { load(); loadFit(1000, []); loadSb(1000, []); }, []);
+  // Toggle a year in the training window; refit + rescore on the new window.
+  const toggleYear = (y: number) => {
+    const next = (years.includes(y) ? years.filter((x) => x !== y) : [...years, y]).sort((a, b) => a - b);
+    if (!next.length) return; // keep at least one year
+    setYears(next); loadFit(minPA, next); loadSb(minPA, next);
+  };
 
   // Pivot the cells into a league-row × (year/side)-column matrix for the table.
   const colKeys = data ? [...new Set(data.cells.map((c) => `${c.year} v${c.side}`))].sort() : [];
@@ -220,7 +234,7 @@ export function ModelTrainingPage() {
     <div style={{ width: "100%", maxWidth: 1100 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Model Training</h2>
-        <button onClick={() => { load(true); loadFit(minPA, true); loadSb(minPA, true); }} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
+        <button onClick={() => { load(true); loadFit(minPA, years, true); loadSb(minPA, years, true); }} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
         {data?.dir && <span style={{ fontSize: 13, color: C.sub }}>source: <code style={{ color: C.text }}>{data.dir}</code></span>}
       </div>
       <p style={{ margin: "0 0 16px", color: C.sub, fontSize: 13, maxWidth: 820 }}>
@@ -292,6 +306,23 @@ export function ModelTrainingPage() {
             {data.unparsedFiles.length > 0 && <> · <span style={{ color: "#f59e0b" }}>{data.unparsedFiles.length} file(s) skipped (unrecognized name): {data.unparsedFiles.join(", ")}</span></>}
           </p>
 
+          {/* Training window — the years the live model + scoreboard in-sample/CV fit on */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0 6px", flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, fontSize: 14 }}>Training window</h3>
+            <span style={{ display: "inline-flex", gap: 4 }}>
+              {data.years.map((y) => {
+                const on = years.includes(y);
+                return (
+                  <button key={y} onClick={() => toggleYear(y)} disabled={fitLoading || sbLoading}
+                    style={{ ...inputStyle, cursor: "pointer", padding: "4px 9px", fontWeight: on ? 700 : 400, background: on ? C.accent : C.input, color: on ? "#fff" : C.sub, border: `1px solid ${on ? C.accent : C.border}` }}>{y}</button>
+                );
+              })}
+            </span>
+            <span style={{ fontSize: 12, color: C.sub }}>
+              fits the live model + the scoreboard's in-sample/CV on these years. Default = recent 2 (new cards drift; older years blend different pools).
+            </span>
+          </div>
+
           {/* Evaluation scoreboard — out-of-sample fidelity for the bake-off baseline */}
           <h3 style={{ margin: "22px 0 8px", fontSize: 14 }}>Evaluation scoreboard {sbLoading && <span style={{ fontSize: 12, color: C.sub }}>· computing…</span>}</h3>
           {sb && !sb.available && <p style={{ color: "#f87171", fontSize: 13 }}>Scoreboard unavailable: {sb.error}</p>}
@@ -316,7 +347,7 @@ export function ModelTrainingPage() {
               <input type="number" value={minPA} min={0} step={100} onChange={(e) => setMinPA(Number(e.target.value))}
                 style={{ ...inputStyle, width: 76, padding: "3px 6px", fontSize: 12 }} />
             </label>
-            <button onClick={() => { loadFit(minPA); loadSb(minPA); }} disabled={fitLoading} style={{ ...inputStyle, cursor: "pointer" }}>{fitLoading ? "Fitting…" : "Refit"}</button>
+            <button onClick={() => { loadFit(minPA, years); loadSb(minPA, years); }} disabled={fitLoading} style={{ ...inputStyle, cursor: "pointer" }}>{fitLoading ? "Fitting…" : "Refit"}</button>
           </div>
 
           {fit && !fit.available && <p style={{ color: "#f87171", fontSize: 13 }}>Fit unavailable: {fit.error}</p>}
@@ -344,7 +375,7 @@ export function ModelTrainingPage() {
                       <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</>,
                     ]}
                     note={<>{fmt(fit.woba_hitting.rowCount)} obs (PA ≥ {fit.woba_hitting.minPA}), split {fit.woba_hitting.split}. Per-event log-linear WLS (weight = PA<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Parity with the old trainer is test-pinned on the 37-38 window.</>}
-                    diagRows={["bb", "k", "hr", "h", "xbh"].map((ev) => ({ label: ev, e: d[ev]! }))} />
+                    diagRows={[...["bb", "k", "hr", "h", "xbh"].map((ev) => ({ label: ev, e: d[ev]! })), ...wobaRow(fit.wobaDiagHit)]} />
                   <ResidualPanel d={d} events={[["bb", "EYE"], ["k", "K"], ["hr", "POW"], ["h", "BABIP"], ["xbh", "GAP"]]} />
                 </>;
               })()}
@@ -361,7 +392,7 @@ export function ModelTrainingPage() {
                       <>XBH = <Coef v={c.xbh.share} />·H (fixed share)</>,
                     ]}
                     note={<>{fmt(fit.woba_pitching.rowCount)} obs (BF ≥ {fit.woba_pitching.minBF}), split {fit.woba_pitching.split}. Per-event log-linear WLS (weight = BF<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Parity with the old trainer is test-pinned on the 37-38 window.</>}
-                    diagRows={["bb", "k", "hr", "h"].map((ev) => ({ label: ev, e: d[ev]! }))} />
+                    diagRows={[...["bb", "k", "hr", "h"].map((ev) => ({ label: ev, e: d[ev]! })), ...wobaRow(fit.wobaDiagPit)]} />
                   <ResidualPanel d={d} events={[["bb", "CON"], ["k", "STU"], ["hr", "HRR"], ["h", "PBABIP"]]} />
                 </>;
               })()}

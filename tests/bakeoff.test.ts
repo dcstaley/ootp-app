@@ -52,21 +52,23 @@ const FIXTURE = "Model 2037 and 2038";
 describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38 fixture", () => {
   const sb = buildScoreboard(FIXTURE, { minN: 1000, k: 5 });
 
-  it("covers both roles × {in-sample, cv, forward, backward}", () => {
+  const pick = (model: string, role: string, evaluation: string) => sb.rows.find((r) => r.model === model && r.role === role && r.evaluation === evaluation)!.metrics;
+
+  it("covers all four models × roles × {in-sample, cv, forward, backward}", () => {
     expect(sb.years).toEqual([2037, 2038]);
-    const evals = new Set(sb.rows.map((r) => r.evaluation));
-    expect(evals).toEqual(new Set(["in-sample", "cv", "forward", "backward"]));
-    expect(sb.rows.length).toBe(8); // 2 roles × 4 evaluations
+    expect(new Set(sb.rows.map((r) => r.evaluation))).toEqual(new Set(["in-sample", "cv", "forward", "backward"]));
+    expect(new Set(sb.rows.map((r) => `${r.model}-${r.role}`))).toEqual(new Set(["woba-hitter", "basic-hitter", "woba-pitcher", "basic-pitcher"]));
+    expect(sb.rows.length).toBe(16); // 4 (model×role) × 4 evaluations
   });
-  it("the log-linear baseline fits the data (CV Pearson is high, metrics in range)", () => {
-    const cvHit = sb.rows.find((r) => r.role === "hitter" && r.evaluation === "cv")!.metrics;
-    expect(cvHit.pearson).toBeGreaterThan(0.7);
-    expect(cvHit.valueRegret).toBeGreaterThanOrEqual(0);
-    expect(cvHit.topNOverlap).toBeGreaterThan(0);
+  it("the wOBA + basic baselines fit the data (CV Pearson high, metrics in range)", () => {
+    for (const model of ["woba", "basic"]) {
+      const cv = pick(model, "hitter", "cv");
+      expect(cv.pearson).toBeGreaterThan(0.7);
+      expect(cv.valueRegret).toBeGreaterThanOrEqual(0);
+      expect(cv.topNOverlap).toBeGreaterThan(0);
+    }
   });
   it("in-sample is no worse than CV (CV is the honest, lower bound)", () => {
-    const isHit = sb.rows.find((r) => r.role === "hitter" && r.evaluation === "in-sample")!.metrics;
-    const cvHit = sb.rows.find((r) => r.role === "hitter" && r.evaluation === "cv")!.metrics;
-    expect(isHit.pearson).toBeGreaterThanOrEqual(cvHit.pearson - 1e-9);
+    expect(pick("woba", "hitter", "in-sample").pearson).toBeGreaterThanOrEqual(pick("woba", "hitter", "cv").pearson - 1e-9);
   });
 });

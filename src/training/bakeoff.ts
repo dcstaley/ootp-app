@@ -7,7 +7,7 @@
 // scale or anchor would only distort the gap-fidelity we measure).
 
 import type { TrainObs } from "./loader.ts";
-import { trainWobaHitting, trainWobaPitching, type WobaHittingCoeffs, type WobaPitchingCoeffs } from "./fit.ts";
+import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingCoeffs, type WobaPitchingCoeffs, type BasicHittingCoeffs, type BasicPitchingCoeffs } from "./fit.ts";
 
 const ln1 = (x: number) => Math.log(Math.max(x, 1));
 // Fixed wOBA event weights (the league-standard linear weights the app uses).
@@ -77,14 +77,39 @@ export const PITCHER: RoleSpec = {
   higherBetter: false, // lower wOBA allowed = better
 };
 
-// The parity log-linear as bake-off models (the scoreboard baseline row).
-export const logLinearHitting: BakeoffModel = {
-  name: "log-linear", role: "hitter",
+// The basic models predict a SCORE that is affine in wOBA (hitting: wOBA×333;
+// pitching: (0.64 − wOBA-allowed)×333). Invert to wOBA so they sit on the scoreboard
+// in the same space as the wOBA models — directly comparable on every metric.
+export function predictBasicHitWoba(c: BasicHittingCoeffs, o: TrainObs): number {
+  const r = o.ratings.hit;
+  const score = c.basic_intercept + c.w_babip * ln1(r.babip) + c.w_pow * ln1(r.pow) + c.w_eye * ln1(r.eye) + c.w_k * ln1(r.kRat) + c.w_gap * ln1(r.gap);
+  return score / 333;
+}
+export function predictBasicPitWoba(c: BasicPitchingCoeffs, o: TrainObs): number {
+  const r = o.ratings.pitch;
+  const score = c.basic_intercept + c.p_stuff * ln1(r.stu) + c.p_control * ln1(r.con) + c.p_babip * ln1(r.pbabip) + c.p_hr * ln1(r.hrr);
+  return 0.64 - score / 333; // recover predicted wOBA allowed
+}
+
+// The four current models as bake-off entries. `model` is the model TYPE (woba /
+// basic); when candidate forms arrive they extend the name (e.g. "woba·cubic").
+export const wobaHitting: BakeoffModel = {
+  name: "woba", role: "hitter",
   fit: (train) => trainWobaHitting(train, 0).coefficients,
   predict: (params, test) => test.map((o) => predictHitWoba(params as WobaHittingCoeffs, o)),
 };
-export const logLinearPitching: BakeoffModel = {
-  name: "log-linear", role: "pitcher",
+export const wobaPitching: BakeoffModel = {
+  name: "woba", role: "pitcher",
   fit: (train) => trainWobaPitching(train, 0).coefficients,
   predict: (params, test) => test.map((o) => predictPitWoba(params as WobaPitchingCoeffs, o)),
+};
+export const basicHitting: BakeoffModel = {
+  name: "basic", role: "hitter",
+  fit: (train) => trainBasicHitting(train, 0, false).coefficients, // unclamped — see trainBasicHitting
+  predict: (params, test) => test.map((o) => predictBasicHitWoba(params as BasicHittingCoeffs, o)),
+};
+export const basicPitching: BakeoffModel = {
+  name: "basic", role: "pitcher",
+  fit: (train) => trainBasicPitching(train, 0, false).coefficients,
+  predict: (params, test) => test.map((o) => predictBasicPitWoba(params as BasicPitchingCoeffs, o)),
 };
