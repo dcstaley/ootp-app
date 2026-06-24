@@ -45,6 +45,11 @@ interface FitResp {
   available: boolean; error?: string; threshold?: number;
   woba_hitting?: WobaHittingFit; woba_pitching?: WobaPitchingFit; basic_hitting?: BasicHittingFit; basic_pitching?: BasicPitchingFit;
 }
+interface SbMetrics { n: number; pearson: number; r2: number; spearman: number; gapRmse: number; rmse: number; mae: number; bias: number; topNOverlap: number; valueRegret: number; topN: number }
+interface ScoreRow { model: string; role: "hitter" | "pitcher"; evaluation: string; window: string; metrics: SbMetrics }
+interface Scoreboard { minN: number; k: number; topN: number; years: number[]; rows: ScoreRow[] }
+interface ScoreboardResp { available: boolean; error?: string; scoreboard?: Scoreboard }
+
 type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitching";
 const FIT_TABS: { id: FitTab; label: string }[] = [
   { id: "woba_hitting", label: "wOBA Hitting" }, { id: "woba_pitching", label: "wOBA Pitching" },
@@ -116,6 +121,37 @@ function ResidualHeat({ label, rating, bins }: { label: string; rating: string; 
   );
 }
 
+// Evaluation scoreboard — Pearson (headline gap-fidelity) coloured by magnitude;
+// forward/backward rows tinted so drift jumps out.
+function ScoreboardView({ sb }: { sb: Scoreboard }) {
+  const evalLabel: Record<string, string> = { "in-sample": "in-sample", cv: `${sb.k}-fold CV`, forward: "forward (OOT)", backward: "backward (OOT)" };
+  const pearColor = (p: number) => { const a = Math.max(0, Math.min(1, (p - 0.5) / 0.5)) * 0.6; return `rgba(34,197,94,${a})`; };
+  const rowTint = (e: string) => (e === "forward" ? "rgba(234,179,8,0.07)" : e === "backward" ? "rgba(59,130,246,0.07)" : "transparent");
+  const cols: [keyof SbMetrics, string][] = [["r2", "R²"], ["spearman", "Spearman"], ["gapRmse", "gap RMSE"], ["valueRegret", "Regret"], ["topNOverlap", `Top${sb.topN} ovl`], ["n", "N"]];
+  return (
+    <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
+      <table style={{ borderCollapse: "collapse", width: "100%" }}>
+        <thead><tr>
+          <th style={{ ...th, textAlign: "left" }}>Role</th><th style={{ ...th, textAlign: "left" }}>Evaluation</th><th style={{ ...th, textAlign: "left" }}>Window</th>
+          <th style={th} title="Weighted Pearson — headline gap-fidelity (affine-invariant)">Pearson</th>
+          {cols.map(([, label]) => <th key={label} style={th}>{label}</th>)}
+        </tr></thead>
+        <tbody>
+          {sb.rows.map((r, i) => (
+            <tr key={i} style={{ background: rowTint(r.evaluation) }}>
+              <td style={{ ...td, textAlign: "left", textTransform: "capitalize" }}>{r.role}</td>
+              <td style={{ ...td, textAlign: "left" }}>{evalLabel[r.evaluation] ?? r.evaluation}</td>
+              <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 12 }}>{r.window}</td>
+              <td style={{ ...td, fontWeight: 700, background: pearColor(r.metrics.pearson) }}>{sig(r.metrics.pearson, 3)}</td>
+              {cols.map(([k]) => <td key={k} style={{ ...td, color: k === "n" ? C.sub : C.text }}>{k === "n" ? r.metrics[k] : sig(r.metrics[k] as number, k === "gapRmse" || k === "valueRegret" ? 4 : 3)}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ResidualPanel({ d, events }: { d: Record<string, EventDiag>; events: [string, string][] }) {
   return (
     <div style={{ marginTop: 16 }}>
@@ -153,6 +189,8 @@ export function ModelTrainingPage() {
   const [fitLoading, setFitLoading] = useState(false);
   const [minPA, setMinPA] = useState(1000);
   const [fitTab, setFitTab] = useState<FitTab>("woba_hitting");
+  const [sb, setSb] = useState<ScoreboardResp | null>(null);
+  const [sbLoading, setSbLoading] = useState(false);
 
   const load = (reload = false) => {
     setLoading(true); setErr(null);
@@ -166,7 +204,13 @@ export function ModelTrainingPage() {
       .then((r) => r.json()).then((d: FitResp) => setFit(d))
       .catch((e) => setErr(String(e))).finally(() => setFitLoading(false));
   };
-  useEffect(() => { load(); loadFit(1000); }, []);
+  const loadSb = (pa: number, reload = false) => {
+    setSbLoading(true);
+    fetch(`/api/training/scoreboard?minN=${pa}&k=5${reload ? "&reload=true" : ""}`)
+      .then((r) => r.json()).then((d: ScoreboardResp) => setSb(d))
+      .catch((e) => setErr(String(e))).finally(() => setSbLoading(false));
+  };
+  useEffect(() => { load(); loadFit(1000); loadSb(1000); }, []);
 
   // Pivot the cells into a league-row × (year/side)-column matrix for the table.
   const colKeys = data ? [...new Set(data.cells.map((c) => `${c.year} v${c.side}`))].sort() : [];
@@ -176,7 +220,7 @@ export function ModelTrainingPage() {
     <div style={{ width: "100%", maxWidth: 1100 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Model Training</h2>
-        <button onClick={() => { load(true); loadFit(minPA, true); }} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
+        <button onClick={() => { load(true); loadFit(minPA, true); loadSb(minPA, true); }} disabled={loading} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{loading ? "Loading…" : "Reload data"}</button>
         {data?.dir && <span style={{ fontSize: 13, color: C.sub }}>source: <code style={{ color: C.text }}>{data.dir}</code></span>}
       </div>
       <p style={{ margin: "0 0 16px", color: C.sub, fontSize: 13, maxWidth: 820 }}>
@@ -248,6 +292,22 @@ export function ModelTrainingPage() {
             {data.unparsedFiles.length > 0 && <> · <span style={{ color: "#f59e0b" }}>{data.unparsedFiles.length} file(s) skipped (unrecognized name): {data.unparsedFiles.join(", ")}</span></>}
           </p>
 
+          {/* Evaluation scoreboard — out-of-sample fidelity for the bake-off baseline */}
+          <h3 style={{ margin: "22px 0 8px", fontSize: 14 }}>Evaluation scoreboard {sbLoading && <span style={{ fontSize: 12, color: C.sub }}>· computing…</span>}</h3>
+          {sb && !sb.available && <p style={{ color: "#f87171", fontSize: 13 }}>Scoreboard unavailable: {sb.error}</p>}
+          {sb?.scoreboard && <>
+            <ScoreboardView sb={sb.scoreboard} />
+            <p style={{ margin: "8px 0 0", fontSize: 11, color: C.sub, maxWidth: 820 }}>
+              Out-of-sample fidelity of the log-linear baseline (the bake-off compares candidate forms here).
+              <b style={{ color: C.text }}> Pearson</b> is the headline — affine-invariant, so it rewards preserving
+              relative gaps, not hitting exact wOBA (a uniform shift/scale doesn't change the roster). <b style={{ color: C.text }}>R²</b>
+              {" "}is diagnostic: R² ≪ Pearson² means harmless level bias. <b style={{ color: C.text }}>Regret</b> = actual-wOBA shortfall
+              if you pick the model's top-{sb.scoreboard.topN}. <span style={{ color: "#eab308" }}>Forward</span> trains older→newest
+              (drift to new releases); <span style={{ color: "#60a5fa" }}>backward</span> trains newest→older (weaker cards / limited-pool,
+              tournament-like). Evaluated in wOBA space, upstream of softcaps/anchoring.
+            </p>
+          </>}
+
           {/* Trained models — all four parity-validated bit-for-bit vs the old trainer */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 8px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, fontSize: 14 }}>Trained models</h3>
@@ -256,7 +316,7 @@ export function ModelTrainingPage() {
               <input type="number" value={minPA} min={0} step={100} onChange={(e) => setMinPA(Number(e.target.value))}
                 style={{ ...inputStyle, width: 76, padding: "3px 6px", fontSize: 12 }} />
             </label>
-            <button onClick={() => loadFit(minPA)} disabled={fitLoading} style={{ ...inputStyle, cursor: "pointer" }}>{fitLoading ? "Fitting…" : "Refit"}</button>
+            <button onClick={() => { loadFit(minPA); loadSb(minPA); }} disabled={fitLoading} style={{ ...inputStyle, cursor: "pointer" }}>{fitLoading ? "Fitting…" : "Refit"}</button>
           </div>
 
           {fit && !fit.available && <p style={{ color: "#f87171", fontSize: 13 }}>Fit unavailable: {fit.error}</p>}
