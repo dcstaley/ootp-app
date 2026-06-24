@@ -61,10 +61,12 @@ export function defaultWindow(years: number[]): number[] {
 /**
  * Scoreboard for all four models (woba/basic × hit/pitch), grouped by model+role:
  *   • in-sample + k-fold CV on the SELECTED training window (default: recent 2yr).
- *   • forward (older→newest) + backward (newest→older) out-of-time across ALL years
- *     (temporal transfer is a property of the data, independent of the live window).
- * Backward = train newest → test older: stresses weaker cards / limited-pool
- * (tournament-like) conditions, per the user.
+ *   • forward + backward out-of-time, BOTH training on 2 years → testing on 1 (so
+ *     neither direction is hobbled by a single-year fit, which would overfit flexible
+ *     forms): forward trains the 2 oldest → tests newest (extrapolate UP to new
+ *     elite cards); backward trains the 2 newest → tests oldest (extrapolate DOWN to
+ *     weaker / limited-pool cards, the tournament-like stress). Needs ≥3 years for a
+ *     2yr train + held-out year; with only 2 years it falls back to 1yr↔1yr.
  */
 export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
   const { minN = 1000, topN = 26, k = 5 } = opts;
@@ -74,16 +76,19 @@ export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
   const models: [BakeoffModel, RoleSpec][] = [[wobaHitting, HITTER], [basicHitting, HITTER], [wobaPitching, PITCHER], [basicPitching, PITCHER]];
   const rows: ScoreRow[] = [];
 
-  const older = years.slice(0, -1), newest = years.length >= 2 ? [years[years.length - 1]!] : [];
-  const olderObs = newest.length ? loadWindow(root, older).observations : [];
-  const newestObs = newest.length ? loadWindow(root, newest).observations : [];
+  // Both OOT directions train on up to 2 adjacent years, test on the held-out edge year.
+  const n = years.length;
+  const fwdTrain = years.slice(Math.max(0, n - 3), n - 1), fwdTest = n >= 2 ? [years[n - 1]!] : [];
+  const backTrain = years.slice(1, Math.min(n, 3)), backTest = n >= 2 ? [years[0]!] : [];
+  const obsOf = (ys: number[]) => (ys.length ? loadWindow(root, ys).observations : []);
+  const fwdTrainObs = obsOf(fwdTrain), fwdTestObs = obsOf(fwdTest), backTrainObs = obsOf(backTrain), backTestObs = obsOf(backTest);
 
   for (const [model, spec] of models) {
     rows.push({ model: model.name, role: spec.role, evaluation: "in-sample", window: window.join("+"), metrics: inSample(winObs, model, spec, opts) });
     rows.push({ model: model.name, role: spec.role, evaluation: "cv", window: `${window.join("+")}, ${k}-fold`, metrics: crossValidate(winObs, model, spec, opts) });
-    if (newest.length) {
-      rows.push({ model: model.name, role: spec.role, evaluation: "forward", window: `${older.join("+")}→${newest[0]}`, metrics: outOfTime(olderObs, newestObs, model, spec, opts) });
-      rows.push({ model: model.name, role: spec.role, evaluation: "backward", window: `${newest[0]}→${older.join("+")}`, metrics: outOfTime(newestObs, olderObs, model, spec, opts) });
+    if (fwdTest.length) {
+      rows.push({ model: model.name, role: spec.role, evaluation: "forward", window: `${fwdTrain.join("+")}→${fwdTest[0]}`, metrics: outOfTime(fwdTrainObs, fwdTestObs, model, spec, opts) });
+      rows.push({ model: model.name, role: spec.role, evaluation: "backward", window: `${backTrain.join("+")}→${backTest[0]}`, metrics: outOfTime(backTrainObs, backTestObs, model, spec, opts) });
     }
   }
   return { minN, k, topN, years, trainWindow: window, rows };
