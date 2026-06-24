@@ -5,6 +5,8 @@ import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import { wPearson, wR2, gapDistortionRmse, wBias, topNOverlap, valueRegret, evalMetrics } from "../src/training/metrics.ts";
 import { foldOf, buildScoreboard } from "../src/training/evaluate.ts";
+import { analyzeResiduals } from "../src/training/residuals.ts";
+import { loadTrainingDir } from "../src/training/loader.ts";
 
 const ones = (n: number) => new Array(n).fill(1);
 
@@ -70,5 +72,24 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
   });
   it("in-sample is no worse than CV (CV is the honest, lower bound)", () => {
     expect(pick("woba", "hitter", "in-sample").pearson).toBeGreaterThanOrEqual(pick("woba", "hitter", "cv").pearson - 1e-9);
+  });
+});
+
+describe.skipIf(!existsSync(FIXTURE))("analyzeResiduals — leaderboards + archetypes + grid", () => {
+  const obs = loadTrainingDir(FIXTURE).observations;
+  const a = analyzeResiduals(obs, "hitter", 1000);
+  it("over-valued leaderboard is sorted above under-valued", () => {
+    expect(a.over.length).toBeGreaterThan(0);
+    expect(a.over[0]!.valErrPts).toBeGreaterThanOrEqual(a.under[0]!.valErrPts);
+  });
+  it("archetypes are named with weighted means", () => {
+    expect(a.archetypes.length).toBe(6);
+    expect(a.archetypes.some((b) => b.n > 0)).toBe(true);
+  });
+  it("the 2D grid is 3×3 and partitions every card", () => {
+    expect(a.grid.cells.length).toBe(3);
+    expect(a.grid.cells.every((row) => row.length === 3)).toBe(true);
+    const gridN = a.grid.cells.flat().reduce((s, c) => s + c.n, 0);
+    expect(gridN).toBe(a.n); // each qualifying card lands in exactly one (row,col) cell
   });
 });

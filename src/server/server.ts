@@ -33,6 +33,7 @@ import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitch
 import { buildScoreboard, defaultWindow, type Scoreboard } from "../training/evaluate.ts";
 import { HITTER, PITCHER, predictHitWoba, predictPitWoba, actualHitWoba, actualPitWoba } from "../training/bakeoff.ts";
 import { evalMetrics, type EvalMetrics } from "../training/metrics.ts";
+import { analyzeResiduals, type ResidualAnalysis } from "../training/residuals.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -512,7 +513,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
 let trainingCache: LoadedTraining | null = null;
 let trainingErr: string | null = null;
 const windowCache = new Map<string, TrainObs[]>(); // observations per year-window
-function clearTrainingCaches() { trainingCache = null; trainingErr = null; windowCache.clear(); fitCache = {}; sbCache = new Map(); }
+function clearTrainingCaches() { trainingCache = null; trainingErr = null; windowCache.clear(); fitCache = {}; sbCache = new Map(); residCache.clear(); }
 function getTraining(reload = false): LoadedTraining | null {
   if (reload) clearTrainingCaches();
   if (trainingCache) return trainingCache;
@@ -577,6 +578,17 @@ function getScoreboard(window: number[], minN: number, k: number, reload = false
   if (!sb) { try { sb = buildScoreboard(TRAINING_DIR, { window, minN, k }); sbCache.set(key, sb); } catch (e) { return { available: false, error: String(e) }; } }
   return { available: true, scoreboard: sb };
 }
+// Per-card residual analysis (over/under leaderboards + archetypes + grid) for the
+// wOBA model of a role, on a window. Cached by (role,window,minN).
+const residCache = new Map<string, ResidualAnalysis>();
+function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number, reload = false): { available: boolean; error?: string; residuals?: ResidualAnalysis } {
+  if (reload) residCache.clear();
+  if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
+  const key = `${role}|${window.join(",")}|${minN}`;
+  let r = residCache.get(key);
+  if (!r) { try { r = { ...analyzeResiduals(windowObs(window), role, minN), window }; residCache.set(key, r); } catch (e) { return { available: false, error: String(e) }; } }
+  return { available: true, residuals: r };
+}
 
 // Precompute the default tournament so first paint is instant.
 scoredFor(DEFAULT_TOURNAMENT_ID);
@@ -631,6 +643,11 @@ const server = createServer(async (req, res) => {
     const minN = Math.max(0, Number(u.searchParams.get("minN") ?? 1000) || 1000);
     const k = Math.min(20, Math.max(2, Number(u.searchParams.get("k") ?? 5) || 5));
     return json(res, getScoreboard(parseYears(u.searchParams.get("years")), minN, k, u.searchParams.get("reload") === "true"));
+  }
+  if (method === "GET" && url === "/api/training/residuals") {
+    const role = u.searchParams.get("role") === "pitcher" ? "pitcher" : "hitter";
+    const minN = Math.max(0, Number(u.searchParams.get("minN") ?? 1000) || 1000);
+    return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
