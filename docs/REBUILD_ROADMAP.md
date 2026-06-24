@@ -693,6 +693,23 @@ Committed + pushed; 81 tests green; parity bit-identical; src + web typecheck cl
 - **Next:** port `trainWobaPitching` + the two basic models (same oracle), then `residualBinReport`
   (residual bins by weighted volume + recommended softcaps), then the D3 bake-off.
 
+**Update (2026-06-24g) — harness refinements + "where the model misses".** Live fit + scoreboard
+in-sample/CV now run on a SELECTABLE year window (default recent 2yr; page has a year selector) — all-years
+was wrong given drift. wOBA models report assembled-wOBA fidelity (a "→ wOBA" diag row). Scoreboard runs
+ALL FOUR models (woba+basic × hit/pitch) with a Model column (basic predicts a score affine in wOBA →
+inverted for comparability; woba-hitter CV Pearson 0.86 beats basic 0.80; pitchers ~tied). OOT made
+symmetric: BOTH forward (2 oldest→newest) and backward (2 newest→oldest) train on 2 years (backward had
+been 1yr-train). gap RMSE + Regret shown as wOBA POINTS (×1000) for readability. **Bug fixed:** basic
+models clamp a negative intercept to 0 (parity quirk) — that fold-dependent shift corrupted pooled CV
+(basic CV Pearson had collapsed to 0.04); `clampIntercept=false` for predictive eval. **"Where the model
+misses"** (`src/training/residuals.ts`, `/api/training/residuals`): per-card valuation-error
+over/under-prediction leaderboards + named card-shape ARCHETYPE buckets + a 2D rating-pair interaction GRID
+(targets extremes + interactions within the model's OWN ratings, NOT external covariates per the user).
+Shows the additive model over-values high-BABIP/low-POW contact (+3.8pts) and under-values high-POW
+(−1.5). 104 tests. **Remaining extras:** inter-model disagreement (most-divergently-modeled cards),
+drift tracking, bootstrap CIs + minPA/weight sensitivity, null-baseline row, paired-fold significance —
+THEN candidate model FORMS behind the seam, THEN softcaps' fate.
+
 **Update (2026-06-24f) — evaluation harness (bake-off core) + multi-year data.** Training data moved to
 `League Files/` (per-year folders, gitignored; grows weekly) — loader recurses + `loadWindow(root, years)`,
 handles the 2039 year-first filename format, canonicalizes league names (strip spaces). Committed
