@@ -82,9 +82,10 @@ describe.skipIf(!existsSync(FIXTURE))("analyzeResiduals — leaderboards + arche
     expect(a.over.length).toBeGreaterThan(0);
     expect(a.over[0]!.valErrPts).toBeGreaterThanOrEqual(a.under[0]!.valErrPts);
   });
-  it("archetypes are named with weighted means", () => {
-    expect(a.archetypes.length).toBe(6);
-    expect(a.archetypes.some((b) => b.n > 0)).toBe(true);
+  it("archetypes (corners + balanced + standout) carry weighted mean ± spread", () => {
+    expect(a.archetypes.length).toBe(8); // 6 corners + Balanced + One standout
+    expect(a.archetypes.map((b) => b.name)).toContain("Balanced (average)");
+    expect(a.archetypes.some((b) => b.n > 0 && b.stdValErrPts >= 0)).toBe(true);
   });
   it("a 2D grid exists for every rating pair, 3×3, partitioning every card", () => {
     expect(a.grids.length).toBe(6); // C(4,2) pairs of the 4 core ratings

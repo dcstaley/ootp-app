@@ -15,7 +15,7 @@ export function foldOf(key: string, k: number): number {
   return (h >>> 0) % k;
 }
 
-interface EvalOpts { minN?: number; topN?: number; k?: number; window?: number[] }
+interface EvalOpts { minN?: number; topN?: number; k?: number; window?: number[]; includeVariants?: boolean }
 
 /** k-fold CV: pooled out-of-sample predictions → one metric bundle. */
 export function crossValidate(obs: TrainObs[], model: BakeoffModel, spec: RoleSpec, opts: EvalOpts = {}): EvalMetrics {
@@ -69,10 +69,11 @@ export function defaultWindow(years: number[]): number[] {
  *     2yr train + held-out year; with only 2 years it falls back to 1yr↔1yr.
  */
 export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
-  const { minN = 1000, topN = 26, k = 5 } = opts;
+  const { minN = 1000, topN = 26, k = 5, includeVariants = true } = opts;
+  const vf = (o: TrainObs) => includeVariants || !o.variant;
   const years = availableYears(root);
   const window = opts.window?.length ? opts.window : defaultWindow(years);
-  const winObs = loadWindow(root, window).observations;
+  const winObs = loadWindow(root, window).observations.filter(vf);
   const models: [BakeoffModel, RoleSpec][] = [[wobaHitting, HITTER], [basicHitting, HITTER], [wobaPitching, PITCHER], [basicPitching, PITCHER]];
   const rows: ScoreRow[] = [];
 
@@ -80,7 +81,7 @@ export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
   const n = years.length;
   const fwdTrain = years.slice(Math.max(0, n - 3), n - 1), fwdTest = n >= 2 ? [years[n - 1]!] : [];
   const backTrain = years.slice(1, Math.min(n, 3)), backTest = n >= 2 ? [years[0]!] : [];
-  const obsOf = (ys: number[]) => (ys.length ? loadWindow(root, ys).observations : []);
+  const obsOf = (ys: number[]) => (ys.length ? loadWindow(root, ys).observations.filter(vf) : []);
   const fwdTrainObs = obsOf(fwdTrain), fwdTestObs = obsOf(fwdTest), backTrainObs = obsOf(backTrain), backTestObs = obsOf(backTest);
 
   for (const [model, spec] of models) {

@@ -15,12 +15,12 @@
 import type { TrainObs } from "./loader.ts";
 import { HITTER, PITCHER, wobaHitting, wobaPitching, type RoleSpec, type BakeoffModel } from "./bakeoff.ts";
 
-export interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number }
-export interface Bucket { name: string; desc: string; n: number; meanValErrPts: number; sumVol: number; members: CardResidual[] }
+export interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number; ratings: Record<string, number> }
+export interface Bucket { name: string; desc: string; n: number; meanValErrPts: number; stdValErrPts: number; sumVol: number; members: CardResidual[] }
 export interface ResidGrid { row: string; col: string; cells: { n: number; meanValErrPts: number; sumVol: number }[][] }
 export interface ResidualAnalysis {
-  role: "hitter" | "pitcher"; window: number[]; n: number; minN: number; includeVariants: boolean;
-  ratings: string[]; bands: string[];
+  role: "hitter" | "pitcher"; window: number[]; n: number; minN: number; includeVariants: boolean; weighted: boolean;
+  ratings: string[]; bands: string[]; thresholds: Record<string, [number, number]>;
   over: CardResidual[]; under: CardResidual[]; archetypes: Bucket[]; grids: ResidGrid[];
 }
 
@@ -33,6 +33,11 @@ function terciles(vals: number[]): [number, number] {
 }
 const band = (v: number, t: [number, number]): Band => (v <= t[0] ? "L" : v >= t[1] ? "H" : "M");
 const wmean = (xs: number[], ws: number[]) => { const W = ws.reduce((s, w) => s + w, 0); return W < 1e-9 ? 0 : xs.reduce((s, x, i) => s + x * ws[i]!, 0) / W; };
+const wstd = (xs: number[], ws: number[]) => {
+  if (xs.length < 2) return 0;
+  const m = wmean(xs, ws), W = ws.reduce((s, w) => s + w, 0);
+  return W < 1e-9 ? 0 : Math.sqrt(xs.reduce((s, x, i) => s + ws[i]! * (x - m) ** 2, 0) / W);
+};
 
 interface RoleCfg {
   spec: RoleSpec; model: BakeoffModel;
@@ -63,35 +68,42 @@ const PIT_CFG: RoleCfg = {
   ],
 };
 
-export interface ResidOpts { includeVariants?: boolean; topK?: number }
+export interface ResidOpts { includeVariants?: boolean; topK?: number; weighted?: boolean }
 export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", minN = 1000, opts: ResidOpts = {}): ResidualAnalysis {
-  const { includeVariants = true, topK = 12 } = opts;
+  const { includeVariants = true, topK = 12, weighted = true } = opts;
   const cfg = role === "hitter" ? HIT_CFG : PIT_CFG;
   const ratingNames = Object.keys(cfg.ratings);
   const qual = obs.filter((o) => cfg.spec.qualifies(o, minN) && (includeVariants || !o.variant));
   const params = cfg.model.fit(qual);
   const pred = cfg.model.predict(params, qual);
-  const w = qual.map((o) => cfg.spec.weight(o));
+  // Aggregation weight: PA^0.75/BF^0.75 (matches the fit) or 1 (each card once).
+  const ew = qual.map((o) => (weighted ? cfg.spec.weight(o) : 1));
   const cards: CardResidual[] = qual.map((o, i) => {
     const actual = cfg.spec.actualWoba(o);
     const valErr = (cfg.spec.higherBetter ? pred[i]! - actual : actual - pred[i]!) * 1000; // + = over-valued (pts)
-    return { name: o.name, cid: o.cid, variant: o.variant, side: o.side, pred: pred[i]!, actual, valErrPts: +valErr.toFixed(1), vol: Math.round(role === "hitter" ? o.hit.PA : o.pitch.BF) };
+    return { name: o.name, cid: o.cid, variant: o.variant, side: o.side, pred: pred[i]!, actual, valErrPts: +valErr.toFixed(1), vol: Math.round(role === "hitter" ? o.hit.PA : o.pitch.BF), ratings: Object.fromEntries(ratingNames.map((r) => [r, Math.round(cfg.ratings[r]!(o))])) };
   });
   const byErr = [...cards.keys()].sort((a, b) => cards[b]!.valErrPts - cards[a]!.valErrPts);
   const over = byErr.slice(0, topK).map((i) => cards[i]!);
   const under = byErr.slice(-topK).reverse().map((i) => cards[i]!);
 
-  // Band each card on every core rating (within-window terciles).
-  const ts: Record<string, [number, number]> = {};
-  for (const r of ratingNames) ts[r] = terciles(qual.map(cfg.ratings[r]!));
-  const bandsOf = qual.map((o) => { const b: Record<string, Band> = {}; for (const r of ratingNames) b[r] = band(cfg.ratings[r]!(o), ts[r]!); return b; });
+  // Band each card on every core rating (within-pool terciles).
+  const thresholds: Record<string, [number, number]> = {};
+  for (const r of ratingNames) { const [lo, hi] = terciles(qual.map(cfg.ratings[r]!)); thresholds[r] = [Math.round(lo), Math.round(hi)]; }
+  const bandsOf = qual.map((o) => { const b: Record<string, Band> = {}; for (const r of ratingNames) b[r] = band(cfg.ratings[r]!(o), thresholds[r]!); return b; });
 
-  const archetypes: Bucket[] = cfg.archetypes.map((a) => {
+  // Corner archetypes + "med"-based shapes (balanced / one standout) per the user.
+  const extra = [
+    { name: "Balanced (average)", desc: "every rating mid", match: (b: Record<string, Band>) => ratingNames.every((r) => b[r] === "M") },
+    { name: "One standout", desc: "one rating high, rest average (no lows)", match: (b: Record<string, Band>) => ratingNames.filter((r) => b[r] === "H").length === 1 && ratingNames.every((r) => b[r] !== "L") },
+  ];
+  const archetypes: Bucket[] = [...cfg.archetypes, ...extra].map((a) => {
     const idx = bandsOf.map((b, i) => (a.match(b) ? i : -1)).filter((i) => i >= 0);
     const members = idx.map((i) => cards[i]!).sort((x, y) => y.valErrPts - x.valErrPts);
+    const errs = idx.map((i) => cards[i]!.valErrPts), ws = idx.map((i) => ew[i]!);
     return {
       name: a.name, desc: a.desc, n: idx.length,
-      meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => w[i]!)).toFixed(1),
+      meanValErrPts: +wmean(errs, ws).toFixed(1), stdValErrPts: +wstd(errs, ws).toFixed(1),
       sumVol: idx.reduce((s, i) => s + cards[i]!.vol, 0), members,
     };
   });
@@ -102,10 +114,10 @@ export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", mi
     const row = ratingNames[a]!, col = ratingNames[b]!;
     const cells = BANDS.map((rb) => BANDS.map((cb) => {
       const idx = qual.map((_, i) => i).filter((i) => bandsOf[i]![row] === rb && bandsOf[i]![col] === cb);
-      return { n: idx.length, meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => w[i]!)).toFixed(1), sumVol: idx.reduce((s, i) => s + cards[i]!.vol, 0) };
+      return { n: idx.length, meanValErrPts: +wmean(idx.map((i) => cards[i]!.valErrPts), idx.map((i) => ew[i]!)).toFixed(1), sumVol: idx.reduce((s, i) => s + cards[i]!.vol, 0) };
     }));
     grids.push({ row, col, cells });
   }
 
-  return { role, window: [], n: qual.length, minN, includeVariants, ratings: ratingNames, bands: BANDS, over, under, archetypes, grids };
+  return { role, window: [], n: qual.length, minN, includeVariants, weighted, ratings: ratingNames, bands: BANDS, thresholds, over, under, archetypes, grids };
 }

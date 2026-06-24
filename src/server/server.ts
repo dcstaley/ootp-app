@@ -549,13 +549,13 @@ let sbCache = new Map<string, Scoreboard>(); // bake-off scoreboards, keyed by (
 // Fit all four models over the SELECTED YEAR WINDOW (default: recent 2yr, limiting
 // cross-year drift) at the given PA/BF threshold. Also computes each wOBA model's
 // assembled-wOBA fidelity (events → wOBA → vs actual), since wOBA is the bottom line.
-function getFit(window: number[], threshold: number, reload = false): { available: boolean; error?: string } & FitBag {
+function getFit(window: number[], threshold: number, includeVariants: boolean, reload = false): { available: boolean; error?: string } & FitBag {
   if (reload) clearTrainingCaches();
   if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
-  const key = `${window.join(",")}|${threshold}`;
+  const key = `${window.join(",")}|${threshold}|${includeVariants}`;
   if (fitCache.key !== key) {
     try {
-      const obs = windowObs(window);
+      const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
       const wh = trainWobaHitting(obs, threshold), wp = trainWobaPitching(obs, threshold);
       const hq = obs.filter((o) => HITTER.qualifies(o, threshold)), pq = obs.filter((o) => PITCHER.qualifies(o, threshold));
       fitCache = {
@@ -570,23 +570,23 @@ function getFit(window: number[], threshold: number, reload = false): { availabl
   return { available: true, ...fitCache };
 }
 // Bake-off scoreboard (in-sample + 5-fold CV + forward/backward OOT), cached by (window,minN,k).
-function getScoreboard(window: number[], minN: number, k: number, reload = false): { available: boolean; error?: string; scoreboard?: Scoreboard } {
+function getScoreboard(window: number[], minN: number, k: number, includeVariants: boolean, reload = false): { available: boolean; error?: string; scoreboard?: Scoreboard } {
   if (reload) sbCache = new Map();
   if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
-  const key = `${window.join(",")}|${minN}|${k}`;
+  const key = `${window.join(",")}|${minN}|${k}|${includeVariants}`;
   let sb = sbCache.get(key);
-  if (!sb) { try { sb = buildScoreboard(TRAINING_DIR, { window, minN, k }); sbCache.set(key, sb); } catch (e) { return { available: false, error: String(e) }; } }
+  if (!sb) { try { sb = buildScoreboard(TRAINING_DIR, { window, minN, k, includeVariants }); sbCache.set(key, sb); } catch (e) { return { available: false, error: String(e) }; } }
   return { available: true, scoreboard: sb };
 }
 // Per-card residual analysis (over/under leaderboards + archetypes + grid) for the
 // wOBA model of a role, on a window. Cached by (role,window,minN).
 const residCache = new Map<string, ResidualAnalysis>();
-function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number, includeVariants: boolean, reload = false): { available: boolean; error?: string; residuals?: ResidualAnalysis } {
+function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number, includeVariants: boolean, weighted: boolean, reload = false): { available: boolean; error?: string; residuals?: ResidualAnalysis } {
   if (reload) residCache.clear();
   if (!existsSync(TRAINING_DIR)) return { available: false, error: `training dir not found: ${TRAINING_DIR}` };
-  const key = `${role}|${window.join(",")}|${minN}|${includeVariants}`;
+  const key = `${role}|${window.join(",")}|${minN}|${includeVariants}|${weighted}`;
   let r = residCache.get(key);
-  if (!r) { try { r = { ...analyzeResiduals(windowObs(window), role, minN, { includeVariants }), window }; residCache.set(key, r); } catch (e) { return { available: false, error: String(e) }; } }
+  if (!r) { try { r = { ...analyzeResiduals(windowObs(window), role, minN, { includeVariants, weighted }), window }; residCache.set(key, r); } catch (e) { return { available: false, error: String(e) }; } }
   return { available: true, residuals: r };
 }
 
@@ -637,18 +637,21 @@ const server = createServer(async (req, res) => {
   }
   if (method === "GET" && url === "/api/training/fit") {
     const minPA = Math.max(0, Number(u.searchParams.get("minPA") ?? 1000) || 1000);
-    return json(res, getFit(parseYears(u.searchParams.get("years")), minPA, u.searchParams.get("reload") === "true"));
+    const includeVariants = u.searchParams.get("variants") !== "base";
+    return json(res, getFit(parseYears(u.searchParams.get("years")), minPA, includeVariants, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/training/scoreboard") {
     const minN = Math.max(0, Number(u.searchParams.get("minN") ?? 1000) || 1000);
     const k = Math.min(20, Math.max(2, Number(u.searchParams.get("k") ?? 5) || 5));
-    return json(res, getScoreboard(parseYears(u.searchParams.get("years")), minN, k, u.searchParams.get("reload") === "true"));
+    const includeVariants = u.searchParams.get("variants") !== "base";
+    return json(res, getScoreboard(parseYears(u.searchParams.get("years")), minN, k, includeVariants, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/training/residuals") {
     const role = u.searchParams.get("role") === "pitcher" ? "pitcher" : "hitter";
     const minN = Math.max(0, Number(u.searchParams.get("minN") ?? 1000) || 1000);
     const includeVariants = u.searchParams.get("variants") !== "base";
-    return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, includeVariants, u.searchParams.get("reload") === "true"));
+    const weighted = u.searchParams.get("weighted") !== "false";
+    return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, includeVariants, weighted, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
