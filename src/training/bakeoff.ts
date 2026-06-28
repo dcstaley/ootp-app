@@ -113,3 +113,18 @@ export const basicPitching: BakeoffModel = {
   fit: (train) => trainBasicPitching(train, 0, false).coefficients,
   predict: (params, test) => test.map((o) => predictBasicPitWoba(params as BasicPitchingCoeffs, o)),
 };
+
+// ── Scoreboard registry ─────────────────────────────────────────────────────────
+// A model's monotonicity/extrapolation gate status (forms only; baselines pass by
+// construction — log curves never turn over). `notes` lists the offending events.
+export interface GateStatus { status: "pass" | "warn"; notes: string[] }
+// One row-group on the scoreboard: a model+role, plus an optional gate evaluated on
+// the in-sample window fit (candidate forms set this; baselines leave it undefined).
+export interface BakeoffEntry { model: BakeoffModel; spec: RoleSpec; gate?: (params: unknown, obs: TrainObs[]) => GateStatus }
+
+// The four parity baselines. Candidate forms live in forms.ts (FORM_ENTRIES) and are
+// concatenated in evaluate.ts — keeping that dependency one-way (forms → bakeoff).
+export const BASE_ENTRIES: BakeoffEntry[] = [
+  { model: wobaHitting, spec: HITTER }, { model: basicHitting, spec: HITTER },
+  { model: wobaPitching, spec: PITCHER }, { model: basicPitching, spec: PITCHER },
+];

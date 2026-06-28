@@ -6,7 +6,8 @@
 import type { TrainObs } from "./loader.ts";
 import { loadWindow, availableYears } from "./loader.ts";
 import { evalMetrics, type EvalMetrics } from "./metrics.ts";
-import { type BakeoffModel, type RoleSpec, HITTER, PITCHER, wobaHitting, wobaPitching, basicHitting, basicPitching } from "./bakeoff.ts";
+import { type BakeoffModel, type RoleSpec, type BakeoffEntry, type GateStatus, BASE_ENTRIES } from "./bakeoff.ts";
+import { FORM_ENTRIES } from "./forms.ts";
 
 /** Deterministic fold assignment by observation key (FNV-1a hash → no RNG). */
 export function foldOf(key: string, k: number): number {
@@ -50,7 +51,7 @@ export function outOfTime(trainObs: TrainObs[], testObs: TrainObs[], model: Bake
   return evalMetrics(model.predict(params, te), te.map(spec.actualWoba), te.map(spec.weight), spec.higherBetter, topN);
 }
 
-export interface ScoreRow { model: string; role: "hitter" | "pitcher"; evaluation: string; window: string; metrics: EvalMetrics }
+export interface ScoreRow { model: string; role: "hitter" | "pitcher"; evaluation: string; window: string; metrics: EvalMetrics; gate?: GateStatus }
 export interface Scoreboard { minN: number; k: number; topN: number; years: number[]; trainWindow: number[]; rows: ScoreRow[] }
 
 /** Default live window = the most recent two years (limits cross-year drift). */
@@ -74,7 +75,10 @@ export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
   const years = availableYears(root);
   const window = opts.window?.length ? opts.window : defaultWindow(years);
   const winObs = loadWindow(root, window).observations.filter(vf);
-  const models: [BakeoffModel, RoleSpec][] = [[wobaHitting, HITTER], [basicHitting, HITTER], [wobaPitching, PITCHER], [basicPitching, PITCHER]];
+  // Baselines + candidate forms, grouped by role (each role's models adjacent for
+  // easy comparison): woba / basic / form… for hitters, then the same for pitchers.
+  const all: BakeoffEntry[] = [...BASE_ENTRIES, ...FORM_ENTRIES];
+  const models: BakeoffEntry[] = [...all.filter((e) => e.spec.role === "hitter"), ...all.filter((e) => e.spec.role === "pitcher")];
   const rows: ScoreRow[] = [];
 
   // Both OOT directions train on up to 2 adjacent years, test on the held-out edge year.
@@ -84,8 +88,16 @@ export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
   const obsOf = (ys: number[]) => (ys.length ? loadWindow(root, ys).observations.filter(vf) : []);
   const fwdTrainObs = obsOf(fwdTrain), fwdTestObs = obsOf(fwdTest), backTrainObs = obsOf(backTrain), backTestObs = obsOf(backTest);
 
-  for (const [model, spec] of models) {
-    rows.push({ model: model.name, role: spec.role, evaluation: "in-sample", window: window.join("+"), metrics: inSample(winObs, model, spec, opts) });
+  for (const { model, spec, gate } of models) {
+    // Gate is computed on the in-sample window fit (the curve's primary shape) and
+    // attached to the in-sample row only — OOT/CV rows refit on other data, so it
+    // would be misleading to repeat it there.
+    let gateStatus: GateStatus | undefined;
+    if (gate) {
+      const qual = winObs.filter((o) => spec.qualifies(o, minN));
+      if (qual.length >= 10) gateStatus = gate(model.fit(qual), qual);
+    }
+    rows.push({ model: model.name, role: spec.role, evaluation: "in-sample", window: window.join("+"), metrics: inSample(winObs, model, spec, opts), gate: gateStatus });
     rows.push({ model: model.name, role: spec.role, evaluation: "cv", window: `${window.join("+")}, ${k}-fold`, metrics: crossValidate(winObs, model, spec, opts) });
     if (fwdTest.length) {
       rows.push({ model: model.name, role: spec.role, evaluation: "forward", window: `${fwdTrain.join("+")}→${fwdTest[0]}`, metrics: outOfTime(fwdTrainObs, fwdTestObs, model, spec, opts) });

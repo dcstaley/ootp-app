@@ -47,7 +47,8 @@ interface FitResp {
   wobaDiagHit?: SbMetrics; wobaDiagPit?: SbMetrics; // assembled-wOBA fidelity (in-sample)
 }
 interface SbMetrics { n: number; pearson: number; r2: number; spearman: number; gapRmse: number; rmse: number; mae: number; bias: number; topNOverlap: number; valueRegret: number; topN: number }
-interface ScoreRow { model: string; role: "hitter" | "pitcher"; evaluation: string; window: string; metrics: SbMetrics }
+interface GateStatus { status: "pass" | "warn"; notes: string[] }
+interface ScoreRow { model: string; role: "hitter" | "pitcher"; evaluation: string; window: string; metrics: SbMetrics; gate?: GateStatus }
 interface Scoreboard { minN: number; k: number; topN: number; years: number[]; trainWindow: number[]; rows: ScoreRow[] }
 interface ScoreboardResp { available: boolean; error?: string; scoreboard?: Scoreboard }
 
@@ -164,6 +165,7 @@ function ScoreboardView({ sb }: { sb: Scoreboard }) {
           <th style={{ ...th, textAlign: "left" }}>Model</th><th style={{ ...th, textAlign: "left" }}>Role</th><th style={{ ...th, textAlign: "left" }}>Evaluation</th><th style={{ ...th, textAlign: "left" }}>Window</th>
           <th style={th} title="Weighted Pearson — headline gap-fidelity (affine-invariant)">Pearson</th>
           {cols.map(([k, label]) => <th key={label} style={th} title={PTS.has(k) ? "wOBA points (×1000)" : undefined}>{label}{PTS.has(k) ? " (pts)" : ""}</th>)}
+          <th style={th} title="Monotonicity / extrapolation gate (in-sample fit): ✓ curve never turns over; ⚠ a per-event curve reverses direction in-domain">Gate</th>
         </tr></thead>
         <tbody>
           {sb.rows.map((r, i) => (
@@ -174,6 +176,7 @@ function ScoreboardView({ sb }: { sb: Scoreboard }) {
               <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 12 }}>{r.window}</td>
               <td style={{ ...td, fontWeight: 700, background: pearColor(r.metrics.pearson) }}>{sig(r.metrics.pearson, 3)}</td>
               {cols.map(([k]) => <td key={k} style={{ ...td, color: k === "n" ? C.sub : C.text }}>{fmtCell(k, r.metrics[k] as number)}</td>)}
+              <td style={{ ...td, fontWeight: 700, color: !r.gate ? C.sub : r.gate.status === "warn" ? "#eab308" : "#86efac" }} title={r.gate?.notes.join("; ") || undefined}>{!r.gate ? "" : r.gate.status === "warn" ? "⚠" : "✓"}</td>
             </tr>
           ))}
         </tbody>
