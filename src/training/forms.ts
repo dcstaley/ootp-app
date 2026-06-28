@@ -70,8 +70,8 @@ function fitEvent(curve: Curve, vals: number[], y: number[], w: number[]): Fitte
 export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve }
 export interface FittedHit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: number[]; xbh: FittedEvent }
 
-export function fitHitForm(form: HitForm, obs: TrainObs[]): FittedHit {
-  const w = obs.map((p) => Math.pow(p.hit.PA, 0.75));
+export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): FittedHit {
+  const w = obs.map((p) => Math.pow(p.hit.PA, fitExp));
   const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.hit.PA, 1)) * 600);
   const BB = per600((p) => p.hit.BB), K = per600((p) => p.hit.K), HR = per600((p) => p.hit.HR);
   const H = per600((p) => p.hit.H), XBH = per600((p) => p.hit.b2 + p.hit.b3);
@@ -108,8 +108,8 @@ export function predictHitForm(m: FittedHit, o: TrainObs): number {
 export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve }
 export interface FittedPit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: number[] }
 
-export function fitPitForm(form: PitForm, obs: TrainObs[]): FittedPit {
-  const w = obs.map((p) => Math.pow(p.pitch.BF, 0.75));
+export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): FittedPit {
+  const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));
   const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.pitch.BF, 1)) * 600);
   const BB = per600((p) => p.pitch.BB), K = per600((p) => p.pitch.K), HR = per600((p) => p.pitch.HR);
   const nHH = per600((p) => p.pitch.b1 + p.pitch.b2 + p.pitch.b3);
