@@ -28,7 +28,7 @@ import {
 
 const DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"].find((d) => d && existsSync(d))!;
 const OLD = loadWindow(DIR, [2032, 2033]).observations;
-const NEW = loadWindow(DIR, [2037, 2038, 2039]).observations; // pool 3yr to cut small-N noise
+const NEW = loadWindow(DIR, [2038, 2039]).observations; // most recent 2yr (tight contemporary pool)
 const MIN_N = 600, TOPN = 26;
 
 type Mode = "H0 raw" | "H1 level" | "H2 zscore";
@@ -99,7 +99,7 @@ function table(title: string, trainObs: TrainObs[], testObs: TrainObs[], role: R
   }
 }
 
-console.log(`pool-transfer — OLD=2032+2033 vs NEW=2037+2038+2039, minN=${MIN_N}, eval weight ^0.75 (fixed); values = weighted Pearson`);
+console.log(`pool-transfer — OLD=2032+2033 vs NEW=2038+2039, minN=${MIN_N}, eval weight ^0.75 (fixed); values = weighted Pearson`);
 table("HITTERS  OLD→NEW (extrapolate up)", OLD, NEW, HITTER, true);
 table("HITTERS  NEW→OLD (extrapolate down)", NEW, OLD, HITTER, true);
 table("PITCHERS OLD→NEW (extrapolate up)", OLD, NEW, PITCHER, false);
