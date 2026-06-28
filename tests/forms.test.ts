@@ -8,7 +8,7 @@ import { existsSync } from "node:fs";
 import { loadWindow } from "../src/training/loader.ts";
 import { wobaHitting, wobaPitching } from "../src/training/bakeoff.ts";
 import {
-  LOG_HIT, LOG_PIT, RAWPOLY_HIT, RAWPOLY_PIT,
+  LOG_HIT, LOG_PIT, RAWPOLY_HIT, RAWPOLY_PIT, LOGCUBIC_HIT, RAWCUBIC_HIT,
   hitFormModel, pitFormModel, fitHitForm, fitPitForm, gateHit, gatePit,
 } from "../src/training/forms.ts";
 
@@ -43,8 +43,14 @@ describe.skipIf(!existsSync(DIR))("forms — log curve reproduces the parity wob
     expect(maxDiff).toBeGreaterThan(1e-4); // the HR/XBH curves must change something
   });
 
-  it("gate runs and returns a defined status for both roles", () => {
-    expect(["pass", "warn"]).toContain(gateHit(fitHitForm(RAWPOLY_HIT, hitObs), hitObs).status);
+  it("cubic-in-log (#1) departs from the log baseline (higher-order log terms bite)", () => {
+    const log = hitFormModel(LOG_HIT), cub = hitFormModel(LOGCUBIC_HIT);
+    const lp = log.predict(log.fit(hitObs), hitObs), cp = cub.predict(cub.fit(hitObs), hitObs);
+    expect(Math.max(...lp.map((p, i) => Math.abs(p - cp[i]!)))).toBeGreaterThan(1e-4);
+  });
+
+  it("gate runs and returns a defined status for every candidate form", () => {
+    for (const m of [RAWPOLY_HIT, LOGCUBIC_HIT, RAWCUBIC_HIT]) expect(["pass", "warn"]).toContain(gateHit(fitHitForm(m, hitObs), hitObs).status);
     expect(["pass", "warn"]).toContain(gatePit(fitPitForm(RAWPOLY_PIT, pitObs), pitObs).status);
   });
 });

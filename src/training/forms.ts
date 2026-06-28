@@ -28,15 +28,21 @@ const W_BB = 0.704, W_1B = 0.8992, W_XBH = 1.29, W_HR = 2.0759, HBP = 6;
 
 // ── Curve = the per-event basis choice ─────────────────────────────────────────
 export type Curve =
-  | { kind: "log" }                          // [1, ln(max(r,1))]  — current parity form
-  | { kind: "rawpoly"; degree: 1 | 2 | 3 };  // [1, u, u², …] with u = (r − μ)/σ (z-scored)
+  | { kind: "log" }                          // [1, ln(max(r,1))] — parity baseline, NOT z-scored
+  | { kind: "rawpoly"; degree: 1 | 2 | 3 }   // [1, u, u², …] with u = z(r)        — raw curvature
+  | { kind: "logpoly"; degree: 2 | 3 };      // [1, u, u², …] with u = z(ln r)      — higher-order log
 
 interface FittedEvent { beta: number[]; mu: number; sd: number; curve: Curve }
 
-/** Design row for one rating value under a curve (uses stored μ/σ for rawpoly). */
+// The pre-z-score base value for a polynomial curve: ln(rating) for logpoly, the
+// raw rating for rawpoly. (log is handled separately — kept exactly [1, ln r] so it
+// stays bit-identical to the parity assembly.)
+const baseVal = (curve: Curve, v: number) => (curve.kind === "logpoly" ? ln1(v) : v);
+
+/** Design row for one rating value under a curve (uses stored μ/σ for poly curves). */
 function row(curve: Curve, v: number, mu: number, sd: number): number[] {
   if (curve.kind === "log") return [1, ln1(v)];
-  const u = sd > 1e-9 ? (v - mu) / sd : 0;
+  const u = sd > 1e-9 ? (baseVal(curve, v) - mu) / sd : 0;
   const out = [1];
   for (let d = 1; d <= curve.degree; d++) out.push(u ** d);
   return out;
@@ -44,14 +50,15 @@ function row(curve: Curve, v: number, mu: number, sd: number): number[] {
 /** Fitted per-event rate at a rating value, clamped ≥ 0 (matches the chain). */
 const rate = (e: FittedEvent, v: number) => Math.max(dot(e.beta, row(e.curve, v, e.mu, e.sd)), 0);
 
-/** WLS-fit one event's curve on (rating → per-600 rate); weighted μ/σ for rawpoly. */
+/** WLS-fit one event's curve on (rating → per-600 rate); weighted μ/σ z-scores the
+ *  (raw or log) base term for conditioning — fitted function value is unchanged. */
 function fitEvent(curve: Curve, vals: number[], y: number[], w: number[]): FittedEvent {
   let mu = 0, sd = 1;
-  if (curve.kind === "rawpoly") {
+  if (curve.kind !== "log") {
     const W = w.reduce((s, x) => s + x, 0);
-    mu = vals.reduce((s, v, i) => s + w[i]! * v, 0) / W;
-    const varr = vals.reduce((s, v, i) => s + w[i]! * (v - mu) ** 2, 0) / W;
-    sd = Math.sqrt(varr) || 1;
+    const b = vals.map((v) => baseVal(curve, v));
+    mu = b.reduce((s, v, i) => s + w[i]! * v, 0) / W;
+    sd = Math.sqrt(b.reduce((s, v, i) => s + w[i]! * (v - mu) ** 2, 0) / W) || 1;
   }
   const X = vals.map((v) => row(curve, v, mu, sd));
   return { beta: wls(X, y, w), mu, sd, curve };
@@ -176,12 +183,36 @@ export function pitFormModel(form: PitForm): BakeoffModel {
 // All-log forms — identical to the parity woba models; used only by the regression test.
 export const LOG_HIT: HitForm = { name: "woba", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "log" }, xbh: { kind: "log" } };
 export const LOG_PIT: PitForm = { name: "woba", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "log" } };
-// Candidate #2 — targeted raw-polynomial.
+
+// Candidate #2 — targeted raw-polynomial (only the events the residuals implicate).
 export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "rawpoly", degree: 2 }, xbh: { kind: "rawpoly", degree: 2 } };
 export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "rawpoly", degree: 2 } };
 
+// Uniform-curve forms apply one curve to every rating-driven event (BB,K,HR + XBH
+// for hitters), holding the chain fixed — the "is log the right curve" comparison.
+// H stays log: its second input (BIP) is itself derived from the other predicted
+// events, so polynomializing it is unstable, and the residuals don't implicate babip.
+const uHit = (name: string, c: Curve): HitForm => ({ name, bb: c, k: c, hr: c, xbh: c });
+const uPit = (name: string, c: Curve): PitForm => ({ name, bb: c, k: c, hr: c });
+// Candidate #1 — cubic-in-log on every event (the artifact's unused eye2/pow2/… slots).
+export const LOGCUBIC_HIT = uHit("woba·logcubic", { kind: "logpoly", degree: 3 });
+export const LOGCUBIC_PIT = uPit("woba·logcubic", { kind: "logpoly", degree: 3 });
+// The raw curve family vs the log baseline (raw-linear = no log, no curvature; quad/cubic add it).
+export const RAWLIN_HIT = uHit("woba·rawlin", { kind: "rawpoly", degree: 1 });
+export const RAWLIN_PIT = uPit("woba·rawlin", { kind: "rawpoly", degree: 1 });
+export const RAWQUAD_HIT = uHit("woba·rawquad", { kind: "rawpoly", degree: 2 });
+export const RAWQUAD_PIT = uPit("woba·rawquad", { kind: "rawpoly", degree: 2 });
+export const RAWCUBIC_HIT = uHit("woba·rawcubic", { kind: "rawpoly", degree: 3 });
+export const RAWCUBIC_PIT = uPit("woba·rawcubic", { kind: "rawpoly", degree: 3 });
+
+const hitEntry = (f: HitForm): BakeoffEntry => ({ model: hitFormModel(f), spec: HITTER, gate: (p, obs) => gateHit(p as FittedHit, obs) });
+const pitEntry = (f: PitForm): BakeoffEntry => ({ model: pitFormModel(f), spec: PITCHER, gate: (p, obs) => gatePit(p as FittedPit, obs) });
+
 /** Scoreboard entries contributed by candidate forms (appended to the baselines). */
 export const FORM_ENTRIES: BakeoffEntry[] = [
-  { model: hitFormModel(RAWPOLY_HIT), spec: HITTER, gate: (p, obs) => gateHit(p as FittedHit, obs) },
-  { model: pitFormModel(RAWPOLY_PIT), spec: PITCHER, gate: (p, obs) => gatePit(p as FittedPit, obs) },
+  hitEntry(RAWPOLY_HIT), pitEntry(RAWPOLY_PIT),     // #2 targeted raw-poly
+  hitEntry(LOGCUBIC_HIT), pitEntry(LOGCUBIC_PIT),   // #1 cubic-in-log
+  hitEntry(RAWLIN_HIT), pitEntry(RAWLIN_PIT),       // curve family — is log the right curve?
+  hitEntry(RAWQUAD_HIT), pitEntry(RAWQUAD_PIT),
+  hitEntry(RAWCUBIC_HIT), pitEntry(RAWCUBIC_PIT),
 ];
