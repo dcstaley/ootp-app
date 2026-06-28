@@ -11,6 +11,7 @@ import {
   LOG_HIT, LOG_PIT, RAWPOLY_HIT, RAWPOLY_PIT, LOGCUBIC_HIT, RAWCUBIC_HIT,
   hitFormModel, pitFormModel, fitHitForm, fitPitForm, gateHit, gatePit,
   fitHitGLM, predictHitGLM, fitPitGLM, gateGLMHit, gateGLMPit,
+  fitHitSeq, predictHitSeq, fitPitSeq, gateSeqHit, gateSeqPit,
 } from "../src/training/forms.ts";
 import { actualHitWoba } from "../src/training/bakeoff.ts";
 import { wPearson } from "../src/training/metrics.ts";
@@ -73,5 +74,17 @@ describe.skipIf(!existsSync(DIR))("forms — log curve reproduces the parity wob
     const pois = fitHitGLM(hitObs, false), nb = fitHitGLM(hitObs, true);
     const dp = pois.hr.reduce((s, b, j) => s + Math.abs(b - nb.hr[j]!), 0);
     expect(dp).toBeGreaterThan(0); // θ is finite for overdispersed counts → coefficients move
+  });
+
+  it("sequential conditional (#6): logistic IRLS fits, predicts sane wOBA, passes the gate", () => {
+    const m = fitHitSeq(hitObs);
+    expect(Object.values(m).flat().every((b) => Number.isFinite(b))).toBe(true);
+    const pred = hitObs.map((o) => predictHitSeq(m, o));
+    expect(pred.every((w) => w > 0.15 && w < 0.6)).toBe(true); // wOBA in a plausible band
+    const r = wPearson(pred, hitObs.map(actualHitWoba), hitObs.map((o) => Math.pow(o.hit.PA, 0.75)));
+    expect(r).toBeGreaterThan(0.7);
+    // every stage is a monotone logit (logistic of log-linear) → gate passes both roles
+    expect(gateSeqHit(m, hitObs).status).toBe("pass");
+    expect(gateSeqPit(fitPitSeq(pitObs), pitObs).status).toBe("pass");
   });
 });

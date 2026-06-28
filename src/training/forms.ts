@@ -297,6 +297,113 @@ export function gateGLMPit(m: GLMPitParams, obs: TrainObs[]): GateStatus {
 const glmHitModel = (name: string, nb: boolean): BakeoffModel => ({ name, role: "hitter", fit: (t) => fitHitGLM(t, nb), predict: (p, test) => test.map((o) => predictHitGLM(p as GLMHitParams, o)) });
 const glmPitModel = (name: string, nb: boolean): BakeoffModel => ({ name, role: "pitcher", fit: (t) => fitPitGLM(t, nb), predict: (p, test) => test.map((o) => predictPitGLM(p as GLMPitParams, o)) });
 
+// ── Sequential conditional (candidate #6): a conditional tree over a PA ──────────
+// Each plate appearance walks an outcome tree — BB, then (given no BB) K, then
+// (given contact) HR, then (given a ball in play) a non-HR hit, then (given a hit)
+// XBH — so probabilities are CONDITIONAL, multiply down the chain, and a stage's
+// count can never exceed its denominator (the "BIP is derived" bookkeeping is free).
+// This re-architects the prior art (recalibrate_pt_model.py) which had the right
+// tree but three flaws: cubic-on-RAW-ratings (overfits / non-monotone — the bake-off
+// confirmed), linearized-logit LEAST-SQUARES instead of a real binomial GLM, and
+// denominators built from PREDICTED stage probabilities (propagates model error).
+// Here each stage is a proper binomial logistic GLM fit by IRLS, with denominators
+// from ACTUAL counts, and a log-linear logit (monotone) — isolating the STRUCTURAL
+// question (conditional tree vs additive chain) from the curve question.
+
+const logistic = (e: number) => 1 / (1 + Math.exp(-Math.max(Math.min(e, 30), -30)));
+const probAt = (beta: number[], r: number) => logistic(beta[0]! + beta[1]! * ln1(r));
+
+/** Binomial logistic GLM (logit link) by IRLS: fit logit p = β·[1, ln rating] to
+ *  successes y out of trials n. Proper likelihood weighting (W = n·p·(1−p)). */
+function logitFit(rating: number[], y: number[], n: number[], iters = 60): number[] {
+  const X = rating.map((r) => [1, ln1(r)]);
+  const sy = y.reduce((s, v) => s + v, 0), sn = n.reduce((s, v) => s + v, 0);
+  const pbar = Math.min(Math.max(sy / Math.max(sn, 1), 1e-4), 1 - 1e-4);
+  const beta = [Math.log(pbar / (1 - pbar)), 0];
+  for (let it = 0; it < iters; it++) {
+    const p = X.map((x) => logistic(dot(beta, x)));
+    const W = p.map((pi, i) => Math.max(n[i]! * pi * (1 - pi), 1e-9));
+    const z = X.map((x, i) => dot(beta, x) + (y[i]! - n[i]! * p[i]!) / W[i]!);
+    const next = wls(X, z, W);
+    const delta = Math.abs(next[0]! - beta[0]!) + Math.abs(next[1]! - beta[1]!);
+    beta[0] = next[0]!; beta[1] = next[1]!;
+    if (delta < 1e-11) break;
+  }
+  return beta;
+}
+
+export interface SeqHitParams { bb: number[]; k: number[]; hr: number[]; h: number[]; xbh: number[] }
+export function fitHitSeq(obs: TrainObs[]): SeqHitParams {
+  // Per-stage (successes y, trials n) from ACTUAL counts; clamp n ≥ y for the binomial.
+  const PA = obs.map((o) => o.hit.PA), BB = obs.map((o) => o.hit.BB), HP = obs.map((o) => o.hit.HP);
+  const K = obs.map((o) => o.hit.K), HR = obs.map((o) => o.hit.HR);
+  const Hn = obs.map((o) => Math.max(o.hit.H - o.hit.HR, 0)), XBH = obs.map((o) => o.hit.b2 + o.hit.b3);
+  const nK = obs.map((_, i) => Math.max(PA[i]! - BB[i]! - HP[i]!, K[i]!));
+  const nHR = obs.map((_, i) => Math.max(nK[i]! - K[i]!, HR[i]!));
+  const nH = obs.map((_, i) => Math.max(nHR[i]! - HR[i]!, Hn[i]!));
+  return {
+    bb: logitFit(obs.map((o) => o.ratings.hit.eye), BB, PA),
+    k: logitFit(obs.map((o) => o.ratings.hit.kRat), K, nK),
+    hr: logitFit(obs.map((o) => o.ratings.hit.pow), HR, nHR),
+    h: logitFit(obs.map((o) => o.ratings.hit.babip), Hn, nH),
+    xbh: logitFit(obs.map((o) => o.ratings.hit.gap), XBH, Hn.map((v, i) => Math.max(v, XBH[i]!))),
+  };
+}
+export function predictHitSeq(m: SeqHitParams, o: TrainObs): number {
+  const r = o.ratings.hit, HBP = 6;
+  const bb = 600 * probAt(m.bb, r.eye);
+  const n2 = Math.max(600 - bb - HBP, 0), k = n2 * probAt(m.k, r.kRat);
+  const n3 = Math.max(n2 - k, 0), hr = n3 * probAt(m.hr, r.pow);
+  const n4 = Math.max(n3 - hr, 0), hn = n4 * probAt(m.h, r.babip);
+  const xbh = hn * probAt(m.xbh, r.gap), oneB = Math.max(hn - xbh, 0);
+  return (W_BB * bb + W_BB * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600;
+}
+
+export interface SeqPitParams { bb: number[]; k: number[]; hr: number[]; h: number[] }
+export function fitPitSeq(obs: TrainObs[]): SeqPitParams {
+  const BF = obs.map((o) => o.pitch.BF), BB = obs.map((o) => o.pitch.BB), HP = obs.map((o) => o.pitch.HP);
+  const K = obs.map((o) => o.pitch.K), HR = obs.map((o) => o.pitch.HR);
+  const Hn = obs.map((o) => o.pitch.b1 + o.pitch.b2 + o.pitch.b3);
+  const nK = obs.map((_, i) => Math.max(BF[i]! - BB[i]! - HP[i]!, K[i]!));
+  const nHR = obs.map((_, i) => Math.max(nK[i]! - K[i]!, HR[i]!));
+  const nH = obs.map((_, i) => Math.max(nHR[i]! - HR[i]!, Hn[i]!));
+  return {
+    bb: logitFit(obs.map((o) => o.ratings.pitch.con), BB, BF),
+    k: logitFit(obs.map((o) => o.ratings.pitch.stu), K, nK),
+    hr: logitFit(obs.map((o) => o.ratings.pitch.hrr), HR, nHR),
+    h: logitFit(obs.map((o) => o.ratings.pitch.pbabip), Hn, nH),
+  };
+}
+export function predictPitSeq(m: SeqPitParams, o: TrainObs): number {
+  const r = o.ratings.pitch, HBP = 6;
+  const bb = 600 * probAt(m.bb, r.con);
+  const n2 = Math.max(600 - bb - HBP, 0), k = n2 * probAt(m.k, r.stu);
+  const n3 = Math.max(n2 - k, 0), hr = n3 * probAt(m.hr, r.hrr);
+  const n4 = Math.max(n3 - hr, 0), hn = n4 * probAt(m.h, r.pbabip);
+  const xbh = hn * 0.25, oneB = Math.max(hn - xbh, 0); // fixed XBH share (no GAP analog)
+  return (W_BB * bb + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // no HBP term (matches old)
+}
+
+export function gateSeqHit(m: SeqHitParams, obs: TrainObs[]): GateStatus {
+  const notes: string[] = [];
+  const chk = (name: string, beta: number[], vals: number[]) => { const [lo, hi] = span(vals); if (!monotoneSampled((v) => probAt(beta, v), lo, hi)) notes.push(`${name} stage non-monotone in-domain`); };
+  chk("HR", m.hr, obs.map((o) => o.ratings.hit.pow));
+  chk("XBH", m.xbh, obs.map((o) => o.ratings.hit.gap));
+  chk("BB", m.bb, obs.map((o) => o.ratings.hit.eye));
+  chk("K", m.k, obs.map((o) => o.ratings.hit.kRat));
+  return { status: notes.length ? "warn" : "pass", notes };
+}
+export function gateSeqPit(m: SeqPitParams, obs: TrainObs[]): GateStatus {
+  const notes: string[] = [];
+  const chk = (name: string, beta: number[], vals: number[]) => { const [lo, hi] = span(vals); if (!monotoneSampled((v) => probAt(beta, v), lo, hi)) notes.push(`${name} stage non-monotone in-domain`); };
+  chk("HR", m.hr, obs.map((o) => o.ratings.pitch.hrr));
+  chk("BB", m.bb, obs.map((o) => o.ratings.pitch.con));
+  chk("K", m.k, obs.map((o) => o.ratings.pitch.stu));
+  return { status: notes.length ? "warn" : "pass", notes };
+}
+const seqHitModel: BakeoffModel = { name: "woba·seqcond", role: "hitter", fit: fitHitSeq, predict: (p, test) => test.map((o) => predictHitSeq(p as SeqHitParams, o)) };
+const seqPitModel: BakeoffModel = { name: "woba·seqcond", role: "pitcher", fit: fitPitSeq, predict: (p, test) => test.map((o) => predictPitSeq(p as SeqPitParams, o)) };
+
 // ── Seam wrappers + form definitions ───────────────────────────────────────────
 export function hitFormModel(form: HitForm): BakeoffModel {
   return { name: form.name, role: "hitter", fit: (train) => fitHitForm(form, train), predict: (p, test) => test.map((o) => predictHitForm(p as FittedHit, o)) };
@@ -345,4 +452,7 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   { model: glmPitModel("woba·poisson", false), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },
   { model: glmHitModel("woba·nb", true), spec: HITTER, gate: (p, obs) => gateGLMHit(p as GLMHitParams, obs) },
   { model: glmPitModel("woba·nb", true), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },
+  // #6 sequential conditional — a binomial logistic tree over the PA outcomes.
+  { model: seqHitModel, spec: HITTER, gate: (p, obs) => gateSeqHit(p as SeqHitParams, obs) },
+  { model: seqPitModel, spec: PITCHER, gate: (p, obs) => gateSeqPit(p as SeqPitParams, obs) },
 ];

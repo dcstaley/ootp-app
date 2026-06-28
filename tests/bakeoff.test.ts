@@ -56,7 +56,7 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
 
   const pick = (model: string, role: string, evaluation: string) => sb.rows.find((r) => r.model === model && r.role === role && r.evaluation === evaluation)!.metrics;
 
-  const MODELS = ["woba", "basic", "woba·rawpoly", "woba·logcubic", "woba·rawlin", "woba·rawquad", "woba·rawcubic", "woba·poisson", "woba·nb"];
+  const MODELS = ["woba", "basic", "woba·rawpoly", "woba·logcubic", "woba·rawlin", "woba·rawquad", "woba·rawcubic", "woba·poisson", "woba·nb", "woba·seqcond"];
   it("covers the baselines + candidate forms × roles × {in-sample, cv, forward, backward}", () => {
     expect(sb.years).toEqual([2037, 2038]);
     expect(new Set(sb.rows.map((r) => r.evaluation))).toEqual(new Set(["in-sample", "cv", "forward", "backward"]));
@@ -66,7 +66,7 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
   it("only candidate forms carry a gate, and only on the in-sample row", () => {
     const gated = sb.rows.filter((r) => r.gate);
     expect(gated.every((r) => r.model !== "woba" && r.model !== "basic" && r.evaluation === "in-sample")).toBe(true);
-    expect(gated.length).toBe(7 * 2); // 7 forms × {hitter, pitcher}, in-sample only
+    expect(gated.length).toBe(8 * 2); // 8 forms × {hitter, pitcher}, in-sample only
   });
   it("the wOBA + basic baselines fit the data (CV Pearson high, metrics in range)", () => {
     for (const model of ["woba", "basic"]) {
