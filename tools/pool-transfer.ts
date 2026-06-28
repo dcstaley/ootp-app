@@ -19,7 +19,12 @@ import { existsSync } from "node:fs";
 import { loadWindow, type TrainObs } from "../src/training/loader.ts";
 import { evalMetrics } from "../src/training/metrics.ts";
 import { HITTER, PITCHER, type RoleSpec } from "../src/training/bakeoff.ts";
-import { LOG_HIT, LOG_PIT, fitHitForm, predictHitForm, fitPitForm, predictPitForm } from "../src/training/forms.ts";
+import {
+  LOG_HIT, LOG_PIT, RAWPOLY_HIT, RAWPOLY_PIT, RAWQUAD_HIT, RAWQUAD_PIT,
+  fitHitForm, predictHitForm, fitPitForm, predictPitForm,
+  fitHitGLM, predictHitGLM, fitPitGLM, predictPitGLM,
+  fitHitSeq, predictHitSeq, fitPitSeq, predictPitSeq,
+} from "../src/training/forms.ts";
 
 const DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"].find((d) => d && existsSync(d))!;
 const OLD = loadWindow(DIR, [2032, 2033]).observations;
@@ -57,28 +62,45 @@ function alignPit(o: TrainObs, mode: Mode, tr: Record<string, { m: number; sd: n
   return { ...o, ratings: { ...o.ratings, pitch: p } };
 }
 
-function run(label: string, trainObs: TrainObs[], testObs: TrainObs[], role: RoleSpec, isHit: boolean) {
+// Each form as a (fit, predict) pair; alignment is model-agnostic (it transforms the
+// test obs' ratings, then ANY model predicts on them). Covers curve forms (log, the
+// targeted #2, uniform raw-quad) + the structural alternatives (Poisson GLM, seqcond).
+type FitFn = (obs: TrainObs[]) => unknown;
+type PredFn = (params: unknown, o: TrainObs) => number;
+interface Model { name: string; hitFit: FitFn; hitPred: PredFn; pitFit: FitFn; pitPred: PredFn }
+const MODELS: Model[] = [
+  { name: "log",     hitFit: (o) => fitHitForm(LOG_HIT, o),     hitPred: (p, o) => predictHitForm(p as any, o), pitFit: (o) => fitPitForm(LOG_PIT, o),     pitPred: (p, o) => predictPitForm(p as any, o) },
+  { name: "rawpoly", hitFit: (o) => fitHitForm(RAWPOLY_HIT, o), hitPred: (p, o) => predictHitForm(p as any, o), pitFit: (o) => fitPitForm(RAWPOLY_PIT, o), pitPred: (p, o) => predictPitForm(p as any, o) },
+  { name: "rawquad", hitFit: (o) => fitHitForm(RAWQUAD_HIT, o), hitPred: (p, o) => predictHitForm(p as any, o), pitFit: (o) => fitPitForm(RAWQUAD_PIT, o), pitPred: (p, o) => predictPitForm(p as any, o) },
+  { name: "poisson", hitFit: (o) => fitHitGLM(o, false),        hitPred: (p, o) => predictHitGLM(p as any, o),  pitFit: (o) => fitPitGLM(o, false),        pitPred: (p, o) => predictPitGLM(p as any, o) },
+  { name: "seqcond", hitFit: (o) => fitHitSeq(o),               hitPred: (p, o) => predictHitSeq(p as any, o),  pitFit: (o) => fitPitSeq(o),               pitPred: (p, o) => predictPitSeq(p as any, o) },
+];
+
+function run(trainObs: TrainObs[], testObs: TrainObs[], role: RoleSpec, isHit: boolean, m: Model) {
   const skills = isHit ? HIT_SK : PIT_SK, getR = isHit ? getHit : getPit, wt = (o: TrainObs) => role.weight(o);
   const train = trainObs.filter((o) => role.qualifies(o, MIN_N));
   const test = testObs.filter((o) => role.qualifies(o, MIN_N));
   const trStats = skillStats(train, skills, getR, wt), teStats = skillStats(test, skills, getR, wt);
-  const params = isHit ? fitHitForm(LOG_HIT, train) : fitPitForm(LOG_PIT, train);
-  const pred = (o: TrainObs) => (isHit ? predictHitForm(params as any, o) : predictPitForm(params as any, o));
+  const fit = isHit ? m.hitFit : m.pitFit, pred = isHit ? m.hitPred : m.pitPred;
+  const params = fit(train);
+  const pear = (obsList: TrainObs[]) => evalMetrics(obsList.map((o) => pred(params, o)), test.map(role.actualWoba), test.map(wt), role.higherBetter, TOPN).pearson;
+  const ceil = evalMetrics(test.map((o) => pred(fit(test), o)), test.map(role.actualWoba), test.map(wt), role.higherBetter, TOPN).pearson; // fit-on-test ceiling
+  const modes = (["H0 raw", "H1 level", "H2 zscore"] as Mode[]).map((mode) => pear(test.map((o) => (isHit ? alignHit(o, mode, trStats, teStats) : alignPit(o, mode, trStats, teStats)))));
+  return { ceil, h0: modes[0]!, h1: modes[1]!, h2: modes[2]!, nTrain: train.length, nTest: test.length };
+}
 
-  // ceiling: fit on TEST itself, predict TEST in-sample (best achievable on this pool)
-  const ceilParams = isHit ? fitHitForm(LOG_HIT, test) : fitPitForm(LOG_PIT, test);
-  const ceil = evalMetrics(test.map((o) => (isHit ? predictHitForm(ceilParams as any, o) : predictPitForm(ceilParams as any, o))), test.map(role.actualWoba), test.map(wt), role.higherBetter, TOPN);
-
-  console.log(`\n== ${label} ==  (train n=${train.length}, test n=${test.length}; ceiling in-sample Pearson=${ceil.pearson.toFixed(4)})`);
-  for (const mode of ["H0 raw", "H1 level", "H2 zscore"] as Mode[]) {
-    const aligned = test.map((o) => (isHit ? alignHit(o, mode, trStats, teStats) : alignPit(o, mode, trStats, teStats)));
-    const m = evalMetrics(aligned.map(pred), test.map(role.actualWoba), test.map(wt), role.higherBetter, TOPN);
-    console.log(`  ${mode.padEnd(9)} Pearson=${m.pearson.toFixed(4)}  regret=${(m.valueRegret * 1000).toFixed(1)}`);
+function table(title: string, trainObs: TrainObs[], testObs: TrainObs[], role: RoleSpec, isHit: boolean) {
+  const first = run(trainObs, testObs, role, isHit, MODELS[0]!);
+  console.log(`\n== ${title} ==  (train n=${first.nTrain}, test n=${first.nTest})`);
+  console.log(`  model      ceiling   H0 raw    H1 level  H2 zscore   Δ(H1−H0)`);
+  for (const m of MODELS) {
+    const r = run(trainObs, testObs, role, isHit, m), d = r.h1 - r.h0;
+    console.log(`  ${m.name.padEnd(9)}  ${r.ceil.toFixed(4)}    ${r.h0.toFixed(4)}    ${r.h1.toFixed(4)}    ${r.h2.toFixed(4)}     ${d >= 0 ? "+" : ""}${d.toFixed(4)}`);
   }
 }
 
-console.log(`pool-transfer — log form, OLD=2032+2033 vs NEW=2037+2038+2039, minN=${MIN_N}, eval weight ^0.75 (fixed)`);
-run("HITTERS  OLD→NEW (extrapolate up)", OLD, NEW, HITTER, true);
-run("HITTERS  NEW→OLD (extrapolate down)", NEW, OLD, HITTER, true);
-run("PITCHERS OLD→NEW (extrapolate up)", OLD, NEW, PITCHER, false);
-run("PITCHERS NEW→OLD (extrapolate down)", NEW, OLD, PITCHER, false);
+console.log(`pool-transfer — OLD=2032+2033 vs NEW=2037+2038+2039, minN=${MIN_N}, eval weight ^0.75 (fixed); values = weighted Pearson`);
+table("HITTERS  OLD→NEW (extrapolate up)", OLD, NEW, HITTER, true);
+table("HITTERS  NEW→OLD (extrapolate down)", NEW, OLD, HITTER, true);
+table("PITCHERS OLD→NEW (extrapolate up)", OLD, NEW, PITCHER, false);
+table("PITCHERS NEW→OLD (extrapolate down)", NEW, OLD, PITCHER, false);
