@@ -31,6 +31,7 @@ export type Curve =
   | { kind: "log" }                          // [1, ln(max(r,1))] — parity baseline, NOT z-scored
   | { kind: "rawpoly"; degree: 1 | 2 | 3 }   // [1, u, u², …] with u = z(r)        — raw curvature
   | { kind: "logpoly"; degree: 2 | 3 };      // [1, u, u², …] with u = z(ln r)      — higher-order log
+const LOG: Curve = { kind: "log" };
 
 interface FittedEvent { beta: number[]; mu: number; sd: number; curve: Curve }
 
@@ -64,17 +65,24 @@ function fitEvent(curve: Curve, vals: number[], y: number[], w: number[]): Fitte
   return { beta: wls(X, y, w), mu, sd, curve };
 }
 
-// The H (non-HR hit) event is special: a configurable curve on the BABIP/PBABIP
-// RATING, PLUS a fixed log term on the derived BIP count (near-constant across cards,
-// so curvature there buys nothing — it stays log). Design = [1, <babip basis>, ln BIP].
-interface FittedH { beta: number[]; curve: Curve; mu: number; sd: number }
-const hRow = (curve: Curve, babip: number, mu: number, sd: number, bip: number): number[] => [...row(curve, babip, mu, sd), ln1(bip)];
-const hRate = (m: FittedH, babip: number, bip: number) => Math.max(dot(m.beta, hRow(m.curve, babip, m.mu, m.sd, bip)), 0);
+// The H (non-HR hit) event has TWO inputs, each with its OWN curve: the BABIP/PBABIP
+// RATING and the derived BIP count. Design = [1, <rating basis>, <bip basis>] (shared
+// intercept). Both default to log (parity); both configurable so neither is assumed.
+interface CurveFit { curve: Curve; mu: number; sd: number }
+interface FittedH { beta: number[]; rating: CurveFit; bip: CurveFit }
+const rowTerms = (c: Curve, v: number, mu: number, sd: number) => row(c, v, mu, sd).slice(1); // basis minus the shared intercept
+const hDesign = (r: CurveFit, rv: number, b: CurveFit, bv: number) => [1, ...rowTerms(r.curve, rv, r.mu, r.sd), ...rowTerms(b.curve, bv, b.mu, b.sd)];
+const hRate = (m: FittedH, rv: number, bv: number) => Math.max(dot(m.beta, hDesign(m.rating, rv, m.bip, bv)), 0);
+function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[], rCurve: Curve, bCurve: Curve): FittedH {
+  const rating = { curve: rCurve, ...curveNorm(rCurve, ratingVals, w) };
+  const bip = { curve: bCurve, ...curveNorm(bCurve, bipVals, w) };
+  return { beta: wls(ratingVals.map((rv, i) => hDesign(rating, rv, bip, bipVals[i]!)), y, w), rating, bip };
+}
 
 // ── Hitting form ───────────────────────────────────────────────────────────────
 // `h` is the curve on the BABIP rating in the non-HR-hit event (BIP term stays log).
 // The XBH curve fits the SHARE of (predicted) hits that go for extra bases.
-export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve }
+export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve }
 export interface FittedHit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH; xbh: FittedEvent }
 
 export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): FittedHit {
@@ -92,10 +100,8 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const hr = fitEvent(form.hr, pow, HR, w);
   // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2).
   const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rate(k, kr[i]!) - rate(hr, pow[i]!) - 6 - 3 + 4, 1));
-  const hn = curveNorm(form.h, babip, w);
-  const hX = obs.map((_, i) => hRow(form.h, babip[i]!, hn.mu, hn.sd, bip[i]!));
-  const h: FittedH = { beta: wls(hX, nonHRH, w), curve: form.h, mu: hn.mu, sd: hn.sd };
-  const hP = obs.map((_, i) => Math.max(dot(h.beta, hX[i]!), 0));
+  const h = fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG);
+  const hP = obs.map((_, i) => Math.max(dot(h.beta, hDesign(h.rating, babip[i]!, h.bip, bip[i]!)), 0));
   const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
   const xbh = fitEvent(form.xbh, gap, share, w);
   return { bb, k, hr, h, xbh };
@@ -113,7 +119,7 @@ export function predictHitForm(m: FittedHit, o: TrainObs): number {
 
 // ── Pitching form ──────────────────────────────────────────────────────────────
 // `h` = curve on the PBABIP rating (BIP term log); XBH stays the fixed 0.25 share.
-export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve }
+export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve; hBip?: Curve }
 export interface FittedPit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH }
 
 export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): FittedPit {
@@ -128,9 +134,7 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const k = fitEvent(form.k, stu, K, w);
   const hr = fitEvent(form.hr, hrr, HR, w);
   const bip = obs.map((_, i) => Math.max(600 - rate(bb, con[i]!) - rate(k, stu[i]!) - rate(hr, hrr[i]!) - 6, 1));
-  const hn = curveNorm(form.h, pbabip, w);
-  const hX = obs.map((_, i) => hRow(form.h, pbabip[i]!, hn.mu, hn.sd, bip[i]!));
-  const h: FittedH = { beta: wls(hX, nHH, w), curve: form.h, mu: hn.mu, sd: hn.sd };
+  const h = fitH(pbabip, bip, nHH, w, form.h, form.hBip ?? LOG);
   return { bb, k, hr, h };
 }
 
@@ -179,10 +183,11 @@ export function gateHit(m: FittedHit, obs: TrainObs[]): GateStatus {
 }
 // H monotonicity is in the BABIP rating; the BIP term is additive so any fixed BIP
 // works (450 ≈ a typical balls-in-play count).
-function chkH(notes: string[], h: FittedH, babips: number[]) {
-  if (h.curve.kind === "log") return;
-  const [lo, hi] = span(babips);
-  if (!monotoneSampled((v) => hRate(h, v, 450), lo, hi)) notes.push("H curve non-monotone in-domain");
+function chkH(notes: string[], h: FittedH, ratings: number[]) {
+  // monotonicity of each H input independently (the other is additive, so its value
+  // is irrelevant): the rating over its domain, and BIP over a typical 300–480 range.
+  if (h.rating.curve.kind !== "log") { const [lo, hi] = span(ratings); if (!monotoneSampled((v) => hRate(h, v, 450), lo, hi)) notes.push("H·rating non-monotone in-domain"); }
+  if (h.bip.curve.kind !== "log" && !monotoneSampled((v) => hRate(h, 100, v), 300, 480)) notes.push("H·BIP non-monotone in-domain");
 }
 export function gatePit(m: FittedPit, obs: TrainObs[]): GateStatus {
   const notes: string[] = [];
@@ -458,7 +463,6 @@ export function pitFormModel(form: PitForm): BakeoffModel {
   return { name: form.name, role: "pitcher", fit: (train) => fitPitForm(form, train), predict: (p, test) => test.map((o) => predictPitForm(p as FittedPit, o)) };
 }
 
-const LOG: Curve = { kind: "log" };
 // All-log forms — identical to the parity woba models; used only by the regression test.
 export const LOG_HIT: HitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, xbh: LOG, h: LOG };
 export const LOG_PIT: PitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, h: LOG };
@@ -488,6 +492,10 @@ export const QPOWLIN_HIT: HitForm = { name: "woba·qpow-lin", bb: LIN, k: LIN, h
 export const QPOWLIN_PIT: PitForm = { name: "woba·qpow-lin", bb: LIN, k: LIN, hr: QUAD, h: LOG };
 export const HLIN_HIT: HitForm = { name: "woba·rawpoly-hlin", bb: LOG, k: LOG, hr: QUAD, xbh: QUAD, h: LIN };
 export const HLIN_PIT: PitForm = { name: "woba·rawpoly-hlin", bb: LOG, k: LOG, hr: QUAD, h: LIN };
+// BIP-curve option (review): hits should be ~proportional to BIP → maybe LINEAR, not
+// log. Isolate it on the clean log baseline — only the H BIP term changes.
+export const BIPLIN_HIT: HitForm = { ...LOG_HIT, name: "woba·biplin", hBip: LIN };
+export const BIPLIN_PIT: PitForm = { ...LOG_PIT, name: "woba·biplin", hBip: LIN };
 
 const hitEntry = (f: HitForm): BakeoffEntry => ({ model: hitFormModel(f), spec: HITTER, gate: (p, obs) => gateHit(p as FittedHit, obs) });
 const pitEntry = (f: PitForm): BakeoffEntry => ({ model: pitFormModel(f), spec: PITCHER, gate: (p, obs) => gatePit(p as FittedPit, obs) });
@@ -502,6 +510,7 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   // Linear options (review) — is raw-linear a better "elsewhere" than log? is H ok linear?
   hitEntry(QPOWLIN_HIT), pitEntry(QPOWLIN_PIT),
   hitEntry(HLIN_HIT), pitEntry(HLIN_PIT),
+  hitEntry(BIPLIN_HIT), pitEntry(BIPLIN_PIT),   // BIP term linear vs log
   // #8 count GLMs — Poisson + negative-binomial, exposure offset, log link.
   { model: glmHitModel("woba·poisson", false), spec: HITTER, gate: (p, obs) => gateGLMHit(p as GLMHitParams, obs) },
   { model: glmPitModel("woba·poisson", false), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },
