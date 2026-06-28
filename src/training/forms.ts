@@ -50,25 +50,32 @@ function row(curve: Curve, v: number, mu: number, sd: number): number[] {
 /** Fitted per-event rate at a rating value, clamped ≥ 0 (matches the chain). */
 const rate = (e: FittedEvent, v: number) => Math.max(dot(e.beta, row(e.curve, v, e.mu, e.sd)), 0);
 
-/** WLS-fit one event's curve on (rating → per-600 rate); weighted μ/σ z-scores the
- *  (raw or log) base term for conditioning — fitted function value is unchanged. */
+/** Weighted μ/σ of a curve's base term (for z-score conditioning; log needs none). */
+function curveNorm(curve: Curve, vals: number[], w: number[]): { mu: number; sd: number } {
+  if (curve.kind === "log") return { mu: 0, sd: 1 };
+  const W = w.reduce((s, x) => s + x, 0), b = vals.map((v) => baseVal(curve, v));
+  const mu = b.reduce((s, v, i) => s + w[i]! * v, 0) / W;
+  return { mu, sd: Math.sqrt(b.reduce((s, v, i) => s + w[i]! * (v - mu) ** 2, 0) / W) || 1 };
+}
+/** WLS-fit one event's curve on (rating → per-600 rate). */
 function fitEvent(curve: Curve, vals: number[], y: number[], w: number[]): FittedEvent {
-  let mu = 0, sd = 1;
-  if (curve.kind !== "log") {
-    const W = w.reduce((s, x) => s + x, 0);
-    const b = vals.map((v) => baseVal(curve, v));
-    mu = b.reduce((s, v, i) => s + w[i]! * v, 0) / W;
-    sd = Math.sqrt(b.reduce((s, v, i) => s + w[i]! * (v - mu) ** 2, 0) / W) || 1;
-  }
+  const { mu, sd } = curveNorm(curve, vals, w);
   const X = vals.map((v) => row(curve, v, mu, sd));
   return { beta: wls(X, y, w), mu, sd, curve };
 }
 
+// The H (non-HR hit) event is special: a configurable curve on the BABIP/PBABIP
+// RATING, PLUS a fixed log term on the derived BIP count (near-constant across cards,
+// so curvature there buys nothing — it stays log). Design = [1, <babip basis>, ln BIP].
+interface FittedH { beta: number[]; curve: Curve; mu: number; sd: number }
+const hRow = (curve: Curve, babip: number, mu: number, sd: number, bip: number): number[] => [...row(curve, babip, mu, sd), ln1(bip)];
+const hRate = (m: FittedH, babip: number, bip: number) => Math.max(dot(m.beta, hRow(m.curve, babip, m.mu, m.sd, bip)), 0);
+
 // ── Hitting form ───────────────────────────────────────────────────────────────
-// H stays log in [1, ln babip, ln bip] (residuals don't implicate it). The XBH
-// curve fits the SHARE of (predicted) hits that go for extra bases.
-export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve }
-export interface FittedHit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: number[]; xbh: FittedEvent }
+// `h` is the curve on the BABIP rating in the non-HR-hit event (BIP term stays log).
+// The XBH curve fits the SHARE of (predicted) hits that go for extra bases.
+export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve }
+export interface FittedHit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH; xbh: FittedEvent }
 
 export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): FittedHit {
   const w = obs.map((p) => Math.pow(p.hit.PA, fitExp));
@@ -85,9 +92,10 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const hr = fitEvent(form.hr, pow, HR, w);
   // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2).
   const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rate(k, kr[i]!) - rate(hr, pow[i]!) - 6 - 3 + 4, 1));
-  const hX = obs.map((_, i) => [1, ln1(babip[i]!), ln1(bip[i]!)]);
-  const h = wls(hX, nonHRH, w);
-  const hP = obs.map((_, i) => Math.max(dot(h, hX[i]!), 0));
+  const hn = curveNorm(form.h, babip, w);
+  const hX = obs.map((_, i) => hRow(form.h, babip[i]!, hn.mu, hn.sd, bip[i]!));
+  const h: FittedH = { beta: wls(hX, nonHRH, w), curve: form.h, mu: hn.mu, sd: hn.sd };
+  const hP = obs.map((_, i) => Math.max(dot(h.beta, hX[i]!), 0));
   const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
   const xbh = fitEvent(form.xbh, gap, share, w);
   return { bb, k, hr, h, xbh };
@@ -97,16 +105,16 @@ export function predictHitForm(m: FittedHit, o: TrainObs): number {
   const r = o.ratings.hit;
   const bb = rate(m.bb, r.eye), k = rate(m.k, r.kRat), hr = rate(m.hr, r.pow);
   const bip = Math.max(600 - bb - k - hr - 6 - 3 + 4, 1);
-  const h = Math.max(dot(m.h, [1, ln1(r.babip), ln1(bip)]), 0);
+  const h = hRate(m.h, r.babip, bip);
   const xbh = Math.max(rate(m.xbh, r.gap) * h, 0); // xbh curve gives the share of h
   const oneB = Math.max(h - xbh, 0);
   return (W_BB * bb + W_BB * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600;
 }
 
 // ── Pitching form ──────────────────────────────────────────────────────────────
-// H stays log; XBH stays the fixed 0.25 share (no GAP analog pitcher-side).
-export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve }
-export interface FittedPit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: number[] }
+// `h` = curve on the PBABIP rating (BIP term log); XBH stays the fixed 0.25 share.
+export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve }
+export interface FittedPit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH }
 
 export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): FittedPit {
   const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));
@@ -120,8 +128,9 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const k = fitEvent(form.k, stu, K, w);
   const hr = fitEvent(form.hr, hrr, HR, w);
   const bip = obs.map((_, i) => Math.max(600 - rate(bb, con[i]!) - rate(k, stu[i]!) - rate(hr, hrr[i]!) - 6, 1));
-  const hX = obs.map((_, i) => [1, ln1(pbabip[i]!), ln1(bip[i]!)]);
-  const h = wls(hX, nHH, w);
+  const hn = curveNorm(form.h, pbabip, w);
+  const hX = obs.map((_, i) => hRow(form.h, pbabip[i]!, hn.mu, hn.sd, bip[i]!));
+  const h: FittedH = { beta: wls(hX, nHH, w), curve: form.h, mu: hn.mu, sd: hn.sd };
   return { bb, k, hr, h };
 }
 
@@ -129,7 +138,7 @@ export function predictPitForm(m: FittedPit, o: TrainObs): number {
   const r = o.ratings.pitch;
   const bb = rate(m.bb, r.con), k = rate(m.k, r.stu), hr = rate(m.hr, r.hrr);
   const bip = Math.max(600 - bb - k - hr - 6, 1);
-  const nHH = Math.max(dot(m.h, [1, ln1(r.pbabip), ln1(bip)]), 0);
+  const nHH = hRate(m.h, r.pbabip, bip);
   const xbh = nHH * 0.25, oneB = Math.max(nHH - xbh, 0);
   return (W_BB * bb + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // no HBP term (matches old)
 }
@@ -165,7 +174,15 @@ export function gateHit(m: FittedHit, obs: TrainObs[]): GateStatus {
   chk("XBH", m.xbh, obs.map((o) => o.ratings.hit.gap));
   chk("BB", m.bb, obs.map((o) => o.ratings.hit.eye));
   chk("K", m.k, obs.map((o) => o.ratings.hit.kRat));
+  chkH(notes, m.h, obs.map((o) => o.ratings.hit.babip));
   return { status: notes.length ? "warn" : "pass", notes };
+}
+// H monotonicity is in the BABIP rating; the BIP term is additive so any fixed BIP
+// works (450 ≈ a typical balls-in-play count).
+function chkH(notes: string[], h: FittedH, babips: number[]) {
+  if (h.curve.kind === "log") return;
+  const [lo, hi] = span(babips);
+  if (!monotoneSampled((v) => hRate(h, v, 450), lo, hi)) notes.push("H curve non-monotone in-domain");
 }
 export function gatePit(m: FittedPit, obs: TrainObs[]): GateStatus {
   const notes: string[] = [];
@@ -173,6 +190,7 @@ export function gatePit(m: FittedPit, obs: TrainObs[]): GateStatus {
   chk("HR", m.hr, obs.map((o) => o.ratings.pitch.hrr));
   chk("BB", m.bb, obs.map((o) => o.ratings.pitch.con));
   chk("K", m.k, obs.map((o) => o.ratings.pitch.stu));
+  chkH(notes, m.h, obs.map((o) => o.ratings.pitch.pbabip));
   return { status: notes.length ? "warn" : "pass", notes };
 }
 
@@ -440,20 +458,19 @@ export function pitFormModel(form: PitForm): BakeoffModel {
   return { name: form.name, role: "pitcher", fit: (train) => fitPitForm(form, train), predict: (p, test) => test.map((o) => predictPitForm(p as FittedPit, o)) };
 }
 
+const LOG: Curve = { kind: "log" };
 // All-log forms — identical to the parity woba models; used only by the regression test.
-export const LOG_HIT: HitForm = { name: "woba", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "log" }, xbh: { kind: "log" } };
-export const LOG_PIT: PitForm = { name: "woba", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "log" } };
+export const LOG_HIT: HitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, xbh: LOG, h: LOG };
+export const LOG_PIT: PitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, h: LOG };
 
-// Candidate #2 — targeted raw-polynomial (only the events the residuals implicate).
-export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "rawpoly", degree: 2 }, xbh: { kind: "rawpoly", degree: 2 } };
-export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: { kind: "log" }, k: { kind: "log" }, hr: { kind: "rawpoly", degree: 2 } };
+// Candidate #2 — targeted raw-polynomial (only the events the residuals implicate); H log.
+export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: { kind: "rawpoly", degree: 2 }, h: LOG };
+export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, h: LOG };
 
-// Uniform-curve forms apply one curve to every rating-driven event (BB,K,HR + XBH
-// for hitters), holding the chain fixed — the "is log the right curve" comparison.
-// H stays log: its second input (BIP) is itself derived from the other predicted
-// events, so polynomializing it is unstable, and the residuals don't implicate babip.
-const uHit = (name: string, c: Curve): HitForm => ({ name, bb: c, k: c, hr: c, xbh: c });
-const uPit = (name: string, c: Curve): PitForm => ({ name, bb: c, k: c, hr: c });
+// Uniform-curve forms apply one curve to EVERY rating-driven event (incl. the BABIP
+// term of H) — the "is log the right curve" comparison, now including H.
+const uHit = (name: string, c: Curve): HitForm => ({ name, bb: c, k: c, hr: c, xbh: c, h: c });
+const uPit = (name: string, c: Curve): PitForm => ({ name, bb: c, k: c, hr: c, h: c });
 // Candidate #1 — cubic-in-log on every event (the artifact's unused eye2/pow2/… slots).
 export const LOGCUBIC_HIT = uHit("woba·logcubic", { kind: "logpoly", degree: 3 });
 export const LOGCUBIC_PIT = uPit("woba·logcubic", { kind: "logpoly", degree: 3 });
@@ -464,6 +481,13 @@ export const RAWQUAD_HIT = uHit("woba·rawquad", { kind: "rawpoly", degree: 2 })
 export const RAWQUAD_PIT = uPit("woba·rawquad", { kind: "rawpoly", degree: 2 });
 export const RAWCUBIC_HIT = uHit("woba·rawcubic", { kind: "rawpoly", degree: 3 });
 export const RAWCUBIC_PIT = uPit("woba·rawcubic", { kind: "rawpoly", degree: 3 });
+// Linear options (review): qpow-lin = #2's quadratic power events but raw-LINEAR BB/K
+// (the untested middle cell, H log); rawpoly-hlin = #2 with a raw-LINEAR H (BABIP) term.
+const LIN: Curve = { kind: "rawpoly", degree: 1 }, QUAD: Curve = { kind: "rawpoly", degree: 2 };
+export const QPOWLIN_HIT: HitForm = { name: "woba·qpow-lin", bb: LIN, k: LIN, hr: QUAD, xbh: QUAD, h: LOG };
+export const QPOWLIN_PIT: PitForm = { name: "woba·qpow-lin", bb: LIN, k: LIN, hr: QUAD, h: LOG };
+export const HLIN_HIT: HitForm = { name: "woba·rawpoly-hlin", bb: LOG, k: LOG, hr: QUAD, xbh: QUAD, h: LIN };
+export const HLIN_PIT: PitForm = { name: "woba·rawpoly-hlin", bb: LOG, k: LOG, hr: QUAD, h: LIN };
 
 const hitEntry = (f: HitForm): BakeoffEntry => ({ model: hitFormModel(f), spec: HITTER, gate: (p, obs) => gateHit(p as FittedHit, obs) });
 const pitEntry = (f: PitForm): BakeoffEntry => ({ model: pitFormModel(f), spec: PITCHER, gate: (p, obs) => gatePit(p as FittedPit, obs) });
@@ -475,6 +499,9 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   hitEntry(RAWLIN_HIT), pitEntry(RAWLIN_PIT),       // curve family — is log the right curve?
   hitEntry(RAWQUAD_HIT), pitEntry(RAWQUAD_PIT),
   hitEntry(RAWCUBIC_HIT), pitEntry(RAWCUBIC_PIT),
+  // Linear options (review) — is raw-linear a better "elsewhere" than log? is H ok linear?
+  hitEntry(QPOWLIN_HIT), pitEntry(QPOWLIN_PIT),
+  hitEntry(HLIN_HIT), pitEntry(HLIN_PIT),
   // #8 count GLMs — Poisson + negative-binomial, exposure offset, log link.
   { model: glmHitModel("woba·poisson", false), spec: HITTER, gate: (p, obs) => gateGLMHit(p as GLMHitParams, obs) },
   { model: glmPitModel("woba·poisson", false), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },
