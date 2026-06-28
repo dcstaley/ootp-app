@@ -1,13 +1,10 @@
-// DIAGNOSTIC — multiplicative scaling + top-X pool definition, on the real OLD<->NEW
-// transfer (hitters). Redo of the rating re-scaling with the corrections from review:
-//   • scaling mode: "mult" = r * (trainMean/testMean) per skill (multiplicative,
-//     compresses/expands gaps; clean additive shift in the model's ln space) — vs
-//     "add" = the old additive H1 (trainMean + (r - testMean)) for comparison, vs H0 raw.
-//   • pool average defined three ways, PER PLATOON SIDE (vL/vR separately):
-//       allPA = PA^0.75-weighted over all qualifiers (the old default)
-//       top25 = mean ratings of the top 25 hitters by actual wOBA (the fielded elite)
-//       top50 = top 50
-// Fit on train pool, predict test pool, report weighted Pearson vs the in-sample ceiling.
+// DIAGNOSTIC — head-to-head of ALL re-scaling modes on the real OLD<->NEW transfer
+// (hitters), with the pool average defined per platoon side. Settles "is H2 actually
+// better, or multiplicative?" by putting them on identical footing (same top-X means).
+//   modes: H0 raw | add (additive shift, mean only) | H2 (z-score: mean+sd) |
+//          mult (multiplicative, r*(trainMean/testMean))
+//   pool-def per side: allPA (PA^0.75-weighted) / top25 / top50 (by actual wOBA)
+// Fit on train pool, predict test, weighted Pearson vs the in-sample ceiling.
 //
 // Run: node tools/pool-scale.ts
 
@@ -24,32 +21,32 @@ const MIN_N = 600;
 const SK = ["eye", "kRat", "pow", "babip", "gap"];
 const getR = (o: TrainObs, s: string) => (o.ratings.hit as unknown as Record<string, number>)[s]!;
 
+interface MS { m: number; sd: number }
 type Def = "allPA" | "top25" | "top50";
-type Means = Record<Side, Record<string, number>>;
+type Means = Record<Side, Record<string, MS>>;
 function buildMeans(obs: TrainObs[], def: Def): Means {
   const out = { L: {}, R: {} } as Means;
   for (const side of ["L", "R"] as Side[]) {
     const pool = obs.filter((o) => o.side === side && o.hit.PA >= MIN_N);
     for (const s of SK) {
-      if (def === "allPA") {
-        const w = pool.map((o) => Math.pow(o.hit.PA, 0.75));
-        out[side][s] = pool.reduce((a, o, i) => a + w[i]! * getR(o, s), 0) / w.reduce((a, x) => a + x, 0);
-      } else {
-        const n = def === "top25" ? 25 : 50;
-        const top = [...pool].sort((a, b) => actualHitWoba(b) - actualHitWoba(a)).slice(0, n);
-        out[side][s] = top.reduce((a, o) => a + getR(o, s), 0) / top.length;
-      }
+      let vals: number[], w: number[];
+      if (def === "allPA") { vals = pool.map((o) => getR(o, s)); w = pool.map((o) => Math.pow(o.hit.PA, 0.75)); }
+      else { const top = [...pool].sort((a, b) => actualHitWoba(b) - actualHitWoba(a)).slice(0, def === "top25" ? 25 : 50); vals = top.map((o) => getR(o, s)); w = vals.map(() => 1); }
+      const W = w.reduce((a, x) => a + x, 0);
+      const m = vals.reduce((a, v, i) => a + w[i]! * v, 0) / W;
+      const sd = Math.sqrt(vals.reduce((a, v, i) => a + w[i]! * (v - m) ** 2, 0) / W) || 1;
+      out[side][s] = { m, sd };
     }
   }
   return out;
 }
 
-type Mode = "H0" | "add" | "mult";
+type Mode = "H0" | "add" | "H2" | "mult";
 function adjust(o: TrainObs, mode: Mode, trM: Means, teM: Means): TrainObs {
   const h = { ...o.ratings.hit } as unknown as Record<string, number>;
   for (const s of SK) {
     const tr = trM[o.side][s]!, te = teM[o.side][s]!, r = getR(o, s);
-    h[s] = mode === "H0" ? r : mode === "add" ? tr + (r - te) : r * (tr / te);
+    h[s] = mode === "H0" ? r : mode === "add" ? tr.m + (r - te.m) : mode === "H2" ? tr.m + (r - te.m) * (tr.sd / te.sd) : r * (tr.m / te.m);
   }
   return { ...o, ratings: { ...o.ratings, hit: h as any } };
 }
@@ -68,13 +65,14 @@ function ceiling(form: HitForm, testObs: TrainObs[]): number {
 }
 
 function block(label: string, form: HitForm, trainObs: TrainObs[], testObs: TrainObs[]) {
-  console.log(`\n== ${label} ==  (ceiling=${ceiling(form, testObs).toFixed(4)})`);
-  console.log(`  pool-def   H0 raw    add(H1)   mult`);
+  const raw = transfer(form, trainObs, testObs, "allPA", "H0");
+  console.log(`\n== ${label} ==  (raw=${raw.toFixed(4)}, ceiling=${ceiling(form, testObs).toFixed(4)})`);
+  console.log(`  pool-def   add(H1)   H2(z)     mult`);
   for (const def of ["allPA", "top25", "top50"] as Def[]) {
-    const h0 = transfer(form, trainObs, testObs, def, "H0"); // H0 ignores def, shown once per row for reference
     const add = transfer(form, trainObs, testObs, def, "add");
+    const h2 = transfer(form, trainObs, testObs, def, "H2");
     const mult = transfer(form, trainObs, testObs, def, "mult");
-    console.log(`  ${def.padEnd(8)}  ${h0.toFixed(4)}   ${add.toFixed(4)}   ${mult.toFixed(4)}`);
+    console.log(`  ${def.padEnd(8)}  ${add.toFixed(4)}   ${h2.toFixed(4)}   ${mult.toFixed(4)}`);
   }
 }
 
