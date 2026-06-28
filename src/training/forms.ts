@@ -141,16 +141,20 @@ export function predictPitForm(m: FittedPit, o: TrainObs): number {
 // gate samples each event's rate across the observed domain PLUS a 10% extrapolation
 // margin and flags any direction REVERSAL. (Log curves are always monotone; a
 // wrong-DIRECTION-but-monotone fit isn't flagged here — it surfaces as poor Pearson.)
-function eventMonotone(e: FittedEvent, rmin: number, rmax: number): boolean {
-  if (e.curve.kind === "log") return true;
-  const ext = rmax + 0.1 * (rmax - rmin), N = 200;
-  let dir = 0, prev = rate(e, rmin);
+// Sample a rate function across [lo, hi] + a 10% extrapolation margin; true unless
+// the direction reverses (a turning point) somewhere in that range.
+function monotoneSampled(fn: (r: number) => number, lo: number, hi: number): boolean {
+  const ext = hi + 0.1 * (hi - lo), N = 200;
+  let dir = 0, prev = fn(lo);
   for (let i = 1; i <= N; i++) {
-    const cur = rate(e, rmin + ((ext - rmin) * i) / N), d = cur - prev;
+    const cur = fn(lo + ((ext - lo) * i) / N), d = cur - prev;
     if (Math.abs(d) > 1e-9) { const s = d > 0 ? 1 : -1; if (dir === 0) dir = s; else if (s !== dir) return false; }
     prev = cur;
   }
   return true;
+}
+function eventMonotone(e: FittedEvent, rmin: number, rmax: number): boolean {
+  return e.curve.kind === "log" ? true : monotoneSampled((v) => rate(e, v), rmin, rmax);
 }
 const span = (vals: number[]): [number, number] => [Math.min(...vals), Math.max(...vals)];
 
@@ -171,6 +175,127 @@ export function gatePit(m: FittedPit, obs: TrainObs[]): GateStatus {
   chk("K", m.k, obs.map((o) => o.ratings.pitch.stu));
   return { status: notes.length ? "warn" : "pass", notes };
 }
+
+// ── Count GLMs (candidate #8): Poisson / negative-binomial with a PA/BF offset ──
+// The parity fit regresses per-600 RATES by WLS (Gaussian) with an ad-hoc PA^0.75
+// weight. The statistically-correct model treats each event as a non-negative COUNT
+// with exposure: y ~ Poisson(μ), log μ = log(exposure) + β·[1, ln rating]. The log
+// link makes every event a power law (rate ∝ rating^β) — monotone by construction,
+// no clamp — and the exposure offset replaces the ad-hoc weight. Negative-binomial
+// adds a dispersion θ (var = μ + μ²/θ) for the overdispersion real count data shows;
+// it only reweights the IRLS, so Poisson is the θ→∞ limit. Predicted per-600 rate
+// = 600·e^{β·x} (exposure-free). Assembled by the SAME chain as every other form.
+
+const POISSON = Infinity;
+/** One IRLS fit of a log-link count GLM with exposure offset. theta=∞ ⇒ Poisson. */
+function glmFit(X: number[][], count: number[], expo: number[], theta: number, iters = 60): number[] {
+  const p = X[0]!.length;
+  const off = expo.map((e) => Math.log(Math.max(e, 1e-9)));
+  const total = count.reduce((s, y) => s + y, 0), totE = expo.reduce((s, e) => s + e, 0);
+  const beta = new Array(p).fill(0);
+  beta[0] = Math.log(Math.max(total, 0.5) / Math.max(totE, 1)); // start at the pooled mean rate
+  for (let it = 0; it < iters; it++) {
+    const lin = X.map((x) => dot(beta, x));
+    const mu = lin.map((l, i) => Math.exp(Math.min(off[i]! + l, 30)));
+    const W = mu.map((m) => (theta === POISSON ? m : m / (1 + m / theta)));
+    const z = X.map((x, i) => dot(beta, x) + (count[i]! - mu[i]!) / Math.max(mu[i]!, 1e-9));
+    const next = wls(X, z, W);
+    const delta = next.reduce((s, b, j) => s + Math.abs(b - beta[j]!), 0);
+    for (let j = 0; j < p; j++) beta[j] = next[j]!;
+    if (delta < 1e-11) break;
+  }
+  return beta;
+}
+
+/** Method-of-moments θ: match the NB Pearson dispersion to its dof (bisection). */
+function estimateTheta(count: number[], mu: number[], p: number): number {
+  const dof = Math.max(count.length - p, 1);
+  const pearson = (th: number) => count.reduce((s, y, i) => { const m = mu[i]!, v = m + (m * m) / th; return s + ((y - m) ** 2) / v; }, 0);
+  if (pearson(1e6) <= dof) return POISSON;     // not overdispersed ⇒ Poisson
+  let lo = 0.05, hi = 1e6;
+  if (pearson(lo) >= dof) return lo;
+  for (let it = 0; it < 60; it++) { const mid = Math.sqrt(lo * hi); if (pearson(mid) > dof) hi = mid; else lo = mid; }
+  return Math.sqrt(lo * hi);
+}
+/** Fit one count event: Poisson, or (nb) Poisson → estimate θ → one NB refit. */
+function fitCount(X: number[][], count: number[], expo: number[], nb: boolean): number[] {
+  const beta = glmFit(X, count, expo, POISSON);
+  if (!nb) return beta;
+  const off = expo.map((e) => Math.log(Math.max(e, 1e-9)));
+  const mu = X.map((x, i) => Math.exp(Math.min(off[i]! + dot(beta, x), 30)));
+  const theta = estimateTheta(count, mu, X[0]!.length);
+  return theta === POISSON ? beta : glmFit(X, count, expo, theta);
+}
+/** Predicted per-600 rate from a log-link fit: 600·e^{β0 + Σ βⱼ·predⱼ} (no clamp). */
+const expRate = (beta: number[], preds: number[]) => 600 * Math.exp(Math.min(beta[0]! + preds.reduce((s, v, j) => s + beta[j + 1]! * v, 0), 30));
+
+export interface GLMHitParams { bb: number[]; k: number[]; hr: number[]; h: number[]; xbh: number[] }
+export function fitHitGLM(obs: TrainObs[], nb: boolean): GLMHitParams {
+  const PA = obs.map((p) => Math.max(p.hit.PA, 1));
+  const lne = obs.map((p) => ln1(p.ratings.hit.eye)), lnk = obs.map((p) => ln1(p.ratings.hit.kRat));
+  const lnp = obs.map((p) => ln1(p.ratings.hit.pow)), lng = obs.map((p) => ln1(p.ratings.hit.gap));
+  const lnb = obs.map((p) => ln1(p.ratings.hit.babip));
+  const bb = fitCount(obs.map((_, i) => [1, lne[i]!]), obs.map((p) => p.hit.BB), PA, nb);
+  const k = fitCount(obs.map((_, i) => [1, lnk[i]!]), obs.map((p) => p.hit.K), PA, nb);
+  const hr = fitCount(obs.map((_, i) => [1, lnp[i]!]), obs.map((p) => p.hit.HR), PA, nb);
+  // training-consistent BIP from the predicted per-600 counts
+  const bip = obs.map((_, i) => Math.max(600 - expRate(bb, [lne[i]!]) - expRate(k, [lnk[i]!]) - expRate(hr, [lnp[i]!]) - 6 - 3 + 4, 1));
+  const h = fitCount(obs.map((_, i) => [1, lnb[i]!, Math.log(bip[i]!)]), obs.map((p) => Math.max(p.hit.H - p.hit.HR, 0)), PA, nb);
+  const xbh = fitCount(obs.map((_, i) => [1, lng[i]!]), obs.map((p) => p.hit.b2 + p.hit.b3), PA, nb);
+  return { bb, k, hr, h, xbh };
+}
+export function predictHitGLM(m: GLMHitParams, o: TrainObs): number {
+  const r = o.ratings.hit;
+  const bb = expRate(m.bb, [ln1(r.eye)]), k = expRate(m.k, [ln1(r.kRat)]), hr = expRate(m.hr, [ln1(r.pow)]);
+  const bip = Math.max(600 - bb - k - hr - 6 - 3 + 4, 1);
+  const h = expRate(m.h, [ln1(r.babip), Math.log(bip)]);
+  const xbh = expRate(m.xbh, [ln1(r.gap)]);
+  const oneB = Math.max(h - xbh, 0);
+  return (W_BB * bb + W_BB * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600;
+}
+
+export interface GLMPitParams { bb: number[]; k: number[]; hr: number[]; h: number[] }
+export function fitPitGLM(obs: TrainObs[], nb: boolean): GLMPitParams {
+  const BF = obs.map((p) => Math.max(p.pitch.BF, 1));
+  const lnc = obs.map((p) => ln1(p.ratings.pitch.con)), lns = obs.map((p) => ln1(p.ratings.pitch.stu));
+  const lnh = obs.map((p) => ln1(p.ratings.pitch.hrr)), lnpb = obs.map((p) => ln1(p.ratings.pitch.pbabip));
+  const bb = fitCount(obs.map((_, i) => [1, lnc[i]!]), obs.map((p) => p.pitch.BB), BF, nb);
+  const k = fitCount(obs.map((_, i) => [1, lns[i]!]), obs.map((p) => p.pitch.K), BF, nb);
+  const hr = fitCount(obs.map((_, i) => [1, lnh[i]!]), obs.map((p) => p.pitch.HR), BF, nb);
+  const bip = obs.map((_, i) => Math.max(600 - expRate(bb, [lnc[i]!]) - expRate(k, [lns[i]!]) - expRate(hr, [lnh[i]!]) - 6, 1));
+  const h = fitCount(obs.map((_, i) => [1, lnpb[i]!, Math.log(bip[i]!)]), obs.map((p) => p.pitch.b1 + p.pitch.b2 + p.pitch.b3), BF, nb);
+  return { bb, k, hr, h };
+}
+export function predictPitGLM(m: GLMPitParams, o: TrainObs): number {
+  const r = o.ratings.pitch;
+  const bb = expRate(m.bb, [ln1(r.con)]), k = expRate(m.k, [ln1(r.stu)]), hr = expRate(m.hr, [ln1(r.hrr)]);
+  const bip = Math.max(600 - bb - k - hr - 6, 1);
+  const nHH = expRate(m.h, [ln1(r.pbabip), Math.log(bip)]);
+  const xbh = nHH * 0.25, oneB = Math.max(nHH - xbh, 0);
+  return (W_BB * bb + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // no HBP term (matches old)
+}
+
+// GLM gate: each single-rating event is a power law (rate ∝ rating^β), monotone by
+// construction — we still sample to confirm (and to catch the multiplicative chain).
+export function gateGLMHit(m: GLMHitParams, obs: TrainObs[]): GateStatus {
+  const notes: string[] = [];
+  const chk = (name: string, beta: number[], vals: number[]) => { const [lo, hi] = span(vals); if (!monotoneSampled((v) => expRate(beta, [ln1(v)]), lo, hi)) notes.push(`${name} curve non-monotone in-domain`); };
+  chk("HR", m.hr, obs.map((o) => o.ratings.hit.pow));
+  chk("XBH", m.xbh, obs.map((o) => o.ratings.hit.gap));
+  chk("BB", m.bb, obs.map((o) => o.ratings.hit.eye));
+  chk("K", m.k, obs.map((o) => o.ratings.hit.kRat));
+  return { status: notes.length ? "warn" : "pass", notes };
+}
+export function gateGLMPit(m: GLMPitParams, obs: TrainObs[]): GateStatus {
+  const notes: string[] = [];
+  const chk = (name: string, beta: number[], vals: number[]) => { const [lo, hi] = span(vals); if (!monotoneSampled((v) => expRate(beta, [ln1(v)]), lo, hi)) notes.push(`${name} curve non-monotone in-domain`); };
+  chk("HR", m.hr, obs.map((o) => o.ratings.pitch.hrr));
+  chk("BB", m.bb, obs.map((o) => o.ratings.pitch.con));
+  chk("K", m.k, obs.map((o) => o.ratings.pitch.stu));
+  return { status: notes.length ? "warn" : "pass", notes };
+}
+const glmHitModel = (name: string, nb: boolean): BakeoffModel => ({ name, role: "hitter", fit: (t) => fitHitGLM(t, nb), predict: (p, test) => test.map((o) => predictHitGLM(p as GLMHitParams, o)) });
+const glmPitModel = (name: string, nb: boolean): BakeoffModel => ({ name, role: "pitcher", fit: (t) => fitPitGLM(t, nb), predict: (p, test) => test.map((o) => predictPitGLM(p as GLMPitParams, o)) });
 
 // ── Seam wrappers + form definitions ───────────────────────────────────────────
 export function hitFormModel(form: HitForm): BakeoffModel {
@@ -215,4 +340,9 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   hitEntry(RAWLIN_HIT), pitEntry(RAWLIN_PIT),       // curve family — is log the right curve?
   hitEntry(RAWQUAD_HIT), pitEntry(RAWQUAD_PIT),
   hitEntry(RAWCUBIC_HIT), pitEntry(RAWCUBIC_PIT),
+  // #8 count GLMs — Poisson + negative-binomial, exposure offset, log link.
+  { model: glmHitModel("woba·poisson", false), spec: HITTER, gate: (p, obs) => gateGLMHit(p as GLMHitParams, obs) },
+  { model: glmPitModel("woba·poisson", false), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },
+  { model: glmHitModel("woba·nb", true), spec: HITTER, gate: (p, obs) => gateGLMHit(p as GLMHitParams, obs) },
+  { model: glmPitModel("woba·nb", true), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },
 ];

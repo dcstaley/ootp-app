@@ -10,7 +10,10 @@ import { wobaHitting, wobaPitching } from "../src/training/bakeoff.ts";
 import {
   LOG_HIT, LOG_PIT, RAWPOLY_HIT, RAWPOLY_PIT, LOGCUBIC_HIT, RAWCUBIC_HIT,
   hitFormModel, pitFormModel, fitHitForm, fitPitForm, gateHit, gatePit,
+  fitHitGLM, predictHitGLM, fitPitGLM, gateGLMHit, gateGLMPit,
 } from "../src/training/forms.ts";
+import { actualHitWoba } from "../src/training/bakeoff.ts";
+import { wPearson } from "../src/training/metrics.ts";
 
 const DIR = "Model 2037 and 2038";
 const WINDOW = [2037, 2038];
@@ -52,5 +55,23 @@ describe.skipIf(!existsSync(DIR))("forms — log curve reproduces the parity wob
   it("gate runs and returns a defined status for every candidate form", () => {
     for (const m of [RAWPOLY_HIT, LOGCUBIC_HIT, RAWCUBIC_HIT]) expect(["pass", "warn"]).toContain(gateHit(fitHitForm(m, hitObs), hitObs).status);
     expect(["pass", "warn"]).toContain(gatePit(fitPitForm(RAWPOLY_PIT, pitObs), pitObs).status);
+  });
+
+  it("count GLM (#8): Poisson IRLS converges, fits the data, and passes the gate", () => {
+    const params = fitHitGLM(hitObs, false);
+    // every fitted coefficient is finite (IRLS didn't diverge)
+    expect(Object.values(params).flat().every((b) => Number.isFinite(b))).toBe(true);
+    const pred = hitObs.map((o) => predictHitGLM(params, o));
+    const r = wPearson(pred, hitObs.map(actualHitWoba), hitObs.map((o) => Math.pow(o.hit.PA, 0.75)));
+    expect(r).toBeGreaterThan(0.7); // a sane in-sample fit
+    // power-law events are monotone by construction → gate passes for both roles
+    expect(gateGLMHit(params, hitObs).status).toBe("pass");
+    expect(gateGLMPit(fitPitGLM(pitObs, false), pitObs).status).toBe("pass");
+  });
+
+  it("negative-binomial differs from Poisson (dispersion reweights the fit)", () => {
+    const pois = fitHitGLM(hitObs, false), nb = fitHitGLM(hitObs, true);
+    const dp = pois.hr.reduce((s, b, j) => s + Math.abs(b - nb.hr[j]!), 0);
+    expect(dp).toBeGreaterThan(0); // θ is finite for overdispersed counts → coefficients move
   });
 });
