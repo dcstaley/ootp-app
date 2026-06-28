@@ -56,7 +56,7 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
 
   const pick = (model: string, role: string, evaluation: string) => sb.rows.find((r) => r.model === model && r.role === role && r.evaluation === evaluation)!.metrics;
 
-  const MODELS = ["woba", "basic", "woba·rawpoly", "woba·logcubic", "woba·rawlin", "woba·rawquad", "woba·rawcubic", "woba·poisson", "woba·nb", "woba·seqcond"];
+  const MODELS = ["woba", "basic", "woba·rawpoly", "woba·logcubic", "woba·rawlin", "woba·rawquad", "woba·rawcubic", "woba·poisson", "woba·nb", "woba·seqcond", "ceiling·flex"];
   it("covers the baselines + candidate forms × roles × {in-sample, cv, forward, backward}", () => {
     expect(sb.years).toEqual([2037, 2038]);
     expect(new Set(sb.rows.map((r) => r.evaluation))).toEqual(new Set(["in-sample", "cv", "forward", "backward"]));

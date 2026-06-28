@@ -19,7 +19,7 @@
 
 import type { TrainObs } from "./loader.ts";
 import { wls } from "./fit.ts";
-import { HITTER, PITCHER, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
+import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
 
 const ln1 = (x: number) => Math.log(Math.max(x, 1));
 const dot = (b: number[], x: number[]) => b.reduce((s, bi, j) => s + bi * x[j]!, 0);
@@ -404,6 +404,34 @@ export function gateSeqPit(m: SeqPitParams, obs: TrainObs[]): GateStatus {
 const seqHitModel: BakeoffModel = { name: "woba·seqcond", role: "hitter", fit: fitHitSeq, predict: (p, test) => test.map((o) => predictHitSeq(p as SeqHitParams, o)) };
 const seqPitModel: BakeoffModel = { name: "woba·seqcond", role: "pitcher", fit: fitPitSeq, predict: (p, test) => test.map((o) => predictPitSeq(p as SeqPitParams, o)) };
 
+// ── Ceiling benchmark (candidate #5): direct flexible wOBA ──────────────────────
+// Bypass the event chain — regress ACTUAL wOBA directly on a flexible polynomial in
+// the z-scored ratings (intercept + linear + quadratic + all pairwise interactions).
+// Its CV Pearson is the practical CEILING for a smooth model: how much signal the
+// ratings even carry. NOT deployable — unconstrained (non-monotone) and over-
+// parameterized (21 hit / 15 pit terms), so it overfits at small N (the in-sample↔CV
+// gap shows it). It only tells us whether the structured forms (#2) are near-optimal.
+interface FlexParams { beta: number[]; mu: number[]; sd: number[]; keys: string[] }
+function flexRow(z: number[]): number[] {
+  const r = [1, ...z];
+  for (const v of z) r.push(v * v);                                                   // quadratic
+  for (let i = 0; i < z.length; i++) for (let j = i + 1; j < z.length; j++) r.push(z[i]! * z[j]!); // interactions
+  return r;
+}
+function fitFlex(obs: TrainObs[], keys: string[], get: (o: TrainObs, k: string) => number, wt: (o: TrainObs) => number, actual: (o: TrainObs) => number): FlexParams {
+  const w = obs.map(wt), W = w.reduce((s, x) => s + x, 0);
+  const mu = keys.map((k) => obs.reduce((s, o, i) => s + w[i]! * get(o, k), 0) / W);
+  const sd = keys.map((k, j) => Math.sqrt(obs.reduce((s, o, i) => s + w[i]! * (get(o, k) - mu[j]!) ** 2, 0) / W) || 1);
+  const X = obs.map((o) => flexRow(keys.map((k, j) => (get(o, k) - mu[j]!) / sd[j]!)));
+  return { beta: wls(X, obs.map(actual), w), mu, sd, keys };
+}
+const predictFlex = (p: FlexParams, o: TrainObs, get: (o: TrainObs, k: string) => number) => dot(p.beta, flexRow(p.keys.map((k, j) => (get(o, k) - p.mu[j]!) / p.sd[j]!)));
+const HIT_KEYS = ["eye", "kRat", "pow", "babip", "gap"], PIT_KEYS = ["con", "stu", "hrr", "pbabip"];
+const getHitK = (o: TrainObs, k: string) => (o.ratings.hit as unknown as Record<string, number>)[k]!;
+const getPitK = (o: TrainObs, k: string) => (o.ratings.pitch as unknown as Record<string, number>)[k]!;
+const flexHitModel: BakeoffModel = { name: "ceiling·flex", role: "hitter", fit: (t) => fitFlex(t, HIT_KEYS, getHitK, (o) => Math.pow(o.hit.PA, 0.75), actualHitWoba), predict: (p, test) => test.map((o) => predictFlex(p as FlexParams, o, getHitK)) };
+const flexPitModel: BakeoffModel = { name: "ceiling·flex", role: "pitcher", fit: (t) => fitFlex(t, PIT_KEYS, getPitK, (o) => Math.pow(o.pitch.BF, 0.75), actualPitWoba), predict: (p, test) => test.map((o) => predictFlex(p as FlexParams, o, getPitK)) };
+
 // ── Seam wrappers + form definitions ───────────────────────────────────────────
 export function hitFormModel(form: HitForm): BakeoffModel {
   return { name: form.name, role: "hitter", fit: (train) => fitHitForm(form, train), predict: (p, test) => test.map((o) => predictHitForm(p as FittedHit, o)) };
@@ -455,4 +483,8 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   // #6 sequential conditional — a binomial logistic tree over the PA outcomes.
   { model: seqHitModel, spec: HITTER, gate: (p, obs) => gateSeqHit(p as SeqHitParams, obs) },
   { model: seqPitModel, spec: PITCHER, gate: (p, obs) => gateSeqPit(p as SeqPitParams, obs) },
+  // #5 ceiling benchmark — direct flexible wOBA. No gate: it's a reference, not a
+  // deployable candidate (intentionally unconstrained / non-monotone).
+  { model: flexHitModel, spec: HITTER },
+  { model: flexPitModel, spec: PITCHER },
 ];

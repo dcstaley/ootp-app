@@ -36,7 +36,7 @@ describe.skipIf(!existsSync(DIR))("loadTrainingDir — real dataset", () => {
   });
 
   it("detects the expected leagues, sides, and years", () => {
-    expect(summary.years).toEqual([2037, 2038, 2039]);
+    expect(summary.years).toEqual(expect.arrayContaining([2037, 2038, 2039])); // ≥ these (Old Data adds 2032-33 locally)
     expect(summary.leagues).toContain("PEL");
     expect(summary.leagues).toContain("HD452"); // canonical (spaces stripped) — unifies 37/38 "HD 452" + 39 "HD452"
     // both platoon sides present across the cells
@@ -44,7 +44,7 @@ describe.skipIf(!existsSync(DIR))("loadTrainingDir — real dataset", () => {
   });
 
   it("selects a window by year; full load = union of windows", () => {
-    expect(availableYears(DIR)).toEqual([2037, 2038, 2039]);
+    expect(availableYears(DIR)).toEqual(expect.arrayContaining([2037, 2038, 2039])); // superset OK (Old Data = 2032-33)
     const w38 = loadWindow(DIR, [2038]);
     expect(w38.summary.years).toEqual([2038]);
     expect(w38.observations.every((o) => o.sources.every((s) => s.year === 2038))).toBe(true);
