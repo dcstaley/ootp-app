@@ -28,6 +28,9 @@ import type { HittingRatings, PitchingRatings } from "../model/types.ts";
 export type Side = "L" | "R";
 
 const num = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+// Batter/pitcher hand code. The training CSVs store B/T as LETTERS (R/L/S); map to the
+// catalog convention 1=R, 2=L, 3=S. Falls back to num() if a source uses numeric codes.
+const handCode = (v: unknown): number => { const s = String(v ?? "").trim().toUpperCase(); return s === "R" ? 1 : s === "L" ? 2 : s === "S" ? 3 : num(v); };
 
 export interface FileTag { file: string; league: string; side: Side; year: number }
 
@@ -143,7 +146,7 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
         o = {
           key, cid, variant, side: tag.side,
           name: String(r["Name"] ?? ""), pos: String(r["POS"] ?? ""),
-          bats: num(r["B"]), throws: num(r["T"]),
+          bats: handCode(r["B"]), throws: handCode(r["T"]),
           ratings: { hit: hitRatings(r, tag.side), pitch: pitchRatings(r, tag.side) },
           hit: zeroHit(), pitch: zeroPitch(), sources: [],
         };

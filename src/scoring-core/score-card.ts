@@ -126,7 +126,8 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
   const hitBlend = (vr: number, vl: number): number => {
     if (bats === 1) return vr * coeffs.r_hit_split + vl * (1 - coeffs.r_hit_split);
     if (bats === 2) return vr * (1 - coeffs.l_hit_split) + vl * coeffs.l_hit_split;
-    return (vr + vl) / 2;
+    const s = typeof coeffs.s_hit_split === "number" ? coeffs.s_hit_split : 0.5; // switch: PA share vs RHP (default 0.5 = parity)
+    return vr * s + vl * (1 - s);
   };
 
   return {

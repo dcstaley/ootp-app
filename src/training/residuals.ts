@@ -11,7 +11,11 @@
 // + = over-valued). Bucket/cell/dist means are PA^0.75/BF^0.75-weighted (toggle).
 
 import type { TrainObs } from "./loader.ts";
-import { HITTER, PITCHER, wobaHitting, wobaPitching, type RoleSpec, type BakeoffModel } from "./bakeoff.ts";
+import { HITTER, PITCHER, type RoleSpec, type BakeoffModel } from "./bakeoff.ts";
+// Residuals score the DEPLOYED #2 model (raw-poly curve-form), not the retired
+// log-linear baseline — so "where the model misses" reflects what users actually see.
+// Tracks the deployed forms by reference: change RAWPOLY_PIT and this follows.
+import { hitFormModel, pitFormModel, RAWPOLY_HIT, LOG_PIT } from "./forms.ts";
 
 export interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number; ratings: Record<string, number> }
 // grid cells carry both the RAW mean error and the INTERACTION residual (raw minus
@@ -76,24 +80,28 @@ const wstd = (xs: number[], ws: number[]) => {
 // for hitters); `sig` = the subset that defines the signature buckets.
 interface RoleCfg { spec: RoleSpec; model: BakeoffModel; ratings: Record<string, (o: TrainObs) => number>; sig: string[] }
 const HIT_CFG: RoleCfg = {
-  spec: HITTER, model: wobaHitting,
+  spec: HITTER, model: hitFormModel(RAWPOLY_HIT),
   ratings: { babip: (o) => o.ratings.hit.babip, pow: (o) => o.ratings.hit.pow, eye: (o) => o.ratings.hit.eye, k: (o) => o.ratings.hit.kRat, gap: (o) => o.ratings.hit.gap },
   sig: ["babip", "pow", "eye", "k"],
 };
 const PIT_CFG: RoleCfg = {
-  spec: PITCHER, model: wobaPitching,
+  spec: PITCHER, model: pitFormModel(LOG_PIT),
   ratings: { stu: (o) => o.ratings.pitch.stu, con: (o) => o.ratings.pitch.con, pbabip: (o) => o.ratings.pitch.pbabip, hrr: (o) => o.ratings.pitch.hrr },
   sig: ["stu", "con", "pbabip", "hrr"],
 };
 
-export interface ResidOpts { includeVariants?: boolean; topK?: number; weighted?: boolean; minBucket?: number }
+// `model` overrides the role's default (deployed) model — lets callers analyze a
+// CANDIDATE model's misses (e.g. compare Poisson vs the deployed raw-poly) without
+// touching the live endpoint, which never passes it.
+export interface ResidOpts { includeVariants?: boolean; topK?: number; weighted?: boolean; minBucket?: number; model?: BakeoffModel }
 export function analyzeResiduals(obs: TrainObs[], role: "hitter" | "pitcher", minN = 1000, opts: ResidOpts = {}): ResidualAnalysis {
   const { includeVariants = true, topK = 12, weighted = true, minBucket = 2 } = opts;
   const cfg = role === "hitter" ? HIT_CFG : PIT_CFG;
+  const model = opts.model ?? cfg.model;
   const ratingNames = Object.keys(cfg.ratings);
   const qual = obs.filter((o) => cfg.spec.qualifies(o, minN) && (includeVariants || !o.variant));
-  const params = cfg.model.fit(qual);
-  const pred = cfg.model.predict(params, qual);
+  const params = model.fit(qual);
+  const pred = model.predict(params, qual);
   const ew = qual.map((o) => (weighted ? cfg.spec.weight(o) : 1));
   const cards: CardResidual[] = qual.map((o, i) => {
     const actual = cfg.spec.actualWoba(o);

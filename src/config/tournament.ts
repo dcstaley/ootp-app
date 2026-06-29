@@ -102,6 +102,9 @@ export interface Tournament {
   slot_counts?: Record<string, number>;   // slots mode: per Card-Value tier counts
   platoonVR?: number;                      // team RHP/LHP exposure weights (default league 0.62/0.38)
   platoonVL?: number;
+  // Per-hand OVR-blend splits (D4 platoon-as-tournament-setting). Seeded from the active
+  // model's measured exposure on CREATE; absent ⇒ the model/coeff defaults (existing tournaments untouched).
+  platoon?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number };
   minPlayersPerPosition?: number;          // coverage depth / backups (default 2)
   // Per-position min defensive ratings. starter = bar to START there (lineup); backup
   // = bar to count toward coverage depth. Keys are rating ids relevant to the position

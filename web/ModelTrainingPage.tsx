@@ -67,15 +67,25 @@ interface ResidualAnalysis {
 }
 interface ResidResp { available: boolean; error?: string; residuals?: ResidualAnalysis }
 
+interface PlatoonExposure {
+  r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number;
+  teamVR: number; teamVL: number;
+  hit: { hand: "R" | "L" | "S"; vsRHP: number; vsLHP: number; pa: number }[];
+  pit: { hand: "R" | "L"; vsRHB: number; vsLHB: number; bf: number }[];
+}
 interface TrainedModelSummary {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
-  hasEventForm: boolean;
+  hasEventForm: boolean; platoon?: PlatoonExposure;
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
 interface ModelsResp { models?: TrainedModelSummary[]; activeId?: string | null }
 
 type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitching";
+// The DEPLOYED forms (must match server.ts saveTrainedModel): raw-poly hitting + log pitching.
+// Used to filter the bake-off scoreboard down to JUST the live model on the Active-model tab.
+const DEPLOYED_HIT_MODEL = "woba·rawpoly";
+const DEPLOYED_PIT_MODEL = "woba";
 const FIT_TABS: { id: FitTab; label: string }[] = [
   { id: "woba_hitting", label: "wOBA Hitting" }, { id: "woba_pitching", label: "wOBA Pitching" },
   { id: "basic_hitting", label: "Basic Hitting" }, { id: "basic_pitching", label: "Basic Pitching" },
@@ -461,6 +471,10 @@ export function ModelTrainingPage() {
   const [residMin, setResidMin] = useState(1000); const [residVar, setResidVar] = useState(true); const [residWeighted, setResidWeighted] = useState(true);
   const [models, setModels] = useState<TrainedModelSummary[]>([]); const [modelName, setModelName] = useState(""); const [savingModel, setSavingModel] = useState(false);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"active" | "bakeoff">("active"); // top-level: deployed model vs candidate comparison
+  // The deployed-performance table reflects the ACTIVE model on ITS frozen config, not the page window.
+  const [activeSb, setActiveSb] = useState<ScoreboardResp | null>(null);
+  const [activeSbLoading, setActiveSbLoading] = useState(false);
 
   const yq = (ys: number[]) => (ys.length ? `&years=${ys.join(",")}` : "");
   const vq = (incl: boolean) => `&variants=${incl ? "all" : "base"}`;
@@ -486,7 +500,12 @@ export function ModelTrainingPage() {
     fetch(`/api/training/residuals?role=${role}&minN=${pa}${vq(incl)}&weighted=${wt}${yq(ys)}${reload ? "&reload=true" : ""}`)
       .then((r) => r.json()).then((d: ResidResp) => setResid(d)).catch((e) => setErr(String(e)));
   const applyModelsResp = (d: ModelsResp) => { setModels(d.models ?? []); setActiveModelId(d.activeId ?? null); };
-  const loadModels = () => fetch("/api/training/models").then((r) => r.json()).then((d: ModelsResp) => applyModelsResp(d)).catch((e) => setErr(String(e)));
+  const loadModels = () => fetch("/api/training/models").then((r) => r.json()).then((d: ModelsResp) => {
+    applyModelsResp(d);
+    const m = (d.models ?? []).find((x) => x.id === d.activeId); // open the page reflecting the live model's config
+    if (m) loadModelConfig(m);
+    else { loadFit([]); loadSb([]); loadResid(residRole, []); } // no active model → default-window view
+  }).catch((e) => setErr(String(e)));
   const saveModel = () => {
     const name = modelName.trim(); if (!name) return;
     setSavingModel(true);
@@ -497,13 +516,36 @@ export function ModelTrainingPage() {
   const deleteModel = (id: string) => fetch(`/api/training/models/delete?id=${encodeURIComponent(id)}`, { method: "POST" }).then((r) => r.json()).then((d: ModelsResp) => applyModelsResp(d)).catch((e) => setErr(String(e)));
   // Activate a #2 model for live scoring (or pass "" to revert to the log-linear baseline).
   const activateModel = (id: string) => fetch(`/api/training/models/activate?id=${encodeURIComponent(id)}`, { method: "POST" })
-    .then((r) => r.json()).then((d: ModelsResp & { ok?: boolean; error?: string }) => { if (d.ok === false) setErr(d.error ?? "activate failed"); else applyModelsResp(d); }).catch((e) => setErr(String(e)));
-  // Load a saved model's CONFIG into the page (window + trained-models min/variants) and refit to match.
+    .then((r) => r.json()).then((d: ModelsResp & { ok?: boolean; error?: string }) => {
+      if (d.ok === false) { setErr(d.error ?? "activate failed"); return; }
+      applyModelsResp(d);
+      const m = (d.models ?? []).find((x) => x.id === id); // sync the WHOLE page (window + every section) to the now-active model
+      if (m) loadModelConfig(m);
+    }).catch((e) => setErr(String(e)));
+  // Push a saved model's CONFIG into the page — the GLOBAL window + EVERY section's min/variants —
+  // and reload fit / scoreboard / residuals so the whole Active-model tab reflects that model.
   const loadModelConfig = (m: TrainedModelSummary) => {
-    setYears(m.window); setFitMin(m.minPA); setFitVar(m.includeVariants);
-    loadFit(m.window, m.minPA, m.includeVariants); loadSb(m.window); loadResid(residRole, m.window);
+    setYears(m.window);
+    setFitMin(m.minPA); setFitVar(m.includeVariants);
+    setSbMin(m.minPA); setSbVar(m.includeVariants);
+    setResidMin(m.minPA); setResidVar(m.includeVariants);
+    loadFit(m.window, m.minPA, m.includeVariants);
+    loadSb(m.window, m.minPA, m.includeVariants);
+    loadResid(residRole, m.window, m.minPA, m.includeVariants);
   };
-  useEffect(() => { load(); loadFit([]); loadSb([]); loadResid("hitter", []); loadModels(); }, []);
+  useEffect(() => { load(); loadModels(); }, []); // loadModels routes to the active model's config (or default-window loads)
+  // Deployed-performance scoreboard: scoped to the ACTIVE model's OWN window/min/variants
+  // (independent of the page's exploration window); refetched whenever the active model changes.
+  const loadActiveSb = (m: TrainedModelSummary) => {
+    setActiveSbLoading(true);
+    fetch(`/api/training/scoreboard?minN=${m.minPA}&k=5${vq(m.includeVariants)}${yq(m.window)}`)
+      .then((r) => r.json()).then((d: ScoreboardResp) => setActiveSb(d))
+      .catch((e) => setErr(String(e))).finally(() => setActiveSbLoading(false));
+  };
+  useEffect(() => {
+    const m = models.find((x) => x.id === activeModelId);
+    if (m) loadActiveSb(m); else setActiveSb(null);
+  }, [activeModelId, models]);
   // Changing the GLOBAL window reloads all three (each with its own section settings).
   const toggleYear = (y: number) => {
     const next = (years.includes(y) ? years.filter((x) => x !== y) : [...years, y]).sort((a, b) => a - b);
@@ -515,6 +557,7 @@ export function ModelTrainingPage() {
   // Pivot the cells into a league-row × (year/side)-column matrix for the table.
   const colKeys = data ? [...new Set(data.cells.map((c) => `${c.year} v${c.side}`))].sort() : [];
   const cellAt = (league: string, col: string) => data?.cells.find((c) => c.league === league && `${c.year} v${c.side}` === col);
+  const activeModel = models.find((m) => m.id === activeModelId); // the live scoring model (● in the table)
 
   return (
     <div style={{ width: "100%", maxWidth: 1100 }}>
@@ -609,6 +652,17 @@ export function ModelTrainingPage() {
             </span>
           </div>
 
+          {/* Top-level tabs — Active model (deployed model + diagnostics) vs Bake-off (candidate comparison) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0 12px", flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 6, overflow: "hidden" }}>
+              {([["active", "Active model"], ["bakeoff", "Bake-off"]] as const).map(([id, label]) => (
+                <button key={id} onClick={() => setTab(id)} style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: "pointer", padding: "6px 14px", fontSize: 13, fontWeight: tab === id ? 700 : 400, background: tab === id ? C.accent : C.input, color: tab === id ? "#fff" : C.sub }}>{label}</button>
+              ))}
+            </span>
+            <span style={{ fontSize: 12, color: C.sub }}>{tab === "active" ? "The live scoring model — saved models, its coefficients, and where it misses." : "Candidate-form comparison (model selection). D3 resolved: raw-poly hitting + log pitching."}</span>
+          </div>
+
+          {tab === "active" && (<>
           {/* Saved models — named snapshots of the four fits + their training config (parallel league/tournament models) */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0 6px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, fontSize: 14 }}>Saved models</h3>
@@ -651,6 +705,9 @@ export function ModelTrainingPage() {
             </div>
           )}
 
+          </>)}
+
+          {tab === "bakeoff" && (<>
           {/* Evaluation scoreboard — out-of-sample fidelity for the bake-off baseline */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 8px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, fontSize: 14 }}>Evaluation scoreboard {sbLoading && <span style={{ fontSize: 12, color: C.sub }}>· computing…</span>}</h3>
@@ -671,6 +728,56 @@ export function ModelTrainingPage() {
               tournament-like). Evaluated in wOBA space, upstream of softcaps/anchoring.
             </p>
           </>}
+
+          </>)}
+
+          {tab === "active" && (<>
+          {/* Deployed model performance — the ACTIVE model's own metrics (raw-poly hitting + log
+              pitching) across in-sample / CV / forward / backward, on ITS frozen window/min/variants. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 8px", flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, fontSize: 14 }}>Deployed model performance {activeSbLoading && <span style={{ fontSize: 12, color: C.sub }}>· computing…</span>}</h3>
+            {activeModel
+              ? <span style={{ fontSize: 12, color: C.sub }}><b style={{ color: C.text }}>{activeModel.name}</b> · window {activeModel.window.join("+")} · min {activeModel.minPA} · {activeModel.includeVariants ? "variants" : "base"} — raw-poly hitting · log pitching</span>
+              : <span style={{ fontSize: 12, color: "#eab308" }}>No model active — live scoring is the log-linear baseline. Click <b>Use</b> on a saved model above.</span>}
+          </div>
+          {activeModel && (activeSb?.scoreboard ? (() => {
+            const rows = activeSb.scoreboard.rows.filter((r) => (r.role === "hitter" && r.model === DEPLOYED_HIT_MODEL) || (r.role === "pitcher" && r.model === DEPLOYED_PIT_MODEL));
+            return rows.length
+              ? <ScoreboardView sb={{ ...activeSb.scoreboard, rows }} />
+              : <p style={{ color: C.sub, fontSize: 13 }}>No deployed-model rows for this model's config.</p>;
+          })() : <p style={{ color: C.sub, fontSize: 13 }}>{activeSbLoading ? "Computing…" : "—"}</p>)}
+
+          {/* Platoon exposure — realized RHP/LHP (hitters) & RHB/LHB (pitchers) shares from this
+              model's data. Seeds NEW tournaments' OVR splits + team exposure; existing untouched. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 8px", flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, fontSize: 14 }}>Platoon exposure</h3>
+            <span style={{ fontSize: 12, color: C.sub }}>realized splits from this model's data — seeds new-tournament OVR weighting &amp; team exposure (existing tournaments untouched)</span>
+          </div>
+          {activeModel?.platoon ? (() => {
+            const p = activeModel.platoon!;
+            const HN: Record<string, string> = { R: "RHB", L: "LHB", S: "SHB" };
+            const PN: Record<string, string> = { R: "RHP", L: "LHP" };
+            const pc = (x: number) => `${(x * 100).toFixed(1)}%`;
+            return <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+                <table style={{ borderCollapse: "collapse" }}>
+                  <thead><tr><th style={{ ...th, textAlign: "left" }}>Batter</th><th style={th}>vs RHP</th><th style={th}>vs LHP</th><th style={th}>PA</th></tr></thead>
+                  <tbody>
+                    {p.hit.filter((h) => h.pa > 0).map((h) => <tr key={h.hand}><td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{HN[h.hand]}</td><td style={td}>{pc(h.vsRHP)}</td><td style={td}>{pc(h.vsLHP)}</td><td style={{ ...td, color: C.sub }}>{h.pa.toLocaleString()}</td></tr>)}
+                    <tr><td style={{ ...td, textAlign: "left", color: C.sub }}>team</td><td style={{ ...td, fontWeight: 700 }}>{pc(p.teamVR)}</td><td style={{ ...td, fontWeight: 700 }}>{pc(p.teamVL)}</td><td style={td}></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+                <table style={{ borderCollapse: "collapse" }}>
+                  <thead><tr><th style={{ ...th, textAlign: "left" }}>Pitcher</th><th style={th}>vs RHB</th><th style={th}>vs LHB</th><th style={th}>BF</th></tr></thead>
+                  <tbody>
+                    {p.pit.filter((x) => x.bf > 0).map((x) => <tr key={x.hand}><td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{PN[x.hand]}</td><td style={td}>{pc(x.vsRHB)}</td><td style={td}>{pc(x.vsLHB)}</td><td style={{ ...td, color: C.sub }}>{x.bf.toLocaleString()}</td></tr>)}
+                  </tbody>
+                </table>
+              </div>
+            </div>;
+          })() : <p style={{ color: C.sub, fontSize: 13 }}>{activeModel ? "This model predates platoon-exposure — re-save it to compute." : "No active model."}</p>}
 
           {/* Where the model misses — per-card residual leaderboards + archetypes + grid */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "22px 0 4px", flexWrap: "wrap" }}>
@@ -765,6 +872,7 @@ export function ModelTrainingPage() {
               })()}
             </>
           )}
+          </>)}
         </>
       )}
     </div>

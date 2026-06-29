@@ -35,6 +35,14 @@ Sequencing rationale: M1.5 finishes the scoring story (no more pasting scales fr
 builds the structure everything reads; M3 makes it visible/checkable; M4 is the payoff; M5–M7 round it
 out. Spikes gate the milestones that need exploration.
 
+### UI refinement backlog (post-M6) — added 2026-06-29
+
+Surfaced during M6; **to be scoped as we reach them**, sequenced AFTER the M6 retirement bundle (once
+modeling is closed out). Both are refinement passes on already-built pages, not new milestones.
+
+- **Tournament page refinements** ⬜ — usability/clarity pass on `web/TournamentsPage.tsx`. Scope TBD.
+- **Roster page refinements** ⬜ — usability pass on `web/RosterPage.tsx` + the lineup editor. Scope TBD.
+
 ---
 
 ## M0 — Foundations ✅

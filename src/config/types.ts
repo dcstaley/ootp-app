@@ -37,6 +37,8 @@ export interface Coeffs {
   ssp_basic_hitting: number; ssp_adv_hitting: number; ssp_basic_pitching: number;
   l_pitch_split: number; r_pitch_split: number;
   l_hit_split: number;   r_hit_split: number;
+  // s_hit_split (switch-hitter OVR split) is carried via the string index signature, optional —
+  // absent ⇒ 0.5 (parity). Not declared explicitly: an optional field conflicts with the index type.
 
   // Basic model
   basic_intercept: number;

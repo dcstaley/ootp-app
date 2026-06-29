@@ -22,7 +22,7 @@ import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeFieldStats, buildPoolTransform, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel } from "../scoring-core/index.ts";
-import { fitHitForm, fitPitForm, RAWPOLY_HIT, RAWPOLY_PIT } from "../training/forms.ts";
+import { fitHitForm, fitPitForm, RAWPOLY_HIT, LOG_PIT } from "../training/forms.ts";
 import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -30,6 +30,7 @@ import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
 import { loadTrainingDir, loadWindow, availableYears, type LoadedTraining, type TrainObs } from "../training/loader.ts";
+import { computePlatoon, type PlatoonExposure } from "../training/platoon.ts";
 import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingFit, type WobaPitchingFit, type BasicFit, type BasicHittingCoeffs, type BasicPitchingCoeffs, type WobaHittingCoeffs, type WobaPitchingCoeffs } from "../training/fit.ts";
 import { buildScoreboard, defaultWindow, type Scoreboard } from "../training/evaluate.ts";
 import { HITTER, PITCHER, predictHitWoba, predictPitWoba, actualHitWoba, actualPitWoba } from "../training/bakeoff.ts";
@@ -146,6 +147,7 @@ let cache = new Map<string, Scored>();
 // #2 is being verified). Refreshed at boot + on activate/delete; changing it clears
 // the per-tournament scoring cache so scores recompute.
 let activeEventForm: EventForm | null = null;
+let activePlatoon: PlatoonExposure | null = null; // active model's measured platoon exposure → new-tournament defaults
 
 // Pool-strength rating transform (#2 only). NON-VARIANT cards set every average/distribution
 // (the field-size diagnostic was no-variants too); variants are scored but never enter the
@@ -170,6 +172,12 @@ function scoreTournament(t: Tournament): Scored {
   if (!era || !park) throw new Error(`Tournament ${t.id}: missing era '${t.eraId}' or park '${t.parkId}'`);
 
   const coeffs = resolveCoeffs(model!, era, park, t.softcaps);
+  // Platoon OVR splits (scope B): a tournament's own splits (seeded from the active model on
+  // create) override the coeff defaults; existing tournaments without `platoon` are untouched.
+  if (t.platoon) {
+    coeffs.r_hit_split = t.platoon.r_hit_split; coeffs.l_hit_split = t.platoon.l_hit_split; coeffs.s_hit_split = t.platoon.s_hit_split;
+    coeffs.r_pitch_split = t.platoon.r_pitch_split; coeffs.l_pitch_split = t.platoon.l_pitch_split;
+  }
   const eventForm = activeEventForm ?? undefined;
   const derived = computeDerived(coeffs, !!eventForm); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
   const pool = buildEligiblePool(catalog.cards, t);
@@ -641,6 +649,7 @@ interface TrainedModel {
   // reproducible even as the (gitignored, weekly-changing) training data moves. Optional
   // for backward compat with pre-#2 artifacts (those can't be activated for scoring).
   eventForm?: EventForm;
+  platoon?: PlatoonExposure; // measured platoon exposure (OVR splits + team VR/VL) — seeds new-tournament defaults
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
@@ -659,19 +668,25 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   const includeVariants = body.includeVariants !== false;
   const f = getFit(window, minPA, includeVariants);
   if (!f.available || !f.woba_hitting || !f.woba_pitching || !f.basic_hitting || !f.basic_pitching) throw new Error(f.error ?? "fit unavailable");
-  // Freeze the deployed D3 #2 (raw-poly) form, fit on the SAME qualifying obs the
-  // log-linear fit used (one fit path — reuse the bake-off's fitHitForm/fitPitForm).
+  // Freeze the deployed D3 #2 form, fit on the SAME qualifying obs as the log-linear fit
+  // (one fit path — reuse the bake-off's fitHitForm/fitPitForm). DEPLOYED FORMS (bake-off,
+  // CV/OOT-validated): HITTING = raw-poly (quadratic POW/GAP captures real accelerating
+  // power structure); PITCHING = LOG — the quadratic earned nothing OOS (pitching value is
+  // near-linear in the ratings and already at its modeling ceiling at log; the raw-poly HR
+  // curve was a slight regression). Each side at its ceiling; both curve-form (one structure).
   const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
   const eventForm: EventForm = {
     hit: fitHitForm(RAWPOLY_HIT, obs.filter((o) => HITTER.qualifies(o, minPA))),
-    pit: fitPitForm(RAWPOLY_PIT, obs.filter((o) => PITCHER.qualifies(o, minPA))),
+    pit: fitPitForm(LOG_PIT, obs.filter((o) => PITCHER.qualifies(o, minPA))),
   };
+  const platoon = computePlatoon(obs); // realized RHP/LHP exposure over ALL window obs (full PA/BF, both roles)
   const existing = await repo.loadAll<TrainedModel>("trained-models");
   let id = slug(name) || "model"; while (existing.some((m) => m.id === id)) id += "-2";
   const model: TrainedModel = {
     id, name, datasetRoot: TRAINING_DIR, window, minPA, includeVariants,
     coefficients: { woba_hitting: f.woba_hitting.coefficients, woba_pitching: f.woba_pitching.coefficients, basic_hitting: f.basic_hitting.coefficients, basic_pitching: f.basic_pitching.coefficients },
     eventForm,
+    platoon,
     diag: { hitPearson: f.wobaDiagHit?.pearson ?? null, pitPearson: f.wobaDiagPit?.pearson ?? null, rowsHit: f.woba_hitting.rowCount, rowsPit: f.woba_pitching.rowCount },
     trainedAt: new Date().toISOString(), notes: body.notes ? String(body.notes) : undefined,
   };
@@ -686,6 +701,7 @@ async function refreshActiveModel(): Promise<void> {
   const id = state.activeModelId ?? null;
   const m = id ? (await repo.loadAll<TrainedModel>("trained-models")).find((x) => x.id === id) : undefined;
   activeEventForm = m?.eventForm ?? null;
+  activePlatoon = m?.platoon ?? null;
   if (id && !m?.eventForm) { state.activeModelId = null; await saveState(); }
   cache = new Map();
 }
@@ -829,6 +845,13 @@ const server = createServer(async (req, res) => {
       softcaps: body.softcaps ?? base.softcaps,
       eligibility: body.eligibility ?? base.eligibility,
     };
+    // New tournaments inherit the ACTIVE model's measured platoon exposure as their default
+    // (existing tournaments keep their stored values — seed only on create).
+    if (!existing && activePlatoon) {
+      if (body.platoon === undefined) t.platoon = { r_hit_split: activePlatoon.r_hit_split, l_hit_split: activePlatoon.l_hit_split, s_hit_split: activePlatoon.s_hit_split, r_pitch_split: activePlatoon.r_pitch_split, l_pitch_split: activePlatoon.l_pitch_split };
+      if (body.platoonVR === undefined) t.platoonVR = activePlatoon.teamVR;
+      if (body.platoonVL === undefined) t.platoonVL = activePlatoon.teamVL;
+    }
     await repo.save("tournaments", id, t);
     tournamentById.set(id, t);
     cache.delete(id); // era/park/softcaps/value-range affect scoring → re-score on next read
