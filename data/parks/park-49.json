@@ -1,0 +1,18 @@
+{
+  "id": "park-49",
+  "name": "Polar Park",
+  "avg_l": 1.09,
+  "avg_r": 1.02,
+  "hr_l": 1.05,
+  "hr_r": 0.98,
+  "gap": 1.24,
+  "gap_l": 1.27,
+  "gap_r": 1.21,
+  "triple": 0.7,
+  "triple_l": 0.71,
+  "triple_r": 0.69,
+  "year": 2026,
+  "league": "IL",
+  "team": "Worcester Red Sox",
+  "ptLevel": 6
+}

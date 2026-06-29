@@ -1,0 +1,18 @@
+{
+  "id": "park-26",
+  "name": "T-Mobile Park",
+  "avg_l": 0.951737404,
+  "avg_r": 0.948722303,
+  "hr_l": 0.928913236,
+  "hr_r": 0.977019727,
+  "gap": 0.93316406,
+  "gap_l": 0.934543669,
+  "gap_r": 0.930498123,
+  "triple": 0.794993758,
+  "triple_l": 0.751126349,
+  "triple_r": 0.842010319,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Seattle Mariners",
+  "ptLevel": 0
+}

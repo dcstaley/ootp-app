@@ -1,0 +1,18 @@
+{
+  "id": "park-120",
+  "name": "Metropolitan Stadium",
+  "avg_l": 1.04,
+  "avg_r": 1.025,
+  "hr_l": 1.054,
+  "hr_r": 1,
+  "gap": 0.976,
+  "gap_l": 0.993,
+  "gap_r": 0.966,
+  "triple": 1.176,
+  "triple_l": 1.146,
+  "triple_r": 1.201,
+  "year": 1981,
+  "league": "AL",
+  "team": "Minnesota Twins",
+  "ptLevel": 5
+}

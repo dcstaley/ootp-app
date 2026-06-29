@@ -1,0 +1,18 @@
+{
+  "id": "park-142",
+  "name": "Astrodome (1965)",
+  "avg_l": 1.004,
+  "avg_r": 0.994,
+  "hr_l": 0.849,
+  "hr_r": 0.874,
+  "gap": 1.022,
+  "gap_l": 1.022,
+  "gap_r": 1.022,
+  "triple": 1.12,
+  "triple_l": 1.12,
+  "triple_r": 1.12,
+  "year": 1965,
+  "league": "NL",
+  "team": "Houston Astros",
+  "ptLevel": 7
+}

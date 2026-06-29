@@ -1,0 +1,18 @@
+{
+  "id": "park-56",
+  "name": "NBT Bank Stadium",
+  "avg_l": 1.02,
+  "avg_r": 1.01,
+  "hr_l": 1.09,
+  "hr_r": 1.1,
+  "gap": 0.97,
+  "gap_l": 0.99,
+  "gap_r": 0.95,
+  "triple": 1.038,
+  "triple_l": 1.54,
+  "triple_r": 0.7,
+  "year": 2026,
+  "league": "IL",
+  "team": "Syracuse Mets",
+  "ptLevel": 5
+}

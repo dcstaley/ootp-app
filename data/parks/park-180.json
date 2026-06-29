@@ -1,0 +1,18 @@
+{
+  "id": "park-180",
+  "name": "Fenway Park (1937)",
+  "avg_l": 0.996,
+  "avg_r": 1.025,
+  "hr_l": 0.833,
+  "hr_r": 1.122,
+  "gap": 1.032,
+  "gap_l": 1.032,
+  "gap_r": 1.032,
+  "triple": 1.022,
+  "triple_l": 1.022,
+  "triple_r": 1.022,
+  "year": 1937,
+  "league": "AL",
+  "team": "Boston Red Sox",
+  "ptLevel": -2
+}

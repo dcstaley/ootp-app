@@ -1,0 +1,18 @@
+{
+  "id": "park-117",
+  "name": "Comiskey Park (1983)",
+  "avg_l": 0.994791806,
+  "avg_r": 1.005400151,
+  "hr_l": 0.970165214,
+  "hr_r": 1.021822836,
+  "gap": 0.990433377,
+  "gap_l": 0.971411192,
+  "gap_r": 1.000745243,
+  "triple": 1.170695864,
+  "triple_l": 1.293759557,
+  "triple_r": 1.08814431,
+  "year": 1983,
+  "league": "AL",
+  "team": "Chicago White Sox",
+  "ptLevel": 4
+}

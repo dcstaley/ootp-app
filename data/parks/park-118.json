@@ -1,0 +1,18 @@
+{
+  "id": "park-118",
+  "name": "Arlington Stadium",
+  "avg_l": 0.99,
+  "avg_r": 1.012,
+  "hr_l": 0.899,
+  "hr_r": 0.88,
+  "gap": 0.989,
+  "gap_l": 0.989,
+  "gap_r": 0.989,
+  "triple": 0.887,
+  "triple_l": 0.887,
+  "triple_r": 0.887,
+  "year": 1982,
+  "league": "AL",
+  "team": "Texas Rangers",
+  "ptLevel": 7
+}

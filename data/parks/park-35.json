@@ -1,0 +1,18 @@
+{
+  "id": "park-35",
+  "name": "Daybreak Field",
+  "avg_l": 1.01,
+  "avg_r": 1.1,
+  "hr_l": 0.75,
+  "hr_r": 1,
+  "gap": 1.064,
+  "gap_l": 1.02,
+  "gap_r": 1.11,
+  "triple": 1.383,
+  "triple_l": 1.31,
+  "triple_r": 1.46,
+  "year": 2026,
+  "league": "PCL",
+  "team": "Salt Lake Bees",
+  "ptLevel": -2
+}

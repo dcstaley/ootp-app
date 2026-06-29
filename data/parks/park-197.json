@@ -1,0 +1,18 @@
+{
+  "id": "park-197",
+  "name": "Yankee Stadium (1923)",
+  "avg_l": 0.965,
+  "avg_r": 0.985,
+  "hr_l": 1.169,
+  "hr_r": 1.12,
+  "gap": 0.901,
+  "gap_l": 0.918,
+  "gap_r": 0.897,
+  "triple": 1.176,
+  "triple_l": 1.108,
+  "triple_r": 1.257,
+  "year": 1923,
+  "league": "AL",
+  "team": "New York Yankees",
+  "ptLevel": 4
+}

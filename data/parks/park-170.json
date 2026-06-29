@@ -1,0 +1,18 @@
+{
+  "id": "park-170",
+  "name": "Wrigley Field (1945)",
+  "avg_l": 0.943,
+  "avg_r": 1.043,
+  "hr_l": 0.877,
+  "hr_r": 1.076,
+  "gap": 0.966,
+  "gap_l": 0.932,
+  "gap_r": 0.995,
+  "triple": 0.944,
+  "triple_l": 0.919,
+  "triple_r": 0.968,
+  "year": 1945,
+  "league": "NL",
+  "team": "Chicago Cubs",
+  "ptLevel": 0
+}

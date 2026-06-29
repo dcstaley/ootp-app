@@ -1,0 +1,18 @@
+{
+  "id": "park-134",
+  "name": "Yankee Stadium (1971)",
+  "avg_l": 0.98264958,
+  "avg_r": 0.974694836,
+  "hr_l": 1.219874945,
+  "hr_r": 0.725371962,
+  "gap": 0.984963814,
+  "gap_l": 1.069025771,
+  "gap_r": 0.934153592,
+  "triple": 1.180102789,
+  "triple_l": 1.115625,
+  "triple_r": 1.23857297,
+  "year": 1971,
+  "league": "AL",
+  "team": "New York Yankees",
+  "ptLevel": -2
+}

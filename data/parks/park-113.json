@@ -1,0 +1,18 @@
+{
+  "id": "park-113",
+  "name": "Jack Murphy Stadium",
+  "avg_l": 0.989,
+  "avg_r": 0.988,
+  "hr_l": 1.09,
+  "hr_r": 1.128,
+  "gap": 0.924,
+  "gap_l": 0.924,
+  "gap_r": 0.924,
+  "triple": 1.035,
+  "triple_l": 1.035,
+  "triple_r": 1.035,
+  "year": 1984,
+  "league": "NL",
+  "team": "San Diego Padres",
+  "ptLevel": 3
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-66",
+  "name": "Daegu Samsung Lions Park",
+  "avg_l": 0.987,
+  "avg_r": 0.992,
+  "hr_l": 1.111,
+  "hr_r": 1.112,
+  "gap": 1.008,
+  "gap_l": 1.008,
+  "gap_r": 1.008,
+  "triple": 0.886,
+  "triple_l": 0.886,
+  "triple_r": 0.886,
+  "year": 2026,
+  "league": "KBO",
+  "team": "Samsung Lions",
+  "ptLevel": 6
+}

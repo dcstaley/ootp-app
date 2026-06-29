@@ -1,0 +1,18 @@
+{
+  "id": "park-17",
+  "name": "LoanDepot Park",
+  "avg_l": 1.021240711,
+  "avg_r": 1.00267005,
+  "hr_l": 1.00846827,
+  "hr_r": 0.940803289,
+  "gap": 1.014599204,
+  "gap_l": 0.998557568,
+  "gap_r": 1.014079809,
+  "triple": 1.090778112,
+  "triple_l": 1.128967285,
+  "triple_r": 1.041738987,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Miami Marlins",
+  "ptLevel": 0
+}

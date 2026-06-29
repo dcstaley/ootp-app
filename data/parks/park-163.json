@@ -1,0 +1,18 @@
+{
+  "id": "park-163",
+  "name": "Crosley Field (1949)",
+  "avg_l": 1.081,
+  "avg_r": 1.087,
+  "hr_l": 1.168,
+  "hr_r": 0.974,
+  "gap": 1.023,
+  "gap_l": 1.021,
+  "gap_r": 1.025,
+  "triple": 0.828,
+  "triple_l": 0.786,
+  "triple_r": 0.875,
+  "year": 1949,
+  "league": "NL",
+  "team": "Cincinnati Reds",
+  "ptLevel": 0
+}

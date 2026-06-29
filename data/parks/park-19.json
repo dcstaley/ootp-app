@@ -1,0 +1,18 @@
+{
+  "id": "park-19",
+  "name": "Target Field",
+  "avg_l": 1.010914445,
+  "avg_r": 0.988550305,
+  "hr_l": 1.021462083,
+  "hr_r": 0.955120981,
+  "gap": 1.054267764,
+  "gap_l": 1.022705197,
+  "gap_r": 1.063042641,
+  "triple": 0.926744163,
+  "triple_l": 0.929982901,
+  "triple_r": 0.910335541,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Minnesota Twins",
+  "ptLevel": 0
+}

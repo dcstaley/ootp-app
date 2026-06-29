@@ -1,0 +1,18 @@
+{
+  "id": "park-198",
+  "name": "Weeghman Park",
+  "avg_l": 1.03,
+  "avg_r": 0.99,
+  "hr_l": 0.928,
+  "hr_r": 1.2,
+  "gap": 1.118,
+  "gap_l": 1.118,
+  "gap_r": 1.118,
+  "triple": 0.862,
+  "triple_l": 0.862,
+  "triple_r": 0.862,
+  "year": 1922,
+  "league": "NL",
+  "team": "Chicago Cubs",
+  "ptLevel": -2
+}

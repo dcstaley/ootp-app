@@ -1,0 +1,18 @@
+{
+  "id": "park-219",
+  "name": "Polo Grounds (1905)",
+  "avg_l": 1.138,
+  "avg_r": 0.983,
+  "hr_l": 1.5,
+  "hr_r": 1.456,
+  "gap": 1.002,
+  "gap_l": 1.067,
+  "gap_r": 1.012,
+  "triple": 0.957,
+  "triple_l": 0.976,
+  "triple_r": 0.859,
+  "year": 1905,
+  "league": "NL",
+  "team": "New York Giants",
+  "ptLevel": -2
+}

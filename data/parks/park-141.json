@@ -1,0 +1,18 @@
+{
+  "id": "park-141",
+  "name": "Memorial Stadium",
+  "avg_l": 1.018,
+  "avg_r": 1.002,
+  "hr_l": 0.995,
+  "hr_r": 1.088,
+  "gap": 0.994,
+  "gap_l": 1.019,
+  "gap_r": 0.984,
+  "triple": 0.917,
+  "triple_l": 0.993,
+  "triple_r": 0.877,
+  "year": 1966,
+  "league": "AL",
+  "team": "Baltimore Orioles",
+  "ptLevel": 5
+}

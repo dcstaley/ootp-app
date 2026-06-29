@@ -1,0 +1,18 @@
+{
+  "id": "park-22",
+  "name": "Citizens Bank Park",
+  "avg_l": 0.999370992,
+  "avg_r": 0.986764491,
+  "hr_l": 1.081446767,
+  "hr_r": 1.038439393,
+  "gap": 0.972628534,
+  "gap_l": 0.951836526,
+  "gap_r": 0.995142996,
+  "triple": 1.017307639,
+  "triple_l": 1.090704679,
+  "triple_r": 0.956820011,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Philadelphia Phillies",
+  "ptLevel": 0
+}

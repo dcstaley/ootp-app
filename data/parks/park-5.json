@@ -1,0 +1,18 @@
+{
+  "id": "park-5",
+  "name": "Oriole Park at Camden Yards (2026)",
+  "avg_l": 1.030292034,
+  "avg_r": 1.034236431,
+  "hr_l": 1.059850574,
+  "hr_r": 0.944839299,
+  "gap": 0.963363409,
+  "gap_l": 0.952048063,
+  "gap_r": 0.979662418,
+  "triple": 1.013375759,
+  "triple_l": 0.910870194,
+  "triple_r": 1.197125077,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Baltimore Orioles",
+  "ptLevel": 0
+}

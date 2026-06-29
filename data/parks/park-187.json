@@ -1,0 +1,18 @@
+{
+  "id": "park-187",
+  "name": "Braves Field (1931)",
+  "avg_l": 0.859,
+  "avg_r": 0.991,
+  "hr_l": 0.822,
+  "hr_r": 0.985,
+  "gap": 1.001,
+  "gap_l": 1.05,
+  "gap_r": 0.988,
+  "triple": 1.028,
+  "triple_l": 0.978,
+  "triple_r": 1.062,
+  "year": 1931,
+  "league": "NL",
+  "team": "Boston Braves",
+  "ptLevel": -2
+}

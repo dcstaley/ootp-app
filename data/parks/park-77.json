@@ -1,0 +1,18 @@
+{
+  "id": "park-77",
+  "name": "Coors Field (2015)",
+  "avg_l": 1.125,
+  "avg_r": 1.182,
+  "hr_l": 1.019,
+  "hr_r": 1.05,
+  "gap": 1,
+  "gap_l": 0.983,
+  "gap_r": 1.011,
+  "triple": 1.171,
+  "triple_l": 1.143,
+  "triple_r": 1.205,
+  "year": 2015,
+  "league": "NL",
+  "team": "Colorado Rockies",
+  "ptLevel": 3
+}

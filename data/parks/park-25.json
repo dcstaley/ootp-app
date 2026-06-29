@@ -1,0 +1,18 @@
+{
+  "id": "park-25",
+  "name": "Oracle Park",
+  "avg_l": 1.001827717,
+  "avg_r": 1.023901939,
+  "hr_l": 0.9142735,
+  "hr_r": 0.903128803,
+  "gap": 1.020335078,
+  "gap_l": 1.017832041,
+  "gap_r": 1.014580369,
+  "triple": 1.099648476,
+  "triple_l": 1.05738008,
+  "triple_r": 1.149312615,
+  "year": 2026,
+  "league": "MLB",
+  "team": "San Francisco Giants",
+  "ptLevel": 0
+}

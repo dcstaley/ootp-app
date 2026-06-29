@@ -1,0 +1,18 @@
+{
+  "id": "park-157",
+  "name": "Cleveland Stadium (1954)",
+  "avg_l": 0.947,
+  "avg_r": 0.98,
+  "hr_l": 1.105,
+  "hr_r": 1.105,
+  "gap": 1.005,
+  "gap_l": 1.005,
+  "gap_r": 1.005,
+  "triple": 0.85,
+  "triple_l": 0.85,
+  "triple_r": 0.85,
+  "year": 1954,
+  "league": "AL",
+  "team": "Cleveland Guardians",
+  "ptLevel": 8
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-14",
+  "name": "Kauffman Stadium",
+  "avg_l": 1.031672001,
+  "avg_r": 1.030036569,
+  "hr_l": 0.920756459,
+  "hr_r": 0.964497447,
+  "gap": 1.075662374,
+  "gap_l": 1.073487401,
+  "gap_r": 1.075105786,
+  "triple": 1.228336096,
+  "triple_l": 1.281503677,
+  "triple_r": 1.183847785,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Kansas City Royals",
+  "ptLevel": 0
+}

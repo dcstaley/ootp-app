@@ -1,0 +1,18 @@
+{
+  "id": "park-169",
+  "name": "Ruppert Stadium",
+  "avg_l": 1.04,
+  "avg_r": 1.04,
+  "hr_l": 1.02,
+  "hr_r": 1.04,
+  "gap": 1.02,
+  "gap_l": 1.02,
+  "gap_r": 1.02,
+  "triple": 0.97,
+  "triple_l": 0.97,
+  "triple_r": 0.97,
+  "year": 1946,
+  "league": "NeL",
+  "team": "Newark Eagles",
+  "ptLevel": 9
+}

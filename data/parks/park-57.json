@@ -1,0 +1,18 @@
+{
+  "id": "park-57",
+  "name": "Victory Field",
+  "avg_l": 0.96,
+  "avg_r": 1,
+  "hr_l": 0.82,
+  "hr_r": 0.88,
+  "gap": 0.869,
+  "gap_l": 0.82,
+  "gap_r": 0.92,
+  "triple": 1.198,
+  "triple_l": 0.82,
+  "triple_r": 1.75,
+  "year": 2026,
+  "league": "IL",
+  "team": "Indianapolis Indians",
+  "ptLevel": -2
+}

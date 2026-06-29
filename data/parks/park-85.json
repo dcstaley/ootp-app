@@ -1,0 +1,18 @@
+{
+  "id": "park-85",
+  "name": "RFK Stadium",
+  "avg_l": 1.006,
+  "avg_r": 0.977,
+  "hr_l": 0.895,
+  "hr_r": 0.897,
+  "gap": 0.985,
+  "gap_l": 0.985,
+  "gap_r": 0.985,
+  "triple": 1.045,
+  "triple_l": 1.045,
+  "triple_r": 1.045,
+  "year": 2007,
+  "league": "NL",
+  "team": "Washington Nationals",
+  "ptLevel": 0
+}

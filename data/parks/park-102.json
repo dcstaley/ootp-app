@@ -1,0 +1,18 @@
+{
+  "id": "park-102",
+  "name": "SkyDome",
+  "avg_l": 1.017,
+  "avg_r": 1,
+  "hr_l": 0.898,
+  "hr_r": 1.139,
+  "gap": 1.058,
+  "gap_l": 1.058,
+  "gap_r": 1.058,
+  "triple": 1.132,
+  "triple_l": 1.132,
+  "triple_r": 1.132,
+  "year": 1992,
+  "league": "AL",
+  "team": "Toronto Blue Jays",
+  "ptLevel": 0
+}

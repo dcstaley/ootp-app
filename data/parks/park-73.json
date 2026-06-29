@@ -1,0 +1,18 @@
+{
+  "id": "park-73",
+  "name": "Marlins Park (2019)",
+  "avg_l": 0.8,
+  "avg_r": 1.114,
+  "hr_l": 0.943,
+  "hr_r": 0.922,
+  "gap": 0.967,
+  "gap_l": 0.979,
+  "gap_r": 0.96,
+  "triple": 1.08,
+  "triple_l": 1.298,
+  "triple_r": 0.961,
+  "year": 2019,
+  "league": "NL",
+  "team": "Miami Marlins",
+  "ptLevel": -2
+}

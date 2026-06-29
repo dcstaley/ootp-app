@@ -1,0 +1,18 @@
+{
+  "id": "park-159",
+  "name": "Forbes Field (1952)",
+  "avg_l": 1.027,
+  "avg_r": 1.021,
+  "hr_l": 0.875,
+  "hr_r": 1.132,
+  "gap": 0.939,
+  "gap_l": 0.939,
+  "gap_r": 0.939,
+  "triple": 1.125,
+  "triple_l": 1.125,
+  "triple_r": 1.125,
+  "year": 1952,
+  "league": "NL",
+  "team": "Pittsburgh Pirates",
+  "ptLevel": -2
+}

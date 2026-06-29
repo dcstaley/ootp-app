@@ -1,0 +1,18 @@
+{
+  "id": "park-70",
+  "name": "Gwangju KIA Champions Field",
+  "avg_l": 0.899,
+  "avg_r": 0.896,
+  "hr_l": 1.023,
+  "hr_r": 1.03,
+  "gap": 0.863,
+  "gap_l": 0.863,
+  "gap_r": 0.863,
+  "triple": 0.855,
+  "triple_l": 0.855,
+  "triple_r": 0.855,
+  "year": 2026,
+  "league": "KBO",
+  "team": "KIA Tigers",
+  "ptLevel": 8
+}

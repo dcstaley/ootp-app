@@ -1,0 +1,18 @@
+{
+  "id": "park-138",
+  "name": "Busch Stadium (1968)",
+  "avg_l": 0.958942989,
+  "avg_r": 0.995497832,
+  "hr_l": 0.891284586,
+  "hr_r": 0.952809478,
+  "gap": 0.943853655,
+  "gap_l": 0.919529917,
+  "gap_r": 0.960839062,
+  "triple": 1.055560434,
+  "triple_l": 1.114236204,
+  "triple_r": 1.00076972,
+  "year": 1968,
+  "league": "NL",
+  "team": "St. Louis Cardinals",
+  "ptLevel": 0
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-208",
+  "name": "Robison Field",
+  "avg_l": 0.972424524,
+  "avg_r": 1.007334269,
+  "hr_l": 0.837184634,
+  "hr_r": 0.769089088,
+  "gap": 0.921760884,
+  "gap_l": 0.956887392,
+  "gap_r": 0.893539042,
+  "triple": 1.035522517,
+  "triple_l": 0.879237407,
+  "triple_r": 1.206979706,
+  "year": 1912,
+  "league": "NL",
+  "team": "St. Louis Cardinals",
+  "ptLevel": 0
+}

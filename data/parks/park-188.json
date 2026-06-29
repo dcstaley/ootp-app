@@ -1,0 +1,18 @@
+{
+  "id": "park-188",
+  "name": "Hamtramck Stadium",
+  "avg_l": 1.03,
+  "avg_r": 1.03,
+  "hr_l": 0.62,
+  "hr_r": 0.6,
+  "gap": 1.04,
+  "gap_l": 1.03,
+  "gap_r": 1.05,
+  "triple": 0.94,
+  "triple_l": 0.94,
+  "triple_r": 0.94,
+  "year": 1930,
+  "league": "NeL",
+  "team": "Detroit Stars",
+  "ptLevel": -2
+}

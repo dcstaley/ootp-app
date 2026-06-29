@@ -1,0 +1,18 @@
+{
+  "id": "park-76",
+  "name": "Turner Field",
+  "avg_l": 1.016,
+  "avg_r": 0.972,
+  "hr_l": 0.941,
+  "hr_r": 0.935,
+  "gap": 0.975,
+  "gap_l": 0.978,
+  "gap_r": 0.97,
+  "triple": 0.914,
+  "triple_l": 0.893,
+  "triple_r": 0.973,
+  "year": 2016,
+  "league": "NL",
+  "team": "Atlanta Braves",
+  "ptLevel": 7
+}

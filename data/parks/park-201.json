@@ -1,0 +1,18 @@
+{
+  "id": "park-201",
+  "name": "Ebbets Field (1920)",
+  "avg_l": 1.036,
+  "avg_r": 0.985,
+  "hr_l": 1.228,
+  "hr_r": 0.913,
+  "gap": 0.931,
+  "gap_l": 0.966,
+  "gap_r": 0.915,
+  "triple": 1.092,
+  "triple_l": 0.88,
+  "triple_r": 1.23,
+  "year": 1920,
+  "league": "NL",
+  "team": "Brooklyn Robins",
+  "ptLevel": -2
+}

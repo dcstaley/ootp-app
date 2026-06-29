@@ -1,0 +1,18 @@
+{
+  "id": "park-126",
+  "name": "Oakland Coliseum",
+  "avg_l": 1.003,
+  "avg_r": 0.943,
+  "hr_l": 0.966,
+  "hr_r": 1.036,
+  "gap": 0.959,
+  "gap_l": 0.959,
+  "gap_r": 0.959,
+  "triple": 0.894,
+  "triple_l": 0.894,
+  "triple_r": 0.894,
+  "year": 1977,
+  "league": "AL",
+  "team": "Oakland Athletics",
+  "ptLevel": 9
+}

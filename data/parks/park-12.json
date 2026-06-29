@@ -1,0 +1,18 @@
+{
+  "id": "park-12",
+  "name": "Comerica Park",
+  "avg_l": 1.009504318,
+  "avg_r": 1.012975812,
+  "hr_l": 0.951784432,
+  "hr_r": 0.984381676,
+  "gap": 1.003130198,
+  "gap_l": 0.985212743,
+  "gap_r": 1.029744625,
+  "triple": 1.182703257,
+  "triple_l": 1.425685883,
+  "triple_r": 0.961294174,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Detroit Tigers",
+  "ptLevel": 0
+}

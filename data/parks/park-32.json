@@ -1,0 +1,18 @@
+{
+  "id": "park-32",
+  "name": "Dell Diamond",
+  "avg_l": 0.99,
+  "avg_r": 0.91,
+  "hr_l": 0.96,
+  "hr_r": 0.86,
+  "gap": 0.952,
+  "gap_l": 1.08,
+  "gap_r": 0.84,
+  "triple": 0.775,
+  "triple_l": 1,
+  "triple_r": 0.6,
+  "year": 2026,
+  "league": "PCL",
+  "team": "Round Rock Express",
+  "ptLevel": -2
+}

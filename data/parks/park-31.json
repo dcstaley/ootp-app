@@ -1,0 +1,18 @@
+{
+  "id": "park-31",
+  "name": "Nationals Park",
+  "avg_l": 1.034756064,
+  "avg_r": 0.988206208,
+  "hr_l": 0.994259179,
+  "hr_r": 1.027736664,
+  "gap": 0.994250059,
+  "gap_l": 1.013029933,
+  "gap_r": 0.994653225,
+  "triple": 0.957718134,
+  "triple_l": 0.929353058,
+  "triple_r": 1.017314911,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Washington Nationals",
+  "ptLevel": 0
+}

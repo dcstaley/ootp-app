@@ -1,0 +1,18 @@
+{
+  "id": "park-58",
+  "name": "Werner Park",
+  "avg_l": 1.07,
+  "avg_r": 1.05,
+  "hr_l": 1.07,
+  "hr_r": 1.25,
+  "gap": 1.018,
+  "gap_l": 1.09,
+  "gap_r": 0.95,
+  "triple": 0.967,
+  "triple_l": 1.17,
+  "triple_r": 0.8,
+  "year": 2026,
+  "league": "IL",
+  "team": "Omaha Storm Chasers",
+  "ptLevel": -2
+}

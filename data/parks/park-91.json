@@ -1,0 +1,18 @@
+{
+  "id": "park-91",
+  "name": "Dodger Stadium (2003)",
+  "avg_l": 1.037,
+  "avg_r": 0.871,
+  "hr_l": 1.012,
+  "hr_r": 1.037,
+  "gap": 0.929,
+  "gap_l": 0.947,
+  "gap_r": 0.919,
+  "triple": 0.768,
+  "triple_l": 0.78,
+  "triple_r": 0.75,
+  "year": 2003,
+  "league": "NL",
+  "team": "Los Angeles Dodgers",
+  "ptLevel": 3
+}

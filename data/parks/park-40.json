@@ -1,0 +1,18 @@
+{
+  "id": "park-40",
+  "name": "Las Vegas Ballpark",
+  "avg_l": 1.06,
+  "avg_r": 1.11,
+  "hr_l": 1.39,
+  "hr_r": 1.44,
+  "gap": 1.104,
+  "gap_l": 1.05,
+  "gap_r": 1.16,
+  "triple": 1.023,
+  "triple_l": 0.77,
+  "triple_r": 1.36,
+  "year": 2026,
+  "league": "PCL",
+  "team": "Las Vegas Aviators",
+  "ptLevel": -2
+}

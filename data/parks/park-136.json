@@ -1,0 +1,18 @@
+{
+  "id": "park-136",
+  "name": "Sicks Stadium 1969",
+  "avg_l": 0.995,
+  "avg_r": 0.992,
+  "hr_l": 1.139,
+  "hr_r": 1.126,
+  "gap": 1.046,
+  "gap_l": 1.139,
+  "gap_r": 1.004,
+  "triple": 0.771,
+  "triple_l": 0.819,
+  "triple_r": 1.073,
+  "year": 1969,
+  "league": "AL",
+  "team": "Seattle Pilots",
+  "ptLevel": 3
+}

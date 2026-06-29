@@ -1,0 +1,18 @@
+{
+  "id": "park-158",
+  "name": "Griffith Stadium (1954)",
+  "avg_l": 1.015,
+  "avg_r": 1.005,
+  "hr_l": 0.857,
+  "hr_r": 0.842,
+  "gap": 0.943,
+  "gap_l": 0.943,
+  "gap_r": 0.943,
+  "triple": 1.161,
+  "triple_l": 1.161,
+  "triple_r": 1.161,
+  "year": 1954,
+  "league": "AL",
+  "team": "Washington Senators",
+  "ptLevel": 0
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-221",
+  "name": "League Park (1905)",
+  "avg_l": 1.2,
+  "avg_r": 1.089,
+  "hr_l": 0.883,
+  "hr_r": 0.929,
+  "gap": 0.913,
+  "gap_l": 0.95,
+  "gap_r": 1.024,
+  "triple": 0.884,
+  "triple_l": 0.992,
+  "triple_r": 0.945,
+  "year": 1905,
+  "league": "AL",
+  "team": "Cleveland Naps",
+  "ptLevel": 3
+}

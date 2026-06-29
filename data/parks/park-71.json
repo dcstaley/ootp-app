@@ -1,0 +1,18 @@
+{
+  "id": "park-71",
+  "name": "RingCentral Coliseum",
+  "avg_l": 0.98,
+  "avg_r": 1,
+  "hr_l": 0.9,
+  "hr_r": 0.9,
+  "gap": 0.99,
+  "gap_l": 1,
+  "gap_r": 0.99,
+  "triple": 1.02,
+  "triple_l": 1.09,
+  "triple_r": 0.95,
+  "year": 2024,
+  "league": "AL",
+  "team": "Oakland Athletics",
+  "ptLevel": 8
+}

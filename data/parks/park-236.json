@@ -1,0 +1,18 @@
+{
+  "id": "park-236",
+  "name": "Louisville Baseball Park",
+  "avg_l": 1.198,
+  "avg_r": 1.198,
+  "hr_l": 1.048,
+  "hr_r": 1.048,
+  "gap": 1,
+  "gap_l": 1,
+  "gap_r": 1,
+  "triple": 1,
+  "triple_l": 1,
+  "triple_r": 1,
+  "year": 1877,
+  "league": "NL",
+  "team": "Louisville Grays",
+  "ptLevel": 0
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-164",
+  "name": "Polo Grounds (1949)",
+  "avg_l": 0.8,
+  "avg_r": 0.816,
+  "hr_l": 1.192,
+  "hr_r": 1.069,
+  "gap": 0.902,
+  "gap_l": 0.858,
+  "gap_r": 0.929,
+  "triple": 0.967,
+  "triple_l": 0.835,
+  "triple_r": 1.066,
+  "year": 1949,
+  "league": "NL",
+  "team": "New York Giants",
+  "ptLevel": 0
+}

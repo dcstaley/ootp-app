@@ -1,0 +1,18 @@
+{
+  "id": "park-206",
+  "name": "South End Grounds",
+  "avg_l": 0.986,
+  "avg_r": 0.955,
+  "hr_l": 1.102,
+  "hr_r": 0.9,
+  "gap": 1.099,
+  "gap_l": 1.186,
+  "gap_r": 1.12,
+  "triple": 0.789,
+  "triple_l": 0.845,
+  "triple_r": 0.726,
+  "year": 1914,
+  "league": "NL",
+  "team": "Boston Braves",
+  "ptLevel": -2
+}

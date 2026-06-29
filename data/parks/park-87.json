@@ -1,0 +1,18 @@
+{
+  "id": "park-87",
+  "name": "Minute Maid Park",
+  "avg_l": 0.976,
+  "avg_r": 1.006,
+  "hr_l": 0.932,
+  "hr_r": 1.12,
+  "gap": 0.963,
+  "gap_l": 0.963,
+  "gap_r": 0.963,
+  "triple": 1.106,
+  "triple_l": 1.106,
+  "triple_r": 1.106,
+  "year": 2005,
+  "league": "NL",
+  "team": "Houston Astros",
+  "ptLevel": 6
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-184",
+  "name": "Yankee Stadium (1934)",
+  "avg_l": 0.957085748,
+  "avg_r": 0.959848809,
+  "hr_l": 1.336834146,
+  "hr_r": 0.891011177,
+  "gap": 0.87890626,
+  "gap_l": 0.87296639,
+  "gap_r": 0.880976864,
+  "triple": 1.01627889,
+  "triple_l": 0.958781416,
+  "triple_r": 1.071465296,
+  "year": 1934,
+  "league": "AL",
+  "team": "New York Yankees",
+  "ptLevel": -2
+}

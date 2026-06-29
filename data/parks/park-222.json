@@ -1,0 +1,18 @@
+{
+  "id": "park-222",
+  "name": "Hilltop Park (1903)",
+  "avg_l": 1.001,
+  "avg_r": 1.001,
+  "hr_l": 1.205,
+  "hr_r": 1.205,
+  "gap": 1.011,
+  "gap_l": 1.011,
+  "gap_r": 1.011,
+  "triple": 1.116,
+  "triple_l": 1.116,
+  "triple_r": 1.116,
+  "year": 1903,
+  "league": "AL",
+  "team": "New York Highlanders",
+  "ptLevel": -2
+}

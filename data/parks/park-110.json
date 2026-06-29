@@ -1,0 +1,18 @@
+{
+  "id": "park-110",
+  "name": "Veterans Stadium",
+  "avg_l": 1.007,
+  "avg_r": 1.027,
+  "hr_l": 1.03,
+  "hr_r": 0.982,
+  "gap": 1.073,
+  "gap_l": 1.073,
+  "gap_r": 1.073,
+  "triple": 1.119,
+  "triple_l": 1.119,
+  "triple_r": 1.119,
+  "year": 1985,
+  "league": "NL",
+  "team": "Philadelphia Phillies",
+  "ptLevel": 9
+}

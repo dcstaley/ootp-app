@@ -1,0 +1,18 @@
+{
+  "id": "park-23",
+  "name": "PNC Park",
+  "avg_l": 1.019131541,
+  "avg_r": 1.024657726,
+  "hr_l": 0.954544604,
+  "hr_r": 0.905401349,
+  "gap": 1.054926753,
+  "gap_l": 1.069854021,
+  "gap_r": 1.033260703,
+  "triple": 0.983421028,
+  "triple_l": 0.9247365,
+  "triple_r": 1.047180414,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Pittsburgh Pirates",
+  "ptLevel": 0
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-124",
+  "name": "Riverfront Stadium",
+  "avg_l": 0.984,
+  "avg_r": 0.992,
+  "hr_l": 1.015,
+  "hr_r": 1.058,
+  "gap": 1.102,
+  "gap_l": 1.102,
+  "gap_r": 1.102,
+  "triple": 0.937,
+  "triple_l": 0.937,
+  "triple_r": 0.937,
+  "year": 1978,
+  "league": "NL",
+  "team": "Cincinnati Reds",
+  "ptLevel": 7
+}

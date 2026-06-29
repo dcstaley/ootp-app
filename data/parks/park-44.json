@@ -1,0 +1,18 @@
+{
+  "id": "park-44",
+  "name": "Coca-Cola Park",
+  "avg_l": 0.97,
+  "avg_r": 0.98,
+  "hr_l": 0.82,
+  "hr_r": 0.94,
+  "gap": 1.008,
+  "gap_l": 0.94,
+  "gap_r": 1.08,
+  "triple": 0.73,
+  "triple_l": 0.55,
+  "triple_r": 0.97,
+  "year": 2026,
+  "league": "IL",
+  "team": "Lehigh Valley IronPigs",
+  "ptLevel": -2
+}

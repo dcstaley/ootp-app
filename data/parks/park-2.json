@@ -1,0 +1,18 @@
+{
+  "id": "park-2",
+  "name": "Chase Field",
+  "avg_l": 1.016305208,
+  "avg_r": 1.032693744,
+  "hr_l": 0.884817123,
+  "hr_r": 0.922696888,
+  "gap": 1.053587675,
+  "gap_l": 1.039151311,
+  "gap_r": 1.053148866,
+  "triple": 1.204620361,
+  "triple_l": 1.192382216,
+  "triple_r": 1.202558041,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Arizona Diamondbacks",
+  "ptLevel": 0
+}

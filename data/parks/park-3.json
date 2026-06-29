@@ -1,0 +1,18 @@
+{
+  "id": "park-3",
+  "name": "Sutter Health Park (2026)",
+  "avg_l": 1.00358665,
+  "avg_r": 1.03431201,
+  "hr_l": 1.036783457,
+  "hr_r": 1.017427444,
+  "gap": 1.065230489,
+  "gap_l": 1.058565736,
+  "gap_r": 1.069267869,
+  "triple": 0.955319166,
+  "triple_l": 1.046153903,
+  "triple_r": 0.912041903,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Athletics",
+  "ptLevel": 0
+}

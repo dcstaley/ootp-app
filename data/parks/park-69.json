@@ -1,0 +1,18 @@
+{
+  "id": "park-69",
+  "name": "Jamsil Baseball Stadium (DS)",
+  "avg_l": 0.988,
+  "avg_r": 0.987,
+  "hr_l": 0.828,
+  "hr_r": 0.827,
+  "gap": 0.925,
+  "gap_l": 0.925,
+  "gap_r": 0.925,
+  "triple": 1.247,
+  "triple_l": 1.247,
+  "triple_r": 1.247,
+  "year": 2026,
+  "league": "KBO",
+  "team": "Doosan Bears",
+  "ptLevel": 4
+}

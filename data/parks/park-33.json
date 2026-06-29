@@ -1,0 +1,18 @@
+{
+  "id": "park-33",
+  "name": "Cheney Stadium",
+  "avg_l": 0.87,
+  "avg_r": 0.93,
+  "hr_l": 1.13,
+  "hr_r": 0.93,
+  "gap": 0.774,
+  "gap_l": 0.74,
+  "gap_r": 0.81,
+  "triple": 0.504,
+  "triple_l": 0.53,
+  "triple_r": 0.48,
+  "year": 2026,
+  "league": "PCL",
+  "team": "Tacoma Rainiers",
+  "ptLevel": -2
+}

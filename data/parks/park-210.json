@@ -1,0 +1,18 @@
+{
+  "id": "park-210",
+  "name": "Washington Park",
+  "avg_l": 1.005,
+  "avg_r": 0.953,
+  "hr_l": 0.919,
+  "hr_r": 0.831,
+  "gap": 1.029,
+  "gap_l": 1.028,
+  "gap_r": 1.013,
+  "triple": 0.979,
+  "triple_l": 0.895,
+  "triple_r": 1.057,
+  "year": 1911,
+  "league": "NL",
+  "team": "Brooklyn Dodgers",
+  "ptLevel": 6
+}

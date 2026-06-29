@@ -1,0 +1,18 @@
+{
+  "id": "park-78",
+  "name": "Angel Stadium of Anaheim (2015)",
+  "avg_l": 1.004,
+  "avg_r": 0.95,
+  "hr_l": 0.973,
+  "hr_r": 0.998,
+  "gap": 0.968,
+  "gap_l": 0.957,
+  "gap_r": 0.974,
+  "triple": 0.827,
+  "triple_l": 0.767,
+  "triple_r": 0.872,
+  "year": 2015,
+  "league": "AL",
+  "team": "Los Angeles Angels of Anaheim",
+  "ptLevel": 9
+}

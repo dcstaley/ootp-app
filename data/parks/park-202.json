@@ -1,0 +1,18 @@
+{
+  "id": "park-202",
+  "name": "Sportsmans Park (1919)",
+  "avg_l": 1.039,
+  "avg_r": 1.001,
+  "hr_l": 1.361,
+  "hr_r": 0.906,
+  "gap": 1.029,
+  "gap_l": 1.024,
+  "gap_r": 1.028,
+  "triple": 1.071,
+  "triple_l": 1.06,
+  "triple_r": 0.987,
+  "year": 1919,
+  "league": "AL",
+  "team": "St. Louis Browns",
+  "ptLevel": -2
+}

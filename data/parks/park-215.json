@@ -1,0 +1,18 @@
+{
+  "id": "park-215",
+  "name": "Palace of the Fans",
+  "avg_l": 0.945,
+  "avg_r": 0.899,
+  "hr_l": 0.812,
+  "hr_r": 0.793,
+  "gap": 0.882,
+  "gap_l": 0.881,
+  "gap_r": 0.874,
+  "triple": 1.258,
+  "triple_l": 1.234,
+  "triple_r": 1.243,
+  "year": 1910,
+  "league": "NL",
+  "team": "Cincinnati Reds",
+  "ptLevel": -2
+}

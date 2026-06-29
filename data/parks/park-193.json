@@ -1,0 +1,18 @@
+{
+  "id": "park-193",
+  "name": "Navin Field",
+  "avg_l": 0.994,
+  "avg_r": 0.989,
+  "hr_l": 0.852,
+  "hr_r": 1.201,
+  "gap": 1.057,
+  "gap_l": 1.057,
+  "gap_r": 1.057,
+  "triple": 1.099,
+  "triple_l": 1.099,
+  "triple_r": 1.099,
+  "year": 1926,
+  "league": "AL",
+  "team": "Detroit Tigers",
+  "ptLevel": -2
+}

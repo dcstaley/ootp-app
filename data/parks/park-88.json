@@ -1,0 +1,18 @@
+{
+  "id": "park-88",
+  "name": "U.S. Cellular Field",
+  "avg_l": 0.996665144,
+  "avg_r": 0.989446815,
+  "hr_l": 1.210607771,
+  "hr_r": 1.157230076,
+  "gap": 0.978818116,
+  "gap_l": 0.996833509,
+  "gap_r": 0.968931027,
+  "triple": 0.89430763,
+  "triple_l": 0.853563994,
+  "triple_r": 0.926873699,
+  "year": 2005,
+  "league": "AL",
+  "team": "Chicago White Sox",
+  "ptLevel": 0
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-64",
+  "name": "Suwon KT Wiz Park",
+  "avg_l": 1.002,
+  "avg_r": 1.001,
+  "hr_l": 1.108,
+  "hr_r": 1.107,
+  "gap": 1.008,
+  "gap_l": 1.008,
+  "gap_r": 1.008,
+  "triple": 1.104,
+  "triple_l": 1.104,
+  "triple_r": 1.104,
+  "year": 2026,
+  "league": "KBO",
+  "team": "kt wiz",
+  "ptLevel": 5
+}

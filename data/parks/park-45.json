@@ -1,0 +1,18 @@
+{
+  "id": "park-45",
+  "name": "Principal Park",
+  "avg_l": 0.99,
+  "avg_r": 1,
+  "hr_l": 1.27,
+  "hr_r": 0.96,
+  "gap": 1.14,
+  "gap_l": 1.13,
+  "gap_r": 1.15,
+  "triple": 1.01,
+  "triple_l": 1.26,
+  "triple_r": 0.81,
+  "year": 2026,
+  "league": "IL",
+  "team": "Iowa Cubs",
+  "ptLevel": -2
+}

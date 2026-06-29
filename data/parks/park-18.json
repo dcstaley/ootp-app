@@ -1,0 +1,18 @@
+{
+  "id": "park-18",
+  "name": "American Family Field",
+  "avg_l": 0.944273174,
+  "avg_r": 0.966249466,
+  "hr_l": 1.049515009,
+  "hr_r": 1.019025207,
+  "gap": 0.968135118,
+  "gap_l": 0.949429274,
+  "gap_r": 0.969712317,
+  "triple": 1.049820304,
+  "triple_l": 1.068402052,
+  "triple_r": 1.003581882,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Milwaukee Brewers",
+  "ptLevel": 0
+}

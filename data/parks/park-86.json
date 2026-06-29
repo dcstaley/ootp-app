@@ -1,0 +1,18 @@
+{
+  "id": "park-86",
+  "name": "Busch Stadium (2006)",
+  "avg_l": 0.9955327,
+  "avg_r": 0.997483381,
+  "hr_l": 0.888503149,
+  "hr_r": 0.896012962,
+  "gap": 0.951401869,
+  "gap_l": 0.940098567,
+  "gap_r": 0.958043672,
+  "triple": 0.925233645,
+  "triple_l": 0.830217498,
+  "triple_r": 1.037675227,
+  "year": 2006,
+  "league": "NL",
+  "team": "St. Louis Cardinals",
+  "ptLevel": 6
+}

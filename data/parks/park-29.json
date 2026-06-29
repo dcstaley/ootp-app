@@ -1,0 +1,18 @@
+{
+  "id": "park-29",
+  "name": "Globe Life Field",
+  "avg_l": 0.989927649,
+  "avg_r": 0.962577105,
+  "hr_l": 1.047993183,
+  "hr_r": 0.994071245,
+  "gap": 1.002732754,
+  "gap_l": 1.011017561,
+  "gap_r": 0.987845957,
+  "triple": 0.932755172,
+  "triple_l": 0.889186025,
+  "triple_r": 0.96328342,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Texas Rangers",
+  "ptLevel": 0
+}

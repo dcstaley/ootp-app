@@ -1,0 +1,18 @@
+{
+  "id": "park-98",
+  "name": "Dodger Stadium (1996)",
+  "avg_l": 0.954186349,
+  "avg_r": 0.957617998,
+  "hr_l": 0.849785671,
+  "hr_r": 0.924969663,
+  "gap": 0.896252595,
+  "gap_l": 0.897829682,
+  "gap_r": 0.896894827,
+  "triple": 0.773890932,
+  "triple_l": 0.718666534,
+  "triple_r": 0.832708448,
+  "year": 1996,
+  "league": "NL",
+  "team": "Los Angeles Dodgers",
+  "ptLevel": 6
+}

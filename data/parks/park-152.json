@@ -1,0 +1,18 @@
+{
+  "id": "park-152",
+  "name": "LA Coliseum",
+  "avg_l": 0.988,
+  "avg_r": 1.01,
+  "hr_l": 0.986,
+  "hr_r": 1.163,
+  "gap": 0.927,
+  "gap_l": 0.927,
+  "gap_r": 0.927,
+  "triple": 1.048,
+  "triple_l": 1.048,
+  "triple_r": 1.048,
+  "year": 1959,
+  "league": "NL",
+  "team": "Los Angeles Dodgers",
+  "ptLevel": -2
+}

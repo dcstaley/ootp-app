@@ -1,0 +1,18 @@
+{
+  "id": "park-145",
+  "name": "Candlestick Park (1962)",
+  "avg_l": 0.933,
+  "avg_r": 0.976,
+  "hr_l": 1.125,
+  "hr_r": 0.973,
+  "gap": 0.958,
+  "gap_l": 0.958,
+  "gap_r": 0.958,
+  "triple": 0.894,
+  "triple_l": 0.894,
+  "triple_r": 0.894,
+  "year": 1962,
+  "league": "NL",
+  "team": "San Francisco Giants",
+  "ptLevel": 4
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-60",
+  "name": "CHS Field",
+  "avg_l": 1.03,
+  "avg_r": 1.04,
+  "hr_l": 1.17,
+  "hr_r": 1.08,
+  "gap": 1.03,
+  "gap_l": 1.06,
+  "gap_r": 1,
+  "triple": 1.17,
+  "triple_l": 0.84,
+  "triple_r": 1.63,
+  "year": 2026,
+  "league": "IL",
+  "team": "St. Paul Saints",
+  "ptLevel": 4
+}

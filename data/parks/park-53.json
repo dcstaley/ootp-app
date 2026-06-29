@@ -1,0 +1,18 @@
+{
+  "id": "park-53",
+  "name": "AutoZone Park",
+  "avg_l": 1.03,
+  "avg_r": 1.02,
+  "hr_l": 0.86,
+  "hr_r": 0.96,
+  "gap": 1.041,
+  "gap_l": 1.14,
+  "gap_r": 0.95,
+  "triple": 1.215,
+  "triple_l": 1.38,
+  "triple_r": 1.07,
+  "year": 2026,
+  "league": "IL",
+  "team": "Memphis Redbirds",
+  "ptLevel": -2
+}

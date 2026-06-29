@@ -1,0 +1,18 @@
+{
+  "id": "park-216",
+  "name": "Baker Bowl (1910)",
+  "avg_l": 1.124,
+  "avg_r": 0.939,
+  "hr_l": 1.211,
+  "hr_r": 1.111,
+  "gap": 1.083,
+  "gap_l": 1.105,
+  "gap_r": 1.084,
+  "triple": 0.916,
+  "triple_l": 0.897,
+  "triple_r": 0.945,
+  "year": 1910,
+  "league": "NL",
+  "team": "Philadelphia Phillies",
+  "ptLevel": -2
+}

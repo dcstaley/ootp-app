@@ -1,0 +1,18 @@
+{
+  "id": "park-199",
+  "name": "Baker Bowl (1921)",
+  "avg_l": 1.016,
+  "avg_r": 1.074,
+  "hr_l": 1.293,
+  "hr_r": 1.48,
+  "gap": 1.195,
+  "gap_l": 1.26,
+  "gap_r": 1.174,
+  "triple": 0.654,
+  "triple_l": 0.688,
+  "triple_r": 0.628,
+  "year": 1921,
+  "league": "NL",
+  "team": "Philadelphia Phillies",
+  "ptLevel": -2
+}

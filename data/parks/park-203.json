@@ -1,0 +1,18 @@
+{
+  "id": "park-203",
+  "name": "Fenway Park (1919)",
+  "avg_l": 0.809,
+  "avg_r": 1.059,
+  "hr_l": 0.816,
+  "hr_r": 0.837,
+  "gap": 1.068,
+  "gap_l": 0.996,
+  "gap_r": 1.137,
+  "triple": 0.921,
+  "triple_l": 0.943,
+  "triple_r": 0.883,
+  "year": 1919,
+  "league": "AL",
+  "team": "Boston Red Sox",
+  "ptLevel": -2
+}

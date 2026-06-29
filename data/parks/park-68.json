@@ -1,0 +1,18 @@
+{
+  "id": "park-68",
+  "name": "Munhak Baseball Stadium",
+  "avg_l": 0.98,
+  "avg_r": 0.976,
+  "hr_l": 1.13,
+  "hr_r": 1.131,
+  "gap": 0.896,
+  "gap_l": 0.896,
+  "gap_r": 0.896,
+  "triple": 0.862,
+  "triple_l": 0.862,
+  "triple_r": 0.862,
+  "year": 2026,
+  "league": "KBO",
+  "team": "SSG Landers",
+  "ptLevel": 5
+}

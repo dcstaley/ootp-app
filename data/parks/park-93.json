@@ -1,0 +1,18 @@
+{
+  "id": "park-93",
+  "name": "Jacobs Field",
+  "avg_l": 1.022,
+  "avg_r": 1.026,
+  "hr_l": 1.066,
+  "hr_r": 1.011,
+  "gap": 0.984,
+  "gap_l": 0.984,
+  "gap_r": 0.984,
+  "triple": 0.976,
+  "triple_l": 0.976,
+  "triple_r": 0.976,
+  "year": 1999,
+  "league": "AL",
+  "team": "Cleveland Guardians",
+  "ptLevel": 8
+}

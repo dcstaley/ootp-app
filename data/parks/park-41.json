@@ -1,0 +1,18 @@
+{
+  "id": "park-41",
+  "name": "Constellation Field",
+  "avg_l": 0.83,
+  "avg_r": 0.87,
+  "hr_l": 0.63,
+  "hr_r": 0.77,
+  "gap": 0.839,
+  "gap_l": 0.89,
+  "gap_r": 0.79,
+  "triple": 0.684,
+  "triple_l": 0.82,
+  "triple_r": 0.57,
+  "year": 2026,
+  "league": "PCL",
+  "team": "Sugar Land Space Cowboys",
+  "ptLevel": -2
+}

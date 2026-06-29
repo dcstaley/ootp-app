@@ -1,0 +1,18 @@
+{
+  "id": "park-92",
+  "name": "Coors Field (2000)",
+  "avg_l": 1.072514862,
+  "avg_r": 1.11083343,
+  "hr_l": 1.247412208,
+  "hr_r": 1.288313513,
+  "gap": 0.990404843,
+  "gap_l": 0.997530672,
+  "gap_r": 0.985316514,
+  "triple": 1.127482852,
+  "triple_l": 1.060993323,
+  "triple_r": 1.203589995,
+  "year": 2000,
+  "league": "NL",
+  "team": "Colorado Rockies",
+  "ptLevel": -2
+}

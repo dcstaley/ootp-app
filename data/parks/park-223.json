@@ -1,0 +1,18 @@
+{
+  "id": "park-223",
+  "name": "South Side Park",
+  "avg_l": 0.941,
+  "avg_r": 0.941,
+  "hr_l": 0.766,
+  "hr_r": 0.766,
+  "gap": 1.05,
+  "gap_l": 1.05,
+  "gap_r": 1.05,
+  "triple": 0.788,
+  "triple_l": 0.788,
+  "triple_r": 0.788,
+  "year": 1903,
+  "league": "AL",
+  "team": "Chicago White Sox",
+  "ptLevel": -2
+}

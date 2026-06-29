@@ -1,0 +1,18 @@
+{
+  "id": "park-213",
+  "name": "Huntington Avenue Grounds",
+  "avg_l": 0.985,
+  "avg_r": 0.973,
+  "hr_l": 1.216,
+  "hr_r": 1.13,
+  "gap": 1.048,
+  "gap_l": 1.044,
+  "gap_r": 1.043,
+  "triple": 0.936,
+  "triple_l": 0.945,
+  "triple_r": 0.93,
+  "year": 1910,
+  "league": "AL",
+  "team": "Boston Red Sox",
+  "ptLevel": -2
+}

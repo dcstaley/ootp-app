@@ -1,0 +1,18 @@
+{
+  "id": "park-181",
+  "name": "Crosley Field (1936)",
+  "avg_l": 0.974,
+  "avg_r": 1.004,
+  "hr_l": 0.842,
+  "hr_r": 0.856,
+  "gap": 0.996,
+  "gap_l": 0.996,
+  "gap_r": 0.996,
+  "triple": 1.107,
+  "triple_l": 1.107,
+  "triple_r": 1.107,
+  "year": 1936,
+  "league": "NL",
+  "team": "Cincinnati Reds",
+  "ptLevel": 4
+}

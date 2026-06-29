@@ -1,0 +1,18 @@
+{
+  "id": "park-119",
+  "name": "Kingdome (1982)",
+  "avg_l": 1.021,
+  "avg_r": 0.981,
+  "hr_l": 1.088,
+  "hr_r": 1.143,
+  "gap": 1.033,
+  "gap_l": 1.05,
+  "gap_r": 1.024,
+  "triple": 0.88,
+  "triple_l": 0.865,
+  "triple_r": 0.891,
+  "year": 1982,
+  "league": "AL",
+  "team": "Seattle Mariners",
+  "ptLevel": 4
+}

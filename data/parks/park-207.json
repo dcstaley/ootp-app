@@ -1,0 +1,18 @@
+{
+  "id": "park-207",
+  "name": "Forbes Field (1913)",
+  "avg_l": 0.875,
+  "avg_r": 0.975,
+  "hr_l": 0.826,
+  "hr_r": 0.884,
+  "gap": 0.923,
+  "gap_l": 1.005,
+  "gap_r": 0.919,
+  "triple": 1.317,
+  "triple_l": 1.367,
+  "triple_r": 1.309,
+  "year": 1913,
+  "league": "NL",
+  "team": "Pittsburgh Pirates",
+  "ptLevel": -2
+}

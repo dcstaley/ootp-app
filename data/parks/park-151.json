@@ -1,0 +1,18 @@
+{
+  "id": "park-151",
+  "name": "Milwaukee County Stadium",
+  "avg_l": 0.956,
+  "avg_r": 0.952,
+  "hr_l": 1.012,
+  "hr_r": 0.899,
+  "gap": 0.918,
+  "gap_l": 0.918,
+  "gap_r": 0.918,
+  "triple": 0.893,
+  "triple_l": 0.893,
+  "triple_r": 0.893,
+  "year": 1959,
+  "league": "NL",
+  "team": "Milwaukee Braves",
+  "ptLevel": 4
+}

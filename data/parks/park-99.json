@@ -1,0 +1,18 @@
+{
+  "id": "park-99",
+  "name": "Coors Field (1995)",
+  "avg_l": 1.095,
+  "avg_r": 1.2,
+  "hr_l": 1.107,
+  "hr_r": 1.183,
+  "gap": 1.015,
+  "gap_l": 1.092,
+  "gap_r": 0.972,
+  "triple": 1.257,
+  "triple_l": 1.079,
+  "triple_r": 1.505,
+  "year": 1995,
+  "league": "NL",
+  "team": "Colorado Rockies",
+  "ptLevel": 0
+}

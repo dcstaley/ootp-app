@@ -1,0 +1,18 @@
+{
+  "id": "park-147",
+  "name": "Polo Grounds (1962)",
+  "avg_l": 0.989,
+  "avg_r": 0.987,
+  "hr_l": 1.278,
+  "hr_r": 1.036,
+  "gap": 0.938,
+  "gap_l": 0.944,
+  "gap_r": 0.935,
+  "triple": 1.229,
+  "triple_l": 1.205,
+  "triple_r": 1.189,
+  "year": 1962,
+  "league": "NL",
+  "team": "New York Mets",
+  "ptLevel": -2
+}

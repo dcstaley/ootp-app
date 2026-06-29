@@ -1,0 +1,18 @@
+{
+  "id": "park-15",
+  "name": "Angel Stadium of Anaheim (2026)",
+  "avg_l": 0.9858284,
+  "avg_r": 1.006276608,
+  "hr_l": 1.067795634,
+  "hr_r": 1.036289454,
+  "gap": 0.965182662,
+  "gap_l": 0.947333515,
+  "gap_r": 0.970519722,
+  "triple": 1.008388758,
+  "triple_l": 1.0135113,
+  "triple_r": 0.99686414,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Los Angeles Angels of Anaheim",
+  "ptLevel": 0
+}

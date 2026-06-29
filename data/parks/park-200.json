@@ -1,0 +1,18 @@
+{
+  "id": "park-200",
+  "name": "Shibe Park AL",
+  "avg_l": 1.003,
+  "avg_r": 0.99,
+  "hr_l": 1.153,
+  "hr_r": 1.2,
+  "gap": 0.975,
+  "gap_l": 0.975,
+  "gap_r": 0.975,
+  "triple": 0.895,
+  "triple_l": 0.895,
+  "triple_r": 0.895,
+  "year": 1920,
+  "league": "AL",
+  "team": "Philadelphia Athletics",
+  "ptLevel": -2
+}

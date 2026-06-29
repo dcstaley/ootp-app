@@ -1,0 +1,18 @@
+{
+  "id": "park-149",
+  "name": "LA Wrigley Field 1961",
+  "avg_l": 1.004,
+  "avg_r": 1.032,
+  "hr_l": 1.068,
+  "hr_r": 1.206,
+  "gap": 1.049,
+  "gap_l": 1.12,
+  "gap_r": 1.02,
+  "triple": 0.904,
+  "triple_l": 0.821,
+  "triple_r": 1.189,
+  "year": 1961,
+  "league": "AL",
+  "team": "Los Angeles Angels",
+  "ptLevel": -2
+}

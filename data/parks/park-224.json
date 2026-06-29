@@ -1,0 +1,18 @@
+{
+  "id": "park-224",
+  "name": "Lloyd Street Grounds",
+  "avg_l": 0.883,
+  "avg_r": 0.883,
+  "hr_l": 0.979,
+  "hr_r": 0.979,
+  "gap": 1.008,
+  "gap_l": 1.008,
+  "gap_r": 1.008,
+  "triple": 1.043,
+  "triple_l": 1.043,
+  "triple_r": 1.043,
+  "year": 1901,
+  "league": "AL",
+  "team": "Milwaukee Brewers",
+  "ptLevel": 5
+}

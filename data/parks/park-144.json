@@ -1,0 +1,18 @@
+{
+  "id": "park-144",
+  "name": "Shea Stadium (1964)",
+  "avg_l": 1.018,
+  "avg_r": 0.997,
+  "hr_l": 0.961,
+  "hr_r": 1.073,
+  "gap": 0.993,
+  "gap_l": 0.983,
+  "gap_r": 0.998,
+  "triple": 1.183,
+  "triple_l": 1.162,
+  "triple_r": 1.195,
+  "year": 1964,
+  "league": "NL",
+  "team": "New York Mets",
+  "ptLevel": 6
+}

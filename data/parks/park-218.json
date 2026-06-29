@@ -1,0 +1,18 @@
+{
+  "id": "park-218",
+  "name": "Columbia Park",
+  "avg_l": 1.099,
+  "avg_r": 1.08,
+  "hr_l": 1.374,
+  "hr_r": 1.071,
+  "gap": 1.143,
+  "gap_l": 1.151,
+  "gap_r": 1.138,
+  "triple": 0.812,
+  "triple_l": 0.853,
+  "triple_r": 0.797,
+  "year": 1906,
+  "league": "AL",
+  "team": "Philadelphia Athletics",
+  "ptLevel": -2
+}

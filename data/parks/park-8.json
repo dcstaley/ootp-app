@@ -1,0 +1,18 @@
+{
+  "id": "park-8",
+  "name": "Rate Field",
+  "avg_l": 1.000242472,
+  "avg_r": 1.004282832,
+  "hr_l": 1.082322955,
+  "hr_r": 1.031708002,
+  "gap": 0.957147121,
+  "gap_l": 0.936014295,
+  "gap_r": 0.977132022,
+  "triple": 0.865957439,
+  "triple_l": 0.83755976,
+  "triple_r": 0.904961228,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Chicago White Sox",
+  "ptLevel": 0
+}

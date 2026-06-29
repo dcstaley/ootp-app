@@ -1,0 +1,18 @@
+{
+  "id": "park-239",
+  "name": "Union Grounds (Brooklyn)",
+  "avg_l": 0.925,
+  "avg_r": 0.925,
+  "hr_l": 0.925,
+  "hr_r": 0.925,
+  "gap": 1,
+  "gap_l": 1,
+  "gap_r": 1,
+  "triple": 1,
+  "triple_l": 1,
+  "triple_r": 1,
+  "year": 1871,
+  "league": "NA",
+  "team": "New York Mutuals",
+  "ptLevel": 9
+}

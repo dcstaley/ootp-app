@@ -1,0 +1,18 @@
+{
+  "id": "park-183",
+  "name": "Baker Bowl (1934)",
+  "avg_l": 1.2,
+  "avg_r": 1.032,
+  "hr_l": 1.126,
+  "hr_r": 1.07,
+  "gap": 1.093,
+  "gap_l": 1.129,
+  "gap_r": 1.074,
+  "triple": 0.677,
+  "triple_l": 0.66,
+  "triple_r": 0.676,
+  "year": 1934,
+  "league": "NL",
+  "team": "Philadelphia Phillies",
+  "ptLevel": -2
+}

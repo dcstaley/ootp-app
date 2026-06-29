@@ -1,0 +1,18 @@
+{
+  "id": "park-115",
+  "name": "Fenway Park (1984)",
+  "avg_l": 1.132,
+  "avg_r": 1.099,
+  "hr_l": 0.985,
+  "hr_r": 0.997,
+  "gap": 1.086,
+  "gap_l": 1.068,
+  "gap_r": 1.101,
+  "triple": 1.036,
+  "triple_l": 1.106,
+  "triple_r": 0.988,
+  "year": 1984,
+  "league": "AL",
+  "team": "Boston Red Sox",
+  "ptLevel": 0
+}

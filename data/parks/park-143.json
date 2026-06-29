@@ -1,0 +1,18 @@
+{
+  "id": "park-143",
+  "name": "Dodger Stadium (1965)",
+  "avg_l": 0.961,
+  "avg_r": 1.011,
+  "hr_l": 0.798,
+  "hr_r": 0.784,
+  "gap": 0.913,
+  "gap_l": 0.912,
+  "gap_r": 0.914,
+  "triple": 0.861,
+  "triple_l": 0.818,
+  "triple_r": 0.97,
+  "year": 1965,
+  "league": "AL",
+  "team": "California Angels",
+  "ptLevel": -2
+}

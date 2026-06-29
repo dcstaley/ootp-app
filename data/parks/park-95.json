@@ -1,0 +1,18 @@
+{
+  "id": "park-95",
+  "name": "Cinergy Field",
+  "avg_l": 0.823,
+  "avg_r": 0.896,
+  "hr_l": 1.027,
+  "hr_r": 1.013,
+  "gap": 1.072,
+  "gap_l": 1.067,
+  "gap_r": 1.075,
+  "triple": 0.97,
+  "triple_l": 0.885,
+  "triple_r": 1.036,
+  "year": 1998,
+  "league": "NL",
+  "team": "Cincinnati Reds",
+  "ptLevel": 6
+}

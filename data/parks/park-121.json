@@ -1,0 +1,18 @@
+{
+  "id": "park-121",
+  "name": "Astrodome (1980)",
+  "avg_l": 1.024,
+  "avg_r": 0.91,
+  "hr_l": 0.888,
+  "hr_r": 0.855,
+  "gap": 0.979,
+  "gap_l": 0.981,
+  "gap_r": 0.978,
+  "triple": 1.197,
+  "triple_l": 1.17,
+  "triple_r": 1.223,
+  "year": 1980,
+  "league": "NL",
+  "team": "Houston Astros",
+  "ptLevel": 7
+}

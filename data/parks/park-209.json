@@ -1,0 +1,18 @@
+{
+  "id": "park-209",
+  "name": "Fenway Park (1912)",
+  "avg_l": 0.995790759,
+  "avg_r": 0.992447743,
+  "hr_l": 0.692920484,
+  "hr_r": 0.781647059,
+  "gap": 1.081898279,
+  "gap_l": 0.975,
+  "gap_r": 1.140022838,
+  "triple": 1.085112614,
+  "triple_l": 1.201865672,
+  "triple_r": 1.002840909,
+  "year": 1912,
+  "league": "AL",
+  "team": "Boston Red Sox",
+  "ptLevel": -2
+}

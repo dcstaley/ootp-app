@@ -1,0 +1,18 @@
+{
+  "id": "park-195",
+  "name": "Braves Field (1925)",
+  "avg_l": 0.97,
+  "avg_r": 0.977,
+  "hr_l": 0.837,
+  "hr_r": 0.837,
+  "gap": 0.997,
+  "gap_l": 0.997,
+  "gap_r": 0.997,
+  "triple": 1.019,
+  "triple_l": 1.019,
+  "triple_r": 1.019,
+  "year": 1925,
+  "league": "NL",
+  "team": "Boston Braves",
+  "ptLevel": 4
+}

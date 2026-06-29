@@ -1,0 +1,18 @@
+{
+  "id": "park-11",
+  "name": "Coors Field (2026)",
+  "avg_l": 1.075350404,
+  "avg_r": 1.085076928,
+  "hr_l": 1.049718142,
+  "hr_r": 1.079511046,
+  "gap": 1.11151123,
+  "gap_l": 1.075874805,
+  "gap_r": 1.133415222,
+  "triple": 1.346648455,
+  "triple_l": 1.276771784,
+  "triple_r": 1.415941954,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Colorado Rockies",
+  "ptLevel": 0
+}

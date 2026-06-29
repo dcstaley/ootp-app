@@ -1,0 +1,18 @@
+{
+  "id": "park-150",
+  "name": "Seals Stadium",
+  "avg_l": 0.986,
+  "avg_r": 0.959,
+  "hr_l": 0.96,
+  "hr_r": 0.99,
+  "gap": 0.928,
+  "gap_l": 0.928,
+  "gap_r": 0.928,
+  "triple": 0.881,
+  "triple_l": 0.881,
+  "triple_r": 0.881,
+  "year": 1959,
+  "league": "NL",
+  "team": "San Francisco Giants",
+  "ptLevel": 10
+}

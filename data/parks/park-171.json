@@ -1,0 +1,18 @@
+{
+  "id": "park-171",
+  "name": "Comiskey Park (1945)",
+  "avg_l": 1.125,
+  "avg_r": 0.931,
+  "hr_l": 0.957,
+  "hr_r": 0.987,
+  "gap": 0.975,
+  "gap_l": 0.934,
+  "gap_r": 1.003,
+  "triple": 0.997,
+  "triple_l": 0.985,
+  "triple_r": 1.003,
+  "year": 1945,
+  "league": "AL",
+  "team": "Chicago White Sox",
+  "ptLevel": 3
+}

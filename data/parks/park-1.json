@@ -1,0 +1,18 @@
+{
+  "id": "park-1",
+  "name": "Heinsohn Ballpark",
+  "avg_l": 1,
+  "avg_r": 1,
+  "hr_l": 1,
+  "hr_r": 1,
+  "gap": 1,
+  "gap_l": 1,
+  "gap_r": 1,
+  "triple": 1,
+  "triple_l": 1,
+  "triple_r": 1,
+  "year": 2026,
+  "league": "MLB",
+  "team": "None",
+  "ptLevel": -1
+}

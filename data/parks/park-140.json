@@ -1,0 +1,18 @@
+{
+  "id": "park-140",
+  "name": "KC Municipal Stadium",
+  "avg_l": 1.061,
+  "avg_r": 1.041,
+  "hr_l": 0.841,
+  "hr_r": 0.853,
+  "gap": 1.068,
+  "gap_l": 1.068,
+  "gap_r": 1.068,
+  "triple": 1.223,
+  "triple_l": 1.223,
+  "triple_r": 1.223,
+  "year": 1967,
+  "league": "AL",
+  "team": "Kansas City Athletics",
+  "ptLevel": 7
+}

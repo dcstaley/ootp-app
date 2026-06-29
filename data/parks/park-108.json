@@ -1,0 +1,18 @@
+{
+  "id": "park-108",
+  "name": "Yankee Stadium (1987)",
+  "avg_l": 1.099,
+  "avg_r": 0.953,
+  "hr_l": 1.088,
+  "hr_r": 0.969,
+  "gap": 0.965,
+  "gap_l": 0.94,
+  "gap_r": 0.979,
+  "triple": 0.847,
+  "triple_l": 0.759,
+  "triple_r": 0.912,
+  "year": 1987,
+  "league": "AL",
+  "team": "New York Yankees",
+  "ptLevel": 0
+}

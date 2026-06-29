@@ -1,0 +1,18 @@
+{
+  "id": "park-42",
+  "name": "Innovative Field",
+  "avg_l": 1,
+  "avg_r": 1,
+  "hr_l": 1.06,
+  "hr_r": 1.11,
+  "gap": 0.964,
+  "gap_l": 1.01,
+  "gap_r": 0.92,
+  "triple": 1.285,
+  "triple_l": 1.32,
+  "triple_r": 1.25,
+  "year": 2026,
+  "league": "IL",
+  "team": "Rochester Red Wings",
+  "ptLevel": 4
+}

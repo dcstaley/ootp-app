@@ -1,0 +1,18 @@
+{
+  "id": "park-28",
+  "name": "Tropicana Field (2026)",
+  "avg_l": 0.998706281,
+  "avg_r": 1.06514287,
+  "hr_l": 0.996741652,
+  "hr_r": 1.081780195,
+  "gap": 0.964848816,
+  "gap_l": 0.964705884,
+  "gap_r": 0.964981735,
+  "triple": 0.878700376,
+  "triple_l": 0.820320845,
+  "triple_r": 1,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Tampa Bay Rays",
+  "ptLevel": 0
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-106",
+  "name": "Anaheim Stadium",
+  "avg_l": 0.953,
+  "avg_r": 0.991,
+  "hr_l": 1.103,
+  "hr_r": 1.104,
+  "gap": 0.958,
+  "gap_l": 0.958,
+  "gap_r": 0.958,
+  "triple": 0.905,
+  "triple_l": 0.905,
+  "triple_r": 0.905,
+  "year": 1990,
+  "league": "AL",
+  "team": "California Angels",
+  "ptLevel": 5
+}

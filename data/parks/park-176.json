@@ -1,0 +1,18 @@
+{
+  "id": "park-176",
+  "name": "Braves Field (1940)",
+  "avg_l": 0.995,
+  "avg_r": 0.969,
+  "hr_l": 0.829,
+  "hr_r": 0.906,
+  "gap": 1.014,
+  "gap_l": 1.026,
+  "gap_r": 1.006,
+  "triple": 0.905,
+  "triple_l": 1.013,
+  "triple_r": 0.814,
+  "year": 1940,
+  "league": "NL",
+  "team": "Boston Bees",
+  "ptLevel": 3
+}

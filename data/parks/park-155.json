@@ -1,0 +1,18 @@
+{
+  "id": "park-155",
+  "name": "Ebbets Field (1955)",
+  "avg_l": 1.019,
+  "avg_r": 0.98,
+  "hr_l": 1.051,
+  "hr_r": 1.125,
+  "gap": 1.088,
+  "gap_l": 1.088,
+  "gap_r": 1.088,
+  "triple": 0.967,
+  "triple_l": 0.967,
+  "triple_r": 0.967,
+  "year": 1955,
+  "league": "NL",
+  "team": "Brooklyn Dodgers",
+  "ptLevel": 4
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-4",
+  "name": "Truist Park",
+  "avg_l": 1.017993808,
+  "avg_r": 0.994756997,
+  "hr_l": 0.993645966,
+  "hr_r": 0.97311902,
+  "gap": 0.986133695,
+  "gap_l": 0.966605186,
+  "gap_r": 0.986852348,
+  "triple": 1.001039386,
+  "triple_l": 0.914044082,
+  "triple_r": 1.111389041,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Atlanta Braves",
+  "ptLevel": 0
+}

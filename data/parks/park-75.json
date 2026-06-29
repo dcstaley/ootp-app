@@ -1,0 +1,18 @@
+{
+  "id": "park-75",
+  "name": "SunTrust Park",
+  "avg_l": 1.008625639,
+  "avg_r": 1.00603318,
+  "hr_l": 0.959314559,
+  "hr_r": 0.911286638,
+  "gap": 0.991509057,
+  "gap_l": 0.980881131,
+  "gap_r": 1.001801108,
+  "triple": 0.860005252,
+  "triple_l": 0.851864242,
+  "triple_r": 0.872170203,
+  "year": 2017,
+  "league": "NL",
+  "team": "Atlanta Braves",
+  "ptLevel": 7
+}

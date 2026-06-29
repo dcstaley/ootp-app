@@ -1,0 +1,18 @@
+{
+  "id": "park-82",
+  "name": "McAfee Coliseum",
+  "avg_l": 0.924,
+  "avg_r": 0.931,
+  "hr_l": 1.015,
+  "hr_r": 0.939,
+  "gap": 0.972,
+  "gap_l": 0.951,
+  "gap_r": 0.99,
+  "triple": 1.007,
+  "triple_l": 1.014,
+  "triple_r": 0.99,
+  "year": 2008,
+  "league": "AL",
+  "team": "Oakland Athletics",
+  "ptLevel": 10
+}

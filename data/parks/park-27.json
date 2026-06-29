@@ -1,0 +1,18 @@
+{
+  "id": "park-27",
+  "name": "Busch Stadium (2026)",
+  "avg_l": 1.002883673,
+  "avg_r": 1.012226701,
+  "hr_l": 0.936663747,
+  "hr_r": 0.937869966,
+  "gap": 0.986189485,
+  "gap_l": 0.962399125,
+  "gap_r": 0.998876512,
+  "triple": 0.886206925,
+  "triple_l": 0.838633299,
+  "triple_r": 0.943197072,
+  "year": 2026,
+  "league": "MLB",
+  "team": "St. Louis Cardinals",
+  "ptLevel": 0
+}

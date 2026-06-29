@@ -1,0 +1,18 @@
+{
+  "id": "park-125",
+  "name": "Royals Stadium",
+  "avg_l": 1.054,
+  "avg_r": 0.998,
+  "hr_l": 0.881,
+  "hr_r": 0.93,
+  "gap": 1.086,
+  "gap_l": 1.086,
+  "gap_r": 1.086,
+  "triple": 1.16,
+  "triple_l": 1.16,
+  "triple_r": 1.16,
+  "year": 1978,
+  "league": "AL",
+  "team": "Kansas City Royals",
+  "ptLevel": -2
+}

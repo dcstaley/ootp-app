@@ -1,0 +1,18 @@
+{
+  "id": "park-109",
+  "name": "Three Rivers Stadium (1986)",
+  "avg_l": 1.002137319,
+  "avg_r": 1.006769526,
+  "hr_l": 1.115413134,
+  "hr_r": 0.949598801,
+  "gap": 1.032536126,
+  "gap_l": 1.079549827,
+  "gap_r": 0.994490563,
+  "triple": 1.067122787,
+  "triple_l": 1.140620349,
+  "triple_r": 0.988471216,
+  "year": 1986,
+  "league": "NL",
+  "team": "Pittsburgh Pirates",
+  "ptLevel": 4
+}

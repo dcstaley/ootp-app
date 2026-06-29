@@ -1,0 +1,18 @@
+{
+  "id": "park-133",
+  "name": "Dodger Stadium (1971)",
+  "avg_l": 0.862,
+  "avg_r": 1.025,
+  "hr_l": 0.932,
+  "hr_r": 1.009,
+  "gap": 0.928,
+  "gap_l": 0.898,
+  "gap_r": 0.947,
+  "triple": 0.789,
+  "triple_l": 0.792,
+  "triple_r": 0.792,
+  "year": 1971,
+  "league": "NL",
+  "team": "Los Angeles Dodgers",
+  "ptLevel": 0
+}

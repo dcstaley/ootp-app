@@ -1,0 +1,18 @@
+{
+  "id": "park-174",
+  "name": "Penmar Park",
+  "avg_l": 1.05,
+  "avg_r": 1.03,
+  "hr_l": 1.05,
+  "hr_r": 1.01,
+  "gap": 0.99,
+  "gap_l": 0.96,
+  "gap_r": 1.05,
+  "triple": 0.96,
+  "triple_l": 0.96,
+  "triple_r": 0.96,
+  "year": 1941,
+  "league": "NeL",
+  "team": "Philadelphia Stars",
+  "ptLevel": 8
+}

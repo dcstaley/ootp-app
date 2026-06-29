@@ -1,0 +1,18 @@
+{
+  "id": "park-146",
+  "name": "Colt Stadium",
+  "avg_l": 1.017,
+  "avg_r": 0.972,
+  "hr_l": 0.776,
+  "hr_r": 0.973,
+  "gap": 0.877,
+  "gap_l": 0.837,
+  "gap_r": 0.903,
+  "triple": 1.299,
+  "triple_l": 1.385,
+  "triple_r": 1.243,
+  "year": 1962,
+  "league": "NL",
+  "team": "Houston Colt .45's",
+  "ptLevel": -2
+}

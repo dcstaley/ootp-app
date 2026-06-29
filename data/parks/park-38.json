@@ -1,0 +1,18 @@
+{
+  "id": "park-38",
+  "name": "Rio Grande Credit Union Field at Isotopes Park",
+  "avg_l": 1.08,
+  "avg_r": 1.14,
+  "hr_l": 1.17,
+  "hr_r": 1.39,
+  "gap": 1.134,
+  "gap_l": 1.1,
+  "gap_r": 1.17,
+  "triple": 1.534,
+  "triple_l": 1.22,
+  "triple_r": 1.93,
+  "year": 2026,
+  "league": "PCL",
+  "team": "Albuquerque Isotopes",
+  "ptLevel": -2
+}

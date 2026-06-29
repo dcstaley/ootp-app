@@ -1,0 +1,18 @@
+{
+  "id": "park-162",
+  "name": "Cleveland Stadium (1952)",
+  "avg_l": 0.952402812,
+  "avg_r": 0.942211584,
+  "hr_l": 0.984866248,
+  "hr_r": 1.11612541,
+  "gap": 0.961337668,
+  "gap_l": 0.938597086,
+  "gap_r": 0.980759379,
+  "triple": 0.695605813,
+  "triple_l": 0.658838309,
+  "triple_r": 0.735635588,
+  "year": 1952,
+  "league": "AL",
+  "team": "Cleveland Guardians",
+  "ptLevel": 5
+}

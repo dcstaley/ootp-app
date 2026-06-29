@@ -1,0 +1,18 @@
+{
+  "id": "park-123",
+  "name": "Candlestick Park (1979)",
+  "avg_l": 0.908,
+  "avg_r": 0.841,
+  "hr_l": 0.936,
+  "hr_r": 0.914,
+  "gap": 0.969,
+  "gap_l": 0.958,
+  "gap_r": 0.975,
+  "triple": 1,
+  "triple_l": 0.955,
+  "triple_r": 1.023,
+  "year": 1979,
+  "league": "NL",
+  "team": "San Francisco Giants",
+  "ptLevel": 0
+}

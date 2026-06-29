@@ -1,0 +1,18 @@
+{
+  "id": "park-154",
+  "name": "Crosley Field (1958)",
+  "avg_l": 1.124,
+  "avg_r": 1.086,
+  "hr_l": 1.134,
+  "hr_r": 1.054,
+  "gap": 1.042,
+  "gap_l": 0.978,
+  "gap_r": 1.089,
+  "triple": 0.722,
+  "triple_l": 0.719,
+  "triple_r": 0.725,
+  "year": 1958,
+  "league": "NL",
+  "team": "Cincinnati Redlegs",
+  "ptLevel": 0
+}

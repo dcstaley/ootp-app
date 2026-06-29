@@ -1,0 +1,18 @@
+{
+  "id": "park-9",
+  "name": "Great American Ball Park (2026)",
+  "avg_l": 1.005016446,
+  "avg_r": 1.023828745,
+  "hr_l": 1.169908643,
+  "hr_r": 1.136438251,
+  "gap": 1.007485509,
+  "gap_l": 1.00114429,
+  "gap_r": 1.020049453,
+  "triple": 0.843752921,
+  "triple_l": 0.897320569,
+  "triple_r": 0.778245151,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Cincinnati Reds",
+  "ptLevel": 0
+}

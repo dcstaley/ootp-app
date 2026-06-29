@@ -1,0 +1,18 @@
+{
+  "id": "park-10",
+  "name": "Progressive Field",
+  "avg_l": 0.998938084,
+  "avg_r": 1.013959885,
+  "hr_l": 1.03247118,
+  "hr_r": 0.957132697,
+  "gap": 0.999448299,
+  "gap_l": 0.990911841,
+  "gap_r": 1.026737094,
+  "triple": 0.867152631,
+  "triple_l": 0.817652285,
+  "triple_r": 0.951417446,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Cleveland Guardians",
+  "ptLevel": 0
+}

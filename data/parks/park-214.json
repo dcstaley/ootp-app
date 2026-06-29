@@ -1,0 +1,18 @@
+{
+  "id": "park-214",
+  "name": "Shibe Park (1910)",
+  "avg_l": 1.098,
+  "avg_r": 0.993,
+  "hr_l": 1.047,
+  "hr_r": 0.826,
+  "gap": 0.965,
+  "gap_l": 0.991,
+  "gap_r": 0.954,
+  "triple": 1.142,
+  "triple_l": 1.097,
+  "triple_r": 1.19,
+  "year": 1910,
+  "league": "AL",
+  "team": "Philadelphia Athletics",
+  "ptLevel": -2
+}

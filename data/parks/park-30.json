@@ -1,0 +1,18 @@
+{
+  "id": "park-30",
+  "name": "Rogers Centre",
+  "avg_l": 0.965819359,
+  "avg_r": 0.976261795,
+  "hr_l": 0.966014981,
+  "hr_r": 1.05317533,
+  "gap": 1.019713879,
+  "gap_l": 1.046867728,
+  "gap_r": 0.994312048,
+  "triple": 0.895529926,
+  "triple_l": 0.882762551,
+  "triple_r": 0.897360861,
+  "year": 2026,
+  "league": "MLB",
+  "team": "Toronto Blue Jays",
+  "ptLevel": 0
+}

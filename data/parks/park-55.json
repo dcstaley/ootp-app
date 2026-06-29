@@ -1,0 +1,18 @@
+{
+  "id": "park-55",
+  "name": "Louisville Slugger Field",
+  "avg_l": 1.06,
+  "avg_r": 0.95,
+  "hr_l": 1.15,
+  "hr_r": 0.89,
+  "gap": 1.027,
+  "gap_l": 1.16,
+  "gap_r": 0.91,
+  "triple": 1.024,
+  "triple_l": 1.38,
+  "triple_r": 0.76,
+  "year": 2026,
+  "league": "IL",
+  "team": "Louisville Bats",
+  "ptLevel": -2
+}

@@ -1,0 +1,18 @@
+{
+  "id": "park-103",
+  "name": "Oriole Park at Camden Yards (1992)",
+  "avg_l": 1.011881537,
+  "avg_r": 0.974776222,
+  "hr_l": 1.054673533,
+  "hr_r": 1.072790384,
+  "gap": 0.973971815,
+  "gap_l": 0.973922306,
+  "gap_r": 0.974465237,
+  "triple": 0.980814941,
+  "triple_l": 0.856856098,
+  "triple_r": 1.121403399,
+  "year": 1992,
+  "league": "AL",
+  "team": "Baltimore Orioles",
+  "ptLevel": 4
+}

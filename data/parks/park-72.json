@@ -1,0 +1,18 @@
+{
+  "id": "park-72",
+  "name": "Tropicana Field (2024)",
+  "avg_l": 0.94,
+  "avg_r": 0.97,
+  "hr_l": 0.92,
+  "hr_r": 0.99,
+  "gap": 0.97,
+  "gap_l": 0.97,
+  "gap_r": 0.97,
+  "triple": 1.01,
+  "triple_l": 1.05,
+  "triple_r": 0.98,
+  "year": 2024,
+  "league": "AL",
+  "team": "Tampa Bay Rays",
+  "ptLevel": 9
+}
