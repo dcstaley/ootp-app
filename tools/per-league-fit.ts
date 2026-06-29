@@ -18,8 +18,10 @@ import { HITTER, PITCHER, type RoleSpec } from "../src/training/bakeoff.ts";
 import { RAWPOLY_HIT, RAWPOLY_PIT, LOG_HIT, LOG_PIT, fitHitForm, predictHitForm, fitPitForm, predictPitForm, type HitForm, type PitForm } from "../src/training/forms.ts";
 
 const DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"].find((d) => d && existsSync(d))!;
-const WINDOW = [2037, 2038, 2039];
+const WINDOW = [2037, 2038, 2039, 2040];
 const MIN_N = 600, K = 5, TOPN = 26;
+// deterministic hash for a representative ALL→PEL-size subsample (no RNG).
+const fnv = (key: string) => { let h = 2166136261; for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
 const PEL = loadWindowLeagues(DIR, WINDOW, ["PEL"]).observations;
 const ALL = loadWindow(DIR, WINDOW).observations;
 
@@ -35,7 +37,7 @@ function compare(label: string, role: RoleSpec, isHit: boolean, hitForm: HitForm
     return Math.sqrt(v.reduce((s, x, i) => s + w[i]! * (x - m) ** 2, 0) / W);
   };
 
-  const fromPEL: number[] = [], fromALL: number[] = [], actual: number[] = [], weight: number[] = [];
+  const fromPEL: number[] = [], fromALL: number[] = [], fromALLm: number[] = [], actual: number[] = [], weight: number[] = [];
   for (let f = 0; f < K; f++) {
     const testPEL = pelQ.filter((o) => foldOf(o.key, K) === f);
     if (!testPEL.length) continue;
@@ -43,11 +45,14 @@ function compare(label: string, role: RoleSpec, isHit: boolean, hitForm: HitForm
     const trainPEL = pelQ.filter((o) => !testKeys.has(o.key));
     const trainALL = allQ.filter((o) => !testKeys.has(o.key)); // test cards fully excluded
     if (trainPEL.length < 10 || trainALL.length < 10) continue;
-    const mPEL = fit(trainPEL), mALL = fit(trainALL);
-    testPEL.forEach((o) => { fromPEL.push(pred(mPEL, o)); fromALL.push(pred(mALL, o)); actual.push(role.actualWoba(o)); weight.push(role.weight(o)); });
+    // matched-N: representative ALL subsample down to PEL's training size (isolates diversity from volume)
+    const trainALLm = [...trainALL].sort((a, b) => fnv(a.key) - fnv(b.key)).slice(0, trainPEL.length);
+    const mPEL = fit(trainPEL), mALL = fit(trainALL), mALLm = fit(trainALLm);
+    testPEL.forEach((o) => { fromPEL.push(pred(mPEL, o)); fromALL.push(pred(mALL, o)); fromALLm.push(pred(mALLm, o)); actual.push(role.actualWoba(o)); weight.push(role.weight(o)); });
   }
   const pPEL = evalMetrics(fromPEL, actual, weight, role.higherBetter, TOPN).pearson;
   const pALL = evalMetrics(fromALL, actual, weight, role.higherBetter, TOPN).pearson;
+  const pALLm = evalMetrics(fromALLm, actual, weight, role.higherBetter, TOPN).pearson;
 
   // reference: standard CV training+testing on ALL cards (the current design's headline)
   const aPred: number[] = [], aAct: number[] = [], aW: number[] = [];
@@ -62,8 +67,10 @@ function compare(label: string, role: RoleSpec, isHit: boolean, hitForm: HitForm
   const d = pALL - pPEL;
   const meanExp = (obs: TrainObs[]) => Math.round(obs.reduce((s, o) => s + (isHit ? o.hit.PA : o.pitch.BF), 0) / Math.max(obs.length, 1));
   console.log(`\n== ${label} ==  (PEL N=${pelQ.length} @ ${meanExp(pelQ)} avg ${isHit ? "PA" : "BF"}, ALL N=${allQ.length} @ ${meanExp(allQ)}; actual-wOBA SD: PEL=${(wsd(pelQ) * 1000).toFixed(1)}pts, ALL=${(wsd(allQ) * 1000).toFixed(1)}pts)`);
-  console.log(`  train PEL → predict PEL:  ${pPEL.toFixed(4)}`);
-  console.log(`  train ALL → predict PEL:  ${pALL.toFixed(4)}   (Δ ALL−PEL = ${d >= 0 ? "+" : ""}${d.toFixed(4)} — negative ⇒ pooling HD hurts PEL)`);
+  const dm = pALLm - pPEL;
+  console.log(`  train PEL-only      → predict PEL:  ${pPEL.toFixed(4)}`);
+  console.log(`  train ALL (full)    → predict PEL:  ${pALL.toFixed(4)}   (Δ vs PEL = ${d >= 0 ? "+" : ""}${d.toFixed(4)}  ← volume + diversity)`);
+  console.log(`  train ALL (=PEL N)  → predict PEL:  ${pALLm.toFixed(4)}   (Δ vs PEL = ${dm >= 0 ? "+" : ""}${dm.toFixed(4)}  ← diversity at EQUAL N; <0 ⇒ same-pool data more valuable per-card ⇒ pool-relativity)`);
   console.log(`  [ref] train ALL → predict ALL:  ${pAllAll.toFixed(4)}`);
 }
 
