@@ -40,7 +40,22 @@ out. Spikes gate the milestones that need exploration.
 Surfaced during M6; **to be scoped as we reach them**, sequenced AFTER the M6 retirement bundle (once
 modeling is closed out). Both are refinement passes on already-built pages, not new milestones.
 
-- **Tournament page refinements** ⬜ — usability/clarity pass on `web/TournamentsPage.tsx`. Scope TBD.
+- **Tournament page refinements** ✅ (2026-06-29) — usability/clarity pass on `web/TournamentsPage.tsx`:
+  - DB cleanup: dropped the 3 non-year eras (`era-neutral/full/thr`) + the non-year parks
+    (`park-neutral/full`) + the `real-*` validation tournaments; repointed the `default-neutral` record
+    (renamed "League Neutral (Default)") to `era-2010` + `park-1` (Heinsohn), `min_starter_stamina` 55.
+  - New-tournament defaults are now a defined template (`newTournamentCfg` in `web/shared.ts`): era 2010 /
+    Heinsohn / roster 26 (fixed, no longer editable) / stamina 55 / mode none / Top-X 100 each /
+    variants 0 = unlimited / no cap/slots/value-min-max. Defaulted fields autofill in the editor.
+  - Searchable comboboxes for era, park, and eligibility columns; parks listed alphabetically
+    (`parkList` sort). Softcaps editor removed (data still passes through; scoring retirement is the M6
+    bundle's job).
+  - **Position constraints redesigned**: accordion replaced by an always-expanded per-position grid;
+    added **rank requirements** (`positionRanks`, "rating in top-K of the eligible-at-position Top-X
+    pool") alongside the existing absolute mins, plus a live **pool-metrics** column (max/mean/p90/p95/
+    t5/t10) from the new `POST /api/position-metrics`. Enforcement: `positionPoolStats` (one source of
+    truth, shared by the endpoint + the optimizer) converts a top-K requirement into an effective min
+    = the K-th highest rating in the pool, reusing `meetsPositionMins`. Verified end-to-end.
 - **Roster page refinements** ⬜ — usability pass on `web/RosterPage.tsx` + the lineup editor. Scope TBD.
 
 ---

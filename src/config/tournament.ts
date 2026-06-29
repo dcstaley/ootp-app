@@ -110,4 +110,9 @@ export interface Tournament {
   // = bar to count toward coverage depth. Keys are rating ids relevant to the position
   // group (C: ability/frame/arm · IF: range/error/arm/dp · OF: range/error/arm).
   positionMins?: Record<string, { starter?: Record<string, number>; backup?: Record<string, number> }>;
+  // Rank-based position requirements (the rostered player's rating must place within the
+  // top-K of eligible-at-position players in the Top-X pool, ranked by that specific
+  // rating). Same starter/backup structure as positionMins; the value is K. Enforced by
+  // converting K → an effective min (the K-th highest rating in the pool) at solve time.
+  positionRanks?: Record<string, { starter?: Record<string, number>; backup?: Record<string, number> }>;
 }

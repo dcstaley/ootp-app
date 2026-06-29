@@ -96,9 +96,36 @@ export interface TournamentCfg {
   eligibility?: EligibilityGroup;
   softcaps?: Record<string, number>; // cap_<grp>_top/_bot + pen_<grp>
   positionMins?: Record<string, PositionMin>;
+  positionRanks?: Record<string, PositionMin>; // top-K rank requirement (value = K) per rating
 }
 // Per-position min defensive ratings (starter = bar to start, backup = bar to cover).
+// For positionRanks the same shape holds, but each value is a top-K rank (not a rating min).
 export interface PositionMin { starter?: Record<string, number>; backup?: Record<string, number> }
+
+// New-tournament defaults (the +New template). era-2010 = BBRef baseline; park-1 = Heinsohn
+// (neutral). platoon/platoonVR/VL are intentionally omitted so the server seeds them from the
+// active model on create; softcaps omitted so the server preserves the base softcaps.
+export const DEFAULT_ERA_ID = "era-2010";
+export const DEFAULT_PARK_ID = "park-1";
+export const TOURNAMENT_DEFAULTS = {
+  roster_size: 26, hitters: 14, pitchers: 12, min_starters: 5, min_starter_stamina: 55,
+  min_pitch_types: 3, topHitters: 100, topPitchers: 100, minPlayersPerPosition: 2,
+  max_variants_on_roster: 0,
+} as const;
+export function newTournamentCfg(): TournamentCfg {
+  return {
+    id: "", name: "New Tournament",
+    card_value_min: null, card_value_max: null, total_cap: null,
+    roster_size: TOURNAMENT_DEFAULTS.roster_size, hitters: TOURNAMENT_DEFAULTS.hitters, pitchers: TOURNAMENT_DEFAULTS.pitchers,
+    min_starters: TOURNAMENT_DEFAULTS.min_starters, min_starter_stamina: TOURNAMENT_DEFAULTS.min_starter_stamina,
+    min_pitch_types: TOURNAMENT_DEFAULTS.min_pitch_types, dh: true,
+    variants_allowed: true, max_variants_on_roster: TOURNAMENT_DEFAULTS.max_variants_on_roster,
+    eraId: DEFAULT_ERA_ID, parkId: DEFAULT_PARK_ID,
+    topHitters: TOURNAMENT_DEFAULTS.topHitters, topPitchers: TOURNAMENT_DEFAULTS.topPitchers,
+    budget_mode: "none", minPlayersPerPosition: TOURNAMENT_DEFAULTS.minPlayersPerPosition,
+    eligibility: { mode: "ALL", rules: [] },
+  };
+}
 const IF_KEYS = [{ key: "range", label: "Range" }, { key: "error", label: "Error" }, { key: "arm", label: "Arm" }, { key: "dp", label: "DP" }];
 const OF_KEYS = [{ key: "range", label: "Range" }, { key: "error", label: "Error" }, { key: "arm", label: "Arm" }];
 const C_KEYS = [{ key: "ability", label: "Ability" }, { key: "frame", label: "Frame" }, { key: "arm", label: "Arm" }];
