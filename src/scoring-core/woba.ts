@@ -8,6 +8,7 @@
 
 import type { Coeffs, Derived, CalScales } from "../config/types.ts";
 import type { RawHitting, RawPitching } from "../model/types.ts";
+import { rate, hRate, type EventForm } from "../model/curves.ts";
 import { cp, getParkFactor } from "./helpers.ts";
 
 // ── Raw wOBA assembly (fixed weights + ssp) — the stored "wOBA" columns ──────
@@ -33,6 +34,7 @@ export interface PitchComponents { BB_fin: number; HR_fin: number; oneB_fin: num
 
 export function hittingComponents(
   e: RawHitting, sBB: number, sHR: number, bats: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
+  eventForm?: EventForm,
 ): HitComponents {
   const vR = side === "vR";
   const parkHR = getParkFactor(bats, vR, coeffs.park_hr_r, coeffs.park_hr_l);
@@ -43,9 +45,18 @@ export function hittingComponents(
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const adv_sh = coeffs.adv_sh ?? 0;
   const BIP_fin = Math.max(600 - BB_fin - adv_hbp - adv_sh - SO_fin - HR_fin, 1);
-  const BA_raw = Math.max((coeffs.baInt ?? 0) + (coeffs.ba ?? 0) * Math.log(Math.max(e.babipSC, 1)) + (coeffs.bipba ?? 0) * Math.log(BIP_fin), 0);
+  // BA (non-HR hit rate) and the GAP-share are RE-DERIVED here because era/park move
+  // BIP and hits depend on BIP. With #2 (eventForm present) the re-derivation uses the
+  // fitted raw-poly curves (H = log babip+BIP, GAP-share = quad in raw GAP) — the SAME
+  // curves the deployed model uses (one core). Otherwise the parity log-linear formulas
+  // (e.babipSC/e.gapSC are the raw ratings under #2, the softcapped values under log).
+  const BA_raw = eventForm
+    ? hRate(eventForm.hit.h, e.babipSC, BIP_fin)
+    : Math.max((coeffs.baInt ?? 0) + (coeffs.ba ?? 0) * Math.log(Math.max(e.babipSC, 1)) + (coeffs.bipba ?? 0) * Math.log(BIP_fin), 0);
   const BA_fin = BA_raw * derived.era_h * parkAvg;
-  const GAP_rate = Math.max((coeffs.gapLogA ?? 0) + (coeffs.gapLogB ?? 0) * Math.log(Math.max(e.gapSC, 1)), 0);
+  const GAP_rate = eventForm
+    ? rate(eventForm.hit.xbh, e.gapSC)
+    : Math.max((coeffs.gapLogA ?? 0) + (coeffs.gapLogB ?? 0) * Math.log(Math.max(e.gapSC, 1)), 0);
   const GAP_fin = Math.max(GAP_rate * BA_fin * coeffs.era_gap * cp(coeffs.park_gap), 0);
   const oneB_fin = Math.max(BA_fin - GAP_fin, 0);
   return { BB_fin, HR_fin, oneB_fin, GAP_fin };
@@ -78,7 +89,7 @@ export function pitchingComponents(
 // ── Trusted (calibrated, display) wOBA — getHittingScore / getPitchingScore ──
 export function trustedHittingWoba(
   e: RawHitting, rawWoba: number, bats: number, side: "vR" | "vL",
-  coeffs: Coeffs, derived: Derived, calScales: CalScales | null,
+  coeffs: Coeffs, derived: Derived, calScales: CalScales | null, eventForm?: EventForm,
 ): number {
   if (!rawWoba) return 0;
   if (!calScales) return rawWoba;
@@ -86,7 +97,7 @@ export function trustedHittingWoba(
   const sBB = vR ? (calScales.hitBBScaleVR ?? 1) : (calScales.hitBBScaleVL ?? 1);
   const sHR = vR ? (calScales.hitHRScaleVR ?? 1) : (calScales.hitHRScaleVL ?? 1);
   const sFinal = vR ? (calScales.hitScaleVR ?? 1) : (calScales.hitScaleVL ?? 1);
-  const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived);
+  const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const ssp = (bats === 1 && vR) || (bats === 2 && !vR) ? (calScales.ssp_adv_hitting ?? 0.97) : 1;
   const finalWoba = ((0.704 * k.BB_fin + 0.704 * adv_hbp + 0.8992 * k.oneB_fin + 1.29 * k.GAP_fin + 2.0759 * k.HR_fin) / 600) * ssp;
@@ -116,8 +127,9 @@ export function trustedPitchingSideWoba(
 // the components). Flagged for post-parity reconciliation.
 export function anchorHittingWoba(
   e: RawHitting, sBB: number, sHR: number, bats: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
+  eventForm?: EventForm,
 ): number {
-  const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived);
+  const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
   return (0.704 * k.BB_fin + 0.8992 * k.oneB_fin + 1.29 * k.GAP_fin + 2.0759 * k.HR_fin) / 600;
 }
 

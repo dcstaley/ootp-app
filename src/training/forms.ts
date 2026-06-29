@@ -20,36 +20,16 @@
 import type { TrainObs } from "./loader.ts";
 import { wls } from "./fit.ts";
 import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
+import {
+  ln1, dot, baseVal, row, rate, hDesign, hRate, LOG,
+  type Curve, type FittedEvent, type CurveFit, type FittedH, type FittedHit, type FittedPit,
+} from "../model/curves.ts";
 
-const ln1 = (x: number) => Math.log(Math.max(x, 1));
-const dot = (b: number[], x: number[]) => b.reduce((s, bi, j) => s + bi * x[j]!, 0);
+// Re-export the curve/param types so existing tool imports (`from "./forms.ts"`) keep working.
+export type { Curve, FittedEvent, FittedHit, FittedPit } from "../model/curves.ts";
+
 // Fixed wOBA event weights (must match bakeoff.ts — the league-standard weights).
 const W_BB = 0.704, W_1B = 0.8992, W_XBH = 1.29, W_HR = 2.0759, HBP = 6;
-
-// ── Curve = the per-event basis choice ─────────────────────────────────────────
-export type Curve =
-  | { kind: "log" }                          // [1, ln(max(r,1))] — parity baseline, NOT z-scored
-  | { kind: "rawpoly"; degree: 1 | 2 | 3 }   // [1, u, u², …] with u = z(r)        — raw curvature
-  | { kind: "logpoly"; degree: 2 | 3 };      // [1, u, u², …] with u = z(ln r)      — higher-order log
-const LOG: Curve = { kind: "log" };
-
-interface FittedEvent { beta: number[]; mu: number; sd: number; curve: Curve }
-
-// The pre-z-score base value for a polynomial curve: ln(rating) for logpoly, the
-// raw rating for rawpoly. (log is handled separately — kept exactly [1, ln r] so it
-// stays bit-identical to the parity assembly.)
-const baseVal = (curve: Curve, v: number) => (curve.kind === "logpoly" ? ln1(v) : v);
-
-/** Design row for one rating value under a curve (uses stored μ/σ for poly curves). */
-function row(curve: Curve, v: number, mu: number, sd: number): number[] {
-  if (curve.kind === "log") return [1, ln1(v)];
-  const u = sd > 1e-9 ? (baseVal(curve, v) - mu) / sd : 0;
-  const out = [1];
-  for (let d = 1; d <= curve.degree; d++) out.push(u ** d);
-  return out;
-}
-/** Fitted per-event rate at a rating value, clamped ≥ 0 (matches the chain). */
-const rate = (e: FittedEvent, v: number) => Math.max(dot(e.beta, row(e.curve, v, e.mu, e.sd)), 0);
 
 /** Weighted μ/σ of a curve's base term (for z-score conditioning; log needs none). */
 function curveNorm(curve: Curve, vals: number[], w: number[]): { mu: number; sd: number } {
@@ -66,13 +46,8 @@ function fitEvent(curve: Curve, vals: number[], y: number[], w: number[]): Fitte
 }
 
 // The H (non-HR hit) event has TWO inputs, each with its OWN curve: the BABIP/PBABIP
-// RATING and the derived BIP count. Design = [1, <rating basis>, <bip basis>] (shared
-// intercept). Both default to log (parity); both configurable so neither is assumed.
-interface CurveFit { curve: Curve; mu: number; sd: number }
-interface FittedH { beta: number[]; rating: CurveFit; bip: CurveFit }
-const rowTerms = (c: Curve, v: number, mu: number, sd: number) => row(c, v, mu, sd).slice(1); // basis minus the shared intercept
-const hDesign = (r: CurveFit, rv: number, b: CurveFit, bv: number) => [1, ...rowTerms(r.curve, rv, r.mu, r.sd), ...rowTerms(b.curve, bv, b.mu, b.sd)];
-const hRate = (m: FittedH, rv: number, bv: number) => Math.max(dot(m.beta, hDesign(m.rating, rv, m.bip, bv)), 0);
+// RATING and the derived BIP count (eval lives in curves.ts as hDesign/hRate). Both
+// default to log (parity); both configurable so neither is assumed.
 function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[], rCurve: Curve, bCurve: Curve): FittedH {
   const rating = { curve: rCurve, ...curveNorm(rCurve, ratingVals, w) };
   const bip = { curve: bCurve, ...curveNorm(bCurve, bipVals, w) };
@@ -83,7 +58,6 @@ function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[],
 // `h` is the curve on the BABIP rating in the non-HR-hit event (BIP term stays log).
 // The XBH curve fits the SHARE of (predicted) hits that go for extra bases.
 export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve }
-export interface FittedHit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH; xbh: FittedEvent }
 
 export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): FittedHit {
   const w = obs.map((p) => Math.pow(p.hit.PA, fitExp));
@@ -120,7 +94,6 @@ export function predictHitForm(m: FittedHit, o: TrainObs): number {
 // ── Pitching form ──────────────────────────────────────────────────────────────
 // `h` = curve on the PBABIP rating (BIP term log); XBH stays the fixed 0.25 share.
 export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve; hBip?: Curve }
-export interface FittedPit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH }
 
 export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): FittedPit {
   const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));

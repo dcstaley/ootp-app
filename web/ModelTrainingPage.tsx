@@ -69,9 +69,11 @@ interface ResidResp { available: boolean; error?: string; residuals?: ResidualAn
 
 interface TrainedModelSummary {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
+  hasEventForm: boolean;
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
+interface ModelsResp { models?: TrainedModelSummary[]; activeId?: string | null }
 
 type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitching";
 const FIT_TABS: { id: FitTab; label: string }[] = [
@@ -458,6 +460,7 @@ export function ModelTrainingPage() {
   const [sbMin, setSbMin] = useState(1000); const [sbVar, setSbVar] = useState(true);
   const [residMin, setResidMin] = useState(1000); const [residVar, setResidVar] = useState(true); const [residWeighted, setResidWeighted] = useState(true);
   const [models, setModels] = useState<TrainedModelSummary[]>([]); const [modelName, setModelName] = useState(""); const [savingModel, setSavingModel] = useState(false);
+  const [activeModelId, setActiveModelId] = useState<string | null>(null);
 
   const yq = (ys: number[]) => (ys.length ? `&years=${ys.join(",")}` : "");
   const vq = (incl: boolean) => `&variants=${incl ? "all" : "base"}`;
@@ -482,15 +485,19 @@ export function ModelTrainingPage() {
   const loadResid = (role: "hitter" | "pitcher", ys: number[], pa = residMin, incl = residVar, wt = residWeighted, reload = false) =>
     fetch(`/api/training/residuals?role=${role}&minN=${pa}${vq(incl)}&weighted=${wt}${yq(ys)}${reload ? "&reload=true" : ""}`)
       .then((r) => r.json()).then((d: ResidResp) => setResid(d)).catch((e) => setErr(String(e)));
-  const loadModels = () => fetch("/api/training/models").then((r) => r.json()).then((d: { models: TrainedModelSummary[] }) => setModels(d.models ?? [])).catch((e) => setErr(String(e)));
+  const applyModelsResp = (d: ModelsResp) => { setModels(d.models ?? []); setActiveModelId(d.activeId ?? null); };
+  const loadModels = () => fetch("/api/training/models").then((r) => r.json()).then((d: ModelsResp) => applyModelsResp(d)).catch((e) => setErr(String(e)));
   const saveModel = () => {
     const name = modelName.trim(); if (!name) return;
     setSavingModel(true);
     fetch("/api/training/models/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, window: years, minPA: fitMin, includeVariants: fitVar }) })
-      .then((r) => r.json()).then((d) => { if (d.ok) { setModels(d.models); setModelName(""); } else setErr(d.error); })
+      .then((r) => r.json()).then((d) => { if (d.ok) { applyModelsResp(d); setModelName(""); } else setErr(d.error); })
       .catch((e) => setErr(String(e))).finally(() => setSavingModel(false));
   };
-  const deleteModel = (id: string) => fetch(`/api/training/models/delete?id=${encodeURIComponent(id)}`, { method: "POST" }).then((r) => r.json()).then((d) => setModels(d.models ?? [])).catch((e) => setErr(String(e)));
+  const deleteModel = (id: string) => fetch(`/api/training/models/delete?id=${encodeURIComponent(id)}`, { method: "POST" }).then((r) => r.json()).then((d: ModelsResp) => applyModelsResp(d)).catch((e) => setErr(String(e)));
+  // Activate a #2 model for live scoring (or pass "" to revert to the log-linear baseline).
+  const activateModel = (id: string) => fetch(`/api/training/models/activate?id=${encodeURIComponent(id)}`, { method: "POST" })
+    .then((r) => r.json()).then((d: ModelsResp & { ok?: boolean; error?: string }) => { if (d.ok === false) setErr(d.error ?? "activate failed"); else applyModelsResp(d); }).catch((e) => setErr(String(e)));
   // Load a saved model's CONFIG into the page (window + trained-models min/variants) and refit to match.
   const loadModelConfig = (m: TrainedModelSummary) => {
     setYears(m.window); setFitMin(m.minPA); setFitVar(m.includeVariants);
@@ -610,6 +617,9 @@ export function ModelTrainingPage() {
             <button onClick={saveModel} disabled={savingModel || !modelName.trim()} style={{ ...inputStyle, cursor: "pointer", background: C.accent, color: "#fff" }}>{savingModel ? "Saving…" : "Save current"}</button>
             <span style={{ fontSize: 12, color: C.sub }}>snapshots the four fits at window {years.join("+") || "(default)"} · min {fitMin} · {fitVar ? "variants" : "base"}</span>
           </div>
+          <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub, maxWidth: 820 }}>
+            <b style={{ color: "#22c55e" }}>●</b> marks the <b style={{ color: C.text }}>live scoring model</b> (D3 #2 raw-poly) — <b style={{ color: C.text }}>Use</b> activates it for the grid, optimizer &amp; calibration; <b style={{ color: C.text }}>Scoring ✓</b> reverts to the log-linear baseline. Each saved model freezes its own #2 form, so league vs (future) tournament models can be swapped.
+          </p>
           {models.length > 0 && (
             <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 4 }}>
               <table style={{ borderCollapse: "collapse", width: "100%" }}>
@@ -620,7 +630,7 @@ export function ModelTrainingPage() {
                 <tbody>
                   {models.map((m) => (
                     <tr key={m.id}>
-                      <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{m.name}{!m.includeVariants && <span style={{ color: C.sub, fontSize: 10 }}> · base</span>}</td>
+                      <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{activeModelId === m.id && <span title="live scoring model (grid + optimizer)" style={{ color: "#22c55e", marginRight: 4 }}>●</span>}{m.name}{!m.includeVariants && <span style={{ color: C.sub, fontSize: 10 }}> · base</span>}</td>
                       <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 12 }}>{m.datasetRoot}</td>
                       <td style={{ ...td, textAlign: "left" }}>{m.window.join("+")}</td>
                       <td style={{ ...td, color: C.sub }}>{m.minPA}</td>
@@ -628,7 +638,10 @@ export function ModelTrainingPage() {
                       <td style={td}>{m.diag.hitPearson != null ? sig(m.diag.hitPearson, 3) : "—"} / {m.diag.pitPearson != null ? sig(m.diag.pitPearson, 3) : "—"}</td>
                       <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 11 }}>{m.trainedAt.slice(0, 10)}</td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>
-                        <button onClick={() => loadModelConfig(m)} title="Load this model's window + min + variants into the page" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12 }}>Load</button>
+                        {activeModelId === m.id
+                          ? <button onClick={() => activateModel("")} title="Revert live scoring to the log-linear baseline" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, background: "#16a34a", color: "#fff", border: "1px solid #16a34a" }}>Scoring ✓</button>
+                          : <button onClick={() => activateModel(m.id)} disabled={!m.hasEventForm} title={m.hasEventForm ? "Use this model for live scoring (grid + optimizer + calibration)" : "Pre-#2 artifact — re-save to enable scoring"} style={{ ...inputStyle, cursor: m.hasEventForm ? "pointer" : "not-allowed", padding: "2px 8px", fontSize: 12, opacity: m.hasEventForm ? 1 : 0.5 }}>Use</button>}
+                        <button onClick={() => loadModelConfig(m)} title="Load this model's window + min + variants into the page" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, marginLeft: 4 }}>Load</button>
                         <button onClick={() => deleteModel(m.id)} title="Delete" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, marginLeft: 4, color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
                       </td>
                     </tr>

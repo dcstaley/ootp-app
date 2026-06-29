@@ -13,7 +13,9 @@
 
 import type { Coeffs, Derived, CalScales } from "../config/types.ts";
 import type { EventModel, RawHitting, RawPitching } from "../model/types.ts";
+import type { EventForm } from "../model/curves.ts";
 import { logLinearModel } from "../model/log-linear.ts";
+import { makeRawPolyModel } from "../model/raw-poly.ts";
 import { scoreCard } from "./score-card.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba, anchorHittingWoba, anchorPitchingWoba } from "./woba.ts";
@@ -26,7 +28,7 @@ export const ANCHOR_N = 50;
 export const H_SECTION3 = { BB: 48.43, HR: 14.87 };
 export const P_SECTION3 = { BB: 47.80, HR: 14.96 };
 
-export interface CalibrateConfig { coeffs: Coeffs; derived: Derived }
+export interface CalibrateConfig { coeffs: Coeffs; derived: Derived; eventForm?: EventForm }
 
 interface SideRaw { e: RawHitting | RawPitching; woba: number }
 interface Aug { bats: number; thr: number; hVR: { e: RawHitting; woba: number }; hVL: { e: RawHitting; woba: number }; pVR: SideRaw; pVL: SideRaw }
@@ -58,9 +60,13 @@ const evScale = (vals: number[], tgt: number) => { const m = mean(vals); return 
  * Compute calibration scales over an (already eligibility-filtered) card pool.
  * The hitter/pitcher anchors self-select from the whole pool by raw wOBA.
  */
-export function calibrate(pool: any[], config: CalibrateConfig, model: EventModel = logLinearModel): CalScales {
-  const { coeffs, derived } = config;
-  const aug = pool.map((c) => augment(c, coeffs, model));
+export function calibrate(pool: any[], config: CalibrateConfig, model?: EventModel): CalScales {
+  const { coeffs, derived, eventForm } = config;
+  // Same model selection as scoreCard: #2 raw-poly when a fitted eventForm is present,
+  // else the parity log-linear default. The anchor recompute uses the SAME model + curves,
+  // so per-pool calibration self-adjusts to #2's event levels.
+  const evModel = model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
+  const aug = pool.map((c) => augment(c, coeffs, evModel));
 
   const hAnchVR = [...aug].sort((a, b) => b.hVR.woba - a.hVR.woba).slice(0, ANCHOR_N);
   const hAnchVL = [...aug].sort((a, b) => b.hVL.woba - a.hVL.woba).slice(0, ANCHOR_N);
@@ -73,8 +79,8 @@ export function calibrate(pool: any[], config: CalibrateConfig, model: EventMode
   const pBBScale = evScale(pAnch.map((x) => (x.pVR.e as RawPitching).BB), P_SECTION3.BB);
   const pHRScale = evScale(pAnch.map((x) => (x.pVR.e as RawPitching).HR), P_SECTION3.HR);
 
-  const anchorMeanVR = mean(hAnchVR.map((x) => anchorHittingWoba(x.hVR.e, hitBBScaleVR, hitHRScaleVR, x.bats, "vR", coeffs, derived)));
-  const anchorMeanVL = mean(hAnchVL.map((x) => anchorHittingWoba(x.hVL.e, hitBBScaleVL, hitHRScaleVL, x.bats, "vL", coeffs, derived)));
+  const anchorMeanVR = mean(hAnchVR.map((x) => anchorHittingWoba(x.hVR.e, hitBBScaleVR, hitHRScaleVR, x.bats, "vR", coeffs, derived, eventForm)));
+  const anchorMeanVL = mean(hAnchVL.map((x) => anchorHittingWoba(x.hVL.e, hitBBScaleVL, hitHRScaleVL, x.bats, "vL", coeffs, derived, eventForm)));
   const anchorMeanPVR = mean(pAnch.map((x) => anchorPitchingWoba(x.pVR.e as RawPitching, pBBScale, pHRScale, "vR", coeffs, derived)));
   const anchorMeanPVL = mean(pAnch.map((x) => anchorPitchingWoba(x.pVL.e as RawPitching, pBBScale, pHRScale, "vL", coeffs, derived)));
   const anchorMeanPOVR = (anchorMeanPVR + anchorMeanPVL) / 2;

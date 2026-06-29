@@ -21,7 +21,8 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, type EventForm } from "../scoring-core/index.ts";
+import { fitHitForm, fitPitForm, RAWPOLY_HIT, RAWPOLY_PIT } from "../training/forms.ts";
 import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -43,7 +44,7 @@ const DATA_ROOT = process.env.DATA_ROOT ?? "data";
 const TRAINING_DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"]
   .find((d): d is string => !!d && existsSync(d)) ?? "League Files";
 
-interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[] }
+interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null }
 
 // ── Boot: config DB + accounts + catalog ──────────────────────────────────────
 console.log("[server] loading catalog + tournaments database…");
@@ -140,6 +141,12 @@ type ScoredRow = ReturnType<typeof toRow>;
 interface Scored { rows: ScoredRow[]; ctx: ScoreCtx; eligibleCount: number }
 let cache = new Map<string, Scored>();
 
+// Active D3 #2 (raw-poly) form: when set, every tournament is scored + calibrated
+// with it (one core). null ⇒ the log-linear fallback (the parity baseline, kept while
+// #2 is being verified). Refreshed at boot + on activate/delete; changing it clears
+// the per-tournament scoring cache so scores recompute.
+let activeEventForm: EventForm | null = null;
+
 function scoreTournament(t: Tournament): Scored {
   const era = eras.get(t.eraId);
   const park = parks.get(t.parkId);
@@ -148,7 +155,10 @@ function scoreTournament(t: Tournament): Scored {
   const coeffs = resolveCoeffs(model!, era, park, t.softcaps);
   const derived = computeDerived(coeffs);
   const pool = buildEligiblePool(catalog.cards, t);
-  const config = { coeffs, derived, calScales: calibrate(pool, { coeffs, derived }) };
+  const eventForm = activeEventForm ?? undefined;
+  // wOBA config uses the active #2 form (model + the woba.ts BA/GAP re-derivation +
+  // per-pool calibration all key off it). Basic metric is rating-direct, model-agnostic.
+  const config = { coeffs, derived, calScales: calibrate(pool, { coeffs, derived, eventForm }), eventForm };
   const basicConfig = { coeffs, derived, calScales: calibrateBasic(pool, { coeffs, derived }) };
 
   const inValueRange = (c: Record<string, unknown>) => {
@@ -598,11 +608,17 @@ function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number
 interface TrainedModel {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
   coefficients: { woba_hitting: WobaHittingCoeffs; woba_pitching: WobaPitchingCoeffs; basic_hitting: BasicHittingCoeffs; basic_pitching: BasicPitchingCoeffs };
+  // D3 #2 (raw-poly) fitted form — the DEPLOYED event math, frozen here so scoring is
+  // reproducible even as the (gitignored, weekly-changing) training data moves. Optional
+  // for backward compat with pre-#2 artifacts (those can't be activated for scoring).
+  eventForm?: EventForm;
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
-type TrainedModelSummary = Omit<TrainedModel, "coefficients">;
-const modelSummary = (m: TrainedModel): TrainedModelSummary => { const { coefficients, ...rest } = m; return rest; };
+// Summary drops the heavy payloads (coefficients + the raw eventForm betas); `hasEventForm`
+// tells the UI whether the model is #2-capable (activatable for scoring).
+type TrainedModelSummary = Omit<TrainedModel, "coefficients" | "eventForm"> & { hasEventForm: boolean };
+const modelSummary = (m: TrainedModel): TrainedModelSummary => { const { coefficients, eventForm, ...rest } = m; return { ...rest, hasEventForm: !!eventForm }; };
 const listModels = async (): Promise<TrainedModelSummary[]> =>
   (await repo.loadAll<TrainedModel>("trained-models")).sort((a, b) => b.trainedAt.localeCompare(a.trainedAt)).map(modelSummary);
 
@@ -614,17 +630,37 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   const includeVariants = body.includeVariants !== false;
   const f = getFit(window, minPA, includeVariants);
   if (!f.available || !f.woba_hitting || !f.woba_pitching || !f.basic_hitting || !f.basic_pitching) throw new Error(f.error ?? "fit unavailable");
+  // Freeze the deployed D3 #2 (raw-poly) form, fit on the SAME qualifying obs the
+  // log-linear fit used (one fit path — reuse the bake-off's fitHitForm/fitPitForm).
+  const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
+  const eventForm: EventForm = {
+    hit: fitHitForm(RAWPOLY_HIT, obs.filter((o) => HITTER.qualifies(o, minPA))),
+    pit: fitPitForm(RAWPOLY_PIT, obs.filter((o) => PITCHER.qualifies(o, minPA))),
+  };
   const existing = await repo.loadAll<TrainedModel>("trained-models");
   let id = slug(name) || "model"; while (existing.some((m) => m.id === id)) id += "-2";
   const model: TrainedModel = {
     id, name, datasetRoot: TRAINING_DIR, window, minPA, includeVariants,
     coefficients: { woba_hitting: f.woba_hitting.coefficients, woba_pitching: f.woba_pitching.coefficients, basic_hitting: f.basic_hitting.coefficients, basic_pitching: f.basic_pitching.coefficients },
+    eventForm,
     diag: { hitPearson: f.wobaDiagHit?.pearson ?? null, pitPearson: f.wobaDiagPit?.pearson ?? null, rowsHit: f.woba_hitting.rowCount, rowsPit: f.woba_pitching.rowCount },
     trainedAt: new Date().toISOString(), notes: body.notes ? String(body.notes) : undefined,
   };
   await repo.save("trained-models", id, model);
   return modelSummary(model);
 }
+
+// Load the active trained model's frozen #2 form into memory (or null for the
+// log-linear fallback). Clears the scoring cache so the next request re-scores.
+// A stale/incompatible pointer (deleted model, or a pre-#2 artifact) self-heals to null.
+async function refreshActiveModel(): Promise<void> {
+  const id = state.activeModelId ?? null;
+  const m = id ? (await repo.loadAll<TrainedModel>("trained-models")).find((x) => x.id === id) : undefined;
+  activeEventForm = m?.eventForm ?? null;
+  if (id && !m?.eventForm) { state.activeModelId = null; await saveState(); }
+  cache = new Map();
+}
+await refreshActiveModel();
 
 // Precompute the default tournament so first paint is instant.
 scoredFor(DEFAULT_TOURNAMENT_ID);
@@ -689,17 +725,31 @@ const server = createServer(async (req, res) => {
     const weighted = u.searchParams.get("weighted") !== "false";
     return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, includeVariants, weighted, u.searchParams.get("reload") === "true"));
   }
-  if (method === "GET" && url === "/api/training/models") return json(res, { models: await listModels() });
+  if (method === "GET" && url === "/api/training/models") return json(res, { models: await listModels(), activeId: state.activeModelId ?? null });
   if (method === "POST" && url === "/api/training/models/save") {
     const body = JSON.parse((await readBody(req)) || "{}");
-    try { const model = await saveTrainedModel(body); return json(res, { ok: true, model, models: await listModels() }); }
+    try { const model = await saveTrainedModel(body); return json(res, { ok: true, model, models: await listModels(), activeId: state.activeModelId ?? null }); }
     catch (e) { return json(res, { ok: false, error: String(e) }, 400); }
+  }
+  // Activate a saved #2 model for scoring (empty id ⇒ deactivate → log-linear fallback).
+  if (method === "POST" && url === "/api/training/models/activate") {
+    const id = u.searchParams.get("id") || "";
+    if (id) {
+      const m = (await repo.loadAll<TrainedModel>("trained-models")).find((x) => x.id === id);
+      if (!m) return json(res, { ok: false, error: "unknown model" }, 404);
+      if (!m.eventForm) return json(res, { ok: false, error: "model has no #2 form (retrain to activate)" }, 400);
+    }
+    state.activeModelId = id || null;
+    await saveState();
+    await refreshActiveModel(); // refresh in-memory form + clear the scoring cache
+    return json(res, { ok: true, activeId: state.activeModelId ?? null, models: await listModels() });
   }
   if (method === "POST" && url === "/api/training/models/delete") {
     const id = u.searchParams.get("id") || "";
     if (!id) return json(res, { ok: false, error: "id required" }, 400);
     await repo.delete("trained-models", id);
-    return json(res, { ok: true, models: await listModels() });
+    if (state.activeModelId === id) { state.activeModelId = null; await saveState(); await refreshActiveModel(); }
+    return json(res, { ok: true, models: await listModels(), activeId: state.activeModelId ?? null });
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));

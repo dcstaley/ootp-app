@@ -3,6 +3,8 @@
 // D4 (separating model-scoped vs tournament-scoped vs derived) is a later step;
 // here we keep one bag and a logical model/calibration seam in code.
 
+import type { EventForm } from "../model/curves.ts";
+
 export type Side = "vR" | "vL";
 
 export interface Coeffs {
@@ -99,8 +101,14 @@ export interface ScoreSettings {
 
 // Everything the core needs to score a card: model+softcap+env coeffs, the
 // derived era values, and the pool-dependent calibration scales.
+//
+// `eventForm` (D3 #2 raw-poly) is OPTIONAL: present ⇒ the deployed scorer uses the
+// raw-poly event model + its fitted curves in the woba.ts recompute; ABSENT ⇒ the
+// parity log-linear path, bit-identical to before. The fitted params travel here in
+// a dedicated field, NOT folded into the flat `Coeffs` bag.
 export interface ScoringConfig {
   coeffs: Coeffs;
   derived: Derived;
   calScales: CalScales | null;
+  eventForm?: EventForm;
 }

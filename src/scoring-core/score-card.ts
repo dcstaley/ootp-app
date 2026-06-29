@@ -6,6 +6,7 @@
 import type { ScoringConfig, Side } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import { logLinearModel } from "../model/log-linear.ts";
+import { makeRawPolyModel } from "../model/raw-poly.ts";
 import {
   n, cp, parkAvgFactor, parkHrFactor, sameSidePenaltyHitting, sameSidePenaltyPitching,
 } from "./helpers.ts";
@@ -26,8 +27,11 @@ export interface CardScores {
   };
 }
 
-export function scoreCard(card: any, config: ScoringConfig, model: EventModel = logLinearModel): CardScores {
-  const { coeffs, derived, calScales } = config;
+export function scoreCard(card: any, config: ScoringConfig, model?: EventModel): CardScores {
+  const { coeffs, derived, calScales, eventForm } = config;
+  // Model selection (D3): an explicit `model` wins (tests/tools); otherwise #2 raw-poly
+  // when the config carries a fitted eventForm, else the parity log-linear default.
+  const evModel = model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
   const bats = n(card["Bats"]);
   const thr = n(card["Throws"]);
   const gb = n(card["GB"]);
@@ -48,11 +52,11 @@ export function scoreCard(card: any, config: ScoringConfig, model: EventModel = 
       gap: n(card[`Gap ${side}`]),
       speed, steal, run,
     };
-    const e = model.predictHitting(ratings, coeffs);
+    const e = evModel.predictHitting(ratings, coeffs);
 
     const sspAdv = sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting);
     const rawWoba = assembleRawHittingWoba(e, sspAdv, speed, steal, run, coeffs);
-    const woba = trustedHittingWoba(e, rawWoba, bats, side, coeffs, derived, calScales);
+    const woba = trustedHittingWoba(e, rawWoba, bats, side, coeffs, derived, calScales, eventForm);
 
     // Basic metric: direct basic-hitting score × pool scale × cross-pool multiplier.
     const basicRaw = basicHittingSide({
@@ -82,7 +86,7 @@ export function scoreCard(card: any, config: ScoringConfig, model: EventModel = 
       pbabip: n(card[`pBABIP ${side}`]),
       hrr: n(card[`pHR ${side}`]),
     };
-    const e = model.predictPitching(ratings, coeffs);
+    const e = evModel.predictPitching(ratings, coeffs);
 
     const sspP = sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching);
     const rawWoba = assembleRawPitchingWoba(e, sspP, coeffs);
