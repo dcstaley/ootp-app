@@ -11,7 +11,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import Papa from "papaparse";
 
-import { scoreCard, computeDerived, type Coeffs, type CalScales } from "../src/scoring-core/index.ts";
+import { scoreCard, calibrate, computeDerived, type Coeffs, type CalScales, type EventForm } from "../src/scoring-core/index.ts";
 
 const CARDS_CSV = "docs/pt_card_list.csv";
 const CAPTURES_DIR = "fixtures/captures";
@@ -37,8 +37,13 @@ const goldenFiles = existsSync(GOLDEN_DIR)
   ? readdirSync(GOLDEN_DIR).filter((f) => f.endsWith(".golden.json"))
   : [];
 
-if (goldenFiles.length === 0) {
-  describe.skip("scoring-core parity (no goldens — run `npm run golden` after adding a capture)", () => {
+const EVENTFORM_PATH = "fixtures/eventform-active.json";
+const eventForm: EventForm | null = existsSync(EVENTFORM_PATH)
+  ? (JSON.parse(readFileSync(EVENTFORM_PATH, "utf8")).eventForm as EventForm) : null;
+const isBase = (c: Record<string, unknown>) => String(c["Variant"] ?? "").toUpperCase() !== "Y";
+
+if (goldenFiles.length === 0 || !eventForm) {
+  describe.skip("scoring-core #2 regression (run `npm run golden` after activating a model)", () => {
     it("placeholder", () => {});
   });
 } else {
@@ -48,14 +53,12 @@ if (goldenFiles.length === 0) {
     const captureName = gf.replace(/\.golden\.json$/, ".json");
     const capturePath = join(CAPTURES_DIR, captureName);
 
-    describe(`scoring-core parity — ${gf}`, () => {
+    describe(`scoring-core #2 regression — ${gf}`, () => {
       const golden = JSON.parse(readFileSync(join(GOLDEN_DIR, gf), "utf8")) as Golden;
       const capture = JSON.parse(readFileSync(capturePath, "utf8")) as Capture;
-      const config = {
-        coeffs: capture.coeffs,
-        derived: computeDerived(capture.coeffs),
-        calScales: capture.calScales,
-      };
+      const coeffs = capture.coeffs;
+      const derived = computeDerived(coeffs, true); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
+      const config = { coeffs, derived, calScales: calibrate(cards.filter(isBase), { coeffs, derived, eventForm }), eventForm };
 
       it(`covers all ${golden.cardCount} cards in lockstep with the CSV`, () => {
         expect(golden.rows.length).toBe(cards.length);
