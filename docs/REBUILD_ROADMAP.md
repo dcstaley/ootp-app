@@ -27,7 +27,7 @@ core; none recomputes scoring.
 | M3 | Data Grid | First UI consumer of the core | ✅ | M2, SP-11 |
 | M4 | Optimizer | Roster + lineups + rotation/bullpen | ✅ (cap/slots, two-way, bonus, eligibility, basic/wOBA) | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ✅ (Next Best + manual add + @dnd-kit drag + lineup editor w/ server-honored locks) | M4 |
-| M6 | Training + bake-off | Fit models; D3 comparison harness | 🔜 (SP-9 loader + training page stood up; fit/diagnostics next) | SP-8/9 |
+| M6 | Training + bake-off | Fit models; D3 comparison harness | 🔜 (bake-off DONE; **D3 RESOLVED = #2 raw-poly**; EventModel integration + calibration audit remain) | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |
 | X | Cross-cutting | Packaging, persistence, parity method | ongoing | — |
 
@@ -692,6 +692,87 @@ Committed + pushed; 81 tests green; parity bit-identical; src + web typecheck cl
   diagnostics table (R²/RMSE/Spearman/Pearson/N).
 - **Next:** port `trainWobaPitching` + the two basic models (same oracle), then `residualBinReport`
   (residual bins by weighted volume + recommended softcaps), then the D3 bake-off.
+
+## Session update (2026-06-29) — D3 bake-off complete; D3 = #2 raw-poly; training design settled
+
+Big session. All committed + pushed (`dcstaley/ootp-app` main); 118 tests green; parity bit-identical;
+typecheck (root + web) + build clean. **No app/scoring-core code changed yet** — all of this is the
+training/bake-off harness (`src/training/`) + throwaway diagnostics (`tools/`); the integration into the
+scoring core is the remaining M6 build.
+
+**D3 RESOLVED — model functional form = candidate #2, "raw-poly".** Quadratic (raw, z-scored) on the
+**power events** — HR-in-POW and XBH-share-in-GAP for hitters, HR-in-HRR for pitchers — and **log-linear
+everywhere else** (BB, K, the non-HR-hit event incl. its BIP term). **Same structure both roles** (the
+per-role idea was REJECTED: events are one engine producing one matchup outcome, so the two side-models
+are marginal projections of the same function — D3 must be one structure). Motivated by the residual
+meta-model (POW systematically under-valued, accelerating at the extremes = the log flattening; GAP
+curvature); validated two independent ways (residual analysis + a per-term log-vs-linear sweep that
+independently found power events want raw curvature, contact/discipline + H want log).
+
+**The bake-off (all on the `BakeoffModel` seam in `src/training/forms.ts`, evaluated in raw-wOBA space
+upstream of calibration; headline = weighted Pearson + value-regret; 5-fold CV + forward/backward OOT;
+monotonicity/extrapolation GATE per form):** baselines (woba/basic) · #1 cubic-in-log (REJECTED — CV
+collapses, non-monotone) · **#2 raw-poly (winner)** · the basics family (raw lin/quad/cubic) · #8 Poisson/NB
+count GLMs (principled but no gain — fixing the distribution doesn't help; the lever is curve shape) ·
+#6 sequential conditional (clean redesign of `recalibrate_pt_model.py`: binomial-logistic PA tree, proper
+IRLS, log-linear logits — best for pitchers but per-role rejected) · **#5 direct flexible wOBA = the
+CEILING probe (decisive: its CV is BELOW #2's despite the highest in-sample → #2 is at/above the practical
+ceiling → form search exhausted)** · plus the targeted linear cells (qpow-lin, rawpoly-hlin, biplin).
+**Every rating-driven term was made configurable and tested log/linear/quad — no inherited assumption left
+unverified** (BB, K, HR, XBH, H-BABIP, H-BIP). Findings: power events genuinely want raw curvature; BB/K/
+BABIP/BIP genuinely want log; H's two terms tested marginally-best-as-log (not "required" — verified).
+Pitcher XBH = fixed 0.25 share confirmed correct (XBH doesn't track pitcher ratings — user).
+
+**Training design — settled empirically (three probes the user pushed for):**
+- **Pool ALL leagues + ALL years (maximize data).** Per-league test: training on all leagues predicts
+  held-out PEL *better* than PEL-only (+0.012–0.022) — variance-reduction from more data beats the small
+  league-strength mixing. Matched-N decomposition: the gain is **volume, not diversity** (diversity effect
+  at equal N is sign-inconsistent noise) → **no pool-relativity signal** (the rating→outcome mapping is
+  stable across leagues).
+- **Rolling ~2–3 recent years.** Window-length test (predict 2040 from expanding lookbacks): 1yr too thin
+  (N~39), 2yr captures ~all, plateau after; **5–7yr-old data does NOT hurt → no staleness penalty out to
+  ~8yr/~0.45σ drift → mapping stable over time too.** Re-run this test each new year = the **drift
+  tripwire** (if old years ever lower newest-year Pearson → tighten the window). Validates the scoreboard's
+  recent-2yr default.
+- **CV-Pearson reliability lesson:** absolute Pearson scales with the eval-targets' PA/reliability (PEL-only
+  outcomes ~5.6k PA → ~0.66; all-summed ~11.7k PA → ~0.88). So **only SAME-eval-set form comparisons are
+  apples-to-apples**; never compare absolute Pearson across PA regimes. The ~0.88 is the cleaner (more-PA)
+  estimate of true ranking ability, not "inflated."
+- **PA^0.75 weighting exponent:** swept {0…1.25}; KEEP 0.75 (role optima diverge — hitters want higher,
+  pitchers lower; #2 is insensitive). Fit-weight vs eval-weight are conceptually distinct (both 0.75 today).
+
+**Pool adjustment / rating-space scaling — investigated, BACKBURNERED** (see [[pool-adjustment-rating-vs-
+event-space]]). Architecture clarified: (a) **era/park** = environmental physics, per-event + BIP-recompute,
+stays always; (b) **event scaling** (the per-pool BB/HR→Section-3 calibration) is itself a pool-relative
+normalization, and **rating scaling would be an alternative to it** (upstream, all-events, also fixes the
+power-premium shape the BB/HR scaling can't) — adopting rating scaling would mean re-homing pool
+normalization to the input, not stacking both; (c) **the 0.320 anchor** is a separate final comparison
+frame and stays regardless. Empirics: re-scaling effect is small/direction-dependent at our ~0.3σ gaps;
+leverage probe shows it moves the LEVEL a lot but RANK barely (rank-preserving). Deferred to: a genuinely
+off-strength deployment pool (we have off-strength *card pools* but no outcomes) — the same-card/matched-N
+tests we *can* run say pool-relativity ≈ 0. Quad-HR makes the eventual revisit matter more (amplifies the
+extrapolate-UP case), but 2040's envelope is FROZEN so no new extrapolation territory yet. H2 + multiplicative
+re-scaling modes retained in `tools/pool-scale.ts`/`pool-fake.ts`. Open TODO when resumed: test EVENT-level
+scaling vs league averages (≈ what leagueNorm already does) head-to-head with rating-space.
+
+**Data:** `League Files/` now spans 2032,2033,2037,2038,2039,2040 (gitignored, go-forward source) — old
+2032-33 added under `Old Data/`, plus 2040 (HD453 missing for 2040, may add later). The committed
+`Model 2037 and 2038/` fixture stays as the frozen parity oracle. `loadWindowLeagues` added for per-league
+diagnostics. Diagnostic tools (throwaway): `weight-sweep`, `pool-drift`, `pool-leagues`, `pool-transfer`,
+`pool-fake`, `pool-scale`, `log-vs-linear`, `per-league-fit`, `window-length`.
+
+**Remaining M6 (the build):**
+1. **Integrate #2 behind the `EventModel` seam** (`src/model/`): a `raw-poly` model producing
+   `RawHitting`/`RawPitching` via #2's curves + the BIP chain (softcap-free); a **coefficient bridge**
+   (#2's fitted betas + z-score μ/σ into the `Coeffs`/artifact the scorer reads); thread the active model
+   through `calibrate`/`scoreCard`/server. Keep #2's event math in ONE place (don't duplicate the bake-off's
+   `predictHitForm`). Parity-safe (log-linear path unchanged).
+2. **Calibration audit under #2** (#3): `calibrate()` already calls the model, so per-pool anchor/scales
+   recompute from #2's predictions automatically — validate that mechanism behaves across real tournament
+   pools; **retire softcaps** (the quadratic is the principled replacement for the log-linear band-aid);
+   resolve the BB/HR-only-vs-all-events scaling question; + the parked audits: the backwards OVR vL/vR split
+   weight, the era `gap`-denominator, two-WLS-solver consolidation.
+3. Then M7 (Single Player), packaging (SX.1).
 
 **Update (2026-06-24h) — archetype methodology, independent controls, model registry.**
 Archetypes: thresholds = within-pool TERCILES (cut values shown); each bucket now shows mean ± σ (spread
