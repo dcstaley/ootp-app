@@ -28,6 +28,12 @@ function compare(label: string, role: RoleSpec, isHit: boolean, hitForm: HitForm
   const pred = (p: any, o: TrainObs) => (isHit ? predictHitForm(p, o) : predictPitForm(p, o));
   const pelQ = PEL.filter((o) => role.qualifies(o, MIN_N));
   const allQ = ALL.filter((o) => role.qualifies(o, MIN_N));
+  // weighted SD of ACTUAL wOBA over each qualified pool — the Pearson denominator.
+  const wsd = (obs: TrainObs[]) => {
+    const w = obs.map((o) => role.weight(o)), v = obs.map((o) => role.actualWoba(o)), W = w.reduce((s, x) => s + x, 0);
+    const m = v.reduce((s, x, i) => s + w[i]! * x, 0) / W;
+    return Math.sqrt(v.reduce((s, x, i) => s + w[i]! * (x - m) ** 2, 0) / W);
+  };
 
   const fromPEL: number[] = [], fromALL: number[] = [], actual: number[] = [], weight: number[] = [];
   for (let f = 0; f < K; f++) {
@@ -54,7 +60,8 @@ function compare(label: string, role: RoleSpec, isHit: boolean, hitForm: HitForm
   const pAllAll = evalMetrics(aPred, aAct, aW, role.higherBetter, TOPN).pearson;
 
   const d = pALL - pPEL;
-  console.log(`\n== ${label} ==  (PEL N=${pelQ.length}, ALL N=${allQ.length})`);
+  const meanExp = (obs: TrainObs[]) => Math.round(obs.reduce((s, o) => s + (isHit ? o.hit.PA : o.pitch.BF), 0) / Math.max(obs.length, 1));
+  console.log(`\n== ${label} ==  (PEL N=${pelQ.length} @ ${meanExp(pelQ)} avg ${isHit ? "PA" : "BF"}, ALL N=${allQ.length} @ ${meanExp(allQ)}; actual-wOBA SD: PEL=${(wsd(pelQ) * 1000).toFixed(1)}pts, ALL=${(wsd(allQ) * 1000).toFixed(1)}pts)`);
   console.log(`  train PEL → predict PEL:  ${pPEL.toFixed(4)}`);
   console.log(`  train ALL → predict PEL:  ${pALL.toFixed(4)}   (Δ ALL−PEL = ${d >= 0 ? "+" : ""}${d.toFixed(4)} — negative ⇒ pooling HD hurts PEL)`);
   console.log(`  [ref] train ALL → predict ALL:  ${pAllAll.toFixed(4)}`);
