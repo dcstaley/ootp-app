@@ -122,8 +122,11 @@ export function valueFor(woba: number, role: "hitter" | "pitcher", baseline = TA
  * (score each card with the wOBA scales for wOBA columns and these for basic).
  */
 export function calibrateBasic(pool: any[], config: CalibrateConfig): CalScales {
-  const { coeffs, derived, poolTransform } = config;
-  const raw = pool.map((c) => scoreCard(c, { coeffs, derived, calScales: null, poolTransform })); // calScales=null → unscaled basic
+  const { coeffs, derived, eventForm, poolTransform } = config;
+  // calScales=null → unscaled basic. Thread eventForm so the card's (discarded) wOBA uses
+  // #2, not the log-linear fallback — basic itself is rating-direct, so this is for the
+  // "no log-linear in production scoring" guarantee (the wOBA columns here are unused).
+  const raw = pool.map((c) => scoreCard(c, { coeffs, derived, calScales: null, eventForm, poolTransform }));
   const topMean = (vals: number[]) => {
     const t = vals.filter((x) => x > 0).sort((a, b) => b - a).slice(0, ANCHOR_N);
     return t.length ? t.reduce((s, x) => s + x, 0) / t.length : 0;

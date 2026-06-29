@@ -31,7 +31,11 @@ export interface CardScores {
 export function scoreCard(card: any, config: ScoringConfig, model?: EventModel): CardScores {
   const { coeffs, derived, calScales, eventForm, poolTransform } = config;
   // Model selection (D3): an explicit `model` wins (tests/tools); otherwise #2 raw-poly
-  // when the config carries a fitted eventForm, else the parity log-linear default.
+  // when the config carries a fitted eventForm. PRODUCTION always passes an eventForm
+  // (server threads the active model into BOTH the wOBA and basic configs), so the
+  // log-linear fallback below is now reached ONLY by no-eventForm test/tool callers — it
+  // is dead in general scoring. (Full removal of the fallback + branch collapse is a
+  // separate pass; it requires giving those ~10 callers a synthetic eventForm.)
   const evModel = model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
   const bats = n(card["Bats"]);
   const thr = n(card["Throws"]);

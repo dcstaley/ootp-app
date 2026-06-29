@@ -196,7 +196,9 @@ function scoreTournament(t: Tournament): Scored {
   // NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
   // rating-direct but still gets the pool transform (it re-bases ratings, which basic reads).
   const config = { coeffs, derived, eventForm, poolTransform, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform }) };
-  const basicConfig = { coeffs, derived, poolTransform, calScales: calibrateBasic(basePool, { coeffs, derived, poolTransform }) };
+  // eventForm threaded in so the basic path's (discarded) wOBA uses #2, not the log-linear
+  // fallback — basic_* is rating-direct and unchanged; this keeps log-linear out of production.
+  const basicConfig = { coeffs, derived, eventForm, poolTransform, calScales: calibrateBasic(basePool, { coeffs, derived, eventForm, poolTransform }) };
 
   const inValueRange = (c: Record<string, unknown>) => {
     const v = n(c["Card Value"]); const lo = t.card_value_min, hi = t.card_value_max;
@@ -308,6 +310,58 @@ const meetsPositionMins = (def: Def, pos: string, mins?: Record<string, number>)
   return true;
 };
 
+// ── Position pool stats (Tournament-page metrics + rank-requirement enforcement) ──
+// Over the eligible Top-X hitter pool, for each field position gather the players who can
+// play it and summarise each defensive rating's distribution (sorted high→low; higher is
+// better). One source of truth, consumed by the /api/position-metrics display AND by the
+// optimizer's rank requirements (a "top-K" requirement → effective min = the K-th highest
+// value in the pool). `sortedDesc` is kept for that lookup; the endpoint strips it.
+export interface RatingDist { n: number; mean: number; max: number; p90: number; p95: number; top5: number; top10: number; sortedDesc: number[] }
+const pctFromTop = (sortedDesc: number[], p: number): number => {
+  if (!sortedDesc.length) return 0;
+  return sortedDesc[Math.min(sortedDesc.length - 1, Math.floor((1 - p) * sortedDesc.length))]!;
+};
+const ratingDist = (sortedDesc: number[]): RatingDist => ({
+  n: sortedDesc.length,
+  mean: sortedDesc.length ? sortedDesc.reduce((s, x) => s + x, 0) / sortedDesc.length : 0,
+  max: sortedDesc[0] ?? 0,
+  p90: pctFromTop(sortedDesc, 0.9), p95: pctFromTop(sortedDesc, 0.95),
+  top5: sortedDesc[Math.min(4, sortedDesc.length - 1)] ?? 0,
+  top10: sortedDesc[Math.min(9, sortedDesc.length - 1)] ?? 0,
+  sortedDesc,
+});
+function positionPoolStats(t: Tournament, s: Scored): Record<string, Record<string, RatingDist>> {
+  const ctx = s.ctx;
+  const xH = t.topHitters && t.topHitters > 0 ? t.topHitters : 100;
+  // Score every eligible base card; keep its defense, playable positions, and hit value.
+  const cands: { def: Def; positions: string[]; vL: number; vR: number }[] = [];
+  for (const c0 of catalog.cards) {
+    if (!ctx.isEligible(c0)) continue;
+    const sc = scoreCard(c0, ctx.config);
+    cands.push({
+      def: defOf(c0),
+      positions: LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p),
+      vL: valueFor(sc.hit.woba_vL, "hitter"), vR: valueFor(sc.hit.woba_vR, "hitter"),
+    });
+  }
+  // Pool = union of top-X by vL and by vR (matches the generation two-way cutoff).
+  const pool = new Set([
+    ...[...cands].sort((a, b) => b.vL - a.vL).slice(0, xH),
+    ...[...cands].sort((a, b) => b.vR - a.vR).slice(0, xH),
+  ]);
+  const out: Record<string, Record<string, RatingDist>> = {};
+  for (const [pos, specs] of Object.entries(POSITION_RATINGS)) {
+    const members = [...pool].filter((c) => c.positions.includes(pos));
+    const perRating: Record<string, RatingDist> = {};
+    for (const spec of specs) perRating[spec.key] = ratingDist(members.map((c) => c.def[spec.field] ?? 0).sort((a, b) => b - a));
+    out[pos] = perRating;
+  }
+  return out;
+}
+// True if a positionRanks config has any rank requirement set.
+const hasAnyRank = (pr?: Record<string, { starter?: Record<string, number>; backup?: Record<string, number> }>): boolean =>
+  !!pr && Object.values(pr).some((p) => Object.keys(p.starter ?? {}).length > 0 || Object.keys(p.backup ?? {}).length > 0);
+
 // A fully-scored candidate (both sides) before any pool slicing. The Next Best
 // Available pool reads these directly (unsliced); the optimizer reads the sliced
 // subsets built below.
@@ -398,16 +452,38 @@ function rosterCandidates(
   const pitchers: PitcherCandidate[] = [];
   const twoWayIds: string[] = [];
   const posMins = t.positionMins ?? {};
-  // Starter-eligible positions (lineup) + backup-eligible (coverage), per the
-  // tournament's per-position min defensive ratings. A starter automatically backs
-  // up too; DH has no defensive min.
+  // Effective per-position mins = absolute mins MERGED with rank requirements
+  // (positionRanks). A "top-K" rank requirement becomes an effective min equal to the
+  // K-th highest value of that rating in the eligible Top-X pool, so a card qualifies
+  // only if it would place within the top K. Computed once over the same pool stats the
+  // Tournament page displays. Skip the pool-stats pass entirely when no ranks are set.
+  const posRanks = t.positionRanks ?? {};
+  const rankStats = hasAnyRank(posRanks) ? positionPoolStats(t, s) : null;
+  const effMins = (pos: string, tier: "starter" | "backup"): Record<string, number> | undefined => {
+    const abs = posMins[pos]?.[tier];
+    const rnk = rankStats ? posRanks[pos]?.[tier] : undefined;
+    if (!abs && !rnk) return undefined;
+    const merged: Record<string, number> = { ...(abs ?? {}) };
+    for (const [key, K] of Object.entries(rnk ?? {})) {
+      const sorted = rankStats![pos]?.[key]?.sortedDesc ?? [];
+      const thr = sorted.length ? sorted[Math.min(K, sorted.length) - 1]! : 0;
+      merged[key] = Math.max(merged[key] ?? -Infinity, thr);
+    }
+    return merged;
+  };
+  // Precompute the merged mins per position/tier (constant across all cards).
+  const effStarter: Record<string, Record<string, number> | undefined> = {};
+  const effBackup: Record<string, Record<string, number> | undefined> = {};
+  for (const pos of Object.keys(POSITION_RATINGS)) { effStarter[pos] = effMins(pos, "starter"); effBackup[pos] = effMins(pos, "backup"); }
+  // Starter-eligible positions (lineup) + backup-eligible (coverage), per the merged
+  // per-position mins. A starter automatically backs up too; DH has no defensive min.
   const qualifiedPositions = (dispId: string, raw: string[]): { starter: string[]; cover: string[] } => {
     const def = defByDisp[dispId]!;
     const field = raw.filter((p) => p !== "DH");
-    const canStart = (p: string) => meetsPositionMins(def, p, posMins[p]?.starter);
+    const canStart = (p: string) => meetsPositionMins(def, p, effStarter[p]);
     return {
       starter: ["DH", ...field.filter(canStart)],
-      cover: field.filter((p) => canStart(p) || meetsPositionMins(def, p, posMins[p]?.backup)),
+      cover: field.filter((p) => canStart(p) || meetsPositionMins(def, p, effBackup[p])),
     };
   };
 
@@ -718,7 +794,7 @@ const MIME: Record<string, string> = {
 // Dynamic so create/edit/delete are reflected without a restart.
 const tournamentListNow = () => [...tournamentById.values()].map((t) => ({ id: t.id, name: t.name }));
 const eraList = () => [...eras.values()].map((e) => ({ id: e.id, name: e.name }));
-const parkList = () => [...parks.values()].map((p) => ({ id: p.id, name: p.name }));
+const parkList = () => [...parks.values()].map((p) => ({ id: p.id, name: p.name })).sort((a, b) => a.name.localeCompare(b.name));
 
 const readBody = (req: IncomingMessage): Promise<string> =>
   new Promise((resolve) => { let d = ""; req.on("data", (c) => (d += c)); req.on("end", () => resolve(d)); });
@@ -876,6 +952,21 @@ const server = createServer(async (req, res) => {
     cache.delete(id);
     if (state.activeTournamentId === id) { state.activeTournamentId = DEFAULT_TOURNAMENT_ID; await saveState(); }
     return json(res, { tournaments: tournamentListNow(), defaultId: state.activeTournamentId || DEFAULT_TOURNAMENT_ID });
+  }
+  // Position-constraint pool metrics for the editor. Body = a (possibly unsaved) draft,
+  // merged over its stored record (or the default) so it scores before save. Returns the
+  // per-position per-rating distribution over the eligible Top-X pool (sortedDesc stripped).
+  if (method === "POST" && url === "/api/position-metrics") {
+    const body = JSON.parse((await readBody(req)) || "{}") as Tournament;
+    const base = (body.id ? tournamentById.get(body.id) : null) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
+    const t: Tournament = { ...base, ...body, softcaps: body.softcaps ?? base.softcaps, eligibility: body.eligibility ?? base.eligibility };
+    const stats = positionPoolStats(t, scoreTournament(t));
+    const metrics: Record<string, Record<string, { n: number; mean: number; max: number; p90: number; p95: number; top5: number; top10: number }>> = {};
+    for (const [pos, perRating] of Object.entries(stats)) {
+      metrics[pos] = {};
+      for (const [key, d] of Object.entries(perRating)) metrics[pos][key] = { n: d.n, mean: d.mean, max: d.max, p90: d.p90, p95: d.p95, top5: d.top5, top10: d.top10 };
+    }
+    return json(res, { topX: t.topHitters && t.topHitters > 0 ? t.topHitters : 100, metrics });
   }
 
   // ── POST API ──
