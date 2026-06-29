@@ -64,6 +64,7 @@ export function hittingComponents(
 
 export function pitchingComponents(
   e: RawPitching, sBB: number, sHR: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
+  eventForm?: EventForm,
 ): PitchComponents {
   const vR = side === "vR";
   const parkHR = cp(vR ? coeffs.park_hr_r : coeffs.park_hr_l);
@@ -73,15 +74,20 @@ export function pitchingComponents(
   const K_fin = e.K * coeffs.era_k;
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const BIP_fin = Math.max(600 - BB_fin - adv_hbp - K_fin - HR_fin, 1);
-  const nHH = Math.max(
-    (coeffs.p_nHH_int ?? 0) + (coeffs.p_nHH_pbabip ?? 0) * Math.log(Math.max(e.pbabipSC, 1)) + (coeffs.p_nHH_bip ?? 0) * Math.log(BIP_fin),
-    0,
-  );
-  const nHH_norm = nHH * (coeffs.p_leagueNorm_h ?? 1);
-  const nHH_fin = nHH_norm * derived.era_h * parkAvg;
+  // nHH (non-HR hits) is RE-DERIVED here because era/park move BIP. With #2 (eventForm
+  // present) it uses the fitted pitcher hit-curve — symmetric with the hitter BA path.
+  // #2 is fit to ACTUAL rates, so it carries NO league-norm (p_leagueNorm_h was the log
+  // model's level-match; #2 needs none — the per-pool pitch scale handles level). Else
+  // the parity log formula + league-norm, untouched.
+  const nHH_fin = eventForm
+    ? hRate(eventForm.pit.h, e.pbabipSC, BIP_fin) * derived.era_h * parkAvg
+    : Math.max((coeffs.p_nHH_int ?? 0) + (coeffs.p_nHH_pbabip ?? 0) * Math.log(Math.max(e.pbabipSC, 1)) + (coeffs.p_nHH_bip ?? 0) * Math.log(BIP_fin), 0)
+        * (coeffs.p_leagueNorm_h ?? 1) * derived.era_h * parkAvg;
   // QUIRK (replicate, reconcile post-parity): XBH uses RAW era_gap & park_gap (no cp()),
-  // unlike hitting which uses cp(park_gap).
-  const XBH_fin = nHH_fin * (coeffs.p_xbh_share ?? 0.25) * (coeffs.p_xbh_norm ?? 1) * coeffs.era_gap * coeffs.park_gap;
+  // unlike hitting which uses cp(park_gap). #2 uses the fixed 0.25 share (matching the
+  // bake-off) and drops p_xbh_norm (old normalization); the env factors stay identical.
+  const xbhShare = eventForm ? 0.25 : (coeffs.p_xbh_share ?? 0.25) * (coeffs.p_xbh_norm ?? 1);
+  const XBH_fin = nHH_fin * xbhShare * coeffs.era_gap * coeffs.park_gap;
   const oneB_fin = Math.max(nHH_fin - XBH_fin, 0);
   return { BB_fin, HR_fin, oneB_fin, XBH_fin };
 }
@@ -106,7 +112,7 @@ export function trustedHittingWoba(
 
 export function trustedPitchingSideWoba(
   e: RawPitching, rawWoba: number, throws: number, side: "vR" | "vL",
-  coeffs: Coeffs, derived: Derived, calScales: CalScales | null,
+  coeffs: Coeffs, derived: Derived, calScales: CalScales | null, eventForm?: EventForm,
 ): number {
   if (!rawWoba) return 0;
   if (!calScales) return rawWoba;
@@ -114,7 +120,7 @@ export function trustedPitchingSideWoba(
   const sBB = vR ? (calScales.pBBScaleVR ?? 1) : (calScales.pBBScaleVL ?? 1);
   const sHR = vR ? (calScales.pHRScaleVR ?? 1) : (calScales.pHRScaleVL ?? 1);
   const sFinal = vR ? (calScales.pitchScaleVR ?? 1) : (calScales.pitchScaleVL ?? 1);
-  const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived);
+  const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived, eventForm);
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const ssp = (throws === 2 && vR) || (throws === 1 && !vR) ? (calScales.ssp_basic_pitching ?? 0.97) : 1;
   const finalWoba = ((0.704 * k.BB_fin + 0.704 * adv_hbp + 0.8992 * k.oneB_fin + 1.29 * k.XBH_fin + 2.0759 * k.HR_fin) / 600) * ssp;
@@ -135,7 +141,8 @@ export function anchorHittingWoba(
 
 export function anchorPitchingWoba(
   e: RawPitching, sBB: number, sHR: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
+  eventForm?: EventForm,
 ): number {
-  const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived);
+  const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived, eventForm);
   return (0.704 * k.BB_fin + 0.8992 * k.oneB_fin + 1.29 * k.XBH_fin + 2.0759 * k.HR_fin) / 600;
 }

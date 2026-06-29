@@ -90,7 +90,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
 
     const sspP = sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching);
     const rawWoba = assembleRawPitchingWoba(e, sspP, coeffs);
-    const woba = trustedPitchingSideWoba(e, rawWoba, thr, side, coeffs, derived, calScales);
+    const woba = trustedPitchingSideWoba(e, rawWoba, thr, side, coeffs, derived, calScales, eventForm);
 
     const vR = side === "vR";
     const basicRaw = basicPitchingSide({

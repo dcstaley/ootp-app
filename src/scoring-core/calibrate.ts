@@ -81,8 +81,8 @@ export function calibrate(pool: any[], config: CalibrateConfig, model?: EventMod
 
   const anchorMeanVR = mean(hAnchVR.map((x) => anchorHittingWoba(x.hVR.e, hitBBScaleVR, hitHRScaleVR, x.bats, "vR", coeffs, derived, eventForm)));
   const anchorMeanVL = mean(hAnchVL.map((x) => anchorHittingWoba(x.hVL.e, hitBBScaleVL, hitHRScaleVL, x.bats, "vL", coeffs, derived, eventForm)));
-  const anchorMeanPVR = mean(pAnch.map((x) => anchorPitchingWoba(x.pVR.e as RawPitching, pBBScale, pHRScale, "vR", coeffs, derived)));
-  const anchorMeanPVL = mean(pAnch.map((x) => anchorPitchingWoba(x.pVL.e as RawPitching, pBBScale, pHRScale, "vL", coeffs, derived)));
+  const anchorMeanPVR = mean(pAnch.map((x) => anchorPitchingWoba(x.pVR.e as RawPitching, pBBScale, pHRScale, "vR", coeffs, derived, eventForm)));
+  const anchorMeanPVL = mean(pAnch.map((x) => anchorPitchingWoba(x.pVL.e as RawPitching, pBBScale, pHRScale, "vL", coeffs, derived, eventForm)));
   const anchorMeanPOVR = (anchorMeanPVR + anchorMeanPVL) / 2;
 
   const hitScaleVR = anchorMeanVR > 0 ? TARGET_WOBA / anchorMeanVR : 1;

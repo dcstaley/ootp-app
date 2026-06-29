@@ -109,6 +109,18 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
     expect(worst).toBeLessThan(3e-3);
   });
 
+  it("B) pitching FULL recompute (neutral env, identity scales) reproduces predictPitForm bit-exactly", () => {
+    // Pitcher BIP has no adv_sf term, so the recompute's BIP_fin == the training BIP →
+    // the #2 pitchingComponents path matches predictPitForm exactly (+ the HBP offset).
+    const offset = (0.704 * HBP) / 600;
+    let worst = 0;
+    for (const o of pitObs) {
+      const s = scoreCard(cardFrom(o), { coeffs, derived, calScales: IDENTITY, eventForm: fit });
+      worst = Math.max(worst, Math.abs(s.pitch.woba_vR - (predictPitForm(fit.pit, o) + offset)));
+    }
+    expect(worst).toBeLessThan(1e-9);
+  });
+
   it("the #2 path actually departs from the log-linear default (eventForm changes scores)", () => {
     const logFit: EventForm = { hit: fitHitForm(LOG_HIT, hitObs), pit: fitPitForm(LOG_PIT, pitObs) };
     let maxDiff = 0;
