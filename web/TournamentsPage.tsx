@@ -25,7 +25,7 @@ export function TournamentsPage() {
   const { tournaments, tournamentId, reloadTournaments, reloadView } = useAppData();
   const [selId, setSelId] = useState(tournamentId);
   const [draft, setDraft] = useState<TournamentCfg | null>(null);
-  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[] }>({ eras: [], parks: [], columns: [] });
+  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[]; platoonDefaults?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number; teamVR?: number; teamVL?: number } }>({ eras: [], parks: [], columns: [] });
   const [isNew, setIsNew] = useState(false);
   const [expandedPos, setExpandedPos] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -41,7 +41,20 @@ export function TournamentsPage() {
 
   const set = <K extends keyof TournamentCfg>(k: K, v: TournamentCfg[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));
   const mode = draft?.budget_mode ?? (draft?.slot_counts && Object.keys(draft.slot_counts).length ? "slots" : (draft?.total_cap ? "cap" : "none"));
-  const vR = draft?.platoonVR ?? 0.62;
+  const vR = draft?.platoonVR ?? libs.platoonDefaults?.teamVR ?? 0.62;
+  // Per-hand OVR splits — show the active model's defaults until the tournament has its own;
+  // the first edit materializes a full platoon object so editing one split keeps the rest.
+  const PLATOON_SPLITS = [
+    { k: "r_hit_split", label: "RHB vs RHP" }, { k: "l_hit_split", label: "LHB vs LHP" }, { k: "s_hit_split", label: "SHB vs RHP" },
+    { k: "r_pitch_split", label: "RHP vs RHB" }, { k: "l_pitch_split", label: "LHP vs LHB" },
+  ] as const;
+  type SplitKey = (typeof PLATOON_SPLITS)[number]["k"];
+  const splitDef = (k: SplitKey): number => draft?.platoon?.[k] ?? libs.platoonDefaults?.[k] ?? 0.5;
+  const setSplit = (k: SplitKey, x: number) => {
+    if (!draft) return;
+    const base = draft.platoon ?? { r_hit_split: splitDef("r_hit_split"), l_hit_split: splitDef("l_hit_split"), s_hit_split: splitDef("s_hit_split"), r_pitch_split: splitDef("r_pitch_split"), l_pitch_split: splitDef("l_pitch_split") };
+    set("platoon", { ...base, [k]: x });
+  };
 
   const save = async () => {
     if (!draft) return;
@@ -193,7 +206,13 @@ export function TournamentsPage() {
               {row("RHP exposure (vR)", <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                 <input type="number" min={0} max={1} step={0.01} value={vR} onChange={(e) => { const x = Math.max(0, Math.min(1, Number(e.target.value))); set("platoonVR", x); set("platoonVL", Math.round((1 - x) * 100) / 100); }} style={{ ...inputStyle, width: 90 }} />
                 <span style={{ fontSize: 12, color: C.sub }}>vL = {Math.round((1 - vR) * 100) / 100}</span>
-              </span>, "team platoon split (league default 0.62)")}
+              </span>, `team RHP/LHP exposure — optimizer${draft.platoonVR == null ? " (model default)" : ""}`)}
+              <div style={{ fontSize: 11, color: C.sub, margin: "6px 0 4px" }}>
+                Per-hand OVR splits — weight on the same-letter side{!draft.platoon && libs.platoonDefaults ? " (showing active-model defaults)" : ""}:
+              </div>
+              {PLATOON_SPLITS.map((s) => (
+                <Fragment key={s.k}>{row(s.label, <input type="number" min={0} max={1} step={0.001} value={splitDef(s.k)} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
+              ))}
             </>)}
 
             {section("Variants", <>

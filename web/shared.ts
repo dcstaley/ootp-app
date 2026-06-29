@@ -91,6 +91,8 @@ export interface TournamentCfg {
   topHitters?: number | null; topPitchers?: number | null;
   budget_mode?: "none" | "cap" | "slots"; slot_counts?: Record<string, number>;
   platoonVR?: number; platoonVL?: number; minPlayersPerPosition?: number;
+  // Per-hand OVR-blend splits (seeded from the active model on create; absent ⇒ model/coeff defaults).
+  platoon?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number };
   eligibility?: EligibilityGroup;
   softcaps?: Record<string, number>; // cap_<grp>_top/_bot + pen_<grp>
   positionMins?: Record<string, PositionMin>;

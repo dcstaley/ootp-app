@@ -758,7 +758,7 @@ export function ModelTrainingPage() {
             const HN: Record<string, string> = { R: "RHB", L: "LHB", S: "SHB" };
             const PN: Record<string, string> = { R: "RHP", L: "LHP" };
             const pc = (x: number) => `${(x * 100).toFixed(1)}%`;
-            return <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+            return <><div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
                 <table style={{ borderCollapse: "collapse" }}>
                   <thead><tr><th style={{ ...th, textAlign: "left" }}>Batter</th><th style={th}>vs RHP</th><th style={th}>vs LHP</th><th style={th}>PA</th></tr></thead>
@@ -776,7 +776,9 @@ export function ModelTrainingPage() {
                   </tbody>
                 </table>
               </div>
-            </div>;
+            </div>
+              <p style={{ margin: "8px 0 0", fontSize: 11, color: C.sub }}>OVR splits seeded to new tournaments: RHB·RHP <b style={{ color: C.text }}>{pc(p.r_hit_split)}</b> · LHB·LHP <b style={{ color: C.text }}>{pc(p.l_hit_split)}</b> · SHB·RHP <b style={{ color: C.text }}>{pc(p.s_hit_split)}</b> · RHP·RHB <b style={{ color: C.text }}>{pc(p.r_pitch_split)}</b> · LHP·LHB <b style={{ color: C.text }}>{pc(p.l_pitch_split)}</b> · team vR <b style={{ color: C.text }}>{pc(p.teamVR)}</b></p>
+            </>;
           })() : <p style={{ color: C.sub, fontSize: 13 }}>{activeModel ? "This model predates platoon-exposure — re-save it to compute." : "No active model."}</p>}
 
           {/* Where the model misses — per-card residual leaderboards + archetypes + grid */}
