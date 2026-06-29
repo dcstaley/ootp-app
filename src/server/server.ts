@@ -847,6 +847,9 @@ const server = createServer(async (req, res) => {
     return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, includeVariants, weighted, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/training/models") return json(res, { models: await listModels(), activeId: state.activeModelId ?? null });
+  // The DEPLOYED #2 event model's fitted curves (for the Model-Training coefficient panel —
+  // so it shows what actually scores, not the retired log-linear baseline). null ⇒ no model active.
+  if (method === "GET" && url === "/api/training/active-eventform") return json(res, { eventForm: activeEventForm });
   if (method === "POST" && url === "/api/training/models/save") {
     const body = JSON.parse((await readBody(req)) || "{}");
     try { const model = await saveTrainedModel(body); return json(res, { ok: true, model, models: await listModels(), activeId: state.activeModelId ?? null }); }

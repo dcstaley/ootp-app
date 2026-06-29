@@ -86,6 +86,32 @@ type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitchi
 // Used to filter the bake-off scoreboard down to JUST the live model on the Active-model tab.
 const DEPLOYED_HIT_MODEL = "woba·rawpoly";
 const DEPLOYED_PIT_MODEL = "woba";
+
+// The DEPLOYED #2 eventForm's fitted curves (from /api/training/active-eventform) — what
+// actually scores, shown in the coefficient panel instead of the retired log-linear baseline.
+interface DeployedCurve { beta: number[]; mu: number; sd: number; curve: { kind: "log" | "rawpoly" | "logpoly"; degree?: number } }
+interface DeployedH { beta: number[]; rating: { curve: { kind: string } }; bip: { curve: { kind: string } } }
+interface DeployedForm {
+  hit: { bb: DeployedCurve; k: DeployedCurve; hr: DeployedCurve; xbh: DeployedCurve; h: DeployedH };
+  pit: { bb: DeployedCurve; k: DeployedCurve; hr: DeployedCurve; h: DeployedH };
+}
+const fNum = (x: number) => x.toFixed(4);
+const fTerm = (x: number) => `${x >= 0 ? "+ " : "− "}${Math.abs(x).toFixed(4)}`;
+// One event's deployed curve as a readable formula in the RAW rating. log → a + b·ln(R);
+// raw-poly degree-2 → the z-scored quadratic EXPANDED to A + B·R + C·R² (so it reads as a
+// real polynomial in the rating, not z-score space).
+function curveText(rating: string, ev: DeployedCurve): string {
+  const b0 = ev.beta[0] ?? 0, b1 = ev.beta[1] ?? 0, b2 = ev.beta[2] ?? 0, mu = ev.mu, sd = ev.sd || 1;
+  if (ev.curve.kind === "log") return `${fNum(b0)} ${fTerm(b1)}·ln(${rating})`;
+  if (ev.curve.kind === "rawpoly" && (ev.curve.degree ?? 1) >= 2) {
+    const A = b0 - (b1 * mu) / sd + (b2 * mu * mu) / (sd * sd);
+    const B = b1 / sd - (2 * b2 * mu) / (sd * sd);
+    const Cq = b2 / (sd * sd);
+    return `${fNum(A)} ${fTerm(B)}·${rating} ${fTerm(Cq)}·${rating}²`;
+  }
+  return `${fNum(b0 - (b1 * mu) / sd)} ${fTerm(b1 / sd)}·${rating}`; // raw-poly degree 1
+}
+const hText = (rating: string, h: DeployedH) => `${fNum(h.beta[0] ?? 0)} ${fTerm(h.beta[1] ?? 0)}·ln(${rating}) ${fTerm(h.beta[2] ?? 0)}·ln(predBIP)`;
 const FIT_TABS: { id: FitTab; label: string }[] = [
   { id: "woba_hitting", label: "wOBA Hitting" }, { id: "woba_pitching", label: "wOBA Pitching" },
   { id: "basic_hitting", label: "Basic Hitting" }, { id: "basic_pitching", label: "Basic Pitching" },
@@ -475,6 +501,7 @@ export function ModelTrainingPage() {
   // The deployed-performance table reflects the ACTIVE model on ITS frozen config, not the page window.
   const [activeSb, setActiveSb] = useState<ScoreboardResp | null>(null);
   const [activeSbLoading, setActiveSbLoading] = useState(false);
+  const [activeForm, setActiveForm] = useState<DeployedForm | null>(null); // deployed #2 curves for the coefficient panel
 
   const yq = (ys: number[]) => (ys.length ? `&years=${ys.join(",")}` : "");
   const vq = (incl: boolean) => `&variants=${incl ? "all" : "base"}`;
@@ -546,6 +573,9 @@ export function ModelTrainingPage() {
     const m = models.find((x) => x.id === activeModelId);
     if (m) loadActiveSb(m); else setActiveSb(null);
   }, [activeModelId, models]);
+  useEffect(() => { // deployed #2 curves for the coefficient panel (follows the active model)
+    fetch("/api/training/active-eventform").then((r) => r.json()).then((d) => setActiveForm(d.eventForm ?? null)).catch(() => {});
+  }, [activeModelId]);
   // Changing the GLOBAL window reloads all three (each with its own section settings).
   const toggleYear = (y: number) => {
     const next = (years.includes(y) ? years.filter((x) => x !== y) : [...years, y]).sort((a, b) => a - b);
@@ -816,40 +846,32 @@ export function ModelTrainingPage() {
                 ))}
               </div>
 
-              {fitTab === "woba_hitting" && fit.woba_hitting && (() => {
-                const c = fit.woba_hitting.coefficients; const d = fit.woba_hitting.diagnostics;
-                return <>
-                  <ModelView
-                    formulas={[
-                      <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.eye} />·ln(EYE)</>,
-                      <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.k} />·ln(K)</>,
-                      <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.pow} />·ln(POW)</>,
-                      <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.ba} />·ln(BABIP) + <Coef v={c.h.bipba} />·ln(predBIP)</>,
-                      <>XBH/H = <Coef v={c.xbh.logA} /> + <Coef v={c.xbh.logB} />·ln(GAP)</>,
-                      <>HBP/600 = <Coef v={c.hbp.constant} /> (fixed)</>,
-                    ]}
-                    note={<>{fmt(fit.woba_hitting.rowCount)} obs (PA ≥ {fit.woba_hitting.minPA}), split {fit.woba_hitting.split}. Per-event log-linear WLS (weight = PA<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Parity with the old trainer is test-pinned on the 37-38 window.</>}
-                    diagRows={[...["bb", "k", "hr", "h", "xbh"].map((ev) => ({ label: ev, e: d[ev]! })), ...wobaRow(fit.wobaDiagHit)]} />
-                  <ResidualPanel d={d} events={[["bb", "EYE"], ["k", "K"], ["hr", "POW"], ["h", "BABIP"], ["xbh", "GAP"]]} />
-                </>;
-              })()}
+              {fitTab === "woba_hitting" && (activeForm ? (
+                <ModelView
+                  formulas={[
+                    <>BB/600 = {curveText("EYE", activeForm.hit.bb)}</>,
+                    <>K/600 = {curveText("K", activeForm.hit.k)}</>,
+                    <>HR/600 = {curveText("POW", activeForm.hit.hr)}</>,
+                    <>nonHR-H/600 = {hText("BABIP", activeForm.hit.h)}</>,
+                    <>XBH/H = {curveText("GAP", activeForm.hit.xbh)}</>,
+                    <>HBP/600 = 6.0000 (fixed)</>,
+                  ]}
+                  note={<><b>Deployed #2 model</b> — raw-poly (quadratic) on HR (POW) &amp; XBH (GAP), log elsewhere; quadratics shown expanded in the raw rating. Fit quality is in <b>Deployed model performance</b> above.</>}
+                  diagRows={[]} />
+              ) : <p style={{ color: C.sub, fontSize: 13 }}>No active #2 model — deployed scoring would fall back to the retired log-linear baseline. Click <b>Use</b> on a saved model above.</p>)}
 
-              {fitTab === "woba_pitching" && fit.woba_pitching && (() => {
-                const c = fit.woba_pitching.coefficients; const d = fit.woba_pitching.diagnostics;
-                return <>
-                  <ModelView
-                    formulas={[
-                      <>BB/600 = <Coef v={c.bb.intercept} /> + <Coef v={c.bb.con} />·ln(CON)</>,
-                      <>K/600 = <Coef v={c.k.intercept} /> + <Coef v={c.k.stu} />·ln(STU)</>,
-                      <>HR/600 = <Coef v={c.hr.intercept} /> + <Coef v={c.hr.hrr} />·ln(HRR)</>,
-                      <>nonHR-H/600 = <Coef v={c.h.intercept} /> + <Coef v={c.h.pbabip} />·ln(PBABIP) + <Coef v={c.h.bip} />·ln(predBIP)</>,
-                      <>XBH = <Coef v={c.xbh.share} />·H (fixed share)</>,
-                    ]}
-                    note={<>{fmt(fit.woba_pitching.rowCount)} obs (BF ≥ {fit.woba_pitching.minBF}), split {fit.woba_pitching.split}. Per-event log-linear WLS (weight = BF<sup>0.75</sup>). League-norm: BB <Coef v={c.leagueNorm.bb} />, K <Coef v={c.leagueNorm.k} />, HR <Coef v={c.leagueNorm.hr} />, H <Coef v={c.leagueNorm.h} />, XBH <Coef v={c.leagueNorm.xbh} />. Parity with the old trainer is test-pinned on the 37-38 window.</>}
-                    diagRows={[...["bb", "k", "hr", "h"].map((ev) => ({ label: ev, e: d[ev]! })), ...wobaRow(fit.wobaDiagPit)]} />
-                  <ResidualPanel d={d} events={[["bb", "CON"], ["k", "STU"], ["hr", "HRR"], ["h", "PBABIP"]]} />
-                </>;
-              })()}
+              {fitTab === "woba_pitching" && (activeForm ? (
+                <ModelView
+                  formulas={[
+                    <>BB/600 = {curveText("CON", activeForm.pit.bb)}</>,
+                    <>K/600 = {curveText("STU", activeForm.pit.k)}</>,
+                    <>HR/600 = {curveText("HRR", activeForm.pit.hr)}</>,
+                    <>nonHR-H/600 = {hText("PBABIP", activeForm.pit.h)}</>,
+                    <>XBH = 0.25·H (fixed share)</>,
+                  ]}
+                  note={<><b>Deployed #2 model</b> — pitching is LOG on every event (the raw-poly HR curve was retired — see Bake-off). Fit quality is in <b>Deployed model performance</b> above.</>}
+                  diagRows={[]} />
+              ) : <p style={{ color: C.sub, fontSize: 13 }}>No active #2 model — deployed scoring would fall back to the retired log-linear baseline.</p>)}
 
               {fitTab === "basic_hitting" && fit.basic_hitting && (() => {
                 const c = fit.basic_hitting.coefficients;
