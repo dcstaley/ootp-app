@@ -28,7 +28,7 @@ describe("BBRef era modifiers", () => {
     expect(e.k).toBeCloseTo(1.1913, 3);    // K up ~19%
     expect(e.hr).toBeCloseTo(1.1995, 3);   // HR up ~20%
     expect(e.avg).toBeCloseTo(0.9405, 3);  // hits down ~6%
-    expect(e.gap).toBeCloseTo(0.9829, 3);
+    expect(e.gap).toBeCloseTo(0.8935, 3);  // gap = temp 2B+3B weighted rate vs 2010 (XBH rate down ~11%)
     expect(e.hbp).toBeCloseTo(1.3866, 3);  // HBP way up
     expect(e.bip).toBe(1);                  // bip pinned neutral (removed from scoring)
   });

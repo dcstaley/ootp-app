@@ -11,9 +11,11 @@
 // bip: a BIP modifier was intentionally REMOVED from scoring (it caused problems and
 //   is likely conceptually wrong), so we do NOT carry a bip modifier — it's pinned to
 //   neutral 1. The raw BIP rate is still kept in `rates` for reference only.
-// gap: ⚠ REVISIT — gap = XBH (2B+3B) share of non-HR hits, vs 2010. This matches how
-//   the scoring model applies era_gap today (scales the XBH content of non-HR hits),
-//   but whether that denominator is the right run-environment signal is unconfirmed.
+// gap: ⚠ TEMPORARY (user 2026-06-29, pending the full gap-vs-2B/3B review) — gap = the
+//   frequency-weighted average of the 2B-factor and 3B-factor = (2B+3B rate this era) /
+//   (2B+3B rate 2010), i.e. the combined per-PA XBH rate ratio. (Weighting each factor by
+//   its 2010 frequency collapses to this combined-rate ratio; 2B dominates.) Replaces the
+//   old "XBH share of non-HR hits vs 2010" definition (kept as `gapShare` for reference).
 
 import Papa from "papaparse";
 import type { Era } from "../config/tournament.ts";
@@ -54,7 +56,7 @@ export function computeEras(text: string, baselineYear = 2010): Era[] {
     return {
       id: `era-${year}`, name: String(year),
       bb: r6(ratio(c.bb, b.bb)), k: r6(ratio(c.k, b.k)), avg: r6(ratio(c.h, b.h)),
-      hr: r6(ratio(c.hr, b.hr)), gap: r6(ratio(c.gapShare, b.gapShare)), bip: 1, // bip pinned neutral (removed from scoring)
+      hr: r6(ratio(c.hr, b.hr)), gap: r6(ratio(c.b2 + c.b3, b.b2 + b.b3)), bip: 1, // gap = temp 2B+3B weighted rate; bip pinned neutral
       thr_toggle: false, thr: 1,
       year, hbp: r6(ratio(c.hbp, b.hbp)),
       rates: { bb: r5(c.bb), k: r5(c.k), hr: r5(c.hr), h: r5(c.h), b2: r5(c.b2), b3: r5(c.b3), hbp: r5(c.hbp), bip: r5(c.bip) },

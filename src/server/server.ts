@@ -170,9 +170,9 @@ function scoreTournament(t: Tournament): Scored {
   if (!era || !park) throw new Error(`Tournament ${t.id}: missing era '${t.eraId}' or park '${t.parkId}'`);
 
   const coeffs = resolveCoeffs(model!, era, park, t.softcaps);
-  const derived = computeDerived(coeffs);
-  const pool = buildEligiblePool(catalog.cards, t);
   const eventForm = activeEventForm ?? undefined;
+  const derived = computeDerived(coeffs, !!eventForm); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
+  const pool = buildEligiblePool(catalog.cards, t);
   // Pool transform (#2 only): reference = top-50 of the full NON-VARIANT catalog, pool =
   // top-50 of the eligible NON-VARIANT subset → map pool onto reference (z-score, full
   // lift). Variants are still scored (toRow runs on the whole catalog) — they just don't
