@@ -34,7 +34,7 @@ export interface CalibrateConfig { coeffs: Coeffs; derived: Derived; eventForm?:
 interface SideRaw { e: RawHitting | RawPitching; woba: number }
 interface Aug { bats: number; thr: number; hVR: { e: RawHitting; woba: number }; hVL: { e: RawHitting; woba: number }; pVR: SideRaw; pVL: SideRaw }
 
-function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransform): Aug {
+function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransform, noSsp = false): Aug {
   const bats = n(card["Bats"]), thr = n(card["Throws"]);
   const speed = n(card["Speed"]), steal = n(card["Stealing"]), run = n(card["Baserunning"]);
   const hit = (side: "vR" | "vL") => {
@@ -43,7 +43,7 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       { eye: applyAffine(n(card[`Eye ${side}`]), t?.eye), pow: applyAffine(n(card[`Power ${side}`]), t?.pow), kRat: applyAffine(n(card[`Avoid K ${side}`]), t?.kRat), babip: applyAffine(n(card[`BABIP ${side}`]), t?.babip), gap: applyAffine(n(card[`Gap ${side}`]), t?.gap), speed, steal, run },
       coeffs,
     );
-    return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting), speed, steal, run, coeffs) };
+    return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, noSsp ? 1 : coeffs.ssp_adv_hitting), speed, steal, run, coeffs) };
   };
   const pit = (side: "vR" | "vL") => {
     const tp = pt?.pit[side];
@@ -51,7 +51,7 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       { con: applyAffine(n(card[`Control ${side}`]), tp?.con), stu: applyAffine(n(card[`Stuff ${side}`]), tp?.stu), pbabip: applyAffine(n(card[`pBABIP ${side}`]), tp?.pbabip), hrr: applyAffine(n(card[`pHR ${side}`]), tp?.hrr) },
       coeffs,
     );
-    return { e, woba: assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching), coeffs) };
+    return { e, woba: assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, noSsp ? 1 : coeffs.ssp_basic_pitching), coeffs) };
   };
   return { bats, thr, hVR: hit("vR"), hVL: hit("vL"), pVR: pit("vR"), pVL: pit("vL") };
 }
@@ -70,18 +70,24 @@ export function calibrate(pool: any[], config: CalibrateConfig, model?: EventMod
   // so per-pool calibration self-adjusts to #2's event levels. The pool transform (if any)
   // is applied to ratings here too, so the anchor is computed on the lifted ratings.
   const evModel = model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
-  const aug = pool.map((c) => augment(c, coeffs, evModel, poolTransform));
+  const aug = pool.map((c) => augment(c, coeffs, evModel, poolTransform, !!eventForm));
 
   const hAnchVR = [...aug].sort((a, b) => b.hVR.woba - a.hVR.woba).slice(0, ANCHOR_N);
   const hAnchVL = [...aug].sort((a, b) => b.hVL.woba - a.hVL.woba).slice(0, ANCHOR_N);
   const pAnch = [...aug].sort((a, b) => (a.pVR.woba + a.pVL.woba) - (b.pVR.woba + b.pVL.woba)).slice(0, ANCHOR_N);
 
-  const hitBBScaleVR = evScale(hAnchVR.map((x) => x.hVR.e.BB), H_SECTION3.BB);
-  const hitHRScaleVR = evScale(hAnchVR.map((x) => x.hVR.e.HR), H_SECTION3.HR);
-  const hitBBScaleVL = evScale(hAnchVL.map((x) => x.hVL.e.BB), H_SECTION3.BB);
-  const hitHRScaleVL = evScale(hAnchVL.map((x) => x.hVL.e.HR), H_SECTION3.HR);
-  const pBBScale = evScale(pAnch.map((x) => (x.pVR.e as RawPitching).BB), P_SECTION3.BB);
-  const pHRScale = evScale(pAnch.map((x) => (x.pVR.e as RawPitching).HR), P_SECTION3.HR);
+  // PER-EVENT CALIBRATION (sBB/sHR) — REMOVED under #2. Its job (pull the field's BB/HR
+  // to the league baseline = crude pool-relativity) moved to the rating-space pool
+  // transform; what's left is the dubious elite→league-average deflation. So with #2 these
+  // are 1 (the model's native event composition stands; the final wOBA scale sets level).
+  // log-linear path keeps them (parity).
+  const noEvCal = !!eventForm;
+  const hitBBScaleVR = noEvCal ? 1 : evScale(hAnchVR.map((x) => x.hVR.e.BB), H_SECTION3.BB);
+  const hitHRScaleVR = noEvCal ? 1 : evScale(hAnchVR.map((x) => x.hVR.e.HR), H_SECTION3.HR);
+  const hitBBScaleVL = noEvCal ? 1 : evScale(hAnchVL.map((x) => x.hVL.e.BB), H_SECTION3.BB);
+  const hitHRScaleVL = noEvCal ? 1 : evScale(hAnchVL.map((x) => x.hVL.e.HR), H_SECTION3.HR);
+  const pBBScale = noEvCal ? 1 : evScale(pAnch.map((x) => (x.pVR.e as RawPitching).BB), P_SECTION3.BB);
+  const pHRScale = noEvCal ? 1 : evScale(pAnch.map((x) => (x.pVR.e as RawPitching).HR), P_SECTION3.HR);
 
   const anchorMeanVR = mean(hAnchVR.map((x) => anchorHittingWoba(x.hVR.e, hitBBScaleVR, hitHRScaleVR, x.bats, "vR", coeffs, derived, eventForm)));
   const anchorMeanVL = mean(hAnchVL.map((x) => anchorHittingWoba(x.hVL.e, hitBBScaleVL, hitHRScaleVL, x.bats, "vL", coeffs, derived, eventForm)));

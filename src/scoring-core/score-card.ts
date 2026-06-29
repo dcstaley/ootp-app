@@ -57,7 +57,8 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     };
     const e = evModel.predictHitting(ratings, coeffs);
 
-    const sspAdv = sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting);
+    // SSP (same-side platoon penalty) — REMOVED under #2 (value → 1); log-linear keeps it (parity).
+    const sspAdv = sameSidePenaltyHitting(bats, side, eventForm ? 1 : coeffs.ssp_adv_hitting);
     const rawWoba = assembleRawHittingWoba(e, sspAdv, speed, steal, run, coeffs);
     const woba = trustedHittingWoba(e, rawWoba, bats, side, coeffs, derived, calScales, eventForm);
 
@@ -69,7 +70,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
       eyeMod: coeffs.era_bb,
       kMod: coeffs.era_k,
       gapMod: cp(coeffs.park_gap),
-      ssp: sameSidePenaltyHitting(bats, side, coeffs.ssp_basic_hitting),
+      ssp: sameSidePenaltyHitting(bats, side, eventForm ? 1 : coeffs.ssp_basic_hitting),
       speed, run, steal,
       coeffs,
     });
@@ -92,7 +93,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     };
     const e = evModel.predictPitching(ratings, coeffs);
 
-    const sspP = sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching);
+    const sspP = sameSidePenaltyPitching(thr, side, eventForm ? 1 : coeffs.ssp_basic_pitching);
     const rawWoba = assembleRawPitchingWoba(e, sspP, coeffs);
     const woba = trustedPitchingSideWoba(e, rawWoba, thr, side, coeffs, derived, calScales, eventForm);
 

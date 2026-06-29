@@ -105,7 +105,7 @@ export function trustedHittingWoba(
   const sFinal = vR ? (calScales.hitScaleVR ?? 1) : (calScales.hitScaleVL ?? 1);
   const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
   const adv_hbp = coeffs.adv_hbp ?? 6;
-  const ssp = (bats === 1 && vR) || (bats === 2 && !vR) ? (calScales.ssp_adv_hitting ?? 0.97) : 1;
+  const ssp = eventForm ? 1 : ((bats === 1 && vR) || (bats === 2 && !vR) ? (calScales.ssp_adv_hitting ?? 0.97) : 1);
   const finalWoba = ((0.704 * k.BB_fin + 0.704 * adv_hbp + 0.8992 * k.oneB_fin + 1.29 * k.GAP_fin + 2.0759 * k.HR_fin) / 600) * ssp;
   return finalWoba * sFinal;
 }
@@ -122,7 +122,7 @@ export function trustedPitchingSideWoba(
   const sFinal = vR ? (calScales.pitchScaleVR ?? 1) : (calScales.pitchScaleVL ?? 1);
   const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived, eventForm);
   const adv_hbp = coeffs.adv_hbp ?? 6;
-  const ssp = (throws === 2 && vR) || (throws === 1 && !vR) ? (calScales.ssp_basic_pitching ?? 0.97) : 1;
+  const ssp = eventForm ? 1 : ((throws === 2 && vR) || (throws === 1 && !vR) ? (calScales.ssp_basic_pitching ?? 0.97) : 1);
   const finalWoba = ((0.704 * k.BB_fin + 0.704 * adv_hbp + 0.8992 * k.oneB_fin + 1.29 * k.XBH_fin + 2.0759 * k.HR_fin) / 600) * ssp;
   return finalWoba * sFinal;
 }
