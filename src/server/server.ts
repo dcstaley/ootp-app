@@ -21,7 +21,7 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, type EventForm } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeFieldStats, buildPoolTransform, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, RAWPOLY_PIT } from "../training/forms.ts";
 import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
@@ -147,6 +147,23 @@ let cache = new Map<string, Scored>();
 // the per-tournament scoring cache so scores recompute.
 let activeEventForm: EventForm | null = null;
 
+// Pool-strength rating transform (#2 only). NON-VARIANT cards set every average/distribution
+// (the field-size diagnostic was no-variants too); variants are scored but never enter the
+// stats. FIELD_N = the validated realistic-field size (tools/field-size.ts).
+const FIELD_N = 50;
+const isBaseCard = (c: Record<string, unknown>) => String(c["Variant"] ?? "").toUpperCase() !== "Y";
+// Reference field = top-50 of the FULL (non-variant) catalog by predicted wOBA — the
+// unrestricted "league," dynamic (recomputed when the active model OR catalog changes),
+// tournament-independent (raw wOBA is era/park-free). Cached.
+let refFieldCache: { key: string; stats: FieldStats } | null = null;
+function referenceFieldStats(baseCatalog: any[], coeffs: Coeffs, model: EventModel): FieldStats {
+  const key = `${state.activeModelId ?? ""}|${catalogSource}`;
+  if (refFieldCache?.key === key) return refFieldCache.stats;
+  const stats = computeFieldStats(baseCatalog, coeffs, model, FIELD_N);
+  refFieldCache = { key, stats };
+  return stats;
+}
+
 function scoreTournament(t: Tournament): Scored {
   const era = eras.get(t.eraId);
   const park = parks.get(t.parkId);
@@ -156,10 +173,22 @@ function scoreTournament(t: Tournament): Scored {
   const derived = computeDerived(coeffs);
   const pool = buildEligiblePool(catalog.cards, t);
   const eventForm = activeEventForm ?? undefined;
-  // wOBA config uses the active #2 form (model + the woba.ts BA/GAP re-derivation +
-  // per-pool calibration all key off it). Basic metric is rating-direct, model-agnostic.
-  const config = { coeffs, derived, calScales: calibrate(pool, { coeffs, derived, eventForm }), eventForm };
-  const basicConfig = { coeffs, derived, calScales: calibrateBasic(pool, { coeffs, derived }) };
+  // Pool transform (#2 only): reference = top-50 of the full NON-VARIANT catalog, pool =
+  // top-50 of the eligible NON-VARIANT subset → map pool onto reference (z-score, full
+  // lift). Variants are still scored (toRow runs on the whole catalog) — they just don't
+  // set the distribution. null ⇒ no transform (the log-linear parity baseline).
+  const basePool = pool.filter(isBaseCard);
+  let poolTransform: PoolTransform | undefined;
+  if (eventForm) {
+    const evModel = makeRawPolyModel(eventForm);
+    const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
+    poolTransform = buildPoolTransform(ref, computeFieldStats(basePool, coeffs, evModel, FIELD_N));
+  }
+  // wOBA config uses the active #2 form + pool transform. The anchor is computed on
+  // NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
+  // rating-direct but still gets the pool transform (it re-bases ratings, which basic reads).
+  const config = { coeffs, derived, eventForm, poolTransform, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform }) };
+  const basicConfig = { coeffs, derived, poolTransform, calScales: calibrateBasic(basePool, { coeffs, derived, poolTransform }) };
 
   const inValueRange = (c: Record<string, unknown>) => {
     const v = n(c["Card Value"]); const lo = t.card_value_min, hi = t.card_value_max;
