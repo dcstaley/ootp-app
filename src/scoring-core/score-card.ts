@@ -7,6 +7,7 @@ import type { ScoringConfig, Side } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
+import { applyAffine } from "../model/pool-transform.ts";
 import {
   n, cp, parkAvgFactor, parkHrFactor, sameSidePenaltyHitting, sameSidePenaltyPitching,
 } from "./helpers.ts";
@@ -28,7 +29,7 @@ export interface CardScores {
 }
 
 export function scoreCard(card: any, config: ScoringConfig, model?: EventModel): CardScores {
-  const { coeffs, derived, calScales, eventForm } = config;
+  const { coeffs, derived, calScales, eventForm, poolTransform } = config;
   // Model selection (D3): an explicit `model` wins (tests/tools); otherwise #2 raw-poly
   // when the config carries a fitted eventForm, else the parity log-linear default.
   const evModel = model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
@@ -44,12 +45,14 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
 
   // ── Hitting, per side ──────────────────────────────────────────────────────
   const hit = (side: Side) => {
+    // Pool transform (rating space, BEFORE the model). Absent ⇒ applyAffine returns raw.
+    const t = poolTransform?.hit[side];
     const ratings = {
-      eye: n(card[`Eye ${side}`]),
-      pow: n(card[`Power ${side}`]),
-      kRat: n(card[`Avoid K ${side}`]),
-      babip: n(card[`BABIP ${side}`]),
-      gap: n(card[`Gap ${side}`]),
+      eye: applyAffine(n(card[`Eye ${side}`]), t?.eye),
+      pow: applyAffine(n(card[`Power ${side}`]), t?.pow),
+      kRat: applyAffine(n(card[`Avoid K ${side}`]), t?.kRat),
+      babip: applyAffine(n(card[`BABIP ${side}`]), t?.babip),
+      gap: applyAffine(n(card[`Gap ${side}`]), t?.gap),
       speed, steal, run,
     };
     const e = evModel.predictHitting(ratings, coeffs);
@@ -80,11 +83,12 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
 
   // ── Pitching, per side ─────────────────────────────────────────────────────
   const pitch = (side: Side) => {
+    const tp = poolTransform?.pit[side];
     const ratings = {
-      con: n(card[`Control ${side}`]),
-      stu: n(card[`Stuff ${side}`]),
-      pbabip: n(card[`pBABIP ${side}`]),
-      hrr: n(card[`pHR ${side}`]),
+      con: applyAffine(n(card[`Control ${side}`]), tp?.con),
+      stu: applyAffine(n(card[`Stuff ${side}`]), tp?.stu),
+      pbabip: applyAffine(n(card[`pBABIP ${side}`]), tp?.pbabip),
+      hrr: applyAffine(n(card[`pHR ${side}`]), tp?.hrr),
     };
     const e = evModel.predictPitching(ratings, coeffs);
 

@@ -4,6 +4,7 @@
 // here we keep one bag and a logical model/calibration seam in code.
 
 import type { EventForm } from "../model/curves.ts";
+import type { PoolTransform } from "../model/pool-transform.ts";
 
 export type Side = "vR" | "vL";
 
@@ -111,4 +112,8 @@ export interface ScoringConfig {
   derived: Derived;
   calScales: CalScales | null;
   eventForm?: EventForm;
+  // Pool-strength rating transform (z-score), applied to ratings BEFORE the model.
+  // Absent ⇒ no transform (bit-identical scores). Present ⇒ the pool is re-based onto
+  // the league reference frame. See src/model/pool-transform.ts.
+  poolTransform?: PoolTransform;
 }

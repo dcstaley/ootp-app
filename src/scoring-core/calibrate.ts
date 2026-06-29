@@ -14,6 +14,7 @@
 import type { Coeffs, Derived, CalScales } from "../config/types.ts";
 import type { EventModel, RawHitting, RawPitching } from "../model/types.ts";
 import type { EventForm } from "../model/curves.ts";
+import { applyAffine, type PoolTransform } from "../model/pool-transform.ts";
 import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
 import { scoreCard } from "./score-card.ts";
@@ -28,24 +29,26 @@ export const ANCHOR_N = 50;
 export const H_SECTION3 = { BB: 48.43, HR: 14.87 };
 export const P_SECTION3 = { BB: 47.80, HR: 14.96 };
 
-export interface CalibrateConfig { coeffs: Coeffs; derived: Derived; eventForm?: EventForm }
+export interface CalibrateConfig { coeffs: Coeffs; derived: Derived; eventForm?: EventForm; poolTransform?: PoolTransform }
 
 interface SideRaw { e: RawHitting | RawPitching; woba: number }
 interface Aug { bats: number; thr: number; hVR: { e: RawHitting; woba: number }; hVL: { e: RawHitting; woba: number }; pVR: SideRaw; pVL: SideRaw }
 
-function augment(card: any, coeffs: Coeffs, model: EventModel): Aug {
+function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransform): Aug {
   const bats = n(card["Bats"]), thr = n(card["Throws"]);
   const speed = n(card["Speed"]), steal = n(card["Stealing"]), run = n(card["Baserunning"]);
   const hit = (side: "vR" | "vL") => {
+    const t = pt?.hit[side]; // pool transform (rating space), absent ⇒ raw
     const e = model.predictHitting(
-      { eye: n(card[`Eye ${side}`]), pow: n(card[`Power ${side}`]), kRat: n(card[`Avoid K ${side}`]), babip: n(card[`BABIP ${side}`]), gap: n(card[`Gap ${side}`]), speed, steal, run },
+      { eye: applyAffine(n(card[`Eye ${side}`]), t?.eye), pow: applyAffine(n(card[`Power ${side}`]), t?.pow), kRat: applyAffine(n(card[`Avoid K ${side}`]), t?.kRat), babip: applyAffine(n(card[`BABIP ${side}`]), t?.babip), gap: applyAffine(n(card[`Gap ${side}`]), t?.gap), speed, steal, run },
       coeffs,
     );
     return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting), speed, steal, run, coeffs) };
   };
   const pit = (side: "vR" | "vL") => {
+    const tp = pt?.pit[side];
     const e = model.predictPitching(
-      { con: n(card[`Control ${side}`]), stu: n(card[`Stuff ${side}`]), pbabip: n(card[`pBABIP ${side}`]), hrr: n(card[`pHR ${side}`]) },
+      { con: applyAffine(n(card[`Control ${side}`]), tp?.con), stu: applyAffine(n(card[`Stuff ${side}`]), tp?.stu), pbabip: applyAffine(n(card[`pBABIP ${side}`]), tp?.pbabip), hrr: applyAffine(n(card[`pHR ${side}`]), tp?.hrr) },
       coeffs,
     );
     return { e, woba: assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching), coeffs) };
@@ -61,12 +64,13 @@ const evScale = (vals: number[], tgt: number) => { const m = mean(vals); return 
  * The hitter/pitcher anchors self-select from the whole pool by raw wOBA.
  */
 export function calibrate(pool: any[], config: CalibrateConfig, model?: EventModel): CalScales {
-  const { coeffs, derived, eventForm } = config;
+  const { coeffs, derived, eventForm, poolTransform } = config;
   // Same model selection as scoreCard: #2 raw-poly when a fitted eventForm is present,
   // else the parity log-linear default. The anchor recompute uses the SAME model + curves,
-  // so per-pool calibration self-adjusts to #2's event levels.
+  // so per-pool calibration self-adjusts to #2's event levels. The pool transform (if any)
+  // is applied to ratings here too, so the anchor is computed on the lifted ratings.
   const evModel = model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
-  const aug = pool.map((c) => augment(c, coeffs, evModel));
+  const aug = pool.map((c) => augment(c, coeffs, evModel, poolTransform));
 
   const hAnchVR = [...aug].sort((a, b) => b.hVR.woba - a.hVR.woba).slice(0, ANCHOR_N);
   const hAnchVL = [...aug].sort((a, b) => b.hVL.woba - a.hVL.woba).slice(0, ANCHOR_N);
@@ -112,8 +116,8 @@ export function valueFor(woba: number, role: "hitter" | "pitcher", baseline = TA
  * (score each card with the wOBA scales for wOBA columns and these for basic).
  */
 export function calibrateBasic(pool: any[], config: CalibrateConfig): CalScales {
-  const { coeffs, derived } = config;
-  const raw = pool.map((c) => scoreCard(c, { coeffs, derived, calScales: null })); // calScales=null → unscaled basic
+  const { coeffs, derived, poolTransform } = config;
+  const raw = pool.map((c) => scoreCard(c, { coeffs, derived, calScales: null, poolTransform })); // calScales=null → unscaled basic
   const topMean = (vals: number[]) => {
     const t = vals.filter((x) => x > 0).sort((a, b) => b - a).slice(0, ANCHOR_N);
     return t.length ? t.reduce((s, x) => s + x, 0) / t.length : 0;

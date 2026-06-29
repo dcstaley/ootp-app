@@ -7,3 +7,4 @@ export type { EventModel } from "../model/types.ts";
 export { logLinearModel } from "../model/log-linear.ts";
 export { makeRawPolyModel } from "../model/raw-poly.ts";
 export type { EventForm, FittedHit, FittedPit } from "../model/curves.ts";
+export { ratingStats, affineFor, buildAffines, HIT_RATINGS, PIT_RATINGS, type PoolTransform, type RatingStats } from "../model/pool-transform.ts";
