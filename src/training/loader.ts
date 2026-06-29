@@ -185,3 +185,12 @@ export function loadWindow(root: string, years?: number[]): LoadedTraining {
 export function loadTrainingDir(dir: string): LoadedTraining {
   return aggregate(discover(dir), dir, null);
 }
+
+/** Load a window scoped to specific (canonical, space-stripped) league names — e.g.
+ *  ["PEL"] or ["HD450","HD451",…]. Outcomes still sum across the INCLUDED leagues
+ *  only. For diagnostics (per-league vs pooled training); not used by the app. */
+export function loadWindowLeagues(root: string, years: number[] | null, leagues: string[]): LoadedTraining {
+  const keep = new Set(leagues);
+  const found = discover(root).filter((f) => f.tag && keep.has(f.tag.league));
+  return aggregate(found, root, years && years.length ? years : null);
+}
