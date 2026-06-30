@@ -8,7 +8,7 @@
 // weights dominate starter placement). value_i = platoon-weighted per-side value.
 
 import type { PitcherCandidate, PitcherOptimizeOptions } from "./types.ts";
-import { qualifiesStarter } from "./types.ts";
+import { qualifiesStarter, blendPitch } from "./types.ts";
 
 export interface BuiltLp { lp: string; vars: number; constraints: number }
 
@@ -20,7 +20,10 @@ export function buildPitcherLp(cands: PitcherCandidate[], opts: PitcherOptimizeO
   const weights = opts.rotationSlotWeights ?? DEFAULT_SLOT_WEIGHTS;
   const slotW = (k: number) => weights[k - 1] ?? weights[weights.length - 1] ?? 0.75;
   const bullpenW = opts.bullpenWeight ?? 0.15;
-  const value = (c: PitcherCandidate) => opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL;
+  // Role-aware collapse: rotation slots use the SP weight, the bullpen term the RP
+  // weight (a pitcher's batter-hand mix differs by where it's actually deployed).
+  const vSP = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "sp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
+  const vRP = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
 
   const obj: string[] = [];
   const xVars: string[] = [];
@@ -29,9 +32,9 @@ export function buildPitcherLp(cands: PitcherCandidate[], opts: PitcherOptimizeO
   const perCard: Record<number, string[]> = {};
 
   cands.forEach((c, i) => {
-    const v = value(c);
-    obj.push(`${f6(bullpenW * v)} p_${i}`);
+    obj.push(`${f6(bullpenW * vRP(c))} p_${i}`);
     if (qualifiesStarter(c, opts.minStarterStamina, opts.minPitchTypes)) {
+      const v = vSP(c);
       for (let k = 1; k <= slots; k++) {
         const x = `x_${i}_s${k}`;
         xVars.push(x);

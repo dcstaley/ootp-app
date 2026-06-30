@@ -6,7 +6,7 @@ import type {
   HitterCandidate, HitterOptimizeOptions, HitterResult, LineupSlot,
   PitcherCandidate, PitcherOptimizeOptions, Roster, RosterOptimizeOptions, RotationSlot,
 } from "./types.ts";
-import { lineupPositions } from "./types.ts";
+import { lineupPositions, blendPitch } from "./types.ts";
 import { buildHitterLp } from "./lp.ts";
 import { buildRosterLp } from "./roster-lp.ts";
 import { getSolver } from "./solve.ts";
@@ -102,7 +102,7 @@ export async function generateFullRoster(
   const cost = hitters_.reduce((s, c) => s + c.cost, 0)
     + pitchers_.filter((c) => !twoWaySet.has(c.id)).reduce((s, c) => s + c.cost, 0);
   const hitterValue = hitters_.reduce((s, c) => s + Math.max(c.valueVR, c.valueVL), 0);
-  const pitcherValue = pitchers_.reduce((s, c) => s + (opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL), 0);
+  const pitcherValue = pitchers_.reduce((s, c) => s + blendPitch(c.valueVR, c.valueVL, c.throws, inRot.has(c.id) ? "sp" : "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL), 0);
 
   return {
     status: "Optimal", objective: sol.ObjectiveValue,

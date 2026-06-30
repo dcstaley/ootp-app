@@ -21,9 +21,9 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeFieldStats, buildPoolTransform, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel } from "../scoring-core/index.ts";
-import { fitHitForm, fitPitForm, RAWPOLY_HIT, LOG_PIT } from "../training/forms.ts";
-import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeFieldStats, buildPoolTransform, applyWobaWeights, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights } from "../scoring-core/index.ts";
+import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
+import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
 import { seedDefaults, seedEras } from "../config/seed.ts";
@@ -148,6 +148,7 @@ let cache = new Map<string, Scored>();
 // the per-tournament scoring cache so scores recompute.
 let activeEventForm: EventForm | null = null;
 let activePlatoon: PlatoonExposure | null = null; // active model's measured platoon exposure → new-tournament defaults
+let activeWobaWeights: WobaWeights | null = null; // active model's wRAA-derived wOBA weights → folded into coeffs
 
 // Pool-strength rating transform (#2 only). NON-VARIANT cards set every average/distribution
 // (the field-size diagnostic was no-variants too); variants are scored but never enter the
@@ -178,6 +179,10 @@ function scoreTournament(t: Tournament): Scored {
     coeffs.r_hit_split = t.platoon.r_hit_split; coeffs.l_hit_split = t.platoon.l_hit_split; coeffs.s_hit_split = t.platoon.s_hit_split;
     coeffs.r_pitch_split = t.platoon.r_pitch_split; coeffs.l_pitch_split = t.platoon.l_pitch_split;
   }
+  // wOBA event weights: the active model's wRAA-derived weights override the historical
+  // constants (absent ⇒ woba.ts uses the defaults, bit-identical). Model-scoped, not
+  // tournament-scoped — the run environment is the model's, not the tournament's.
+  if (activeWobaWeights) applyWobaWeights(coeffs, activeWobaWeights);
   const eventForm = activeEventForm ?? undefined;
   const derived = computeDerived(coeffs, !!eventForm); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
   const pool = buildEligiblePool(catalog.cards, t);
@@ -382,6 +387,7 @@ function rosterCandidates(
 ): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; entries: Entry[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string>; firstByDisp: Record<string, string>; starterPosByDisp: Record<string, string[]> } {
   const { s } = scoredFor(t.id);
   const ctx = s.ctx;
+  const ps = resolvePitchSplit(t); // (hand,role) pitcher batter-hand exposure (see resolvePitchSplit)
   // Signed-distance value (D2) in the active metric. basic: score − 100 for BOTH
   // roles (basic-hit and basic-pitch are both higher-is-better). woba: hitter
   // woba − baseline, pitcher baseline − allowedWoba.
@@ -415,10 +421,13 @@ function rosterCandidates(
     const positions = [...LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p), "DH"];
     const pitVR = pitVal(sc, "vR");
     const pitVL = pitVal(sc, "vL");
+    // Single representative OVR (next-best ranking + upgrade input): role unknown
+    // pre-solve, so guess from starter-qualification (stamina + pitch types).
+    const pRole: PitchRole = n(c0["Stamina"]) >= t.min_starter_stamina && pitchCount(c0) >= t.min_pitch_types ? "sp" : "rp";
     entries.push({
       dispId,
       hitVR: hitVal(sc, "vR"), hitVL: hitVal(sc, "vL"),
-      pitVR, pitVL, pitOVR: platoonVR * pitVR + platoonVL * pitVL,
+      pitVR, pitVL, pitOVR: blendPitch(pitVR, pitVL, sc.throws, pRole, ps, platoonVR, platoonVL),
       positions, stamina: n(c0["Stamina"]), pitchTypes: pitchCount(c0),
       bats: sc.bats, throws: sc.throws, title: String(sc.title), cost,
       role: roleOverrides[id] ?? "auto",
@@ -528,11 +537,29 @@ function budgetMode(t: Tournament): "none" | "cap" | "slots" {
   return "none";
 }
 
+// Resolve the (hand, role) pitcher batter-hand split for the optimizer. Each field
+// falls back independently: tournament's own role field → active model's measured
+// role split → tournament role-blind pitch_split (Step A: handedness-correct, role-
+// flat). If none of those exist for any field ⇒ undefined, and the optimizer keeps
+// the legacy team-split collapse. So existing tournaments (role-blind platoon only)
+// get the handedness fix immediately and role differentiation from the active model
+// without rewriting stored config; tournaments with no platoon at all are unchanged.
+function resolvePitchSplit(t: Tournament): PitchSplit | undefined {
+  const p = t.platoon;
+  const model = activePlatoon?.pitchRoleSplits;
+  const r = (role: PitchRole) => (role === "sp" ? p?.r_pitch_split_sp : p?.r_pitch_split_rp) ?? model?.[role]?.r ?? p?.r_pitch_split;
+  const l = (role: PitchRole) => (role === "sp" ? p?.l_pitch_split_sp : p?.l_pitch_split_rp) ?? model?.[role]?.l ?? p?.l_pitch_split;
+  const spR = r("sp"), spL = l("sp"), rpR = r("rp"), rpL = l("rp");
+  if (spR == null || spL == null || rpR == null || rpL == null) return undefined;
+  return { sp: { r: spR, l: spL }, rp: { r: rpR, l: rpL } };
+}
+
 function rosterOptions(t: Tournament): RosterOptimizeOptions {
   return {
     nHitters: t.hitters, nPitchers: t.pitchers, dh: t.dh,
     minStarters: t.min_starters, minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
-    platoonVR: t.platoonVR ?? 0.62, platoonVL: t.platoonVL ?? 0.38, // tournament platoon split (league default)
+    platoonVR: t.platoonVR ?? 0.62, platoonVL: t.platoonVL ?? 0.38, // team exposure: weights the vR/vL HITTER lineups
+    pitchSplit: resolvePitchSplit(t),                               // (hand,role) PITCHER batter-hand exposure
     minPlayersPerPosition: t.minPlayersPerPosition ?? 2,            // coverage depth / backups
     mode: budgetMode(t), totalCap: t.total_cap ?? undefined, slotCounts: t.slot_counts,
     rosterSize: t.roster_size,
@@ -593,7 +620,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
   const rosterPitchers = r.pitchers.map((id) => {
     const c = pById.get(id)!; const role = pitRole(id);
-    const combined = opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL;
+    const combined = blendPitch(c.valueVR, c.valueVL, c.throws, role === "starter" ? "sp" : "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
     return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", throws: THROWS[c.throws] ?? "", role, twoWay: twoWaySet.has(strip(id)),
       woba: pScore(combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || a.woba - b.woba);
@@ -698,7 +725,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
       return { val, rot: rotSet, bull: new Set(bull.map((a) => a.id)) };
     };
     const armOf = (id: string, value: number, stamina: number, pitchTypes: number): Arm => ({ id, value, qualified: stamina >= opts.minStarterStamina && pitchTypes >= opts.minPitchTypes });
-    const curStaff = r.pitchers.map((id) => { const c = pById.get(id)!; return armOf(id, wVR * c.valueVR + wVL * c.valueVL, c.stamina, c.pitchTypes); });
+    const curStaff = r.pitchers.map((id) => { const c = pById.get(id)!; return armOf(id, blendPitch(c.valueVR, c.valueVL, c.throws, rotIds.has(id) ? "sp" : "rp", opts.pitchSplit, wVR, wVL), c.stamina, c.pitchTypes); });
     const baseVal = staff(curStaff).val;
     const spUp: PU[] = [], rpUp: PU[] = [];
     for (const e of entries) {
@@ -756,7 +783,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
 // into observations. Ingestion only — no model is trained here yet.
 let trainingCache: LoadedTraining | null = null;
 let trainingErr: string | null = null;
-const windowCache = new Map<string, TrainObs[]>(); // observations per year-window
+const windowCache = new Map<string, LoadedTraining>(); // loaded training per year-window
 function clearTrainingCaches() { trainingCache = null; trainingErr = null; windowCache.clear(); fitCache = {}; sbCache = new Map(); residCache.clear(); }
 function getTraining(reload = false): LoadedTraining | null {
   if (reload) clearTrainingCaches();
@@ -775,12 +802,13 @@ function parseYears(param: string | null): number[] {
   const want = (param ?? "").split(",").map((s) => Number(s.trim())).filter((y) => avail.includes(y));
   return want.length ? [...new Set(want)].sort((a, b) => a - b) : defaultWindow(avail);
 }
-function windowObs(years: number[]): TrainObs[] {
+function windowLoaded(years: number[]): LoadedTraining {
   const key = years.join(",");
   let o = windowCache.get(key);
-  if (!o) { o = loadWindow(TRAINING_DIR, years).observations; windowCache.set(key, o); }
+  if (!o) { o = loadWindow(TRAINING_DIR, years); windowCache.set(key, o); }
   return o;
 }
+function windowObs(years: number[]): TrainObs[] { return windowLoaded(years).observations; }
 
 interface FitBag {
   key?: string; window?: number[];
@@ -847,6 +875,7 @@ interface TrainedModel {
   // for backward compat with pre-#2 artifacts (those can't be activated for scoring).
   eventForm?: EventForm;
   platoon?: PlatoonExposure; // measured platoon exposure (OVR splits + team VR/VL) — seeds new-tournament defaults
+  wobaWeights?: WobaWeights; // wRAA-derived wOBA event weights for this model's leagues (optional; absent ⇒ defaults)
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
@@ -868,15 +897,21 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   // Freeze the deployed D3 #2 form, fit on the SAME qualifying obs as the log-linear fit
   // (one fit path — reuse the bake-off's fitHitForm/fitPitForm). DEPLOYED FORMS (bake-off,
   // CV/OOT-validated): HITTING = raw-poly (quadratic POW/GAP captures real accelerating
-  // power structure); PITCHING = LOG — the quadratic earned nothing OOS (pitching value is
-  // near-linear in the ratings and already at its modeling ceiling at log; the raw-poly HR
-  // curve was a slight regression). Each side at its ceiling; both curve-form (one structure).
+  // power structure); PITCHING = LOG curve + a linear Stuff term on BB & HR (STUFFAUG_PIT)
+  // — high Stuff suppresses walks/homers beyond Control/HRR, an outcome-measured channel the
+  // K route alone misses; it fixes the low-Stuff over-rating and beats plain LOG forward &
+  // backward OOT. (The raw-poly HR curve earned nothing OOS, so pitching stays log-curve.)
   const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
   const eventForm: EventForm = {
     hit: fitHitForm(RAWPOLY_HIT, obs.filter((o) => HITTER.qualifies(o, minPA))),
-    pit: fitPitForm(LOG_PIT, obs.filter((o) => PITCHER.qualifies(o, minPA))),
+    pit: fitPitForm(STUFFAUG_PIT, obs.filter((o) => PITCHER.qualifies(o, minPA))),
   };
-  const platoon = computePlatoon(obs); // realized RHP/LHP exposure over ALL window obs (full PA/BF, both roles)
+  // Realized RHP/LHP exposure over ALL window obs (OVR/team splits from aggregated
+  // obs) + role-conditional pitch splits (row grain, from the loader before CID
+  // aggregation — computePlatoon can't see role from the aggregated obs).
+  const loaded = windowLoaded(window);
+  const platoon = { ...computePlatoon(obs), pitchRoleSplits: loaded.pitchRoleSplits };
+  const wobaWeights = loaded.wobaWeights; // wRAA-derived weights for the model's leagues
   const existing = await repo.loadAll<TrainedModel>("trained-models");
   let id = slug(name) || "model"; while (existing.some((m) => m.id === id)) id += "-2";
   const model: TrainedModel = {
@@ -884,6 +919,7 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     coefficients: { woba_hitting: f.woba_hitting.coefficients, woba_pitching: f.woba_pitching.coefficients, basic_hitting: f.basic_hitting.coefficients, basic_pitching: f.basic_pitching.coefficients },
     eventForm,
     platoon,
+    wobaWeights,
     diag: { hitPearson: f.wobaDiagHit?.pearson ?? null, pitPearson: f.wobaDiagPit?.pearson ?? null, rowsHit: f.woba_hitting.rowCount, rowsPit: f.woba_pitching.rowCount },
     trainedAt: new Date().toISOString(), notes: body.notes ? String(body.notes) : undefined,
   };
@@ -899,6 +935,7 @@ async function refreshActiveModel(): Promise<void> {
   const m = id ? (await repo.loadAll<TrainedModel>("trained-models")).find((x) => x.id === id) : undefined;
   activeEventForm = m?.eventForm ?? null;
   activePlatoon = m?.platoon ?? null;
+  activeWobaWeights = m?.wobaWeights ?? null;
   if (id && !m?.eventForm) { state.activeModelId = null; await saveState(); }
   cache = new Map();
 }
@@ -1051,7 +1088,14 @@ const server = createServer(async (req, res) => {
     // New tournaments inherit the ACTIVE model's measured platoon exposure as their default
     // (existing tournaments keep their stored values — seed only on create).
     if (!existing && activePlatoon) {
-      if (body.platoon === undefined) t.platoon = { r_hit_split: activePlatoon.r_hit_split, l_hit_split: activePlatoon.l_hit_split, s_hit_split: activePlatoon.s_hit_split, r_pitch_split: activePlatoon.r_pitch_split, l_pitch_split: activePlatoon.l_pitch_split };
+      if (body.platoon === undefined) {
+        const rs = activePlatoon.pitchRoleSplits;
+        t.platoon = {
+          r_hit_split: activePlatoon.r_hit_split, l_hit_split: activePlatoon.l_hit_split, s_hit_split: activePlatoon.s_hit_split,
+          r_pitch_split: activePlatoon.r_pitch_split, l_pitch_split: activePlatoon.l_pitch_split,
+          ...(rs ? { r_pitch_split_sp: rs.sp.r, l_pitch_split_sp: rs.sp.l, r_pitch_split_rp: rs.rp.r, l_pitch_split_rp: rs.rp.l } : {}),
+        };
+      }
       if (body.platoonVR === undefined) t.platoonVR = activePlatoon.teamVR;
       if (body.platoonVL === undefined) t.platoonVL = activePlatoon.teamVL;
     }

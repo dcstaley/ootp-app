@@ -11,5 +11,6 @@ export {
   type HitterCandidate, type HitterOptimizeOptions, type HitterResult,
   type PitcherCandidate, type PitcherOptimizeOptions, type PitcherStaff,
   type Roster, type RosterOptimizeOptions, type BudgetMode, type LineupSlot, type RotationSlot,
-  FIELD_POSITIONS, SLOT_TIERS, lineupPositions, qualifiesStarter,
+  type PitchSplit, type PitchRole,
+  FIELD_POSITIONS, SLOT_TIERS, lineupPositions, qualifiesStarter, blendPitch, pitchVsRWeight,
 } from "./types.ts";

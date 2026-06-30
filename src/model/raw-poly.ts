@@ -17,7 +17,7 @@
 // hands the model `ratings` + `coeffs`, so the curves are closed over here).
 
 import type { Coeffs } from "../config/types.ts";
-import { rate, hRate, type EventForm } from "./curves.ts";
+import { rate, rateAux, hRate, type EventForm } from "./curves.ts";
 import type { EventModel, HittingRatings, PitchingRatings, RawHitting, RawPitching } from "./types.ts";
 
 /** Build the deployed #2 event model bound to a fitted form (one per scoring config). */
@@ -40,9 +40,9 @@ export function makeRawPolyModel(form: EventForm): EventModel {
   }
 
   function predictPitching(r: PitchingRatings, _c: Coeffs): RawPitching {
-    const BB = rate(pit.bb, r.con);
+    const BB = rateAux(pit.bb, r.con, r.stu); // + linear Stuff term when the form carries it
     const K = rate(pit.k, r.stu);
-    const HR = rate(pit.hr, r.hrr);          // quadratic in raw HRR
+    const HR = rateAux(pit.hr, r.hrr, r.stu); // + linear Stuff term (high Stuff suppresses HR)
     const BIP = Math.max(600 - BB - K - HR - 6, 1); // matches forms.ts predictPitForm
     const nHH = hRate(pit.h, r.pbabip, BIP);
     const XBH = nHH * 0.25;                   // fixed share (no GAP analog for pitchers)

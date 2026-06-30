@@ -104,7 +104,13 @@ export interface Tournament {
   platoonVL?: number;
   // Per-hand OVR-blend splits (D4 platoon-as-tournament-setting). Seeded from the active
   // model's measured exposure on CREATE; absent ⇒ the model/coeff defaults (existing tournaments untouched).
-  platoon?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number };
+  platoon?: {
+    r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number;
+    // Role-conditional pitch splits (M6, optional). Seeded on CREATE from the active
+    // model's measured SP/RP exposure; absent ⇒ the optimizer falls back to the active
+    // model's role splits, then the role-blind split above. See server resolvePitchSplit.
+    r_pitch_split_sp?: number; l_pitch_split_sp?: number; r_pitch_split_rp?: number; l_pitch_split_rp?: number;
+  };
   minPlayersPerPosition?: number;          // coverage depth / backups (default 2)
   // Per-position min defensive ratings. starter = bar to START there (lineup); backup
   // = bar to count toward coverage depth. Keys are rating ids relevant to the position

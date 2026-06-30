@@ -59,7 +59,7 @@ export function TournamentsPage() {
   const { tournaments, tournamentId, reloadTournaments, reloadView } = useAppData();
   const [selId, setSelId] = useState(tournamentId);
   const [draft, setDraft] = useState<TournamentCfg | null>(null);
-  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[]; platoonDefaults?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number; teamVR?: number; teamVL?: number } }>({ eras: [], parks: [], columns: [] });
+  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[]; platoonDefaults?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number; teamVR?: number; teamVL?: number; pitchRoleSplits?: { sp: { r: number; l: number }; rp: { r: number; l: number } } } }>({ eras: [], parks: [], columns: [] });
   const [metrics, setMetrics] = useState<PosMetrics | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -81,15 +81,42 @@ export function TournamentsPage() {
   const vR = draft?.platoonVR ?? libs.platoonDefaults?.teamVR ?? 0.62;
   // Per-hand OVR splits — show the active model's defaults until the tournament has its own;
   // the first edit materializes a full platoon object so editing one split keeps the rest.
-  const PLATOON_SPLITS = [
+  // HITTER OVR-blend splits — these (with the pitcher role splits below) weight the
+  // Cards-page OVR columns ONLY. The optimizer uses team exposure (above) for hitters.
+  const HIT_SPLITS = [
     { k: "r_hit_split", label: "RHB vs RHP" }, { k: "l_hit_split", label: "LHB vs LHP" }, { k: "s_hit_split", label: "SHB vs RHP" },
-    { k: "r_pitch_split", label: "RHP vs RHB" }, { k: "l_pitch_split", label: "LHP vs LHB" },
   ] as const;
-  type SplitKey = (typeof PLATOON_SPLITS)[number]["k"];
-  const splitDef = (k: SplitKey): number => draft?.platoon?.[k] ?? libs.platoonDefaults?.[k] ?? 0.5;
+  // Role-conditional pitch splits (SP vs RP usage) — the optimizer's deployment-aware
+  // pitcher collapse. Defaults come from the model's measured pitchRoleSplits.
+  const PITCH_ROLE_SPLITS = [
+    { k: "r_pitch_split_sp", label: "RHP vs RHB (SP)" }, { k: "l_pitch_split_sp", label: "LHP vs LHB (SP)" },
+    { k: "r_pitch_split_rp", label: "RHP vs RHB (RP)" }, { k: "l_pitch_split_rp", label: "LHP vs LHB (RP)" },
+  ] as const;
+  // Role-blind r/l_pitch_split are NOT shown: they only weight the grid pitcher OVR
+  // column (score-card blend) + are the optimizer's no-role fallback — editing them
+  // here would read as a duplicate of the SP/RP rows the optimizer actually uses.
+  // They stay in the persisted platoon object (materialized in setSplit) so the grid
+  // keeps a weight; the `SplitKey` union retains them for that.
+  type SplitKey = (typeof HIT_SPLITS)[number]["k"] | (typeof PITCH_ROLE_SPLITS)[number]["k"] | "r_pitch_split" | "l_pitch_split";
+  const roleDefault = (k: SplitKey): number | undefined => {
+    const rs = libs.platoonDefaults?.pitchRoleSplits; if (!rs) return undefined;
+    return k === "r_pitch_split_sp" ? rs.sp.r : k === "l_pitch_split_sp" ? rs.sp.l
+      : k === "r_pitch_split_rp" ? rs.rp.r : k === "l_pitch_split_rp" ? rs.rp.l : undefined;
+  };
+  const splitDef = (k: SplitKey): number => {
+    const own = draft?.platoon?.[k]; if (own != null) return own;
+    const rd = roleDefault(k); if (rd != null) return rd;
+    const pd = libs.platoonDefaults as Record<string, number> | undefined;
+    return (pd && k in pd ? pd[k] : undefined) ?? 0.5;
+  };
   const setSplit = (k: SplitKey, x: number) => {
     if (!draft) return;
-    const base = draft.platoon ?? { r_hit_split: splitDef("r_hit_split"), l_hit_split: splitDef("l_hit_split"), s_hit_split: splitDef("s_hit_split"), r_pitch_split: splitDef("r_pitch_split"), l_pitch_split: splitDef("l_pitch_split") };
+    const base = draft.platoon ?? {
+      r_hit_split: splitDef("r_hit_split"), l_hit_split: splitDef("l_hit_split"), s_hit_split: splitDef("s_hit_split"),
+      r_pitch_split: splitDef("r_pitch_split"), l_pitch_split: splitDef("l_pitch_split"),
+      r_pitch_split_sp: splitDef("r_pitch_split_sp"), l_pitch_split_sp: splitDef("l_pitch_split_sp"),
+      r_pitch_split_rp: splitDef("r_pitch_split_rp"), l_pitch_split_rp: splitDef("l_pitch_split_rp"),
+    };
     set("platoon", { ...base, [k]: r3(x) });
   };
 
@@ -291,9 +318,15 @@ export function TournamentsPage() {
                 <span style={{ fontSize: 13, color: C.sub }}>vL = {r3(1 - vR)}</span>
               </span>, `team RHP/LHP exposure — optimizer${draft.platoonVR == null ? " (model default)" : ""}`)}
               <div style={{ fontSize: 12, color: C.sub, margin: "8px 0 6px" }}>
-                Per-hand OVR splits — weight on the same-letter side{!draft.platoon && libs.platoonDefaults ? " (showing active-model defaults)" : ""}:
+                Hitter OVR splits — Cards-page display only, weight on the same-letter side{!draft.platoon && libs.platoonDefaults ? " (showing active-model defaults)" : ""}:
               </div>
-              {PLATOON_SPLITS.map((s) => (
+              {HIT_SPLITS.map((s) => (
+                <Fragment key={s.k}>{row(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 100 }} />)}</Fragment>
+              ))}
+              <div style={{ fontSize: 12, color: C.sub, margin: "8px 0 6px" }}>
+                Pitcher splits — optimizer collapse, same-side weight by actual SP vs RP usage{!draft.platoon?.r_pitch_split_sp && libs.platoonDefaults?.pitchRoleSplits ? " (showing active-model defaults)" : ""}:
+              </div>
+              {PITCH_ROLE_SPLITS.map((s) => (
                 <Fragment key={s.k}>{row(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 100 }} />)}</Fragment>
               ))}
             </>)}

@@ -20,16 +20,17 @@
 import type { TrainObs } from "./loader.ts";
 import { wls } from "./fit.ts";
 import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
+import { DEFAULT_WOBA_WEIGHTS } from "../scoring-core/woba-weights.ts";
 import {
-  ln1, dot, baseVal, row, rate, hDesign, hRate, LOG,
+  ln1, dot, baseVal, row, rate, rateAux, hDesign, hRate, LOG,
   type Curve, type FittedEvent, type CurveFit, type FittedH, type FittedHit, type FittedPit,
 } from "../model/curves.ts";
 
 // Re-export the curve/param types so existing tool imports (`from "./forms.ts"`) keep working.
 export type { Curve, FittedEvent, FittedHit, FittedPit } from "../model/curves.ts";
 
-// Fixed wOBA event weights (must match bakeoff.ts — the league-standard weights).
-const W_BB = 0.704, W_1B = 0.8992, W_XBH = 1.29, W_HR = 2.0759, HBP = 6;
+// wOBA event weights — the ONE source (scoring-core); must match bakeoff.ts.
+const W_BB = DEFAULT_WOBA_WEIGHTS.bb, W_HBP = DEFAULT_WOBA_WEIGHTS.hbp, W_1B = DEFAULT_WOBA_WEIGHTS.b1, W_XBH = DEFAULT_WOBA_WEIGHTS.xbh, W_HR = DEFAULT_WOBA_WEIGHTS.hr, HBP = 6;
 
 /** Weighted μ/σ of a curve's base term (for z-score conditioning; log needs none). */
 function curveNorm(curve: Curve, vals: number[], w: number[]): { mu: number; sd: number } {
@@ -43,6 +44,19 @@ function fitEvent(curve: Curve, vals: number[], y: number[], w: number[]): Fitte
   const { mu, sd } = curveNorm(curve, vals, w);
   const X = vals.map((v) => row(curve, v, mu, sd));
   return { beta: wls(X, y, w), mu, sd, curve };
+}
+/** Fit a primary curve PLUS a linear z-scored ln(aux) term, jointly (one WLS). The aux
+ *  column is appended, fitted, then split back out into `aux` so `rate` (curve only)
+ *  and `rateAux` (curve + aux) both work. Used for the pitching Stuff term on BB/HR. */
+function fitEventAux(curve: Curve, vals: number[], auxVals: number[], y: number[], w: number[]): FittedEvent {
+  const { mu, sd } = curveNorm(curve, vals, w);
+  const la = auxVals.map(ln1), W = w.reduce((s, x) => s + x, 0);
+  const amu = la.reduce((s, v, i) => s + w[i]! * v, 0) / W;
+  const asd = Math.sqrt(la.reduce((s, v, i) => s + w[i]! * (v - amu) ** 2, 0) / W) || 1;
+  const X = vals.map((v, i) => [...row(curve, v, mu, sd), (la[i]! - amu) / asd]);
+  const beta = wls(X, y, w);
+  const auxBeta = beta.pop()!; // last column = the aux coefficient
+  return { beta, mu, sd, curve, aux: { beta: auxBeta, mu: amu, sd: asd } };
 }
 
 // The H (non-HR hit) event has TWO inputs, each with its OWN curve: the BABIP/PBABIP
@@ -93,7 +107,9 @@ export function predictHitForm(m: FittedHit, o: TrainObs): number {
 
 // ── Pitching form ──────────────────────────────────────────────────────────────
 // `h` = curve on the PBABIP rating (BIP term log); XBH stays the fixed 0.25 share.
-export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve; hBip?: Curve }
+// `stuffAug` adds a linear ln(Stuff) term to the BB and HR fits — high Stuff suppresses
+// walks/homers beyond Control/HRR (an outcome-measured channel the K route alone misses).
+export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve; hBip?: Curve; stuffAug?: boolean }
 
 export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): FittedPit {
   const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));
@@ -103,21 +119,22 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const con = obs.map((p) => p.ratings.pitch.con), stu = obs.map((p) => p.ratings.pitch.stu);
   const hrr = obs.map((p) => p.ratings.pitch.hrr), pbabip = obs.map((p) => p.ratings.pitch.pbabip);
 
-  const bb = fitEvent(form.bb, con, BB, w);
+  const bb = form.stuffAug ? fitEventAux(form.bb, con, stu, BB, w) : fitEvent(form.bb, con, BB, w);
   const k = fitEvent(form.k, stu, K, w);
-  const hr = fitEvent(form.hr, hrr, HR, w);
-  const bip = obs.map((_, i) => Math.max(600 - rate(bb, con[i]!) - rate(k, stu[i]!) - rate(hr, hrr[i]!) - 6, 1));
+  const hr = form.stuffAug ? fitEventAux(form.hr, hrr, stu, HR, w) : fitEvent(form.hr, hrr, HR, w);
+  // Predicted BB/HR (with the Stuff aux when present) drive BIP — training mirrors inference.
+  const bip = obs.map((_, i) => Math.max(600 - rateAux(bb, con[i]!, stu[i]!) - rate(k, stu[i]!) - rateAux(hr, hrr[i]!, stu[i]!) - 6, 1));
   const h = fitH(pbabip, bip, nHH, w, form.h, form.hBip ?? LOG);
   return { bb, k, hr, h };
 }
 
 export function predictPitForm(m: FittedPit, o: TrainObs): number {
   const r = o.ratings.pitch;
-  const bb = rate(m.bb, r.con), k = rate(m.k, r.stu), hr = rate(m.hr, r.hrr);
+  const bb = rateAux(m.bb, r.con, r.stu), k = rate(m.k, r.stu), hr = rateAux(m.hr, r.hrr, r.stu);
   const bip = Math.max(600 - bb - k - hr - 6, 1);
   const nHH = hRate(m.h, r.pbabip, bip);
   const xbh = nHH * 0.25, oneB = Math.max(nHH - xbh, 0);
-  return (W_BB * bb + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // no HBP term (matches old)
+  return (W_BB * bb + W_HBP * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // HBP included (matches scoring)
 }
 
 // ── Monotonicity + sane-extrapolation gate ─────────────────────────────────────
@@ -268,7 +285,7 @@ export function predictPitGLM(m: GLMPitParams, o: TrainObs): number {
   const bip = Math.max(600 - bb - k - hr - 6, 1);
   const nHH = expRate(m.h, [ln1(r.pbabip), Math.log(bip)]);
   const xbh = nHH * 0.25, oneB = Math.max(nHH - xbh, 0);
-  return (W_BB * bb + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // no HBP term (matches old)
+  return (W_BB * bb + W_HBP * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // HBP included (matches scoring)
 }
 
 // GLM gate: each single-rating event is a power law (rate ∝ rating^β), monotone by
@@ -377,7 +394,7 @@ export function predictPitSeq(m: SeqPitParams, o: TrainObs): number {
   const n3 = Math.max(n2 - k, 0), hr = n3 * probAt(m.hr, r.hrr);
   const n4 = Math.max(n3 - hr, 0), hn = n4 * probAt(m.h, r.pbabip);
   const xbh = hn * 0.25, oneB = Math.max(hn - xbh, 0); // fixed XBH share (no GAP analog)
-  return (W_BB * bb + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // no HBP term (matches old)
+  return (W_BB * bb + W_HBP * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // HBP included (matches scoring)
 }
 
 export function gateSeqHit(m: SeqHitParams, obs: TrainObs[]): GateStatus {
@@ -443,6 +460,9 @@ export const LOG_PIT: PitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, h: LOG
 // Candidate #2 — targeted raw-polynomial (only the events the residuals implicate); H log.
 export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: { kind: "rawpoly", degree: 2 }, h: LOG };
 export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, h: LOG };
+// DEPLOYED pitching form: log baseline + a linear Stuff term on BB and HR (fixes the
+// low-Stuff over-rating; validated OOT — beats plain LOG forward & backward).
+export const STUFFAUG_PIT: PitForm = { name: "woba·stuffaug", bb: LOG, k: LOG, hr: LOG, h: LOG, stuffAug: true };
 
 // Uniform-curve forms apply one curve to EVERY rating-driven event (incl. the BABIP
 // term of H) — the "is log the right curve" comparison, now including H.

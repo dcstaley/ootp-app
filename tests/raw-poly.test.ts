@@ -25,7 +25,6 @@ import { scoreCard, computeDerived, type Coeffs, type CalScales } from "../src/s
 
 const DIR = "Model 2037 and 2038";
 const WINDOW = [2037, 2038];
-const HBP = 6;
 
 // Neutralised env coeffs: era/park all 1, no ssp, adv_hbp=6 / adv_sh=3 — so the
 // recompute scaffolding is identity and the only signal is the fitted #2 curves.
@@ -86,14 +85,13 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
     expect(worst).toBeLessThan(1e-9);
   });
 
-  it("A) pitching RAW path reproduces predictPitForm (+ the raw-assembly HBP term)", () => {
-    // predictPitForm omits the 0.704·HBP term that assembleRawPitchingWoba includes;
-    // matching after that constant offset proves the raw pitching events are identical.
-    const offset = (0.704 * HBP) / 600;
+  it("A) pitching RAW path reproduces predictPitForm bit-exactly", () => {
+    // predictPitForm now includes the 0.704·HBP term that assembleRawPitchingWoba uses
+    // (HBP added to the pitcher assembly), so the two match with no offset.
     let worst = 0;
     for (const o of pitObs) {
       const s = scoreCard(cardFrom(o), { coeffs, derived, calScales: null, eventForm: fit });
-      const ref = predictPitForm(fit.pit, o) + offset;
+      const ref = predictPitForm(fit.pit, o);
       worst = Math.max(worst, Math.abs(s.pitch.woba_vR - ref));
     }
     expect(worst).toBeLessThan(1e-9);
@@ -111,12 +109,11 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
 
   it("B) pitching FULL recompute (neutral env, identity scales) reproduces predictPitForm bit-exactly", () => {
     // Pitcher BIP has no adv_sf term, so the recompute's BIP_fin == the training BIP →
-    // the #2 pitchingComponents path matches predictPitForm exactly (+ the HBP offset).
-    const offset = (0.704 * HBP) / 600;
+    // the #2 pitchingComponents path matches predictPitForm exactly (HBP now in both).
     let worst = 0;
     for (const o of pitObs) {
       const s = scoreCard(cardFrom(o), { coeffs, derived, calScales: IDENTITY, eventForm: fit });
-      worst = Math.max(worst, Math.abs(s.pitch.woba_vR - (predictPitForm(fit.pit, o) + offset)));
+      worst = Math.max(worst, Math.abs(s.pitch.woba_vR - predictPitForm(fit.pit, o)));
     }
     expect(worst).toBeLessThan(1e-9);
   });

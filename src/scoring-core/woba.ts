@@ -10,18 +10,23 @@ import type { Coeffs, Derived, CalScales } from "../config/types.ts";
 import type { RawHitting, RawPitching } from "../model/types.ts";
 import { rate, hRate, type EventForm } from "../model/curves.ts";
 import { cp, getParkFactor } from "./helpers.ts";
+import { wobaWeightsFromCoeffs } from "./woba-weights.ts";
 
-// ── Raw wOBA assembly (fixed weights + ssp) — the stored "wOBA" columns ──────
+// ── Raw wOBA assembly (per-event weights + ssp) — the stored "wOBA" columns ──
+// Weights come from the coeff bag (model-derived when present, else the historical
+// constants — bit-identical without a weights-bearing model). See woba-weights.ts.
 export function assembleRawHittingWoba(
   e: RawHitting, ssp: number, speed: number, steal: number, run: number, c: Coeffs,
 ): number {
-  return (((0.704 * e.BB) + (0.704 * c.adv_hbp) + (0.8992 * e.oneB) + (1.29 * e.GAP) + (2.0759 * e.HR)) / 600 +
+  const w = wobaWeightsFromCoeffs(c);
+  return (((w.bb * e.BB) + (w.hbp * c.adv_hbp) + (w.b1 * e.oneB) + (w.xbh * e.GAP) + (w.hr * e.HR)) / 600 +
     (c.adv_speed * speed) + (c.adv_steal * steal) + (c.adv_run * run)) * ssp;
 }
 
 export function assembleRawPitchingWoba(e: RawPitching, ssp: number, c: Coeffs): number {
+  const w = wobaWeightsFromCoeffs(c);
   const oneB = e.nHH - e.XBH;
-  return ((0.704 * e.BB + 0.704 * c.adv_hbp + 0.8992 * oneB + 1.29 * e.XBH + 2.0759 * e.HR) / 600) * ssp;
+  return ((w.bb * e.BB + w.hbp * c.adv_hbp + w.b1 * oneB + w.xbh * e.XBH + w.hr * e.HR) / 600) * ssp;
 }
 
 // ── Shared recompute (the ONE copy) ─────────────────────────────────────────
@@ -104,9 +109,10 @@ export function trustedHittingWoba(
   const sHR = vR ? (calScales.hitHRScaleVR ?? 1) : (calScales.hitHRScaleVL ?? 1);
   const sFinal = vR ? (calScales.hitScaleVR ?? 1) : (calScales.hitScaleVL ?? 1);
   const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
+  const w = wobaWeightsFromCoeffs(coeffs);
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const ssp = eventForm ? 1 : ((bats === 1 && vR) || (bats === 2 && !vR) ? (calScales.ssp_adv_hitting ?? 0.97) : 1);
-  const finalWoba = ((0.704 * k.BB_fin + 0.704 * adv_hbp + 0.8992 * k.oneB_fin + 1.29 * k.GAP_fin + 2.0759 * k.HR_fin) / 600) * ssp;
+  const finalWoba = ((w.bb * k.BB_fin + w.hbp * adv_hbp + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600) * ssp;
   return finalWoba * sFinal;
 }
 
@@ -121,9 +127,10 @@ export function trustedPitchingSideWoba(
   const sHR = vR ? (calScales.pHRScaleVR ?? 1) : (calScales.pHRScaleVL ?? 1);
   const sFinal = vR ? (calScales.pitchScaleVR ?? 1) : (calScales.pitchScaleVL ?? 1);
   const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived, eventForm);
+  const w = wobaWeightsFromCoeffs(coeffs);
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const ssp = eventForm ? 1 : ((throws === 2 && vR) || (throws === 1 && !vR) ? (calScales.ssp_basic_pitching ?? 0.97) : 1);
-  const finalWoba = ((0.704 * k.BB_fin + 0.704 * adv_hbp + 0.8992 * k.oneB_fin + 1.29 * k.XBH_fin + 2.0759 * k.HR_fin) / 600) * ssp;
+  const finalWoba = ((w.bb * k.BB_fin + w.hbp * adv_hbp + w.b1 * k.oneB_fin + w.xbh * k.XBH_fin + w.hr * k.HR_fin) / 600) * ssp;
   return finalWoba * sFinal;
 }
 
@@ -136,7 +143,8 @@ export function anchorHittingWoba(
   eventForm?: EventForm,
 ): number {
   const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
-  return (0.704 * k.BB_fin + 0.8992 * k.oneB_fin + 1.29 * k.GAP_fin + 2.0759 * k.HR_fin) / 600;
+  const w = wobaWeightsFromCoeffs(coeffs);
+  return (w.bb * k.BB_fin + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600;
 }
 
 export function anchorPitchingWoba(
@@ -144,5 +152,6 @@ export function anchorPitchingWoba(
   eventForm?: EventForm,
 ): number {
   const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived, eventForm);
-  return (0.704 * k.BB_fin + 0.8992 * k.oneB_fin + 1.29 * k.XBH_fin + 2.0759 * k.HR_fin) / 600;
+  const w = wobaWeightsFromCoeffs(coeffs);
+  return (w.bb * k.BB_fin + w.b1 * k.oneB_fin + w.xbh * k.XBH_fin + w.hr * k.HR_fin) / 600;
 }

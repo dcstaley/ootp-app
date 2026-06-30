@@ -9,7 +9,7 @@
 // Pure aggregation over (bats/throws hand × pitcher/batter side faced). `side` in the
 // data = the OPPONENT hand faced (hitter side=R ⇒ vs RHP; pitcher side=R ⇒ vs RHB).
 
-import type { TrainObs } from "./loader.ts";
+import type { TrainObs, PitchRoleSplits } from "./loader.ts";
 
 export interface PlatoonHit { hand: "R" | "L" | "S"; vsRHP: number; vsLHP: number; pa: number }
 export interface PlatoonPit { hand: "R" | "L"; vsRHB: number; vsLHB: number; bf: number }
@@ -18,6 +18,11 @@ export interface PlatoonExposure {
   r_pitch_split: number; l_pitch_split: number;
   teamVR: number; teamVL: number;
   hit: PlatoonHit[]; pit: PlatoonPit[];
+  // Role-conditional pitch splits (same convention as r/l_pitch_split, split by
+  // realized SP vs RP usage). Optional: pre-M6 artifacts lack it. Computed at row
+  // grain in the loader and merged in by saveTrainedModel (computePlatoon works on
+  // CID-aggregated obs, which can't see role — so it never sets this itself).
+  pitchRoleSplits?: PitchRoleSplits;
 }
 
 const share = (a: number, b: number, fallback: number) => (a + b > 1e-9 ? a / (a + b) : fallback);
