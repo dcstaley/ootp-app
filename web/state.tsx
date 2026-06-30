@@ -3,7 +3,7 @@
 // active (tournament, account) view and exposes the mutations.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AddedCard, LineupLock } from "./shared.ts";
+import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AddedCard, LineupLock, BiggestUpgrades } from "./shared.ts";
 import { lockKey } from "./shared.ts";
 
 interface ImportResult { ok: boolean; error?: string; matched?: number; unmatched?: number; column?: string; newId?: string }
@@ -22,6 +22,9 @@ interface AppData {
   // Regenerate). dirty = generation params changed since the last generate.
   locked: Set<string>; excluded: Set<string>; removed: Set<string>; dirty: boolean;
   toggleLock: (id: string) => void; toggleExclude: (id: string) => void; removeCard: (id: string) => void;
+  // Biggest Upgrades: dismiss without regenerating (roster is unchanged) + refill the buffer.
+  excludeNoRegen: (id: string) => void;
+  fetchUpgrades: () => Promise<BiggestUpgrades | null>;
   // manually-added cards (fill an open roster slot + lock); shown immediately.
   added: AddedCard[]; addCard: (card: AddedCard) => void;
   // per-card pool override (Pitch/Hit/2way); absent = auto. Needs Regenerate.
@@ -201,18 +204,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setDirty(true);
   };
 
+  // Shared query string for /api/roster + /api/upgrades (optionally overriding `excluded`).
+  const rosterQuery = (overrideExcluded?: Set<string>) => {
+    const enc = (s: Set<string>) => [...s].join(",");
+    const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
+    const encLocks = [...lineupLocks.values()].map((l) => `${l.id}:${l.pos}:${l.side}`).join(",");
+    return `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(locked)}&excluded=${enc(overrideExcluded ?? excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}`;
+  };
   const generateRoster = async () => {
     if (!tournamentId) return;
     setRosterLoading(true);
     try {
-      const enc = (s: Set<string>) => [...s].join(",");
-      const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
-      const encLocks = [...lineupLocks.values()].map((l) => `${l.id}:${l.pos}:${l.side}`).join(",");
-      const q = `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(locked)}&excluded=${enc(excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}`;
-      setRoster(await fetch("/api/roster" + q).then((r) => r.json()));
+      setRoster(await fetch("/api/roster" + rosterQuery()).then((r) => r.json()));
       setRemoved(new Set()); setAdded([]); // fresh roster — clear manual edits
       setDirty(false);
     } catch (e) { setErr(String(e)); } finally { setRosterLoading(false); }
+  };
+  // Biggest Upgrades: dismiss a card WITHOUT regenerating — it leaves the (owned-only) roster
+  // unchanged, so we just add it to `excluded` (no dirty flag) and let the panel promote the
+  // next-best from its buffer; the buffer refills via /api/upgrades when it runs low.
+  const excludeNoRegen = (id: string) => setExcluded((s) => { const n = new Set(s); n.add(id); return n; });
+  const fetchUpgrades = async (): Promise<BiggestUpgrades | null> => {
+    if (!tournamentId) return null;
+    try { return (await fetch("/api/upgrades" + rosterQuery()).then((r) => r.json())).biggestUpgrades ?? null; }
+    catch { return null; }
   };
 
   const value: AppData = {
@@ -221,7 +236,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     cards, meta, loading, busy, err,
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},
     ownedOnly: ownedOnlyState, setOwnedOnly, metric: metricState, setMetric,
-    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
+    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades,
     added, addCard,
     roles: roleOv, setRole,
     lineupLocks, toggleLineupLock,

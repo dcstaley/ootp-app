@@ -56,7 +56,37 @@ modeling is closed out). Both are refinement passes on already-built pages, not 
     t5/t10) from the new `POST /api/position-metrics`. Enforcement: `positionPoolStats` (one source of
     truth, shared by the endpoint + the optimizer) converts a top-K requirement into an effective min
     = the K-th highest rating in the pool, reusing `meetsPositionMins`. Verified end-to-end.
-- **Roster page refinements** ⬜ — usability pass on `web/RosterPage.tsx` + the lineup editor. Scope TBD.
+- **Biggest Upgrades** ✅ (2026-06-30) — new roster-page feature: unowned acquisition targets that would
+  improve the current roster (top-10 hitters + 5 SP + 5 RP), gated to non-cap/non-slots + owned-only.
+  Hitters ranked by the **lineup-assignment marginal** (add the card, make the best forced roster cut) —
+  a max-weight matching (`src/optimizer/lineup-match.ts` `bestLineupValue`, tested) resolves position
+  cascades and respects def/rank starter eligibility; per-side deltas show both-sides vs platoon. Safe
+  O(1) pre-filter via the telescoping identity (a hitter's value is position-independent ⇒ a card helps a
+  side only if it beats that side's weakest starter). **Pitchers = weighted staff re-sort** (also a
+  cascade: a new SP bumps the old worst starter to the bullpen, bumping the worst reliever off); staff
+  value `Σ rotW·v + Σ bullW·v`, flat **rotW=1.0 / bullpen=0.25** (relievers throw ~¼ a starter's innings —
+  grounded in real innings, NOT the optimizer's slot weights, which stay for rotation ORDER). Two-way →
+  dominant bucket + tag. **Exclude-replace buffer**: server returns 15/8/8, panel shows 10/5/5 filtered by
+  `excluded`; ✕ = `excludeNoRegen` (no regen — owned roster unchanged), refill from `GET /api/upgrades`
+  (~6 KB). **cap/slots = constrained slot-swap (A)**: one-for-one budget-feasible swap (`feasibleSwap`:
+  cap total ≤ cap, or cumulative slot-tier limits); single-swap approximation — the **hybrid** (exact MILP
+  re-solve on the top-N shortlist) is deferred. Coverage-depth out of scope. Verified end-to-end.
+- **Roster page refinements** ✅ (2026-06-30) — DataTable resizable columns (reset on Regenerate); Player
+  column auto-sized to the widest rendered "<prefix><bold name>" (DOM-measured, ellipsis-aware) so the full
+  name always shows, Def then Pos shrink to make room; Lineup tab restyled to the DataTable look.
+
+### Next steps backlog (post-upgrades) — added 2026-06-30
+
+Sequenced; do in order, **hybrid last**.
+1. **Splits investigation** (3 parts): (a) the **team split is incorrectly used to set pitcher OVR** — fix;
+   (b) audit **how the other splits are actually consumed** end-to-end; (c) **moderate extreme splits** using
+   the trained data (the current splits are too extreme — pull toward more moderate values).
+2. **Gold-player / extreme-scaling investigation** — specific cases: **Kaat** and **Bonham** (pitchers),
+   **Pearson** (hitter). How do extremes scale? Are we preserving the low AND high ends, or compressing them?
+3. **Donohue investigation** — Pete Donohue (surfaced in SP upgrades) looks off; investigate his scoring/scaling.
+4. **Tournament page UI cleanup.**
+5. **Hybrid upgrades** — add stage-2 exact MILP re-solve on the top-N shortlist for cap/slots (and optionally
+   non-cap) to correct the single-swap approximation.
 
 ---
 

@@ -23,7 +23,7 @@ import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../
 import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeFieldStats, buildPoolTransform, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, LOG_PIT } from "../training/forms.ts";
-import { generateFullRoster, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
+import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
 import { seedDefaults, seedEras } from "../config/seed.ts";
@@ -379,7 +379,7 @@ function rosterCandidates(
   t: Tournament, accountId: string | null, ownedOnly: boolean,
   excluded: Set<string>, roleOverrides: Record<string, RoleOverride>, locked: Set<string>,
   platoonVR: number, platoonVL: number, metric: Metric,
-): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; entries: Entry[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string> } {
+): { hitters: HitterCandidate[]; pitchers: PitcherCandidate[]; twoWayIds: string[]; entries: Entry[]; ownedByDisp: Record<string, number>; defByDisp: Record<string, Def>; lastByDisp: Record<string, string>; firstByDisp: Record<string, string>; starterPosByDisp: Record<string, string[]> } {
   const { s } = scoredFor(t.id);
   const ctx = s.ctx;
   // Signed-distance value (D2) in the active metric. basic: score − 100 for BOTH
@@ -398,6 +398,7 @@ function rosterCandidates(
   const ownedByDisp: Record<string, number> = {};
   const defByDisp: Record<string, Def> = {};
   const lastByDisp: Record<string, string> = {};
+  const firstByDisp: Record<string, string> = {};
 
   for (const c0 of catalog.cards) {
     const id = cardId(c0);
@@ -425,6 +426,7 @@ function rosterCandidates(
     ownedByDisp[dispId] = qty;
     defByDisp[dispId] = defOf(c);
     lastByDisp[dispId] = String(c0["LastName"] ?? "");
+    firstByDisp[dispId] = String(c0["FirstName"] ?? "");
   }
 
   // Pool slicing + two-way overlap (see header). N = top-X (non-budgeted) / 1500 (cap/slots).
@@ -486,6 +488,11 @@ function rosterCandidates(
       cover: field.filter((p) => canStart(p) || meetsPositionMins(def, p, effBackup[p])),
     };
   };
+  // Starter-eligible positions for EVERY eligible card (owned + unowned) — the Biggest
+  // Upgrades estimate needs unowned candidates' lineup eligibility, which the owned-scoped
+  // optimizer pool doesn't carry.
+  const starterPosByDisp: Record<string, string[]> = {};
+  for (const e of entries) starterPosByDisp[e.dispId] = qualifiedPositions(e.dispId, e.positions).starter;
 
   // Force-include locked / role-overridden cards even if they fell outside the Top-X
   // slice or are unowned — so a manually-added/locked card actually binds on solve.
@@ -510,7 +517,7 @@ function rosterCandidates(
     const isTwoWay = useH && useP && (e.role === "twoway" || (e.role === "auto" && twHit.has(e.dispId) && twPit.has(e.dispId)));
     if (isTwoWay) twoWayIds.push(e.dispId);
   }
-  return { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp };
+  return { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp, firstByDisp, starterPosByDisp };
 }
 
 // Effective budget mode: explicit field, else derived (slots > cap > none).
@@ -540,7 +547,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   // roster lock. (The yh=1 lock then forces it rostered, so it need not also be
   // in lockedIds.)
   const forceInclude = new Set([...locked, ...lineupLocks.map((l) => l.id)]);
-  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
+  const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp, firstByDisp, starterPosByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
   const opts = { ...opts0, lockedIds: locked, twoWayIds, lineupLocks };
   const r = await generateFullRoster(hitters, pitchers, opts);
   // Reconstruct the DISPLAY score from the signed-distance value, per metric.
@@ -581,13 +588,13 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const roleRank: Record<string, number> = { both: 0, vL: 1, vR: 1, bench: 2, starter: 0, reliever: 1 };
   const rosterHitters = r.hitters.map((id) => {
     const c = hById.get(id)!; const role = hitRole(id);
-    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, def: defByDisp[id],
+    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, def: defByDisp[id],
       wobaVL: hScore(c.valueVL), wobaVR: hScore(c.valueVR), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
   const rosterPitchers = r.pitchers.map((id) => {
     const c = pById.get(id)!; const role = pitRole(id);
     const combined = opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL;
-    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", throws: THROWS[c.throws] ?? "", role, twoWay: twoWaySet.has(strip(id)),
+    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", throws: THROWS[c.throws] ?? "", role, twoWay: twoWaySet.has(strip(id)),
       woba: pScore(combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || a.woba - b.woba);
 
@@ -612,8 +619,122 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   }));
   const nextBest = { available };
 
+  // ── Biggest Upgrades (M5b) ──────────────────────────────────────────────────
+  // Non-owned acquisition targets that would improve THIS roster. Hitters: the
+  // lineup-assignment delta of adding the card and making the best forced roster cut —
+  // a max-weight matching per side handles position cascades (2B→SS→…) and respects
+  // def/rank eligibility (a card is only assignable to positions it qualifies to start).
+  // Pitchers: marginal vs the weakest rotation (SP) / bullpen (RP) arm. Only computed for
+  // the regime where "best owned roster, what to acquire" is well-defined: non-cap/
+  // non-slots + owned-only. Coverage-depth (backups) is intentionally out of scope here.
+  type HU = { id: string; title: string; last: string; bats: string; positions: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean };
+  type PU = { id: string; title: string; last: string; throws: string; stamina: number; pitchTypes: number; cost: number; total: number; twoWay: boolean };
+  let biggestUpgrades: { hitters: HU[]; sp: PU[]; rp: PU[] } | null = null;
+  if (ownedOnly) {
+    const wVR = opts.platoonVR, wVL = opts.platoonVL, dh = opts.dh, EPS = 1e-6;
+    // Budget feasibility for cap/slots: acquiring X means a one-for-one swap (drop a card of the
+    // same role), and the swap must keep the roster within the cap (total ≤ cap) or within the
+    // cumulative slot-tier limits. In non-cap mode every swap is feasible.
+    const hCost = (id: string) => hById.get(id)?.cost ?? 0;
+    const pCost = (id: string) => pById.get(id)?.cost ?? 0;
+    const allCosts = [...r.hitters.map(hCost), ...r.pitchers.map(pCost)];
+    const rosterCost = allCosts.reduce((a, b) => a + b, 0);
+    const cap = t.total_cap ?? Infinity;
+    const tierLimits = opts.mode === "slots" ? cumulativeSlotLimits(t.slot_counts ?? {}, opts.rosterSize ?? (t.hitters + t.pitchers)).map((l) => ({ ...l, n: allCosts.filter((c) => c >= l.threshold).length })) : [];
+    const feasibleSwap = (costOut: number, costIn: number): boolean => {
+      if (opts.mode === "cap") return rosterCost - costOut + costIn <= cap + EPS;
+      if (opts.mode === "slots") return tierLimits.every((l) => l.n - (costOut >= l.threshold ? 1 : 0) + (costIn >= l.threshold ? 1 : 0) <= l.limit);
+      return true;
+    };
+    const curH: { id: string; positions: string[]; valueVR: number; valueVL: number; cost: number }[] = r.hitters.map((id) => { const c = hById.get(id)!; return { id, positions: c.positions, valueVR: c.valueVR, valueVL: c.valueVL, cost: c.cost }; });
+    const baseR = bestLineupValue(curH, "R", dh), baseL = bestLineupValue(curH, "L", dh);
+    const jointBase = wVR * baseR + wVL * baseL;
+    // Weakest current starter per side. A hitter's lineup value is position-independent,
+    // so the assignment marginal telescopes to (candidate − benched starter); a card can
+    // only improve a side if its value beats that side's weakest starter. Safe O(1) gate.
+    const minStartR = Math.min(...r.lineupVR.map((x) => hById.get(x.id)?.valueVR ?? Infinity));
+    const minStartL = Math.min(...r.lineupVL.map((x) => hById.get(x.id)?.valueVL ?? Infinity));
+    const hitUp: HU[] = [];
+    for (const e of entries) {
+      if (rosteredDisp.has(e.dispId) || (ownedByDisp[e.dispId] ?? 0) > 0) continue;
+      const pos = starterPosByDisp[e.dispId] ?? ["DH"];
+      if (!pos.some((p) => p !== "DH") && e.pitchTypes > 0) continue; // pure pitcher → not a hitter upgrade
+      if (e.hitVR <= minStartR + EPS && e.hitVL <= minStartL + EPS) continue; // can't beat any starter
+      const X = { id: e.dispId, positions: pos, valueVR: e.hitVR, valueVL: e.hitVL, cost: e.cost };
+      const withX = [...curH, X];
+      // Joint marginal: add X, then drop the one hitter that costs least across both lineups —
+      // restricted to BUDGET-FEASIBLE swaps in cap/slots. Dropping X itself = "don't acquire"
+      // (the baseline), always allowed, so the marginal is floored at 0.
+      let bestJv = -Infinity, bestNR = baseR, bestNL = baseL;
+      for (let d = 0; d < withX.length; d++) {
+        if (withX[d]!.id !== X.id && !feasibleSwap(withX[d]!.cost, X.cost)) continue;
+        const sub = withX.filter((_, i) => i !== d);
+        const nr = bestLineupValue(sub, "R", dh), nl = bestLineupValue(sub, "L", dh);
+        const jv = wVR * nr + wVL * nl;
+        if (jv > bestJv) { bestJv = jv; bestNR = nr; bestNL = nl; }
+      }
+      const total = bestJv - jointBase;
+      if (total <= EPS) continue;
+      hitUp.push({ id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", bats: BATS[e.bats] ?? "", positions: pos.filter((p) => p !== "DH"), cost: e.cost, deltaVR: round(bestNR - baseR), deltaVL: round(bestNL - baseL), total: round(total), twoWay: false });
+    }
+    // Pitchers: weighted STAFF re-sort. The staff objective mirrors the optimizer's
+    // (Σ bullpenW·value over all rostered + Σ slotW_k·value over the rotation), so adding a
+    // candidate, dropping the genuinely-worst arm, and re-sorting captures the full cascade —
+    // a new SP bumps the old worst starter down into the bullpen (where it still contributes
+    // at the bullpen weight), which bumps the worst reliever off the staff. The marginal is the
+    // weighted staff-value delta; the bucket (SP/RP) is where the candidate lands after the sort.
+    // Upgrade staff weighting: a rotation arm counts full (it throws ~4× a reliever's innings),
+    // a bullpen arm at 0.25 of a starter. Flat — no per-slot or per-reliever differentiation.
+    const ROT_W = 1, BULL_W = 0.25;
+    const minSP = opts.minStarters, nPit = opts.nPitchers;
+    type Arm = { id: string; value: number; qualified: boolean };
+    const staff = (arms: Arm[]): { val: number; rot: Set<string>; bull: Set<string> } => {
+      const rot = arms.filter((a) => a.qualified).sort((a, b) => b.value - a.value).slice(0, minSP);
+      const rotSet = new Set(rot.map((a) => a.id));
+      const bull = arms.filter((a) => !rotSet.has(a.id)).sort((a, b) => b.value - a.value).slice(0, Math.max(0, nPit - minSP));
+      let val = 0;
+      rot.forEach((a) => { val += ROT_W * a.value; });
+      bull.forEach((a) => { val += BULL_W * a.value; });
+      return { val, rot: rotSet, bull: new Set(bull.map((a) => a.id)) };
+    };
+    const armOf = (id: string, value: number, stamina: number, pitchTypes: number): Arm => ({ id, value, qualified: stamina >= opts.minStarterStamina && pitchTypes >= opts.minPitchTypes });
+    const curStaff = r.pitchers.map((id) => { const c = pById.get(id)!; return armOf(id, wVR * c.valueVR + wVL * c.valueVL, c.stamina, c.pitchTypes); });
+    const baseVal = staff(curStaff).val;
+    const spUp: PU[] = [], rpUp: PU[] = [];
+    for (const e of entries) {
+      if (rosteredDisp.has(e.dispId) || (ownedByDisp[e.dispId] ?? 0) > 0 || e.pitchTypes === 0) continue;
+      const X = armOf(e.dispId, e.pitOVR, e.stamina, e.pitchTypes);
+      // Best BUDGET-FEASIBLE swap: drop one current pitcher (cap/slots-feasible), add X, re-sort.
+      // In non-cap every swap is feasible, so the max naturally drops the worst arm.
+      let best = -Infinity, landRot = false, landBull = false;
+      for (const d of curStaff) {
+        if (!feasibleSwap(pCost(d.id), e.cost)) continue;
+        const sv = staff([...curStaff.filter((a) => a.id !== d.id), X]);
+        if (sv.rot.size < minSP) continue; // swap can't field a full rotation
+        if (sv.val > best) { best = sv.val; landRot = sv.rot.has(X.id); landBull = sv.bull.has(X.id); }
+      }
+      const total = best - baseVal;
+      if (best === -Infinity || total <= EPS) continue;
+      const mk = (): PU => ({ id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", throws: THROWS[e.throws] ?? "", stamina: e.stamina, pitchTypes: e.pitchTypes, cost: e.cost, total: round(total), twoWay: false });
+      if (landRot) spUp.push(mk());        // lands in the rotation → SP
+      else if (landBull) rpUp.push(mk());  // lands in the bullpen → RP
+    }
+    // Two-way: a card in BOTH a hitter and a pitcher list → keep it in the higher-marginal
+    // bucket, tag it, drop it from the other (mark the loser's total for removal).
+    const pitById = new Map<string, PU>([...spUp, ...rpUp].map((p): [string, PU] => [p.id, p]));
+    for (const h of hitUp) {
+      const p = pitById.get(h.id);
+      if (!p) continue;
+      if (h.total >= p.total) { h.twoWay = true; p.total = -Infinity; } else { p.twoWay = true; h.total = -Infinity; }
+    }
+    const top = <T extends { total: number }>(xs: T[], n: number) => xs.filter((x) => x.total > -Infinity).sort((a, b) => b.total - a.total).slice(0, n);
+    // Return a BUFFER (more than displayed) so the client can dismiss a card and promote the
+    // next-best instantly, only refilling from /api/upgrades when the buffer runs low.
+    biggestUpgrades = { hitters: top(hitUp, 15), sp: top(spUp, 8), rp: top(rpUp, 8) };
+  }
+
   return {
-    roles, rosterHitters, rosterPitchers, ownedOnly, metric, twoWayIds: [...twoWaySet], nextBest,
+    roles, rosterHitters, rosterPitchers, ownedOnly, metric, twoWayIds: [...twoWaySet], nextBest, biggestUpgrades,
     cardValueMin: t.card_value_min ?? 40, cardValueMax: t.card_value_max ?? null,
     nHitters: t.hitters, nPitchers: t.pitchers,
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
@@ -877,7 +998,7 @@ const server = createServer(async (req, res) => {
   }
   if (method === "GET" && url === "/api/cards") return json(res, buildCards(tid, aid));
   if (method === "GET" && url === "/api/meta") return json(res, buildMeta(tid, aid));
-  if (method === "GET" && url === "/api/roster") {
+  if (method === "GET" && (url === "/api/roster" || url === "/api/upgrades")) {
     const list = (k: string) => (u.searchParams.get(k) || "").split(",").filter(Boolean);
     // roles=ID:hitter,ID:pitcher,ID:twoway — per-card pool override (base Card ID).
     const roleOverrides: Record<string, RoleOverride> = {};
@@ -892,7 +1013,10 @@ const server = createServer(async (req, res) => {
       const [id, pos, side] = trip.split(":");
       if (id && pos && (side === "L" || side === "R")) lineupLocks.push({ id, pos, side });
     }
-    return json(res, await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides, metric, lineupLocks));
+    const result = await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides, metric, lineupLocks);
+    // /api/upgrades returns ONLY the Biggest Upgrades (small payload) — used to refill the
+    // client's upgrade buffer after a dismiss without re-sending the full roster + Next Best.
+    return json(res, url === "/api/upgrades" ? { biggestUpgrades: result.biggestUpgrades ?? null } : result);
   }
 
   // ── Parks library import (raw pt_ballparks.txt) ──

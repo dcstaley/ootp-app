@@ -16,8 +16,8 @@ export interface Meta {
 }
 export interface RosterSlotCard { pos?: string; slot?: number; id: string; title: string; cost: number; stamina?: number; pitchTypes?: number }
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
-export interface RosterHitterRow { id: string; title: string; last: string; bats: string; role: string; twoWay: boolean; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
-export interface RosterPitcherRow { id: string; title: string; last: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
+export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
+export interface RosterPitcherRow { id: string; title: string; last: string; first?: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 // Next Best Available pool (M5) — every available card as one unified row (both
 // hit + pitch values); the client derives hitter/pitcher cards per tab.
 export interface AvailRow {
@@ -43,7 +43,15 @@ export interface RosterResult {
   nextBest: { available: AvailRow[] };
   cardValueMin: number; cardValueMax: number | null;
   roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever|twoway
+  biggestUpgrades?: BiggestUpgrades | null; // unowned acquisition targets (non-cap/slots + owned-only only)
 }
+
+// Biggest Upgrades (M5b): non-owned cards that would improve the current roster. Hitters
+// ranked by combined lineup-assignment marginal (per-side deltas show both-sides vs platoon);
+// pitchers vs the weakest rotation (SP) / bullpen (RP) arm. `total` = the upgrade magnitude.
+export interface UpgradeHitter { id: string; title: string; last: string; bats: string; positions: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean }
+export interface UpgradePitcher { id: string; title: string; last: string; throws: string; stamina: number; pitchTypes: number; cost: number; total: number; twoWay: boolean }
+export interface BiggestUpgrades { hitters: UpgradeHitter[]; sp: UpgradePitcher[]; rp: UpgradePitcher[] }
 
 // Per-card pool override (Roster page Actions). "auto" = no override (default).
 export type RoleOverride = "hitter" | "pitcher" | "twoway";

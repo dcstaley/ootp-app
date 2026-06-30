@@ -4,7 +4,7 @@
 // (forbidden) / Remove (drop from the current roster — returns on Regenerate).
 // Lineups support manual position assignment via per-player dropdowns.
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { useAppData } from "./state.tsx";
 import { DataTable, type Column } from "./DataTable.tsx";
@@ -12,6 +12,7 @@ import { LineupTab } from "./LineupTab.tsx";
 import {
   C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL,
   type RosterHitterRow, type RosterPitcherRow, type RoleOverride, type AvailRow, type AvailHitterRow, type AvailPitcherRow, type AddedCard,
+  type BiggestUpgrades, type UpgradeHitter, type UpgradePitcher,
 } from "./shared.ts";
 import { IF, OF, posStr, star, nameCell, defSummary, ROLE_OV } from "./roster-cells.tsx";
 
@@ -44,6 +45,81 @@ function RosterDropZone({ children }: { children: ReactNode }) {
   return <div ref={setNodeRef} style={{ flex: "999 1 500px", minWidth: 0, maxWidth: 1320, borderRadius: 10, outline: isOver ? `2px dashed ${C.accent}` : "none", outlineOffset: 4 }}>{children}</div>;
 }
 
+// Biggest Upgrades — unowned acquisition targets that would improve the roster. Hitters
+// ranked by combined lineup-assignment marginal (per-side deltas reveal both-sides vs
+// platoon); SP/RP vs the weakest rotation/bullpen arm. ✕ excludes the card and pulls in
+// the next-best immediately. Shown only for non-cap/non-slots + owned-only generations.
+function UpgradesPanel({ data, onExclude, busy }: { data: BiggestUpgrades; onExclude: (id: string) => void; busy: boolean }) {
+  const pts = (x: number) => (x >= 0 ? "+" : "−") + Math.round(Math.abs(x) * 1000); // wOBA points
+  const dColor = (x: number) => (x > 0.0005 ? "#86efac" : x < -0.0005 ? "#f87171" : C.sub);
+  const exBtn = (id: string) => (
+    <button onClick={() => onExclude(id)} disabled={busy} title="Exclude this card and replace it with the next-best upgrade"
+      style={{ ...inputStyle, padding: "1px 0", width: 24, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: busy ? "default" : "pointer", color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
+  );
+  const tag = (on: boolean) => on ? <span style={{ fontSize: 10, color: ROSTER_BORDER.twoway, border: `1px solid ${ROSTER_BORDER.twoway}`, borderRadius: 3, padding: "0 3px", marginLeft: 5, whiteSpace: "nowrap" }}>2-way</span> : null;
+  const th: React.CSSProperties = { padding: "2px 6px", color: C.sub, fontWeight: 600, fontSize: 11, textAlign: "right" };
+  const td: React.CSSProperties = { padding: "3px 6px", fontVariantNumeric: "tabular-nums" };
+  const name = (title: string, twoWay: boolean) => <td style={{ ...td, lineHeight: 1.25, overflowWrap: "anywhere" }}>{star(title)}{tag(twoWay)}</td>;
+  const empty = <p style={{ fontSize: 12, color: C.sub, margin: "2px 0" }}>None — no unowned upgrades.</p>;
+
+  const hitters = (
+    <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
+      <thead><tr>
+        <th style={{ ...th, textAlign: "left" }}>Hitter</th><th style={{ ...th, textAlign: "left" }}>Pos</th>
+        <th style={th}>vR</th><th style={th}>vL</th><th style={th}>Total</th><th style={th}>Cost</th><th />
+      </tr></thead>
+      <tbody>{data.hitters.map((h: UpgradeHitter) => (
+        <tr key={h.id} style={{ borderTop: `1px solid ${C.border}55` }}>
+          {name(h.title, h.twoWay)}
+          <td style={{ ...td, color: C.sub }}>{h.positions.join("/") || "DH"}</td>
+          <td style={{ ...td, textAlign: "right", color: dColor(h.deltaVR) }}>{pts(h.deltaVR)}</td>
+          <td style={{ ...td, textAlign: "right", color: dColor(h.deltaVL) }}>{pts(h.deltaVL)}</td>
+          <td style={{ ...td, textAlign: "right", fontWeight: 700, color: "#86efac" }}>{pts(h.total)}</td>
+          <td style={{ ...td, textAlign: "right", color: C.sub }}>{h.cost}</td>
+          <td style={{ ...td, textAlign: "center" }}>{exBtn(h.id)}</td>
+        </tr>
+      ))}</tbody>
+    </table>
+  );
+  const staff = (rows: UpgradePitcher[], showStam: boolean) => (
+    <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
+      <thead><tr>
+        <th style={{ ...th, textAlign: "left" }}>Pitcher</th><th style={th}>Δ</th>
+        {showStam && <th style={th}>Stam</th>}<th style={th}>Cost</th><th />
+      </tr></thead>
+      <tbody>{rows.map((p) => (
+        <tr key={p.id} style={{ borderTop: `1px solid ${C.border}55` }}>
+          {name(p.title, p.twoWay)}
+          <td style={{ ...td, textAlign: "right", fontWeight: 700, color: "#86efac" }}>{pts(p.total)}</td>
+          {showStam && <td style={{ ...td, textAlign: "right", color: C.sub }}>{p.stamina}</td>}
+          <td style={{ ...td, textAlign: "right", color: C.sub }}>{p.cost}</td>
+          <td style={{ ...td, textAlign: "center" }}>{exBtn(p.id)}</td>
+        </tr>
+      ))}</tbody>
+    </table>
+  );
+
+  return (
+    <div style={{ marginTop: 16, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14 }}>Biggest Upgrades <span style={{ fontSize: 12, fontWeight: 400, color: C.sub }}>· unowned cards that would improve this roster (Δ in wOBA points)</span></h3>
+      <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <div style={{ flex: "2 1 420px", minWidth: 340 }}>
+          <h4 style={{ margin: "4px 0 2px", fontSize: 12, color: C.link }}>Hitters</h4>
+          {data.hitters.length ? hitters : empty}
+        </div>
+        <div style={{ flex: "1 1 240px", minWidth: 220 }}>
+          <h4 style={{ margin: "4px 0 2px", fontSize: 12, color: C.link }}>Starting Pitchers</h4>
+          {data.sp.length ? staff(data.sp, true) : empty}
+        </div>
+        <div style={{ flex: "1 1 200px", minWidth: 200 }}>
+          <h4 style={{ margin: "4px 0 2px", fontSize: 12, color: C.link }}>Relievers</h4>
+          {data.rp.length ? staff(data.rp, false) : empty}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Tab = "roster" | "lineups" | "pitching";
 type AvailCat = "hitVR" | "hitVL" | "pitch" | "sp" | "ifRng" | "ofRng" | "cAbil";
 const AVAIL_CATS: { id: AvailCat; label: string; kind: "hitter" | "pitcher" }[] = [
@@ -57,7 +133,7 @@ type PStaffRow = RosterPitcherRow & { slotLabel: string };
 export function RosterPage() {
   const {
     roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly, metric, setMetric,
-    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard,
+    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades,
     added, addCard, roles: roleOverrides, setRole, cards,
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
@@ -66,6 +142,25 @@ export function RosterPage() {
   const [nbMaxValue, setNbMaxValue] = useState("");      // Next Best: max Card Value filter
 
   useEffect(() => { if (!roster && !rosterLoading) generateRoster(); }, []);
+
+  // Biggest Upgrades buffer. Seeded (15/8/8) from each generation; the panel shows the top
+  // 10/5/5 after filtering out dismissed (excluded) cards, so a dismiss promotes the next-best
+  // instantly with no roster regen. When a bucket runs low, refill from /api/upgrades.
+  const [upBuf, setUpBuf] = useState<BiggestUpgrades | null>(null);
+  useEffect(() => { setUpBuf(roster?.biggestUpgrades ?? null); }, [roster]);
+  const refilling = useRef(false);
+  const upShow = upBuf && {
+    hitters: upBuf.hitters.filter((h) => !excluded.has(h.id)),
+    sp: upBuf.sp.filter((p) => !excluded.has(p.id)),
+    rp: upBuf.rp.filter((p) => !excluded.has(p.id)),
+  };
+  useEffect(() => {
+    if (!upShow || refilling.current) return;
+    if (upShow.hitters.length >= 10 && upShow.sp.length >= 5 && upShow.rp.length >= 5) return;
+    refilling.current = true;
+    fetchUpgrades().then((f) => { if (f) setUpBuf(f); }).finally(() => { refilling.current = false; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excluded]);
 
   // Manually-added cards shown on the roster — hitters as bench bats, pitchers as relievers.
   const addedHitterRows: RosterHitterRow[] = added.filter((a) => a.kind === "hitter")
@@ -103,7 +198,7 @@ export function RosterPage() {
 
   // Per-card actions (Lock / Exclude / Remove).
   const iconBtn = (active: boolean, color = "#ef4444"): React.CSSProperties => ({
-    ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box",
+    ...inputStyle, padding: "1px 0", width: 24, textAlign: "center", boxSizing: "border-box",
     fontSize: 12, cursor: "pointer", lineHeight: 1.4,
     background: active ? `${color}40` : C.input, border: `1px solid ${active ? color : C.border}`,
   });
@@ -111,24 +206,27 @@ export function RosterPage() {
   // shown value is the card's current role (override if set, else the LP's pick).
   // Re-selecting the shown value releases the override (lets the optimizer decide);
   // picking a different value forces it. Forced cards get an amber border.
-  const roleSel: React.CSSProperties = { ...inputStyle, padding: "1px 3px", fontSize: 11, cursor: "pointer", lineHeight: 1.4 };
+  // Compact H/P/2W selector. Solid dark field + coloured text/border (translucent fills
+  // are unreadable as the closed value); only as wide as "2W" + the dropdown caret.
+  const roleSel: React.CSSProperties = { ...inputStyle, width: 30, padding: "1px 0", fontSize: 11, cursor: "pointer", lineHeight: 1.4, textAlign: "center", textAlignLast: "center", appearance: "none", WebkitAppearance: "none", MozAppearance: "none" };
   const roleControl = (id: string): ReactNode => {
     const lp = lpRoleById.get(id) ?? "hitter";
     const shown = roleOverrides.get(id) ?? lp;
     const forced = roleOverrides.has(id);
     const col = ROLE_OV[shown]!;
+    const optStyle = { background: C.input, color: C.text };
     return (
       <select value={shown} onChange={(e) => { const v = e.target.value as RoleOverride; setRole(id, v === shown ? null : v); }}
         title={`Role (pool) for this card${forced ? " — FORCED" : " — chosen by the optimizer"}. Pick a different role to force it; re-pick the shown role to let the optimizer decide.`}
-        style={{ ...roleSel, background: col.bg, color: col.fg, fontWeight: forced ? 700 : 400, border: `${forced ? 2 : 1}px solid ${col.bd}` }}>
-        <option value="hitter">Hit</option>
-        <option value="pitcher">Pitch</option>
-        <option value="twoway">2way</option>
+        style={{ ...roleSel, background: C.input, color: col.fg, fontWeight: 700, border: `${forced ? 2 : 1}px solid ${col.bd}` }}>
+        <option value="hitter" style={optStyle}>H</option>
+        <option value="pitcher" style={optStyle}>P</option>
+        <option value="twoway" style={optStyle}>2W</option>
       </select>
     );
   };
   const actionsCell = (id: string): ReactNode => (
-    <span style={{ display: "inline-flex", gap: 3, alignItems: "center" }}>
+    <span style={{ display: "inline-flex", gap: 2, alignItems: "center" }}>
       {roleControl(id)}
       <button onClick={() => toggleLock(id)} title="Lock to roster (required on regenerate)" style={iconBtn(locked.has(id), "#22c55e")}>{locked.has(id) ? "🔒" : "🔓"}</button>
       <button onClick={() => toggleExclude(id)} title="Exclude from generation (never selected)" style={iconBtn(excluded.has(id), "#ef4444")}>{excluded.has(id) ? "🚫" : "⊘"}</button>
@@ -137,27 +235,68 @@ export function RosterPage() {
   );
   const actionsCol = <T extends { id: string }>(): Column<T> => ({ key: "act", label: "Actions", align: "r", value: () => 0, render: (r) => actionsCell(r.id) });
 
-  // ── Roster-tab columns (fit mode — never scroll; shrink Pos → Def → Player) ──
-  // Numeric/action columns are protected (fixed width); Pos/Def/Player absorb the
-  // squeeze in priority order via `shrink` (1 = shrink first).
+  // Pin the Player column to the widest rendered "<prefix><bold name>" so the full player name
+  // always shows. Measured from the real DOM after render (exact): b.right − cell.left = the
+  // prefix+name width regardless of the current column width, so it settles in one pass.
+  const rosterRef = useRef<HTMLDivElement>(null);
+  const [nameW, setNameW] = useState({ h: 280, p: 280 });
+  useLayoutEffect(() => {
+    const measure = (table?: Element | null): number | null => {
+      if (!table) return null;
+      let need = 0;
+      for (const tr of table.querySelectorAll("tbody tr")) {
+        const cell = tr.querySelector("td"); if (!cell) continue;
+        const ref = cell.querySelector("b") ?? cell.firstElementChild;
+        if (!ref) continue;
+        need = Math.max(need, ref.getBoundingClientRect().right - cell.getBoundingClientRect().left);
+      }
+      // + right padding AND room for the "…" the cell inserts after the name when the team/year
+      // suffix overflows (without this slack the ellipsis clips the last letter of the name).
+      return need ? Math.min(620, Math.max(140, Math.ceil(need) + 30)) : null;
+    };
+    const measureAll = () => {
+      const root = rosterRef.current;
+      if (!root) return;
+      const tables = root.querySelectorAll("table");
+      const h = measure(tables[0]), p = measure(tables[1]);
+      setNameW((prev) => {
+        const nh = h ?? prev.h, np = p ?? prev.p;
+        return Math.abs(nh - prev.h) < 2 && Math.abs(np - prev.p) < 2 ? prev : { h: nh, p: np };
+      });
+    };
+    measureAll();
+    // The layout effect first runs with fallback font metrics; re-measure once the real web
+    // font loads (wider glyphs) so the column isn't left too narrow and clipping names. Both a
+    // fonts.ready hook and a short delayed pass (fonts.ready can resolve before the bold variant
+    // is applied) — measurement is idempotent, so extra passes are harmless.
+    let cancelled = false;
+    document.fonts?.ready.then(() => { if (!cancelled) measureAll(); });
+    const t1 = setTimeout(() => { if (!cancelled) measureAll(); }, 250);
+    const t2 = setTimeout(() => { if (!cancelled) measureAll(); }, 800);
+    return () => { cancelled = true; clearTimeout(t1); clearTimeout(t2); };
+  }, [roster, tab]);
+
+  // ── Roster-tab columns ──
+  // The Player column is pinned to nameW (measured above) so the full player name always shows
+  // (only team/year may clip). Defense shrinks first, then Pos, to free the room.
   const hitterCols: Column<RosterHitterRow>[] = [
-    { key: "player", label: "Player", width: 240, min: 86, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", width: 56, value: (h) => h.cost },
-    { key: "b", label: "B", align: "c", width: 32, value: (h) => h.bats },
-    { key: "vL", label: "vL", align: "r", width: 66, value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
-    { key: "vR", label: "vR", align: "r", width: 66, value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
-    { key: "pos", label: "Pos", width: 96, min: 40, shrink: 1, value: (h) => posStr(h.positions) },
-    { key: "def", label: "Defense", width: 200, min: 60, shrink: 2, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
-    { ...actionsCol<RosterHitterRow>(), width: 156 },
+    { key: "player", label: "Player", width: nameW.h, min: nameW.h, max: nameW.h + 140, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
+    { key: "value", label: "Val", align: "r", width: 44, value: (h) => h.cost },
+    { key: "b", label: "B", align: "c", width: 26, value: (h) => h.bats },
+    { key: "vL", label: "vL", align: "r", width: 58, value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
+    { key: "vR", label: "vR", align: "r", width: 58, value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
+    { key: "pos", label: "Pos", width: 150, min: 44, shrink: 2, value: (h) => posStr(h.positions) },
+    { key: "def", label: "Defense", width: 312, min: 90, shrink: 1, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
+    { ...actionsCol<RosterHitterRow>(), width: 122 },
   ];
   const pitcherCols: Column<RosterPitcherRow>[] = [
-    { key: "player", label: "Player", width: 260, min: 90, shrink: 1, value: (p) => p.last || p.title, render: nameCell },
-    { key: "value", label: "Value", align: "r", width: 56, value: (p) => p.cost },
-    { key: "t", label: "T", align: "c", width: 32, value: (p) => p.throws },
-    { key: "woba", label: "OVR", align: "r", width: 70, value: (p) => p.woba, render: (p) => num(p.woba) },
-    { key: "stam", label: "Stam", align: "r", width: 56, value: (p) => p.stamina },
-    { key: "pit", label: "# Pit", align: "r", width: 56, value: (p) => p.pitchTypes },
-    { ...actionsCol<RosterPitcherRow>(), width: 156 },
+    { key: "player", label: "Player", width: nameW.p, min: nameW.p, max: nameW.p + 160, shrink: 1, value: (p) => p.last || p.title, render: nameCell },
+    { key: "value", label: "Val", align: "r", width: 44, value: (p) => p.cost },
+    { key: "t", label: "T", align: "c", width: 26, value: (p) => p.throws },
+    { key: "woba", label: "OVR", align: "r", width: 66, value: (p) => p.woba, render: (p) => num(p.woba) },
+    { key: "stam", label: "Stam", align: "r", width: 54, value: (p) => p.stamina },
+    { key: "pit", label: "# Pit", align: "r", width: 54, value: (p) => p.pitchTypes },
+    { ...actionsCol<RosterPitcherRow>(), width: 122 },
   ];
 
   // ── Next Best Available (left rail) — compact card list, +Add = lock the card.
@@ -329,7 +468,7 @@ export function RosterPage() {
 
           {tab === "roster" && (
             <DndContext sensors={poolSensors} onDragEnd={onPoolDragEnd}>
-            <div style={{ display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div ref={rosterRef} style={{ display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
               {/* Left rail: Next Best Available */}
               <div style={{ flex: "1 1 290px", minWidth: 280, maxWidth: 340 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Next Best Available</h3>
@@ -361,9 +500,9 @@ export function RosterPage() {
               {/* Center: roster tables (drop target for pool→roster drag) */}
               <RosterDropZone>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
-                <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} fit />
+                <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} fit resizable resetKey={roster} />
                 <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
-                <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} fit />
+                <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} fit resizable resetKey={roster} />
               </RosterDropZone>
 
               {/* Right rail: Excluded */}
@@ -384,6 +523,7 @@ export function RosterPage() {
                     </>}
               </div>
             </div>
+            {upShow && <UpgradesPanel data={{ hitters: upShow.hitters.slice(0, 10), sp: upShow.sp.slice(0, 5), rp: upShow.rp.slice(0, 5) }} onExclude={excludeNoRegen} busy={rosterLoading} />}
             </DndContext>
           )}
 
@@ -395,15 +535,15 @@ export function RosterPage() {
             <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
               <div style={{ flex: "1 1 560px", minWidth: 0, maxWidth: 760 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Rotation</h3>
-                <DataTable rows={rotRows} cols={pStaffCols} getKey={(r) => r.id} rowStyle={() => ({ background: ROSTER_COLORS.starter })} fit />
+                <DataTable rows={rotRows} cols={pStaffCols} getKey={(r) => r.id} rowStyle={() => ({ background: ROSTER_COLORS.starter })} fit resizable resetKey={roster} />
                 <h3 style={{ margin: "14px 0 6px", fontSize: 14 }}>Bullpen ({bullpenRows.length})</h3>
-                <DataTable rows={bullpenRows} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} rowStyle={() => ({ background: ROSTER_COLORS.reliever })} fit />
+                <DataTable rows={bullpenRows} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} rowStyle={() => ({ background: ROSTER_COLORS.reliever })} fit resizable resetKey={roster} />
               </div>
               <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 760 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Available Starters</h3>
                 <p style={{ margin: "0 0 6px", fontSize: 12, color: C.sub }}>Rostered bullpen arms that qualify as SP (stamina ≥ {roster.minStarterStamina}, ≥ {roster.minPitchTypes} pitch types).</p>
                 {availSP.length === 0 ? <p style={{ fontSize: 13, color: C.sub }}>None — no spare qualified starters.</p>
-                  : <DataTable rows={availSP} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} fit />}
+                  : <DataTable rows={availSP} cols={pStaffCols} getKey={(p) => p.id} initialSort={{ key: "woba", dir: 1 }} fit resizable resetKey={roster} />}
               </div>
             </div>
           )}

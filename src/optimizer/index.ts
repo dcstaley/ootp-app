@@ -5,6 +5,7 @@ export { generatePitcherStaff } from "./pitcher-generate.ts";
 export { buildHitterLp } from "./lp.ts";
 export { buildPitcherLp } from "./pitcher-lp.ts";
 export { buildRosterLp, cumulativeSlotLimits } from "./roster-lp.ts";
+export { bestLineupValue, type MatchHitter } from "./lineup-match.ts";
 export { getSolver, type SolveResult } from "./solve.ts";
 export {
   type HitterCandidate, type HitterOptimizeOptions, type HitterResult,
