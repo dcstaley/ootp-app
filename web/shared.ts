@@ -100,7 +100,11 @@ export interface TournamentCfg {
   budget_mode?: "none" | "cap" | "slots"; slot_counts?: Record<string, number>;
   platoonVR?: number; platoonVL?: number; minPlayersPerPosition?: number;
   // Per-hand OVR-blend splits (seeded from the active model on create; absent ⇒ model/coeff defaults).
-  platoon?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number };
+  platoon?: {
+    r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number;
+    // Role-conditional pitch splits (SP vs RP usage); optional — absent ⇒ active-model role split / role-blind fallback.
+    r_pitch_split_sp?: number; l_pitch_split_sp?: number; r_pitch_split_rp?: number; l_pitch_split_rp?: number;
+  };
   eligibility?: EligibilityGroup;
   softcaps?: Record<string, number>; // cap_<grp>_top/_bot + pen_<grp>
   positionMins?: Record<string, PositionMin>;

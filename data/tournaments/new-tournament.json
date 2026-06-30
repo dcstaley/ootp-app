@@ -63,11 +63,15 @@
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
   "platoon": {
-    "r_hit_split": 0.53,
-    "l_hit_split": 0.35,
-    "s_hit_split": 0.565,
-    "r_pitch_split": 0.45,
-    "l_pitch_split": 0.35
+    "r_hit_split": 0.54,
+    "l_hit_split": 0.337,
+    "s_hit_split": 0.562,
+    "r_pitch_split": 0.481,
+    "l_pitch_split": 0.294,
+    "r_pitch_split_sp": 0.471,
+    "l_pitch_split_sp": 0.273,
+    "r_pitch_split_rp": 0.499,
+    "l_pitch_split_rp": 0.33
   },
   "positionMins": {
     "C": {

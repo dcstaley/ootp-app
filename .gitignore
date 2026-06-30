@@ -13,10 +13,14 @@ fixtures/golden/*.json
 # The #2 regression goldens are generated from it; never commit the trained model.
 fixtures/eventform-active.json
 
-# File-based app DB (D7): tournaments, era/park libraries, accounts, models, trained
-# models, and runtime state. Version-controlled so the user's real config (tournaments,
-# position constraints, parks, ownership, trained models) is backed up and shareable.
-# (data/state/app.json holds active selections, so expect churn there.)
+# File-based app DB (D7). Tournaments + era/park libraries ARE tracked (the user's real,
+# hand-authored config). Card lists (imports), per-account ownership, runtime selection
+# state, and trained-model artifacts are LOCAL — re-uploaded / regenerated per machine.
+data/imports/
+data/accounts/
+data/state/
+data/models/
+data/trained-models/
 
 # Real captures embed the user's trained model coefficients + account/economy
 # data — NEVER commit these. Only the safe invented smoke-test fixture is kept.

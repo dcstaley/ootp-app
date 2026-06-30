@@ -11,7 +11,7 @@
 import type { Coeffs } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import {
-  ratingStats, buildAffines, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform,
+  ratingStats, buildAffines, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform, type RatingEnvelope,
 } from "../model/pool-transform.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba } from "./woba.ts";
@@ -57,10 +57,13 @@ export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventMode
   };
 }
 
-/** Build the z-score transform that maps the POOL field onto the REFERENCE field. */
-export function buildPoolTransform(ref: FieldStats, pool: FieldStats): PoolTransform {
+/** Build the saturating mean-scalar transform mapping the POOL field onto the REFERENCE
+ *  field, with per-rating saturation ceilings from the model's training envelope (pooled
+ *  over sides → the same ceiling for vR/vL). Absent envelope ⇒ no cap (pure scalar). */
+export function buildPoolTransform(ref: FieldStats, pool: FieldStats, env?: RatingEnvelope): PoolTransform {
+  const h = env?.hit ?? {}, p = env?.pit ?? {};
   return {
-    hit: { vR: buildAffines(HIT_RATINGS, ref.hit.vR, pool.hit.vR), vL: buildAffines(HIT_RATINGS, ref.hit.vL, pool.hit.vL) },
-    pit: { vR: buildAffines(PIT_RATINGS, ref.pit.vR, pool.pit.vR), vL: buildAffines(PIT_RATINGS, ref.pit.vL, pool.pit.vL) },
+    hit: { vR: buildAffines(HIT_RATINGS, ref.hit.vR, pool.hit.vR, h), vL: buildAffines(HIT_RATINGS, ref.hit.vL, pool.hit.vL, h) },
+    pit: { vR: buildAffines(PIT_RATINGS, ref.pit.vR, pool.pit.vR, p), vL: buildAffines(PIT_RATINGS, ref.pit.vL, pool.pit.vL, p) },
   };
 }

@@ -11,7 +11,7 @@
 //   slots: per Card-Value tier, Σ rostered with cost ≥ threshold ≤ cumulative limit
 
 import type { HitterCandidate, PitcherCandidate, RosterOptimizeOptions } from "./types.ts";
-import { lineupPositions, qualifiesStarter, SLOT_TIERS, FIELD_POSITIONS } from "./types.ts";
+import { lineupPositions, qualifiesStarter, blendPitch, SLOT_TIERS, FIELD_POSITIONS } from "./types.ts";
 
 export interface BuiltRosterLp { lp: string; vars: number; constraints: number }
 
@@ -43,7 +43,11 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const pEmph = opts.pitcherEmphasis ?? 1;
   const bonus = opts.bothSidesBonus ?? 1.25;
   const bsThresh = opts.bothSidesThreshold ?? 0;
-  const pValue = (c: PitcherCandidate) => opts.platoonVR * c.valueVR + opts.platoonVL * c.valueVL;
+  // Role-aware pitcher collapse (M6): rotation-slot value uses the SP batter-hand
+  // weight, the bullpen membership term the RP weight. Absent pitchSplit ⇒ legacy
+  // team-split fallback (both roles identical), so behavior is unchanged without it.
+  const vSP = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "sp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
+  const vRP = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
 
   const obj: string[] = [];
   const bin: string[] = [];
@@ -102,9 +106,9 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const pSlot: Record<number, string[]> = {};
   const pCard: Record<number, string[]> = {};
   pitchers.forEach((c, j) => {
-    const v = pValue(c);
-    obj.push(`${f6(pEmph * bullpenW * v)} rp_${j}`);
+    obj.push(`${f6(pEmph * bullpenW * vRP(c))} rp_${j}`);
     if (qualifiesStarter(c, opts.minStarterStamina, opts.minPitchTypes)) {
+      const v = vSP(c);
       for (let k = 1; k <= slots; k++) {
         const x = `xp_${j}_s${k}`;
         bin.push(x);

@@ -56,18 +56,22 @@
       "backup": {}
     }
   },
-  "platoonVR": 0.5798834749058775,
-  "platoonVL": 0.4201165250941224,
+  "platoonVR": 0.58,
+  "platoonVL": 0.42,
   "budget_mode": "cap",
   "topHitters": 100,
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
   "platoon": {
-    "r_hit_split": 0.5401288195738561,
-    "l_hit_split": 0.3368311079985764,
-    "s_hit_split": 0.5623230905283367,
-    "r_pitch_split": 0.48106468193606067,
-    "l_pitch_split": 0.29379892766447907
+    "r_hit_split": 0.54,
+    "l_hit_split": 0.337,
+    "s_hit_split": 0.562,
+    "r_pitch_split": 0.481,
+    "l_pitch_split": 0.294,
+    "r_pitch_split_sp": 0.471,
+    "l_pitch_split_sp": 0.273,
+    "r_pitch_split_rp": 0.499,
+    "l_pitch_split_rp": 0.33
   },
   "positionMins": {
     "C": {

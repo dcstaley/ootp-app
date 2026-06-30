@@ -24,6 +24,22 @@ import Papa from "papaparse";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, basename } from "node:path";
 import type { HittingRatings, PitchingRatings } from "../model/types.ts";
+import { DEFAULT_WOBA_WEIGHTS, type WobaWeights } from "../scoring-core/woba-weights.ts";
+
+// Normal-equations solve (X'X b = X'y) via Gauss-Jordan — used to reverse-engineer
+// the game's wOBA event weights from wRAA (see deriveWobaWeights below).
+function solveNormal(X: number[][], y: number[]): number[] {
+  const p = X[0]!.length, A = Array.from({ length: p }, () => new Array(p + 1).fill(0));
+  for (let i = 0; i < X.length; i++) { for (let j = 0; j < p; j++) { for (let k = 0; k < p; k++) A[j]![k] += X[i]![j]! * X[i]![k]!; A[j]![p] += X[i]![j]! * y[i]!; } }
+  for (let c = 0; c < p; c++) {
+    let m = c; for (let r = c + 1; r < p; r++) if (Math.abs(A[r]![c]!) > Math.abs(A[m]![c]!)) m = r;
+    [A[c], A[m]] = [A[m]!, A[c]!];
+    const pv = A[c]![c]!; if (Math.abs(pv) < 1e-12) continue;
+    for (let k = c; k <= p; k++) A[c]![k] /= pv;
+    for (let r = 0; r < p; r++) { if (r === c) continue; const f = A[r]![c]!; for (let k = c; k <= p; k++) A[r]![k] -= f * A[c]![k]!; }
+  }
+  return A.map((r) => r[p]!);
+}
 
 export type Side = "L" | "R";
 
@@ -55,6 +71,16 @@ export function parseTrainingFilename(name: string): { league: string; side: Sid
 
 export interface HitOutcomes { PA: number; AB: number; H: number; b1: number; b2: number; b3: number; HR: number; BB: number; IBB: number; HP: number; SH: number; SF: number; K: number; GIDP: number }
 export interface PitchOutcomes { BF: number; IP: number; AB: number; b1: number; b2: number; b3: number; HR: number; BB: number; IBB: number; K: number; HP: number; SH: number; SF: number }
+
+// Realized SP/RP opponent-hand splits (M6 — role-conditional platoon exposure).
+// Same-side BF share by realized role: `r` = RHP's share of BF vs RHB, `l` = LHP's
+// share vs LHB — i.e. the existing `r/l_pitch_split` convention, split by role.
+// Computed at RAW-ROW grain (one team-season deployment) BEFORE CID aggregation,
+// because a single card is deployed as a starter by some owners and a reliever by
+// others; aggregating to the card first washes the role difference out. Role comes
+// from each deployment's own GS_1/G_1 (game-level, replicated across the vL/vR split
+// files — so read per-row, never summed across sides); BF is partitioned by opponent.
+export interface PitchRoleSplits { sp: { r: number; l: number }; rp: { r: number; l: number } }
 
 export interface TrainObs {
   key: string;            // `${cid}|${variant ? "V" : "B"}|${side}`
@@ -103,7 +129,7 @@ export interface TrainingSummary {
   totalPA: number; totalBF: number;
 }
 
-export interface LoadedTraining { summary: TrainingSummary; observations: TrainObs[] }
+export interface LoadedTraining { summary: TrainingSummary; observations: TrainObs[]; pitchRoleSplits: PitchRoleSplits; wobaWeights: WobaWeights }
 
 // Recursively discover training CSVs under a root (per-year folders OR a flat
 // folder — the year is parsed from each filename either way). Files whose name
@@ -128,6 +154,15 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
   const files: (FileTag & { rows: number; pa: number; bf: number })[] = [];
   const unparsedFiles = found.filter((f) => !f.tag).map((f) => f.file);
   const cells: CellStat[] = [];
+  // Role-conditional opponent-hand BF accumulator: acc[role][hand][opponentSide].
+  // Filled at row grain (see PitchRoleSplits) inside the same windowed file loop.
+  const rsAcc = { sp: { R: { R: 0, L: 0 }, L: { R: 0, L: 0 } }, rp: { R: { R: 0, L: 0 }, L: { R: 0, L: 0 } } };
+  // wOBA-weight reverse-engineering: per (league,season,side) file we regress wRAA on
+  // the raw events (each file shares one league wOBA scale/baseline), recover the event
+  // weights RELATIVE to 1B, and PA-weight-blend across files — so larger leagues (more
+  // teams ⇒ more PA, e.g. PEL) carry proportionally more weight. n2/n3 accumulate the
+  // global 2B:3B mix for the single combined XBH weight. See deriveWobaWeights note.
+  const wwAcc = { bb: 0, hbp: 0, b2: 0, b3: 0, hr: 0 }; let wwPA = 0, n2tot = 0, n3tot = 0;
 
   for (const f of found) {
     if (!f.tag) continue;
@@ -136,11 +171,23 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
     const parsed = Papa.parse<Row>(readFileSync(f.abs, "utf8"), { header: true, skipEmptyLines: true });
     const rows = (parsed.data ?? []).filter((r) => r && r["CID"]);
     let fpa = 0, fbf = 0;
+    const wbX: number[][] = [], wbY: number[] = []; // per-file wRAA regression rows
     for (const r of rows) {
       const cid = String(r["CID"]); const variant = String(r["VAR"] ?? "").toUpperCase() === "Y";
       const key = `${cid}|${variant ? "V" : "B"}|${tag.side}`;
       const h = hitOutcomes(r); const p = pitchOutcomes(r);
       fpa += h.PA; fbf += p.BF;
+      // wRAA ≈ (1/scale)·Σ(w_e·event) − (lg/scale)·PA — exactly linear in events + PA
+      // with NO intercept, so a no-intercept regression recovers the game's weights.
+      if (h.PA >= 50) { wbX.push([h.BB, h.HP, h.b1, h.b2, h.b3, h.HR, h.PA]); wbY.push(num(r["wRAA"])); n2tot += h.b2; n3tot += h.b3; }
+      // Role-conditional split: classify THIS deployment by its own start-share and
+      // add its per-side BF. thr 1=R/2=L only (no switch pitchers); g>0 guards rookies.
+      if (p.BF > 0) {
+        const thr = handCode(r["T"]); const g = num(r["G_1"]); const gs = num(r["GS_1"]);
+        if ((thr === 1 || thr === 2) && g > 0) {
+          rsAcc[gs / g >= 0.5 ? "sp" : "rp"][thr === 1 ? "R" : "L"][tag.side] += p.BF;
+        }
+      }
       let o = obs.get(key);
       if (!o) {
         o = {
@@ -159,6 +206,15 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
     }
     files.push({ file: f.file, ...tag, rows: rows.length, pa: fpa, bf: fbf });
     cells.push({ league: tag.league, side: tag.side, year: tag.year, rows: rows.length, pa: fpa, bf: fbf });
+    // Per-file wOBA weights, relative to 1B, PA-weighted into the blend.
+    if (wbX.length >= 20) {
+      const b = solveNormal(wbX, wbY); const oneB = b[2]!;
+      if (Math.abs(oneB) > 1e-9) {
+        wwAcc.bb += (b[0]! / oneB) * fpa; wwAcc.hbp += (b[1]! / oneB) * fpa;
+        wwAcc.b2 += (b[3]! / oneB) * fpa; wwAcc.b3 += (b[4]! / oneB) * fpa; wwAcc.hr += (b[5]! / oneB) * fpa;
+        wwPA += fpa;
+      }
+    }
   }
 
   const observations = [...obs.values()];
@@ -176,7 +232,28 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
     totalPA: observations.reduce((s, o) => s + o.hit.PA, 0),
     totalBF: observations.reduce((s, o) => s + o.pitch.BF, 0),
   };
-  return { summary, observations };
+  // Same-side share per (role, hand). Fallbacks: an empty role bucket falls back to
+  // the other role's same-hand share, then to the role-blind hand share, then 0.5 —
+  // so a thin RP/SP sample never yields a degenerate weight.
+  const ss = (a: number, b: number, fb: number) => (a + b > 1e-9 ? a / (a + b) : fb);
+  const handSame = (acc: { R: number; L: number }, hand: "R" | "L", fb: number) => hand === "R" ? ss(acc.R, acc.L, fb) : ss(acc.L, acc.R, fb);
+  const blind = (hand: "R" | "L") => handSame({ R: rsAcc.sp[hand].R + rsAcc.rp[hand].R, L: rsAcc.sp[hand].L + rsAcc.rp[hand].L }, hand, 0.5);
+  const roleShare = (role: "sp" | "rp", hand: "R" | "L") => handSame(rsAcc[role][hand], hand, blind(hand));
+  const pitchRoleSplits: PitchRoleSplits = {
+    sp: { r: roleShare("sp", "R"), l: roleShare("sp", "L") },
+    rp: { r: roleShare("rp", "R"), l: roleShare("rp", "L") },
+  };
+  // Blend the PA-weighted relative weights, anchor 1B to the conventional value (keeps
+  // wOBA on its usual scale), and collapse 2B+3B to one XBH weight by their actual
+  // frequency. Empty window ⇒ the historical defaults.
+  let wobaWeights: WobaWeights = DEFAULT_WOBA_WEIGHTS;
+  if (wwPA > 0) {
+    const A = DEFAULT_WOBA_WEIGHTS.b1; // anchor 1B
+    const w2 = (wwAcc.b2 / wwPA) * A, w3 = (wwAcc.b3 / wwPA) * A;
+    const xbh = n2tot + n3tot > 0 ? (n2tot * w2 + n3tot * w3) / (n2tot + n3tot) : DEFAULT_WOBA_WEIGHTS.xbh;
+    wobaWeights = { bb: (wwAcc.bb / wwPA) * A, hbp: (wwAcc.hbp / wwPA) * A, b1: A, xbh, hr: (wwAcc.hr / wwPA) * A };
+  }
+  return { summary, observations, pitchRoleSplits, wobaWeights };
 }
 
 /** Load a specific window (year set) from a root; omit `years` for all of them. */

@@ -11,6 +11,7 @@
 // residual-bin report + softcap recommendation are a later increment.
 
 import type { TrainObs } from "./loader.ts";
+import { DEFAULT_WOBA_WEIGHTS as WW } from "../scoring-core/woba-weights.ts";
 
 // ── Math: weighted least squares (normal equations + Gauss-Jordan) ─────────────
 export function wls(X: number[][], y: number[], w: number[]): number[] {
@@ -341,7 +342,7 @@ export function trainBasicHitting(obs: TrainObs[], minPA = 1000, clampIntercept 
   // Y: actual wOBA × 333 (per PA, matching the basic-hitting score scale).
   const y = players.map((p) => {
     const b1 = Math.max(p.hit.H - p.hit.HR - p.hit.b2 - p.hit.b3, 0);
-    return (0.704 * p.hit.BB + 0.8992 * b1 + 1.29 * (p.hit.b2 + p.hit.b3) + 2.0759 * p.hit.HR) / Math.max(p.hit.PA, 1) * 333;
+    return (WW.bb * p.hit.BB + WW.b1 * b1 + WW.xbh * (p.hit.b2 + p.hit.b3) + WW.hr * p.hit.HR) / Math.max(p.hit.PA, 1) * 333;
   });
   const r = players.map((p) => p.ratings.hit);
   const X = players.map((_, i) => [1, ln1(r[i]!.babip), ln1(r[i]!.pow), ln1(r[i]!.eye), ln1(r[i]!.kRat), ln1(r[i]!.gap)]);
@@ -366,7 +367,7 @@ export function trainBasicPitching(obs: TrainObs[], minBF = 1000, clampIntercept
   // Y: (0.64 − wOBA allowed) × 333 — higher = better pitcher.
   const y = players.map((p) => {
     const xbh = p.pitch.b2 + p.pitch.b3;
-    const wobaAllowed = (0.704 * p.pitch.BB + 0.8992 * p.pitch.b1 + 1.29 * xbh + 2.0759 * p.pitch.HR) / Math.max(p.pitch.BF, 1);
+    const wobaAllowed = (WW.bb * p.pitch.BB + WW.b1 * p.pitch.b1 + WW.xbh * xbh + WW.hr * p.pitch.HR) / Math.max(p.pitch.BF, 1);
     return (0.64 - wobaAllowed) * 333;
   });
   const r = players.map((p) => p.ratings.pitch);

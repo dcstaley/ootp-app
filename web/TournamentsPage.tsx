@@ -6,7 +6,7 @@
 
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, SLOT_TIER_KEYS, POSITION_RATING_KEYS, FIELD_POS, newTournamentCfg, TOURNAMENT_DEFAULTS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp } from "./shared.ts";
+import { C, inputStyle, SLOT_TIER_KEYS, POSITION_RATING_KEYS, FIELD_POS, newTournamentCfg, TOURNAMENT_DEFAULTS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp, type EraCfg, type ParkCfg } from "./shared.ts";
 
 type Lib = { id: string; name: string };
 type PoolMetric = { n: number; mean: number; max: number; p90: number; p95: number; top5: number; top10: number };
@@ -55,17 +55,57 @@ function Combo({ value, options, onChange, width, placeholder }: { value: string
   );
 }
 
+// A run-environment factor: green when it boosts (>1), red when it suppresses (<1), grey neutral.
+const modColor = (v: number) => (v > 1.001 ? "#86efac" : v < 0.999 ? "#f87171" : C.sub);
+// Compact factor strip shown beside an era/park selector. Each group is a label + one or more
+// values (e.g. park AVG has separate L/R). All-neutral ⇒ a single "neutral" tag.
+function ModStrip({ groups }: { groups: { label: string; values: number[] }[] }) {
+  const live = groups.some((g) => g.values.some((v) => Math.abs(v - 1) > 0.001));
+  return (
+    <div style={{ display: "flex", gap: 11, flexWrap: "wrap", alignItems: "center", fontSize: 12 }}>
+      {!live && <span style={{ color: C.sub, fontStyle: "italic" }}>neutral</span>}
+      {live && groups.map((g) => (
+        <span key={g.label} style={{ display: "inline-flex", gap: 4, alignItems: "baseline" }}>
+          <span style={{ color: C.sub, opacity: 0.7 }}>{g.label}</span>
+          {g.values.map((v, i) => (
+            <Fragment key={i}>
+              {i > 0 && <span style={{ color: C.sub, opacity: 0.45 }}>/</span>}
+              <span style={{ color: modColor(v), fontVariantNumeric: "tabular-nums" }}>{v.toFixed(2)}</span>
+            </Fragment>
+          ))}
+        </span>
+      ))}
+    </div>
+  );
+}
+const eraModGroups = (e?: EraCfg) => e ? [
+  { label: "BB", values: [e.bb] }, { label: "K", values: [e.k] }, { label: "AVG", values: [e.avg] },
+  { label: "HR", values: [e.hr] }, { label: "GAP", values: [e.gap] },
+] : [];
+const parkModGroups = (p?: ParkCfg) => p ? [
+  { label: "AVG vL", values: [p.avg_l] }, { label: "AVG vR", values: [p.avg_r] },
+  { label: "HR vL", values: [p.hr_l] }, { label: "HR vR", values: [p.hr_r] },
+  { label: "GAP", values: [p.gap] }, ...(p.triple != null ? [{ label: "3B", values: [p.triple] }] : []),
+] : [];
+
 export function TournamentsPage() {
   const { tournaments, tournamentId, reloadTournaments, reloadView } = useAppData();
   const [selId, setSelId] = useState(tournamentId);
   const [draft, setDraft] = useState<TournamentCfg | null>(null);
-  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[]; platoonDefaults?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number; teamVR?: number; teamVL?: number } }>({ eras: [], parks: [], columns: [] });
+  const [libs, setLibs] = useState<{ eras: Lib[]; parks: Lib[]; columns: string[]; platoonDefaults?: { r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split: number; l_pitch_split: number; teamVR?: number; teamVL?: number; pitchRoleSplits?: { sp: { r: number; l: number }; rp: { r: number; l: number } } } }>({ eras: [], parks: [], columns: [] });
+  const [eraMap, setEraMap] = useState<Record<string, EraCfg>>({});
+  const [parkMap, setParkMap] = useState<Record<string, ParkCfg>>({});
   const [metrics, setMetrics] = useState<PosMetrics | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const savedRef = useRef<string>(""); // JSON of the last-persisted draft (auto-save baseline)
 
   useEffect(() => { fetch("/api/libraries").then((r) => r.json()).then(setLibs).catch(() => {}); }, []);
+  // Full era/park objects (for the factor strips beside the selectors) — keyed by id.
+  useEffect(() => {
+    fetch("/api/eras").then((r) => r.json()).then((d) => setEraMap(Object.fromEntries((d.eras ?? []).map((e: EraCfg) => [e.id, e])))).catch(() => {});
+    fetch("/api/parks").then((r) => r.json()).then((d) => setParkMap(Object.fromEntries((d.parks ?? []).map((p: ParkCfg) => [p.id, p])))).catch(() => {});
+  }, []);
   // If the page mounts before the active tournament is known, adopt it once it arrives.
   useEffect(() => { if (!selId && tournamentId) setSelId(tournamentId); }, [tournamentId, selId]);
   // Load the selected tournament; seed the auto-save baseline so a plain load never re-saves.
@@ -81,15 +121,42 @@ export function TournamentsPage() {
   const vR = draft?.platoonVR ?? libs.platoonDefaults?.teamVR ?? 0.62;
   // Per-hand OVR splits — show the active model's defaults until the tournament has its own;
   // the first edit materializes a full platoon object so editing one split keeps the rest.
-  const PLATOON_SPLITS = [
+  // HITTER OVR-blend splits — these (with the pitcher role splits below) weight the
+  // Cards-page OVR columns ONLY. The optimizer uses team exposure (above) for hitters.
+  const HIT_SPLITS = [
     { k: "r_hit_split", label: "RHB vs RHP" }, { k: "l_hit_split", label: "LHB vs LHP" }, { k: "s_hit_split", label: "SHB vs RHP" },
-    { k: "r_pitch_split", label: "RHP vs RHB" }, { k: "l_pitch_split", label: "LHP vs LHB" },
   ] as const;
-  type SplitKey = (typeof PLATOON_SPLITS)[number]["k"];
-  const splitDef = (k: SplitKey): number => draft?.platoon?.[k] ?? libs.platoonDefaults?.[k] ?? 0.5;
+  // Role-conditional pitch splits (SP vs RP usage) — the optimizer's deployment-aware
+  // pitcher collapse. Defaults come from the model's measured pitchRoleSplits.
+  const PITCH_ROLE_SPLITS = [
+    { k: "r_pitch_split_sp", label: "RHP vs RHB (SP)" }, { k: "l_pitch_split_sp", label: "LHP vs LHB (SP)" },
+    { k: "r_pitch_split_rp", label: "RHP vs RHB (RP)" }, { k: "l_pitch_split_rp", label: "LHP vs LHB (RP)" },
+  ] as const;
+  // Role-blind r/l_pitch_split are NOT shown: they only weight the grid pitcher OVR
+  // column (score-card blend) + are the optimizer's no-role fallback — editing them
+  // here would read as a duplicate of the SP/RP rows the optimizer actually uses.
+  // They stay in the persisted platoon object (materialized in setSplit) so the grid
+  // keeps a weight; the `SplitKey` union retains them for that.
+  type SplitKey = (typeof HIT_SPLITS)[number]["k"] | (typeof PITCH_ROLE_SPLITS)[number]["k"] | "r_pitch_split" | "l_pitch_split";
+  const roleDefault = (k: SplitKey): number | undefined => {
+    const rs = libs.platoonDefaults?.pitchRoleSplits; if (!rs) return undefined;
+    return k === "r_pitch_split_sp" ? rs.sp.r : k === "l_pitch_split_sp" ? rs.sp.l
+      : k === "r_pitch_split_rp" ? rs.rp.r : k === "l_pitch_split_rp" ? rs.rp.l : undefined;
+  };
+  const splitDef = (k: SplitKey): number => {
+    const own = draft?.platoon?.[k]; if (own != null) return own;
+    const rd = roleDefault(k); if (rd != null) return rd;
+    const pd = libs.platoonDefaults as Record<string, number> | undefined;
+    return (pd && k in pd ? pd[k] : undefined) ?? 0.5;
+  };
   const setSplit = (k: SplitKey, x: number) => {
     if (!draft) return;
-    const base = draft.platoon ?? { r_hit_split: splitDef("r_hit_split"), l_hit_split: splitDef("l_hit_split"), s_hit_split: splitDef("s_hit_split"), r_pitch_split: splitDef("r_pitch_split"), l_pitch_split: splitDef("l_pitch_split") };
+    const base = draft.platoon ?? {
+      r_hit_split: splitDef("r_hit_split"), l_hit_split: splitDef("l_hit_split"), s_hit_split: splitDef("s_hit_split"),
+      r_pitch_split: splitDef("r_pitch_split"), l_pitch_split: splitDef("l_pitch_split"),
+      r_pitch_split_sp: splitDef("r_pitch_split_sp"), l_pitch_split_sp: splitDef("l_pitch_split_sp"),
+      r_pitch_split_rp: splitDef("r_pitch_split_rp"), l_pitch_split_rp: splitDef("l_pitch_split_rp"),
+    };
     set("platoon", { ...base, [k]: r3(x) });
   };
 
@@ -162,6 +229,30 @@ export function TournamentsPage() {
       {node}
     </label>
   );
+  // Compact label-over-control field — lets short inputs sit side by side in a grid (fgrid)
+  // instead of each consuming a full stacked row.
+  const field = (label: string, node: ReactNode, hint?: string): ReactNode => (
+    <label style={{ display: "grid", gap: 3, fontSize: 14, alignContent: "start" }}>
+      <span style={{ color: C.sub, fontSize: 13 }}>{label}{hint && <span style={{ display: "block", fontSize: 11, color: C.sub, opacity: 0.7 }}>{hint}</span>}</span>
+      {node}
+    </label>
+  );
+  // Responsive multi-column wrapper for `field`s — fills the available width, wrapping as needed.
+  const fgrid = (children: ReactNode, min = 130): ReactNode => (
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, gap: "12px 16px" }}>{children}</div>
+  );
+  // FIXED 4-column grid — used so the Top-X, hitter-split, and pitcher-split rows line their
+  // first three columns up vertically (pitcher splits fill the 4th; the others leave it empty).
+  const grid4 = (children: ReactNode): ReactNode => (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "12px 16px" }}>{children}</div>
+  );
+  // Checkbox + label inline (left-aligned next to its label, not stranded in a wide value column).
+  const checkRow = (label: string, checked: boolean, onChange: (v: boolean) => void, hint?: string): ReactNode => (
+    <label style={{ display: "inline-flex", gap: 8, alignItems: "center", fontSize: 14, cursor: "pointer", color: C.sub }}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span>{label}</span>{hint && <span style={{ fontSize: 12, opacity: 0.7 }}>· {hint}</span>}
+    </label>
+  );
   // `def` autofills the displayed value when the field is unset, so defaulted fields show
   // their effective value instead of a blank box.
   const numIn = (k: keyof TournamentCfg, opts: { min?: number; max?: number; step?: number; nullable?: boolean; width?: number; def?: number } = {}): ReactNode => (
@@ -169,12 +260,15 @@ export function TournamentsPage() {
       onChange={(e) => set(k, (e.target.value === "" ? (opts.nullable ? null : 0) : Number(e.target.value)) as TournamentCfg[typeof k])}
       style={{ ...inputStyle, width: opts.width ?? 120 }} />
   );
-  const section = (title: string, children: ReactNode): ReactNode => (
-    <div style={{ marginBottom: 20 }}>
+  const section = (title: string, children: ReactNode, style?: CSSProperties): ReactNode => (
+    <div style={{ marginBottom: 20, ...style }}>
       <div style={{ fontSize: 14, color: C.link, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700, margin: "0 0 10px" }}>{title}</div>
       {children}
     </div>
   );
+  // A section styled as a panel card — used for the small sections that sit side by side.
+  const card = (title: string, children: ReactNode): ReactNode =>
+    section(title, children, { flex: "1 1 280px", minWidth: 250, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: "12px 14px", marginBottom: 0 });
 
   // ── Eligibility rule helpers ──
   const elig: EligibilityGroup = draft?.eligibility ?? { mode: "ALL", rules: [] };
@@ -246,61 +340,82 @@ export function TournamentsPage() {
 
         {/* Right: editor */}
         {draft ? (
-          <div style={{ flex: "1 1 620px", minWidth: 0, maxWidth: 860 }}>
-            {section("Identity & environment", <>
+          <div style={{ flex: "1 1 720px", minWidth: 0, maxWidth: 1180 }}>
+            {section("Identity & environment", <div style={{ display: "grid", gap: 10 }}>
               {row("Name", <input value={draft.name} onChange={(e) => set("name", e.target.value)} style={{ ...inputStyle, width: 340 }} />)}
-              {row("Era", <Combo value={draft.eraId} options={libs.eras} onChange={(id) => set("eraId", id)} placeholder="Search eras…" />)}
-              {row("Park", <Combo value={draft.parkId} options={libs.parks} onChange={(id) => set("parkId", id)} placeholder="Search parks…" />)}
-            </>)}
-
-            {section("Roster shape", <>
-              {row("Hitters", numIn("hitters", { min: 0 }))}
-              {row("Pitchers", numIn("pitchers", { min: 0 }))}
-              {row("Rotation (starters)", numIn("min_starters", { min: 0 }))}
-              {row("Min starter stamina", numIn("min_starter_stamina", { min: 0 }))}
-              {row("Min pitch types", numIn("min_pitch_types", { min: 0 }))}
-              {row("DH", <input type="checkbox" checked={draft.dh} onChange={(e) => set("dh", e.target.checked)} />)}
-              {row("Backups per position", numIn("minPlayersPerPosition", { min: 1, max: 5, def: TOURNAMENT_DEFAULTS.minPlayersPerPosition }), "coverage depth")}
-            </>)}
-
-            {section("Budget", <>
-              {row("Mode", <span style={{ display: "inline-flex", gap: 14 }}>
-                {(["none", "cap", "slots"] as const).map((m) => (
-                  <label key={m} style={{ display: "inline-flex", gap: 5, alignItems: "center", cursor: "pointer" }}>
-                    <input type="radio" name="bmode" checked={mode === m} onChange={() => set("budget_mode", m)} /> {m === "none" ? "None" : m === "cap" ? "Cap" : "Slots"}
-                  </label>
-                ))}
-              </span>)}
-              {mode === "cap" && row("Total cap", numIn("total_cap", { min: 0, nullable: true, width: 150 }))}
-              {mode === "slots" && row("Slot tiers", <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                {SLOT_TIER_KEYS.map((key) => (
-                  <label key={key} style={{ fontSize: 12, color: C.sub, display: "grid", gap: 2 }}>{key}
-                    <input type="number" min={0} value={draft.slot_counts?.[key] ?? ""} onChange={(e) => set("slot_counts", { ...(draft.slot_counts ?? {}), [key]: e.target.value === "" ? 0 : Number(e.target.value) })} style={{ ...inputStyle, width: "100%" }} />
-                  </label>
-                ))}
+              {row("Era", <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                <Combo value={draft.eraId} options={libs.eras} onChange={(id) => set("eraId", id)} width={240} placeholder="Search eras…" />
+                <ModStrip groups={eraModGroups(eraMap[draft.eraId])} />
               </div>)}
-              {row("Card value min", numIn("card_value_min", { min: 0, nullable: true }), "blank = no floor (entire pool)")}
-              {row("Card value max", numIn("card_value_max", { min: 0, nullable: true }), "blank = no ceiling")}
-            </>)}
+              {row("Park", <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                <Combo value={draft.parkId} options={libs.parks} onChange={(id) => set("parkId", id)} width={240} placeholder="Search parks…" />
+                <ModStrip groups={parkModGroups(parkMap[draft.parkId])} />
+              </div>)}
+            </div>)}
+
+            {/* Small sections, side by side to use width */}
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 20, alignItems: "stretch" }}>
+              {card("Roster shape", <>
+                {fgrid(<>
+                  {field("Hitters", numIn("hitters", { min: 0, width: 80 }))}
+                  {field("Pitchers", numIn("pitchers", { min: 0, width: 80 }))}
+                  {field("Rotation", numIn("min_starters", { min: 0, width: 80 }), "starters")}
+                  {field("Min stamina", numIn("min_starter_stamina", { min: 0, width: 80 }), "starter")}
+                  {field("Min pitch types", numIn("min_pitch_types", { min: 0, width: 80 }))}
+                  {field("Backups / pos", numIn("minPlayersPerPosition", { min: 1, max: 5, width: 80, def: TOURNAMENT_DEFAULTS.minPlayersPerPosition }), "coverage depth")}
+                </>, 110)}
+                <div style={{ marginTop: 12 }}>{checkRow("DH", draft.dh, (v) => set("dh", v))}</div>
+              </>)}
+
+              {card("Budget", <>
+                <div style={{ display: "inline-flex", gap: 14, marginBottom: 10 }}>
+                  {(["none", "cap", "slots"] as const).map((m) => (
+                    <label key={m} style={{ display: "inline-flex", gap: 5, alignItems: "center", cursor: "pointer" }}>
+                      <input type="radio" name="bmode" checked={mode === m} onChange={() => set("budget_mode", m)} /> {m === "none" ? "None" : m === "cap" ? "Cap" : "Slots"}
+                    </label>
+                  ))}
+                </div>
+                {mode === "cap" && <div style={{ marginBottom: 10 }}>{field("Total cap", numIn("total_cap", { min: 0, nullable: true, width: 150 }))}</div>}
+                {mode === "slots" && <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 10 }}>
+                  {SLOT_TIER_KEYS.map((key) => (
+                    <label key={key} style={{ fontSize: 12, color: C.sub, display: "grid", gap: 2 }}>{key}
+                      <input type="number" min={0} value={draft.slot_counts?.[key] ?? ""} onChange={(e) => set("slot_counts", { ...(draft.slot_counts ?? {}), [key]: e.target.value === "" ? 0 : Number(e.target.value) })} style={{ ...inputStyle, width: "100%" }} />
+                    </label>
+                  ))}
+                </div>}
+                {fgrid(<>
+                  {field("Card value min", numIn("card_value_min", { min: 0, nullable: true, width: 90 }), "blank = no floor")}
+                  {field("Card value max", numIn("card_value_max", { min: 0, nullable: true, width: 90 }), "blank = no ceiling")}
+                </>, 120)}
+              </>)}
+
+              {card("Variants", <>
+                <div style={{ marginBottom: 12 }}>{checkRow("Variants allowed", draft.variants_allowed, (v) => set("variants_allowed", v))}</div>
+                {field("Max variants on roster", numIn("max_variants_on_roster", { min: 0, width: 90 }), "0 = unlimited")}
+              </>)}
+            </div>
 
             {section("Pool & weighting", <>
-              {row("Top-X hitters", numIn("topHitters", { min: 0, nullable: true, def: TOURNAMENT_DEFAULTS.topHitters }), "each side (vL/vR) · two-way cutoff / non-cap pool")}
-              {row("Top-X pitchers", numIn("topPitchers", { min: 0, nullable: true, def: TOURNAMENT_DEFAULTS.topPitchers }), "by OVR")}
-              {row("RHP exposure (vR)", <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
-                <input type="number" min={0} max={1} step={0.001} value={r3(vR)} onChange={(e) => { const x = Math.max(0, Math.min(1, Number(e.target.value))); set("platoonVR", r3(x)); set("platoonVL", r3(1 - x)); }} style={{ ...inputStyle, width: 100 }} />
-                <span style={{ fontSize: 13, color: C.sub }}>vL = {r3(1 - vR)}</span>
-              </span>, `team RHP/LHP exposure — optimizer${draft.platoonVR == null ? " (model default)" : ""}`)}
-              <div style={{ fontSize: 12, color: C.sub, margin: "8px 0 6px" }}>
-                Per-hand OVR splits — weight on the same-letter side{!draft.platoon && libs.platoonDefaults ? " (showing active-model defaults)" : ""}:
+              {grid4(<>
+                {field("Top-X hitters", numIn("topHitters", { min: 0, nullable: true, width: 90, def: TOURNAMENT_DEFAULTS.topHitters }), "each side · two-way cutoff / non-cap pool")}
+                {field("Top-X pitchers", numIn("topPitchers", { min: 0, nullable: true, width: 90, def: TOURNAMENT_DEFAULTS.topPitchers }), "by OVR")}
+                {field("RHP exposure (vR)", <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+                  <input type="number" min={0} max={1} step={0.001} value={r3(vR)} onChange={(e) => { const x = Math.max(0, Math.min(1, Number(e.target.value))); set("platoonVR", r3(x)); set("platoonVL", r3(1 - x)); }} style={{ ...inputStyle, width: 90 }} />
+                  <span style={{ fontSize: 13, color: C.sub }}>vL = {r3(1 - vR)}</span>
+                </span>, `team exposure — optimizer${draft.platoonVR == null ? " (model default)" : ""}`)}
+              </>)}
+              <div style={{ fontSize: 12, color: C.sub, margin: "14px 0 6px" }}>
+                Hitter OVR splits — Cards-page display only, weight on the same-letter side{!draft.platoon && libs.platoonDefaults ? " (showing active-model defaults)" : ""}:
               </div>
-              {PLATOON_SPLITS.map((s) => (
-                <Fragment key={s.k}>{row(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 100 }} />)}</Fragment>
-              ))}
-            </>)}
-
-            {section("Variants", <>
-              {row("Variants allowed", <input type="checkbox" checked={draft.variants_allowed} onChange={(e) => set("variants_allowed", e.target.checked)} />)}
-              {row("Max variants on roster", numIn("max_variants_on_roster", { min: 0 }), "0 = unlimited")}
+              {grid4(HIT_SPLITS.map((s) => (
+                <Fragment key={s.k}>{field(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
+              )))}
+              <div style={{ fontSize: 12, color: C.sub, margin: "14px 0 6px" }}>
+                Pitcher splits — optimizer collapse, same-side weight by actual SP vs RP usage{!draft.platoon?.r_pitch_split_sp && libs.platoonDefaults?.pitchRoleSplits ? " (showing active-model defaults)" : ""}:
+              </div>
+              {grid4(PITCH_ROLE_SPLITS.map((s) => (
+                <Fragment key={s.k}>{field(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
+              )))}
             </>)}
 
             {section("Eligibility rules", <>
@@ -358,12 +473,14 @@ export function TournamentsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {FIELD_POS.map((pos) => {
+                    {FIELD_POS.map((pos, pIdx) => {
                       const ratings = POSITION_RATING_KEYS[pos]!;
+                      // Strongly alternating block fill so each position reads as its own band.
+                      const blockBg = pIdx % 2 === 1 ? "#2c333e" : "#1b2027";
                       return ratings.map((rt, i) => {
                         const m = metrics?.[pos]?.[rt.key];
                         return (
-                          <tr key={pos + rt.key} style={{ borderTop: i === 0 ? `1px solid ${C.border}` : `1px solid ${C.border}33` }}>
+                          <tr key={pos + rt.key} style={{ background: blockBg, borderTop: i === 0 ? `2px solid ${C.border}` : "none" }}>
                             {i === 0 && <td rowSpan={ratings.length} style={tdPos}>
                               <div>{pos}</div>
                               <div style={{ fontSize: 12, fontWeight: 400, color: C.sub }}>n = {poolN(pos) ?? "…"}</div>

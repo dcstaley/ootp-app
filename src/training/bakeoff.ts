@@ -8,10 +8,13 @@
 
 import type { TrainObs } from "./loader.ts";
 import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching, type WobaHittingCoeffs, type WobaPitchingCoeffs, type BasicHittingCoeffs, type BasicPitchingCoeffs } from "./fit.ts";
+import { DEFAULT_WOBA_WEIGHTS } from "../scoring-core/woba-weights.ts";
 
 const ln1 = (x: number) => Math.log(Math.max(x, 1));
-// Fixed wOBA event weights (the league-standard linear weights the app uses).
-const W_BB = 0.704, W_1B = 0.8992, W_XBH = 1.29, W_HR = 2.0759, HBP = 6;
+// wOBA event weights — the ONE source (scoring-core). The bake-off/residual target uses
+// the defaults (the per-model wRAA-derived weights are applied at SCORING time); since the
+// scoreboard metric is Pearson (shift-invariant), this choice doesn't affect selection.
+const W_BB = DEFAULT_WOBA_WEIGHTS.bb, W_HBP = DEFAULT_WOBA_WEIGHTS.hbp, W_1B = DEFAULT_WOBA_WEIGHTS.b1, W_XBH = DEFAULT_WOBA_WEIGHTS.xbh, W_HR = DEFAULT_WOBA_WEIGHTS.hr, HBP = 6;
 
 // ── Assembled wOBA from predicted / actual per-600 events ──────────────────────
 export function predictHitWoba(c: WobaHittingCoeffs, o: TrainObs): number {
@@ -39,11 +42,11 @@ export function predictPitWoba(c: WobaPitchingCoeffs, o: TrainObs): number {
   const bip = Math.max(600 - bb - k - hr - 6, 1);
   const nHH = Math.max(c.h.intercept + c.h.pbabip * ln1(r.pbabip) + c.h.bip * ln1(bip), 0);
   const xbh = nHH * c.xbh.share, oneB = Math.max(nHH - xbh, 0);
-  return (W_BB * bb + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // no HBP term (matches old)
+  return (W_BB * bb + W_HBP * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // HBP now included (matches scoring)
 }
 export function actualPitWoba(o: TrainObs): number {
   const bf = Math.max(o.pitch.BF, 1), s = 600 / bf;
-  return (W_BB * o.pitch.BB * s + W_1B * o.pitch.b1 * s + W_XBH * (o.pitch.b2 + o.pitch.b3) * s + W_HR * o.pitch.HR * s) / 600;
+  return (W_BB * o.pitch.BB * s + W_HBP * o.pitch.HP * s + W_1B * o.pitch.b1 * s + W_XBH * (o.pitch.b2 + o.pitch.b3) * s + W_HR * o.pitch.HR * s) / 600;
 }
 
 // ── Model abstraction ──────────────────────────────────────────────────────────
