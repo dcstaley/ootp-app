@@ -77,16 +77,22 @@ modeling is closed out). Both are refinement passes on already-built pages, not 
 
 ### Next steps backlog (post-upgrades) — added 2026-06-30
 
-Sequenced; do in order, **hybrid last**.
-1. **Splits investigation** (3 parts): (a) the **team split is incorrectly used to set pitcher OVR** — fix;
-   (b) audit **how the other splits are actually consumed** end-to-end; (c) **moderate extreme splits** using
-   the trained data (the current splits are too extreme — pull toward more moderate values).
-2. **Gold-player / extreme-scaling investigation** — specific cases: **Kaat** and **Bonham** (pitchers),
-   **Pearson** (hitter). How do extremes scale? Are we preserving the low AND high ends, or compressing them?
-3. **Donohue investigation** — Pete Donohue (surfaced in SP upgrades) looks off; investigate his scoring/scaling.
-4. **Tournament page UI cleanup.**
-5. **Hybrid upgrades** — add stage-2 exact MILP re-solve on the top-N shortlist for cap/slots (and optionally
-   non-cap) to correct the single-swap approximation.
+Sequenced; do in order, **hybrid last**. Items 1–2 are DIAGNOSE-FIRST (audit before changing scoring).
+1. **Splits audit (diagnose, don't presume).** First step: audit **all** splits — for each (per-hand OVR
+   splits `r/l/s_hit_split`, `r/l_pitch_split`, team `platoonVR/VL`), document how it **should** be used vs
+   how it **is** being used, end-to-end (model artifact → scoring → optimizer). A suspected issue is the
+   **team split being used to set pitcher OVR** — but confirm via the audit, don't assume. Likely follow-ups
+   once diagnosed: fix any misuse; moderate splits that are too extreme using the trained data.
+2. **Overscoring of weak players / extreme-rating scaling.** Several clearly-not-great cards score far higher
+   than their real-world usage by top players + the stats we have: **Kaat** and **Bonham** (pitchers),
+   **Pearson** (hitter), **Pete Donohue** (pitcher, surfaced high in SP upgrades). Suspected two-pronged:
+   (a) **softcap removal** — softcaps were a lever we used to tamp this down; their removal may be correct
+   but removed the control; (b) **extreme ratings scaling weirdly** — card shapes differ at low levels, and a
+   card with BOTH extremely low and extremely high ratings scales oddly. Investigate the rating→event scaling
+   (pool transform / raw-poly) at the extremes; are the low AND high ends preserved or distorted?
+3. **Tournament page UI cleanup** (`web/TournamentsPage.tsx`) — usability/clarity pass.
+4. **Hybrid upgrades** — add stage-2 exact MILP re-solve on the top-N shortlist for cap/slots (and optionally
+   non-cap) to correct the single-swap approximation (A).
 
 ---
 
