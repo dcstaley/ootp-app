@@ -17,7 +17,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { useAppData } from "./state.tsx";
 import { C, inputStyle, lockKey, type RosterHitterRow, type RosterSlotCard } from "./shared.ts";
-import { FIELD, star, defStr, posStr } from "./roster-cells.tsx";
+import { FIELD, star, nameCell, defStr, posStr } from "./roster-cells.tsx";
 
 type Side = "L" | "R";
 const strip = (id: string) => id.replace(/#V$/, "");
@@ -168,6 +168,7 @@ export function LineupTab({
           {/* Lineup */}
           <div style={{ flex: "3 1 640px", minWidth: 0, maxWidth: 1000 }}>
             <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Batting order ({lineIds.length}) — vs {sideLabel}</h3>
+            <div style={{ border: `1px solid ${C.border}` }}>
             <HeaderRow />
             <LineupDrop>
               <SortableContext items={lineIds} strategy={verticalListSortingStrategy}>
@@ -178,7 +179,7 @@ export function LineupTab({
                     <SortableRow key={id} id={id} grid={GRID} style={roleBg(h.role)}>
                       {lockBtn(!!lk, () => toggleLineupLock(id, p, side), p)}
                       <span style={{ textAlign: "center", color: C.sub, fontSize: 12 }}>{i + 1}</span>
-                      <span style={ell}>{h.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(h.title)}</span>
+                      <span style={ell}>{nameCell(h)}</span>
                       <span style={{ textAlign: "center", fontSize: 12 }}>{h.bats}</span>
                       <select value={p} onChange={(e) => changePos(id, e.target.value)} style={posSel} disabled={!!lk} title={lk ? "Unlock to change position" : "Defensive position"}>
                         <option value="-">-</option>
@@ -192,11 +193,13 @@ export function LineupTab({
                 })}
               </SortableContext>
             </LineupDrop>
+            </div>
           </div>
 
           {/* Bench + depth */}
           <div style={{ flex: "1 1 300px", minWidth: 260 }}>
             <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Bench ({benchIds.length})</h3>
+            <div style={{ border: `1px solid ${C.border}` }}>
             <BenchDrop>
               <SortableContext items={benchIds} strategy={verticalListSortingStrategy}>
                 {benchIds.length === 0 && <div style={{ fontSize: 12, color: C.sub, padding: "8px 6px" }}>No bench — every hitter is starting.</div>}
@@ -204,7 +207,7 @@ export function LineupTab({
                   const h = byId.get(id)!; const canAdd = firstOpenPos(id) !== "-";
                   return (
                     <SortableRow key={id} id={id} grid="18px minmax(0,1fr) 50px 58px" style={roleBg("bench")}>
-                      <span style={{ ...ell, fontSize: 12 }}>{h.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(h.title)} <span style={{ color: C.sub, fontSize: 11 }}>· {h.bats} · {posStr(h.positions)}</span></span>
+                      <span style={{ ...ell, fontSize: 12 }}>{nameCell(h)} <span style={{ color: C.sub, fontSize: 11 }}>· {posStr(h.positions)}</span></span>
                       <span style={{ textAlign: "right", color: C.sub, fontSize: 11 }}>{num(score(id, side))}</span>
                       <button onClick={() => addToLineupAt(id, lineIds.length)} disabled={!canAdd} title={canAdd ? "Add to the lineup" : "No eligible position open"} style={addBtn(canAdd)}>+ Add</button>
                     </SortableRow>
@@ -212,6 +215,7 @@ export function LineupTab({
                 })}
               </SortableContext>
             </BenchDrop>
+            </div>
 
             <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Depth (vs {sideLabel})</h3>
             <div style={{ display: "grid", gap: 6 }}>
@@ -258,9 +262,9 @@ const lockBtn = (on: boolean, onClick: () => void, p: string): ReactNode => (
 );
 
 function HeaderRow() {
-  const h: CSSProperties = { fontSize: 11, color: C.sub, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 };
+  const h: CSSProperties = { fontSize: 13, color: C.sub };
   return (
-    <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 6, padding: "0 8px 4px", alignItems: "center" }}>
+    <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 6, padding: "5px 6px", alignItems: "center", background: C.head, borderBottom: `1px solid ${C.border}` }}>
       <span /><span style={h}>🔒</span><span style={{ ...h, textAlign: "center" }}>#</span><span style={h}>Player</span><span style={{ ...h, textAlign: "center" }}>B</span><span style={h}>Pos</span><span style={h}>Defense</span><span style={{ ...h, textAlign: "right" }}>Score</span><span />
     </div>
   );
@@ -271,8 +275,8 @@ function SortableRow({ id, children, style, grid }: { id: string; children: Reac
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const wrap: CSSProperties = {
     ...style, transform: CSS.Transform.toString(transform), transition,
-    opacity: isDragging ? 0.4 : 1, border: `1px solid ${C.border}`, borderRadius: 6, marginBottom: 4,
-    display: "grid", gridTemplateColumns: grid, gap: 6, alignItems: "center", padding: "4px 8px",
+    opacity: isDragging ? 0.4 : 1, borderBottom: `1px solid ${C.border}`,
+    display: "grid", gridTemplateColumns: grid, gap: 6, alignItems: "center", padding: "5px 6px", fontSize: 13,
   };
   return (
     <div ref={setNodeRef} style={wrap}>
