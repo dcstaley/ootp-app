@@ -1,0 +1,136 @@
+{
+  "id": "new-tournament-2",
+  "name": "Silver Cap",
+  "card_value_min": null,
+  "card_value_max": 79,
+  "total_cap": 1475,
+  "roster_size": 26,
+  "hitters": 14,
+  "pitchers": 12,
+  "min_starters": 5,
+  "min_starter_stamina": 55,
+  "min_pitch_types": 3,
+  "dh": true,
+  "variants_allowed": true,
+  "max_variants_on_roster": 10,
+  "eraId": "era-1998",
+  "parkId": "park-1",
+  "softcaps": {
+    "cap_k_top": 500,
+    "cap_k_bot": 0,
+    "pen_k": 0.25,
+    "cap_babip_top": 500,
+    "cap_babip_bot": 0,
+    "pen_babip": 0.5,
+    "cap_gap_top": 500,
+    "cap_gap_bot": 0,
+    "pen_gap": 0.25,
+    "cap_pow_top": 500,
+    "cap_pow_bot": 0,
+    "pen_pow": 0.5,
+    "cap_eye_top": 500,
+    "cap_eye_bot": 0,
+    "pen_eye": 0.5,
+    "cap_p_con_top": 500,
+    "cap_p_con_bot": 0,
+    "pen_p_con": 0.25,
+    "cap_p_stu_top": 500,
+    "cap_p_stu_bot": 0,
+    "pen_p_stu": 0.25,
+    "cap_p_pbabip_top": 500,
+    "cap_p_pbabip_bot": 0,
+    "pen_p_pbabip": 0.25,
+    "cap_p_hrr_top": 500,
+    "cap_p_hrr_bot": 0,
+    "pen_p_hrr": 0.25
+  },
+  "eligibility": {
+    "mode": "ALL",
+    "rules": []
+  },
+  "positionRanks": {
+    "RF": {
+      "starter": {}
+    },
+    "C": {
+      "backup": {}
+    }
+  },
+  "platoonVR": 0.5798834749058775,
+  "platoonVL": 0.4201165250941224,
+  "budget_mode": "cap",
+  "topHitters": 100,
+  "topPitchers": 100,
+  "minPlayersPerPosition": 2,
+  "platoon": {
+    "r_hit_split": 0.5401288195738561,
+    "l_hit_split": 0.3368311079985764,
+    "s_hit_split": 0.5623230905283367,
+    "r_pitch_split": 0.48106468193606067,
+    "l_pitch_split": 0.29379892766447907
+  },
+  "positionMins": {
+    "C": {
+      "starter": {
+        "ability": 70,
+        "frame": 65
+      },
+      "backup": {
+        "ability": 65,
+        "frame": 60
+      }
+    },
+    "1B": {
+      "backup": {
+        "range": 20
+      }
+    },
+    "2B": {
+      "backup": {
+        "range": 80
+      },
+      "starter": {
+        "range": 85
+      }
+    },
+    "3B": {
+      "starter": {
+        "range": 70
+      },
+      "backup": {
+        "range": 60
+      }
+    },
+    "SS": {
+      "starter": {
+        "range": 95
+      },
+      "backup": {
+        "range": 85
+      }
+    },
+    "LF": {
+      "starter": {
+        "range": 50
+      }
+    },
+    "CF": {
+      "starter": {
+        "range": 95
+      },
+      "backup": {
+        "range": 85
+      }
+    },
+    "RF": {
+      "starter": {
+        "range": 80,
+        "arm": 80
+      },
+      "backup": {
+        "range": 70,
+        "arm": 70
+      }
+    }
+  }
+}

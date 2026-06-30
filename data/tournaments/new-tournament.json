@@ -1,0 +1,128 @@
+{
+  "id": "new-tournament",
+  "name": "Oaxaca League",
+  "card_value_min": null,
+  "card_value_max": null,
+  "total_cap": null,
+  "roster_size": 26,
+  "hitters": 14,
+  "pitchers": 12,
+  "min_starters": 5,
+  "min_starter_stamina": 55,
+  "min_pitch_types": 3,
+  "dh": true,
+  "variants_allowed": true,
+  "max_variants_on_roster": 0,
+  "eraId": "era-2010",
+  "parkId": "park-1",
+  "softcaps": {
+    "cap_k_top": 500,
+    "cap_k_bot": 0,
+    "pen_k": 0.25,
+    "cap_babip_top": 500,
+    "cap_babip_bot": 0,
+    "pen_babip": 0.5,
+    "cap_gap_top": 500,
+    "cap_gap_bot": 0,
+    "pen_gap": 0.25,
+    "cap_pow_top": 500,
+    "cap_pow_bot": 0,
+    "pen_pow": 0.5,
+    "cap_eye_top": 500,
+    "cap_eye_bot": 0,
+    "pen_eye": 0.5,
+    "cap_p_con_top": 500,
+    "cap_p_con_bot": 0,
+    "pen_p_con": 0.25,
+    "cap_p_stu_top": 500,
+    "cap_p_stu_bot": 0,
+    "pen_p_stu": 0.25,
+    "cap_p_pbabip_top": 500,
+    "cap_p_pbabip_bot": 0,
+    "pen_p_pbabip": 0.25,
+    "cap_p_hrr_top": 500,
+    "cap_p_hrr_bot": 0,
+    "pen_p_hrr": 0.25
+  },
+  "eligibility": {
+    "mode": "ALL",
+    "rules": []
+  },
+  "positionRanks": {
+    "RF": {
+      "starter": {}
+    },
+    "C": {
+      "backup": {}
+    }
+  },
+  "platoonVR": 0.58,
+  "platoonVL": 0.42,
+  "budget_mode": "none",
+  "topHitters": 100,
+  "topPitchers": 100,
+  "minPlayersPerPosition": 2,
+  "platoon": {
+    "r_hit_split": 0.53,
+    "l_hit_split": 0.35,
+    "s_hit_split": 0.565,
+    "r_pitch_split": 0.45,
+    "l_pitch_split": 0.35
+  },
+  "positionMins": {
+    "C": {
+      "backup": {},
+      "starter": {
+        "ability": 75,
+        "frame": 75,
+        "arm": 75
+      }
+    },
+    "1B": {
+      "backup": {},
+      "starter": {
+        "range": 20
+      }
+    },
+    "2B": {
+      "backup": {},
+      "starter": {
+        "range": 85
+      }
+    },
+    "3B": {
+      "backup": {},
+      "starter": {
+        "range": 70,
+        "arm": 65
+      }
+    },
+    "SS": {
+      "backup": {
+        "range": 95
+      },
+      "starter": {
+        "range": 105
+      }
+    },
+    "LF": {
+      "starter": {
+        "range": 60
+      }
+    },
+    "CF": {
+      "starter": {
+        "range": 105
+      },
+      "backup": {
+        "range": 95
+      }
+    },
+    "RF": {
+      "starter": {
+        "range": 70,
+        "arm": 70
+      }
+    }
+  }
+}
