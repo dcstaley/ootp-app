@@ -33,3 +33,19 @@ for (let i = 0; i < 120; i++) {
 
 start(["node_modules/vite/bin/vite.js", "--config", "web/vite.config.ts"]);
 for (const c of children) c.on("exit", shutdown);
+
+// Packaged double-click launcher: open the browser once the UI (Vite, 5173) is ready.
+// Gated by LAUNCH_OPEN so a plain `npm run dev` (dev workflow) doesn't spawn a browser tab.
+if (process.env.LAUNCH_OPEN === "1") {
+  const url = "http://localhost:5173/";
+  for (let i = 0; i < 120; i++) {
+    try { if ((await fetch(url)).ok) break; } catch { /* Vite not up yet */ }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  try {
+    if (process.platform === "win32") spawn("cmd", ["/c", "start", "", url], { stdio: "ignore", detached: true }).unref();
+    else if (process.platform === "darwin") spawn("open", [url], { stdio: "ignore", detached: true }).unref();
+    else spawn("xdg-open", [url], { stdio: "ignore", detached: true }).unref();
+  } catch { /* best-effort; the console shows the URL regardless */ }
+  console.log(`[launcher] app ready — opening ${url}`);
+}
