@@ -43,15 +43,19 @@ export interface RosterResult {
   nextBest: { available: AvailRow[] };
   cardValueMin: number; cardValueMax: number | null;
   roles: Record<string, string>; // base Card ID -> both|vL|vR|bench|starter|reliever|twoway
-  biggestUpgrades?: BiggestUpgrades | null; // unowned acquisition targets (non-cap/slots + owned-only only)
+  biggestUpgrades?: BiggestUpgrades | null; // unowned acquisition targets (owned-only; cap/slots totals are refined exact via /api/upgrades/refine)
 }
 
 // Biggest Upgrades (M5b): non-owned cards that would improve the current roster. Hitters
 // ranked by combined lineup-assignment marginal (per-side deltas show both-sides vs platoon);
 // pitchers vs the weakest rotation (SP) / bullpen (RP) arm. `total` = the upgrade magnitude.
-export interface UpgradeHitter { id: string; title: string; last: string; bats: string; positions: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean }
-export interface UpgradePitcher { id: string; title: string; last: string; throws: string; stamina: number; pitchTypes: number; cost: number; total: number; twoWay: boolean }
+// `refined` (client-only) = this row's `total` is the exact stage-2 marginal (cap/slots).
+export interface UpgradeHitter { id: string; title: string; last: string; bats: string; positions: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean; refined?: boolean }
+export interface UpgradePitcher { id: string; title: string; last: string; throws: string; stamina: number; pitchTypes: number; cost: number; total: number; twoWay: boolean; refined?: boolean }
 export interface BiggestUpgrades { hitters: UpgradeHitter[]; sp: UpgradePitcher[]; rp: UpgradePitcher[] }
+// Stage-2 exact refinement result for one candidate (value units): per-side lineup
+// deltas (hitters) + the weighted total. Streamed in and populated onto the row.
+export interface RefinedValue { total: number; dVR?: number; dVL?: number }
 
 // Per-card pool override (Roster page Actions). "auto" = no override (default).
 export type RoleOverride = "hitter" | "pitcher" | "twoway";

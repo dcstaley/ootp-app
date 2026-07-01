@@ -12,7 +12,7 @@ import { LineupTab } from "./LineupTab.tsx";
 import {
   C, inputStyle, ROSTER_COLORS, ROSTER_BORDER, ROLE_LABEL,
   type RosterHitterRow, type RosterPitcherRow, type RoleOverride, type AvailRow, type AvailHitterRow, type AvailPitcherRow, type AddedCard,
-  type BiggestUpgrades, type UpgradeHitter, type UpgradePitcher,
+  type BiggestUpgrades, type UpgradeHitter, type UpgradePitcher, type RefinedValue,
 } from "./shared.ts";
 import { IF, OF, posStr, star, nameCell, defSummary, ROLE_OV } from "./roster-cells.tsx";
 
@@ -48,14 +48,25 @@ function RosterDropZone({ children }: { children: ReactNode }) {
 // Biggest Upgrades — unowned acquisition targets that would improve the roster. Hitters
 // ranked by combined lineup-assignment marginal (per-side deltas reveal both-sides vs
 // platoon); SP/RP vs the weakest rotation/bullpen arm. ✕ excludes the card and pulls in
-// the next-best immediately. Shown only for non-cap/non-slots + owned-only generations.
-function UpgradesPanel({ data, onExclude, busy }: { data: BiggestUpgrades; onExclude: (id: string) => void; busy: boolean }) {
+// the next-best immediately. Owned-only; in cap/slots the Total is the single-swap stage-1
+// estimate, refined in place to the exact whole-roster marginal (stage 2) as it streams in.
+function UpgradesPanel({ data, onExclude, onAcquire, busy, refining, refinedCount }: { data: BiggestUpgrades; onExclude: (id: string) => void; onAcquire: (id: string) => void; busy: boolean; refining?: boolean; refinedCount?: number }) {
   const pts = (x: number) => (x >= 0 ? "+" : "−") + Math.round(Math.abs(x) * 1000); // wOBA points
   const dColor = (x: number) => (x > 0.0005 ? "#86efac" : x < -0.0005 ? "#f87171" : C.sub);
+  // Numbers come only from stage-2 and populate as each re-solve lands; a pending row
+  // shows "…" until its exact value arrives.
+  const val = (row: { refined?: boolean }, x: number) => row.refined ? pts(x) : "…";
+  const numCell = (row: { refined?: boolean }, x: number, bold = false): React.CSSProperties =>
+    ({ ...td, textAlign: "right", fontWeight: bold ? 700 : 400, color: row.refined ? dColor(x) : C.sub, opacity: row.refined ? 1 : 0.5 });
   const exBtn = (id: string) => (
     <button onClick={() => onExclude(id)} disabled={busy} title="Exclude this card and replace it with the next-best upgrade"
       style={{ ...inputStyle, padding: "1px 0", width: 24, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: busy ? "default" : "pointer", color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
   );
+  const addBtn = (id: string) => (
+    <button onClick={() => onAcquire(id)} disabled={busy} title="Acquire: lock this card onto the roster and regenerate"
+      style={{ ...inputStyle, padding: "1px 0", width: 24, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: busy ? "default" : "pointer", color: "#86efac", border: "1px solid #22c55e" }}>+</button>
+  );
+  const actions = (id: string) => <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>{addBtn(id)}{exBtn(id)}</div>;
   const tag = (on: boolean) => on ? <span style={{ fontSize: 10, color: ROSTER_BORDER.twoway, border: `1px solid ${ROSTER_BORDER.twoway}`, borderRadius: 3, padding: "0 3px", marginLeft: 5, whiteSpace: "nowrap" }}>2-way</span> : null;
   const th: React.CSSProperties = { padding: "2px 6px", color: C.sub, fontWeight: 600, fontSize: 11, textAlign: "right" };
   const td: React.CSSProperties = { padding: "3px 6px", fontVariantNumeric: "tabular-nums" };
@@ -66,17 +77,19 @@ function UpgradesPanel({ data, onExclude, busy }: { data: BiggestUpgrades; onExc
     <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
       <thead><tr>
         <th style={{ ...th, textAlign: "left" }}>Hitter</th><th style={{ ...th, textAlign: "left" }}>Pos</th>
-        <th style={th}>vR</th><th style={th}>vL</th><th style={th}>Total</th><th style={th}>Cost</th><th />
+        <th style={th} title="Lineup gain vs RHP (counts full)">vR</th>
+        <th style={th} title="Lineup gain vs LHP, discounted by this tournament's LHP exposure (you face LHP less often)">vL</th>
+        <th style={th} title="OVR = vR + vL (a sum, not an average)">Total</th><th style={th}>Cost</th><th />
       </tr></thead>
       <tbody>{data.hitters.map((h: UpgradeHitter) => (
         <tr key={h.id} style={{ borderTop: `1px solid ${C.border}55` }}>
           {name(h.title, h.twoWay)}
           <td style={{ ...td, color: C.sub }}>{h.positions.join("/") || "DH"}</td>
-          <td style={{ ...td, textAlign: "right", color: dColor(h.deltaVR) }}>{pts(h.deltaVR)}</td>
-          <td style={{ ...td, textAlign: "right", color: dColor(h.deltaVL) }}>{pts(h.deltaVL)}</td>
-          <td style={{ ...td, textAlign: "right", fontWeight: 700, color: "#86efac" }}>{pts(h.total)}</td>
+          <td style={numCell(h, h.deltaVR)}>{val(h, h.deltaVR)}</td>
+          <td style={numCell(h, h.deltaVL)}>{val(h, h.deltaVL)}</td>
+          <td style={numCell(h, h.total, true)}>{val(h, h.total)}</td>
           <td style={{ ...td, textAlign: "right", color: C.sub }}>{h.cost}</td>
-          <td style={{ ...td, textAlign: "center" }}>{exBtn(h.id)}</td>
+          <td style={{ ...td, textAlign: "center" }}>{actions(h.id)}</td>
         </tr>
       ))}</tbody>
     </table>
@@ -90,10 +103,10 @@ function UpgradesPanel({ data, onExclude, busy }: { data: BiggestUpgrades; onExc
       <tbody>{rows.map((p) => (
         <tr key={p.id} style={{ borderTop: `1px solid ${C.border}55` }}>
           {name(p.title, p.twoWay)}
-          <td style={{ ...td, textAlign: "right", fontWeight: 700, color: "#86efac" }}>{pts(p.total)}</td>
+          <td style={numCell(p, p.total, true)}>{val(p, p.total)}</td>
           {showStam && <td style={{ ...td, textAlign: "right", color: C.sub }}>{p.stamina}</td>}
           <td style={{ ...td, textAlign: "right", color: C.sub }}>{p.cost}</td>
-          <td style={{ ...td, textAlign: "center" }}>{exBtn(p.id)}</td>
+          <td style={{ ...td, textAlign: "center" }}>{actions(p.id)}</td>
         </tr>
       ))}</tbody>
     </table>
@@ -101,7 +114,11 @@ function UpgradesPanel({ data, onExclude, busy }: { data: BiggestUpgrades; onExc
 
   return (
     <div style={{ marginTop: 16, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14 }}>Biggest Upgrades <span style={{ fontSize: 12, fontWeight: 400, color: C.sub }}>· unowned cards that would improve this roster (Δ in wOBA points)</span></h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14 }}>Biggest Upgrades <span style={{ fontSize: 12, fontWeight: 400, color: C.sub }}>· unowned cards that would improve this roster (Δ in wOBA points)</span>
+        {refining
+          ? <span style={{ fontSize: 11, fontWeight: 400, color: C.link, marginLeft: 8 }}>· computing exact values…{refinedCount ? ` (${refinedCount})` : ""}</span>
+          : <span style={{ fontSize: 11, fontWeight: 400, color: "#86efac", marginLeft: 8 }}>· exact (whole-roster re-solve)</span>}
+      </h3>
       <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div style={{ flex: "2 1 420px", minWidth: 340 }}>
           <h4 style={{ margin: "4px 0 2px", fontSize: 12, color: C.link }}>Hitters</h4>
@@ -133,7 +150,7 @@ type PStaffRow = RosterPitcherRow & { slotLabel: string };
 export function RosterPage() {
   const {
     roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly, metric, setMetric,
-    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades,
+    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades, refineUpgrades, acquireCard,
     added, addCard, roles: roleOverrides, setRole, cards,
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
@@ -149,6 +166,43 @@ export function RosterPage() {
   const [upBuf, setUpBuf] = useState<BiggestUpgrades | null>(null);
   useEffect(() => { setUpBuf(roster?.biggestUpgrades ?? null); }, [roster]);
   const refilling = useRef(false);
+
+  // Stage-2 exact refinement (ALL modes — the one upgrade-value path). Stage 1 only
+  // picks the shortlist (which cards to evaluate); its numbers are never shown. Each
+  // candidate's exact per-side lineup deltas + weighted total stream in and POPULATE
+  // the row as they land. Re-runs whenever the buffer changes (generation / dismiss-refill).
+  const [refined, setRefined] = useState<Map<string, RefinedValue>>(new Map());
+  const [refineActive, setRefineActive] = useState(false);
+  const refineCtl = useRef<AbortController | null>(null);
+  useEffect(() => {
+    refineCtl.current?.abort();
+    setRefined(new Map());
+    if (!upBuf) { setRefineActive(false); return; }
+    const ctl = new AbortController(); refineCtl.current = ctl;
+    setRefineActive(true);
+    const shortlist = { hitters: upBuf.hitters.map((h) => h.id), sp: upBuf.sp.map((p) => p.id), rp: upBuf.rp.map((p) => p.id) };
+    refineUpgrades(shortlist, (id, r) => setRefined((m) => new Map(m).set(id, r)), ctl.signal)
+      .catch(() => { /* aborted or failed */ })
+      .finally(() => { if (refineCtl.current === ctl) setRefineActive(false); });
+    return () => ctl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [upBuf]);
+
+  // Build the displayed rows: numbers come ONLY from stage-2. Un-refined rows are pending
+  // (shown as "…"); refined rows carry the exact total + per-side deltas, are dropped if
+  // non-positive (not a real upgrade), and float above pending, sorted by exact total.
+  // Pending rows keep the shortlist order. Slice to the shown count.
+  const merge = <T extends UpgradeHitter | UpgradePitcher>(arr: T[], n: number): T[] => {
+    const rows = arr.map((x, i) => ({ x, rv: refined.get(x.id), i })).filter(({ rv }) => !rv || rv.total > 0);
+    rows.sort((a, b) => {
+      if (a.rv && b.rv) return b.rv.total - a.rv.total;
+      if (!!a.rv !== !!b.rv) return a.rv ? -1 : 1; // refined (known) above pending
+      return a.i - b.i;
+    });
+    return rows.slice(0, n).map(({ x, rv }) => rv
+      ? ({ ...x, total: rv.total, deltaVR: rv.dVR ?? 0, deltaVL: rv.dVL ?? 0, refined: true } as T)
+      : ({ ...x, refined: false } as T));
+  };
   const upShow = upBuf && {
     hitters: upBuf.hitters.filter((h) => !excluded.has(h.id)),
     sp: upBuf.sp.filter((p) => !excluded.has(p.id)),
@@ -523,7 +577,7 @@ export function RosterPage() {
                     </>}
               </div>
             </div>
-            {upShow && <UpgradesPanel data={{ hitters: upShow.hitters.slice(0, 10), sp: upShow.sp.slice(0, 5), rp: upShow.rp.slice(0, 5) }} onExclude={excludeNoRegen} busy={rosterLoading} />}
+            {upShow && <UpgradesPanel data={{ hitters: merge(upShow.hitters, 10), sp: merge(upShow.sp, 5), rp: merge(upShow.rp, 5) }} onExclude={excludeNoRegen} onAcquire={acquireCard} busy={rosterLoading} refining={refineActive} refinedCount={refined.size} />}
             </DndContext>
           )}
 

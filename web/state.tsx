@@ -3,7 +3,7 @@
 // active (tournament, account) view and exposes the mutations.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AddedCard, LineupLock, BiggestUpgrades } from "./shared.ts";
+import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AddedCard, LineupLock, BiggestUpgrades, RefinedValue } from "./shared.ts";
 import { lockKey } from "./shared.ts";
 
 interface ImportResult { ok: boolean; error?: string; matched?: number; unmatched?: number; column?: string; newId?: string }
@@ -25,6 +25,11 @@ interface AppData {
   // Biggest Upgrades: dismiss without regenerating (roster is unchanged) + refill the buffer.
   excludeNoRegen: (id: string) => void;
   fetchUpgrades: () => Promise<BiggestUpgrades | null>;
+  // Stage-2 exact refinement: stream exact value marginals for a shortlist, one per
+  // candidate as it solves (onResult), so the panel populates exact numbers in place.
+  refineUpgrades: (shortlist: { hitters: string[]; sp: string[]; rp: string[] }, onResult: (id: string, r: RefinedValue) => void, signal?: AbortSignal) => Promise<void>;
+  // Acquire an upgrade target: lock it onto the roster + regenerate.
+  acquireCard: (id: string) => Promise<void>;
   // manually-added cards (fill an open roster slot + lock); shown immediately.
   added: AddedCard[]; addCard: (card: AddedCard) => void;
   // per-card pool override (Pitch/Hit/2way); absent = auto. Needs Regenerate.
@@ -204,21 +209,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setDirty(true);
   };
 
-  // Shared query string for /api/roster + /api/upgrades (optionally overriding `excluded`).
-  const rosterQuery = (overrideExcluded?: Set<string>) => {
+  // Shared query string for /api/roster + /api/upgrades (optionally overriding locked/excluded).
+  const rosterQuery = (over?: { excluded?: Set<string>; locked?: Set<string> }) => {
     const enc = (s: Set<string>) => [...s].join(",");
     const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
     const encLocks = [...lineupLocks.values()].map((l) => `${l.id}:${l.pos}:${l.side}`).join(",");
-    return `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(locked)}&excluded=${enc(overrideExcluded ?? excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}`;
+    return `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(over?.locked ?? locked)}&excluded=${enc(over?.excluded ?? excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}`;
   };
-  const generateRoster = async () => {
+  const generateRoster = async (over?: { locked?: Set<string> }) => {
     if (!tournamentId) return;
     setRosterLoading(true);
     try {
-      setRoster(await fetch("/api/roster" + rosterQuery()).then((r) => r.json()));
+      setRoster(await fetch("/api/roster" + rosterQuery(over)).then((r) => r.json()));
       setRemoved(new Set()); setAdded([]); // fresh roster — clear manual edits
       setDirty(false);
     } catch (e) { setErr(String(e)); } finally { setRosterLoading(false); }
+  };
+  // Acquire an upgrade target: lock it + regenerate so it enters the optimized roster
+  // (the whole roster rebalances to fit it, realizing the stage-2 prediction). Passes the
+  // updated lock set explicitly since setLocked is async and generateRoster reads state.
+  const acquireCard = async (id: string) => {
+    const nextLocked = new Set(locked); nextLocked.add(id);
+    setLocked(nextLocked);
+    setExcluded((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; });
+    await generateRoster({ locked: nextLocked });
   };
   // Biggest Upgrades: dismiss a card WITHOUT regenerating — it leaves the (owned-only) roster
   // unchanged, so we just add it to `excluded` (no dirty flag) and let the panel promote the
@@ -229,6 +243,32 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     try { return (await fetch("/api/upgrades" + rosterQuery()).then((r) => r.json())).biggestUpgrades ?? null; }
     catch { return null; }
   };
+  // Stage-2 refine: open the NDJSON stream for a shortlist and invoke onResult per
+  // candidate as its exact marginal lands. Reuses the baseline cached by the last
+  // /api/roster call (same query key). Aborts cleanly via the passed signal.
+  const refineUpgrades = async (
+    shortlist: { hitters: string[]; sp: string[]; rp: string[] },
+    onResult: (id: string, r: RefinedValue) => void, signal?: AbortSignal,
+  ): Promise<void> => {
+    if (!tournamentId) return;
+    const q = rosterQuery() + `&h=${shortlist.hitters.join(",")}&sp=${shortlist.sp.join(",")}&rp=${shortlist.rp.join(",")}`;
+    const res = await fetch("/api/upgrades/refine" + q, { signal });
+    if (!res.body) return;
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
+        if (!line) continue;
+        try { const o = JSON.parse(line); if (o.type === "result" && typeof o.stage2 === "number") onResult(o.id, { total: o.stage2, dVR: o.dVR, dVL: o.dVL }); } catch { /* skip partial */ }
+      }
+    }
+  };
 
   const value: AppData = {
     tournaments, tournamentId, chooseTournament, reloadTournaments,
@@ -236,7 +276,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     cards, meta, loading, busy, err,
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},
     ownedOnly: ownedOnlyState, setOwnedOnly, metric: metricState, setMetric,
-    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades,
+    locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades, refineUpgrades, acquireCard,
     added, addCard,
     roles: roleOv, setRole,
     lineupLocks, toggleLineupLock,

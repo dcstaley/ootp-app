@@ -142,6 +142,20 @@ type ScoredRow = ReturnType<typeof toRow>;
 interface Scored { rows: ScoredRow[]; ctx: ScoreCtx; eligibleCount: number }
 let cache = new Map<string, Scored>();
 
+// Baseline solve cache for stage-2 refine: the last full owned-roster solve per
+// generation-input key. Refine reuses the objective + roster membership instead of
+// re-solving the expensive (~5s slots) baseline (it's already computed at generation).
+// Includes the baseline lineups + staff so refine can measure per-side lineup value
+// deltas (hitters) and staff-value deltas (pitchers) against them — all in value units.
+type BaselineSnap = { objective: number; hitterIds: string[]; pitcherIds: string[]; lineupVR: string[]; lineupVL: string[]; rotation: string[]; bullpen: string[] };
+const baselineCache = new Map<string, BaselineSnap>();
+const baselineKey = (tid: string, aid: string | null, metric: string, excluded: string[], locked: string[]) =>
+  `${tid}|${aid ?? ""}|${metric}|${[...excluded].sort().join(",")}|${[...locked].sort().join(",")}`;
+function setBaseline(key: string, snap: BaselineSnap) {
+  baselineCache.set(key, snap);
+  if (baselineCache.size > 16) baselineCache.delete(baselineCache.keys().next().value!); // bound (single-user)
+}
+
 // Active D3 #2 (raw-poly) form: when set, every tournament is scored + calibrated
 // with it (one core). null ⇒ the log-linear fallback (the parity baseline, kept while
 // #2 is being verified). Refreshed at boot + on activate/delete; changing it clears
@@ -289,6 +303,11 @@ function refreshCatalog() {
 // cap/slots mode, where the pools themselves are 1500). The per-card role override
 // forces a card into Hit-only / Pitch-only / two-way regardless of ranking.
 const HARD_POOL_CAP = 1500;
+// Stage-2 refine reduced re-solve pool: baseline roster ∪ candidate ∪ top-N-by-value
+// ∪ N-cheapest. Validated exact vs a 10× pool (rebalances only touch cards near the
+// roster) while cutting each re-solve ~5s→~0.1s.
+const REFINE_POOL_TOPVALUE = 60;
+const REFINE_POOL_CHEAPEST = 30;
 type RoleOverride = "hitter" | "pitcher" | "twoway";
 
 const defOf = (c: Record<string, unknown>) => ({
@@ -579,6 +598,13 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp, firstByDisp, starterPosByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
   const opts = { ...opts0, lockedIds: locked, twoWayIds, lineupLocks };
   const r = await generateFullRoster(hitters, pitchers, opts);
+  // Stash the baseline (owned solve) so stage-2 refine can reuse it instead of
+  // re-solving the expensive budgeted baseline.
+  if (ownedOnly && r.status === "Optimal") setBaseline(baselineKey(tid, aid, metric, excluded, locked), {
+    objective: r.objective, hitterIds: r.hitters, pitcherIds: r.pitchers,
+    lineupVR: r.lineupVR.map((x) => x.id), lineupVL: r.lineupVL.map((x) => x.id),
+    rotation: r.rotation.map((x) => x.id), bullpen: r.bullpen,
+  });
   // Reconstruct the DISPLAY score from the signed-distance value, per metric.
   // hitter: value + baseline (both metrics). pitcher: woba → baseline − value
   // (allowed wOBA); basic → value + baseline (quality, higher = better).
@@ -778,6 +804,131 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     bench,
     memberIds: [...new Set([...r.hitters, ...r.pitchers].map((id) => id.replace(/#V$/, "")))],
   };
+}
+
+// ── Stage-2 exact upgrade refinement (hybrid; the ONE upgrade-value path) ────
+// Stage 1 (the single-swap matching) is used only to pick WHICH cards to evaluate
+// (a shortlist — we can't re-solve all ~1000s of unowned cards); its numbers are
+// never shown. Every displayed number is stage-2 exact: lock the candidate onto the
+// roster, re-solve the real MILP (which rebalances the whole roster under the budget),
+// and measure the value gain against the baseline. No new scoring math — reuses
+// generateFullRoster + the same pool/opts (one scoring core).
+//
+// The value is measured in interpretable wOBA-value units, all from the SAME re-solve
+// so they cohere: hitters report per-side lineup gains (dVR full, dVL discounted by the
+// tournament's relative LHP exposure) and total = dVR + dVL (a SUM that visibly adds up
+// from the shown sides); pitchers report the weighted staff-value delta.
+//
+// Perf: the budgeted baseline pool is HARD_POOL_CAP (~1500) → a full re-solve is
+// slow (~5s slots). But a locked-candidate re-solve only needs the baseline roster
+// + the candidate + a rebalancing buffer, so we run each re-solve over a REDUCED
+// pool: baseline roster ∪ candidate ∪ top-value ∪ cheapest (cheap cards preserve
+// cap-reclaim headroom) — validated exact vs the full pool.
+type RefineOne = { id: string; kind: "hitter" | "pitcher"; stage2: number; dVR?: number; dVL?: number; ms: number; status: string };
+
+// Keep the forced set (roster + candidate), then top-value + cheapest of the rest.
+function reduceCandPool<T extends { id: string; cost: number; valueVR: number; valueVL: number }>(
+  pool: T[], keep: Set<string>, topByValue: number, cheapest: number,
+): T[] {
+  const forced = pool.filter((c) => keep.has(c.id));
+  const rest = pool.filter((c) => !keep.has(c.id));
+  const byVal = [...rest].sort((a, b) => Math.max(b.valueVR, b.valueVL) - Math.max(a.valueVR, a.valueVL)).slice(0, topByValue);
+  const inByVal = new Set(byVal.map((c) => c.id));
+  const byCheap = rest.filter((c) => !inByVal.has(c.id)).sort((a, b) => a.cost - b.cost).slice(0, cheapest);
+  return [...forced, ...byVal, ...byCheap];
+}
+
+async function refineUpgrades(
+  tid: string, aid: string | null, excluded: string[], roleOverrides: Record<string, RoleOverride>,
+  metric: Metric, locked: string[], hitterIds: string[], pitcherIds: string[],
+  poolTopValue: number, poolCheapest: number, onResult?: (r: RefineOne) => void | Promise<void>,
+): Promise<{ mode: string; baselineObj: number; baselineMs: number; results: RefineOne[] }> {
+  const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
+  const opts0 = rosterOptions(t);
+  const strip = (id: string) => id.replace(/#V$/, "");
+  const allCand = new Set([...hitterIds, ...pitcherIds]);
+  const forceInclude = new Set<string>([...allCand, ...locked]);
+  // Force-included candidates default to the HITTER pool; pin each to its bucket so
+  // pitcher candidates actually land in `pitchers` (else they'd be silently skipped).
+  const roles: Record<string, RoleOverride> = { ...roleOverrides };
+  for (const id of hitterIds) roles[id] = "hitter";
+  for (const id of pitcherIds) roles[id] = "pitcher";
+  const { hitters, pitchers, twoWayIds, ownedByDisp } = rosterCandidates(
+    t, aid, true, new Set(excluded), roles, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
+  const opts = { ...opts0, twoWayIds, lockedIds: locked };
+  const isUnownedCand = (id: string) => allCand.has(strip(id)) && (ownedByDisp[id] ?? 0) <= 0;
+  // Owned-only baseline pool: drop the force-included UNOWNED candidates so the
+  // baseline is the best OWNED roster (the true reference the delta measures against).
+  const ownedH = hitters.filter((h) => !isUnownedCand(h.id));
+  const ownedP = pitchers.filter((p) => !isUnownedCand(p.id));
+
+  // Reuse the baseline from generation when available (skips the ~5s budgeted solve);
+  // else solve it here. The reduced re-solve pool always contains the baseline roster,
+  // so its unlocked optimum equals the full-pool baseline objective — the delta is valid.
+  const snap = baselineCache.get(baselineKey(tid, aid, metric, excluded, locked));
+  let baselineObj: number, baselineMs = 0, rosterH: Set<string>, rosterP: Set<string>;
+  let baseLineupVR: string[], baseLineupVL: string[], baseRotation: string[], baseBullpen: string[];
+  if (snap) {
+    baselineObj = snap.objective; rosterH = new Set(snap.hitterIds); rosterP = new Set(snap.pitcherIds);
+    baseLineupVR = snap.lineupVR; baseLineupVL = snap.lineupVL; baseRotation = snap.rotation; baseBullpen = snap.bullpen;
+  } else {
+    const tB = performance.now();
+    const base = await generateFullRoster(ownedH, ownedP, opts);
+    baselineMs = performance.now() - tB;
+    baselineObj = base.objective; rosterH = new Set(base.hitters); rosterP = new Set(base.pitchers);
+    baseLineupVR = base.lineupVR.map((x) => x.id); baseLineupVL = base.lineupVL.map((x) => x.id);
+    baseRotation = base.rotation.map((x) => x.id); baseBullpen = base.bullpen;
+  }
+  const hById = new Map(hitters.map((c) => [strip(c.id), c]));
+  const pById = new Map(pitchers.map((c) => [strip(c.id), c]));
+  const wVR = opts.platoonVR, wVL = opts.platoonVL;
+  // Upgrade OVR discounts the vL gain by the tournament's LHP exposure RELATIVE to RHP
+  // (vR counts full; you face LHP less often). Dynamic from the split — balanced 50/50
+  // ⇒ ×1 (no discount), 58/42 ⇒ ×0.72. Not a locked constant.
+  const vlMult = wVR > 0 ? wVL / wVR : 1;
+  // Per-side lineup value (hitters) + weighted staff value (pitchers), in value units.
+  const lineupVal = (ids: string[], side: "VR" | "VL") => ids.reduce((s, id) => s + (side === "VR" ? (hById.get(strip(id))?.valueVR ?? 0) : (hById.get(strip(id))?.valueVL ?? 0)), 0);
+  const pVal = (id: string, role: PitchRole) => { const p = pById.get(strip(id)); return p ? blendPitch(p.valueVR, p.valueVL, p.throws, role, opts.pitchSplit, wVR, wVL) : 0; };
+  // Rotation arms count full; bullpen arms at 0.25 (a reliever throws ~¼ a starter's
+  // innings) — the same staff weighting the single-swap upgrade used.
+  const ROT_W = 1, BULL_W = 0.25;
+  const staffVal = (rot: string[], pen: string[]) => ROT_W * rot.reduce((s, id) => s + pVal(id, "sp"), 0) + BULL_W * pen.reduce((s, id) => s + pVal(id, "rp"), 0);
+  const baseVR = lineupVal(baseLineupVR, "VR"), baseVL = lineupVal(baseLineupVL, "VL"), baseStaff = staffVal(baseRotation, baseBullpen);
+  const redP0 = reduceCandPool(ownedP, rosterP, poolTopValue, poolCheapest); // pitcher side, fixed across hitter re-solves
+  const redH0 = reduceCandPool(ownedH, rosterH, poolTopValue, poolCheapest); // hitter side, fixed across pitcher re-solves
+
+  const results: RefineOne[] = [];
+  const solveWith = async (hp: HitterCandidate[], pp: PitcherCandidate[], lockId: string) => {
+    const t1 = performance.now();
+    const r = await generateFullRoster(hp, pp, { ...opts, lockedIds: [...locked, lockId] });
+    return { r, ms: performance.now() - t1 };
+  };
+  const emit = async (one: RefineOne) => { results.push(one); if (onResult) await onResult(one); };
+  for (const cid of hitterIds) {
+    const cand = hById.get(cid); if (!cand) continue;
+    const hp = reduceCandPool([...ownedH, cand], new Set([...rosterH, cand.id]), poolTopValue, poolCheapest);
+    const { r, ms } = await solveWith(hp, redP0, strip(cand.id));
+    const ok = r.status === "Optimal";
+    const dVR = ok ? lineupVal(r.lineupVR.map((x) => x.id), "VR") - baseVR : 0;
+    const dVLw = (ok ? lineupVal(r.lineupVL.map((x) => x.id), "VL") - baseVL : 0) * vlMult;
+    // OVR is a SUM of the two per-side lineup gains (NOT a platoon-weighted average):
+    // vR counts full, vL is discounted by relative LHP exposure, and they add — so a
+    // vR-only +13 is worth +13 and a both-sides card adds the (discounted) vL on top.
+    // Round each side to display precision first so vR + vL == OVR exactly on screen.
+    // (This display metric only — every other use, incl. the optimizer objective, still
+    // platoon-weights via valueFor/blendPitch.)
+    const vrI = Math.round(dVR * 1000), vlI = Math.round(dVLw * 1000);
+    await emit({ id: cid, kind: "hitter", dVR: vrI / 1000, dVL: vlI / 1000, stage2: (vrI + vlI) / 1000, ms: Math.round(ms), status: r.status });
+  }
+  for (const cid of pitcherIds) {
+    const cand = pById.get(cid); if (!cand) continue;
+    const pp = reduceCandPool([...ownedP, cand], new Set([...rosterP, cand.id]), poolTopValue, poolCheapest);
+    const { r, ms } = await solveWith(redH0, pp, strip(cand.id));
+    const ok = r.status === "Optimal";
+    const dStaff = ok ? staffVal(r.rotation.map((x) => x.id), r.bullpen) - baseStaff : 0;
+    await emit({ id: cid, kind: "pitcher", stage2: round(dStaff), ms: Math.round(ms), status: r.status });
+  }
+  return { mode: opts.mode, baselineObj: round(baselineObj), baselineMs: Math.round(baselineMs), results };
 }
 
 // ── Training data (M6 / SP-9) ──────────────────────────────────────────────────
@@ -1203,6 +1354,32 @@ const server = createServer(async (req, res) => {
     // /api/upgrades returns ONLY the Biggest Upgrades (small payload) — used to refill the
     // client's upgrade buffer after a dismiss without re-sending the full roster + Next Best.
     return json(res, url === "/api/upgrades" ? { biggestUpgrades: result.biggestUpgrades ?? null } : result);
+  }
+
+  // ── Stage-2 exact upgrade refinement (hybrid) — NDJSON stream ──
+  // Re-ranks the Biggest Upgrades shortlist with EXACT whole-roster marginals (lock
+  // each candidate, re-solve, diff objective vs the baseline). Streams one JSON line
+  // per candidate as it completes so the client autoloads exact numbers in place.
+  // Reuses the baseline cached by the preceding /api/roster call. Candidate ids come
+  // from the client (h/sp/rp = the current shortlist); the client maps id→bucket.
+  if (method === "GET" && url === "/api/upgrades/refine") {
+    const list = (k: string) => (u.searchParams.get(k) || "").split(",").filter(Boolean);
+    const metric: Metric = u.searchParams.get("metric") === "basic" ? "basic" : "woba";
+    const hIds = list("h"), spIds = list("sp"), rpIds = list("rp");
+    res.writeHead(200, { "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" });
+    const write = (o: unknown) => res.write(JSON.stringify(o) + "\n");
+    try {
+      const ref = await refineUpgrades(
+        tid, aid, list("excluded"), {}, metric, list("locked"),
+        hIds, [...spIds, ...rpIds], REFINE_POOL_TOPVALUE, REFINE_POOL_CHEAPEST,
+        (one) => { write({ type: "result", id: one.id, stage2: one.stage2, dVR: one.dVR, dVL: one.dVL, status: one.status }); },
+      );
+      write({ type: "done", mode: ref.mode, count: ref.results.length, baselineMs: ref.baselineMs });
+    } catch (e) {
+      write({ type: "error", error: String(e) });
+    }
+    res.end();
+    return;
   }
 
   // ── Parks library import (raw pt_ballparks.txt) ──
