@@ -9,7 +9,6 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "typecheck:web": "tsc --noEmit -p web/tsconfig.json",
-    "golden": "node tools/golden/generate-golden.ts",
     "server": "node src/server/server.ts",
     "dev": "node tools/dev.ts",
     "dev:web": "vite --config web/vite.config.ts",

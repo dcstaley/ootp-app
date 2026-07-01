@@ -75,35 +75,32 @@ real pool sizes.
 - **Alternate model (prior art for D3):** `recalibrate_pt_model.py` in `C:\ootp_app` — a standalone
   sequential conditional cubic-logistic model; not what the old app trains, useful for the bake-off.
 
-## Definition of done for Step 1 (scoring core)
+## Definition of done for Step 1 (scoring core) — DONE
 A single scoring module that, given a card's ratings + a tournament config, produces the per-(card,
-side, role) value — and reproduces the current app's scores on the same inputs within a small tolerance,
-with unit tests. No second copy of the scoring math anywhere.
+side, role) value, with unit tests. No second copy of the scoring math anywhere. (The original goal was
+old-app parity within tolerance; parity is now SUNSET — the deployed model is data-driven raw-poly.)
 
 ## Conventions
 - **Stack:** single TypeScript package, ESM (`"type": "module"`). Node 24 runs `.ts` scripts directly via
   type-stripping (no build step) — so relative imports use explicit `.ts` extensions and `import type`.
   Vitest for tests. No frontend/UI yet (deferred to the Data Grid step); packaging = local Node server +
   browser (decided; not built yet).
-- **Commands:** `npm test` (parity), `npm run golden` (regenerate golden refs from captures),
-  `npm run typecheck` (`tsc --noEmit`).
+- **Commands:** `npm test`, `npm run typecheck` (`tsc --noEmit`), `npm run typecheck:web`,
+  `npm run build:web`, `npm run dev` (Vite 5173 + Node 8787).
 - **Module layout:**
   - `src/scoring-core/` — the ONE scoring core. `helpers.ts` (single copy of cp/softcap/park/ssp/gb),
     `basic.ts`, `woba.ts` (raw assembly + trusted calibration), `score-card.ts` (orchestrator → per-card
     score matrix), `index.ts` (public surface). If you write scoring math anywhere else, stop.
   - `src/model/` — D3 swappable event model behind `EventModel` (`predictHitting`/`predictPitching`);
-    `log-linear.ts` is the current (parity) port. Nothing downstream assumes how events are produced.
+    `raw-poly.ts` is the DEPLOYED model. `log-linear.ts` is the retired parity port (out of production).
   - `src/config/` — `types.ts` (Coeffs/CalScales/Derived/ScoringConfig — one bag for now; D4 separation
     is a later step), `derived.ts` (era_h / era_effective_hr).
-  - `tools/golden/` — THROWAWAY validation harness. `old/` holds verbatim extracts of the old app's
-    scoring code (formula bodies unchanged) used only to emit golden reference numbers. NOT app code;
-    never import from `tools/` into `src/`.
-  - `tools/capture-snippet.js` — pasted into the OLD app's console to export a tournament's
-    `{coeffs, calScales}` for validation. `fixtures/captures/*.json` (inputs) → `fixtures/golden/*` (refs).
-- **Validation:** parity is measured against the user's TRUSTED scores = the old Roster & Lineup page's
-  calibrated `getHittingScore`/`getPitchingScore`, NOT the datagrid. Workflow: capture → `npm run golden`
-  → `npm test`. `fixtures/captures/_synthetic.json` is a dev smoke-test only (invented coeffs, not the
-  old dead defaults); real per-tournament captures are the true oracle.
-- **Parity rule:** reproduce the old math exactly, quirks included (e.g. pitching uses raw `park_gap`
-  while hitting uses `cp(park_gap)`; calibrated hitting BIP drops `adv_sf`). Flag quirks in comments as
-  post-parity reconciliation candidates; never silently "fix" one during the port.
+  - `fixtures/captures/*.json` — per-tournament `{coeffs, calScales}` kept as SCORING-INPUT fixtures for
+    the test suite (`optimizer`, `calibrate`, `raw-poly`, `coeff-resolve`, …). Not regenerated.
+- **Old-app PARITY is SUNSET (2026-07-01).** We no longer validate against the old app or care about it.
+  Removed: `tests/parity.test.ts`, the `tools/golden/` harness (+ `old/` extracts), the `fixtures/golden/`
+  snapshots, and the `npm run golden` script. Make deliberate scoring changes freely — no golden re-baseline.
+- **Testing:** the deployed model is the raw-poly event model; `tests/raw-poly.test.ts` guards that
+  `scoreCard` == the bake-off model, and the other suites cover calibration / optimizer / training / etc.
+- **Env factors:** ALL park factors are COMPRESSED via `cp` (0.26) — hitting AND pitching (the old
+  pitching-uses-raw-`park_gap` quirk was reconciled 2026-07-01). Era factors are NOT compressed.

@@ -88,11 +88,11 @@ export function pitchingComponents(
     ? hRate(eventForm.pit.h, e.pbabipSC, BIP_fin) * derived.era_h * parkAvg
     : Math.max((coeffs.p_nHH_int ?? 0) + (coeffs.p_nHH_pbabip ?? 0) * Math.log(Math.max(e.pbabipSC, 1)) + (coeffs.p_nHH_bip ?? 0) * Math.log(BIP_fin), 0)
         * (coeffs.p_leagueNorm_h ?? 1) * derived.era_h * parkAvg;
-  // QUIRK (replicate, reconcile post-parity): XBH uses RAW era_gap & park_gap (no cp()),
-  // unlike hitting which uses cp(park_gap). #2 uses the fixed 0.25 share (matching the
-  // bake-off) and drops p_xbh_norm (old normalization); the env factors stay identical.
+  // park_gap is COMPRESSED here (cp), same as hitting — all park factors are compressed
+  // (post-parity reconciliation: pitching previously used raw park_gap, a parity quirk).
+  // #2 uses the fixed 0.25 share (matching the bake-off) and drops p_xbh_norm (old norm).
   const xbhShare = eventForm ? 0.25 : (coeffs.p_xbh_share ?? 0.25) * (coeffs.p_xbh_norm ?? 1);
-  const XBH_fin = nHH_fin * xbhShare * coeffs.era_gap * coeffs.park_gap;
+  const XBH_fin = nHH_fin * xbhShare * coeffs.era_gap * cp(coeffs.park_gap);
   const oneB_fin = Math.max(nHH_fin - XBH_fin, 0);
   return { BB_fin, HR_fin, oneB_fin, XBH_fin };
 }
