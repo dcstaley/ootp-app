@@ -1261,7 +1261,7 @@ const server = createServer(async (req, res) => {
     const preCfg = { ...s.ctx.config, poolTransform: undefined };
     const eff = applyAffine; // raw → effective via the real transform (no duplicated math)
     const PIT: [string, string][] = [["con", "Control"], ["stu", "Stuff"], ["pbabip", "pBABIP"], ["hrr", "pHR"]];
-    const HIT: [string, string][] = [["babip", "BABIP"], ["pow", "Power"], ["eye", "Eye"], ["k", "Avoid K"], ["gap", "Gap"]];
+    const HIT: [string, string][] = [["babip", "BABIP"], ["pow", "Power"], ["eye", "Eye"], ["kRat", "Avoid K"], ["gap", "Gap"]];
     const cfg = s.ctx.config; const co = cfg.coeffs, dv = cfg.derived, cs = cfg.calScales, ef = cfg.eventForm;
     const evModel = ef ? makeRawPolyModel(ef) : null;
     const r4 = (x: number) => Math.round(x * 1e4) / 1e4;
