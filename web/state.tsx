@@ -89,7 +89,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetch("/api/tournaments").then((r) => r.json())
       .then((d: { tournaments: TournamentOpt[]; defaultId: string }) => {
-        setTournaments(d.tournaments);
+        setTournaments([...d.tournaments].sort((a, b) => a.name.localeCompare(b.name)));
         setTournamentId(d.defaultId || d.tournaments[0]?.id || "");
       }).catch((e) => setErr(String(e)));
     loadAccounts().catch((e) => setErr(String(e)));
