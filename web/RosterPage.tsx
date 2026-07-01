@@ -157,6 +157,7 @@ export function RosterPage() {
   const [availCat, setAvailCat] = useState<AvailCat>("hitVR");
   const [nbOwnedOnly, setNbOwnedOnly] = useState(true); // Next Best: owned-only view
   const [nbMaxValue, setNbMaxValue] = useState("");      // Next Best: max Card Value filter
+  const [nbSearch, setNbSearch] = useState("");          // Next Best: manual name search (spans the full pool)
 
   useEffect(() => { if (!roster && !rosterLoading) generateRoster(); }, []);
 
@@ -360,11 +361,17 @@ export function RosterPage() {
   // Tabs by need (Hit vR / Hit vL now; Pitch/SP/defence/value filter to follow).
   const addedIds = new Set(added.map((a) => a.row.id));
   const maxV = nbMaxValue.trim() === "" ? null : Number(nbMaxValue);
-  // The full available pool; filter (owned, value, tab) then render only the top slice.
-  const availAll: AvailRow[] = (roster?.nextBest?.available ?? []).filter((x) =>
-    !addedIds.has(x.id) && !removed.has(x.id)
-    && (!nbOwnedOnly || x.owned > 0)
+  const nbQuery = nbSearch.trim().toLowerCase();
+  // Every eligible card not on the roster (owned + unowned). BROWSE applies the owned/value
+  // toggles; a name SEARCH spans this whole pool (ignoring owned/value/tab filters) so any
+  // card is findable to add — the +Add path force-includes it exactly like an Acquire.
+  const poolRaw: AvailRow[] = (roster?.nextBest?.available ?? []).filter((x) => !addedIds.has(x.id) && !removed.has(x.id));
+  const availAll: AvailRow[] = poolRaw.filter((x) =>
+    (!nbOwnedOnly || x.owned > 0)
     && (maxV == null || !Number.isFinite(maxV) || x.cost <= maxV));
+  const searchAll: AvailRow[] = nbQuery
+    ? poolRaw.filter((x) => x.title.toLowerCase().includes(nbQuery) || (x.last ?? "").toLowerCase().includes(nbQuery))
+    : [];
   const NB_RENDER = 100; // cap rendered cards (keeps the DOM light; filter scans all)
   const activeCat = AVAIL_CATS.find((c) => c.id === availCat)!;
   const minStam = roster?.minStarterStamina ?? 70, minPit = roster?.minPitchTypes ?? 3;
@@ -372,17 +379,19 @@ export function RosterPage() {
   const toPitcher = (a: AvailRow): AvailPitcherRow => ({ id: a.id, title: a.title, last: a.last, throws: a.throws, cost: a.cost, owned: a.owned, stamina: a.stamina, pitchTypes: a.pitchTypes, woba: a.pitOVR, wobaVL: a.pitVL, wobaVR: a.pitVR });
   // Per-tab list: filter to position/role relevance, sort by the metric, top slice.
   const hitterList = (): AvailHitterRow[] => {
-    let list = availAll;
-    if (availCat === "ifRng") list = list.filter((a) => IF.some((p) => a.positions.includes(p)));
-    else if (availCat === "ofRng") list = list.filter((a) => OF.some((p) => a.positions.includes(p)));
-    else if (availCat === "cAbil") list = list.filter((a) => a.positions.includes("C"));
+    let list = nbQuery ? searchAll : availAll; // a search spans the whole pool (skip the position sub-filter)
+    if (!nbQuery) {
+      if (availCat === "ifRng") list = list.filter((a) => IF.some((p) => a.positions.includes(p)));
+      else if (availCat === "ofRng") list = list.filter((a) => OF.some((p) => a.positions.includes(p)));
+      else if (availCat === "cAbil") list = list.filter((a) => a.positions.includes("C"));
+    }
     const key: (a: AvailRow) => number =
       availCat === "hitVL" ? (a) => a.hitVL : availCat === "hitVR" ? (a) => a.hitVR :
       availCat === "ifRng" ? (a) => a.def.ifR : availCat === "ofRng" ? (a) => a.def.ofR : (a) => a.def.cAb;
     return [...list].sort((a, b) => key(b) - key(a)).slice(0, NB_RENDER).map(toHitter);
   };
   const pitcherList = (): AvailPitcherRow[] => {
-    const list = availCat === "sp" ? availAll.filter((a) => a.stamina >= minStam && a.pitchTypes >= minPit) : availAll;
+    const list = nbQuery ? searchAll : (availCat === "sp" ? availAll.filter((a) => a.stamina >= minStam && a.pitchTypes >= minPit) : availAll);
     return [...list].sort((a, b) => a.pitOVR - b.pitOVR).slice(0, NB_RENDER).map(toPitcher); // lower allowed = better
   };
   const catBtn = (id: AvailCat, label: string) => (
@@ -450,7 +459,7 @@ export function RosterPage() {
     for (const p of curPitchers) m.set(p.id, { kind: "pitcher", row: p });
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availCat, curHitters.length, curPitchers.length, nbOwnedOnly, nbMaxValue, added.length, removed.size]);
+  }, [availCat, curHitters.length, curPitchers.length, nbOwnedOnly, nbMaxValue, nbSearch, added.length, removed.size]);
   const availItems: ReactNode[] = activeCat.kind === "hitter" ? curHitters.map(availHitterCard) : curPitchers.map(availPitcherCard);
   const poolSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const onPoolDragEnd = (e: DragEndEvent) => {
@@ -539,6 +548,12 @@ export function RosterPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5, marginBottom: 8 }}>
                   {AVAIL_CATS.map((c) => catBtn(c.id, c.label))}
                 </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+                  <input type="text" value={nbSearch} onChange={(e) => setNbSearch(e.target.value)} placeholder="Search any player by name…"
+                    title="Search the whole eligible pool by name (owned + unowned; ignores the owned/value filters). Switch the Hit/Pitch tab to add as a hitter or pitcher."
+                    style={{ ...inputStyle, flex: "1 1 auto", minWidth: 0, padding: "3px 7px", fontSize: 12 }} />
+                  {nbSearch && <button onClick={() => setNbSearch("")} title="Clear search" style={{ ...inputStyle, padding: "1px 0", width: 24, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", flex: "0 0 auto", color: C.sub }}>✕</button>}
+                </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
                   <label style={{ fontSize: 12, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <input type="checkbox" checked={nbOwnedOnly} onChange={(e) => setNbOwnedOnly(e.target.checked)} /> Owned only
@@ -551,7 +566,7 @@ export function RosterPage() {
                   </label>
                 </div>
                 {availItems.length === 0
-                  ? <p style={{ fontSize: 12, color: C.sub }}>None available for this tab.</p>
+                  ? <p style={{ fontSize: 12, color: C.sub }}>{nbQuery ? `No player matches “${nbSearch.trim()}”.` : "None available for this tab."}</p>
                   : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 260px)", overflowY: "auto", paddingRight: 4 }}>{availItems}</div>}
               </div>
 
