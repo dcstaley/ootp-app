@@ -1,20 +1,20 @@
 {
-  "id": "new-tournament-2",
-  "name": "Silver Cap",
+  "id": "new-tournament-2-2-2-2-2-2-2",
+  "name": "Early Gold",
   "card_value_min": null,
-  "card_value_max": 79,
-  "total_cap": 1475,
+  "card_value_max": 89,
+  "total_cap": null,
   "roster_size": 26,
-  "hitters": 14,
-  "pitchers": 12,
-  "min_starters": 5,
-  "min_starter_stamina": 55,
+  "hitters": 16,
+  "pitchers": 10,
+  "min_starters": 4,
+  "min_starter_stamina": 50,
   "min_pitch_types": 3,
-  "dh": true,
+  "dh": false,
   "variants_allowed": true,
-  "max_variants_on_roster": 10,
-  "eraId": "era-1998",
-  "parkId": "park-1",
+  "max_variants_on_roster": 0,
+  "eraId": "era-1920",
+  "parkId": "park-169",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -51,66 +51,59 @@
   "positionRanks": {
     "RF": {
       "starter": {}
-    },
-    "C": {
-      "backup": {}
     }
   },
-  "platoonVR": 0.58,
-  "platoonVL": 0.42,
-  "budget_mode": "cap",
+  "platoonVR": 0.5798834749058775,
+  "platoonVL": 0.4201165250941224,
+  "budget_mode": "none",
+  "platoon": {
+    "r_hit_split": 0.5401288195738561,
+    "l_hit_split": 0.3368311079985764,
+    "s_hit_split": 0.5623230905283367,
+    "r_pitch_split": 0.48106468193606067,
+    "l_pitch_split": 0.29379892766447907,
+    "r_pitch_split_sp": 0.4714550685005527,
+    "l_pitch_split_sp": 0.2734945513505361,
+    "r_pitch_split_rp": 0.49899402992925335,
+    "l_pitch_split_rp": 0.33033183572548547
+  },
   "topHitters": 100,
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
-  "platoon": {
-    "r_hit_split": 0.54,
-    "l_hit_split": 0.337,
-    "s_hit_split": 0.562,
-    "r_pitch_split": 0.481,
-    "l_pitch_split": 0.294,
-    "r_pitch_split_sp": 0.471,
-    "l_pitch_split_sp": 0.273,
-    "r_pitch_split_rp": 0.499,
-    "l_pitch_split_rp": 0.33
-  },
   "positionMins": {
     "C": {
-      "starter": {
-        "ability": 70,
-        "frame": 60
-      },
-      "backup": {
-        "ability": 65,
-        "frame": 0
-      }
+      "starter": {},
+      "backup": {}
     },
     "1B": {
-      "backup": {
+      "starter": {
         "range": 20
       }
     },
     "2B": {
-      "backup": {
-        "range": 75
-      },
-      "starter": {
-        "range": 80
-      }
-    },
-    "3B": {
-      "starter": {
-        "range": 60
-      },
-      "backup": {
-        "range": 50
-      }
-    },
-    "SS": {
       "starter": {
         "range": 85
       },
       "backup": {
         "range": 80
+      }
+    },
+    "3B": {
+      "starter": {
+        "range": 60,
+        "arm": 60
+      },
+      "backup": {
+        "range": 50,
+        "arm": 50
+      }
+    },
+    "SS": {
+      "starter": {
+        "range": 95
+      },
+      "backup": {
+        "range": 85
       }
     },
     "LF": {
@@ -120,19 +113,19 @@
     },
     "CF": {
       "starter": {
-        "range": 85
+        "range": 95
       },
       "backup": {
-        "range": 80
+        "range": 85
       }
     },
     "RF": {
       "starter": {
         "range": 60,
-        "arm": 60
+        "arm": 50
       },
       "backup": {
-        "range": 50,
+        "range": 60,
         "arm": 50
       }
     }
