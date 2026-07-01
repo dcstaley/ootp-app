@@ -76,6 +76,35 @@ let accounts = new Map((await repo.loadAll<AccountOverlay>("accounts")).map((a) 
 let state: AppState = (await repo.load<AppState>("state", "app")) ?? { activeAccountId: null, catalogSourceId: null, activeTournamentId: null };
 const saveState = () => repo.save("state", "app", state);
 
+// ── One-time id migration (D4): tournament ids track their display name. Older
+// records were keyed by the creation-time placeholder ("new-tournament-2-2-…") and
+// never re-derived when renamed, so the files no longer read like their names.
+// Re-slug each from its name (bronze-cap.json, …). The built-in default keeps its
+// pinned id (DEFAULT_TOURNAMENT_ID — its name wouldn't slug back to it).
+{
+  const taken = new Set(tournamentById.keys());
+  let migrated = 0;
+  for (const t of [...tournamentById.values()]) {
+    if (t.id === "default-neutral") continue;
+    const want = slug(t.name);
+    if (!want || want === t.id) continue;
+    taken.delete(t.id);
+    let nid = want, k = 2;
+    while (taken.has(nid)) nid = `${want}-${k++}`;
+    taken.add(nid);
+    const oldId = t.id;
+    tournamentById.delete(oldId);
+    await repo.delete("tournaments", oldId);
+    if (state.activeTournamentId === oldId) { state.activeTournamentId = nid; await saveState(); }
+    t.id = nid;
+    tournamentById.set(nid, t);
+    await repo.save("tournaments", nid, t);
+    console.log(`[server] tournament id migrated: ${oldId} → ${nid} ("${t.name}")`);
+    migrated++;
+  }
+  if (migrated) console.log(`[server] tournaments: ${migrated} id(s) re-slugged to match names`);
+}
+
 // Shared catalog = the current source import (latest upload); fallback to the
 // committed docs sample on a fresh clone.
 function loadCatalog(): { catalog: Catalog; source: string } {
@@ -1124,6 +1153,15 @@ await refreshActiveModel();
 // Precompute the default tournament so first paint is instant.
 scoredFor(DEFAULT_TOURNAMENT_ID);
 
+// Next free tournament id for `base`, appending -2, -3, … on collision (never the old
+// -2-2-2 loop). `keep` is the record's own current id, which doesn't count as a clash
+// (so re-saving without a rename is a no-op).
+function freeTournamentId(base: string, keep?: string): string {
+  const b = base || "tournament";
+  if (!tournamentById.has(b) || b === keep) return b;
+  for (let n = 2; ; n++) { const id = `${b}-${n}`; if (!tournamentById.has(id) || id === keep) return id; }
+}
+
 // ── HTTP ──────────────────────────────────────────────────────────────────────
 const MIME: Record<string, string> = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
@@ -1468,8 +1506,13 @@ const server = createServer(async (req, res) => {
     const name = String(body.name ?? "").trim();
     if (!name) return json(res, { error: "name required" }, 400);
     const existing = body.id ? tournamentById.get(body.id) : null;
-    let id = body.id || slug(name);
-    if (!existing) { while (tournamentById.has(id)) id += "-2"; } // avoid id collision on create
+    const oldId = existing?.id ?? null;
+    // Id tracks the display name (D4): re-slug on create AND on rename. The built-in
+    // default keeps its pinned id (its name wouldn't slug back to it).
+    const pinned = oldId === DEFAULT_TOURNAMENT_ID;
+    const id = pinned ? oldId!
+      : existing ? freeTournamentId(slug(name), oldId!)
+      : freeTournamentId(body.id || slug(name));
     // Preserve softcaps/eligibility from the existing record unless the body carries them
     // (the Phase-1 editor doesn't touch those, so don't let it blow them away).
     const base = existing ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
@@ -1492,6 +1535,13 @@ const server = createServer(async (req, res) => {
       if (body.platoonVR === undefined) t.platoonVR = activePlatoon.teamVR;
       if (body.platoonVL === undefined) t.platoonVL = activePlatoon.teamVL;
     }
+    // Rename: drop the stale file/entry and repoint the active-tournament pointer.
+    if (oldId && oldId !== id) {
+      await repo.delete("tournaments", oldId);
+      tournamentById.delete(oldId);
+      cache.delete(oldId);
+      if (state.activeTournamentId === oldId) { state.activeTournamentId = id; await saveState(); }
+    }
     await repo.save("tournaments", id, t);
     tournamentById.set(id, t);
     cache.delete(id); // era/park/softcaps/value-range affect scoring → re-score on next read
@@ -1500,7 +1550,7 @@ const server = createServer(async (req, res) => {
   if (method === "POST" && url === "/api/tournaments/duplicate") {
     const src = tournamentById.get(u.searchParams.get("id") || "");
     if (!src) return json(res, { error: "unknown tournament" }, 400);
-    let id = slug(`${src.name} copy`); while (tournamentById.has(id)) id += "-2";
+    const id = freeTournamentId(slug(`${src.name} copy`));
     const t: Tournament = { ...src, id, name: `${src.name} (copy)` };
     await repo.save("tournaments", id, t);
     tournamentById.set(id, t);

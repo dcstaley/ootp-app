@@ -99,6 +99,7 @@ export function TournamentsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const savedRef = useRef<string>(""); // JSON of the last-persisted draft (auto-save baseline)
+  const adoptedIdRef = useRef<string | null>(null); // id the server re-slugged us to (skip its reload)
 
   useEffect(() => { fetch("/api/libraries").then((r) => r.json()).then(setLibs).catch(() => {}); }, []);
   // Full era/park objects (for the factor strips beside the selectors) — keyed by id.
@@ -111,6 +112,9 @@ export function TournamentsPage() {
   // Load the selected tournament; seed the auto-save baseline so a plain load never re-saves.
   useEffect(() => {
     if (!selId) return;
+    // We just re-slugged this record ourselves (rename auto-save) — the draft is already
+    // current; refetching would clobber in-progress edits. Consume the flag and skip.
+    if (adoptedIdRef.current === selId) { adoptedIdRef.current = null; return; }
     fetch("/api/tournament?id=" + encodeURIComponent(selId)).then((r) => r.json()).then((t) => {
       if (!t.error) { setDraft(t); savedRef.current = JSON.stringify(t); setMsg(null); }
     }).catch(() => {});
@@ -174,6 +178,16 @@ export function TournamentsPage() {
         const d = await r.json();
         if (!r.ok) { setMsg({ text: d.error || "Save failed.", ok: false }); return; }
         savedRef.current = snap;
+        // The server re-slugs the id to track the name (D4). Adopt the new id so later
+        // saves target the moved record (not a stale id → duplicate), without letting
+        // the selId reload effect refetch over our in-flight draft.
+        if (d.id && d.id !== draft.id) {
+          const adopted = { ...draft, id: d.id };
+          savedRef.current = JSON.stringify(adopted);
+          adoptedIdRef.current = d.id;
+          setDraft(adopted);
+          setSelId(d.id);
+        }
         await reloadTournaments();
         if (d.id === tournamentId) await reloadView();
         setMsg({ text: "Saved.", ok: true });

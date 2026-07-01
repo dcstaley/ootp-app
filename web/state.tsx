@@ -21,7 +21,7 @@ interface AppData {
   // Regenerate) and removed = client-side drop from the CURRENT roster (resets on
   // Regenerate). dirty = generation params changed since the last generate.
   locked: Set<string>; excluded: Set<string>; removed: Set<string>; dirty: boolean;
-  toggleLock: (id: string) => void; toggleExclude: (id: string) => void; removeCard: (id: string) => void;
+  toggleLock: (id: string, role?: RoleOverride) => void; toggleExclude: (id: string) => void; removeCard: (id: string) => void;
   // Biggest Upgrades: dismiss without regenerating (roster is unchanged) + refill the buffer.
   excludeNoRegen: (id: string) => void;
   fetchUpgrades: () => Promise<BiggestUpgrades | null>;
@@ -174,7 +174,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const setOwnedOnly = (v: boolean) => { setOwnedOnlyState(v); setDirty(true); };
   const setMetric = (m: "woba" | "basic") => { setMetricState(m); setDirty(true); };
-  const toggleLock = (id: string) => { setLocked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setExcluded((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
+  // Lock/unlock a card onto the roster. The role it's locked AS (P/H/2W — the value
+  // shown in the roster grid) travels WITH the lock: on lock we snapshot it into the
+  // role override so Regenerate force-pools the card in that role (a locked SP stays an
+  // SP, not a defaulted bench bat); on unlock we release both. Callers pass the shown
+  // role; the rail's ✕ passes none (it's unlocking anyway).
+  const toggleLock = (id: string, role?: RoleOverride) => {
+    const locking = !locked.has(id);
+    setLocked((s) => { const n = new Set(s); locking ? n.add(id) : n.delete(id); return n; });
+    setRoleOv((m) => { const n = new Map(m); if (locking) { if (role) n.set(id, role); } else n.delete(id); return n; });
+    setExcluded((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; });
+    setDirty(true);
+  };
   const toggleExclude = (id: string) => { setExcluded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); setLocked((s) => { if (!s.has(id)) return s; const n = new Set(s); n.delete(id); return n; }); setDirty(true); };
   // Remove from the current roster. A manually-added card is pulled out of `added`
   // (re-opening its slot + unlocking); a generated card goes to `removed`.
@@ -185,9 +196,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setLocked((l) => { if (!l.has(id)) return l; const n = new Set(l); n.delete(id); return n; });
     // drop any lineup locks for this card (both sides) — it's leaving the roster.
     setLineupLocks((m) => { const n = new Map(m); n.delete(lockKey("L", id)); n.delete(lockKey("R", id)); return m.size === n.size ? m : n; });
+    // release the role pin too — leaving the roster releases the locked-as-role (mirrors unlock).
+    setRoleOv((m) => { if (!m.has(id)) return m; const n = new Map(m); n.delete(id); return n; });
     if (added.some((a) => a.row.id === id)) {
       setAdded((a) => a.filter((x) => x.row.id !== id));
-      setRoleOv((m) => { const n = new Map(m); n.delete(id); return n; });
     } else {
       setRemoved((s) => { const n = new Set(s); n.add(id); return n; });
     }

@@ -285,7 +285,7 @@ export function RosterPage() {
   const actionsCell = (id: string): ReactNode => (
     <span style={{ display: "inline-flex", gap: 2, alignItems: "center" }}>
       {roleControl(id)}
-      <button onClick={() => toggleLock(id)} title="Lock to roster (required on regenerate)" style={iconBtn(locked.has(id), "#22c55e")}>{locked.has(id) ? "🔒" : "🔓"}</button>
+      <button onClick={() => toggleLock(id, roleOverrides.get(id) ?? lpRoleById.get(id) ?? "hitter")} title="Lock to roster in its current role (required on regenerate)" style={iconBtn(locked.has(id), "#22c55e")}>{locked.has(id) ? "🔒" : "🔓"}</button>
       <button onClick={() => toggleExclude(id)} title="Exclude from generation (never selected)" style={iconBtn(excluded.has(id), "#ef4444")}>{excluded.has(id) ? "🚫" : "⊘"}</button>
       <button onClick={() => removeCard(id)} title="Remove from the current roster (returns on Regenerate)" style={{ ...iconBtn(false), color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
     </span>

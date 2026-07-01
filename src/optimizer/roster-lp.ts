@@ -173,15 +173,29 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // ── Required cards (locks): force the entity onto the roster ──
   const locked = new Set(opts.lockedIds ?? []);
   if (locked.size) {
-    // A two-way card is locked via its hitter var (rp_j follows from rh_i = rp_j);
-    // a pure hitter/pitcher via its own membership.
-    const lockedH = new Set<number>();
-    hitters.forEach((c, i) => { if (locked.has(strip(c.id)) || locked.has(c.id)) { cons.push(` lock_h_${i}: rh_${i} = 1`); lockedH.add(i); } });
+    const isLocked = (id: string) => locked.has(strip(id)) || locked.has(id);
+    // A locked card present in BOTH pools needs care:
+    //   • two-way (rh_i = rp_j): lock the hitter var; the pitcher var follows.
+    //   • single-role (rh_i + rp_j ≤ 1): do NOT pin the hitter var — that would force
+    //     the pitcher var to 0 and strand a pitcher on the bench. Instead force the
+    //     pair onto the roster (≥ 1); the ≤ 1 sr constraint + the objective then pick
+    //     the better role (e.g. a locked SP stays an SP, not a low-value bench bat).
+    // A pure hitter / pure pitcher is locked via its own membership.
     const twoWayHIdx = new Set(twoWay.map((o) => o.i));
+    const srPairByH = new Map<number, number>();
+    for (const o of overlapTerms) if (!o.twoWay) srPairByH.set(o.i, o.j);
+    const lockedH = new Set<number>();
+    hitters.forEach((c, i) => {
+      if (!isLocked(c.id)) return;
+      const j = srPairByH.get(i);
+      if (j != null) cons.push(` lock_sr_${i}_${j}: rh_${i} + rp_${j} >= 1`);
+      else cons.push(` lock_h_${i}: rh_${i} = 1`);
+      lockedH.add(i);
+    });
     pitchers.forEach((c, j) => {
       const i = hIdxById.get(c.id);
-      if (i != null && (lockedH.has(i) || twoWayHIdx.has(i))) return; // covered by hitter lock / rh=rp
-      if (locked.has(strip(c.id)) || locked.has(c.id)) cons.push(` lock_p_${j}: rp_${j} = 1`);
+      if (i != null && (lockedH.has(i) || twoWayHIdx.has(i))) return; // covered above / rh=rp
+      if (isLocked(c.id)) cons.push(` lock_p_${j}: rp_${j} = 1`);
     });
   }
 
