@@ -16,6 +16,27 @@ export const posStr = (positions: string[]) => {
   return f.length > 7 ? f.slice(0, 7).join("/") + "…" : f.join("/"); // cap at 7 positions
 };
 
+// POS cell: shows every position a card CAN play (Learn), with positions it does NOT
+// meet the tournament's defensive minimum for shown in amber (still playable, just
+// below the def requirement to start there). `eligible` = the starter-eligible subset.
+export const posCell = (all: string[], eligible: string[]): ReactNode => {
+  const elig = new Set(eligible);
+  const f = [...all].filter((p) => p !== "DH").sort((a, b) => posRank(a) - posRank(b));
+  if (!f.length) return "DH";
+  const shown = f.slice(0, 7);
+  return (
+    <span>
+      {shown.map((p, i) => (
+        <span key={p}>
+          {i > 0 && <span style={{ color: C.sub }}>/</span>}
+          <span style={elig.has(p) ? undefined : { color: "#fbbf24" }} title={elig.has(p) ? undefined : `${p}: below this tournament's defensive minimum to start`}>{p}</span>
+        </span>
+      ))}
+      {f.length > 7 && <span style={{ color: C.sub }}>…</span>}
+    </span>
+  );
+};
+
 export const star = (t: string): ReactNode => (t.startsWith("★") ? <><span style={{ color: C.star }}>★</span>{t.slice(1)}</> : t);
 
 export const twoWayBadge = (
@@ -55,11 +76,15 @@ export function defStr(d: CardDef, pos: string): string {
 
 // Group ratings (label + its individual ratings) the card has, capped at 8 ratings total
 // with a trailing "…" when there are more (keeps multi-position lines from running wide).
-export function defSummary(h: { positions: string[]; def: CardDef }): string {
+// Uses ALL positions the card can play (allPositions) — a player shows the ratings for a
+// position they can play even when they don't meet its defensive minimum (e.g. Prince
+// Fielder still shows IF ratings at 1B).
+export function defSummary(h: { positions: string[]; allPositions?: string[]; def: CardDef }): string {
+  const pos = h.allPositions ?? h.positions;
   const segs: [string, string][] = [];
-  if (h.positions.includes("C")) segs.push(["C", defStr(h.def, "C")]);
-  if (IF.some((p) => h.positions.includes(p))) segs.push(["IF", defStr(h.def, "1B")]);
-  if (OF.some((p) => h.positions.includes(p))) segs.push(["OF", defStr(h.def, "LF")]);
+  if (pos.includes("C")) segs.push(["C", defStr(h.def, "C")]);
+  if (IF.some((p) => pos.includes(p))) segs.push(["IF", defStr(h.def, "1B")]);
+  if (OF.some((p) => pos.includes(p))) segs.push(["OF", defStr(h.def, "LF")]);
   let budget = 8, truncated = false;
   const parts: string[] = [];
   for (const [label, str] of segs) {

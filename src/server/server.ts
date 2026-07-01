@@ -541,7 +541,7 @@ function rosterCandidates(
     const useP = e.role === "pitcher" || e.role === "twoway" || (e.role === "auto" && pitcherPool.has(e.dispId));
     if (useH) {
       const q = qualifiedPositions(e.dispId, e.positions);
-      hitters.push({ id: e.dispId, title: e.title, bats: e.bats, valueVR: e.hitVR, valueVL: e.hitVL, positions: q.starter, coverPositions: q.cover, cost: e.cost });
+      hitters.push({ id: e.dispId, title: e.title, bats: e.bats, valueVR: e.hitVR, valueVL: e.hitVL, positions: q.starter, coverPositions: q.cover, playPositions: e.positions, cost: e.cost });
     }
     if (useP) pitchers.push({ id: e.dispId, title: e.title, throws: e.throws, valueVR: e.pitVR, valueVL: e.pitVL, stamina: e.stamina, pitchTypes: e.pitchTypes, cost: e.cost });
     const isTwoWay = useH && useP && (e.role === "twoway" || (e.role === "auto" && twHit.has(e.dispId) && twPit.has(e.dispId)));
@@ -641,9 +641,12 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const BATS: Record<number, string> = { 1: "R", 2: "L", 3: "S" };
   const THROWS: Record<number, string> = { 1: "R", 2: "L" };
   const roleRank: Record<string, number> = { both: 0, vL: 1, vR: 1, bench: 2, starter: 0, reliever: 1 };
+  // Raw Learn positions (all a card CAN play) per dispId — POS shows these; the
+  // starter-eligible subset (c.positions) drives the def-requirement colour-coding.
+  const rawPosByDisp = new Map(entries.map((e) => [e.dispId, e.positions]));
   const rosterHitters = r.hitters.map((id) => {
     const c = hById.get(id)!; const role = hitRole(id);
-    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, def: defByDisp[id],
+    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, allPositions: rawPosByDisp.get(id) ?? c.positions, def: defByDisp[id],
       wobaVL: hScore(c.valueVL), wobaVR: hScore(c.valueVR), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
   const rosterPitchers = r.pitchers.map((id) => {
@@ -667,7 +670,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const available = entries.filter((e) => !rosteredDisp.has(e.dispId)).map((e) => ({
     id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "",
     bats: BATS[e.bats] ?? "", throws: THROWS[e.throws] ?? "",
-    positions: e.positions, def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
+    positions: e.positions, startPositions: starterPosByDisp[e.dispId] ?? [], def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
     hitVL: hScore(e.hitVL), hitVR: hScore(e.hitVR),
     pitOVR: pScore(e.pitOVR), pitVL: pScore(e.pitVL), pitVR: pScore(e.pitVR),
     stamina: e.stamina, pitchTypes: e.pitchTypes,
@@ -682,7 +685,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   // Pitchers: marginal vs the weakest rotation (SP) / bullpen (RP) arm. Only computed for
   // the regime where "best owned roster, what to acquire" is well-defined: non-cap/
   // non-slots + owned-only. Coverage-depth (backups) is intentionally out of scope here.
-  type HU = { id: string; title: string; last: string; bats: string; positions: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean };
+  type HU = { id: string; title: string; last: string; bats: string; positions: string[]; allPositions: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean };
   type PU = { id: string; title: string; last: string; throws: string; stamina: number; pitchTypes: number; cost: number; total: number; twoWay: boolean };
   let biggestUpgrades: { hitters: HU[]; sp: PU[]; rp: PU[] } | null = null;
   if (ownedOnly) {
@@ -730,7 +733,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
       }
       const total = bestJv - jointBase;
       if (total <= EPS) continue;
-      hitUp.push({ id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", bats: BATS[e.bats] ?? "", positions: pos.filter((p) => p !== "DH"), cost: e.cost, deltaVR: round(bestNR - baseR), deltaVL: round(bestNL - baseL), total: round(total), twoWay: false });
+      hitUp.push({ id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "", bats: BATS[e.bats] ?? "", positions: pos.filter((p) => p !== "DH"), allPositions: (rawPosByDisp.get(e.dispId) ?? pos).filter((p) => p !== "DH"), cost: e.cost, deltaVR: round(bestNR - baseR), deltaVL: round(bestNL - baseL), total: round(total), twoWay: false });
     }
     // Pitchers: weighted STAFF re-sort. The staff objective mirrors the optimizer's
     // (Σ bullpenW·value over all rostered + Σ slotW_k·value over the rotation), so adding a
@@ -788,12 +791,23 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     biggestUpgrades = { hitters: top(hitUp, 15), sp: top(spUp, 8), rp: top(rpUp, 8) };
   }
 
+  // Slot-tier usage (slots mode): per cumulative tier, how many DISTINCT rostered cards
+  // are at/above the threshold vs the limit — drives the right-rail budget readout.
+  const memberCost = new Map<string, number>();
+  for (const id of r.hitters) memberCost.set(strip(id), hById.get(id)?.cost ?? 0);
+  for (const id of r.pitchers) if (!memberCost.has(strip(id))) memberCost.set(strip(id), pById.get(id)?.cost ?? 0);
+  const rosterCosts = [...memberCost.values()];
+  const slotUsage = opts.mode === "slots"
+    ? cumulativeSlotLimits(t.slot_counts ?? {}, opts.rosterSize ?? (t.hitters + t.pitchers))
+        .map((l) => ({ threshold: l.threshold, limit: l.limit, used: rosterCosts.filter((c) => c >= l.threshold).length }))
+    : null;
+
   return {
     roles, rosterHitters, rosterPitchers, ownedOnly, metric, twoWayIds: [...twoWaySet], nextBest, biggestUpgrades,
     cardValueMin: t.card_value_min ?? 40, cardValueMax: t.card_value_max ?? null,
     nHitters: t.hitters, nPitchers: t.pitchers,
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
-    status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null,
+    status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null, slotUsage,
     objective: r.objective, balance: r.balance ?? null,
     poolHitters: hitters.length, poolPitchers: pitchers.length,
     rosterSize: new Set([...r.hitters, ...r.pitchers].map(strip)).size,

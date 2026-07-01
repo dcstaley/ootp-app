@@ -14,7 +14,7 @@ import {
   type RosterHitterRow, type RosterPitcherRow, type RoleOverride, type AvailRow, type AvailHitterRow, type AvailPitcherRow, type AddedCard,
   type BiggestUpgrades, type UpgradeHitter, type UpgradePitcher, type RefinedValue,
 } from "./shared.ts";
-import { IF, OF, posStr, star, nameCell, defSummary, ROLE_OV } from "./roster-cells.tsx";
+import { IF, OF, posStr, posCell, star, nameCell, defSummary, ROLE_OV } from "./roster-cells.tsx";
 
 function Legend({ roles }: { roles: string[] }) {
   return (
@@ -84,7 +84,7 @@ function UpgradesPanel({ data, onExclude, onAcquire, busy, refining, refinedCoun
       <tbody>{data.hitters.map((h: UpgradeHitter) => (
         <tr key={h.id} style={{ borderTop: `1px solid ${C.border}55` }}>
           {name(h.title, h.twoWay)}
-          <td style={{ ...td, color: C.sub }}>{h.positions.join("/") || "DH"}</td>
+          <td style={{ ...td, color: C.sub }}>{posCell(h.allPositions ?? h.positions, h.positions)}</td>
           <td style={numCell(h, h.deltaVR)}>{val(h, h.deltaVR)}</td>
           <td style={numCell(h, h.deltaVL)}>{val(h, h.deltaVL)}</td>
           <td style={numCell(h, h.total, true)}>{val(h, h.total)}</td>
@@ -235,10 +235,13 @@ export function RosterPage() {
   const lpRoleById = new Map<string, RoleOverride>();
   for (const h of roster?.rosterHitters ?? []) lpRoleById.set(h.id, h.twoWay ? "twoway" : "hitter");
   for (const p of roster?.rosterPitchers ?? []) if (!lpRoleById.has(p.id)) lpRoleById.set(p.id, "pitcher");
-  // Excluded players (kept out of generation) — surfaced so they can be un-excluded.
+  // Locked / excluded players — surfaced on the right rail so they can be released.
   const cardById = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards]);
   const excludedList = [...excluded].map((id) => ({ id, title: cardById.get(id)?.title ?? id }))
     .sort((a, b) => a.title.localeCompare(b.title));
+  const lockedList = [...locked].map((id) => ({ id, title: cardById.get(id)?.title ?? id }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+  const railBtnStyle: React.CSSProperties = { ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", flex: "0 0 auto", color: "#f87171", border: "1px solid #ef4444" };
 
   const roleBg = (role: string): React.CSSProperties => ({ background: ROSTER_COLORS[role] });
   const tabBtn = (id: Tab, label: string) => (
@@ -339,7 +342,7 @@ export function RosterPage() {
     { key: "b", label: "B", align: "c", width: 26, value: (h) => h.bats },
     { key: "vL", label: "vL", align: "r", width: 58, value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
     { key: "vR", label: "vR", align: "r", width: 58, value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
-    { key: "pos", label: "Pos", width: 150, min: 44, shrink: 2, value: (h) => posStr(h.positions) },
+    { key: "pos", label: "Pos", width: 150, min: 44, shrink: 2, value: (h) => posStr(h.allPositions ?? h.positions), render: (h) => posCell(h.allPositions ?? h.positions, h.positions) },
     { key: "def", label: "Defense", width: 312, min: 90, shrink: 1, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
     { ...actionsCol<RosterHitterRow>(), width: 122 },
   ];
@@ -364,9 +367,8 @@ export function RosterPage() {
     && (maxV == null || !Number.isFinite(maxV) || x.cost <= maxV));
   const NB_RENDER = 100; // cap rendered cards (keeps the DOM light; filter scans all)
   const activeCat = AVAIL_CATS.find((c) => c.id === availCat)!;
-  const catDesc = ({ hitVR: "by vs-RHP value", hitVL: "by vs-LHP value", pitch: "pitchers by overall value", sp: "SP-qualified pitchers", ifRng: "by infield range", ofRng: "by OF range", cAbil: "by catcher ability" } as Record<AvailCat, string>)[availCat];
   const minStam = roster?.minStarterStamina ?? 70, minPit = roster?.minPitchTypes ?? 3;
-  const toHitter = (a: AvailRow): AvailHitterRow => ({ id: a.id, title: a.title, last: a.last, bats: a.bats, positions: a.positions, def: a.def, cost: a.cost, owned: a.owned, wobaVL: a.hitVL, wobaVR: a.hitVR });
+  const toHitter = (a: AvailRow): AvailHitterRow => ({ id: a.id, title: a.title, last: a.last, bats: a.bats, positions: a.positions, startPositions: a.startPositions, def: a.def, cost: a.cost, owned: a.owned, wobaVL: a.hitVL, wobaVR: a.hitVR });
   const toPitcher = (a: AvailRow): AvailPitcherRow => ({ id: a.id, title: a.title, last: a.last, throws: a.throws, cost: a.cost, owned: a.owned, stamina: a.stamina, pitchTypes: a.pitchTypes, woba: a.pitOVR, wobaVL: a.pitVL, wobaVR: a.pitVR });
   // Per-tab list: filter to position/role relevance, sort by the metric, top slice.
   const hitterList = (): AvailHitterRow[] => {
@@ -386,12 +388,20 @@ export function RosterPage() {
   const catBtn = (id: AvailCat, label: string) => (
     <button key={id} onClick={() => setAvailCat(id)} style={{ ...inputStyle, padding: "4px 0", fontSize: 12, cursor: "pointer", background: availCat === id ? C.accent : C.input, color: availCat === id ? "#fff" : C.sub, fontWeight: availCat === id ? 700 : 400, border: `1px solid ${availCat === id ? C.accent : C.border}` }}>{label}</button>
   );
-  const addBtnStyle = (canAdd: boolean): React.CSSProperties => ({
-    ...inputStyle, flex: "0 0 auto", padding: "1px 7px", fontSize: 11, whiteSpace: "nowrap",
-    cursor: canAdd ? "pointer" : "not-allowed", opacity: canAdd ? 1 : 0.45,
-    background: canAdd ? "rgba(34,197,94,0.18)" : C.input, color: canAdd ? "#86efac" : C.sub, border: `1px solid ${canAdd ? "#22c55e" : C.border}`,
-  });
   const addTitle = (canAdd: boolean) => canAdd ? "Add to an open roster slot (locks the card)" : "Roster full — remove a card first to open a slot";
+  // Compact action icons matching the Biggest Upgrades panel: + adds+locks the card
+  // into an open slot; ✕ excludes it from generation (needs Regenerate).
+  const nbIconBtn = (color: string, on: boolean): React.CSSProperties => ({
+    ...inputStyle, padding: "1px 0", width: 24, textAlign: "center", boxSizing: "border-box",
+    fontSize: 12, flex: "0 0 auto", cursor: on ? "pointer" : "not-allowed", opacity: on ? 1 : 0.45,
+    color, border: `1px solid ${color}`,
+  });
+  const nbActions = (id: string, canAdd: boolean, add: () => void) => (
+    <div style={{ display: "flex", gap: 3, flex: "0 0 auto" }}>
+      <button onClick={() => canAdd && add()} disabled={!canAdd} title={addTitle(canAdd)} style={nbIconBtn("#86efac", canAdd)}>+</button>
+      <button onClick={() => toggleExclude(id)} title="Exclude from generation (kept out until un-excluded + Regenerate)" style={nbIconBtn("#f87171", true)}>✕</button>
+    </div>
+  );
   const availHitterCard = (h: AvailHitterRow): ReactNode => {
     const canAdd = emptySpace > 0;
     const act = (v: AvailCat) => v === availCat;
@@ -401,13 +411,13 @@ export function RosterPage() {
           <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
             {h.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(h.title)}
           </span>
-          <button onClick={() => canAdd && addCard({ kind: "hitter", row: h })} disabled={!canAdd} title={addTitle(canAdd)} style={addBtnStyle(canAdd)}>+ Add</button>
+          {nbActions(h.id, canAdd, () => addCard({ kind: "hitter", row: h }))}
         </div>
         <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
           <span style={{ color: act("hitVL") ? C.text : C.sub, fontWeight: act("hitVL") ? 700 : 400 }}>vL {num(h.wobaVL)}</span>
           {" · "}
           <span style={{ color: act("hitVR") ? C.text : C.sub, fontWeight: act("hitVR") ? 700 : 400 }}>vR {num(h.wobaVR)}</span>
-          {" · "}Val {h.cost} · {posStr(h.positions)} {h.bats && `· ${h.bats}`}
+          {" · "}Val {h.cost} · {posCell(h.positions, h.startPositions ?? h.positions)} {h.bats && `· ${h.bats}`}
         </div>
         {defSummary(h) && <div style={{ fontSize: 10, color: C.sub, marginTop: 1 }}>{defSummary(h)}</div>}
       </PoolDraggable>
@@ -421,7 +431,7 @@ export function RosterPage() {
           <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflowWrap: "anywhere" }}>
             {p.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 3 }} title="Not owned">!</span>}{star(p.title)}
           </span>
-          <button onClick={() => canAdd && addCard({ kind: "pitcher", row: p })} disabled={!canAdd} title={addTitle(canAdd)} style={addBtnStyle(canAdd)}>+ Add</button>
+          {nbActions(p.id, canAdd, () => addCard({ kind: "pitcher", row: p }))}
         </div>
         <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>
           <b style={{ color: C.text }}>OVR {num(p.woba)}</b> · vL {num(p.wobaVL)} · vR {num(p.wobaVR)}
@@ -540,12 +550,6 @@ export function RosterPage() {
                       style={{ ...inputStyle, width: 54, padding: "2px 5px", fontSize: 12 }} />
                   </label>
                 </div>
-                <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>
-                  Top available cards, {catDesc}.{" "}
-                  {emptySpace > 0
-                    ? <><b style={{ color: "#86efac" }}>+ Add</b> fills an open slot ({emptySpace}) and locks the card.</>
-                    : <>Roster full — <span style={{ color: "#f87171" }}>remove</span> a card to open a slot.</>}
-                </p>
                 {availItems.length === 0
                   ? <p style={{ fontSize: 12, color: C.sub }}>None available for this tab.</p>
                   : <div style={{ display: "grid", gap: 6, maxHeight: "calc(100vh - 260px)", overflowY: "auto", paddingRight: 4 }}>{availItems}</div>}
@@ -559,22 +563,67 @@ export function RosterPage() {
                 <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} fit resizable resetKey={roster} />
               </RosterDropZone>
 
-              {/* Right rail: Excluded */}
-              <div style={{ flex: "1 1 240px", minWidth: 220, maxWidth: 320 }}>
-                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Excluded ({excludedList.length})</h3>
-                {excludedList.length === 0
-                  ? <p style={{ fontSize: 12, color: C.sub }}>None. Use the <span style={{ color: "#ef4444" }}>⊘</span> action to keep a card out of generation.</p>
-                  : <>
-                      <p style={{ margin: "0 0 6px", fontSize: 11, color: C.sub }}>Never selected. Click ✕ to un-exclude, then Regenerate.</p>
-                      <div style={{ display: "grid", gap: 4 }}>
-                        {excludedList.map((e) => (
+              {/* Right rail: budget usage → locked → excluded */}
+              <div style={{ flex: "1 1 240px", minWidth: 220, maxWidth: 320, display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Cap / Slot usage (when the tournament budgets) */}
+                {roster.mode === "cap" && roster.cap != null && (() => {
+                  const used = roster.cost ?? 0, over = used > roster.cap!;
+                  return (
+                    <div>
+                      <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Cap Usage</h3>
+                      <div style={{ fontSize: 12, color: C.sub, display: "flex", justifyContent: "space-between" }}>
+                        <span>Used <b style={{ color: over ? "#f87171" : C.text }}>{used}</b> / {roster.cap}</span>
+                        <span>{roster.cap! - used} left</span>
+                      </div>
+                      <div style={{ height: 6, background: C.input, borderRadius: 3, marginTop: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${Math.min(100, (100 * used) / roster.cap!)}%`, background: over ? "#f87171" : "#22c55e" }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+                {roster.mode === "slots" && roster.slotUsage && roster.slotUsage.length > 0 && (
+                  <div>
+                    <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Slot Usage</h3>
+                    <div style={{ display: "grid", gap: 3 }}>
+                      {roster.slotUsage.filter((s) => s.limit > 0).map((s) => (
+                        <div key={s.threshold} style={{ fontSize: 12, color: C.sub, display: "flex", justifyContent: "space-between" }}>
+                          <span>Value ≥ {s.threshold}</span>
+                          <span style={{ color: s.used > s.limit ? "#f87171" : s.used === s.limit ? "#fbbf24" : C.text }}><b>{s.used}</b> / {s.limit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Locked */}
+                <div>
+                  <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Locked ({lockedList.length})</h3>
+                  {lockedList.length === 0
+                    ? <p style={{ fontSize: 12, color: C.sub }}>None. Use <span style={{ color: "#22c55e" }}>🔒</span> or <b style={{ color: "#86efac" }}>+</b> to force a card onto the roster.</p>
+                    : <div style={{ display: "grid", gap: 4 }}>
+                        {lockedList.map((e) => (
                           <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "4px 6px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                            <button onClick={() => toggleExclude(e.id)} title="Un-exclude (returns to generation on Regenerate)" style={{ ...inputStyle, padding: "1px 0", width: 26, textAlign: "center", boxSizing: "border-box", fontSize: 12, cursor: "pointer", flex: "0 0 auto", color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
+                            <button onClick={() => toggleLock(e.id)} title="Unlock (no longer forced onto the roster)" style={{ ...railBtnStyle, color: "#86efac", border: "1px solid #22c55e" }}>✕</button>
                             <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, lineHeight: 1.3, overflowWrap: "anywhere" }}>{star(e.title)}</span>
                           </div>
                         ))}
-                      </div>
-                    </>}
+                      </div>}
+                </div>
+                {/* Excluded */}
+                <div>
+                  <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Excluded ({excludedList.length})</h3>
+                  {excludedList.length === 0
+                    ? <p style={{ fontSize: 12, color: C.sub }}>None. Use the <span style={{ color: "#ef4444" }}>✕</span> action to keep a card out of generation.</p>
+                    : <>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          {excludedList.map((e) => (
+                            <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "4px 6px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                              <button onClick={() => toggleExclude(e.id)} title="Un-exclude (returns to generation on Regenerate)" style={railBtnStyle}>✕</button>
+                              <span style={{ flex: "1 1 auto", minWidth: 0, fontSize: 12, lineHeight: 1.3, overflowWrap: "anywhere" }}>{star(e.title)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>}
+                </div>
               </div>
             </div>
             {upShow && <UpgradesPanel data={{ hitters: merge(upShow.hitters, 10), sp: merge(upShow.sp, 5), rp: merge(upShow.rp, 5) }} onExclude={excludeNoRegen} onAcquire={acquireCard} busy={rosterLoading} refining={refineActive} refinedCount={refined.size} />}

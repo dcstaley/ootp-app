@@ -8,8 +8,9 @@ export interface HitterCandidate {
   bats: number;
   valueVR: number;     // per-side hitter value (D2 signed distance from baseline)
   valueVL: number;
-  positions: string[]; // STARTER-eligible lineup positions (Learn flags + "DH", filtered by per-position starter mins)
-  coverPositions?: string[]; // BACKUP-eligible field positions (coverage depth); defaults to `positions` when absent
+  positions: string[]; // QUALIFIED starter positions: eligible (Learn) AND meets the per-position starter def mins. + "DH"
+  coverPositions?: string[]; // BACKUP-qualified field positions (coverage depth); defaults to `positions` when absent
+  playPositions?: string[]; // ELIGIBLE positions: every position the card CAN play (Learn), ignoring def mins. Used only to honour a manual lineup lock at an eligible-but-unqualified position.
   cost: number;        // Card Value — the cap/slots budget cost
 }
 

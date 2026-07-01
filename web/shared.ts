@@ -16,23 +16,27 @@ export interface Meta {
 }
 export interface RosterSlotCard { pos?: string; slot?: number; id: string; title: string; cost: number; stamina?: number; pitchTypes?: number }
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
-export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
+// `positions` = starter-eligible (def-met); `allPositions` = every position the card can play (Learn), for the POS display.
+export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; allPositions?: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
 export interface RosterPitcherRow { id: string; title: string; last: string; first?: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 // Next Best Available pool (M5) — every available card as one unified row (both
 // hit + pitch values); the client derives hitter/pitcher cards per tab.
+// `positions` = every position the card can play (Learn); `startPositions` = the starter-eligible (def-met) subset.
 export interface AvailRow {
   id: string; title: string; last: string; bats: string; throws: string;
-  positions: string[]; def: CardDef; cost: number; owned: number;
+  positions: string[]; startPositions?: string[]; def: CardDef; cost: number; owned: number;
   hitVL: number; hitVR: number; pitOVR: number; pitVL: number; pitVR: number;
   stamina: number; pitchTypes: number;
 }
 // Per-card shapes the Available cards + manual-add use (derived from AvailRow).
-export interface AvailHitterRow { id: string; title: string; last: string; bats: string; positions: string[]; def: CardDef; cost: number; owned: number; wobaVL: number; wobaVR: number }
+export interface AvailHitterRow { id: string; title: string; last: string; bats: string; positions: string[]; startPositions?: string[]; def: CardDef; cost: number; owned: number; wobaVL: number; wobaVR: number }
 export interface AvailPitcherRow { id: string; title: string; last: string; throws: string; cost: number; owned: number; stamina: number; pitchTypes: number; woba: number; wobaVL: number; wobaVR: number }
 // A manually-added card (fills an open roster slot); tagged by which table it joins.
 export type AddedCard = { kind: "hitter"; row: AvailHitterRow } | { kind: "pitcher"; row: AvailPitcherRow };
+export interface SlotTierUsage { threshold: number; limit: number; used: number }
 export interface RosterResult {
   status: string; mode: string; cap: number | null; cost: number | null; objective: number; ownedOnly: boolean; metric: string;
+  slotUsage?: SlotTierUsage[] | null;
   minStarterStamina: number; minPitchTypes: number;
   balance: { hitterValue: number; pitcherValue: number } | null;
   poolHitters: number; poolPitchers: number; rosterSize: number; nHitters: number; nPitchers: number;
@@ -50,7 +54,7 @@ export interface RosterResult {
 // ranked by combined lineup-assignment marginal (per-side deltas show both-sides vs platoon);
 // pitchers vs the weakest rotation (SP) / bullpen (RP) arm. `total` = the upgrade magnitude.
 // `refined` (client-only) = this row's `total` is the exact stage-2 marginal (cap/slots).
-export interface UpgradeHitter { id: string; title: string; last: string; bats: string; positions: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean; refined?: boolean }
+export interface UpgradeHitter { id: string; title: string; last: string; bats: string; positions: string[]; allPositions?: string[]; cost: number; deltaVR: number; deltaVL: number; total: number; twoWay: boolean; refined?: boolean }
 export interface UpgradePitcher { id: string; title: string; last: string; throws: string; stamina: number; pitchTypes: number; cost: number; total: number; twoWay: boolean; refined?: boolean }
 export interface BiggestUpgrades { hitters: UpgradeHitter[]; sp: UpgradePitcher[]; rp: UpgradePitcher[] }
 // Stage-2 exact refinement result for one candidate (value units): per-side lineup

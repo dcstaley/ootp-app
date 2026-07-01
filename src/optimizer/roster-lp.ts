@@ -52,6 +52,21 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const obj: string[] = [];
   const bin: string[] = [];
   const cons: string[] = [];
+  const strip = (id: string) => id.replace(/#V$/, "");
+
+  // A manual lineup lock may pin a card to any ELIGIBLE (can-play) position — even one
+  // it isn't def-QUALIFIED to start. We emit the yh var for such positions so the lock
+  // (yh=1) can bind; the AUTO optimizer still only assigns QUALIFIED positions (below).
+  const lockEligPos = new Map<number, Set<string>>();
+  if (opts.lineupLocks?.length) {
+    const idxByBase = new Map<string, number>(); hitters.forEach((c, i) => idxByBase.set(strip(c.id), i));
+    for (const lk of opts.lineupLocks) {
+      const i = idxByBase.get(strip(lk.id));
+      if (i == null || !positions.includes(lk.pos)) continue;
+      const c = hitters[i]!;
+      if ((c.playPositions ?? c.positions).includes(lk.pos)) (lockEligPos.get(i) ?? lockEligPos.set(i, new Set()).get(i)!).add(lk.pos);
+    }
+  }
 
   // ── Hitters ──
   const rhVars = hitters.map((_, i) => `rh_${i}`);
@@ -62,7 +77,7 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     for (const side of ["L", "R"] as const) {
       const w = side === "R" ? opts.platoonVR : opts.platoonVL;
       const val = side === "R" ? c.valueVR : c.valueVL;
-      for (const p of c.positions) {
+      for (const p of new Set([...c.positions, ...(lockEligPos.get(i) ?? [])])) {
         if (!positions.includes(p)) continue;
         const y = `yh_${i}_${p}_v${side}`;
         bin.push(y);
@@ -134,7 +149,6 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   //   • two-way (Top-X overlap or forced toggle): rh_i = rp_j — used as both sides
   //     or neither (always-two-way per the user); counted ONCE toward roster + cap.
   //   • single-role (in both pools but not two-way): rh_i + rp_j ≤ 1 — pick one.
-  const strip = (id: string) => id.replace(/#V$/, "");
   const hIdxById = new Map<string, number>(); hitters.forEach((c, i) => hIdxById.set(c.id, i));
   const twoWaySet = new Set(opts.twoWayIds ?? []);
   const overlapTerms: { i: number; j: number; cost: number; twoWay: boolean }[] = [];
@@ -181,7 +195,8 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     const i = hIdxByBase.get(strip(lk.id));
     if (i == null) continue;
     const c = hitters[i]!;
-    if (!positions.includes(lk.pos) || !c.positions.includes(lk.pos)) continue;
+    // Allow the lock at any ELIGIBLE position (the yh var was emitted above for it).
+    if (!positions.includes(lk.pos) || !(c.playPositions ?? c.positions).includes(lk.pos)) continue;
     cons.push(` lkpos_${i}_${lk.pos}_v${lk.side}: yh_${i}_${lk.pos}_v${lk.side} = 1`);
   }
 
