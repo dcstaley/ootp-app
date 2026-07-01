@@ -1,8 +1,8 @@
-// Pool-strength rating transform — a mean-scalar lift with a logistic fade. It must (1) lift a
-// weaker pool toward the league by the MEAN ratio (preserving true lows + relative spacing) in
-// the bulk, (2) FADE the lift out as a rating nears/exceeds the model's trained max — the gap
-// peaking BELOW the max and decaying toward ~0 (never 0, never capped) past it, and (3) be the
-// identity when there's no lift (k = 1).
+// Pool-strength rating transform — a mean-scalar lift, faded BEFORE the trained max, HARD-CAPPED
+// at max + buffer. It must (1) lift a weaker pool toward the league by the MEAN ratio (preserving
+// true lows + relative spacing) in the bulk, (2) aggressively fade the lift as a rating nears the
+// trained max, (3) never lift past C + buffer and keep a rating at/above C + buffer at its raw
+// value, and (4) be the identity when there's no lift (k = 1).
 
 import { describe, it, expect } from "vitest";
 import { ratingStats, affineFor, applyAffine, type RatingStats } from "../src/model/pool-transform.ts";
@@ -24,20 +24,26 @@ describe("pool-transform — mean-scalar with logistic fade", () => {
     expect(applyAffine(0, m)).toBeCloseTo(0, 6);
   });
 
-  it("the lift (gap) PEAKS BELOW the max, then DECAYS through and past it toward ~0", () => {
+  it("the lift PEAKS below the max, then AGGRESSIVELY fades approaching it", () => {
     const gap = (r: number) => applyAffine(r, m) - r;
-    const g = [60, 100, 150, 200, 280, 400].map(gap);
-    // rises to a peak somewhere in the low/mid range...
+    const g = [60, 100, 150, 190].map(gap);
     const peak = Math.max(...g), peakAt = g.indexOf(peak);
     expect(peakAt).toBeGreaterThan(0);            // not at the very bottom
-    expect(peakAt).toBeLessThan(g.length - 1);    // and not at the very top — it's a hump
-    // ...then strictly decreases through and past the max
-    expect(gap(200)).toBeLessThan(gap(150));      // shrinking by the max
-    expect(gap(280)).toBeLessThan(gap(200));      // keeps shrinking after
-    expect(gap(400)).toBeLessThan(gap(280));
-    // toward ~0 but NEVER 0 (always at least a touch of lift), and NEVER capped
-    expect(gap(400)).toBeGreaterThan(0);
-    expect(applyAffine(400, m)).toBeGreaterThan(400); // not capped / not pulled to raw
+    expect(peakAt).toBeLessThan(g.length - 1);    // and not at the very top — it's a hump below C
+    // strictly shrinking as the rating climbs toward the max
+    expect(gap(180)).toBeLessThan(gap(150));
+    expect(gap(190)).toBeLessThan(gap(180));
+  });
+
+  it("HARD-CAPS the lift at C + buffer, and keeps raw at/above it", () => {
+    const B = 5; // MAX_BUFFER
+    for (const r of [150, 190, 200, 204]) expect(applyAffine(r, m)).toBeLessThanOrEqual(C + B + 1e-9);
+    // a rating just under the max can be nudged up to the buffer (here 200 → 205)
+    expect(applyAffine(200, m)).toBeCloseTo(C + B, 6);
+    // at/above C + buffer, the raw rating is kept exactly (elite / off-chart cards untouched)
+    expect(applyAffine(C + B, m)).toBeCloseTo(C + B, 6);
+    expect(applyAffine(280, m)).toBeCloseTo(280, 6);
+    expect(applyAffine(400, m)).toBeCloseTo(400, 6);
   });
 
   it("effective stays monotone increasing (a higher raw never scores lower)", () => {
