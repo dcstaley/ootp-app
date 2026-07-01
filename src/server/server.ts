@@ -359,10 +359,13 @@ const ratingDist = (sortedDesc: number[]): RatingDist => ({
 function positionPoolStats(t: Tournament, s: Scored): Record<string, Record<string, RatingDist>> {
   const ctx = s.ctx;
   const xH = t.topHitters && t.topHitters > 0 ? t.topHitters : 100;
-  // Score every eligible base card; keep its defense, playable positions, and hit value.
+  // Score every eligible NON-VARIANT card; keep its defense, playable positions, and hit
+  // value. Variants are excluded from the pool distribution (mean/max/top5/top10 and the
+  // rank-requirement thresholds derived from it) — same "variants set no baseline" rule as
+  // the rating-scaling reference field.
   const cands: { def: Def; positions: string[]; vL: number; vR: number }[] = [];
   for (const c0 of catalog.cards) {
-    if (!ctx.isEligible(c0)) continue;
+    if (!isBaseCard(c0) || !ctx.isEligible(c0)) continue;
     const sc = scoreCard(c0, ctx.config);
     cands.push({
       def: defOf(c0),
