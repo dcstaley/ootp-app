@@ -23,8 +23,8 @@ import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../
 import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeFieldStats, buildPoolTransform, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
-import { pitchingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
-import { cp } from "../scoring-core/helpers.ts";               // park compression, for the trace
+import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
+import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -1288,6 +1288,28 @@ const server = createServer(async (req, res) => {
         finalEvents_per600: { BB: r4(k.BB_fin), K: r4(K_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.XBH_fin), BIP: r4(BIP_fin) },
       };
     };
+    // Hitter event trace (per side), mirroring the pitcher one: effective ratings →
+    // base events (predictHitting) → era/park-adjusted finals (hittingComponents).
+    const hitTrace = (c: Record<string, unknown>, side: "vR" | "vL") => {
+      if (!evModel) return "(no event model)";
+      const bats = n(c["Bats"]); const th = pt?.hit[side];
+      const eR = { eye: eff(n(c[`Eye ${side}`]), th?.eye), pow: eff(n(c[`Power ${side}`]), th?.pow), kRat: eff(n(c[`Avoid K ${side}`]), th?.kRat), babip: eff(n(c[`BABIP ${side}`]), th?.babip), gap: eff(n(c[`Gap ${side}`]), th?.gap), speed: 0, steal: 0, run: 0 };
+      const e = evModel.predictHitting(eR, co) as any;
+      const vR = side === "vR";
+      const sBB = vR ? (cs?.hitBBScaleVR ?? 1) : (cs?.hitBBScaleVL ?? 1);
+      const sHR = vR ? (cs?.hitHRScaleVR ?? 1) : (cs?.hitHRScaleVL ?? 1);
+      const sFinal = vR ? (cs?.hitScaleVR ?? 1) : (cs?.hitScaleVL ?? 1);
+      const k = hittingComponents(e, sBB, sHR, bats, side, co, dv, ef);
+      const SO_fin = e.SO * co.era_k;
+      const BIP_fin = Math.max(600 - k.BB_fin - (co.adv_hbp ?? 6) - (co.adv_sh ?? 0) - SO_fin - k.HR_fin, 1);
+      return {
+        effRatings: { eye: r4(eR.eye), pow: r4(eR.pow), kRat: r4(eR.kRat), babip: r4(eR.babip), gap: r4(eR.gap) },
+        baseEvents_per600: { BB: r4(e.BB), SO: r4(e.SO), HR: r4(e.HR) },
+        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: co.era_gap, park_hr: r4(getParkFactor(bats, vR, co.park_hr_r, co.park_hr_l)), park_avg: r4(getParkFactor(bats, vR, co.park_avg_r, co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
+        calScales: { hitBBScale: r4(sBB), hitHRScale: r4(sHR), hitScale: r4(sFinal) },
+        finalEvents_per600: { BB: r4(k.BB_fin), SO: r4(SO_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.GAP_fin), BIP: r4(BIP_fin) },
+      };
+    };
     const out: any[] = [];
     for (const c of catalog.cards) {
       const title = String(c["//Card Title"] ?? "");
@@ -1298,7 +1320,7 @@ const server = createServer(async (req, res) => {
       out.push({
         title, cardValue: n(c["Card Value"]), throws: n(c["Throws"]), eligible: s.ctx.isEligible(c),
         pit: { ratings: pt ? ratesFor(PIT, pt.pit) : "(no transform)", wobaPre: { vR: +pre.pitch.woba_vR.toFixed(4), vL: +pre.pitch.woba_vL.toFixed(4) }, wobaPost: { vR: +post.pitch.woba_vR.toFixed(4), vL: +post.pitch.woba_vL.toFixed(4) }, trace: { vR: pitTrace(c, "vR"), vL: pitTrace(c, "vL") } },
-        hit: { ratings: pt ? ratesFor(HIT, pt.hit) : "(no transform)", wobaPre: { vR: +pre.hit.woba_vR.toFixed(4), vL: +pre.hit.woba_vL.toFixed(4) }, wobaPost: { vR: +post.hit.woba_vR.toFixed(4), vL: +post.hit.woba_vL.toFixed(4) } },
+        hit: { ratings: pt ? ratesFor(HIT, pt.hit) : "(no transform)", wobaPre: { vR: +pre.hit.woba_vR.toFixed(4), vL: +pre.hit.woba_vL.toFixed(4) }, wobaPost: { vR: +post.hit.woba_vR.toFixed(4), vL: +post.hit.woba_vL.toFixed(4) }, trace: { vR: hitTrace(c, "vR"), vL: hitTrace(c, "vL") } },
       });
     }
     return json(res, { tournament: t.name, era: t.eraId, park: t.parkId, transformActive: !!pt, matches: out.length, cards: out });
