@@ -16,8 +16,9 @@ export interface Meta {
 }
 export interface RosterSlotCard { pos?: string; slot?: number; id: string; title: string; cost: number; stamina?: number; pitchTypes?: number }
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
-// `positions` = starter-eligible (def-met); `allPositions` = every position the card can play (Learn), for the POS display.
-export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; allPositions?: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
+// `positions` = QUALIFIED to START (meets starter def min); `coverPositions` = QUALIFIED to
+// BACK UP (meets starter OR backup min); `allPositions` = ELIGIBLE (can play, Learn).
+export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; coverPositions?: string[]; allPositions?: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
 export interface RosterPitcherRow { id: string; title: string; last: string; first?: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 // Next Best Available pool (M5) — every available card as one unified row (both
 // hit + pitch values); the client derives hitter/pitcher cards per tab.

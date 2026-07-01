@@ -179,16 +179,25 @@ export function LineupTab({
           <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Depth (vs {sideLabel})</h3>
           <div style={{ display: "grid", gap: 6 }}>
             {FIELD.map((p) => {
-              const backups = hitters.filter((h) => (h.allPositions ?? h.positions).includes(p) && pos[side][h.id] !== p).sort((a, b) => score(b.id, side) - score(a.id, side)).slice(0, 2);
+              // A qualified BACKUP meets the position's BACKUP min (coverPositions), not the
+              // stricter starter min. Qualified backups sort first; eligible-only (can play but
+              // below even the backup min) sort after and show amber.
+              const qual = (h: RosterHitterRow) => (h.coverPositions ?? h.positions).includes(p);
+              const backups = hitters.filter((h) => (h.allPositions ?? h.positions).includes(p) && pos[side][h.id] !== p)
+                .sort((a, b) => (Number(qual(b)) - Number(qual(a))) || (score(b.id, side) - score(a.id, side))).slice(0, 2);
+              const noQualified = !backups.some(qual);
               return (
                 <div key={p} style={{ padding: "6px 8px", border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: C.link }}>{p}</div>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: C.link }}>{p}{noQualified && backups.length > 0 && <span style={{ color: "#fbbf24", fontWeight: 400 }} title="No rostered backup meets the defensive minimum here"> · no qualified backup</span>}</div>
                   {backups.length === 0 ? <div style={{ fontSize: 11, color: "#ef4444", fontStyle: "italic" }}>No backups</div>
-                    : backups.map((b, i) => (
-                      <div key={b.id} style={{ fontSize: 11, paddingLeft: 6 }}>
-                        {i + 1}. {b.title.replace(/^★\s*/, "")} <span style={{ color: C.sub }}>· {defStr(b.def, p)} · {num(score(b.id, side))}</span>
-                      </div>
-                    ))}
+                    : backups.map((b, i) => {
+                      const q = qual(b);
+                      return (
+                        <div key={b.id} style={{ fontSize: 11, paddingLeft: 6, color: q ? undefined : "#fbbf24" }} title={q ? undefined : `Eligible at ${p} but below the defensive minimum`}>
+                          {i + 1}. {b.title.replace(/^★\s*/, "")}{!q && " ⚠"} <span style={{ color: C.sub }}>· {defStr(b.def, p)} · {num(score(b.id, side))}</span>
+                        </div>
+                      );
+                    })}
                 </div>
               );
             })}

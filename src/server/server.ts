@@ -646,7 +646,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const rawPosByDisp = new Map(entries.map((e) => [e.dispId, e.positions]));
   const rosterHitters = r.hitters.map((id) => {
     const c = hById.get(id)!; const role = hitRole(id);
-    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, allPositions: rawPosByDisp.get(id) ?? c.positions, def: defByDisp[id],
+    return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, coverPositions: c.coverPositions ?? c.positions, allPositions: rawPosByDisp.get(id) ?? c.positions, def: defByDisp[id],
       wobaVL: hScore(c.valueVL), wobaVR: hScore(c.valueVR), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
   const rosterPitchers = r.pitchers.map((id) => {
