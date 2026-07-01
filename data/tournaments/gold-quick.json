@@ -1,9 +1,9 @@
 {
-  "id": "new-tournament-2",
-  "name": "Silver Cap",
+  "id": "gold-quick",
+  "name": "Gold Quick",
   "card_value_min": null,
-  "card_value_max": 79,
-  "total_cap": 1475,
+  "card_value_max": 89,
+  "total_cap": null,
   "roster_size": 26,
   "hitters": 14,
   "pitchers": 12,
@@ -12,8 +12,8 @@
   "min_pitch_types": 3,
   "dh": true,
   "variants_allowed": true,
-  "max_variants_on_roster": 10,
-  "eraId": "era-1998",
+  "max_variants_on_roster": 0,
+  "eraId": "era-2010",
   "parkId": "park-1",
   "softcaps": {
     "cap_k_top": 500,
@@ -51,14 +51,11 @@
   "positionRanks": {
     "RF": {
       "starter": {}
-    },
-    "C": {
-      "backup": {}
     }
   },
   "platoonVR": 0.58,
   "platoonVL": 0.42,
-  "budget_mode": "cap",
+  "budget_mode": "none",
   "topHitters": 100,
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
@@ -72,69 +69,5 @@
     "l_pitch_split_sp": 0.273,
     "r_pitch_split_rp": 0.499,
     "l_pitch_split_rp": 0.33
-  },
-  "positionMins": {
-    "C": {
-      "starter": {
-        "ability": 70,
-        "frame": 60
-      },
-      "backup": {
-        "ability": 65,
-        "frame": 0
-      }
-    },
-    "1B": {
-      "backup": {
-        "range": 20
-      }
-    },
-    "2B": {
-      "backup": {
-        "range": 75
-      },
-      "starter": {
-        "range": 80
-      }
-    },
-    "3B": {
-      "starter": {
-        "range": 60
-      },
-      "backup": {
-        "range": 50
-      }
-    },
-    "SS": {
-      "starter": {
-        "range": 85
-      },
-      "backup": {
-        "range": 80
-      }
-    },
-    "LF": {
-      "starter": {
-        "range": 40
-      }
-    },
-    "CF": {
-      "starter": {
-        "range": 85
-      },
-      "backup": {
-        "range": 80
-      }
-    },
-    "RF": {
-      "starter": {
-        "range": 60,
-        "arm": 60
-      },
-      "backup": {
-        "range": 50,
-        "arm": 50
-      }
-    }
   }
 }

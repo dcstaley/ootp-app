@@ -1,8 +1,8 @@
 {
-  "id": "new-tournament-2-2-2",
-  "name": "Gold Quick",
+  "id": "oaxaca-league",
+  "name": "Oaxaca League",
   "card_value_min": null,
-  "card_value_max": 89,
+  "card_value_max": null,
   "total_cap": null,
   "roster_size": 26,
   "hitters": 14,
@@ -51,6 +51,9 @@
   "positionRanks": {
     "RF": {
       "starter": {}
+    },
+    "C": {
+      "backup": {}
     }
   },
   "platoonVR": 0.58,
@@ -69,5 +72,61 @@
     "l_pitch_split_sp": 0.273,
     "r_pitch_split_rp": 0.499,
     "l_pitch_split_rp": 0.33
+  },
+  "positionMins": {
+    "C": {
+      "backup": {},
+      "starter": {
+        "ability": 75,
+        "frame": 75,
+        "arm": 75
+      }
+    },
+    "1B": {
+      "backup": {},
+      "starter": {
+        "range": 20
+      }
+    },
+    "2B": {
+      "backup": {},
+      "starter": {
+        "range": 85
+      }
+    },
+    "3B": {
+      "backup": {},
+      "starter": {
+        "range": 70,
+        "arm": 65
+      }
+    },
+    "SS": {
+      "backup": {
+        "range": 95
+      },
+      "starter": {
+        "range": 105
+      }
+    },
+    "LF": {
+      "starter": {
+        "range": 60
+      }
+    },
+    "CF": {
+      "starter": {
+        "range": 105
+      },
+      "backup": {
+        "range": 95
+      }
+    },
+    "RF": {
+      "starter": {
+        "range": 70,
+        "arm": 70
+      }
+    }
   }
 }

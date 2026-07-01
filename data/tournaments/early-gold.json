@@ -1,20 +1,20 @@
 {
-  "id": "new-tournament-2-2-2-2",
-  "name": "Live Weekly",
+  "id": "early-gold",
+  "name": "Early Gold",
   "card_value_min": null,
-  "card_value_max": null,
+  "card_value_max": 89,
   "total_cap": null,
   "roster_size": 26,
-  "hitters": 14,
-  "pitchers": 12,
-  "min_starters": 5,
-  "min_starter_stamina": 55,
+  "hitters": 16,
+  "pitchers": 10,
+  "min_starters": 4,
+  "min_starter_stamina": 50,
   "min_pitch_types": 3,
-  "dh": true,
+  "dh": false,
   "variants_allowed": true,
   "max_variants_on_roster": 0,
-  "eraId": "era-2010",
-  "parkId": "park-25",
+  "eraId": "era-1920",
+  "parkId": "park-169",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -46,14 +46,7 @@
   },
   "eligibility": {
     "mode": "ALL",
-    "rules": [
-      {
-        "id": "r1782834209695-0",
-        "column": "Card Type",
-        "op": "num_eq",
-        "a": "1"
-      }
-    ]
+    "rules": []
   },
   "positionRanks": {
     "RF": {
@@ -79,14 +72,8 @@
   "minPlayersPerPosition": 2,
   "positionMins": {
     "C": {
-      "starter": {
-        "ability": 60,
-        "frame": 60
-      },
-      "backup": {
-        "ability": 55,
-        "frame": 55
-      }
+      "starter": {},
+      "backup": {}
     },
     "1B": {
       "starter": {
@@ -95,16 +82,16 @@
     },
     "2B": {
       "starter": {
-        "range": 75
+        "range": 85
       },
       "backup": {
-        "range": 70
+        "range": 80
       }
     },
     "3B": {
       "starter": {
-        "range": 50,
-        "arm": 50
+        "range": 60,
+        "arm": 60
       },
       "backup": {
         "range": 50,
@@ -113,10 +100,10 @@
     },
     "SS": {
       "starter": {
-        "range": 80
+        "range": 95
       },
       "backup": {
-        "range": 75
+        "range": 85
       }
     },
     "LF": {
@@ -126,20 +113,20 @@
     },
     "CF": {
       "starter": {
-        "range": 80
+        "range": 95
       },
       "backup": {
-        "range": 75
+        "range": 85
       }
     },
     "RF": {
       "starter": {
-        "range": 65,
-        "arm": 60
+        "range": 60,
+        "arm": 50
       },
       "backup": {
         "range": 60,
-        "arm": 55
+        "arm": 50
       }
     }
   }

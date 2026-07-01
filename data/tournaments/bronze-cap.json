@@ -1,20 +1,20 @@
 {
-  "id": "new-tournament-2-2-2-2-2-2-2",
-  "name": "Early Gold",
+  "id": "bronze-cap",
+  "name": "Bronze Cap",
   "card_value_min": null,
-  "card_value_max": 89,
-  "total_cap": null,
+  "card_value_max": 69,
+  "total_cap": 1275,
   "roster_size": 26,
   "hitters": 16,
   "pitchers": 10,
   "min_starters": 4,
   "min_starter_stamina": 50,
   "min_pitch_types": 3,
-  "dh": false,
+  "dh": true,
   "variants_allowed": true,
-  "max_variants_on_roster": 0,
-  "eraId": "era-1920",
-  "parkId": "park-169",
+  "max_variants_on_roster": 10,
+  "eraId": "era-1955",
+  "parkId": "park-155",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -55,7 +55,7 @@
   },
   "platoonVR": 0.5798834749058775,
   "platoonVL": 0.4201165250941224,
-  "budget_mode": "none",
+  "budget_mode": "cap",
   "platoon": {
     "r_hit_split": 0.5401288195738561,
     "l_hit_split": 0.3368311079985764,
@@ -72,8 +72,12 @@
   "minPlayersPerPosition": 2,
   "positionMins": {
     "C": {
-      "starter": {},
-      "backup": {}
+      "starter": {
+        "ability": 55
+      },
+      "backup": {
+        "ability": 50
+      }
     },
     "1B": {
       "starter": {
@@ -82,16 +86,16 @@
     },
     "2B": {
       "starter": {
-        "range": 85
+        "range": 70
       },
       "backup": {
-        "range": 80
+        "range": 65
       }
     },
     "3B": {
       "starter": {
-        "range": 60,
-        "arm": 60
+        "range": 50,
+        "arm": 50
       },
       "backup": {
         "range": 50,
@@ -100,10 +104,10 @@
     },
     "SS": {
       "starter": {
-        "range": 95
+        "range": 80
       },
       "backup": {
-        "range": 85
+        "range": 75
       }
     },
     "LF": {
@@ -113,19 +117,19 @@
     },
     "CF": {
       "starter": {
-        "range": 95
+        "range": 80
       },
       "backup": {
-        "range": 85
+        "range": 75
       }
     },
     "RF": {
       "starter": {
-        "range": 60,
+        "range": 50,
         "arm": 50
       },
       "backup": {
-        "range": 60,
+        "range": 50,
         "arm": 50
       }
     }

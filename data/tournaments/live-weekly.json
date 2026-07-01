@@ -1,20 +1,20 @@
 {
-  "id": "new-tournament-2-2-2-2-2",
-  "name": "Bronze Heart",
+  "id": "live-weekly",
+  "name": "Live Weekly",
   "card_value_min": null,
-  "card_value_max": 69,
+  "card_value_max": null,
   "total_cap": null,
   "roster_size": 26,
-  "hitters": 16,
-  "pitchers": 10,
-  "min_starters": 4,
-  "min_starter_stamina": 50,
+  "hitters": 14,
+  "pitchers": 12,
+  "min_starters": 5,
+  "min_starter_stamina": 55,
   "min_pitch_types": 3,
-  "dh": false,
+  "dh": true,
   "variants_allowed": true,
   "max_variants_on_roster": 0,
-  "eraId": "era-1939",
-  "parkId": "park-191",
+  "eraId": "era-2010",
+  "parkId": "park-25",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -48,11 +48,10 @@
     "mode": "ALL",
     "rules": [
       {
-        "id": "r1782835200352-0",
-        "column": "Year",
-        "op": "num_between",
-        "a": "1930",
-        "b": "1989"
+        "id": "r1782834209695-0",
+        "column": "Card Type",
+        "op": "num_eq",
+        "a": "1"
       }
     ]
   },
@@ -81,11 +80,11 @@
   "positionMins": {
     "C": {
       "starter": {
-        "ability": 65,
+        "ability": 60,
         "frame": 60
       },
       "backup": {
-        "ability": 60,
+        "ability": 55,
         "frame": 55
       }
     },
@@ -104,26 +103,30 @@
     },
     "3B": {
       "starter": {
-        "range": 60,
-        "arm": 60
+        "range": 50,
+        "arm": 50
+      },
+      "backup": {
+        "range": 50,
+        "arm": 50
       }
     },
     "SS": {
       "starter": {
-        "range": 85
+        "range": 80
       },
       "backup": {
-        "range": 80
+        "range": 75
       }
     },
     "LF": {
       "starter": {
-        "range": 35
+        "range": 40
       }
     },
     "CF": {
       "starter": {
-        "range": 85
+        "range": 80
       },
       "backup": {
         "range": 75
@@ -131,8 +134,12 @@
     },
     "RF": {
       "starter": {
-        "range": 60,
+        "range": 65,
         "arm": 60
+      },
+      "backup": {
+        "range": 60,
+        "arm": 55
       }
     }
   }

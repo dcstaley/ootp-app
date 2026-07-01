@@ -1,0 +1,141 @@
+{
+  "id": "low-gold-retrospective",
+  "name": "Low Gold Retrospective",
+  "card_value_min": null,
+  "card_value_max": 84,
+  "total_cap": null,
+  "roster_size": 26,
+  "hitters": 15,
+  "pitchers": 11,
+  "min_starters": 5,
+  "min_starter_stamina": 55,
+  "min_pitch_types": 3,
+  "dh": false,
+  "variants_allowed": true,
+  "max_variants_on_roster": 0,
+  "eraId": "era-1962",
+  "parkId": "park-149",
+  "softcaps": {
+    "cap_k_top": 500,
+    "cap_k_bot": 0,
+    "pen_k": 0.25,
+    "cap_babip_top": 500,
+    "cap_babip_bot": 0,
+    "pen_babip": 0.5,
+    "cap_gap_top": 500,
+    "cap_gap_bot": 0,
+    "pen_gap": 0.25,
+    "cap_pow_top": 500,
+    "cap_pow_bot": 0,
+    "pen_pow": 0.5,
+    "cap_eye_top": 500,
+    "cap_eye_bot": 0,
+    "pen_eye": 0.5,
+    "cap_p_con_top": 500,
+    "cap_p_con_bot": 0,
+    "pen_p_con": 0.25,
+    "cap_p_stu_top": 500,
+    "cap_p_stu_bot": 0,
+    "pen_p_stu": 0.25,
+    "cap_p_pbabip_top": 500,
+    "cap_p_pbabip_bot": 0,
+    "pen_p_pbabip": 0.25,
+    "cap_p_hrr_top": 500,
+    "cap_p_hrr_bot": 0,
+    "pen_p_hrr": 0.25
+  },
+  "eligibility": {
+    "mode": "ALL",
+    "rules": [
+      {
+        "id": "r1782906658137-0",
+        "column": "Year",
+        "op": "set_not_in",
+        "values": [
+          "2026"
+        ]
+      }
+    ]
+  },
+  "positionRanks": {
+    "RF": {
+      "starter": {}
+    }
+  },
+  "platoonVR": 0.5798834749058775,
+  "platoonVL": 0.4201165250941224,
+  "budget_mode": "none",
+  "platoon": {
+    "r_hit_split": 0.5401288195738561,
+    "l_hit_split": 0.3368311079985764,
+    "s_hit_split": 0.5623230905283367,
+    "r_pitch_split": 0.48106468193606067,
+    "l_pitch_split": 0.29379892766447907
+  },
+  "topHitters": 100,
+  "topPitchers": 100,
+  "minPlayersPerPosition": 2,
+  "positionMins": {
+    "C": {
+      "starter": {
+        "ability": 75
+      },
+      "backup": {
+        "ability": 65
+      }
+    },
+    "1B": {
+      "starter": {
+        "range": 20
+      }
+    },
+    "2B": {
+      "starter": {
+        "range": 75
+      },
+      "backup": {
+        "range": 65
+      }
+    },
+    "3B": {
+      "starter": {
+        "range": 60,
+        "arm": 50
+      },
+      "backup": {
+        "range": 50
+      }
+    },
+    "SS": {
+      "starter": {
+        "range": 95
+      },
+      "backup": {
+        "range": 80
+      }
+    },
+    "LF": {
+      "starter": {
+        "range": 40
+      }
+    },
+    "CF": {
+      "starter": {
+        "range": 95
+      },
+      "backup": {
+        "range": 80
+      }
+    },
+    "RF": {
+      "starter": {
+        "range": 60,
+        "arm": 60
+      },
+      "backup": {
+        "range": 50,
+        "arm": 50
+      }
+    }
+  }
+}
