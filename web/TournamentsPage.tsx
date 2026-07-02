@@ -6,7 +6,7 @@
 
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, SLOT_TIER_KEYS, POSITION_RATING_KEYS, FIELD_POS, newTournamentCfg, TOURNAMENT_DEFAULTS, type TournamentCfg, type EligibilityGroup, type EligibilityRule, type RuleOp, type EraCfg, type ParkCfg } from "./shared.ts";
+import { C, inputStyle, SLOT_TIER_KEYS, POSITION_RATING_KEYS, FIELD_POS, newTournamentCfg, TOURNAMENT_DEFAULTS, TOURNAMENT_ADJ_DEFAULTS, type TournamentCfg, type TournamentAdjustment, type EligibilityGroup, type EligibilityRule, type RuleOp, type EraCfg, type ParkCfg } from "./shared.ts";
 
 type Lib = { id: string; name: string };
 type PoolMetric = { n: number; mean: number; max: number; p90: number; p95: number; top5: number; top10: number };
@@ -284,6 +284,13 @@ export function TournamentsPage() {
   const card = (title: string, children: ReactNode): ReactNode =>
     section(title, children, { flex: "1 1 280px", minWidth: 250, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: "12px 14px", marginBottom: 0 });
 
+  // ── Tournament adjustment (second era-modifier set, multiplied onto era) ──
+  const adj: TournamentAdjustment = draft?.tournamentAdjustment ?? TOURNAMENT_ADJ_DEFAULTS;
+  const setAdj = (patch: Partial<TournamentAdjustment>) => set("tournamentAdjustment", { ...adj, ...patch });
+  const ADJ_KEYS: { k: keyof Omit<TournamentAdjustment, "enabled">; label: string }[] = [
+    { k: "hr", label: "HR" }, { k: "bb", label: "BB" }, { k: "k", label: "K" }, { k: "h", label: "H" }, { k: "gap", label: "GAP" },
+  ];
+
   // ── Eligibility rule helpers ──
   const elig: EligibilityGroup = draft?.eligibility ?? { mode: "ALL", rules: [] };
   const setElig = (g: EligibilityGroup) => set("eligibility", g);
@@ -365,6 +372,17 @@ export function TournamentsPage() {
                 <Combo value={draft.parkId} options={libs.parks} onChange={(id) => set("parkId", id)} width={240} placeholder="Search parks…" />
                 <ModStrip groups={parkModGroups(parkMap[draft.parkId])} />
               </div>)}
+              {row("Tournament adjustment", <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                {checkRow("On", adj.enabled, (v) => setAdj({ enabled: v }))}
+                {ADJ_KEYS.map(({ k, label }) => (
+                  <label key={k} style={{ display: "inline-flex", gap: 5, alignItems: "center", fontSize: 13, color: C.sub, opacity: adj.enabled ? 1 : 0.45 }}>
+                    {label}
+                    <input type="number" step={0.05} min={0} value={adj[k]} disabled={!adj.enabled}
+                      onChange={(e) => setAdj({ [k]: e.target.value === "" ? 1 : Number(e.target.value) })}
+                      style={{ ...inputStyle, width: 62, padding: "3px 6px", fontSize: 13 }} />
+                  </label>
+                ))}
+              </div>, "Multiplied onto the era factors (era × adjustment). Default HR 1.15, BB 0.85.")}
             </div>)}
 
             {/* Small sections, side by side to use width */}

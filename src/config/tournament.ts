@@ -62,6 +62,23 @@ export interface Softcaps {
   cap_p_hrr_top: number;    cap_p_hrr_bot: number;    pen_p_hrr: number;
 }
 
+// Tournament-scoped environment adjustment (D4): a SECOND set of era modifiers that
+// MULTIPLY onto the era factors (era 1.12 × adj 1.15 = 1.288), on top of era/park. Lets a
+// tournament tune its run environment beyond the shared era — e.g. a hotter HR / lower-walk
+// pool. Defaults: HR 1.15, BB 0.85, others 1.0. On by default (except the neutral pools).
+export interface TournamentAdjustment {
+  enabled: boolean;
+  hr: number; bb: number; k: number; h: number; gap: number;
+}
+export const TOURNAMENT_ADJ_DEFAULTS = { hr: 1.15, bb: 0.85, k: 1, h: 1, gap: 1 } as const;
+// Neutral/reference pools default the adjustment OFF (their scores stay era-pure).
+const ADJ_OFF_BY_DEFAULT = new Set(["default-neutral", "oaxaca-league"]);
+/** Effective adjustment for a tournament: its own field, else the default (off for the
+ *  neutral pools, on with defaults for everything else). */
+export function resolveTournamentAdjustment(t: Tournament): TournamentAdjustment {
+  return t.tournamentAdjustment ?? { enabled: !ADJ_OFF_BY_DEFAULT.has(t.id), ...TOURNAMENT_ADJ_DEFAULTS };
+}
+
 export interface Tournament {
   id: string;
   name: string;
@@ -91,6 +108,7 @@ export interface Tournament {
   // Tournament-scoped config
   softcaps: Softcaps;
   eligibility: EligibilityGroup;
+  tournamentAdjustment?: TournamentAdjustment; // second era-modifier set (multiplied onto era)
 
   // Pool sizing / generation settings (used by M4 optimization pool, not calibration)
   topHitters?: number | null;

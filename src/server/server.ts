@@ -21,12 +21,13 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeFieldStats, buildPoolTransform, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
+import { resolveTournamentAdjustment } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
 import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
@@ -208,7 +209,7 @@ let refFieldCache: { key: string; stats: FieldStats } | null = null;
 function referenceFieldStats(baseCatalog: any[], coeffs: Coeffs, model: EventModel): FieldStats {
   const key = `${state.activeModelId ?? ""}|${catalogSource}`;
   if (refFieldCache?.key === key) return refFieldCache.stats;
-  const stats = computeFieldStats(baseCatalog, coeffs, model, FIELD_N);
+  const stats = computeUnifiedFieldStats(baseCatalog, coeffs, model, FIELD_N);
   refFieldCache = { key, stats };
   return stats;
 }
@@ -230,7 +231,14 @@ function scoreTournament(t: Tournament): Scored {
   // tournament-scoped — the run environment is the model's, not the tournament's.
   if (activeWobaWeights) applyWobaWeights(coeffs, activeWobaWeights);
   const eventForm = activeEventForm ?? undefined;
+  // Tournament adjustment (D4): a second era-modifier set MULTIPLIED onto the era factors
+  // (era 1.12 × adj 1.15 = 1.288). BB/K/GAP live in coeffs; HR/H in derived. On by default
+  // except the neutral pools. Applied before the pool transform + calibration, so the whole
+  // environment (and the anchor) reflects the adjusted rates.
+  const adj = resolveTournamentAdjustment(t);
+  if (adj.enabled) { coeffs.era_bb *= adj.bb; coeffs.era_k *= adj.k; coeffs.era_gap *= adj.gap; }
   const derived = computeDerived(coeffs, !!eventForm); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
+  if (adj.enabled) { derived.era_effective_hr *= adj.hr; derived.era_h *= adj.h; }
   const pool = buildEligiblePool(catalog.cards, t);
   // Pool transform (#2 only): reference = top-50 of the full NON-VARIANT catalog, pool =
   // top-50 of the eligible NON-VARIANT subset → lift pool toward reference (saturating
@@ -242,7 +250,7 @@ function scoreTournament(t: Tournament): Scored {
   if (eventForm) {
     const evModel = makeRawPolyModel(eventForm);
     const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
-    poolTransform = buildPoolTransform(ref, computeFieldStats(basePool, coeffs, evModel, FIELD_N), activeEnvelope ?? undefined);
+    poolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N), activeEnvelope ?? undefined);
   }
   // wOBA config uses the active #2 form + pool transform. The anchor is computed on
   // NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
@@ -1193,7 +1201,9 @@ const server = createServer(async (req, res) => {
     return json(res, { tournaments: tournamentListNow(), defaultId: state.activeTournamentId || DEFAULT_TOURNAMENT_ID });
   if (method === "GET" && url === "/api/tournament") { // full object for the editor
     const t = tournamentById.get(u.searchParams.get("id") || "");
-    return t ? json(res, t) : json(res, { error: "unknown tournament" }, 404);
+    // Materialize the effective tournament adjustment so the editor's toggle/values reflect
+    // the default (off for the neutral pools, on with defaults elsewhere) when unset.
+    return t ? json(res, { ...t, tournamentAdjustment: resolveTournamentAdjustment(t) }) : json(res, { error: "unknown tournament" }, 404);
   }
   if (method === "GET" && url === "/api/libraries") return json(res, { eras: eraList(), parks: parkList(), columns: [...catalog.columns].sort((a, b) => a.localeCompare(b)), platoonDefaults: activePlatoon });
   if (method === "GET" && url === "/api/parks") return json(res, { parks: [...parks.values()] });

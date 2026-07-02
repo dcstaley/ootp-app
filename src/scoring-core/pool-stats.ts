@@ -57,6 +57,28 @@ export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventMode
   };
 }
 
+/** Side-UNIFIED field stats: one μ/σ per rating, applied to BOTH sides (vR === vL), so the
+ *  pool-strength lift preserves each card's platoon shape instead of reshaping it.
+ *   • Pitchers (Option A): a pitcher faces both hands every game → select the top-N by COMBINED
+ *     allowed wOBA and pool BOTH sides' rating values.
+ *   • Hitters (#2): platooned → select per-side cohorts (top-N vs R, top-N vs L) but pool each
+ *     cohort's DEPLOYMENT-side values (vR-cohort's vR ratings + vL-cohort's vL ratings), so a
+ *     platoon specialist counts on the side he actually plays and his rarely-used bad side
+ *     doesn't define the frame. */
+export function computeUnifiedFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number): FieldStats {
+  const recs = cards.map((c) => cardRec(c, coeffs, model));
+  // Pitchers: top-N by combined allowed wOBA (lower = better), both-side values pooled.
+  const pitTop = [...recs].sort((a, b) => (a.pitVR.woba + a.pitVL.woba) - (b.pitVR.woba + b.pitVL.woba)).slice(0, topN);
+  const pit: Record<string, RatingStats> = {};
+  for (const k of PIT_RATINGS) pit[k] = ratingStats(pitTop.flatMap((r) => [r.pitVR.rat[k] ?? 0, r.pitVL.rat[k] ?? 0]));
+  // Hitters: per-side cohorts, each contributing its deployment-side values.
+  const hVR = recs.map((r) => r.hitVR).sort((a, b) => b.woba - a.woba).slice(0, topN);
+  const hVL = recs.map((r) => r.hitVL).sort((a, b) => b.woba - a.woba).slice(0, topN);
+  const hit: Record<string, RatingStats> = {};
+  for (const k of HIT_RATINGS) hit[k] = ratingStats([...hVR.map((x) => x.rat[k] ?? 0), ...hVL.map((x) => x.rat[k] ?? 0)]);
+  return { hit: { vR: hit, vL: hit }, pit: { vR: pit, vL: pit } };
+}
+
 /** Build the saturating mean-scalar transform mapping the POOL field onto the REFERENCE
  *  field, with per-rating saturation ceilings from the model's training envelope (pooled
  *  over sides → the same ceiling for vR/vL). Absent envelope ⇒ no cap (pure scalar). */

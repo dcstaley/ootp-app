@@ -115,6 +115,7 @@ export interface TournamentCfg {
     r_pitch_split_sp?: number; l_pitch_split_sp?: number; r_pitch_split_rp?: number; l_pitch_split_rp?: number;
   };
   eligibility?: EligibilityGroup;
+  tournamentAdjustment?: TournamentAdjustment; // second era-modifier set (multiplied onto era)
   softcaps?: Record<string, number>; // cap_<grp>_top/_bot + pen_<grp>
   positionMins?: Record<string, PositionMin>;
   positionRanks?: Record<string, PositionMin>; // top-K rank requirement (value = K) per rating
@@ -122,6 +123,12 @@ export interface TournamentCfg {
 // Per-position min defensive ratings (starter = bar to start, backup = bar to cover).
 // For positionRanks the same shape holds, but each value is a top-K rank (not a rating min).
 export interface PositionMin { starter?: Record<string, number>; backup?: Record<string, number> }
+
+// Tournament environment adjustment — a second era-modifier set multiplied onto the era
+// factors (era × adj). Defaults: HR 1.15, BB 0.85, others 1.0; on by default (server decides
+// per-tournament — neutral pools default off). The editor edits it directly.
+export interface TournamentAdjustment { enabled: boolean; hr: number; bb: number; k: number; h: number; gap: number }
+export const TOURNAMENT_ADJ_DEFAULTS: TournamentAdjustment = { enabled: true, hr: 1.15, bb: 0.85, k: 1, h: 1, gap: 1 };
 
 // New-tournament defaults (the +New template). era-2010 = BBRef baseline; park-1 = Heinsohn
 // (neutral). platoon/platoonVR/VL are intentionally omitted so the server seeds them from the
@@ -145,6 +152,7 @@ export function newTournamentCfg(): TournamentCfg {
     topHitters: TOURNAMENT_DEFAULTS.topHitters, topPitchers: TOURNAMENT_DEFAULTS.topPitchers,
     budget_mode: "none", minPlayersPerPosition: TOURNAMENT_DEFAULTS.minPlayersPerPosition,
     eligibility: { mode: "ALL", rules: [] },
+    tournamentAdjustment: { ...TOURNAMENT_ADJ_DEFAULTS },
   };
 }
 const IF_KEYS = [{ key: "range", label: "Range" }, { key: "error", label: "Error" }, { key: "arm", label: "Arm" }, { key: "dp", label: "DP" }];
