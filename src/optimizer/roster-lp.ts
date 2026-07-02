@@ -43,6 +43,17 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const pEmph = opts.pitcherEmphasis ?? 1;
   const bonus = opts.bothSidesBonus ?? 1.25;
   const bsThresh = opts.bothSidesThreshold ?? 0;
+  // Non-budgeted (Top-X) mode: JUST PICK THE BEST PLAYERS per role. Versus cap/slots
+  // it drops the rotation slot-decay (every SP slot weighs the same) and the both-sides
+  // bonus, and — crucially — values a slotted starter on its SP blend ALONE, not also
+  // credited the bullpen (RP-blend) value it will never pitch. That double-credit is
+  // what let a worse starter who happens to be a good reliever edge a better starter
+  // for a rotation spot. The UNIFORM membership values stay (every bench bat and bullpen
+  // arm is still valued, so the best-available fill those spots — no per-slot weighting).
+  // Cap/slots keep their weighted objective exactly as-is; the double-credit there is a
+  // separate, deferred fix (the cap/slots/weights overhaul), not touched here.
+  const weighted = opts.mode !== "none";
+  const bonusEff = weighted ? bonus : 1;
   // Role-aware pitcher collapse (M6): rotation-slot value uses the SP batter-hand
   // weight, the bullpen membership term the RP weight. Absent pitchSplit ⇒ legacy
   // team-split fallback (both roles identical), so behavior is unchanged without it.
@@ -73,7 +84,7 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const hPosSide: Record<string, string[]> = {};
   const hCardSide: Record<string, string[]> = {};
   hitters.forEach((c, i) => {
-    const bothSides = Math.min(c.valueVR, c.valueVL) >= bsThresh ? bonus : 1;
+    const bothSides = Math.min(c.valueVR, c.valueVL) >= bsThresh ? bonusEff : 1;
     for (const side of ["L", "R"] as const) {
       const w = side === "R" ? opts.platoonVR : opts.platoonVL;
       const val = side === "R" ? c.valueVR : c.valueVL;
@@ -121,13 +132,19 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const pSlot: Record<number, string[]> = {};
   const pCard: Record<number, string[]> = {};
   pitchers.forEach((c, j) => {
-    obj.push(`${f6(pEmph * bullpenW * vRP(c))} rp_${j}`);
+    const relief = bullpenW * vRP(c); // relief value credited to every rostered pitcher (both modes)
+    obj.push(`${f6(pEmph * relief)} rp_${j}`);
     if (qualifiesStarter(c, opts.minStarterStamina, opts.minPitchTypes)) {
       const v = vSP(c);
       for (let k = 1; k <= slots; k++) {
         const x = `xp_${j}_s${k}`;
         bin.push(x);
-        obj.push(`${f6(pEmph * slotW(k) * v)} ${x}`);
+        // cap/slots (weighted): SP value × slot weight, ON TOP of the rp membership (UNCHANGED).
+        // non-cap: flat, and net a slotted starter to vSP alone — cancel the rp membership so it
+        // isn't double-credited relief it won't pitch. So starter = vSP, reliever = relief; best
+        // qualified SPs start, best remaining fill the pen.
+        const coef = weighted ? slotW(k) * v : v - relief;
+        obj.push(`${f6(pEmph * coef)} ${x}`);
         (pSlot[k] ??= []).push(x);
         (pCard[j] ??= []).push(x);
       }

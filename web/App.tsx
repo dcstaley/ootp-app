@@ -60,7 +60,7 @@ function Sidebar({ route, go }: { route: string; go: (id: string) => void }) {
         <div style={labelStyle}>Tournament</div>
         <select value={tournamentId} onChange={(e) => chooseTournament(e.target.value)} disabled={!tournaments.length}
           style={{ ...inputStyle, width: "100%", cursor: "pointer" }}>
-          {tournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {[...tournaments].sort((a, b) => a.name.localeCompare(b.name)).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
       <div style={{ marginBottom: 14 }}>
