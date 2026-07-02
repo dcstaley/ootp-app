@@ -359,13 +359,14 @@ export function RosterPage() {
 
   // ── Next Best Available (left rail) — compact card list, +Add = lock the card.
   // Tabs by need (Hit vR / Hit vL now; Pitch/SP/defence/value filter to follow).
-  const addedIds = new Set(added.map((a) => a.row.id));
   const maxV = nbMaxValue.trim() === "" ? null : Number(nbMaxValue);
   const nbQuery = nbSearch.trim().toLowerCase();
-  // Every eligible card not on the roster (owned + unowned). BROWSE applies the owned/value
-  // toggles; a name SEARCH spans this whole pool (ignoring owned/value/tab filters) so any
-  // card is findable to add — the +Add path force-includes it exactly like an Acquire.
-  const poolRaw: AvailRow[] = (roster?.nextBest?.available ?? []).filter((x) => !addedIds.has(x.id) && !removed.has(x.id));
+  // Every eligible card (owned + unowned) MINUS whoever is currently on the roster. The
+  // server now sends the full pool including rostered cards; excluding the CURRENT roster
+  // (rostered − removed + added) means a card removed from the lineup returns here for
+  // re-adding. BROWSE applies the owned/value toggles; a name SEARCH spans this whole pool.
+  const onRosterIds = new Set([...hitters, ...pitchers].map((r) => r.id));
+  const poolRaw: AvailRow[] = (roster?.nextBest?.available ?? []).filter((x) => !onRosterIds.has(x.id));
   const availAll: AvailRow[] = poolRaw.filter((x) =>
     (!nbOwnedOnly || x.owned > 0)
     && (maxV == null || !Number.isFinite(maxV) || x.cost <= maxV));

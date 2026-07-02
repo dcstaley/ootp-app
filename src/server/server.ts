@@ -705,11 +705,11 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   // client tabs/sorts this by need (Hit vL/vR, Pitch, SP, defence; value filter
   // later) and +Add fills an open roster slot. Bounded to the top of each pool.
   const rosteredDisp = new Set([...r.hitters, ...r.pitchers]);
-  // The FULL available pool: every eligible card not on the roster, as one unified
-  // row carrying both hit + pitch values. The client sorts/filters per tab (owned,
-  // value, position) and renders only the top slice — so a value filter down to the
-  // tournament's card-value min still reaches the cheapest cards (cap-roster need).
-  const available = entries.filter((e) => !rosteredDisp.has(e.dispId)).map((e) => ({
+  // The FULL eligible pool as unified rows (both hit + pitch values). Rostered cards are
+  // INCLUDED — the client filters out whoever is CURRENTLY on the roster, so a card the
+  // user removes from the lineup returns to Next Best Available for re-adding. The client
+  // sorts/filters per tab (owned, value, position) and renders only the top slice.
+  const available = entries.map((e) => ({
     id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "",
     bats: BATS[e.bats] ?? "", throws: THROWS[e.throws] ?? "",
     positions: e.positions, startPositions: starterPosByDisp[e.dispId] ?? [], def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
