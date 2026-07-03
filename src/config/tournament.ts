@@ -139,4 +139,21 @@ export interface Tournament {
   // rating). Same starter/backup structure as positionMins; the value is K. Enforced by
   // converting K → an effective min (the K-th highest rating in the pool) at solve time.
   positionRanks?: Record<string, { starter?: Record<string, number>; backup?: Record<string, number> }>;
+  // ── E[wins] optimizer (CAP/SLOTS ONLY) ──────────────────────────────────────
+  // Best-of-N series format of the tournament's rounds. Drives the rotation usage curve
+  // (a slot's expected starts). Absent ⇒ Bo7. Rotation SIZE is min_starters (4 or 5).
+  bestOf?: number;
+  // User steering for the E[wins] objective (all optional; absent ⇒ model defaults, so
+  // existing tournaments are unchanged). Tier-1 belief knobs + relative spend dials.
+  tuning?: TournamentTuning;
+}
+
+export interface TournamentTuning {
+  rotationShare?: number;      // fraction of team BF thrown by the rotation (vs bullpen)
+  rotationDecay?: number;      // extra manual tilt of rotation innings toward SP1 ("value SP5 less")
+  platoonCapture?: number;     // ρ: how often a fielded card gets its favorable matchup
+  fullStrengthShare?: number;  // fraction of games at full strength (bench-depth value)
+  bullpenLeverage?: number[];  // leverage premiums for the top relievers (closer, setup, …)
+  // Relative spend dials: a fraction of the segment's NATURAL spend (1 = leave alone).
+  dials?: { lineup?: number; bench?: number; rotation?: number; bullpen?: number };
 }

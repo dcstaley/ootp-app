@@ -1,9 +1,9 @@
 {
-  "id": "gold-cap",
-  "name": "Gold Cap",
+  "id": "ptcs-gold",
+  "name": "PTCS Gold",
   "card_value_min": null,
   "card_value_max": 89,
-  "total_cap": 1580,
+  "total_cap": null,
   "roster_size": 26,
   "hitters": 14,
   "pitchers": 12,
@@ -13,8 +13,8 @@
   "dh": true,
   "variants_allowed": true,
   "max_variants_on_roster": 10,
-  "eraId": "era-2010",
-  "parkId": "park-156",
+  "eraId": "era-2004",
+  "parkId": "park-22",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -46,7 +46,18 @@
   },
   "eligibility": {
     "mode": "ALL",
-    "rules": []
+    "rules": [
+      {
+        "id": "r1783069830262-0",
+        "column": "Card Type",
+        "op": "set_in",
+        "values": [
+          "3",
+          "5",
+          "9"
+        ]
+      }
+    ]
   },
   "positionRanks": {
     "RF": {
@@ -55,7 +66,7 @@
   },
   "platoonVR": 0.5798834749058775,
   "platoonVL": 0.4201165250941224,
-  "budget_mode": "cap",
+  "budget_mode": "none",
   "platoon": {
     "r_hit_split": 0.5401288195738561,
     "l_hit_split": 0.3368311079985764,
@@ -67,9 +78,17 @@
     "r_pitch_split_rp": 0.49899402992925335,
     "l_pitch_split_rp": 0.33033183572548547
   },
-  "topHitters": 50,
-  "topPitchers": 50,
+  "topHitters": 100,
+  "topPitchers": 100,
   "minPlayersPerPosition": 2,
+  "tournamentAdjustment": {
+    "enabled": true,
+    "hr": 1.15,
+    "bb": 0.85,
+    "k": 1,
+    "h": 1,
+    "gap": 1
+  },
   "positionMins": {
     "C": {
       "starter": {
@@ -88,10 +107,10 @@
     },
     "2B": {
       "starter": {
-        "range": 85
+        "range": 75
       },
       "backup": {
-        "range": 80
+        "range": 70
       }
     },
     "3B": {
@@ -100,29 +119,29 @@
         "arm": 60
       },
       "backup": {
-        "range": 50,
-        "arm": 50
+        "range": 55,
+        "arm": 55
       }
     },
     "SS": {
       "starter": {
-        "range": 95
+        "range": 90
       },
       "backup": {
-        "range": 90
+        "range": 80
       }
     },
     "LF": {
       "starter": {
-        "range": 40
+        "range": 50
       }
     },
     "CF": {
       "starter": {
-        "range": 95
+        "range": 90
       },
       "backup": {
-        "range": 90
+        "range": 80
       }
     },
     "RF": {
@@ -135,24 +154,5 @@
         "arm": 50
       }
     }
-  },
-  "tournamentAdjustment": {
-    "enabled": true,
-    "hr": 1.15,
-    "bb": 0.85,
-    "k": 1,
-    "h": 1,
-    "gap": 1
-  },
-  "tuning": {
-    "rotationShare": 0.62,
-    "dials": {
-      "bullpen": 1.5,
-      "rotation": 1
-    },
-    "bullpenLeverage": [
-      2,
-      2
-    ]
   }
 }

@@ -40,6 +40,7 @@ export interface RosterResult {
   slotUsage?: SlotTierUsage[] | null;
   minStarterStamina: number; minPitchTypes: number;
   balance: { hitterValue: number; pitcherValue: number } | null;
+  expectedWinPct?: number | null; // calibrated E[win%] (cap/slots): .500 = a perfect 0-variant roster
   poolHitters: number; poolPitchers: number; rosterSize: number; nHitters: number; nPitchers: number;
   lineupVR: RosterSlotCard[]; lineupVL: RosterSlotCard[];
   rotation: RosterSlotCard[]; bullpen: RosterSlotCard[]; bench: RosterSlotCard[];
@@ -119,6 +120,19 @@ export interface TournamentCfg {
   softcaps?: Record<string, number>; // cap_<grp>_top/_bot + pen_<grp>
   positionMins?: Record<string, PositionMin>;
   positionRanks?: Record<string, PositionMin>; // top-K rank requirement (value = K) per rating
+  // E[wins] optimizer (cap/slots only): series format + Tier-1 steering. Absent ⇒ defaults.
+  bestOf?: number;
+  tuning?: TournamentTuning;
+}
+
+// User steering for the E[wins] cap/slots objective (all optional; absent ⇒ model defaults).
+export interface TournamentTuning {
+  rotationShare?: number;      // fraction of team BF thrown by the rotation (vs bullpen)
+  rotationDecay?: number;      // extra tilt of rotation innings toward SP1 ("value SP5 less")
+  platoonCapture?: number;     // ρ: how often a fielded card gets its favorable matchup
+  fullStrengthShare?: number;  // fraction of games at full strength (bench-depth value)
+  bullpenLeverage?: number[];  // leverage premiums for the top relievers [closer, setup, …]
+  dials?: { lineup?: number; bench?: number; rotation?: number; bullpen?: number }; // relative spend
 }
 // Per-position min defensive ratings (starter = bar to start, backup = bar to cover).
 // For positionRanks the same shape holds, but each value is a top-K rank (not a rating min).

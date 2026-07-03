@@ -25,7 +25,8 @@ import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
-import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
+import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
+import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, type WinParams } from "../eval/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { resolveTournamentAdjustment } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -626,7 +627,63 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
     minPlayersPerPosition: t.minPlayersPerPosition ?? 2,            // coverage depth / backups
     mode: budgetMode(t), totalCap: t.total_cap ?? undefined, slotCounts: t.slot_counts,
     rosterSize: t.roster_size,
+    bestOf: t.bestOf ?? 7, // series format → rotation usage (cap/slots E[wins] path)
   };
+}
+
+/** E[wins] parameters from a tournament's Tier-1 knobs, over the model defaults (absent ⇒ default,
+ *  so existing tournaments are unchanged). Cap/slots only. */
+function winParamsFor(t: Tournament): WinParams {
+  const tn = t.tuning ?? {};
+  const p: WinParams = { ...DEFAULT_WIN_PARAMS };
+  if (tn.rotationShare != null) p.rotationShare = tn.rotationShare;
+  if (tn.rotationDecay != null) p.rotationDecay = tn.rotationDecay;
+  if (tn.platoonCapture != null) p.platoonCapture = tn.platoonCapture;
+  if (tn.fullStrengthShare != null) p.fullStrengthShare = tn.fullStrengthShare;
+  if (tn.bullpenLeverage != null && tn.bullpenLeverage.length) p.bullpenLeverage = tn.bullpenLeverage;
+  return p;
+}
+
+/** Budget spent per segment in a solved roster (lineup starters / bench / rotation / bullpen). */
+function segmentSpend(r: Roster, hitters: HitterCandidate[], pitchers: PitcherCandidate[]) {
+  const hMap = new Map(hitters.map((c) => [c.id, c]));
+  const pMap = new Map(pitchers.map((c) => [c.id, c]));
+  const starters = new Set([...r.lineupVR, ...r.lineupVL].map((s) => s.id));
+  const rot = new Set(r.rotation.map((x) => x.id));
+  const seg = { lineup: 0, bench: 0, rotation: 0, bullpen: 0 };
+  for (const id of r.hitters) { const c = hMap.get(id); if (c) (starters.has(id) ? (seg.lineup += c.cost) : (seg.bench += c.cost)); }
+  for (const id of r.pitchers) { const c = pMap.get(id); if (c) (rot.has(id) ? (seg.rotation += c.cost) : (seg.bullpen += c.cost)); }
+  return seg;
+}
+
+// The 0-variant OPTIMAL roster's run differential (off+def), cached per tournament — the anchor
+// for "50% = a perfectly-optimized roster with NO variants". A roster that uses variants (or is
+// otherwise better) reads >50%; a weaker/un-optimized one reads <50%.
+// NOTE: keyed by tournament id, but computed from the FIRST request's pool — which may be
+// owned-scoped by the active account — so the reference is approximate, not pool-exact.
+const refDCache = new Map<string, number>();
+async function referenceD(tid: string, hitters: HitterCandidate[], pitchers: PitcherCandidate[], opts: RosterOptimizeOptions, uw: RosterOptimizeOptions["usageWeights"], wp: WinParams): Promise<number> {
+  const cached = refDCache.get(tid); if (cached != null) return cached;
+  const h0 = hitters.filter((x) => !x.id.includes("#V")); // base cards only (no variants)
+  const p0 = pitchers.filter((x) => !x.id.includes("#V"));
+  let D = 0;
+  const ref = await generateFullRoster(h0, p0, { ...opts, usageWeights: uw });
+  if (ref.status === "Optimal") {
+    const hm = new Map(h0.map((x) => [x.id, x])); const pm = new Map(p0.map((x) => [x.id, x]));
+    const w = setExpectedWins(ref.hitters.map((id) => hm.get(id)!).filter(Boolean), ref.pitchers.map((id) => pm.get(id)!).filter(Boolean), opts, wp);
+    if (w) D = w.offRunsAboveAvg + w.defRunsAboveAvg;
+  }
+  refDCache.set(tid, D); return D;
+}
+
+/** Calibrated E[win%] for a solved roster: score it, then shift so the 0-variant optimum reads .500. */
+async function expectedWin(tid: string, r: Roster, hitters: HitterCandidate[], pitchers: PitcherCandidate[], opts: RosterOptimizeOptions, uw: RosterOptimizeOptions["usageWeights"], wp: WinParams): Promise<number | null> {
+  if (r.status !== "Optimal") return null;
+  const hm = new Map(hitters.map((x) => [x.id, x])); const pm = new Map(pitchers.map((x) => [x.id, x]));
+  const w = setExpectedWins(r.hitters.map((id) => hm.get(id)!).filter(Boolean), r.pitchers.map((id) => pm.get(id)!).filter(Boolean), opts, wp);
+  if (!w) return null;
+  const Dref = await referenceD(tid, hitters, pitchers, opts, uw, wp);
+  return winPctFromRuns(w.offRunsAboveAvg - Dref / 2, w.defRunsAboveAvg - Dref / 2, wp).winPct;
 }
 
 type LineupLock = { id: string; pos: string; side: "L" | "R" };
@@ -639,7 +696,38 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   const forceInclude = new Set([...locked, ...lineupLocks.map((l) => l.id)]);
   const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp, firstByDisp, starterPosByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
   const opts = { ...opts0, lockedIds: locked, twoWayIds, lineupLocks };
-  const r = await generateFullRoster(hitters, pitchers, opts);
+  // Cap/slots → the MILP optimizes the E[wins]-DERIVED objective: value × playing-time (from the
+  // usage model), which does the combinatorial budget allocation natively (multi-card trades).
+  // Non-cap ("none") passes no usageWeights, so the MILP keeps its legacy weighted objective —
+  // completely untouched.
+  let r: Roster;
+  let expectedWinPct: number | null = null;
+  if (opts.mode === "none") {
+    r = await generateFullRoster(hitters, pitchers, opts);
+  } else {
+    const wp = winParamsFor(t);
+    const usage = buildUsage(opts, wp);
+    const avgPA = usage.lineupPA.reduce((s, x) => s + x, 0) / (usage.lineupPA.length || 1);
+    // Bench bats see only part-time PA (availability-lite): a fraction of the absence share.
+    const usageWeights = { lineupPA: avgPA, benchPA: (1 - wp.fullStrengthShare) * avgPA * 0.3, rotationBF: usage.rotationBF, bullpenBF: usage.bullpenBF };
+    const ewOpts = { ...opts, usageWeights };
+    // Natural (undialed) roster first — the spend dials are RELATIVE to it. If any dial is set,
+    // re-solve with per-segment $ bounds = dial × natural spend; the solver reallocates the rest.
+    const natural = await generateFullRoster(hitters, pitchers, ewOpts);
+    const dials = t.tuning?.dials;
+    const SEGS = ["lineup", "bench", "rotation", "bullpen"] as const;
+    const active = dials && SEGS.some((s) => dials[s] != null && dials[s] !== 1);
+    if (natural.status === "Optimal" && active) {
+      const spend = segmentSpend(natural, hitters, pitchers);
+      const segmentBounds: RosterOptimizeOptions["segmentBounds"] = {};
+      for (const s of SEGS) { const d = dials![s]; if (d == null || d === 1) continue; segmentBounds[s] = d < 1 ? { max: d * spend[s] } : { min: d * spend[s] }; }
+      const dialed = await generateFullRoster(hitters, pitchers, { ...ewOpts, segmentBounds });
+      r = dialed.status === "Optimal" ? dialed : natural;
+    } else {
+      r = natural;
+    }
+    expectedWinPct = await expectedWin(t.id, r, hitters, pitchers, opts, usageWeights, wp);
+  }
   // Stash the baseline (owned solve) so stage-2 refine can reuse it instead of
   // re-solving the expensive budgeted baseline.
   if (ownedOnly && r.status === "Optimal") setBaseline(baselineKey(tid, aid, metric, excluded, locked), {
@@ -850,7 +938,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     nHitters: t.hitters, nPitchers: t.pitchers,
     minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
     status: r.status, mode: opts.mode, cap: opts.totalCap ?? null, cost: r.cost ?? null, slotUsage,
-    objective: r.objective, balance: r.balance ?? null,
+    objective: r.objective, balance: r.balance ?? null, expectedWinPct,
     poolHitters: hitters.length, poolPitchers: pitchers.length,
     rosterSize: new Set([...r.hitters, ...r.pitchers].map(strip)).size,
     lineupVR: r.lineupVR.map((x) => ({ ...x, cost: hById.get(x.id)?.cost ?? 0 })),
@@ -1550,11 +1638,13 @@ const server = createServer(async (req, res) => {
       await repo.delete("tournaments", oldId);
       tournamentById.delete(oldId);
       cache.delete(oldId);
+      refDCache.delete(oldId);
       if (state.activeTournamentId === oldId) { state.activeTournamentId = id; await saveState(); }
     }
     await repo.save("tournaments", id, t);
     tournamentById.set(id, t);
     cache.delete(id); // era/park/softcaps/value-range affect scoring → re-score on next read
+    refDCache.delete(id); // bestOf/tuning changes move the .500 anchor → recompute reference D
     return json(res, { id, tournaments: tournamentListNow() });
   }
   if (method === "POST" && url === "/api/tournaments/duplicate") {

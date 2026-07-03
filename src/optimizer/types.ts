@@ -140,6 +140,22 @@ export interface RosterOptimizeOptions {
   totalCap?: number;
   slotCounts?: Record<string, number>;
   rosterSize?: number;         // for implied-iron in slots mode (default nHitters+nPitchers)
+  // Tournament round format (best-of-N series): drives the rotation usage curve — a slot's
+  // expected starts come from how often a Bo-N series reaches its games (default 7 = Bo7).
+  bestOf?: number;
+  // Precomputed E[wins] usage weights (PA/BF per role) for the CAP/SLOTS MILP objective. The
+  // server derives these from the usage model (rotation format curve, bullpen leverage, bench).
+  // Absent ⇒ the legacy weighted objective (rotationSlotWeights/bullpenWeight/benchWeight).
+  usageWeights?: {
+    lineupPA: number;      // PA per lineup slot (a started card's run weight)
+    benchPA: number;       // PA a bench bat sees (small — availability-lite)
+    rotationBF: number[];  // BF per rotation slot (format-derived; SP1..SPk)
+    bullpenBF: number[];   // BF per bullpen leverage slot (closer, setup, filler…) — descending
+  };
+  // Per-segment spend bounds ($ cost) for the cap/slots E[wins] MILP — the "spend less/more on X"
+  // DIALS as constraints. The server resolves the relative dial (× natural spend) to absolute
+  // min/max here; the solver reallocates the freed/added budget across the other segments.
+  segmentBounds?: Partial<Record<"lineup" | "bench" | "rotation" | "bullpen", { min?: number; max?: number }>>;
 }
 
 export interface Roster {

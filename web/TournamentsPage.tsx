@@ -6,7 +6,7 @@
 
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
-import { C, inputStyle, SLOT_TIER_KEYS, POSITION_RATING_KEYS, FIELD_POS, newTournamentCfg, TOURNAMENT_DEFAULTS, TOURNAMENT_ADJ_DEFAULTS, type TournamentCfg, type TournamentAdjustment, type EligibilityGroup, type EligibilityRule, type RuleOp, type EraCfg, type ParkCfg } from "./shared.ts";
+import { C, inputStyle, SLOT_TIER_KEYS, POSITION_RATING_KEYS, FIELD_POS, newTournamentCfg, TOURNAMENT_DEFAULTS, TOURNAMENT_ADJ_DEFAULTS, type TournamentCfg, type TournamentAdjustment, type TournamentTuning, type EligibilityGroup, type EligibilityRule, type RuleOp, type EraCfg, type ParkCfg } from "./shared.ts";
 
 type Lib = { id: string; name: string };
 type PoolMetric = { n: number; mean: number; max: number; p90: number; p95: number; top5: number; top10: number };
@@ -287,6 +287,21 @@ export function TournamentsPage() {
   // ── Tournament adjustment (second era-modifier set, multiplied onto era) ──
   const adj: TournamentAdjustment = draft?.tournamentAdjustment ?? TOURNAMENT_ADJ_DEFAULTS;
   const setAdj = (patch: Partial<TournamentAdjustment>) => set("tournamentAdjustment", { ...adj, ...patch });
+
+  // ── E[wins] optimizer steering (cap/slots only) ──
+  const tun: TournamentTuning = draft?.tuning ?? {};
+  const setTun = (patch: Partial<TournamentTuning>) => set("tuning", { ...tun, ...patch });
+  const setDial = (seg: "lineup" | "bench" | "rotation" | "bullpen", v: number) => setTun({ dials: { ...(tun.dials ?? {}), [seg]: v } });
+  const lev = tun.bullpenLeverage ?? [2.5, 1.5];
+  const setLev = (i: number, v: number) => { const a = [...lev]; a[i] = v; setTun({ bullpenLeverage: a }); };
+  // Slider row: value with a live readout; `def` shows the effective default when unset.
+  const slider = (label: string, value: number | undefined, def: number, min: number, max: number, step: number, onChange: (v: number) => void, hint?: string): ReactNode => (
+    <label style={{ display: "grid", gridTemplateColumns: "150px 1fr 48px", gap: 8, alignItems: "center", fontSize: 13, color: C.sub }}>
+      <span>{label}{hint && <span style={{ opacity: 0.6 }}> · {hint}</span>}</span>
+      <input type="range" min={min} max={max} step={step} value={value ?? def} onChange={(e) => onChange(Number(e.target.value))} />
+      <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: (value ?? def) === def ? C.sub : C.link }}>{(value ?? def).toFixed(2)}</span>
+    </label>
+  );
   const ADJ_KEYS: { k: keyof Omit<TournamentAdjustment, "enabled">; label: string }[] = [
     { k: "hr", label: "HR" }, { k: "bb", label: "BB" }, { k: "k", label: "K" }, { k: "h", label: "H" }, { k: "gap", label: "GAP" },
   ];
@@ -448,6 +463,29 @@ export function TournamentsPage() {
               {grid4(PITCH_ROLE_SPLITS.map((s) => (
                 <Fragment key={s.k}>{field(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
               )))}
+            </>)}
+
+            {mode !== "none" && section("E[wins] optimizer", <>
+              <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>Cap/slots only — the roster is built to maximize expected win%. Greyed values are the (sensible) defaults; adjust to steer. Dials nudge a segment's spend relative to the optimizer's own choice (1.00 = leave alone).</div>
+              <div style={{ marginBottom: 14 }}>{field("Series format", (
+                <select value={draft.bestOf ?? 7} onChange={(e) => set("bestOf", Number(e.target.value))} style={{ ...inputStyle, width: 130 }}>
+                  {[3, 5, 7, 9].map((n) => <option key={n} value={n}>Best of {n}</option>)}
+                </select>
+              ), "round length → starter usage")}</div>
+              <div style={{ display: "grid", gap: 8, maxWidth: 560 }}>
+                <div style={{ fontSize: 13, color: C.link, fontWeight: 600 }}>Spend dials</div>
+                {slider("Lineup", tun.dials?.lineup, 1, 0.5, 1.5, 0.05, (v) => setDial("lineup", v))}
+                {slider("Bench", tun.dials?.bench, 1, 0.5, 1.5, 0.05, (v) => setDial("bench", v))}
+                {slider("Rotation", tun.dials?.rotation, 1, 0.5, 1.5, 0.05, (v) => setDial("rotation", v))}
+                {slider("Bullpen", tun.dials?.bullpen, 1, 0.5, 1.5, 0.05, (v) => setDial("bullpen", v))}
+                <div style={{ fontSize: 13, color: C.link, fontWeight: 600, marginTop: 8 }}>Usage knobs</div>
+                {slider("Rotation share", tun.rotationShare, 0.62, 0.4, 0.8, 0.01, (v) => setTun({ rotationShare: v }), "vs bullpen innings")}
+                {slider("SP5 decay", tun.rotationDecay, 0, 0, 0.6, 0.05, (v) => setTun({ rotationDecay: v }), "tilt toward SP1")}
+                {slider("Platoon capture", tun.platoonCapture, 0.8, 0.5, 1, 0.05, (v) => setTun({ platoonCapture: v }), "favorable-matchup rate")}
+                {slider("Bench usage", tun.fullStrengthShare, 0.6, 0.3, 1, 0.05, (v) => setTun({ fullStrengthShare: v }), "full-strength share")}
+                {slider("Closer premium", lev[0], 2.5, 1, 4, 0.1, (v) => setLev(0, v), "top reliever leverage")}
+                {slider("Setup premium", lev[1], 1.5, 1, 3, 0.1, (v) => setLev(1, v))}
+              </div>
             </>)}
 
             {section("Eligibility rules", <>

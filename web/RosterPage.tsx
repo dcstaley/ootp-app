@@ -528,6 +528,7 @@ export function RosterPage() {
             {roster.mode === "cap"
               ? <>Cap: <b style={{ color: (capPct ?? 0) > 100 ? "#f87171" : C.text }}>{money(roster.cost)}/{money(roster.cap)}</b> ({capPct}%) · </>
               : <>Mode: {roster.mode} · </>}
+            {roster.expectedWinPct != null && <>E[win] <b style={{ color: C.text }} title="Expected win% — .500 = a perfectly optimized roster with no variants; higher = variants/better">{(roster.expectedWinPct * 100).toFixed(1)}%</b> · </>}
             Pool: {roster.poolHitters}H / {roster.poolPitchers}P · H-value <b style={{ color: C.text }}>{roster.balance?.hitterValue.toFixed(3)}</b> · P-value <b style={{ color: C.text }}>{roster.balance?.pitcherValue.toFixed(3)}</b>
             {nTwoWay > 0 && <> · <span style={{ color: "#fde68a" }}>{nTwoWay} two-way</span></>}
             {nRem > 0 && <> · <span style={{ color: "#f59e0b" }}>{nRem} removed</span></>}
