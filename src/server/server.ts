@@ -853,11 +853,15 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, coverPositions: c.coverPositions ?? c.positions, allPositions: rawPosByDisp.get(id) ?? c.positions, def: defByDisp[id],
       wobaVL: hScore(c.valueVL), wobaVR: hScore(c.valueVR), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
+  // Both role blends per pitcher, so the UI shows the ROLE-APPROPRIATE score everywhere: SP in
+  // the rotation + "available starters", RP in the bullpen (same arm, different context).
+  const spBlend = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "sp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
+  const rpBlend = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
   const rosterPitchers = r.pitchers.map((id) => {
     const c = pById.get(id)!; const role = pitRole(id);
-    const combined = blendPitch(c.valueVR, c.valueVL, c.throws, role === "starter" ? "sp" : "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
+    const wobaSP = pScore(spBlend(c)), wobaRP = pScore(rpBlend(c));
     return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", throws: THROWS[c.throws] ?? "", role, twoWay: twoWaySet.has(strip(id)),
-      woba: pScore(combined), stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
+      woba: role === "starter" ? wobaSP : wobaRP, wobaSP, wobaRP, stamina: c.stamina, pitchTypes: c.pitchTypes, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || a.woba - b.woba);
 
   // ── Next Best Available pool (M5) ──────────────────────────────────────────
@@ -1017,7 +1021,11 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     rosterSize: new Set([...r.hitters, ...r.pitchers].map(strip)).size,
     lineupVR: r.lineupVR.map((x) => ({ ...x, cost: hById.get(x.id)?.cost ?? 0 })),
     lineupVL: r.lineupVL.map((x) => ({ ...x, cost: hById.get(x.id)?.cost ?? 0 })),
-    rotation: r.rotation.map((x) => ({ ...x, ...pCard(x.id) })),
+    // SP slots numbered by SP VALUE (best = SP1). The optimizer's slot order is arbitrary in
+    // non-cap mode (flat slots), so re-rank here for a sensible display.
+    rotation: [...r.rotation]
+      .sort((a, b) => { const ca = pById.get(a.id), cb = pById.get(b.id); return (cb ? spBlend(cb) : -Infinity) - (ca ? spBlend(ca) : -Infinity); })
+      .map((x, i) => ({ ...x, slot: i + 1, ...pCard(x.id) })),
     bullpen: r.bullpen.map(pCard),
     bench,
     memberIds: [...new Set([...r.hitters, ...r.pitchers].map((id) => id.replace(/#V$/, "")))],

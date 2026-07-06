@@ -479,12 +479,15 @@ export function RosterPage() {
     { key: "stam", label: "Stam", align: "r", width: 56, value: (p) => p.stamina },
     { key: "pit", label: "# Pit", align: "r", width: 56, value: (p) => p.pitchTypes },
   ];
+  // Show the ROLE-APPROPRIATE blend per table: rotation + available-starters = SP score,
+  // bullpen = RP score (manually-added arms lack the split → fall back to their single woba).
   const rotRows: PStaffRow[] = useMemo(() => (roster?.rotation ?? []).map((rt) => {
     const p = pitchers.find((x) => x.id === rt.id.replace(/#V$/, ""));
-    return p ? { ...p, slotLabel: `SP${rt.slot}` } : null;
+    return p ? { ...p, woba: p.wobaSP ?? p.woba, slotLabel: `SP${rt.slot}` } : null;
   }).filter((r): r is PStaffRow => !!r), [roster, removed]);
-  const bullpenRows: PStaffRow[] = pitchers.filter((p) => p.role === "reliever").map((p) => ({ ...p, slotLabel: "RP" }));
-  const availSP: PStaffRow[] = bullpenRows.filter((p) => p.stamina >= (roster?.minStarterStamina ?? 70) && p.pitchTypes >= (roster?.minPitchTypes ?? 3));
+  const bullpenRows: PStaffRow[] = pitchers.filter((p) => p.role === "reliever").map((p) => ({ ...p, woba: p.wobaRP ?? p.woba, slotLabel: "RP" }));
+  const availSP: PStaffRow[] = pitchers.filter((p) => p.role === "reliever" && p.stamina >= (roster?.minStarterStamina ?? 70) && p.pitchTypes >= (roster?.minPitchTypes ?? 3))
+    .map((p) => ({ ...p, woba: p.wobaSP ?? p.woba, slotLabel: "SP" }));
 
   const nLock = locked.size, nExcl = excluded.size, nRem = removed.size;
 

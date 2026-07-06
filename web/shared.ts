@@ -19,7 +19,7 @@ export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cA
 // `positions` = QUALIFIED to START (meets starter def min); `coverPositions` = QUALIFIED to
 // BACK UP (meets starter OR backup min); `allPositions` = ELIGIBLE (can play, Learn).
 export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; coverPositions?: string[]; allPositions?: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
-export interface RosterPitcherRow { id: string; title: string; last: string; first?: string; throws: string; role: string; twoWay: boolean; woba: number; stamina: number; pitchTypes: number; cost: number; owned: number }
+export interface RosterPitcherRow { id: string; title: string; last: string; first?: string; throws: string; role: string; twoWay: boolean; woba: number; wobaSP?: number; wobaRP?: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 // Next Best Available pool (M5) — every available card as one unified row (both
 // hit + pitch values); the client derives hitter/pitcher cards per tab.
 // `positions` = every position the card can play (Learn); `startPositions` = the starter-eligible (def-met) subset.
