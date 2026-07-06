@@ -458,7 +458,10 @@ export const LOG_HIT: HitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, xbh: L
 export const LOG_PIT: PitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, h: LOG };
 
 // Candidate #2 — targeted raw-polynomial (only the events the residuals implicate); H log.
-export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: { kind: "rawpoly", degree: 2 }, h: LOG };
+// XBH is LOG (not rawpoly-quad): the quad over-fit the concavity and turned over past gap ~165
+// (a higher rating predicting FEWER XBH — see the monotone gate); log is monotone-increasing
+// with diminishing returns and fits the pool identically (Δ Pearson ~1e-4). HR stays quad.
+export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: LOG, h: LOG };
 export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, h: LOG };
 // DEPLOYED pitching form: log baseline + a linear Stuff term on BB and HR (fixes the
 // low-Stuff over-rating; validated OOT — beats plain LOG forward & backward).

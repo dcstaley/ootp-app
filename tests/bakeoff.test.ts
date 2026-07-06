@@ -57,11 +57,18 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
   const pick = (model: string, role: string, evaluation: string) => sb.rows.find((r) => r.model === model && r.role === role && r.evaluation === evaluation)!.metrics;
 
   const MODELS = ["woba", "basic", "woba·rawpoly", "woba·logcubic", "woba·rawlin", "woba·rawquad", "woba·rawcubic", "woba·qpow-lin", "woba·rawpoly-hlin", "woba·biplin", "woba·poisson", "woba·nb", "woba·seqcond", "ceiling·flex"];
-  it("covers the baselines + candidate forms × roles × {in-sample, cv, forward, backward}", () => {
+  it("covers the baselines + candidate forms × roles × {in-sample, cv} (no OOT: the fixture has no out-of-window year)", () => {
     expect(sb.years).toEqual([2037, 2038]);
-    expect(new Set(sb.rows.map((r) => r.evaluation))).toEqual(new Set(["in-sample", "cv", "forward", "backward"]));
+    expect(new Set(sb.rows.map((r) => r.evaluation))).toEqual(new Set(["in-sample", "cv"]));
     expect(new Set(sb.rows.map((r) => `${r.model}-${r.role}`))).toEqual(new Set(MODELS.flatMap((m) => [`${m}-hitter`, `${m}-pitcher`])));
-    expect(sb.rows.length).toBe(MODELS.length * 2 * 4); // (model×role) × 4 evaluations
+    expect(sb.rows.length).toBe(MODELS.length * 2 * 2); // (model×role) × {in-sample, cv}
+  });
+  it("OOT tracks the selected window: a sub-window fits on the window + tests the held-out year", () => {
+    const sb2 = buildScoreboard(FIXTURE, { minN: 1000, k: 5, window: [2038] });
+    const evals = new Set(sb2.rows.map((r) => r.evaluation));
+    expect(evals.has("backward")).toBe(true);  // train 2038 → test 2037 (out-of-window past)
+    expect(evals.has("forward")).toBe(false);  // no year after 2038
+    expect(sb2.rows.find((r) => r.evaluation === "backward")!.window).toBe("2038→2037");
   });
   it("only candidate forms carry a gate, and only on the in-sample row", () => {
     const gated = sb.rows.filter((r) => r.gate);

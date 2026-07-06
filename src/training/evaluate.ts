@@ -81,12 +81,24 @@ export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
   const models: BakeoffEntry[] = [...all.filter((e) => e.spec.role === "hitter"), ...all.filter((e) => e.spec.role === "pitcher")];
   const rows: ScoreRow[] = [];
 
-  // Both OOT directions train on up to 2 adjacent years, test on the held-out edge year.
-  const n = years.length;
-  const fwdTrain = years.slice(Math.max(0, n - 3), n - 1), fwdTest = n >= 2 ? [years[n - 1]!] : [];
-  const backTrain = years.slice(1, Math.min(n, 3)), backTest = n >= 2 ? [years[0]!] : [];
+  // OOT tests the ACTUAL trained model: fit on the SELECTED window (the model's years) and
+  // evaluate on the held-out BLOCK outside it — backward = the distant-past block (the leading
+  // run of early years split from the window by a >2yr gap, e.g. 2032+2033), forward = the
+  // trailing future block. So the OOT rows track the chosen window instead of a fixed edge
+  // sub-window; a direction with no out-of-window block is omitted.
+  const wMin = Math.min(...window), wMax = Math.max(...window);
+  const backTest: number[] = [];
+  for (let i = 0; i < years.length && years[i]! < wMin; i++) {
+    if (i > 0 && years[i]! - years[i - 1]! > 2) break; // gap → past the distant block
+    backTest.push(years[i]!);
+  }
+  const fwdTest: number[] = [];
+  for (let i = years.length - 1; i >= 0 && years[i]! > wMax; i--) {
+    if (i < years.length - 1 && years[i + 1]! - years[i]! > 2) break;
+    fwdTest.unshift(years[i]!);
+  }
   const obsOf = (ys: number[]) => (ys.length ? loadWindow(root, ys).observations.filter(vf) : []);
-  const fwdTrainObs = obsOf(fwdTrain), fwdTestObs = obsOf(fwdTest), backTrainObs = obsOf(backTrain), backTestObs = obsOf(backTest);
+  const fwdTestObs = obsOf(fwdTest), backTestObs = obsOf(backTest);
 
   for (const { model, spec, gate } of models) {
     // Gate is computed on the in-sample window fit (the curve's primary shape) and
@@ -99,10 +111,9 @@ export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
     }
     rows.push({ model: model.name, role: spec.role, evaluation: "in-sample", window: window.join("+"), metrics: inSample(winObs, model, spec, opts), gate: gateStatus });
     rows.push({ model: model.name, role: spec.role, evaluation: "cv", window: `${window.join("+")}, ${k}-fold`, metrics: crossValidate(winObs, model, spec, opts) });
-    if (fwdTest.length) {
-      rows.push({ model: model.name, role: spec.role, evaluation: "forward", window: `${fwdTrain.join("+")}→${fwdTest[0]}`, metrics: outOfTime(fwdTrainObs, fwdTestObs, model, spec, opts) });
-      rows.push({ model: model.name, role: spec.role, evaluation: "backward", window: `${backTrain.join("+")}→${backTest[0]}`, metrics: outOfTime(backTrainObs, backTestObs, model, spec, opts) });
-    }
+    // OOT: fit on the window (winObs), test on out-of-window years. Each direction independent.
+    if (fwdTest.length) rows.push({ model: model.name, role: spec.role, evaluation: "forward", window: `${window.join("+")}→${fwdTest.join(",")}`, metrics: outOfTime(winObs, fwdTestObs, model, spec, opts) });
+    if (backTest.length) rows.push({ model: model.name, role: spec.role, evaluation: "backward", window: `${window.join("+")}→${backTest.join(",")}`, metrics: outOfTime(winObs, backTestObs, model, spec, opts) });
   }
   return { minN, k, topN, years, trainWindow: window, rows };
 }

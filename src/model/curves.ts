@@ -36,12 +36,33 @@ export function row(curve: Curve, v: number, mu: number, sd: number): number[] {
   for (let d = 1; d <= curve.degree; d++) out.push(u ** d);
   return out;
 }
-/** Fitted per-event rate at a rating value, clamped ≥ 0 (matches the chain). */
-export const rate = (e: FittedEvent, v: number) => Math.max(dot(e.beta, row(e.curve, v, e.mu, e.sd)), 0);
+// Monotone guard: an over-fit degree-2 rawpoly can PEAK inside the rating range and then
+// DECREASE — a higher rating predicting a LOWER rate (the XBH gate warning; elite-gap hitters
+// under-valued). Clamp the z-score at that interior peak so the curve stays FLAT beyond it,
+// never decreasing. No-op when the peak is outside the sampled range (already-monotone fits)
+// and for log / degree-1 / upward (b2 ≥ 0) curves. EVALUATION-only — the fit is unchanged, and
+// because the gate samples `rate`, this also clears the warning for a capped curve.
+function monoZ(beta: number[], curve: Curve, u: number): number {
+  if (curve.kind === "rawpoly" && curve.degree === 2) {
+    const b2 = beta[2] ?? 0;
+    if (b2 < 0) { const peak = -(beta[1] ?? 0) / (2 * b2); if (u > peak) return peak; }
+  }
+  return u;
+}
+/** Design row with the monotone guard applied (needs beta to locate the interior peak). */
+function rowMono(beta: number[], curve: Curve, v: number, mu: number, sd: number): number[] {
+  if (curve.kind === "log") return [1, ln1(v)];
+  const u = monoZ(beta, curve, sd > 1e-9 ? (baseVal(curve, v) - mu) / sd : 0);
+  const out = [1];
+  for (let d = 1; d <= curve.degree; d++) out.push(u ** d);
+  return out;
+}
+/** Fitted per-event rate at a rating value, clamped ≥ 0 (matches the chain), monotone-guarded. */
+export const rate = (e: FittedEvent, v: number) => Math.max(dot(e.beta, rowMono(e.beta, e.curve, v, e.mu, e.sd)), 0);
 /** Like `rate`, plus the optional Stuff (or other) aux term. `auxV` = the aux rating
  *  value; ignored when the event has no `aux`, so this is safe to call everywhere. */
 export const rateAux = (e: FittedEvent, v: number, auxV: number) => {
-  const base = dot(e.beta, row(e.curve, v, e.mu, e.sd));
+  const base = dot(e.beta, rowMono(e.beta, e.curve, v, e.mu, e.sd));
   const a = e.aux ? e.aux.beta * (e.aux.sd > 1e-9 ? (ln1(auxV) - e.aux.mu) / e.aux.sd : 0) : 0;
   return Math.max(base + a, 0);
 };
