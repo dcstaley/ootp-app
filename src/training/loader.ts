@@ -25,6 +25,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, basename } from "node:path";
 import type { HittingRatings, PitchingRatings } from "../model/types.ts";
 import { DEFAULT_WOBA_WEIGHTS, type WobaWeights } from "../scoring-core/woba-weights.ts";
+import { corruptCellKeys } from "./validate.ts";
 
 // Normal-equations solve (X'X b = X'y) via Gauss-Jordan — used to reverse-engineer
 // the game's wOBA event weights from wRAA (see deriveWobaWeights below).
@@ -124,6 +125,7 @@ export interface TrainingSummary {
   unparsedFiles: string[];
   leagues: string[]; years: number[];
   cells: CellStat[];
+  excludedCells: string[]; // "league|year" cells dropped from modeling as corrupt (still shown, flagged)
   observations: number; hitterObs: number; pitcherObs: number;
   baseObs: number; variantObs: number;
   totalPA: number; totalBF: number;
@@ -164,19 +166,34 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
   // global 2B:3B mix for the single combined XBH weight. See deriveWobaWeights note.
   const wwAcc = { bb: 0, hbp: 0, b2: 0, b3: 0, hr: 0 }; let wwPA = 0, n2tot = 0, n3tot = 0;
 
+  // PASS 1 — parse each windowed file + record its per-(league,side,year) cell stats. We must
+  // know the cell stats BEFORE aggregating so clearly-corrupt cells can be excluded from EVERY
+  // modeling input (observations, role splits, wOBA weights), not just flagged.
+  const parsedFiles: { tag: { league: string; side: Side; year: number }; rows: Row[] }[] = [];
   for (const f of found) {
     if (!f.tag) continue;
     if (window && !window.includes(f.tag.year)) continue;
-    const tag = f.tag;
     const parsed = Papa.parse<Row>(readFileSync(f.abs, "utf8"), { header: true, skipEmptyLines: true });
     const rows = (parsed.data ?? []).filter((r) => r && r["CID"]);
     let fpa = 0, fbf = 0;
+    for (const r of rows) { fpa += num(r["PA"]); fbf += num(r["BF"]); }
+    files.push({ file: f.file, ...f.tag, rows: rows.length, pa: fpa, bf: fbf });
+    cells.push({ league: f.tag.league, side: f.tag.side, year: f.tag.year, rows: rows.length, pa: fpa, bf: fbf });
+    parsedFiles.push({ tag: f.tag, rows });
+  }
+  // Clearly-corrupt cells (duplicate vL/vR, reversed split) → excluded from modeling entirely.
+  const excludedKeys = corruptCellKeys(cells);
+
+  // PASS 2 — aggregate observations + role splits + wOBA weights from the CLEAN files only.
+  for (const { tag, rows } of parsedFiles) {
+    if (excludedKeys.has(`${tag.league}|${tag.year}`)) continue;
+    let fpa = 0;
     const wbX: number[][] = [], wbY: number[] = []; // per-file wRAA regression rows
     for (const r of rows) {
       const cid = String(r["CID"]); const variant = String(r["VAR"] ?? "").toUpperCase() === "Y";
       const key = `${cid}|${variant ? "V" : "B"}|${tag.side}`;
       const h = hitOutcomes(r); const p = pitchOutcomes(r);
-      fpa += h.PA; fbf += p.BF;
+      fpa += h.PA;
       // wRAA ≈ (1/scale)·Σ(w_e·event) − (lg/scale)·PA — exactly linear in events + PA
       // with NO intercept, so a no-intercept regression recovers the game's weights.
       if (h.PA >= 50) { wbX.push([h.BB, h.HP, h.b1, h.b2, h.b3, h.HR, h.PA]); wbY.push(num(r["wRAA"])); n2tot += h.b2; n3tot += h.b3; }
@@ -204,8 +221,6 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
       addHit(o.hit, h); addPitch(o.pitch, p);
       o.sources.push({ league: tag.league, year: tag.year, pa: h.PA, bf: p.BF });
     }
-    files.push({ file: f.file, ...tag, rows: rows.length, pa: fpa, bf: fbf });
-    cells.push({ league: tag.league, side: tag.side, year: tag.year, rows: rows.length, pa: fpa, bf: fbf });
     // Per-file wOBA weights, relative to 1B, PA-weighted into the blend.
     if (wbX.length >= 20) {
       const b = solveNormal(wbX, wbY); const oneB = b[2]!;
@@ -224,6 +239,7 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
     leagues: [...new Set(files.map((f) => f.league))].sort(),
     years: [...new Set(files.map((f) => f.year))].sort(),
     cells: cells.sort((a, b) => a.league.localeCompare(b.league) || a.year - b.year || a.side.localeCompare(b.side)),
+    excludedCells: [...excludedKeys.keys()],
     observations: observations.length,
     hitterObs: observations.filter((o) => o.hit.PA > 0).length,
     pitcherObs: observations.filter((o) => o.pitch.BF > 0).length,

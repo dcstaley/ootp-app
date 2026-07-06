@@ -11,12 +11,15 @@ import { C, inputStyle } from "./shared.ts";
 type Side = "L" | "R";
 interface FileStat { file: string; league: string; side: Side; year: number; rows: number; pa: number; bf: number }
 interface CellStat { league: string; side: Side; year: number; rows: number; pa: number; bf: number }
+interface DatasetIssue { severity: "error" | "warn"; scope: string; message: string }
+interface DatasetValidation { ok: boolean; errors: number; warnings: number; excluded: string[]; issues: DatasetIssue[] }
 interface TrainingSummary {
   available: boolean; dir: string; error?: string;
   files: FileStat[]; unparsedFiles: string[];
   leagues: string[]; years: number[]; cells: CellStat[];
   observations: number; hitterObs: number; pitcherObs: number;
   baseObs: number; variantObs: number; totalPA: number; totalBF: number;
+  validation?: DatasetValidation;
 }
 
 interface ResidualBin { lo: number; hi: number; mid: number; n: number; sumW: number; meanResidual: number; signal: number }
@@ -587,6 +590,7 @@ export function ModelTrainingPage() {
   // Pivot the cells into a league-row × (year/side)-column matrix for the table.
   const colKeys = data ? [...new Set(data.cells.map((c) => `${c.year} v${c.side}`))].sort() : [];
   const cellAt = (league: string, col: string) => data?.cells.find((c) => c.league === league && `${c.year} v${c.side}` === col);
+  const excludedSet = new Set(data?.validation?.excluded ?? []); // "league|year" cells dropped from modeling (shown red)
   const activeModel = models.find((m) => m.id === activeModelId); // the live scoring model (● in the table)
 
   return (
@@ -626,6 +630,23 @@ export function ModelTrainingPage() {
             <Stat label="Files" value={fmt(data.files.length)} sub={`${data.leagues.length} leagues · ${data.years.join("–")}`} />
           </div>
 
+          {data.validation && data.validation.issues.length > 0 && (
+            <div style={{ marginBottom: 18, border: `1px solid ${data.validation.ok ? "#f59e0b" : "#ef4444"}`, borderRadius: 8, padding: "10px 12px", background: "rgba(239,68,68,0.06)" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: data.validation.ok ? "#f59e0b" : "#ef4444", marginBottom: 6 }}>
+                Dataset integrity — {data.validation.errors} error{data.validation.errors === 1 ? "" : "s"}, {data.validation.warnings} warning{data.validation.warnings === 1 ? "" : "s"}
+                {data.validation.excluded.length > 0 && <span style={{ fontWeight: 400, color: C.sub }}> · {data.validation.excluded.length} cell(s) auto-excluded from modeling (highlighted below)</span>}
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: C.text, display: "grid", gap: 3 }}>
+                {data.validation.issues.map((iss, i) => (
+                  <li key={i}><b style={{ color: iss.severity === "error" ? "#ef4444" : "#f59e0b" }}>[{iss.severity}]</b> <code style={{ color: C.sub }}>{iss.scope}</code> — {iss.message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {data.validation && data.validation.issues.length === 0 && (
+            <div style={{ marginBottom: 18, fontSize: 12.5, color: "#22c55e" }}>✓ Dataset integrity checks passed.</div>
+          )}
+
           <h3 style={{ margin: "0 0 8px", fontSize: 14 }}>Coverage by league × year × side</h3>
           <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
             <table style={{ borderCollapse: "collapse", width: "100%" }}>
@@ -645,11 +666,14 @@ export function ModelTrainingPage() {
                   return (
                     <tr key={lg}>
                       <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{lg}</td>
-                      {rowCells.map((x, i) => (
-                        <td key={i} style={{ ...td, color: x ? C.text : C.sub }}>
-                          {x ? <span title={`${fmt(x.rows)} rows · ${fmt(x.pa)} PA · ${fmt(x.bf)} BF`}>{fmt(x.rows)}</span> : "—"}
-                        </td>
-                      ))}
+                      {rowCells.map((x, i) => {
+                        const excl = !!x && excludedSet.has(`${lg}|${x.year}`);
+                        return (
+                          <td key={i} style={{ ...td, color: excl ? "#ef4444" : x ? C.text : C.sub, fontWeight: excl ? 700 : undefined, background: excl ? "rgba(239,68,68,0.14)" : undefined }}>
+                            {x ? <span title={`${excl ? "EXCLUDED (corrupt) — " : ""}${fmt(x.rows)} rows · ${fmt(x.pa)} PA · ${fmt(x.bf)} BF`}>{fmt(x.rows)}</span> : "—"}
+                          </td>
+                        );
+                      })}
                       <td style={{ ...td, borderLeft: `1px solid ${C.border}`, color: C.sub }}>{fmt(pa)}</td>
                       <td style={{ ...td, color: C.sub }}>{fmt(bf)}</td>
                     </tr>

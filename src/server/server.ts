@@ -40,6 +40,7 @@ import { buildScoreboard, defaultWindow, type Scoreboard } from "../training/eva
 import { HITTER, PITCHER, predictHitWoba, predictPitWoba, actualHitWoba, actualPitWoba } from "../training/bakeoff.ts";
 import { evalMetrics, type EvalMetrics } from "../training/metrics.ts";
 import { analyzeResiduals, type ResidualAnalysis } from "../training/residuals.ts";
+import { validateDataset } from "../training/validate.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -1383,7 +1384,7 @@ const server = createServer(async (req, res) => {
   if (method === "GET" && url === "/api/training/summary") {
     const t = getTraining(u.searchParams.get("reload") === "true");
     if (!t) return json(res, { available: false, dir: TRAINING_DIR, error: trainingErr }, 200);
-    return json(res, { available: true, ...t.summary });
+    return json(res, { available: true, ...t.summary, validation: validateDataset(t.summary) });
   }
   // Diagnostic: how the pool-strength transform (rating re-basing) moves a tournament's
   // ratings. Returns the per-rating affines (effective = a + b·raw, clamped ≥0) and the
