@@ -224,23 +224,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setDirty(true);
   };
   // Pin a pitcher to the rotation ("sp") or bullpen ("rp"); toggling the same role clears it.
-  // Auto-regenerates so the arm physically relocates to the right table (the LP rebalances).
+  // Marks the roster dirty (sent to the optimizer on the next Regenerate) — like every lock.
   const toggleStaffLock = (id: string, role: "sp" | "rp") => {
-    const n = new Map(staffLocks);
-    if (n.get(id) === role) n.delete(id); else n.set(id, role);
-    setStaffLocks(n);
-    void generateRoster({ staffLocks: n });
+    setStaffLocks((m) => { const n = new Map(m); if (n.get(id) === role) n.delete(id); else n.set(id, role); return n; });
+    setDirty(true);
   };
 
   // Shared query string for /api/roster + /api/upgrades (optionally overriding locked/excluded).
-  const rosterQuery = (over?: { excluded?: Set<string>; locked?: Set<string>; staffLocks?: Map<string, "sp" | "rp"> }) => {
+  const rosterQuery = (over?: { excluded?: Set<string>; locked?: Set<string> }) => {
     const enc = (s: Set<string>) => [...s].join(",");
     const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
     const encLocks = [...lineupLocks.values()].map((l) => `${l.id}:${l.pos}:${l.side}`).join(",");
-    const encStaff = [...(over?.staffLocks ?? staffLocks)].map(([id, role]) => `${id}:${role}`).join(",");
+    const encStaff = [...staffLocks].map(([id, role]) => `${id}:${role}`).join(",");
     return `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(over?.locked ?? locked)}&excluded=${enc(over?.excluded ?? excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}&staffLocks=${encodeURIComponent(encStaff)}`;
   };
-  const generateRoster = async (over?: { locked?: Set<string>; staffLocks?: Map<string, "sp" | "rp"> }) => {
+  const generateRoster = async (over?: { locked?: Set<string> }) => {
     if (!tournamentId) return;
     setRosterLoading(true);
     try {
