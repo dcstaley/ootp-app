@@ -21,12 +21,12 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
-import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, type WinParams } from "../eval/index.ts";
+import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { resolveTournamentAdjustment } from "../config/tournament.ts";
 import { Repository } from "../persistence/repository.ts";
@@ -172,7 +172,7 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
 type ScoredRow = ReturnType<typeof toRow>;
 
 // ── Per-tournament scoring (resolve → calibrate → score), cached ──────────────
-interface Scored { rows: ScoredRow[]; ctx: ScoreCtx; eligibleCount: number }
+interface Scored { rows: ScoredRow[]; ctx: ScoreCtx; eligibleCount: number; exposure: ExposureResolved | null }
 let cache = new Map<string, Scored>();
 
 // Baseline solve cache for stage-2 refine: the last full owned-roster solve per
@@ -221,17 +221,26 @@ function scoreTournament(t: Tournament): Scored {
   if (!era || !park) throw new Error(`Tournament ${t.id}: missing era '${t.eraId}' or park '${t.parkId}'`);
 
   const coeffs = resolveCoeffs(model!, era, park, t.softcaps);
-  // Platoon OVR splits (scope B): a tournament's own splits (seeded from the active model on
-  // create) override the coeff defaults; existing tournaments without `platoon` are untouched.
-  if (t.platoon) {
+  // wOBA event weights: the active model's wRAA-derived weights override the historical
+  // constants (absent ⇒ woba.ts uses the defaults, bit-identical). Model-scoped. Applied
+  // BEFORE exposure so the raw-wOBA field selection uses the model's weights.
+  if (activeWobaWeights) applyWobaWeights(coeffs, activeWobaWeights);
+  const eventForm = activeEventForm ?? undefined;
+  const evModel: EventModel = eventForm ? makeRawPolyModel(eventForm) : logLinearModel;
+  const pool = buildEligiblePool(catalog.cards, t);
+  const basePool = pool.filter(isBaseCard);
+  // Platoon EXPOSURE (baseline+deployment / realized) drives BOTH the display OVR blends (the
+  // coeff splits below) AND the optimizer (stored on ctx). Absent a #2 model ⇒ null ⇒ the
+  // legacy t.platoon splits. See docs/REBUILD_PLATOON_EXPOSURE_PLAN.md Part A.
+  const exposure = resolveExposure(t, coeffs, evModel, basePool);
+  const sp = exposure?.effective;
+  if (sp) {
+    coeffs.r_hit_split = sp.r_hit_split; coeffs.l_hit_split = sp.l_hit_split; coeffs.s_hit_split = sp.s_hit_split;
+    coeffs.r_pitch_split = sp.r_pitch_split; coeffs.l_pitch_split = sp.l_pitch_split;
+  } else if (t.platoon) { // legacy fallback (no #2 model): the tournament's stored splits
     coeffs.r_hit_split = t.platoon.r_hit_split; coeffs.l_hit_split = t.platoon.l_hit_split; coeffs.s_hit_split = t.platoon.s_hit_split;
     coeffs.r_pitch_split = t.platoon.r_pitch_split; coeffs.l_pitch_split = t.platoon.l_pitch_split;
   }
-  // wOBA event weights: the active model's wRAA-derived weights override the historical
-  // constants (absent ⇒ woba.ts uses the defaults, bit-identical). Model-scoped, not
-  // tournament-scoped — the run environment is the model's, not the tournament's.
-  if (activeWobaWeights) applyWobaWeights(coeffs, activeWobaWeights);
-  const eventForm = activeEventForm ?? undefined;
   // Tournament adjustment (D4): a second era-modifier set MULTIPLIED onto the era factors
   // (era 1.12 × adj 1.15 = 1.288). BB/K/GAP live in coeffs; HR/H in derived. On by default
   // except the neutral pools. Applied before the pool transform + calibration, so the whole
@@ -240,16 +249,13 @@ function scoreTournament(t: Tournament): Scored {
   if (adj.enabled) { coeffs.era_bb *= adj.bb; coeffs.era_k *= adj.k; coeffs.era_gap *= adj.gap; }
   const derived = computeDerived(coeffs, !!eventForm); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
   if (adj.enabled) { derived.era_effective_hr *= adj.hr; derived.era_h *= adj.h; }
-  const pool = buildEligiblePool(catalog.cards, t);
   // Pool transform (#2 only): reference = top-50 of the full NON-VARIANT catalog, pool =
   // top-50 of the eligible NON-VARIANT subset → lift pool toward reference (saturating
   // mean-scalar, capped at the active model's training envelope). Variants are still scored
   // (toRow runs on the whole catalog) — they just don't set the distribution. undefined ⇒
   // no transform (unrestricted pool ⇒ k≈1 ⇒ identity; no #2 model ⇒ log-linear baseline).
-  const basePool = pool.filter(isBaseCard);
   let poolTransform: PoolTransform | undefined;
   if (eventForm) {
-    const evModel = makeRawPolyModel(eventForm);
     const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
     poolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N), activeEnvelope ?? undefined);
   }
@@ -268,7 +274,7 @@ function scoreTournament(t: Tournament): Scored {
   const isEligible = (c: Record<string, unknown>) => inValueRange(c) && rowEligible(c as any, t);
   const ctx: ScoreCtx = { config, basicConfig, isEligible };
 
-  return { rows: catalog.cards.map((c) => toRow(c, ctx)), ctx, eligibleCount: pool.length };
+  return { rows: catalog.cards.map((c) => toRow(c, ctx)), ctx, eligibleCount: pool.length, exposure };
 }
 
 function scoredFor(id: string): { t: Tournament; s: Scored } {
@@ -608,7 +614,73 @@ function budgetMode(t: Tournament): "none" | "cap" | "slots" {
 // the legacy team-split collapse. So existing tournaments (role-blind platoon only)
 // get the handedness fix immediately and role differentiation from the active model
 // without rewriting stored config; tournaments with no platoon at all are unchanged.
+// ── Pool-derived platoon EXPOSURE (baseline + deployment) ─────────────────────
+// Replaces the hardcoded team split / global pitch split with the tournament's OWN pool
+// composition. baseline = usage-weighted handedness of the role-agnostic top-N field
+// (env-free RAW-wOBA selection, see cardSideWobas); deployment = the active model's
+// realized managed-platooning shift (realized − LEAGUE baseline), in logit space.
+// effective = baseline(this pool) + deployment. The league round-trips to realized by
+// construction; other pools get their own baseline + the shared deployment. Absent a #2
+// model ⇒ null ⇒ callers keep the legacy constants. See
+// docs/REBUILD_PLATOON_EXPOSURE_PLAN.md Part A.
+const EXPOSURE_N = 100;
+function exposureFieldMembers(cards: any[], coeffs: Coeffs, model: EventModel): FieldMember[] {
+  return cards.map((c) => {
+    const w = cardSideWobas(c, coeffs, model);
+    // pitVal: lower allowed wOBA = better → negate so "higher = better" for the field sort.
+    // pitWeight = stamina (innings/BF proxy); hitWeight flat (lineup PA ≈ flat).
+    return { bats: n(c["Bats"]), throws: n(c["Throws"]), hitVR: w.hitVR, hitVL: w.hitVL, pitVal: -(w.pitVR + w.pitVL), hitWeight: 1, pitWeight: Math.max(n(c["Stamina"]), 1) };
+  });
+}
+// LEAGUE reference baseline = full-catalog field. Env-invariant (RAW wOBA), so any tournament's
+// coeffs+model give the same result → cached globally by model+catalog.
+let leagueBaselineCache: { key: string; base: ExposureBaseline } | null = null;
+function leagueExposureBaseline(coeffs: Coeffs, model: EventModel): ExposureBaseline {
+  const key = `${state.activeModelId ?? ""}|${catalogSource}`;
+  if (leagueBaselineCache?.key === key) return leagueBaselineCache.base;
+  const base = computeBaseline(exposureFieldMembers(catalog.cards.filter(isBaseCard), coeffs, model), EXPOSURE_N);
+  leagueBaselineCache = { key, base };
+  return base;
+}
+function realizedSplitsOf(p: PlatoonExposure): RealizedSplits {
+  const rs = p.pitchRoleSplits;
+  return {
+    teamVR: p.teamVR, r_hit_split: p.r_hit_split, l_hit_split: p.l_hit_split, s_hit_split: p.s_hit_split,
+    r_pitch_split_sp: rs?.sp.r ?? p.r_pitch_split, l_pitch_split_sp: rs?.sp.l ?? p.l_pitch_split,
+    r_pitch_split_rp: rs?.rp.r ?? p.r_pitch_split, l_pitch_split_rp: rs?.rp.l ?? p.l_pitch_split,
+  };
+}
+/** LEAGUE pool: the model's realized splits verbatim (this IS the training pool). */
+function realizedEffective(p: PlatoonExposure): EffectiveExposure {
+  const r = realizedSplitsOf(p);
+  return {
+    platoonVR: r.teamVR, platoonVL: 1 - r.teamVR,
+    r_hit_split: r.r_hit_split, l_hit_split: r.l_hit_split, s_hit_split: r.s_hit_split,
+    r_pitch_split_sp: r.r_pitch_split_sp, l_pitch_split_sp: r.l_pitch_split_sp,
+    r_pitch_split_rp: r.r_pitch_split_rp, l_pitch_split_rp: r.l_pitch_split_rp,
+    r_pitch_split: (r.r_pitch_split_sp + r.r_pitch_split_rp) / 2, l_pitch_split: (r.l_pitch_split_sp + r.l_pitch_split_rp) / 2,
+  };
+}
+interface ExposureResolved { mode: "realized" | "estimate"; baseline: ExposureBaseline; deployment: DeploymentShift | null; effective: EffectiveExposure }
+/** Resolve exposure DURING scoring (called by scoreTournament with its coeffs+model+eligible base
+ *  pool). LEAGUE kind ⇒ realized splits verbatim; TOURNAMENT ⇒ baseline(this pool) + deployment.
+ *  baseline/deployment kept either way for provenance. null ⇒ no #2 model (legacy constants). */
+function resolveExposure(t: Tournament, coeffs: Coeffs, model: EventModel, basePool: any[]): ExposureResolved | null {
+  if (!activeEventForm) return null;
+  const baseline = computeBaseline(exposureFieldMembers(basePool, coeffs, model), EXPOSURE_N);
+  const deployment = activePlatoon ? deploymentFrom(realizedSplitsOf(activePlatoon), leagueExposureBaseline(coeffs, model)) : null;
+  const league = t.kind === "league" && !!activePlatoon;
+  const effective = league ? realizedEffective(activePlatoon!) : applyDeployment(baseline, deployment);
+  return { mode: league ? "realized" : "estimate", baseline, deployment, effective };
+}
+/** The exposure the optimizer + the display OVR blends both use — computed once per tournament
+ *  in scoreTournament and cached on its Scored context. */
+function exposureFor(t: Tournament): ExposureResolved | null { return scoredFor(t.id).s.exposure; }
+
 function resolvePitchSplit(t: Tournament): PitchSplit | undefined {
+  const exp = exposureFor(t);
+  if (exp) { const e = exp.effective; return { sp: { r: e.r_pitch_split_sp, l: e.l_pitch_split_sp }, rp: { r: e.r_pitch_split_rp, l: e.l_pitch_split_rp } }; }
+  // Legacy fallback (no #2 model): tournament field → model role split → role-blind split.
   const p = t.platoon;
   const model = activePlatoon?.pitchRoleSplits;
   const r = (role: PitchRole) => (role === "sp" ? p?.r_pitch_split_sp : p?.r_pitch_split_rp) ?? model?.[role]?.r ?? p?.r_pitch_split;
@@ -619,10 +691,11 @@ function resolvePitchSplit(t: Tournament): PitchSplit | undefined {
 }
 
 function rosterOptions(t: Tournament): RosterOptimizeOptions {
+  const exp = exposureFor(t)?.effective;
   return {
     nHitters: t.hitters, nPitchers: t.pitchers, dh: t.dh,
     minStarters: t.min_starters, minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
-    platoonVR: t.platoonVR ?? 0.62, platoonVL: t.platoonVL ?? 0.38, // team exposure: weights the vR/vL HITTER lineups
+    platoonVR: exp?.platoonVR ?? t.platoonVR ?? 0.62, platoonVL: exp?.platoonVL ?? t.platoonVL ?? 0.38, // team exposure: weights the vR/vL HITTER lineups
     pitchSplit: resolvePitchSplit(t),                               // (hand,role) PITCHER batter-hand exposure
     minPlayersPerPosition: t.minPlayersPerPosition ?? 2,            // coverage depth / backups
     mode: budgetMode(t), totalCap: t.total_cap ?? undefined, slotCounts: t.slot_counts,
@@ -1294,6 +1367,16 @@ const server = createServer(async (req, res) => {
     return t ? json(res, { ...t, tournamentAdjustment: resolveTournamentAdjustment(t) }) : json(res, { error: "unknown tournament" }, 404);
   }
   if (method === "GET" && url === "/api/libraries") return json(res, { eras: eraList(), parks: parkList(), columns: [...catalog.columns].sort((a, b) => a.localeCompare(b)), platoonDefaults: activePlatoon });
+  // Platoon exposure provenance: baseline (this pool) → deployment (active model) → effective.
+  // Powers the Tournament-settings exposure preview + verifies the league round-trip.
+  if (method === "GET" && url === "/api/exposure") {
+    const tid = u.searchParams.get("t") || DEFAULT_TOURNAMENT_ID;
+    const t = tournamentById.get(tid);
+    if (!t) return json(res, { error: "unknown tournament" }, 400);
+    const exp = exposureFor(t);
+    if (!exp) return json(res, { tournament: t.name, active: false, note: "no #2 model active — legacy constants in use" });
+    return json(res, { tournament: t.name, active: true, mode: exp.mode, kind: t.kind ?? "tournament", n: EXPOSURE_N, baseline: exp.baseline, deployment: exp.deployment, effective: exp.effective, realizedTeamVR: activePlatoon?.teamVR ?? null });
+  }
   if (method === "GET" && url === "/api/parks") return json(res, { parks: [...parks.values()] });
   if (method === "GET" && url === "/api/eras") return json(res, { eras: [...eras.values()] });
   if (method === "GET" && url === "/api/accounts") return json(res, accountSummary());
@@ -1643,7 +1726,7 @@ const server = createServer(async (req, res) => {
     }
     await repo.save("tournaments", id, t);
     tournamentById.set(id, t);
-    cache.delete(id); // era/park/softcaps/value-range affect scoring → re-score on next read
+    cache.delete(id); // era/park/softcaps/value-range affect scoring → re-score on next read (exposure lives on the Scored ctx, so it invalidates with it)
     refDCache.delete(id); // bestOf/tuning changes move the .500 anchor → recompute reference D
     return json(res, { id, tournaments: tournamentListNow() });
   }

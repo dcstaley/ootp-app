@@ -101,6 +101,12 @@ export interface Tournament {
   variants_allowed: boolean;
   max_variants_on_roster: number;
 
+  // League vs tournament (drives platoon-exposure sourcing): "league" pools ARE the model's
+  // training pool → use the model's REALIZED splits directly; "tournament" pools estimate
+  // via pool baseline + the model's deployment shift. Absent ⇒ "tournament". See
+  // docs/REBUILD_PLATOON_EXPOSURE_PLAN.md Part A.
+  kind?: "league" | "tournament";
+
   // Run environment by reference (D4)
   eraId: string;
   parkId: string;

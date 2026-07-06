@@ -48,6 +48,13 @@ function topStats(recs: SideRec[], keys: readonly string[], topN: number, hitter
   return out;
 }
 
+/** Raw per-side predicted wOBA for one card — the env-free field-SELECTION basis (same
+ *  raw wOBA the field stats rank by). Reused by the exposure baseline so its field matches. */
+export function cardSideWobas(c: any, coeffs: Coeffs, model: EventModel): { hitVR: number; hitVL: number; pitVR: number; pitVL: number } {
+  const r = cardRec(c, coeffs, model);
+  return { hitVR: r.hitVR.woba, hitVL: r.hitVL.woba, pitVR: r.pitVR.woba, pitVL: r.pitVL.woba };
+}
+
 /** Per-(role, side) rating μ/σ of the top-N field by raw predicted wOBA. */
 export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number): FieldStats {
   const recs = cards.map((c) => cardRec(c, coeffs, model));

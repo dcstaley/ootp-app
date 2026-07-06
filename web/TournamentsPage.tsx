@@ -88,6 +88,13 @@ const parkModGroups = (p?: ParkCfg) => p ? [
   { label: "GAP", values: [p.gap] }, ...(p.triple != null ? [{ label: "3B", values: [p.triple] }] : []),
 ] : [];
 
+type ExpSplits = { platoonVR: number; r_hit_split: number; l_hit_split: number; s_hit_split: number; r_pitch_split_sp: number; l_pitch_split_sp: number; r_pitch_split_rp: number; l_pitch_split_rp: number };
+type ExposureInfo = {
+  active: boolean; mode?: "realized" | "estimate"; note?: string; n?: number;
+  baseline?: { platoonVR: number; r_pitch_split: number; l_pitch_split: number };
+  effective?: ExpSplits;
+};
+
 export function TournamentsPage() {
   const { tournaments, tournamentId, reloadTournaments, reloadView } = useAppData();
   const [selId, setSelId] = useState(tournamentId);
@@ -98,6 +105,7 @@ export function TournamentsPage() {
   const [metrics, setMetrics] = useState<PosMetrics | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [exposure, setExposure] = useState<ExposureInfo | null>(null);
   const savedRef = useRef<string>(""); // JSON of the last-persisted draft (auto-save baseline)
   const adoptedIdRef = useRef<string | null>(null); // id the server re-slugged us to (skip its reload)
 
@@ -195,6 +203,13 @@ export function TournamentsPage() {
     }, 500);
     return () => clearTimeout(tmo);
   }, [draft]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Platoon-exposure provenance (baseline → deployment → effective) for the selected
+  // tournament. Server computes from the SAVED config, so refetch on select + after saves.
+  useEffect(() => {
+    if (!selId) { setExposure(null); return; }
+    fetch("/api/exposure?t=" + encodeURIComponent(selId)).then((r) => r.json()).then(setExposure).catch(() => setExposure(null));
+  }, [selId, msg?.text]);
 
   // Pool metrics for the position-constraint editor. Recomputed (debounced) when a
   // pool-defining field changes (era/park/eligibility/value-range/Top-X). POSTs the draft
@@ -379,6 +394,13 @@ export function TournamentsPage() {
           <div style={{ flex: "1 1 720px", minWidth: 0, maxWidth: 1180 }}>
             {section("Identity & environment", <div style={{ display: "grid", gap: 10 }}>
               {row("Name", <input value={draft.name} onChange={(e) => set("name", e.target.value)} style={{ ...inputStyle, width: 340 }} />)}
+              {row("Type", <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                {(["tournament", "league"] as const).map((k) => (
+                  <label key={k} style={{ display: "inline-flex", gap: 5, alignItems: "center", cursor: "pointer" }}>
+                    <input type="radio" name="tkind" checked={(draft.kind ?? "tournament") === k} onChange={() => set("kind", k)} /> {k === "league" ? "League" : "Tournament"}
+                  </label>
+                ))}
+              </div>, "League ⇒ uses the model's learned REAL splits (this IS the training pool); Tournament ⇒ estimates from this pool's baseline + the model's deployment shift")}
               {row("Era", <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                 <Combo value={draft.eraId} options={libs.eras} onChange={(id) => set("eraId", id)} width={240} placeholder="Search eras…" />
                 <ModStrip groups={eraModGroups(eraMap[draft.eraId])} />
@@ -443,26 +465,60 @@ export function TournamentsPage() {
             </div>
 
             {section("Pool & weighting", <>
+              {exposure?.active && exposure.effective && (() => {
+                const e = exposure.effective!, est = exposure.mode === "estimate";
+                const items: { label: string; eff: number; base?: number }[] = [
+                  { label: "vs RHP (team)", eff: e.platoonVR, base: est ? exposure.baseline?.platoonVR : undefined },
+                  { label: "RHB vs RHP", eff: e.r_hit_split }, { label: "LHB vs LHP", eff: e.l_hit_split }, { label: "SHB vs RHP", eff: e.s_hit_split },
+                  { label: "RHP→RHB · SP", eff: e.r_pitch_split_sp, base: est ? exposure.baseline?.r_pitch_split : undefined },
+                  { label: "LHP→LHB · SP", eff: e.l_pitch_split_sp, base: est ? exposure.baseline?.l_pitch_split : undefined },
+                  { label: "RHP→RHB · RP", eff: e.r_pitch_split_rp }, { label: "LHP→LHB · RP", eff: e.l_pitch_split_rp },
+                ];
+                return (
+                  <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", marginBottom: 14 }}>
+                    <div style={{ fontSize: 12.5, color: C.sub, marginBottom: 8 }}>
+                      <b style={{ color: C.text }}>Exposure the optimizer uses</b> — {exposure.mode === "realized"
+                        ? "League pool → the model's learned REAL splits, verbatim."
+                        : `Tournament pool → this pool's baseline + the model's deployment shift (top-${exposure.n ?? 100}). Shown as baseline → effective.`}
+                    </div>
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                      {items.map((it) => (
+                        <div key={it.label} style={{ display: "grid", gap: 1 }}>
+                          <span style={{ color: C.sub, fontSize: 11 }}>{it.label}</span>
+                          <span style={{ color: C.text, fontVariantNumeric: "tabular-nums", fontSize: 13 }}>
+                            {it.base != null && <span style={{ color: C.sub }}>{r3(it.base)} → </span>}<b>{r3(it.eff)}</b>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               {grid4(<>
                 {field("Top-X hitters", numIn("topHitters", { min: 0, nullable: true, width: 90, def: TOURNAMENT_DEFAULTS.topHitters }), "each side · two-way cutoff / non-cap pool")}
                 {field("Top-X pitchers", numIn("topPitchers", { min: 0, nullable: true, width: 90, def: TOURNAMENT_DEFAULTS.topPitchers }), "by OVR")}
-                {field("RHP exposure (vR)", <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
-                  <input type="number" min={0} max={1} step={0.001} value={r3(vR)} onChange={(e) => { const x = Math.max(0, Math.min(1, Number(e.target.value))); set("platoonVR", r3(x)); set("platoonVL", r3(1 - x)); }} style={{ ...inputStyle, width: 90 }} />
-                  <span style={{ fontSize: 13, color: C.sub }}>vL = {r3(1 - vR)}</span>
-                </span>, `team exposure — optimizer${draft.platoonVR == null ? " (model default)" : ""}`)}
               </>)}
-              <div style={{ fontSize: 12, color: C.sub, margin: "14px 0 6px" }}>
-                Hitter OVR splits — Cards-page display only, weight on the same-letter side{!draft.platoon && libs.platoonDefaults ? " (showing active-model defaults)" : ""}:
+              <div style={{ marginTop: 16, ...(exposure?.active ? { opacity: 0.5 } : {}) }}>
+                <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>
+                  {exposure?.active
+                    ? "Manual platoon splits — FALLBACK ONLY. The computed exposure above is in use (active model); these apply only when no model is active."
+                    : "Platoon splits — team exposure + per-hand OVR blends:"}
+                </div>
+                {grid4(<>
+                  {field("RHP exposure (vR)", <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+                    <input type="number" min={0} max={1} step={0.001} value={r3(vR)} onChange={(e) => { const x = Math.max(0, Math.min(1, Number(e.target.value))); set("platoonVR", r3(x)); set("platoonVL", r3(1 - x)); }} style={{ ...inputStyle, width: 90 }} />
+                    <span style={{ fontSize: 13, color: C.sub }}>vL = {r3(1 - vR)}</span>
+                  </span>, "team exposure")}
+                </>)}
+                <div style={{ fontSize: 12, color: C.sub, margin: "14px 0 6px" }}>Hitter OVR splits — weight on the same-letter side:</div>
+                {grid4(HIT_SPLITS.map((s) => (
+                  <Fragment key={s.k}>{field(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
+                )))}
+                <div style={{ fontSize: 12, color: C.sub, margin: "14px 0 6px" }}>Pitcher splits — same-side weight by SP vs RP usage:</div>
+                {grid4(PITCH_ROLE_SPLITS.map((s) => (
+                  <Fragment key={s.k}>{field(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
+                )))}
               </div>
-              {grid4(HIT_SPLITS.map((s) => (
-                <Fragment key={s.k}>{field(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
-              )))}
-              <div style={{ fontSize: 12, color: C.sub, margin: "14px 0 6px" }}>
-                Pitcher splits — optimizer collapse, same-side weight by actual SP vs RP usage{!draft.platoon?.r_pitch_split_sp && libs.platoonDefaults?.pitchRoleSplits ? " (showing active-model defaults)" : ""}:
-              </div>
-              {grid4(PITCH_ROLE_SPLITS.map((s) => (
-                <Fragment key={s.k}>{field(s.label, <input type="number" min={0} max={1} step={0.001} value={r3(splitDef(s.k))} onChange={(e) => setSplit(s.k, Math.max(0, Math.min(1, Number(e.target.value))))} style={{ ...inputStyle, width: 90 }} />)}</Fragment>
-              )))}
             </>)}
 
             {mode !== "none" && section("E[wins] optimizer", <>

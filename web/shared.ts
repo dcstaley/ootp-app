@@ -101,6 +101,7 @@ export interface EligibilityGroup { mode: "ALL" | "ANY"; rules: EligibilityRule[
 // opaquely (loaded, preserved on save — not edited in Phase 1).
 export interface TournamentCfg {
   id: string; name: string;
+  kind?: "league" | "tournament"; // league ⇒ use the model's realized platoon splits; tournament ⇒ pool baseline + deployment
   card_value_min?: number | null; card_value_max?: number | null; total_cap?: number | null;
   roster_size: number; hitters: number; pitchers: number;
   min_starters: number; min_starter_stamina: number; min_pitch_types: number; dh: boolean;

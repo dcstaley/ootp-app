@@ -1,6 +1,7 @@
 {
   "id": "oaxaca-league",
   "name": "Oaxaca League",
+  "kind": "league",
   "card_value_min": null,
   "card_value_max": null,
   "total_cap": null,
