@@ -37,6 +37,8 @@ interface AppData {
   // lineup position locks (S5.3), keyed `side:id`. Survive Regenerate (sent to the
   // optimizer); toggling marks the roster dirty.
   lineupLocks: Map<string, LineupLock>; toggleLineupLock: (id: string, pos: string, side: "L" | "R") => void;
+  // pitcher staff locks (rotation/bullpen), keyed by card id. Auto-regenerate on toggle.
+  staffLocks: Map<string, "sp" | "rp">; toggleStaffLock: (id: string, role: "sp" | "rp") => void;
   generateRoster: () => Promise<void>;
   reloadView: () => Promise<void>;
   loadAccounts: () => Promise<unknown>;
@@ -77,6 +79,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [added, setAdded] = useState<AddedCard[]>([]);
   const [roleOv, setRoleOv] = useState<Map<string, RoleOverride>>(new Map());
   const [lineupLocks, setLineupLocks] = useState<Map<string, LineupLock>>(new Map());
+  const [staffLocks, setStaffLocks] = useState<Map<string, "sp" | "rp">>(new Map()); // pitcher → forced rotation/bullpen
   const [dirty, setDirty] = useState(false);
 
   const loadAccounts = () =>
@@ -170,7 +173,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   // Roster + generation controls reset whenever the (tournament, account) scope
   // changes — locks/excludes are card-specific to the active account.
-  useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setAdded([]); setRoleOv(new Map()); setLineupLocks(new Map()); setDirty(false); }, [tournamentId, accountId]);
+  useEffect(() => { setRoster(null); setLocked(new Set()); setExcluded(new Set()); setRemoved(new Set()); setAdded([]); setRoleOv(new Map()); setLineupLocks(new Map()); setStaffLocks(new Map()); setDirty(false); }, [tournamentId, accountId]);
 
   const setOwnedOnly = (v: boolean) => { setOwnedOnlyState(v); setDirty(true); };
   const setMetric = (m: "woba" | "basic") => { setMetricState(m); setDirty(true); };
@@ -220,15 +223,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setLineupLocks((m) => { const n = new Map(m); const k = lockKey(side, id); const cur = n.get(k); if (cur && cur.pos === pos) n.delete(k); else n.set(k, { id, pos, side }); return n; });
     setDirty(true);
   };
+  // Pin a pitcher to the rotation ("sp") or bullpen ("rp"); toggling the same role clears it.
+  // Auto-regenerates so the arm physically relocates to the right table (the LP rebalances).
+  const toggleStaffLock = (id: string, role: "sp" | "rp") => {
+    const n = new Map(staffLocks);
+    if (n.get(id) === role) n.delete(id); else n.set(id, role);
+    setStaffLocks(n);
+    void generateRoster({ staffLocks: n });
+  };
 
   // Shared query string for /api/roster + /api/upgrades (optionally overriding locked/excluded).
-  const rosterQuery = (over?: { excluded?: Set<string>; locked?: Set<string> }) => {
+  const rosterQuery = (over?: { excluded?: Set<string>; locked?: Set<string>; staffLocks?: Map<string, "sp" | "rp"> }) => {
     const enc = (s: Set<string>) => [...s].join(",");
     const encRoles = [...roleOv].map(([id, r]) => `${id}:${r}`).join(",");
     const encLocks = [...lineupLocks.values()].map((l) => `${l.id}:${l.pos}:${l.side}`).join(",");
-    return `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(over?.locked ?? locked)}&excluded=${enc(over?.excluded ?? excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}`;
+    const encStaff = [...(over?.staffLocks ?? staffLocks)].map(([id, role]) => `${id}:${role}`).join(",");
+    return `?tournament=${encodeURIComponent(tournamentId)}${accountId ? `&account=${encodeURIComponent(accountId)}` : ""}&ownedOnly=${ownedOnlyState}&metric=${metricState}&locked=${enc(over?.locked ?? locked)}&excluded=${enc(over?.excluded ?? excluded)}&roles=${encodeURIComponent(encRoles)}&lineupLocks=${encodeURIComponent(encLocks)}&staffLocks=${encodeURIComponent(encStaff)}`;
   };
-  const generateRoster = async (over?: { locked?: Set<string> }) => {
+  const generateRoster = async (over?: { locked?: Set<string>; staffLocks?: Map<string, "sp" | "rp"> }) => {
     if (!tournamentId) return;
     setRosterLoading(true);
     try {
@@ -292,6 +304,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     added, addCard,
     roles: roleOv, setRole,
     lineupLocks, toggleLineupLock,
+    staffLocks, toggleStaffLock,
     generateRoster,
     reloadView, loadAccounts, renameAccount, importOwnership, toggleVariant, importVariants, clearVariants,
   };

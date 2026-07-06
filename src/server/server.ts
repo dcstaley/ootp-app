@@ -761,15 +761,16 @@ async function expectedWin(tid: string, r: Roster, hitters: HitterCandidate[], p
 }
 
 type LineupLock = { id: string; pos: string; side: "L" | "R" };
-async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>, metric: Metric, lineupLocks: LineupLock[]) {
+type StaffLock = { id: string; role: "sp" | "rp" };
+async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boolean, locked: string[], excluded: string[], roleOverrides: Record<string, RoleOverride>, metric: Metric, lineupLocks: LineupLock[], staffLocks: StaffLock[] = []) {
   const t = tournamentById.get(tid) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
   const opts0 = rosterOptions(t);
   // A position-locked card must survive pool slicing — force-include it like a
   // roster lock. (The yh=1 lock then forces it rostered, so it need not also be
-  // in lockedIds.)
-  const forceInclude = new Set([...locked, ...lineupLocks.map((l) => l.id)]);
+  // in lockedIds.) Staff-locked pitchers are force-rostered too (via lockedIds below).
+  const forceInclude = new Set([...locked, ...lineupLocks.map((l) => l.id), ...staffLocks.map((s) => s.id)]);
   const { hitters, pitchers, twoWayIds, entries, ownedByDisp, defByDisp, lastByDisp, firstByDisp, starterPosByDisp } = rosterCandidates(t, aid, ownedOnly, new Set(excluded), roleOverrides, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
-  const opts = { ...opts0, lockedIds: locked, twoWayIds, lineupLocks };
+  const opts = { ...opts0, lockedIds: [...locked, ...staffLocks.map((s) => s.id)], twoWayIds, lineupLocks, staffLocks };
   // Cap/slots → the MILP optimizes the E[wins]-DERIVED objective: value × playing-time (from the
   // usage model), which does the combinatorial budget allocation natively (multi-card trades).
   // Non-cap ("none") passes no usageWeights, so the MILP keeps its legacy weighted objective —
@@ -1645,7 +1646,13 @@ const server = createServer(async (req, res) => {
       const [id, pos, side] = trip.split(":");
       if (id && pos && (side === "L" || side === "R")) lineupLocks.push({ id, pos, side });
     }
-    const result = await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides, metric, lineupLocks);
+    // staffLocks=ID:sp,ID:rp — pin a pitcher to the rotation (sp) or bullpen (rp).
+    const staffLocks: StaffLock[] = [];
+    for (const pair of list("staffLocks")) {
+      const [id, role] = pair.split(":");
+      if (id && (role === "sp" || role === "rp")) staffLocks.push({ id, role });
+    }
+    const result = await generateRosterFor(tid, aid, u.searchParams.get("ownedOnly") !== "false", list("locked"), list("excluded"), roleOverrides, metric, lineupLocks, staffLocks);
     // /api/upgrades returns ONLY the Biggest Upgrades (small payload) — used to refill the
     // client's upgrade buffer after a dismiss without re-sending the full roster + Next Best.
     return json(res, url === "/api/upgrades" ? { biggestUpgrades: result.biggestUpgrades ?? null } : result);

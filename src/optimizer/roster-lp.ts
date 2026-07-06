@@ -260,6 +260,18 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     });
   }
 
+  // ── Staff role locks: pin a pitcher to the rotation (SP) or bullpen (RP) ──
+  // SP ⇒ the pitcher must hold exactly one rotation slot (Σ_k xp_j_sk = 1); RP ⇒ it holds
+  // none (= 0), so it's a reliever. Rostering is forced separately via lockedIds. An "sp"
+  // lock on a non-qualified arm has no slot vars and is silently ignored (server flags it).
+  for (const lk of opts.staffLocks ?? []) {
+    const j = pitchers.findIndex((c) => strip(c.id) === strip(lk.id) || c.id === lk.id);
+    if (j < 0) continue;
+    const slotTerms = pCard[j];
+    if (lk.role === "sp") { if (slotTerms?.length) cons.push(` splock_${j}: ${slotTerms.join(" + ")} = 1`); }
+    else if (slotTerms?.length) cons.push(` rplock_${j}: ${slotTerms.join(" + ")} = 0`);
+  }
+
   // ── Lineup position locks (S5.3): pin a hitter to a position in one platoon
   // lineup. yh_i_pos_vS = 1 → the fill_pos_vS = 1 constraint forces every other
   // candidate at that (pos, side) to 0, displacing whoever the LP would have

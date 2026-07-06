@@ -128,6 +128,11 @@ export interface RosterOptimizeOptions {
   // (and rosters the locked card). Matched by base card id; a lock to a position
   // the card can't start is ignored (the var doesn't exist).
   lineupLocks?: { id: string; pos: string; side: "L" | "R" }[];
+  // staff role locks — pin a pitcher to the rotation ("sp": must hold a rotation slot) or
+  // the bullpen ("rp": rostered but never in the rotation). Matched by base card id; also
+  // force-rostered (via lockedIds). A "sp" lock on a non-starter-qualified arm can't be
+  // honored (no slot var) and is ignored.
+  staffLocks?: { id: string; role: "sp" | "rp" }[];
   // two-way players: candidate ids that appear in BOTH the hitter and pitcher
   // pools AND are designated two-way (Top-X overlap, or forced via the per-card
   // toggle). Such a card fills a hitter slot AND a pitcher slot with one entity —

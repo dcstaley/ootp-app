@@ -152,6 +152,7 @@ export function RosterPage() {
     roster, rosterLoading, generateRoster, meta, ownedOnly, setOwnedOnly, metric, setMetric,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades, refineUpgrades, acquireCard,
     added, addCard, roles: roleOverrides, setRole, cards,
+    staffLocks, toggleStaffLock,
   } = useAppData();
   const [tab, setTab] = useState<Tab>("roster");
   const [availCat, setAvailCat] = useState<AvailCat>("hitVR");
@@ -478,6 +479,23 @@ export function RosterPage() {
     { key: "woba", label: "OVR", align: "r", width: 76, value: (p) => p.woba, render: (p) => num(p.woba) },
     { key: "stam", label: "Stam", align: "r", width: 56, value: (p) => p.stamina },
     { key: "pit", label: "# Pit", align: "r", width: 56, value: (p) => p.pitchTypes },
+    // Staff lock: pin the arm to the rotation (SP) or bullpen (RP). Auto-regenerates, so the
+    // row relocates to the right table. SP disabled when the arm doesn't qualify as a starter.
+    { key: "lock", label: "Lock", align: "c", width: 78, value: (p) => staffLocks.get(p.id) ?? "", render: (p) => {
+      const spOk = p.stamina >= (roster?.minStarterStamina ?? 70) && p.pitchTypes >= (roster?.minPitchTypes ?? 3);
+      const cur = staffLocks.get(p.id);
+      const btn = (role: "sp" | "rp", on: boolean, enabled: boolean): React.CSSProperties => ({
+        ...inputStyle, padding: "1px 5px", fontSize: 11, cursor: enabled ? "pointer" : "not-allowed", fontWeight: on ? 700 : 400,
+        color: on ? "#fff" : enabled ? C.text : C.sub, background: on ? (role === "sp" ? "#3b82f6" : "#a855f7") : C.input,
+        border: `1px solid ${on ? (role === "sp" ? "#3b82f6" : "#a855f7") : C.border}`, opacity: enabled ? 1 : 0.4,
+      });
+      return (
+        <span style={{ display: "inline-flex", gap: 3 }}>
+          <button disabled={!spOk} onClick={() => toggleStaffLock(p.id, "sp")} title={spOk ? "Lock to rotation (SP)" : "Doesn't qualify as a starter"} style={btn("sp", cur === "sp", spOk)}>SP</button>
+          <button onClick={() => toggleStaffLock(p.id, "rp")} title="Lock to bullpen (RP)" style={btn("rp", cur === "rp", true)}>RP</button>
+        </span>
+      );
+    } },
   ];
   // Show the ROLE-APPROPRIATE blend per table: rotation + available-starters = SP score,
   // bullpen = RP score (manually-added arms lack the split → fall back to their single woba).
