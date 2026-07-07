@@ -719,17 +719,6 @@ function winParamsFor(t: Tournament): WinParams {
 }
 
 /** Budget spent per segment in a solved roster (lineup starters / bench / rotation / bullpen). */
-function segmentSpend(r: Roster, hitters: HitterCandidate[], pitchers: PitcherCandidate[]) {
-  const hMap = new Map(hitters.map((c) => [c.id, c]));
-  const pMap = new Map(pitchers.map((c) => [c.id, c]));
-  const starters = new Set([...r.lineupVR, ...r.lineupVL].map((s) => s.id));
-  const rot = new Set(r.rotation.map((x) => x.id));
-  const seg = { lineup: 0, bench: 0, rotation: 0, bullpen: 0 };
-  for (const id of r.hitters) { const c = hMap.get(id); if (c) (starters.has(id) ? (seg.lineup += c.cost) : (seg.bench += c.cost)); }
-  for (const id of r.pitchers) { const c = pMap.get(id); if (c) (rot.has(id) ? (seg.rotation += c.cost) : (seg.bullpen += c.cost)); }
-  return seg;
-}
-
 // The 0-variant OPTIMAL roster's run differential (off+def), cached per tournament — the anchor
 // for "50% = a perfectly-optimized roster with NO variants". A roster that uses variants (or is
 // otherwise better) reads >50%; a weaker/un-optimized one reads <50%.
@@ -785,22 +774,16 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     const avgPA = usage.lineupPA.reduce((s, x) => s + x, 0) / (usage.lineupPA.length || 1);
     // Bench bats see only part-time PA (availability-lite): a fraction of the absence share.
     const usageWeights = { lineupPA: avgPA, benchPA: (1 - wp.fullStrengthShare) * avgPA * 0.3, rotationBF: usage.rotationBF, bullpenBF: usage.bullpenBF };
-    const ewOpts = { ...opts, usageWeights };
-    // Natural (undialed) roster first — the spend dials are RELATIVE to it. If any dial is set,
-    // re-solve with per-segment $ bounds = dial × natural spend; the solver reallocates the rest.
-    const natural = await generateFullRoster(hitters, pitchers, ewOpts);
+    // Dials are per-segment PREFERENCE weights (pure objective multipliers, NOT spend caps): a
+    // down-dial shrinks that segment's value so the solver shifts scarce slots to the other
+    // segments (the intended reallocation), while relative order WITHIN a segment is untouched —
+    // so the best card always wins its slot. One solve; no natural/dialed re-solve dance.
     const dials = t.tuning?.dials;
-    const SEGS = ["lineup", "bench", "rotation", "bullpen"] as const;
-    const active = dials && SEGS.some((s) => dials[s] != null && dials[s] !== 1);
-    if (natural.status === "Optimal" && active) {
-      const spend = segmentSpend(natural, hitters, pitchers);
-      const segmentBounds: RosterOptimizeOptions["segmentBounds"] = {};
-      for (const s of SEGS) { const d = dials![s]; if (d == null || d === 1) continue; segmentBounds[s] = d < 1 ? { max: d * spend[s] } : { min: d * spend[s] }; }
-      const dialed = await generateFullRoster(hitters, pitchers, { ...ewOpts, segmentBounds });
-      r = dialed.status === "Optimal" ? dialed : natural;
-    } else {
-      r = natural;
-    }
+    const segmentWeights = dials
+      ? { lineup: dials.lineup, bench: dials.bench, rotation: dials.rotation, bullpen: dials.bullpen }
+      : undefined;
+    const ewOpts = { ...opts, usageWeights, segmentWeights };
+    r = await generateFullRoster(hitters, pitchers, ewOpts);
     expectedWinPct = await expectedWin(t.id, r, hitters, pitchers, opts, usageWeights, wp);
   }
   // Stash the baseline (owned solve) so stage-2 refine can reuse it instead of

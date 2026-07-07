@@ -157,10 +157,13 @@ export interface RosterOptimizeOptions {
     rotationBF: number[];  // BF per rotation slot (format-derived; SP1..SPk)
     bullpenBF: number[];   // BF per bullpen leverage slot (closer, setup, filler…) — descending
   };
-  // Per-segment spend bounds ($ cost) for the cap/slots E[wins] MILP — the "spend less/more on X"
-  // DIALS as constraints. The server resolves the relative dial (× natural spend) to absolute
-  // min/max here; the solver reallocates the freed/added budget across the other segments.
-  segmentBounds?: Partial<Record<"lineup" | "bench" | "rotation" | "bullpen", { min?: number; max?: number }>>;
+  // Per-segment objective PREFERENCE weights (the "spend less/more on X" DIALS). A dial is a
+  // pure value multiplier on that segment's objective terms — NOT a cap. Down-dialing a segment
+  // (<1) makes its value count for less, so the solver naturally shifts scarce tier-slots/budget
+  // to the other (higher-weighted) segments — the intended reallocation — WITHOUT ever bounding
+  // spend or preferring a cheaper-but-worse card to hit a dollar target. Relative order within a
+  // segment is preserved, so the best card always wins its slot. Default 1 (neutral).
+  segmentWeights?: Partial<Record<"lineup" | "bench" | "rotation" | "bullpen", number>>;
 }
 
 export interface Roster {

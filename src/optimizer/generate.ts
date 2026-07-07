@@ -11,6 +11,18 @@ import { buildHitterLp } from "./lp.ts";
 import { buildRosterLp } from "./roster-lp.ts";
 import { getSolver } from "./solve.ts";
 import { generatePitcherStaff } from "./pitcher-generate.ts";
+import { bestLineup } from "./assign.ts";
+
+// The DISPLAYED dual lineups come from the exact max-weight assignment (bestLineup) over the
+// ROSTERED hitters — the SAME routine the E[wins] evaluator scores with — so the highest
+// side-value eligible player always starts each position (no roster-depth/insurance credit can
+// bench a better bat). Pure side value (capture = 1): the vR lineup is the best-vR nine, the vL
+// lineup the best-vL nine.
+function displayLineup(rostered: HitterCandidate[], dh: boolean, side: "L" | "R"): LineupSlot[] {
+  const positions = lineupPositions(dh);
+  const lu = bestLineup(rostered, positions, side, 1);
+  return lu ? lu.map((c, i) => ({ pos: positions[i]!, id: c.id, title: c.title })) : [];
+}
 
 export async function generateHitterRoster(cands: HitterCandidate[], opts: HitterOptimizeOptions): Promise<HitterResult> {
   const { lp } = buildHitterLp(cands, opts);
@@ -22,19 +34,10 @@ export async function generateHitterRoster(cands: HitterCandidate[], opts: Hitte
   }
 
   const on = (name: string) => (sol.Columns[name]?.Primal ?? 0) > 0.5;
-  const hitters: string[] = [];
-  cands.forEach((c, i) => { if (on(`r_${i}`)) hitters.push(c.id); });
+  const rostered = cands.filter((_, i) => on(`r_${i}`));
+  const hitters = rostered.map((c) => c.id);
 
-  const lineup = (side: "L" | "R"): LineupSlot[] => {
-    const slots: LineupSlot[] = [];
-    for (const p of lineupPositions(opts.dh)) {
-      const i = cands.findIndex((_, idx) => on(`y_${idx}_${p}_v${side}`));
-      if (i >= 0) slots.push({ pos: p, id: cands[i]!.id, title: cands[i]!.title });
-    }
-    return slots;
-  };
-
-  return { status: "Optimal", objective: sol.ObjectiveValue, hitters, lineupVR: lineup("R"), lineupVL: lineup("L") };
+  return { status: "Optimal", objective: sol.ObjectiveValue, hitters, lineupVR: displayLineup(rostered, opts.dh, "R"), lineupVL: displayLineup(rostered, opts.dh, "L") };
 }
 
 /**
@@ -78,14 +81,7 @@ export async function generateFullRoster(
   const hitters_ = hitters.filter((_, i) => on(`rh_${i}`));
   const pitchers_ = pitchers.filter((_, j) => on(`rp_${j}`));
 
-  const lineup = (side: "L" | "R"): LineupSlot[] => {
-    const slots: LineupSlot[] = [];
-    for (const p of lineupPositions(opts.dh)) {
-      const i = hitters.findIndex((_, idx) => on(`yh_${idx}_${p}_v${side}`));
-      if (i >= 0) slots.push({ pos: p, id: hitters[i]!.id, title: hitters[i]!.title });
-    }
-    return slots;
-  };
+  const lineup = (side: "L" | "R"): LineupSlot[] => displayLineup(hitters_, opts.dh, side);
   const rotation: RotationSlot[] = [];
   for (let k = 1; k <= opts.minStarters; k++) {
     const j = pitchers.findIndex((_, idx) => on(`xp_${idx}_s${k}`));

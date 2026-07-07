@@ -54,6 +54,11 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // separate, deferred fix (the cap/slots/weights overhaul), not touched here.
   const weighted = opts.mode !== "none";
   const bonusEff = weighted ? bonus : 1;
+  // Per-segment PREFERENCE dials — pure objective value multipliers (NOT caps). Down-dialing a
+  // segment shrinks its value so the solver shifts slots to higher-weighted segments; relative
+  // order WITHIN a segment is untouched, so the best card always wins its slot. Default 1.
+  const sw = opts.segmentWeights ?? {};
+  const wLineup = sw.lineup ?? 1, wBench = sw.bench ?? 1, wRotation = sw.rotation ?? 1, wBullpen = sw.bullpen ?? 1;
   // Role-aware pitcher collapse (M6): rotation-slot value uses the SP batter-hand
   // weight, the bullpen membership term the RP weight. Absent pitchSplit ⇒ legacy
   // team-split fallback (both roles identical), so behavior is unchanged without it.
@@ -103,13 +108,13 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
         if (!positions.includes(p)) continue;
         const y = `yh_${i}_${p}_v${side}`;
         bin.push(y);
-        obj.push(`${f6(eweins ? w * val * uw!.lineupPA : hEmph * bothSides * w * val)} ${y}`);
+        obj.push(`${f6((eweins ? w * val * uw!.lineupPA : hEmph * bothSides * w * val) * wLineup)} ${y}`);
         (hPosSide[`${p}|${side}`] ??= []).push(y);
         (hCardSide[`${i}|${side}`] ??= []).push(y);
       }
     }
     const benchMax = Math.max(c.valueVR, c.valueVL);
-    obj.push(`${f6(eweins ? benchMax * uw!.benchPA : hEmph * benchW * benchMax)} rh_${i}`);
+    obj.push(`${f6((eweins ? benchMax * uw!.benchPA : hEmph * benchW * benchMax) * wBench)} rh_${i}`);
   });
   bin.push(...rhVars);
   for (const side of ["L", "R"]) for (const p of positions) {
@@ -127,17 +132,22 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // starts any side (Σ yh ≥ 1 ⇒ z=1, forced by the constraint; the −bench coef on z keeps it 0
   // otherwise). So a starter is valued on its lineup value alone; only a PURE bench bat keeps
   // the bench credit.
+  const stVars: string[] = []; // zst start-indicators (one per hitter, eweins) — reused by 2b below
   if (eweins) hitters.forEach((c, i) => {
     const allY = [...(hCardSide[`${i}|L`] ?? []), ...(hCardSide[`${i}|R`] ?? [])];
     if (!allY.length) return;
-    const z = `zst_${i}`; bin.push(z);
-    obj.push(`${f6(-Math.max(c.valueVR, c.valueVL) * uw!.benchPA)} ${z}`);
+    const z = `zst_${i}`; bin.push(z); stVars.push(z);
+    obj.push(`${f6(-Math.max(c.valueVR, c.valueVL) * uw!.benchPA * wBench)} ${z}`);
+    // z = 1 iff the card starts a side: znet forces z ≥ Σyh/2 (starting ⇒ z=1); zub forces
+    // z ≤ Σyh (not starting ⇒ z=0). The hard pin matters for the 2b cap below, which must not be
+    // gamed by flagging a non-starter as a "starter".
     cons.push(` znet_${i}: ${allY.join(" + ")} - 2 ${z} <= 0`);
+    cons.push(` zub_${i}: ${z} - ${allY.join(" - ")} <= 0`);
   });
   // hsize/psize are FLOORS (≥), not equalities — two-way players free roster slots
-  // that flow to bonus picks (extra hitter who'd start, else a 13th pitcher). The
+  // that flow to bonus picks (extra hitter who'd start, else an extra pitcher). The
   // distinct-card roster size (rsize, below) is the hard equality; with zero
-  // two-way cards the floors collapse to exact 14H/12P (today's behavior).
+  // two-way cards the floors collapse to exact nHitters/nPitchers (today's behavior).
   cons.push(` hsize: ${rhVars.join(" + ")} >= ${opts.nHitters}`);
   // Coverage depth: ≥ minPlayersPerPosition rostered hitters can play EACH field
   // position (so every position has a backup, not just catcher). Catcher may use a
@@ -161,13 +171,13 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   pitchers.forEach((c, j) => {
     const relief = bullpenW * vRP(c); // legacy relief credit (both modes)
     // E[wins]: a rostered pitcher's base = its relief run-prevention over a FILLER reliever's BF.
-    obj.push(`${f6(eweins ? vRP(c) * fillerBF : pEmph * relief)} rp_${j}`);
+    obj.push(`${f6((eweins ? vRP(c) * fillerBF : pEmph * relief) * wBullpen)} rp_${j}`);
     // Bullpen LEVERAGE (E[wins]): a reliever placed in the closer/setup slot earns the extra
     // high-leverage BF on top of its filler base — so the solver puts its BEST arm at the top and
     // fills the rest cheaply ("1–2 good relievers"). The delta form keeps it valued once.
     if (hasLeverage) {
-      const xc = `xrpc_${j}`; bin.push(xc); obj.push(`${f6(vRP(c) * (closerBF - fillerBF))} ${xc}`); closerVars.push(xc); (leverByCard[j] ??= []).push(xc);
-      if (setupBF > fillerBF) { const xs = `xrps_${j}`; bin.push(xs); obj.push(`${f6(vRP(c) * (setupBF - fillerBF))} ${xs}`); setupVars.push(xs); (leverByCard[j] ??= []).push(xs); }
+      const xc = `xrpc_${j}`; bin.push(xc); obj.push(`${f6(vRP(c) * (closerBF - fillerBF) * wBullpen)} ${xc}`); closerVars.push(xc); (leverByCard[j] ??= []).push(xc);
+      if (setupBF > fillerBF) { const xs = `xrps_${j}`; bin.push(xs); obj.push(`${f6(vRP(c) * (setupBF - fillerBF) * wBullpen)} ${xs}`); setupVars.push(xs); (leverByCard[j] ??= []).push(xs); }
     }
     if (qualifiesStarter(c, opts.minStarterStamina, opts.minPitchTypes)) {
       const v = vSP(c);
@@ -176,8 +186,10 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
         bin.push(x);
         // E[wins] cap/slots: SP value over the slot's FORMAT BF, NET of the relief membership it
         // also gets on rp (above) → a slotted starter is valued ONCE as a starter (kills the
-        // SP/relief double-count). Legacy cap/slots = slotW·v (on top of rp); non-cap = v − relief.
-        const coef = eweins ? (v * rotBF(k) - vRP(c) * fillerBF) : (weighted ? slotW(k) * v : v - relief);
+        // SP/relief double-count). The rotation dial weights the SP value; the netted relief credit
+        // uses the SAME bullpen weight as rp so a slotted starter nets to exactly wRotation·SP.
+        // Legacy cap/slots = slotW·v (on top of rp); non-cap = v − relief.
+        const coef = eweins ? (v * rotBF(k) * wRotation - vRP(c) * fillerBF * wBullpen) : (weighted ? slotW(k) * v * wRotation : v - relief);
         obj.push(`${f6(eweins ? coef : pEmph * coef)} ${x}`);
         (pSlot[k] ??= []).push(x);
         (pCard[j] ??= []).push(x);
@@ -225,6 +237,19 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // rh_i once removes the double-count from roster size + cost.
   const twoWay = overlapTerms.filter((o) => o.twoWay);
   const overlapCount = twoWay.map((o) => `rh_${o.i}`);
+
+  // 2b — a two-way card frees a roster slot; it may add a HITTER only if that hitter STARTS,
+  // otherwise it becomes an extra pitcher. Cap total hitters at max(nHitters, #starting hitters):
+  // a spare BENCH bat can never inflate the hitter count past nHitters, but a fully-platooned
+  // lineup that starts MORE than nHitters distinct hitters still can. Big-M disjunction — y=0 ⇒
+  // Σrh ≤ nHitters (the usual regime), y=1 ⇒ Σrh ≤ Σstarters (every rostered hitter must start).
+  // The solver takes whichever regime yields the better roster.
+  if (eweins && twoWay.length && stVars.length) {
+    const M = hitters.length;
+    bin.push("y2bh");
+    cons.push(` twh_base: ${rhVars.join(" + ")} - ${M} y2bh <= ${opts.nHitters}`);
+    cons.push(` twh_plat: ${rhVars.join(" + ")} - ${stVars.join(" - ")} + ${M} y2bh <= ${M}`);
+  }
 
   // ── Roster size (distinct cards) — the hard equality ──
   const rosterSize = opts.rosterSize ?? opts.nHitters + opts.nPitchers;
@@ -307,30 +332,8 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     }
   }
 
-  // ── Segment spend DIALS (E[wins]): a SOFT per-segment $ target the solver honours while
-  // reallocating budget across the other segments. Soft (slack var + penalty), NOT a hard bound,
-  // so an unreachable target (e.g. "spend less than the pool floor") clamps gracefully instead of
-  // going infeasible. lineup = Σ cost·z (starters); bench = Σ cost·rh − Σ cost·z; rotation =
-  // Σ cost·xp; bullpen = Σ cost·rp − Σ cost·xp. PEN/$ dominates the E[wins] value per $ (~0.5).
-  if (eweins && opts.segmentBounds) {
-    const sb = opts.segmentBounds;
-    const PEN = 50;
-    const hasZ = (i: number) => !!(hCardSide[`${i}|L`]?.length || hCardSide[`${i}|R`]?.length);
-    const lineupTerms = hitters.map((c, i) => (hasZ(i) ? `${c.cost} zst_${i}` : null)).filter((x): x is string => !!x);
-    const benchTerms = hitters.flatMap((c, i) => [`${c.cost} rh_${i}`, hasZ(i) ? `- ${c.cost} zst_${i}` : null]).filter((x): x is string => !!x);
-    const rotTerms = pitchers.flatMap((c, j) => (pCard[j] ?? []).map((x) => `${c.cost} ${x}`));
-    const penTerms = pitchers.flatMap((c, j) => [`${c.cost} rp_${j}`, ...(pCard[j] ?? []).map((x) => `- ${c.cost} ${x}`)]);
-    const bound = (name: string, terms: string[], b?: { min?: number; max?: number }) => {
-      if (!terms.length || !b) return;
-      const expr = terms.join(" + ").replace(/\+ -/g, "-");
-      if (b.max != null) { obj.push(`- ${f6(PEN)} over_${name}`); cons.push(` d${name}max: ${expr} - over_${name} <= ${b.max}`); }
-      if (b.min != null) { obj.push(`- ${f6(PEN)} und_${name}`); cons.push(` d${name}min: ${expr} + und_${name} >= ${b.min}`); }
-    };
-    bound("lineup", lineupTerms, sb.lineup);
-    bound("bench", benchTerms, sb.bench);
-    bound("rotation", rotTerms, sb.rotation);
-    bound("bullpen", penTerms, sb.bullpen);
-  }
+  // (Segment DIALS are now pure objective PREFERENCE weights — applied inline to each segment's
+  // value terms above via wLineup/wBench/wRotation/wBullpen — NOT spend caps. See segmentWeights.)
 
   const lp = ["Maximize", ` obj: ${obj.join(" + ").replace(/\+ -/g, "-")}`, "Subject To", ...cons, "Binaries", ` ${bin.join(" ")}`, "End"].join("\n");
   return { lp, vars: bin.length, constraints: cons.length };
