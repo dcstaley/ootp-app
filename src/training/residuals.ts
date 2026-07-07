@@ -12,10 +12,11 @@
 
 import type { TrainObs } from "./loader.ts";
 import { HITTER, PITCHER, type RoleSpec, type BakeoffModel } from "./bakeoff.ts";
-// Residuals score the DEPLOYED #2 model (raw-poly curve-form), not the retired
-// log-linear baseline — so "where the model misses" reflects what users actually see.
-// Tracks the deployed forms by reference: change RAWPOLY_PIT and this follows.
-import { hitFormModel, pitFormModel, RAWPOLY_HIT, LOG_PIT } from "./forms.ts";
+// Residuals score the DEPLOYED model (hitting = raw-poly curve-form; pitching =
+// StuffAug), not the retired log-linear baseline — so "where the model misses"
+// reflects what users actually see. Tracks the deployed forms by reference: change
+// RAWPOLY_HIT / STUFFAUG_PIT and this follows.
+import { hitFormModel, pitFormModel, RAWPOLY_HIT, STUFFAUG_PIT } from "./forms.ts";
 
 export interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number; ratings: Record<string, number> }
 // grid cells carry both the RAW mean error and the INTERACTION residual (raw minus
@@ -85,7 +86,7 @@ const HIT_CFG: RoleCfg = {
   sig: ["babip", "pow", "eye", "k"],
 };
 const PIT_CFG: RoleCfg = {
-  spec: PITCHER, model: pitFormModel(LOG_PIT),
+  spec: PITCHER, model: pitFormModel(STUFFAUG_PIT),
   ratings: { stu: (o) => o.ratings.pitch.stu, con: (o) => o.ratings.pitch.con, pbabip: (o) => o.ratings.pitch.pbabip, hrr: (o) => o.ratings.pitch.hrr },
   sig: ["stu", "con", "pbabip", "hrr"],
 };
