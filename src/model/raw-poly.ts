@@ -17,7 +17,7 @@
 // hands the model `ratings` + `coeffs`, so the curves are closed over here).
 
 import type { Coeffs } from "../config/types.ts";
-import { rate, rateAux, hRate, type EventForm } from "./curves.ts";
+import { rate, rateAux, hRate, HIT_BIP_ADJ, PIT_BIP_ADJ, type EventForm } from "./curves.ts";
 import type { EventModel, HittingRatings, PitchingRatings, RawHitting, RawPitching } from "./types.ts";
 
 /** Build the deployed #2 event model bound to a fitted form (one per scoring config). */
@@ -28,8 +28,8 @@ export function makeRawPolyModel(form: EventForm): EventModel {
     const BB = rate(hit.bb, r.eye);
     const HR = rate(hit.hr, r.pow);          // quadratic in raw POW
     const SO = rate(hit.k, r.kRat);
-    // BIP chain mirrors forms.ts predictHitForm exactly (6 HBP, 3 SH, 4 SF).
-    const BIP = Math.max(600 - BB - SO - HR - 6 - 3 + 4, 1);
+    // BIP chain mirrors forms.ts predictHitForm exactly (shared HIT_BIP_ADJ).
+    const BIP = Math.max(600 - BB - SO - HR - HIT_BIP_ADJ, 1);
     const AB = Math.max(600 - BB - 4 - 3 - 6, 1); // for completeness (unused downstream)
     const H = hRate(hit.h, r.babip, BIP);    // non-HR hit rate (log H + log BIP term)
     const share = rate(hit.xbh, r.gap);      // quadratic XBH-share in raw GAP
@@ -43,7 +43,7 @@ export function makeRawPolyModel(form: EventForm): EventModel {
     const BB = rateAux(pit.bb, r.con, r.stu); // + linear Stuff term when the form carries it
     const K = rate(pit.k, r.stu);
     const HR = rateAux(pit.hr, r.hrr, r.stu); // + linear Stuff term (high Stuff suppresses HR)
-    const BIP = Math.max(600 - BB - K - HR - 6, 1); // matches forms.ts predictPitForm
+    const BIP = Math.max(600 - BB - K - HR - PIT_BIP_ADJ, 1); // matches forms.ts predictPitForm
     const nHH = hRate(pit.h, r.pbabip, BIP);
     const XBH = nHH * 0.25;                   // fixed share (no GAP analog for pitchers)
     return { BB, K, HR, nHH, XBH, pbabipSC: r.pbabip };

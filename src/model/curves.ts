@@ -10,6 +10,14 @@
 export const ln1 = (x: number) => Math.log(Math.max(x, 1));
 export const dot = (b: number[], x: number[]) => b.reduce((s, bi, j) => s + bi * x[j]!, 0);
 
+// ── BIP convention constants (the ONE copy) ────────────────────────────────────
+// BIP = 600 − BB − K − HR − <adj>. Training (forms.ts), the deployed model
+// (raw-poly.ts), and the scoring-core recompute (woba.ts, eventForm path) must all
+// derive BIP with the SAME constant or the fitted H-curve is evaluated off its fit
+// convention. Hitting: HBP 6 + SH 3 − SF 4; pitching: HBP 6 (no SH/SF).
+export const HIT_BIP_ADJ = 6 + 3 - 4;
+export const PIT_BIP_ADJ = 6;
+
 // ── Curve = the per-event basis choice ─────────────────────────────────────────
 export type Curve =
   | { kind: "log" }                          // [1, ln(max(r,1))] — parity baseline, NOT z-scored

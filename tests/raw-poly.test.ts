@@ -7,11 +7,8 @@
 //   A) RAW path (calScales=null → scoreCard returns the raw assembled wOBA): bit-exact
 //      to predictHitForm — same curves, same BIP chain, same weights.
 //   B) FULL recompute (calScales=identity, neutral era/park → hittingComponents runs):
-//      within tol of predictHitForm. The only gap is the recompute's BIP convention
-//      (subtracts adv_hbp+adv_sh, no +adv_sf) vs the training BIP (−6−3+4) — a known
-//      pre-existing quirk shared with the log path, ~0.001 wOBA.
-//
-// Parity (eventForm ABSENT) is guarded separately by tests/parity.test.ts.
+//      bit-exact to predictHitForm — the recompute derives BIP with the SAME shared
+//      constants (HIT_BIP_ADJ/PIT_BIP_ADJ, curves.ts) the training fit used.
 
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
@@ -21,7 +18,8 @@ import {
   fitHitForm, fitPitForm, predictHitForm, predictPitForm,
 } from "../src/training/forms.ts";
 import type { EventForm } from "../src/model/curves.ts";
-import { scoreCard, computeDerived, type Coeffs, type CalScales } from "../src/scoring-core/index.ts";
+import { scoreCard, computeDerived, makeRawPolyModel, type Coeffs, type CalScales } from "../src/scoring-core/index.ts";
+import { anchorHittingWoba, anchorPitchingWoba } from "../src/scoring-core/woba.ts";
 
 const DIR = "Model 2037 and 2038";
 const WINDOW = [2037, 2038];
@@ -97,14 +95,33 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
     expect(worst).toBeLessThan(1e-9);
   });
 
-  it("B) hitting FULL recompute (neutral env, identity scales) matches predictHitForm within tol", () => {
+  it("B) hitting FULL recompute (neutral env, identity scales) reproduces predictHitForm bit-exactly", () => {
+    // The recompute's eventForm BIP uses the shared HIT_BIP_ADJ (S-2 fix), so at neutral
+    // env it evaluates the fitted H-curve on the exact training convention.
     let worst = 0;
     for (const o of hitObs) {
       const s = scoreCard(cardFrom(o), { coeffs, derived, calScales: IDENTITY, eventForm: fit });
       worst = Math.max(worst, Math.abs(s.hit.woba_vR - predictHitForm(fit.hit, o)));
     }
-    // Only the BIP convention (adv_sf=4) separates the recompute from the training fit.
-    expect(worst).toBeLessThan(3e-3);
+    expect(worst).toBeLessThan(1e-9);
+  });
+
+  it("anchor assembly == trusted assembly at sFinal=1 (S-1: identical event terms incl. HBP)", () => {
+    const model = makeRawPolyModel(fit);
+    for (const o of hitObs.slice(0, 60)) {
+      const card = cardFrom(o);
+      const e = model.predictHitting({ ...o.ratings.hit, speed: 0, steal: 0, run: 0 }, coeffs);
+      const anchor = anchorHittingWoba(e, 1, 1, 1, "vR", coeffs, derived, fit);
+      const trusted = scoreCard(card, { coeffs, derived, calScales: IDENTITY, eventForm: fit }).hit.woba_vR;
+      expect(Math.abs(anchor - trusted)).toBeLessThan(1e-12);
+    }
+    for (const o of pitObs.slice(0, 60)) {
+      const card = cardFrom(o);
+      const e = model.predictPitching(o.ratings.pitch, coeffs);
+      const anchor = anchorPitchingWoba(e, 1, 1, "vR", coeffs, derived, fit);
+      const trusted = scoreCard(card, { coeffs, derived, calScales: IDENTITY, eventForm: fit }).pitch.woba_vR;
+      expect(Math.abs(anchor - trusted)).toBeLessThan(1e-12);
+    }
   });
 
   it("B) pitching FULL recompute (neutral env, identity scales) reproduces predictPitForm bit-exactly", () => {

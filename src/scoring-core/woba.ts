@@ -8,7 +8,7 @@
 
 import type { Coeffs, Derived, CalScales } from "../config/types.ts";
 import type { RawHitting, RawPitching } from "../model/types.ts";
-import { rate, hRate, type EventForm } from "../model/curves.ts";
+import { rate, hRate, HIT_BIP_ADJ, PIT_BIP_ADJ, type EventForm } from "../model/curves.ts";
 import { cp, getParkFactor } from "./helpers.ts";
 import { wobaWeightsFromCoeffs } from "./woba-weights.ts";
 
@@ -47,9 +47,12 @@ export function hittingComponents(
   const BB_fin = e.BB * sBB * coeffs.era_bb;
   const HR_fin = e.HR * sHR * derived.era_effective_hr * parkHR;
   const SO_fin = e.SO * coeffs.era_k;
-  const adv_hbp = coeffs.adv_hbp ?? 6;
-  const adv_sh = coeffs.adv_sh ?? 0;
-  const BIP_fin = Math.max(600 - BB_fin - adv_hbp - adv_sh - SO_fin - HR_fin, 1);
+  // BIP: under eventForm the fitted H-curve was trained on BIP = 600 − BB − K − HR −
+  // HIT_BIP_ADJ (shared constant, curves.ts) — evaluate it on the SAME convention.
+  // Legacy (no-eventForm, retired log path): the coeff-driven adv_hbp+adv_sh, unchanged.
+  const BIP_fin = eventForm
+    ? Math.max(600 - BB_fin - SO_fin - HR_fin - HIT_BIP_ADJ, 1)
+    : Math.max(600 - BB_fin - (coeffs.adv_hbp ?? 6) - (coeffs.adv_sh ?? 0) - SO_fin - HR_fin, 1);
   // BA (non-HR hit rate) and the GAP-share are RE-DERIVED here because era/park move
   // BIP and hits depend on BIP. With #2 (eventForm present) the re-derivation uses the
   // fitted raw-poly curves (H = log babip+BIP, GAP-share = quad in raw GAP) — the SAME
@@ -77,8 +80,11 @@ export function pitchingComponents(
   const BB_fin = e.BB * sBB * coeffs.era_bb;
   const HR_fin = e.HR * sHR * derived.era_effective_hr * parkHR;
   const K_fin = e.K * coeffs.era_k;
-  const adv_hbp = coeffs.adv_hbp ?? 6;
-  const BIP_fin = Math.max(600 - BB_fin - adv_hbp - K_fin - HR_fin, 1);
+  // Same convention rule as hitting: eventForm ⇒ the training constant (PIT_BIP_ADJ);
+  // legacy ⇒ coeff-driven adv_hbp (production carries 6, so these coincide).
+  const BIP_fin = eventForm
+    ? Math.max(600 - BB_fin - K_fin - HR_fin - PIT_BIP_ADJ, 1)
+    : Math.max(600 - BB_fin - (coeffs.adv_hbp ?? 6) - K_fin - HR_fin, 1);
   // nHH (non-HR hits) is RE-DERIVED here because era/park move BIP. With #2 (eventForm
   // present) it uses the fitted pitcher hit-curve — symmetric with the hitter BA path.
   // #2 is fit to ACTUAL rates, so it carries NO league-norm (p_leagueNorm_h was the log
@@ -135,16 +141,18 @@ export function trustedPitchingSideWoba(
 }
 
 // ── Anchor wOBA (calibration only) — port of calcAnchorWoba ──────────────────
-// QUIRK (replicate): the anchor wOBA omits BOTH ssp AND the 0.704*HBP term that
-// the display score includes (HBP is still used in the BIP subtraction inside
-// the components). Flagged for post-parity reconciliation.
+// The anchor uses the SAME event terms as the trusted assemblies (incl. HBP), so
+// anchoring the top-50 mean to TARGET_WOBA puts the trusted scores themselves at
+// the target — no constant cross-role offset. (The old-app anchor omitted HBP; that
+// quirk was reconciled 2026-07-11 post-parity-sunset.) ssp is deliberately absent:
+// under eventForm ssp ≡ 1, and the legacy log path keeps the old anchor semantics.
 export function anchorHittingWoba(
   e: RawHitting, sBB: number, sHR: number, bats: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
   eventForm?: EventForm,
 ): number {
   const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
   const w = wobaWeightsFromCoeffs(coeffs);
-  return (w.bb * k.BB_fin + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600;
+  return (w.bb * k.BB_fin + w.hbp * (coeffs.adv_hbp ?? 6) + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600;
 }
 
 export function anchorPitchingWoba(
@@ -153,5 +161,5 @@ export function anchorPitchingWoba(
 ): number {
   const k = pitchingComponents(e, sBB, sHR, side, coeffs, derived, eventForm);
   const w = wobaWeightsFromCoeffs(coeffs);
-  return (w.bb * k.BB_fin + w.b1 * k.oneB_fin + w.xbh * k.XBH_fin + w.hr * k.HR_fin) / 600;
+  return (w.bb * k.BB_fin + w.hbp * (coeffs.adv_hbp ?? 6) + w.b1 * k.oneB_fin + w.xbh * k.XBH_fin + w.hr * k.HR_fin) / 600;
 }

@@ -15,7 +15,7 @@ import { parseCatalogCsv, cardId } from "../src/data/catalog.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import { makeRawPolyModel, applyWobaWeights } from "../src/scoring-core/index.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba } from "../src/scoring-core/woba.ts";
-import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "../src/scoring-core/helpers.ts";
+import { n } from "../src/scoring-core/helpers.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 
 const DATA_ROOT = "data";
@@ -65,11 +65,11 @@ const recs: Rec[] = pool.map((c: any) => {
   const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
   const hit = (side: "vR" | "vL") => {
     const e = rp.predictHitting({ eye: n(c[`Eye ${side}`]), pow: n(c[`Power ${side}`]), kRat: n(c[`Avoid K ${side}`]), babip: n(c[`BABIP ${side}`]), gap: n(c[`Gap ${side}`]), speed, steal, run }, coeffs);
-    return assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting), speed, steal, run, coeffs);
+    return assembleRawHittingWoba(e, 1, speed, steal, run, coeffs); // ssp-free: mirrors computeUnifiedFieldStats under eventForm
   };
   const pit = (side: "vR" | "vL") => {
     const e = rp.predictPitching({ con: n(c[`Control ${side}`]), stu: n(c[`Stuff ${side}`]), pbabip: n(c[`pBABIP ${side}`]), hrr: n(c[`pHR ${side}`]) }, coeffs);
-    return assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching), coeffs);
+    return assembleRawPitchingWoba(e, 1, coeffs); // ssp-free: mirrors computeUnifiedFieldStats under eventForm
   };
   return { bats, thr, hVR: hit("vR"), hVL: hit("vL"), pVR: pit("vR"), pVL: pit("vL") };
 });

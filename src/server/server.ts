@@ -24,6 +24,7 @@ import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
+import { HIT_BIP_ADJ, PIT_BIP_ADJ } from "../model/curves.ts";                    // BIP convention, for the trace
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
 import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
@@ -211,7 +212,7 @@ let refFieldCache: { key: string; stats: FieldStats } | null = null;
 function referenceFieldStats(baseCatalog: any[], coeffs: Coeffs, model: EventModel): FieldStats {
   const key = `${state.activeModelId ?? ""}|${catalogSource}`;
   if (refFieldCache?.key === key) return refFieldCache.stats;
-  const stats = computeUnifiedFieldStats(baseCatalog, coeffs, model, FIELD_N);
+  const stats = computeUnifiedFieldStats(baseCatalog, coeffs, model, FIELD_N, true); // eventForm-only path ⇒ ssp-free selection
   refFieldCache = { key, stats };
   return stats;
 }
@@ -258,7 +259,7 @@ function scoreTournament(t: Tournament): Scored {
   let poolTransform: PoolTransform | undefined;
   if (eventForm) {
     const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
-    poolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N), activeEnvelope ?? undefined);
+    poolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true), activeEnvelope ?? undefined);
   }
   // wOBA config uses the active #2 form + pool transform. The anchor is computed on
   // NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
@@ -627,7 +628,7 @@ function budgetMode(t: Tournament): "none" | "cap" | "slots" {
 const EXPOSURE_N = 100;
 function exposureFieldMembers(cards: any[], coeffs: Coeffs, model: EventModel): FieldMember[] {
   return cards.map((c) => {
-    const w = cardSideWobas(c, coeffs, model);
+    const w = cardSideWobas(c, coeffs, model, true); // exposure runs only with a #2 model ⇒ ssp-free
     // pitVal: lower allowed wOBA = better → negate so "higher = better" for the field sort.
     // pitWeight = stamina (innings/BF proxy); hitWeight flat (lineup PA ≈ flat).
     return { bats: n(c["Bats"]), throws: n(c["Throws"]), hitVR: w.hitVR, hitVL: w.hitVL, pitVal: -(w.pitVR + w.pitVL), hitWeight: 1, pitWeight: Math.max(n(c["Stamina"]), 1) };
@@ -1491,7 +1492,8 @@ const server = createServer(async (req, res) => {
       const sFinal = vR ? (cs?.pitchScaleVR ?? 1) : (cs?.pitchScaleVL ?? 1);
       const k = pitchingComponents(e, sBB, sHR, side, co, dv, ef);
       const K_fin = e.K * co.era_k;
-      const BIP_fin = Math.max(600 - k.BB_fin - (co.adv_hbp ?? 6) - K_fin - k.HR_fin, 1);
+      const BIP_fin = ef ? Math.max(600 - k.BB_fin - K_fin - k.HR_fin - PIT_BIP_ADJ, 1)
+        : Math.max(600 - k.BB_fin - (co.adv_hbp ?? 6) - K_fin - k.HR_fin, 1);
       return {
         effRatings: { con: r4(eR.con), stu: r4(eR.stu), pbabip: r4(eR.pbabip), hrr: r4(eR.hrr) },
         baseEvents_per600: { BB: r4(e.BB), K: r4(e.K), HR: r4(e.HR) },
@@ -1513,7 +1515,8 @@ const server = createServer(async (req, res) => {
       const sFinal = vR ? (cs?.hitScaleVR ?? 1) : (cs?.hitScaleVL ?? 1);
       const k = hittingComponents(e, sBB, sHR, bats, side, co, dv, ef);
       const SO_fin = e.SO * co.era_k;
-      const BIP_fin = Math.max(600 - k.BB_fin - (co.adv_hbp ?? 6) - (co.adv_sh ?? 0) - SO_fin - k.HR_fin, 1);
+      const BIP_fin = ef ? Math.max(600 - k.BB_fin - SO_fin - k.HR_fin - HIT_BIP_ADJ, 1)
+        : Math.max(600 - k.BB_fin - (co.adv_hbp ?? 6) - (co.adv_sh ?? 0) - SO_fin - k.HR_fin, 1);
       return {
         effRatings: { eye: r4(eR.eye), pow: r4(eR.pow), kRat: r4(eR.kRat), babip: r4(eR.babip), gap: r4(eR.gap) },
         baseEvents_per600: { BB: r4(e.BB), SO: r4(e.SO), HR: r4(e.HR) },

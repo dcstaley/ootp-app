@@ -22,7 +22,7 @@ import { wls } from "./fit.ts";
 import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
 import { DEFAULT_WOBA_WEIGHTS } from "../scoring-core/woba-weights.ts";
 import {
-  ln1, dot, baseVal, row, rate, rateAux, hDesign, hRate, LOG,
+  ln1, dot, baseVal, row, rate, rateAux, hDesign, hRate, LOG, HIT_BIP_ADJ, PIT_BIP_ADJ,
   type Curve, type FittedEvent, type CurveFit, type FittedH, type FittedHit, type FittedPit,
 } from "../model/curves.ts";
 
@@ -87,7 +87,7 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const k = fitEvent(form.k, kr, K, w);
   const hr = fitEvent(form.hr, pow, HR, w);
   // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2).
-  const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rate(k, kr[i]!) - rate(hr, pow[i]!) - 6 - 3 + 4, 1));
+  const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rate(k, kr[i]!) - rate(hr, pow[i]!) - HIT_BIP_ADJ, 1));
   const h = fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG);
   const hP = obs.map((_, i) => Math.max(dot(h.beta, hDesign(h.rating, babip[i]!, h.bip, bip[i]!)), 0));
   const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
@@ -98,7 +98,7 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): Fitte
 export function predictHitForm(m: FittedHit, o: TrainObs): number {
   const r = o.ratings.hit;
   const bb = rate(m.bb, r.eye), k = rate(m.k, r.kRat), hr = rate(m.hr, r.pow);
-  const bip = Math.max(600 - bb - k - hr - 6 - 3 + 4, 1);
+  const bip = Math.max(600 - bb - k - hr - HIT_BIP_ADJ, 1);
   const h = hRate(m.h, r.babip, bip);
   const xbh = Math.max(rate(m.xbh, r.gap) * h, 0); // xbh curve gives the share of h
   const oneB = Math.max(h - xbh, 0);
@@ -123,7 +123,7 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const k = fitEvent(form.k, stu, K, w);
   const hr = form.stuffAug ? fitEventAux(form.hr, hrr, stu, HR, w) : fitEvent(form.hr, hrr, HR, w);
   // Predicted BB/HR (with the Stuff aux when present) drive BIP — training mirrors inference.
-  const bip = obs.map((_, i) => Math.max(600 - rateAux(bb, con[i]!, stu[i]!) - rate(k, stu[i]!) - rateAux(hr, hrr[i]!, stu[i]!) - 6, 1));
+  const bip = obs.map((_, i) => Math.max(600 - rateAux(bb, con[i]!, stu[i]!) - rate(k, stu[i]!) - rateAux(hr, hrr[i]!, stu[i]!) - PIT_BIP_ADJ, 1));
   const h = fitH(pbabip, bip, nHH, w, form.h, form.hBip ?? LOG);
   return { bb, k, hr, h };
 }
@@ -131,7 +131,7 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
 export function predictPitForm(m: FittedPit, o: TrainObs): number {
   const r = o.ratings.pitch;
   const bb = rateAux(m.bb, r.con, r.stu), k = rate(m.k, r.stu), hr = rateAux(m.hr, r.hrr, r.stu);
-  const bip = Math.max(600 - bb - k - hr - 6, 1);
+  const bip = Math.max(600 - bb - k - hr - PIT_BIP_ADJ, 1);
   const nHH = hRate(m.h, r.pbabip, bip);
   const xbh = nHH * 0.25, oneB = Math.max(nHH - xbh, 0);
   return (W_BB * bb + W_HBP * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // HBP included (matches scoring)

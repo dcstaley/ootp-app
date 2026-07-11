@@ -24,18 +24,23 @@ export interface FieldStats {
 interface SideRec { rat: Record<string, number>; woba: number }
 interface CardRec { hitVR: SideRec; hitVL: SideRec; pitVR: SideRec; pitVL: SideRec }
 
-function cardRec(c: any, coeffs: Coeffs, model: EventModel): CardRec {
+// `sspFree` = the caller runs under an eventForm (#2) — the deployed pipeline forces
+// ssp → 1 there (woba.ts, calibrate.ts, score-card.ts), so field SELECTION must rank
+// on the same ssp-free basis. false ⇒ legacy log-path behavior (coeff ssp), unchanged.
+function cardRec(c: any, coeffs: Coeffs, model: EventModel, sspFree: boolean): CardRec {
   const bats = n(c["Bats"]), thr = n(c["Throws"]);
   const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
   const hit = (side: "vR" | "vL"): SideRec => {
     const rat: Record<string, number> = { eye: n(c[`Eye ${side}`]), pow: n(c[`Power ${side}`]), kRat: n(c[`Avoid K ${side}`]), babip: n(c[`BABIP ${side}`]), gap: n(c[`Gap ${side}`]) };
     const e = model.predictHitting({ eye: rat.eye!, pow: rat.pow!, kRat: rat.kRat!, babip: rat.babip!, gap: rat.gap!, speed, steal, run }, coeffs);
-    return { rat, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting), speed, steal, run, coeffs) };
+    const ssp = sspFree ? 1 : sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting);
+    return { rat, woba: assembleRawHittingWoba(e, ssp, speed, steal, run, coeffs) };
   };
   const pit = (side: "vR" | "vL"): SideRec => {
     const rat: Record<string, number> = { con: n(c[`Control ${side}`]), stu: n(c[`Stuff ${side}`]), pbabip: n(c[`pBABIP ${side}`]), hrr: n(c[`pHR ${side}`]) };
     const e = model.predictPitching({ con: rat.con!, stu: rat.stu!, pbabip: rat.pbabip!, hrr: rat.hrr! }, coeffs);
-    return { rat, woba: assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching), coeffs) };
+    const ssp = sspFree ? 1 : sameSidePenaltyPitching(thr, side, coeffs.ssp_basic_pitching);
+    return { rat, woba: assembleRawPitchingWoba(e, ssp, coeffs) };
   };
   return { hitVR: hit("vR"), hitVL: hit("vL"), pitVR: pit("vR"), pitVL: pit("vL") };
 }
@@ -50,14 +55,14 @@ function topStats(recs: SideRec[], keys: readonly string[], topN: number, hitter
 
 /** Raw per-side predicted wOBA for one card — the env-free field-SELECTION basis (same
  *  raw wOBA the field stats rank by). Reused by the exposure baseline so its field matches. */
-export function cardSideWobas(c: any, coeffs: Coeffs, model: EventModel): { hitVR: number; hitVL: number; pitVR: number; pitVL: number } {
-  const r = cardRec(c, coeffs, model);
+export function cardSideWobas(c: any, coeffs: Coeffs, model: EventModel, sspFree = false): { hitVR: number; hitVL: number; pitVR: number; pitVL: number } {
+  const r = cardRec(c, coeffs, model, sspFree);
   return { hitVR: r.hitVR.woba, hitVL: r.hitVL.woba, pitVR: r.pitVR.woba, pitVL: r.pitVL.woba };
 }
 
 /** Per-(role, side) rating μ/σ of the top-N field by raw predicted wOBA. */
-export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number): FieldStats {
-  const recs = cards.map((c) => cardRec(c, coeffs, model));
+export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, sspFree = false): FieldStats {
+  const recs = cards.map((c) => cardRec(c, coeffs, model, sspFree));
   return {
     hit: { vR: topStats(recs.map((r) => r.hitVR), HIT_RATINGS, topN, true), vL: topStats(recs.map((r) => r.hitVL), HIT_RATINGS, topN, true) },
     pit: { vR: topStats(recs.map((r) => r.pitVR), PIT_RATINGS, topN, false), vL: topStats(recs.map((r) => r.pitVL), PIT_RATINGS, topN, false) },
@@ -72,8 +77,8 @@ export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventMode
  *     cohort's DEPLOYMENT-side values (vR-cohort's vR ratings + vL-cohort's vL ratings), so a
  *     platoon specialist counts on the side he actually plays and his rarely-used bad side
  *     doesn't define the frame. */
-export function computeUnifiedFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number): FieldStats {
-  const recs = cards.map((c) => cardRec(c, coeffs, model));
+export function computeUnifiedFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, sspFree = false): FieldStats {
+  const recs = cards.map((c) => cardRec(c, coeffs, model, sspFree));
   // Pitchers: top-N by combined allowed wOBA (lower = better), both-side values pooled.
   const pitTop = [...recs].sort((a, b) => (a.pitVR.woba + a.pitVL.woba) - (b.pitVR.woba + b.pitVL.woba)).slice(0, topN);
   const pit: Record<string, RatingStats> = {};
