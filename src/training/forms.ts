@@ -22,7 +22,7 @@ import { wls } from "./fit.ts";
 import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
 import { DEFAULT_WOBA_WEIGHTS } from "../scoring-core/woba-weights.ts";
 import {
-  ln1, dot, baseVal, row, rate, rateAux, hDesign, hRate, LOG, HIT_BIP_ADJ, PIT_BIP_ADJ,
+  ln1, dot, baseVal, row, rate, rateRaw, rateAux, capActive, hDesign, hRate, LOG, HIT_BIP_ADJ, PIT_BIP_ADJ,
   type Curve, type FittedEvent, type CurveFit, type FittedH, type FittedHit, type FittedPit,
 } from "../model/curves.ts";
 
@@ -39,11 +39,20 @@ function curveNorm(curve: Curve, vals: number[], w: number[]): { mu: number; sd:
   const mu = b.reduce((s, v, i) => s + w[i]! * v, 0) / W;
   return { mu, sd: Math.sqrt(b.reduce((s, v, i) => s + w[i]! * (v - mu) ** 2, 0) / W) || 1 };
 }
+/** The z-score domain the curve is fit over (poly curves only) — stored on the FittedEvent so
+ *  the direction-aware monotone cap can tell an interior vertex from an out-of-domain one. */
+function uDomain(curve: Curve, vals: number[], mu: number, sd: number): { uMin?: number; uMax?: number } {
+  if (curve.kind === "log" || !vals.length) return {};
+  const s = sd > 1e-9 ? sd : 1;
+  let uMin = Infinity, uMax = -Infinity;
+  for (const v of vals) { const u = (baseVal(curve, v) - mu) / s; if (u < uMin) uMin = u; if (u > uMax) uMax = u; }
+  return { uMin, uMax };
+}
 /** WLS-fit one event's curve on (rating → per-600 rate). */
 function fitEvent(curve: Curve, vals: number[], y: number[], w: number[]): FittedEvent {
   const { mu, sd } = curveNorm(curve, vals, w);
   const X = vals.map((v) => row(curve, v, mu, sd));
-  return { beta: wls(X, y, w), mu, sd, curve };
+  return { beta: wls(X, y, w), mu, sd, curve, ...uDomain(curve, vals, mu, sd) };
 }
 /** Fit a primary curve PLUS a linear z-scored ln(aux) term, jointly (one WLS). The aux
  *  column is appended, fitted, then split back out into `aux` so `rate` (curve only)
@@ -56,7 +65,7 @@ function fitEventAux(curve: Curve, vals: number[], auxVals: number[], y: number[
   const X = vals.map((v, i) => [...row(curve, v, mu, sd), (la[i]! - amu) / asd]);
   const beta = wls(X, y, w);
   const auxBeta = beta.pop()!; // last column = the aux coefficient
-  return { beta, mu, sd, curve, aux: { beta: auxBeta, mu: amu, sd: asd } };
+  return { beta, mu, sd, curve, aux: { beta: auxBeta, mu: amu, sd: asd }, ...uDomain(curve, vals, mu, sd) };
 }
 
 // The H (non-HR hit) event has TWO inputs, each with its OWN curve: the BABIP/PBABIP
@@ -156,20 +165,33 @@ function monotoneSampled(fn: (r: number) => number, lo: number, hi: number): boo
   }
   return true;
 }
+// Sample the UNCAPPED curve (rateRaw) so a real turn-over stays visible — the direction-aware
+// cap must not hide corruption from the bake-off's gate comparison (T-5).
 function eventMonotone(e: FittedEvent, rmin: number, rmax: number): boolean {
-  return e.curve.kind === "log" ? true : monotoneSampled((v) => rate(e, v), rmin, rmax);
+  return e.curve.kind === "log" ? true : monotoneSampled((v) => rateRaw(e, v), rmin, rmax);
 }
 const span = (vals: number[]): [number, number] => [Math.min(...vals), Math.max(...vals)];
 
+// A gate check: flag a non-monotone (turn-over) UNCAPPED curve, and separately NOTE when the
+// direction-aware cap is actively rescuing the curve in-domain (so a capped fit is visible, not
+// silently "passing"). Cap-active alone is a note, not a fail.
+function chkEvent(notes: string[], name: string, e: FittedEvent, vals: number[]) {
+  const [lo, hi] = span(vals);
+  if (!eventMonotone(e, lo, hi)) notes.push(`${name} curve non-monotone in-domain`);
+  else if (capActive(e, lo, hi)) notes.push(`${name} curve monotone-capped in-domain`);
+}
+
 export function gateHit(m: FittedHit, obs: TrainObs[]): GateStatus {
   const notes: string[] = [];
-  const chk = (name: string, e: FittedEvent, vals: number[]) => { const [lo, hi] = span(vals); if (!eventMonotone(e, lo, hi)) notes.push(`${name} curve non-monotone in-domain`); };
+  const chk = (name: string, e: FittedEvent, vals: number[]) => chkEvent(notes, name, e, vals);
   chk("HR", m.hr, obs.map((o) => o.ratings.hit.pow));
   chk("XBH", m.xbh, obs.map((o) => o.ratings.hit.gap));
   chk("BB", m.bb, obs.map((o) => o.ratings.hit.eye));
   chk("K", m.k, obs.map((o) => o.ratings.hit.kRat));
   chkH(notes, m.h, obs.map((o) => o.ratings.hit.babip));
-  return { status: notes.length ? "warn" : "pass", notes };
+  // A "monotone-capped" note is informational (the cap rescued the curve); only a true
+  // non-monotone (uncapped turn-over) fails the gate.
+  return { status: notes.some((n) => n.includes("non-monotone")) ? "warn" : "pass", notes };
 }
 // H monotonicity is in the BABIP rating; the BIP term is additive so any fixed BIP
 // works (450 ≈ a typical balls-in-play count).
@@ -181,12 +203,12 @@ function chkH(notes: string[], h: FittedH, ratings: number[]) {
 }
 export function gatePit(m: FittedPit, obs: TrainObs[]): GateStatus {
   const notes: string[] = [];
-  const chk = (name: string, e: FittedEvent, vals: number[]) => { const [lo, hi] = span(vals); if (!eventMonotone(e, lo, hi)) notes.push(`${name} curve non-monotone in-domain`); };
+  const chk = (name: string, e: FittedEvent, vals: number[]) => chkEvent(notes, name, e, vals);
   chk("HR", m.hr, obs.map((o) => o.ratings.pitch.hrr));
   chk("BB", m.bb, obs.map((o) => o.ratings.pitch.con));
   chk("K", m.k, obs.map((o) => o.ratings.pitch.stu));
   chkH(notes, m.h, obs.map((o) => o.ratings.pitch.pbabip));
-  return { status: notes.length ? "warn" : "pass", notes };
+  return { status: notes.some((n) => n.includes("non-monotone")) ? "warn" : "pass", notes };
 }
 
 // ── Count GLMs (candidate #8): Poisson / negative-binomial with a PA/BF offset ──

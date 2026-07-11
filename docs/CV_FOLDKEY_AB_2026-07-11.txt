@@ -1,0 +1,109 @@
+
+CV fold-key A/B — root=League Files, window=2040+2041, minN=1000, k=5
+
+obs in window: 720 (hitters 407, pitchers 343)
+
+── current cid|BV|side ──
+  hitter  woba                   CV r=0.8851  in=0.8888  gap=0.0037
+  hitter  basic                  CV r=0.8318  in=0.8549  gap=0.0231
+  hitter  woba·rawpoly           CV r=0.8910  in=0.8946  gap=0.0036
+  hitter  woba·logcubic          CV r=0.5950  in=0.8969  gap=0.3019
+  hitter  woba·rawlin            CV r=0.8729  in=0.8754  gap=0.0025
+  hitter  woba·rawquad           CV r=0.8894  in=0.8956  gap=0.0062
+  hitter  woba·rawcubic          CV r=0.8884  in=0.8957  gap=0.0073
+  hitter  woba·qpow-lin          CV r=0.8858  in=0.8888  gap=0.0030
+  hitter  woba·rawpoly-hlin      CV r=0.8878  in=0.8915  gap=0.0037
+  hitter  woba·biplin            CV r=0.8846  in=0.8882  gap=0.0036
+  hitter  woba·poisson           CV r=0.8719  in=0.8745  gap=0.0026
+  hitter  woba·nb                CV r=0.8646  in=0.8661  gap=0.0015
+  hitter  woba·seqcond           CV r=0.8791  in=0.8808  gap=0.0017
+  hitter  ceiling·flex           CV r=0.8599  in=0.9004  gap=0.0405
+  pitcher woba                   CV r=0.7741  in=0.7870  gap=0.0129
+  pitcher basic                  CV r=0.7933  in=0.8066  gap=0.0133
+  pitcher woba·rawpoly           CV r=0.7648  in=0.7799  gap=0.0151
+  pitcher woba·logcubic          CV r=0.7198  in=0.7844  gap=0.0646
+  pitcher woba·rawlin            CV r=0.7572  in=0.7756  gap=0.0184
+  pitcher woba·rawquad           CV r=0.7593  in=0.7802  gap=0.0209
+  pitcher woba·rawcubic          CV r=0.7545  in=0.7880  gap=0.0335
+  pitcher woba·qpow-lin          CV r=0.7502  in=0.7705  gap=0.0203
+  pitcher woba·rawpoly-hlin      CV r=0.7648  in=0.7797  gap=0.0149
+  pitcher woba·biplin            CV r=0.7748  in=0.7874  gap=0.0126
+  pitcher woba·poisson           CV r=0.7689  in=0.7834  gap=0.0145
+  pitcher woba·nb                CV r=0.7756  in=0.7860  gap=0.0104
+  pitcher woba·seqcond           CV r=0.7951  in=0.8051  gap=0.0100
+  pitcher ceiling·flex           CV r=0.7484  in=0.8208  gap=0.0724
+
+── new     cid|side ──
+  hitter  woba                   CV r=0.8830  in=0.8888  gap=0.0058
+  hitter  basic                  CV r=0.8232  in=0.8549  gap=0.0317
+  hitter  woba·rawpoly           CV r=0.8904  in=0.8946  gap=0.0042
+  hitter  woba·logcubic          CV r=0.6501  in=0.8969  gap=0.2468
+  hitter  woba·rawlin            CV r=0.8701  in=0.8754  gap=0.0053
+  hitter  woba·rawquad           CV r=0.8900  in=0.8956  gap=0.0056
+  hitter  woba·rawcubic          CV r=0.8903  in=0.8957  gap=0.0054
+  hitter  woba·qpow-lin          CV r=0.8848  in=0.8888  gap=0.0040
+  hitter  woba·rawpoly-hlin      CV r=0.8866  in=0.8915  gap=0.0049
+  hitter  woba·biplin            CV r=0.8823  in=0.8882  gap=0.0059
+  hitter  woba·poisson           CV r=0.8682  in=0.8745  gap=0.0063
+  hitter  woba·nb                CV r=0.8597  in=0.8661  gap=0.0064
+  hitter  woba·seqcond           CV r=0.8749  in=0.8808  gap=0.0059
+  hitter  ceiling·flex           CV r=0.8712  in=0.9004  gap=0.0292
+  pitcher woba                   CV r=0.7657  in=0.7870  gap=0.0213
+  pitcher basic                  CV r=0.7853  in=0.8066  gap=0.0213
+  pitcher woba·rawpoly           CV r=0.7605  in=0.7799  gap=0.0194
+  pitcher woba·logcubic          CV r=0.7602  in=0.7844  gap=0.0242
+  pitcher woba·rawlin            CV r=0.7421  in=0.7756  gap=0.0335
+  pitcher woba·rawquad           CV r=0.7687  in=0.7802  gap=0.0115
+  pitcher woba·rawcubic          CV r=0.7748  in=0.7880  gap=0.0132
+  pitcher woba·qpow-lin          CV r=0.7425  in=0.7705  gap=0.0280
+  pitcher woba·rawpoly-hlin      CV r=0.7579  in=0.7797  gap=0.0218
+  pitcher woba·biplin            CV r=0.7674  in=0.7874  gap=0.0200
+  pitcher woba·poisson           CV r=0.7665  in=0.7834  gap=0.0169
+  pitcher woba·nb                CV r=0.7758  in=0.7860  gap=0.0102
+  pitcher woba·seqcond           CV r=0.8007  in=0.8051  gap=0.0044
+  pitcher ceiling·flex           CV r=0.7495  in=0.8208  gap=0.0713
+
+── full    cid ──
+  hitter  woba                   CV r=0.8874  in=0.8888  gap=0.0014
+  hitter  basic                  CV r=0.8207  in=0.8549  gap=0.0342
+  hitter  woba·rawpoly           CV r=0.8939  in=0.8946  gap=0.0007
+  hitter  woba·logcubic          CV r=0.6461  in=0.8969  gap=0.2508
+  hitter  woba·rawlin            CV r=0.8712  in=0.8754  gap=0.0042
+  hitter  woba·rawquad           CV r=0.8909  in=0.8956  gap=0.0047
+  hitter  woba·rawcubic          CV r=0.8902  in=0.8957  gap=0.0055
+  hitter  woba·qpow-lin          CV r=0.8868  in=0.8888  gap=0.0020
+  hitter  woba·rawpoly-hlin      CV r=0.8901  in=0.8915  gap=0.0014
+  hitter  woba·biplin            CV r=0.8862  in=0.8882  gap=0.0020
+  hitter  woba·poisson           CV r=0.8716  in=0.8745  gap=0.0029
+  hitter  woba·nb                CV r=0.8645  in=0.8661  gap=0.0016
+  hitter  woba·seqcond           CV r=0.8796  in=0.8808  gap=0.0012
+  hitter  ceiling·flex           CV r=0.8776  in=0.9004  gap=0.0228
+  pitcher woba                   CV r=0.7706  in=0.7870  gap=0.0164
+  pitcher basic                  CV r=0.7941  in=0.8066  gap=0.0125
+  pitcher woba·rawpoly           CV r=0.7663  in=0.7799  gap=0.0136
+  pitcher woba·logcubic          CV r=0.6648  in=0.7844  gap=0.1196
+  pitcher woba·rawlin            CV r=0.7495  in=0.7756  gap=0.0261
+  pitcher woba·rawquad           CV r=0.7674  in=0.7802  gap=0.0128
+  pitcher woba·rawcubic          CV r=0.7421  in=0.7880  gap=0.0459
+  pitcher woba·qpow-lin          CV r=0.7479  in=0.7705  gap=0.0226
+  pitcher woba·rawpoly-hlin      CV r=0.7655  in=0.7797  gap=0.0142
+  pitcher woba·biplin            CV r=0.7721  in=0.7874  gap=0.0153
+  pitcher woba·poisson           CV r=0.7693  in=0.7834  gap=0.0141
+  pitcher woba·nb                CV r=0.7725  in=0.7860  gap=0.0135
+  pitcher woba·seqcond           CV r=0.7986  in=0.8051  gap=0.0065
+  pitcher ceiling·flex           CV r=0.7216  in=0.8208  gap=0.0992
+
+RANKING (hitter, by CV Pearson):
+  current cid|BV|side  woba·rawpoly > woba·rawquad > woba·rawcubic > woba·rawpoly-hlin > woba·qpow-lin > woba > woba·biplin > woba·seqcond > woba·rawlin > woba·poisson > woba·nb > ceiling·flex > basic > woba·logcubic
+  new     cid|side     woba·rawpoly > woba·rawcubic > woba·rawquad > woba·rawpoly-hlin > woba·qpow-lin > woba > woba·biplin > woba·seqcond > ceiling·flex > woba·rawlin > woba·poisson > woba·nb > basic > woba·logcubic
+  full    cid          woba·rawpoly > woba·rawquad > woba·rawcubic > woba·rawpoly-hlin > woba > woba·qpow-lin > woba·biplin > woba·seqcond > ceiling·flex > woba·poisson > woba·rawlin > woba·nb > basic > woba·logcubic
+  ⚠ RANKING FLIP vs cid|side : current cid|BV|side
+  ⚠ RANKING FLIP vs cid|side : full    cid
+
+RANKING (pitcher, by CV Pearson):
+  current cid|BV|side  woba·seqcond > basic > woba·nb > woba·biplin > woba > woba·poisson > woba·rawpoly > woba·rawpoly-hlin > woba·rawquad > woba·rawlin > woba·rawcubic > woba·qpow-lin > ceiling·flex > woba·logcubic
+  new     cid|side     woba·seqcond > basic > woba·nb > woba·rawcubic > woba·rawquad > woba·biplin > woba·poisson > woba > woba·rawpoly > woba·logcubic > woba·rawpoly-hlin > ceiling·flex > woba·qpow-lin > woba·rawlin
+  full    cid          woba·seqcond > basic > woba·nb > woba·biplin > woba > woba·poisson > woba·rawquad > woba·rawpoly > woba·rawpoly-hlin > woba·rawlin > woba·qpow-lin > woba·rawcubic > ceiling·flex > woba·logcubic
+  ⚠ RANKING FLIP vs cid|side : current cid|BV|side
+  ⚠ RANKING FLIP vs cid|side : full    cid
+

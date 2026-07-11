@@ -1263,8 +1263,17 @@ function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number
 // were trained on (dataset + window + min + variants). Lets us keep MULTIPLE
 // parallel models (e.g. a league model and, later, a tournament model). Scoring-core
 // integration (a model becoming the active scoring model) is a separate later step.
+// Artifact evaluation-semantics version (T-4). Bump whenever a change to how betas are
+// EVALUATED (not fit) would retroactively rescore an already-persisted model — e.g. the
+// direction-aware monotone cap (T-5). On activation a model whose version predates this is
+// flagged (server log + a `stale` field the UI surfaces) so it can be retrained.
+//   v1 = pre-versioning (implicit)  ·  v2 = direction-aware monotone cap + fit-domain (T-5)
+const MODEL_FORMAT_VERSION = 2;
+
 interface TrainedModel {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
+  formatVersion?: number; // T-4: evaluation-semantics version; absent ⇒ predates versioning (v1)
+  validation?: { errors: number; warnings: number; excluded: string[]; forced: boolean }; // T-3: dataset state at train time
   coefficients: { woba_hitting: WobaHittingCoeffs; woba_pitching: WobaPitchingCoeffs; basic_hitting: BasicHittingCoeffs; basic_pitching: BasicPitchingCoeffs };
   // D3 #2 (raw-poly) fitted form — the DEPLOYED event math, frozen here so scoring is
   // reproducible even as the (gitignored, weekly-changing) training data moves. Optional
@@ -1277,18 +1286,30 @@ interface TrainedModel {
   trainedAt: string; notes?: string;
 }
 // Summary drops the heavy payloads (coefficients + the raw eventForm betas); `hasEventForm`
-// tells the UI whether the model is #2-capable (activatable for scoring).
-type TrainedModelSummary = Omit<TrainedModel, "coefficients" | "eventForm"> & { hasEventForm: boolean };
-const modelSummary = (m: TrainedModel): TrainedModelSummary => { const { coefficients, eventForm, ...rest } = m; return { ...rest, hasEventForm: !!eventForm }; };
+// tells the UI whether the model is #2-capable (activatable for scoring); `stale` (T-4) flags
+// an artifact whose evaluation semantics predate the current MODEL_FORMAT_VERSION.
+type TrainedModelSummary = Omit<TrainedModel, "coefficients" | "eventForm"> & { hasEventForm: boolean; stale: boolean; currentFormatVersion: number };
+const modelSummary = (m: TrainedModel): TrainedModelSummary => {
+  const { coefficients, eventForm, ...rest } = m;
+  return { ...rest, hasEventForm: !!eventForm, stale: (m.formatVersion ?? 1) < MODEL_FORMAT_VERSION, currentFormatVersion: MODEL_FORMAT_VERSION };
+};
 const listModels = async (): Promise<TrainedModelSummary[]> =>
   (await repo.loadAll<TrainedModel>("trained-models")).sort((a, b) => b.trainedAt.localeCompare(a.trainedAt)).map(modelSummary);
 
-async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?: number; includeVariants?: boolean; notes?: string }): Promise<TrainedModelSummary> {
+async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?: number; includeVariants?: boolean; notes?: string; force?: boolean }): Promise<TrainedModelSummary> {
   const name = String(body.name ?? "").trim();
   if (!name) throw new Error("name required");
   const window = Array.isArray(body.window) && body.window.length ? body.window.map(Number) : defaultWindow(trainingYears());
   const minPA = Math.max(0, Number(body.minPA ?? 1000) || 1000);
   const includeVariants = body.includeVariants !== false;
+  // T-3: validate the dataset the model trains on; block on outstanding errors unless force=true,
+  // and record the validation state on the artifact so a deployed model carries what it was
+  // trained through. (Byte-identical vL/vR cells already auto-exclude in the loader.)
+  const validation = validateDataset(windowLoaded(window).summary);
+  if (!validation.ok && !body.force) {
+    const first = validation.issues.find((i) => i.severity === "error")?.message ?? "";
+    throw new Error(`dataset has ${validation.errors} validation error(s) — fix them or resave with force=true. First: ${first}`);
+  }
   const f = getFit(window, minPA, includeVariants);
   if (!f.available || !f.woba_hitting || !f.woba_pitching || !f.basic_hitting || !f.basic_pitching) throw new Error(f.error ?? "fit unavailable");
   // Freeze the deployed D3 #2 form, fit on the SAME qualifying obs as the log-linear fit
@@ -1318,6 +1339,8 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   let id = slug(name) || "model"; while (existing.some((m) => m.id === id)) id += "-2";
   const model: TrainedModel = {
     id, name, datasetRoot: TRAINING_DIR, window, minPA, includeVariants,
+    formatVersion: MODEL_FORMAT_VERSION,
+    validation: { errors: validation.errors, warnings: validation.warnings, excluded: validation.excluded, forced: !validation.ok },
     coefficients: { woba_hitting: f.woba_hitting.coefficients, woba_pitching: f.woba_pitching.coefficients, basic_hitting: f.basic_hitting.coefficients, basic_pitching: f.basic_pitching.coefficients },
     eventForm,
     platoon,
@@ -1340,6 +1363,12 @@ async function refreshActiveModel(): Promise<void> {
   activePlatoon = m?.platoon ?? null;
   activeWobaWeights = m?.wobaWeights ?? null;
   activeEnvelope = m?.ratingEnvelope ?? null;
+  // T-4: an activated artifact whose evaluation semantics predate the current version scores
+  // its betas under DIFFERENT math than it was validated with — warn loudly (the UI also
+  // surfaces `stale` via modelSummary).
+  if (m && (m.formatVersion ?? 1) < MODEL_FORMAT_VERSION) {
+    console.warn(`[server] ⚠ active model '${m.id}' is formatVersion ${m.formatVersion ?? 1} < current ${MODEL_FORMAT_VERSION} — its betas score under updated evaluation semantics; RETRAIN to re-validate.`);
+  }
   if (id && !m?.eventForm) { state.activeModelId = null; await saveState(); }
   invalidateDerivedCaches(); // model change moves the reference field, .500 anchor, and exposure baseline
 }

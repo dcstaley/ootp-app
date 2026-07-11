@@ -16,16 +16,25 @@ export function foldOf(key: string, k: number): number {
   return (h >>> 0) % k;
 }
 
-interface EvalOpts { minN?: number; topN?: number; k?: number; window?: number[]; includeVariants?: boolean }
+interface EvalOpts { minN?: number; topN?: number; k?: number; window?: number[]; includeVariants?: boolean; foldKey?: (o: TrainObs) => string }
+
+// CV fold key (T-2). Decision (Derek): vL and vR are different players (profiles can
+// differ materially by side) → sides stay in INDEPENDENT folds; but base+variant are
+// near-duplicates (same player, uniformly boosted ratings) → they must travel TOGETHER.
+// So fold on `cid|side`, dropping the B/V token from o.key (`cid|B|V|side`). This changes
+// ONLY which rows are hidden together in CV — nothing about what is trained or scored
+// (variants stay in everything). Overridable via opts.foldKey for the one-time A/B.
+export const cvFoldKey = (o: TrainObs) => `${o.cid}|${o.side}`;
 
 /** k-fold CV: pooled out-of-sample predictions → one metric bundle. */
 export function crossValidate(obs: TrainObs[], model: BakeoffModel, spec: RoleSpec, opts: EvalOpts = {}): EvalMetrics {
   const { minN = 1000, topN = 26, k = 5 } = opts;
+  const fk = opts.foldKey ?? cvFoldKey;
   const qual = obs.filter((o) => spec.qualifies(o, minN));
   const pred: number[] = [], actual: number[] = [], weight: number[] = [];
   for (let f = 0; f < k; f++) {
-    const test = qual.filter((o) => foldOf(o.key, k) === f);
-    const train = qual.filter((o) => foldOf(o.key, k) !== f);
+    const test = qual.filter((o) => foldOf(fk(o), k) === f);
+    const train = qual.filter((o) => foldOf(fk(o), k) !== f);
     if (test.length === 0 || train.length < 10) continue;
     const params = model.fit(train);
     const p = model.predict(params, test);

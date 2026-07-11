@@ -216,8 +216,12 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
         };
         obs.set(key, o); repPA.set(key, -1);
       }
-      // Representative ratings = the source with the most hitting PA (best sample).
-      if (h.PA > (repPA.get(key) ?? -1)) { o.ratings = { hit: hitRatings(r, tag.side), pitch: pitchRatings(r, tag.side) }; repPA.set(key, h.PA); }
+      // Representative ratings = the source with the largest ROLE-APPROPRIATE sample.
+      // (T-1) Using h.PA alone made this 0 for every pitcher row, so the comparison fired
+      // once and pitcher rep ratings came from file-iteration order; h.PA + p.BF covers
+      // hitters, pitchers, and two-ways, picking the most-used variant level.
+      const sample = h.PA + p.BF;
+      if (sample > (repPA.get(key) ?? -1)) { o.ratings = { hit: hitRatings(r, tag.side), pitch: pitchRatings(r, tag.side) }; repPA.set(key, sample); }
       addHit(o.hit, h); addPitch(o.pitch, p);
       o.sources.push({ league: tag.league, year: tag.year, pa: h.PA, bf: p.BF });
     }
