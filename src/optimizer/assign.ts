@@ -87,6 +87,45 @@ export function bestLineup(hitters: HitterCandidate[], positions: string[], side
   return out;
 }
 
+/**
+ * Best lineup honoring manual position locks: each lock pins a card to its position (using the
+ * card's ELIGIBLE `playPositions`, so an eligible-but-unqualified lock is allowed — same as the
+ * MILP), then the remaining positions are max-weight matched over the remaining cards. Locks are
+ * matched by BASE card id (variant `#V` suffix stripped). Returns the cards in `positions` order,
+ * or null if a locked slot is uncoverable or the remainder can't be filled. Falls back to no-lock
+ * matching when there are no applicable locks (preserves the no-inversion display).
+ */
+export function bestLineupLocked(
+  hitters: HitterCandidate[], positions: string[], side: "R" | "L", capture: number,
+  locks: { id: string; pos: string }[],
+): HitterCandidate[] | null {
+  const stripV = (id: string) => id.replace(/#V$/, "");
+  // Resolve applicable locks: card present, position in the lineup, card ELIGIBLE there.
+  const idxByBase = new Map<string, number>(); hitters.forEach((c, i) => idxByBase.set(stripV(c.id), i));
+  const lockedCardAt = new Map<string, HitterCandidate>(); // pos → card
+  const lockedIdx = new Set<number>();
+  for (const lk of locks) {
+    const i = idxByBase.get(stripV(lk.id));
+    if (i == null || !positions.includes(lk.pos)) continue;
+    const c = hitters[i]!;
+    if (!(c.playPositions ?? c.positions).includes(lk.pos)) continue; // not eligible there
+    if (lockedCardAt.has(lk.pos)) continue;      // position already pinned (first lock wins)
+    if (lockedIdx.has(i)) continue;              // card already pinned elsewhere
+    lockedCardAt.set(lk.pos, c); lockedIdx.add(i);
+  }
+  if (lockedCardAt.size === 0) return bestLineup(hitters, positions, side, capture);
+
+  // Match the remaining positions over the remaining cards (qualified positions only — the auto
+  // optimizer never uses eligible-but-unqualified slots, matching MILP feasibility).
+  const freePositions = positions.filter((p) => !lockedCardAt.has(p));
+  const freeHitters = hitters.filter((_, i) => !lockedIdx.has(i));
+  const filled = freePositions.length ? bestLineup(freeHitters, freePositions, side, capture) : [];
+  if (filled === null) return null;
+  const byFreePos = new Map<string, HitterCandidate>();
+  freePositions.forEach((p, k) => byFreePos.set(p, filled[k]!));
+  return positions.map((p) => lockedCardAt.get(p) ?? byFreePos.get(p)!);
+}
+
 /** Best lineup as display slots (position + card id). */
 function matchLineup(hitters: HitterCandidate[], positions: string[], side: "R" | "L"): LineupSlot[] | null {
   const lu = bestLineup(hitters, positions, side);

@@ -11,16 +11,21 @@ import { buildHitterLp } from "./lp.ts";
 import { buildRosterLp } from "./roster-lp.ts";
 import { getSolver } from "./solve.ts";
 import { generatePitcherStaff } from "./pitcher-generate.ts";
-import { bestLineup } from "./assign.ts";
+import { bestLineupLocked } from "./assign.ts";
 
 // The DISPLAYED dual lineups come from the exact max-weight assignment (bestLineup) over the
 // ROSTERED hitters — the SAME routine the E[wins] evaluator scores with — so the highest
 // side-value eligible player always starts each position (no roster-depth/insurance credit can
 // bench a better bat). Pure side value (capture = 1): the vR lineup is the best-vR nine, the vL
-// lineup the best-vL nine.
-function displayLineup(rostered: HitterCandidate[], dh: boolean, side: "L" | "R"): LineupSlot[] {
+// lineup the best-vL nine. Manual lineup locks (S-4) are honored: a pinned card is fixed at its
+// locked position (using its ELIGIBLE positions, matching the MILP) and the rest matched around
+// it — so the displayed lineup can't bench a lock or blank out on an eligible-but-unqualified pin.
+function displayLineup(
+  rostered: HitterCandidate[], dh: boolean, side: "L" | "R", lineupLocks?: { id: string; pos: string; side: "L" | "R" }[],
+): LineupSlot[] {
   const positions = lineupPositions(dh);
-  const lu = bestLineup(rostered, positions, side, 1);
+  const locks = (lineupLocks ?? []).filter((l) => l.side === side).map((l) => ({ id: l.id, pos: l.pos }));
+  const lu = bestLineupLocked(rostered, positions, side, 1, locks);
   return lu ? lu.map((c, i) => ({ pos: positions[i]!, id: c.id, title: c.title })) : [];
 }
 
@@ -81,7 +86,7 @@ export async function generateFullRoster(
   const hitters_ = hitters.filter((_, i) => on(`rh_${i}`));
   const pitchers_ = pitchers.filter((_, j) => on(`rp_${j}`));
 
-  const lineup = (side: "L" | "R"): LineupSlot[] => displayLineup(hitters_, opts.dh, side);
+  const lineup = (side: "L" | "R"): LineupSlot[] => displayLineup(hitters_, opts.dh, side, opts.lineupLocks);
   const rotation: RotationSlot[] = [];
   for (let k = 1; k <= opts.minStarters; k++) {
     const j = pitchers.findIndex((_, idx) => on(`xp_${idx}_s${k}`));
