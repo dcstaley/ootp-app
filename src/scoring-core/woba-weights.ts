@@ -4,9 +4,10 @@
 //
 // DEFAULT_WOBA_WEIGHTS reproduces the historical hard-coded constants EXACTLY (the
 // parity baseline). A trained model may carry its OWN weights, reverse-engineered from
-// the game's wRAA over that model's leagues (see src/training/woba-weights.ts); when a
-// weights-bearing model is active those override the defaults at scoring time (folded
-// into the coeff bag as w_bb/w_hbp/w_1b/w_xbh/w_hr, read back via `wobaWeightsFromCoeffs`).
+// the game's wRAA over that model's leagues (derivation in src/training/loader.ts, the
+// per-file wRAA regression that feeds `wobaWeights`); when a weights-bearing model is
+// active those override the defaults at scoring time (folded into the coeff bag as
+// w_bb/w_hbp/w_1b/w_xbh/w_hr, read back via `wobaWeightsFromCoeffs`).
 //
 // `xbh` is a SINGLE extra-base weight because the event model predicts one combined XBH
 // rate (no 2B/3B split) — the derived value is the frequency-weighted blend of the game's

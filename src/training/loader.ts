@@ -28,7 +28,7 @@ import { DEFAULT_WOBA_WEIGHTS, type WobaWeights } from "../scoring-core/woba-wei
 import { corruptCellKeys } from "./validate.ts";
 
 // Normal-equations solve (X'X b = X'y) via Gauss-Jordan — used to reverse-engineer
-// the game's wOBA event weights from wRAA (see deriveWobaWeights below).
+// the game's wOBA event weights from wRAA (the per-file wRAA regression in aggregate()).
 function solveNormal(X: number[][], y: number[]): number[] {
   const p = X[0]!.length, A = Array.from({ length: p }, () => new Array(p + 1).fill(0));
   for (let i = 0; i < X.length; i++) { for (let j = 0; j < p; j++) { for (let k = 0; k < p; k++) A[j]![k] += X[i]![j]! * X[i]![k]!; A[j]![p] += X[i]![j]! * y[i]!; } }
@@ -163,7 +163,7 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
   // the raw events (each file shares one league wOBA scale/baseline), recover the event
   // weights RELATIVE to 1B, and PA-weight-blend across files — so larger leagues (more
   // teams ⇒ more PA, e.g. PEL) carry proportionally more weight. n2/n3 accumulate the
-  // global 2B:3B mix for the single combined XBH weight. See deriveWobaWeights note.
+  // global 2B:3B mix for the single combined XBH weight (blended into wobaWeights below).
   const wwAcc = { bb: 0, hbp: 0, b2: 0, b3: 0, hr: 0 }; let wwPA = 0, n2tot = 0, n3tot = 0;
 
   // PASS 1 — parse each windowed file + record its per-(league,side,year) cell stats. We must

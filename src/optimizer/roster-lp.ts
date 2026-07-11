@@ -50,8 +50,10 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // what let a worse starter who happens to be a good reliever edge a better starter
   // for a rotation spot. The UNIFORM membership values stay (every bench bat and bullpen
   // arm is still valued, so the best-available fill those spots — no per-slot weighting).
-  // Cap/slots keep their weighted objective exactly as-is; the double-credit there is a
-  // separate, deferred fix (the cap/slots/weights overhaul), not touched here.
+  // Cap/slots under the E[wins] objective (usageWeights) net the same SP/relief double-count
+  // below (a slotted starter's rp relief credit is subtracted from its rotation term). The
+  // legacy weighted cap/slots path (no usageWeights) still carries it, but production always
+  // builds usageWeights for cap/slots, so the double-credit is gone in practice.
   const weighted = opts.mode !== "none";
   const bonusEff = weighted ? bonus : 1;
   // Per-segment PREFERENCE dials — pure objective value multipliers (NOT caps). Down-dialing a

@@ -71,6 +71,11 @@ Each: the question, the options, and a recommendation. **These are yours to deci
 - All cards normalized to 600 PA so cards compare fairly regardless of training-data volume.
 
 ### D2 — Cross-pool hitter/pitcher comparability ✅ RESOLVED
+> **Superseded for cap/slots (as built):** the signed-distance VALUE is unchanged, but cap/slots no longer
+> weight it by role/slot constants — the shipped **E[wins] single-MILP objective** multiplies each card's
+> value by its run-scoring playing time (usage model), which subsumes the old role/slot weights. See
+> `docs/REBUILD_CAP_SLOTS_OBJECTIVE_PLAN.md`. Non-cap is still unweighted Σ(signed-distance).
+
 **Decision:** Compare players by **signed distance from a common baseline**, with the sign flipped for
 pitchers, all at 600-PA normalization:
 - Hitter value = `wOBA − baseline`; Pitcher value = `baseline − allowedWOBA`. Same unit (wOBA points),
@@ -88,7 +93,13 @@ pitchers, all at 600-PA normalization:
   Σ(signed-distance value × role/slot weight) subject to budget/tier caps. The value unit and natural
   balance are identical across all modes.
 
-### D3 — Model functional form ⏸️ DEFERRED (decide with data in hand)
+### D3 — Model functional form ✅ RESOLVED (bake-off, 2026-06-29)
+> **RESOLVED via the data bake-off:** the deployed form is the **raw-poly** event model for HITTING
+> (quadratic on POW/GAP captures the real accelerating power structure) and **StuffAug** for PITCHING (a
+> log curve + a linear Stuff term on BB & HR — high Stuff suppresses walks/homers beyond Control/HRR). It
+> lives behind the `EventModel` seam (`src/model/raw-poly.ts`); the comparison harness stays for future
+> forms. The original deferral text is kept below for provenance.
+
 **Decision:** Defer the functional-form choice to a dedicated data-exploration phase. Needs a real
 bake-off across many structures (sequential & non-sequential; log / linear / quadratic / cubic;
 logistic vs rate). The earlier poor sequential result is weak evidence (old tooling).
@@ -118,6 +129,11 @@ step).
   are constants; derived values are computed. No button-synced global state.
 
 ### D5 — Optimizer shape & post-processing ✅ RESOLVED (keep decomposition; fix quality)
+> **Superseded for cap/slots (as built):** the starters-first *decomposition* was replaced by a **single
+> E[wins] MILP** — one solve allocates the budget across lineup/bench/rotation/bullpen via usage-weighted
+> value (no reserve→greedy→reclaim). The quality goals below (principled matching, real coverage depth,
+> backup-catcher as a "need two" constraint) all shipped inside that one solve. See
+> `docs/REBUILD_CAP_SLOTS_OBJECTIVE_PLAN.md`.
 Root cause understood (findings §7C): the LP optimizes the starting core and reserves cap for support
 roles filled post-LP. **Decision: the starters-first decomposition STAYS** — it is correct, for two
 reasons, not just tractability:
@@ -170,19 +186,23 @@ PT-only. Specifics:
 - **D1** ✅ Two score types (basic direct / wOBA event-based); wOBA pipeline order locked; anchor after
   era/park; 600-PA normalization.
 - **D2** ✅ Signed distance from a common baseline (sign-flipped for pitchers); drop the power
-  transform; natural H/P balance; role/slot weights cap/slots-only.
-- **D3** ⏸️ Functional form deferred to a data bake-off; model is a swappable component behind a clean
-  interface; comparison harness required.
+  transform; natural H/P balance. *(Cap/slots role/slot weights superseded by the E[wins] usage-weighted
+  objective — see the D2 note above.)*
+- **D3** ✅ RESOLVED via the bake-off — **raw-poly hitting + StuffAug pitching**, behind the EventModel
+  seam; comparison harness retained. *(Was deferred; decided 2026-06-29.)*
 - **D4** ✅ Tournament is the single config source; Era + Park reusable libraries by reference; weights
-  + softcaps tournament-scoped (softcaps model-seeded); global coeff bag dissolves.
-- **D5** ✅ Keep starters-first decomposition (value structure + tractability); fix quality — principled
-  support fill + matching-based defensive feasibility; catcher backup = depth constraint; deterministic
-  cap-reclaim.
+  tournament-scoped; global coeff bag dissolves. *(Softcaps are no longer a tournament feature — the
+  raw-poly model replaced them; retirement pending.)*
+- **D5** ✅ Keep the value structure; fix quality — principled matching-based defensive feasibility;
+  catcher backup = depth constraint. *(Cap/slots: the starters-first decomposition was replaced by a
+  single E[wins] MILP — see the D5 note above.)*
 - **D6** ✅ Two accounts (not hard-coded); quantity carried, filter `owned>0`; active-account selector
   scopes grid + variants + generation.
 - **D7** ✅ Principle locked (consolidated persistence, per-account overlays first-class); storage tech
   + solver placement deferred to architecture.
 
-Discovery + requirements are now closed. Open item carried forward: **D3 model form** (decide with data
-in hand). The project is ready for the architecture proposal phase in Claude Code, anchored by the
-single most important principle: **one scoring core, computed once, consumed identically everywhere.**
+Discovery + requirements are now closed, and **all of D1–D7 are resolved** (D3 was the last open item —
+resolved by the 2026-06-29 bake-off). The one remaining live thread is the weak/extreme-player
+overscoring investigation (the Stuff residual), tracked in `docs/REBUILD_ROADMAP.md`. Everything remains
+anchored by the single most important principle: **one scoring core, computed once, consumed identically
+everywhere.**

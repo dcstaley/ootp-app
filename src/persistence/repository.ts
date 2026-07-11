@@ -5,7 +5,7 @@
 //
 //   <root>/
 //     tournaments/<id>.json   eras/<id>.json   parks/<id>.json
-//     models/<id>.json        accounts/<id>.json   rosters/<id>.json
+//     models/<id>.json        accounts/<id>.json
 //     imports/<name>.csv      (raw pt_card_list.csv imports, per account)
 //
 // A thin, typed-by-caller repository: list / load / loadAll / save / delete per
@@ -32,7 +32,7 @@ export const COLLECTIONS = {
   parks: "parks",
   models: "models",
   accounts: "accounts",
-  rosters: "rosters",
+  // No saved-rosters collection: rosters are regenerated per request (Derek's decision).
 } as const;
 export type Collection = (typeof COLLECTIONS)[keyof typeof COLLECTIONS] | (string & {});
 

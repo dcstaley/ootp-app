@@ -66,7 +66,9 @@ those same numbers. Nothing recomputes scoring on its own.
 - **PT account overlays (D6):** two accounts (built so more is possible later). Each is one imported
   CSV; what's account-specific is the `owned` quantity (and that account's variants). The catalog is
   shared; the overlay says "this account owns these, in these quantities, with these variants."
-- **Variants:** account-scoped boosted copies of owned cards (levels 1–5), stored as overlay rows.
+- **Variants:** account-scoped boosted copies of owned cards, stored as overlay rows. *(As built:
+  variants are a single **v5** boost, not levels 1–5; the v5 boost is always recomputed by us and the
+  game's own level/ratings are ignored.)*
 - **Libraries:** saved Tournaments, Eras, Parks, and trained Models — each a set of files.
 
 ### B. The scoring core — the one place (D1, D2)
@@ -98,6 +100,12 @@ final value used everywhere.
   core.
 
 ### D. The roster optimizer (D5)
+> **AS BUILT (superseded design):** the cap/slots optimizer is now a **single MILP with an E[wins]-derived
+> objective** — each card's coefficient is its run contribution (value × playing-time from the usage model),
+> so the budget allocation is combinatorial and native (no reserve→greedy→reclaim; the SP/relief
+> double-count is netted; bullpen leverage slots + the two-way disjunction + preference-weight dials all
+> live in the one solve). The "starters-first decomposition" language below describes the original plan;
+> see `docs/REBUILD_CAP_SLOTS_OBJECTIVE_PLAN.md` for the shipped objective.
 - **Picks the best roster + vL/vR lineups + rotation/bullpen** under the tournament's rules, reading
   the scoring core's values as-is.
 - **Starters first, on purpose:** in cap/slots mode, starters are worth far more than bench, and you
@@ -119,8 +127,9 @@ final value used everywhere.
 ### F. Model training + comparison (D3)
 - Fits prediction models from outcome CSVs (vL and vR as separate observations into one model;
   volume-weighted; aggregates duplicate cards).
-- Produces diagnostics (residuals by weighted volume, over-valuation signal) and **recommended
-  softcaps** to seed tournaments.
+- Produces diagnostics (residuals by weighted volume, over-valuation signal). *(As built: **softcaps are
+  no longer a tournament feature** — the raw-poly event model replaced the softcap band-aid; softcap
+  fields still pass through data untouched, retirement pending. Model-seeded softcaps are not produced.)*
 - Adds a **comparison harness**: fit several model forms, score them against the diagnostics on real
   data, pick the best. This is where the deferred D3 decision gets made.
 
@@ -145,6 +154,10 @@ final value used everywhere.
 ---
 
 ## Part 5 — Suggested build order (incremental, validate each step)
+
+> **Note:** step 1's "check its numbers against the current app" parity check is **obsolete** — old-app
+> parity was sunset (2026-07-01) and the scoring core is now validated against the deployed raw-poly
+> event model + the test suite, not the old app.
 
 1. **Scoring core + one model** (even today's log model) → check its numbers against the current app on
    the same cards. This is the foundation; get it right first.

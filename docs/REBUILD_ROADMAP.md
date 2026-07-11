@@ -27,7 +27,7 @@ core; none recomputes scoring.
 | M3 | Data Grid | First UI consumer of the core | ✅ | M2, SP-11 |
 | M4 | Optimizer | Roster + lineups + rotation/bullpen | ✅ (cap/slots, two-way, bonus, eligibility, basic/wOBA) | SP-4/5/6, M2 |
 | M5 | Manual editing | Drag-drop roster/lineup overrides | ✅ (Next Best + manual add + @dnd-kit drag + lineup editor w/ server-honored locks) | M4 |
-| M6 | Training + bake-off | Fit models; D3 comparison harness | 🔜 (bake-off DONE; **D3 RESOLVED = #2 raw-poly**; EventModel integration + calibration audit remain) | SP-8/9 |
+| M6 | Training + bake-off | Fit models; D3 comparison harness | ✅ (bake-off + **D3 = #2 raw-poly** deployed behind the EventModel seam; StuffAug pitching; calibration audit shipped) | SP-8/9 |
 | M7 | Single Player | SP import adapter + potential ratings | ⬜ | SP-10, M2 |
 | X | Cross-cutting | Packaging, persistence, parity method | ongoing | — |
 
@@ -78,21 +78,20 @@ modeling is closed out). Both are refinement passes on already-built pages, not 
 ### Next steps backlog (post-upgrades) — added 2026-06-30
 
 Sequenced; do in order, **hybrid last**. Items 1–2 are DIAGNOSE-FIRST (audit before changing scoring).
-1. **Splits audit (diagnose, don't presume).** First step: audit **all** splits — for each (per-hand OVR
-   splits `r/l/s_hit_split`, `r/l_pitch_split`, team `platoonVR/VL`), document how it **should** be used vs
-   how it **is** being used, end-to-end (model artifact → scoring → optimizer). A suspected issue is the
-   **team split being used to set pitcher OVR** — but confirm via the audit, don't assume. Likely follow-ups
-   once diagnosed: fix any misuse; moderate splits that are too extreme using the trained data.
-2. **Overscoring of weak players / extreme-rating scaling.** Several clearly-not-great cards score far higher
-   than their real-world usage by top players + the stats we have: **Kaat** and **Bonham** (pitchers),
-   **Pearson** (hitter), **Pete Donohue** (pitcher, surfaced high in SP upgrades). Suspected two-pronged:
-   (a) **softcap removal** — softcaps were a lever we used to tamp this down; their removal may be correct
-   but removed the control; (b) **extreme ratings scaling weirdly** — card shapes differ at low levels, and a
-   card with BOTH extremely low and extremely high ratings scales oddly. Investigate the rating→event scaling
-   (pool transform / raw-poly) at the extremes; are the low AND high ends preserved or distorted?
-3. **Tournament page UI cleanup** (`web/TournamentsPage.tsx`) — usability/clarity pass.
-4. **Hybrid upgrades** — add stage-2 exact MILP re-solve on the top-N shortlist for cap/slots (and optionally
-   non-cap) to correct the single-swap approximation (A).
+1. ✅ **Splits audit (diagnose, don't presume).** DONE — pitcher OVR now uses the (hand, role)
+   `pitch_split` rather than the team split; role-conditional SP/RP splits at row grain; hitters were
+   already correct. (See the platoon-exposure work + `resolvePitchSplit`.)
+2. **Overscoring of weak players / extreme-rating scaling — OPEN (the one live modeling thread).** Several
+   clearly-not-great cards score far higher than their real-world usage: **Kaat**, **Bonham**, **Donohue**
+   (pitchers), **Pearson** (hitter). The current lead is the **Stuff residual** — the model over-rates
+   low-Stuff/high-Control pitchers; shape/contact/XBH/weights ruled out. StuffAug (a linear Stuff term on
+   BB & HR) addressed part of it; the omitted-channel-vs-bias-correction question remains. Investigate the
+   rating→event scaling (pool transform / raw-poly) at the extremes.
+3. ✅ **Tournament page UI cleanup** (`web/TournamentsPage.tsx`) — DONE (2026-06-29 refinements above).
+4. ✅ **Hybrid upgrades** — DONE: the acquisition-target upgrades shipped (Biggest Upgrades above).
+
+The **cap/slots weights overhaul** (single MILP E[wins] objective; SP/relief double-count netting; bullpen
+leverage slots; two-way disjunction; preference-weight dials) also **shipped** (e45ee3d + b5db870).
 
 ---
 
@@ -493,6 +492,17 @@ trivial and agreed.
 
 ## Right now
 
+> **CURRENT STATE (2026-07-11, main @ audit fixes).** M0–M6 done. The deployed scoring model is the
+> data-driven **raw-poly** event model (hitting) + **StuffAug** (pitching) behind the EventModel seam;
+> old-app parity is **SUNSET** (no golden harness — `npm run golden` is gone; scoring changes are made
+> deliberately). The cap/slots **E[wins] single-MILP objective** shipped (usageWeights, leverage slots,
+> two-way disjunction, preference dials). A full audit (2026-07-10) landed its fixes: anchor-HBP/BIP/ssp
+> scoring reconciliation, lock-aware display lineups, `max_variants_on_roster` enforcement, server
+> hardening, and the training-pipeline fixes (CV fold key `cid|side`, dataset-gated model save,
+> artifact `formatVersion`, direction-aware monotone cap). The one **open modeling thread** is item 2
+> above (weak/extreme-player overscoring — the Stuff residual). **Next milestone:** M7 (Single Player).
+> The historical session-by-session log below is kept as-is for provenance.
+
 **CURRENT STATE (2026-06-23): M0–M3 done; M4 optimizer Phases A–E done (incl. two-way) + roster-page UI built out.**
 - **M4 headless optimizer** (`src/optimizer/`, HiGHS-WASM in-process): combined cap/slots roster MILP —
   binary `rh_i` (hitter rostered) + `yh_i_pos_side` (dual-lineup assignment) + `rp_j` (pitcher) +
@@ -631,9 +641,10 @@ training + D3 bake-off, M7 Single Player.
 - Treat the OLD app (`C:\ootp_app`) as suspect, not authoritative — flag suspected bugs (see "Flagged
   old-app issues"), don't blindly copy.
 - Commit AND push after each milestone, as SEPARATE git commands (compound `&&` chains re-prompt).
-- Parity = equivalence with the old app's trusted Roster & Lineup numbers, NOT endorsement.
+- Parity is SUNSET (2026-07-01) — the golden harness and `npm run golden` were removed; scoring changes
+  are deliberate. Validate with `npm test` + `npm run typecheck` + `npm run typecheck:web`.
 - Real captures in `fixtures/captures/*.json` are gitignored (contain the user's trained model); only
-  `_synthetic.json` is tracked. Validate with: `npm run golden` → `npm test`.
+  `_synthetic.json` is tracked (a SCORING-INPUT fixture for the test suite, not a golden baseline).
 
 ---
 
