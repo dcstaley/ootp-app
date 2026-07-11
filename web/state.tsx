@@ -2,9 +2,9 @@
 // (Cards grid, Accounts management). Scoring is server-side; this just fetches the
 // active (tournament, account) view and exposes the mutations.
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Card, Meta, TournamentOpt, AccountOpt, RosterResult, RoleOverride, AddedCard, LineupLock, BiggestUpgrades, RefinedValue } from "./shared.ts";
-import { lockKey } from "./shared.ts";
+import { getJson, lockKey, postJson } from "./shared.ts";
 
 interface ImportResult { ok: boolean; error?: string; matched?: number; unmatched?: number; column?: string; newId?: string }
 
@@ -14,6 +14,7 @@ interface AppData {
   accounts: AccountOpt[]; accountId: string; chooseAccount: (id: string) => void;
   activeAccount: AccountOpt | undefined;
   cards: Card[]; meta: Meta | null; loading: boolean; busy: string | null; err: string | null;
+  clearErr: () => void;
   roster: RosterResult | null; rosterLoading: boolean; rosterRoles: Record<string, string>;
   ownedOnly: boolean; setOwnedOnly: (v: boolean) => void;
   metric: "woba" | "basic"; setMetric: (m: "woba" | "basic") => void;
@@ -37,7 +38,8 @@ interface AppData {
   // lineup position locks (S5.3), keyed `side:id`. Survive Regenerate (sent to the
   // optimizer); toggling marks the roster dirty.
   lineupLocks: Map<string, LineupLock>; toggleLineupLock: (id: string, pos: string, side: "L" | "R") => void;
-  // pitcher staff locks (rotation/bullpen), keyed by card id. Auto-regenerate on toggle.
+  // pitcher staff locks (rotation/bullpen), keyed by card id. Toggling marks the
+  // roster dirty; the lock binds on the next manual Regenerate (no auto-regen).
   staffLocks: Map<string, "sp" | "rp">; toggleStaffLock: (id: string, role: "sp" | "rp") => void;
   generateRoster: () => Promise<void>;
   reloadView: () => Promise<void>;
@@ -82,16 +84,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [staffLocks, setStaffLocks] = useState<Map<string, "sp" | "rp">>(new Map()); // pitcher → forced rotation/bullpen
   const [dirty, setDirty] = useState(false);
 
+  // Fetch-lifecycle guards (latest-wins). `scopeRef` bumps whenever the (tournament,
+  // account) scope loads; every async response captured under an older scope is dropped
+  // before it can install stale data under the new scope's header. `genRef` bumps per
+  // roster generate so only the newest generate owns `rosterLoading`.
+  const scopeRef = useRef(0);
+  const genRef = useRef(0);
+
+  const clearErr = () => setErr(null);
+
   const loadAccounts = () =>
-    fetch("/api/accounts").then((r) => r.json()).then((d: { accounts: AccountOpt[]; activeId: string | null }) => {
+    getJson<{ accounts: AccountOpt[]; activeId: string | null }>("/api/accounts").then((d) => {
       setAccounts(d.accounts);
       setAccountId((cur) => cur || d.activeId || d.accounts[0]?.id || "");
       return d;
     });
 
   useEffect(() => {
-    fetch("/api/tournaments").then((r) => r.json())
-      .then((d: { tournaments: TournamentOpt[]; defaultId: string }) => {
+    getJson<{ tournaments: TournamentOpt[]; defaultId: string }>("/api/tournaments")
+      .then((d) => {
         setTournaments([...d.tournaments].sort((a, b) => a.name.localeCompare(b.name)));
         setTournamentId(d.defaultId || d.tournaments[0]?.id || "");
       }).catch((e) => setErr(String(e)));
@@ -102,71 +113,81 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     `?tournament=${encodeURIComponent(tid)}${aid ? `&account=${encodeURIComponent(aid)}` : ""}`;
 
   // Tournament drives scoring (server resolves era/park/softcaps + re-calibrates);
-  // account scopes owned + variants. The pages just read the result.
+  // account scopes owned + variants. The pages just read the result. Each run bumps
+  // the scope token, invalidating any slower response from the previous scope.
   useEffect(() => {
     if (!tournamentId) return;
+    const scope = ++scopeRef.current;
     const q = view(tournamentId, accountId);
     setLoading(true);
-    Promise.all([fetch("/api/meta" + q).then((r) => r.json()), fetch("/api/cards" + q).then((r) => r.json())])
-      .then(([m, c]) => { setMeta(m); setCards(c); }).catch((e) => setErr(String(e))).finally(() => setLoading(false));
+    Promise.all([getJson<Meta>("/api/meta" + q), getJson<Card[]>("/api/cards" + q)])
+      .then(([m, c]) => { if (scope !== scopeRef.current) return; setMeta(m); setCards(c); setErr(null); })
+      .catch((e) => { if (scope === scopeRef.current) setErr(String(e)); })
+      .finally(() => { if (scope === scopeRef.current) setLoading(false); });
   }, [tournamentId, accountId]);
 
   const reloadView = () => {
     if (!tournamentId) return Promise.resolve();
+    const scope = scopeRef.current;
     const q = view(tournamentId, accountId);
-    return Promise.all([fetch("/api/meta" + q).then((r) => r.json()), fetch("/api/cards" + q).then((r) => r.json())])
-      .then(([m, c]) => { setMeta(m); setCards(c); });
+    return Promise.all([getJson<Meta>("/api/meta" + q), getJson<Card[]>("/api/cards" + q)])
+      .then(([m, c]) => { if (scope !== scopeRef.current) return; setMeta(m); setCards(c); });
   };
 
   const reloadTournaments = () =>
-    fetch("/api/tournaments").then((r) => r.json()).then((d: { tournaments: TournamentOpt[]; defaultId: string }) => {
+    getJson<{ tournaments: TournamentOpt[]; defaultId: string }>("/api/tournaments").then((d) => {
       setTournaments(d.tournaments);
       setTournamentId((cur) => (cur && d.tournaments.some((t) => t.id === cur)) ? cur : (d.defaultId || d.tournaments[0]?.id || ""));
     });
 
-  const persist = (patch: Record<string, string>) => post("/api/state", patch).catch(() => {});
+  const persist = (patch: Record<string, string>) =>
+    post("/api/state", patch).catch((e) => setErr("Failed to save selection: " + String(e)));
   const chooseTournament = (id: string) => { setTournamentId(id); persist({ activeTournamentId: id }); };
   const chooseAccount = (id: string) => { setAccountId(id); persist({ activeAccountId: id }); };
 
   const renameAccount = async (id: string, name: string) => {
     setBusy("rename");
-    await post("/api/accounts/rename", { id, name });
-    await loadAccounts();
-    setBusy(null);
+    try {
+      await postJson("/api/accounts/rename", { id, name });
+      await loadAccounts();
+    } catch (e) { setErr(String(e)); } finally { setBusy(null); }
   };
 
   const importOwnership = async ({ id, name, text }: { id?: string; name?: string; text: string }): Promise<ImportResult> => {
     setBusy("upload");
-    const qs = id ? `?id=${encodeURIComponent(id)}` : `?name=${encodeURIComponent(name ?? "Account")}`;
-    const r = await post("/api/accounts/import" + qs, text, false);
-    const d = await r.json().catch(() => null);
-    if (!r.ok) { setErr(d?.error || "import failed"); setBusy(null); return { ok: false, error: d?.error }; }
-    await loadAccounts();
-    const newId = !id && d?.accounts?.length ? d.accounts[d.accounts.length - 1].id : undefined;
-    if (newId) chooseAccount(newId); else await reloadView(); // catalog changed → refresh
-    setBusy(null);
-    return { ok: true, newId };
+    try {
+      const qs = id ? `?id=${encodeURIComponent(id)}` : `?name=${encodeURIComponent(name ?? "Account")}`;
+      const r = await post("/api/accounts/import" + qs, text, false);
+      const d = await r.json().catch(() => null);
+      if (!r.ok) { setErr(d?.error || "import failed"); return { ok: false, error: d?.error }; }
+      await loadAccounts();
+      const newId = !id && d?.accounts?.length ? d.accounts[d.accounts.length - 1].id : undefined;
+      if (newId) chooseAccount(newId); else await reloadView(); // catalog changed → refresh
+      return { ok: true, newId };
+    } catch (e) { setErr(String(e)); return { ok: false, error: String(e) }; } finally { setBusy(null); }
   };
 
   const toggleVariant = async (cardId: string, on: boolean) => {
     if (!accountId) return;
     setBusy("variant");
-    await post("/api/accounts/variants/toggle", { id: accountId, cardId, on });
-    await loadAccounts();
-    await reloadView();
-    setBusy(null);
+    try {
+      await postJson("/api/accounts/variants/toggle", { id: accountId, cardId, on });
+      await loadAccounts();
+      await reloadView();
+    } catch (e) { setErr(String(e)); } finally { setBusy(null); }
   };
 
   const importVariants = async (text: string): Promise<ImportResult> => {
     if (!accountId) return { ok: false, error: "no active account" };
     setBusy("variant");
-    const r = await post("/api/accounts/variants/import?id=" + encodeURIComponent(accountId), text, false);
-    const d = await r.json().catch(() => null);
-    if (!r.ok) { setErr(d?.error || "variant import failed"); setBusy(null); return { ok: false, error: d?.error }; }
-    await loadAccounts();
-    await reloadView();
-    setBusy(null);
-    return { ok: true, matched: d.matched, unmatched: d.unmatched, column: d.column };
+    try {
+      const r = await post("/api/accounts/variants/import?id=" + encodeURIComponent(accountId), text, false);
+      const d = await r.json().catch(() => null);
+      if (!r.ok) { setErr(d?.error || "variant import failed"); return { ok: false, error: d?.error }; }
+      await loadAccounts();
+      await reloadView();
+      return { ok: true, matched: d.matched, unmatched: d.unmatched, column: d.column };
+    } catch (e) { setErr(String(e)); return { ok: false, error: String(e) }; } finally { setBusy(null); }
   };
 
   const clearVariants = async () => { await importVariants("CID\n"); };
@@ -240,12 +261,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
   const generateRoster = async (over?: { locked?: Set<string> }) => {
     if (!tournamentId) return;
+    const scope = scopeRef.current; // drop the result if the (tournament, account) scope moved on
+    const gen = ++genRef.current;   // only the newest generate owns rosterLoading
     setRosterLoading(true);
     try {
-      setRoster(await fetch("/api/roster" + rosterQuery(over)).then((r) => r.json()));
+      const r = await getJson<RosterResult>("/api/roster" + rosterQuery(over));
+      if (scope !== scopeRef.current || gen !== genRef.current) return;
+      setRoster(r);
       setRemoved(new Set()); setAdded([]); // fresh roster — clear manual edits
       setDirty(false);
-    } catch (e) { setErr(String(e)); } finally { setRosterLoading(false); }
+    } catch (e) { if (scope === scopeRef.current) setErr(String(e)); }
+    finally { if (gen === genRef.current) setRosterLoading(false); }
   };
   // Acquire an upgrade target: lock it + regenerate so it enters the optimized roster
   // (the whole roster rebalances to fit it, realizing the stage-2 prediction). Passes the
@@ -262,8 +288,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const excludeNoRegen = (id: string) => setExcluded((s) => { const n = new Set(s); n.add(id); return n; });
   const fetchUpgrades = async (): Promise<BiggestUpgrades | null> => {
     if (!tournamentId) return null;
-    try { return (await fetch("/api/upgrades" + rosterQuery()).then((r) => r.json())).biggestUpgrades ?? null; }
-    catch { return null; }
+    const scope = scopeRef.current;
+    try {
+      const d = await getJson<{ biggestUpgrades?: BiggestUpgrades | null }>("/api/upgrades" + rosterQuery());
+      return scope === scopeRef.current ? (d.biggestUpgrades ?? null) : null;
+    } catch { return null; }
   };
   // Stage-2 refine: open the NDJSON stream for a shortlist and invoke onResult per
   // candidate as its exact marginal lands. Reuses the baseline cached by the last
@@ -295,7 +324,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const value: AppData = {
     tournaments, tournamentId, chooseTournament, reloadTournaments,
     accounts, accountId, chooseAccount, activeAccount: accounts.find((a) => a.id === accountId),
-    cards, meta, loading, busy, err,
+    cards, meta, loading, busy, err, clearErr,
     roster, rosterLoading, rosterRoles: roster?.roles ?? {},
     ownedOnly: ownedOnlyState, setOwnedOnly, metric: metricState, setMetric,
     locked, excluded, removed, dirty, toggleLock, toggleExclude, removeCard, excludeNoRegen, fetchUpgrades, refineUpgrades, acquireCard,

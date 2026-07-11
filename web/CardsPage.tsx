@@ -240,6 +240,15 @@ export function CardsPage() {
         )}
       </div>
 
+      {!loading && cards.length === 0 && (
+        <div style={{ padding: "26px 22px", border: `1px dashed ${C.border}`, borderRadius: 8, color: C.sub, fontSize: 14, maxWidth: 560, lineHeight: 1.6 }}>
+          <b style={{ color: C.text }}>No card catalog imported yet.</b><br />
+          Go to <a href="#/accounts" style={{ color: C.link }}>Accounts</a> and use{" "}
+          <b style={{ color: C.text }}>Import ownership</b> with your PT card-list CSV — the upload
+          becomes the shared catalog (and that account's owned cards), and the grid fills in here.
+        </div>
+      )}
+      {(loading || cards.length > 0) && (
       <div style={{ overflow: "auto", border: `1px solid ${C.border}`, maxHeight: "74vh" }}>
         <table style={{ borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed", width: "max-content" }}>
           <colgroup>{cols.map((c) => <col key={c.key} style={{ width: w(c.key) }} />)}</colgroup>
@@ -284,6 +293,7 @@ export function CardsPage() {
           </tbody>
         </table>
       </div>
+      )}
       {rows.length > 1000 && <p style={{ color: C.sub, fontSize: 12 }}>Showing first 1000 of {rows.length}.</p>}
 
       {fcol && (

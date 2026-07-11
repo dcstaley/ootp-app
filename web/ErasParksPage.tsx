@@ -22,7 +22,7 @@ export function ErasParksPage() {
     fetch("/api/parks").then((r) => r.json()).then((d) => setParks(d.parks ?? [])),
     fetch("/api/eras").then((r) => r.json()).then((d) => setEras(d.eras ?? [])),
   ]);
-  useEffect(() => { load().catch(() => {}); }, []);
+  useEffect(() => { load().catch((e) => setMsg({ text: "Failed to load eras/parks: " + String(e), ok: false })); }, []);
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

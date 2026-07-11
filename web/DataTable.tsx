@@ -1,6 +1,8 @@
 // Reusable sortable table. Columns declare a sort `value` (number|string) and an
-// optional custom `render`. Click a header to sort (toggles asc/desc); an optional
-// `initialSort` sets the default. Used across the roster-page tabs.
+// optional custom `render`. Click a header to sort (toggles asc/desc; numeric columns
+// start DESCENDING — best first, like the Cards grid); an optional `initialSort` sets
+// the default. Headers are sticky (the wrapper scrolls vertically past 74vh, like the
+// Cards grid). Used across the roster-page tabs.
 //
 // `fit` mode: the table always fits its container (never scrolls). Columns marked
 // shrinkable (`shrink` = priority, lower shrinks first; `min` = floor) absorb the
@@ -108,8 +110,15 @@ export function DataTable<T>({ rows, cols, getKey, initialSort, rowStyle, fit, r
     });
   }, [rows, cols, sort]);
 
+  // First click on a NUMERIC column sorts descending (best-first, matching CardsPage);
+  // text columns ascending. Clicking again toggles.
   const clickSort = (key: string) =>
-    setSort((s) => (s && s.key === key ? { key, dir: (s.dir === 1 ? -1 : 1) as 1 | -1 } : { key, dir: 1 }));
+    setSort((s) => {
+      if (s && s.key === key) return { key, dir: (s.dir === 1 ? -1 : 1) as 1 | -1 };
+      const col = cols.find((c) => c.key === key);
+      const numeric = !!col && rows.length > 0 && typeof col.value(rows[0]!) === "number";
+      return { key, dir: numeric ? -1 : 1 };
+    });
 
   const cell: CSSProperties = { padding: "5px 6px", borderBottom: `1px solid ${C.border}`, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   // A user-resized column becomes fixed (protected) at its width.
@@ -136,14 +145,14 @@ export function DataTable<T>({ rows, cols, getKey, initialSort, rowStyle, fit, r
   };
 
   return (
-    <div ref={wrapRef} style={{ overflowX, width: "100%" }}>
+    <div ref={wrapRef} style={{ overflowX, overflowY: "auto", maxHeight: "74vh", width: "100%" }}>
       <table style={{ borderCollapse: "collapse", width: tableWidth, tableLayout, border: `1px solid ${C.border}` }}>
         {(fit || anyW) && <colgroup>{cols.map((c, i) => <col key={c.key} style={colWidths[i] != null ? { width: colWidths[i] } : undefined} />)}</colgroup>}
         <thead>
           <tr>
             {cols.map((c, i) => (
               <th key={c.key} onClick={() => clickSort(c.key)} title={c.title ?? c.label}
-                style={{ ...cell, position: "relative", textAlign: ta(c.align), background: C.head, cursor: "pointer", userSelect: "none" }}>
+                style={{ ...cell, position: "sticky", top: 0, zIndex: 2, textAlign: ta(c.align), background: C.head, cursor: "pointer", userSelect: "none" }}>
                 {c.label}{sort?.key === c.key ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
                 {resizable && (
                   <span onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); startResize(c.key, e.clientX, colWidths[i] ?? c.width ?? 80, c.min ?? 32); }}

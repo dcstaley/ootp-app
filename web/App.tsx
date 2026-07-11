@@ -77,8 +77,8 @@ function Sidebar({ route, go }: { route: string; go: (id: string) => void }) {
         <div key={g} style={{ marginBottom: 12 }}>
           <div style={labelStyle}>{g}</div>
           {ROUTES.filter((r) => r.group === g).map((r) => (
-            <a key={r.id} onClick={() => go(r.id)}
-              style={{ display: "block", padding: "6px 8px", borderRadius: 6, cursor: "pointer", fontSize: 13, marginBottom: 2,
+            <a key={r.id} href={"#/" + r.id} onClick={() => go(r.id)}
+              style={{ display: "block", padding: "6px 8px", borderRadius: 6, cursor: "pointer", fontSize: 13, marginBottom: 2, textDecoration: "none",
                 background: route === r.id ? C.navActive : "transparent", color: route === r.id ? C.text : C.sub, fontWeight: route === r.id ? 600 : 400 }}>
               {r.label}
             </a>
@@ -91,13 +91,21 @@ function Sidebar({ route, go }: { route: string; go: (id: string) => void }) {
 
 function Shell() {
   const [route, go] = useHashRoute();
-  const { err } = useAppData();
+  const { err, clearErr } = useAppData();
   const Active = (ROUTES.find((r) => r.id === route) ?? ROUTES[0]!).element;
   return (
     <div style={{ display: "flex", fontFamily: "system-ui, sans-serif", color: C.text, background: C.bg, minHeight: "100vh" }}>
       <Sidebar route={route} go={go} />
       <main style={{ flex: 1, padding: 16, minWidth: 0 }}>
-        {err && <p style={{ color: "#f87171" }}>Failed to load: {err} — is the server running?</p>}
+        {err && (
+          <p style={{ color: "#f87171" }}>
+            ⚠ {err}
+            <button onClick={clearErr} title="Dismiss"
+              style={{ marginLeft: 10, background: "transparent", color: C.sub, border: `1px solid ${C.border}`, borderRadius: 4, cursor: "pointer", fontSize: 12, padding: "1px 7px" }}>
+              dismiss
+            </button>
+          </p>
+        )}
         <Active />
       </main>
     </div>

@@ -106,26 +106,42 @@ export function TournamentsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [exposure, setExposure] = useState<ExposureInfo | null>(null);
+  // Raw text of a numeric field mid-edit (keyed by field). While a field holds unparseable
+  // text (e.g. cleared for retyping) the DRAFT is left untouched, so the auto-save never
+  // persists a transient 0 — the draft only moves on parseable values (W-5).
+  const [editRaw, setEditRaw] = useState<Record<string, string>>({});
   const savedRef = useRef<string>(""); // JSON of the last-persisted draft (auto-save baseline)
   const adoptedIdRef = useRef<string | null>(null); // id the server re-slugged us to (skip its reload)
 
-  useEffect(() => { fetch("/api/libraries").then((r) => r.json()).then(setLibs).catch(() => {}); }, []);
+  useEffect(() => { fetch("/api/libraries").then((r) => r.json()).then(setLibs).catch((e) => setMsg({ text: "Libraries failed to load: " + String(e), ok: false })); }, []);
   // Full era/park objects (for the factor strips beside the selectors) — keyed by id.
   useEffect(() => {
-    fetch("/api/eras").then((r) => r.json()).then((d) => setEraMap(Object.fromEntries((d.eras ?? []).map((e: EraCfg) => [e.id, e])))).catch(() => {});
-    fetch("/api/parks").then((r) => r.json()).then((d) => setParkMap(Object.fromEntries((d.parks ?? []).map((p: ParkCfg) => [p.id, p])))).catch(() => {});
+    fetch("/api/eras").then((r) => r.json()).then((d) => setEraMap(Object.fromEntries((d.eras ?? []).map((e: EraCfg) => [e.id, e])))).catch((e) => setMsg({ text: "Eras failed to load: " + String(e), ok: false }));
+    fetch("/api/parks").then((r) => r.json()).then((d) => setParkMap(Object.fromEntries((d.parks ?? []).map((p: ParkCfg) => [p.id, p])))).catch((e) => setMsg({ text: "Parks failed to load: " + String(e), ok: false }));
   }, []);
   // If the page mounts before the active tournament is known, adopt it once it arrives.
   useEffect(() => { if (!selId && tournamentId) setSelId(tournamentId); }, [tournamentId, selId]);
   // Load the selected tournament; seed the auto-save baseline so a plain load never re-saves.
+  // Latest-wins (a slow response for a previously-selected id is dropped). On a FAILED load
+  // the editor is cleared/disabled — otherwise the previous draft would linger under the new
+  // selection and the 500ms auto-save would write those edits onto the WRONG tournament id.
   useEffect(() => {
     if (!selId) return;
     // We just re-slugged this record ourselves (rename auto-save) — the draft is already
     // current; refetching would clobber in-progress edits. Consume the flag and skip.
     if (adoptedIdRef.current === selId) { adoptedIdRef.current = null; return; }
+    let stale = false;
+    const fail = (why: string) => {
+      if (stale) return;
+      setDraft(null); savedRef.current = "";
+      setMsg({ text: `Couldn't load tournament: ${why} — editor disabled until a load succeeds.`, ok: false });
+    };
     fetch("/api/tournament?id=" + encodeURIComponent(selId)).then((r) => r.json()).then((t) => {
-      if (!t.error) { setDraft(t); savedRef.current = JSON.stringify(t); setMsg(null); }
-    }).catch(() => {});
+      if (stale) return;
+      if (t.error) { fail(String(t.error)); return; }
+      setDraft(t); setEditRaw({}); savedRef.current = JSON.stringify(t); setMsg(null);
+    }).catch((e) => fail(String(e)));
+    return () => { stale = true; };
   }, [selId]);
 
   const set = <K extends keyof TournamentCfg>(k: K, v: TournamentCfg[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));
@@ -179,6 +195,14 @@ export function TournamentsPage() {
     const snap = JSON.stringify(draft);
     if (snap === savedRef.current) return;
     if (!draft.name.trim()) { setMsg({ text: "Name is required.", ok: false }); return; }
+    // Inline validation — block the auto-save with a visible message instead of letting
+    // the inconsistency surface later as a solver "Infeasible" on another page.
+    const bad = draft.hitters + draft.pitchers !== draft.roster_size
+      ? `hitters (${draft.hitters}) + pitchers (${draft.pitchers}) must equal the roster size (${draft.roster_size})`
+      : draft.min_starters > draft.pitchers
+        ? `rotation size (${draft.min_starters}) can't exceed pitchers (${draft.pitchers})`
+        : null;
+    if (bad) { setMsg({ text: `Not saved — ${bad}.`, ok: false }); return; }
     setMsg({ text: "Saving…", ok: true });
     const tmo = setTimeout(async () => {
       try {
@@ -208,7 +232,11 @@ export function TournamentsPage() {
   // tournament. Server computes from the SAVED config, so refetch on select + after saves.
   useEffect(() => {
     if (!selId) { setExposure(null); return; }
-    fetch("/api/exposure?t=" + encodeURIComponent(selId)).then((r) => r.json()).then(setExposure).catch(() => setExposure(null));
+    let stale = false; // latest-wins: a slow response for a previous select/save is dropped
+    fetch("/api/exposure?t=" + encodeURIComponent(selId)).then((r) => r.json())
+      .then((d) => { if (!stale) setExposure(d); })
+      .catch(() => { if (!stale) setExposure(null); });
+    return () => { stale = true; };
   }, [selId, msg?.text]);
 
   // Pool metrics for the position-constraint editor. Recomputed (debounced) when a
@@ -220,7 +248,8 @@ export function TournamentsPage() {
     const ctrl = new AbortController();
     const tmo = setTimeout(() => {
       fetch("/api/position-metrics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft), signal: ctrl.signal })
-        .then((r) => r.json()).then((d) => setMetrics(d.metrics ?? null)).catch(() => {});
+        .then((r) => r.json()).then((d) => setMetrics(d.metrics ?? null))
+        .catch((e) => { if ((e as Error)?.name !== "AbortError") setMsg({ text: "Pool metrics failed: " + String(e), ok: false }); });
     }, 250);
     return () => { ctrl.abort(); clearTimeout(tmo); };
   }, [poolSig]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -283,10 +312,20 @@ export function TournamentsPage() {
     </label>
   );
   // `def` autofills the displayed value when the field is unset, so defaulted fields show
-  // their effective value instead of a blank box.
+  // their effective value instead of a blank box. Mid-edit text that doesn't parse (a
+  // cleared field being retyped) is held in editRaw and NOT written to the draft — only
+  // parseable values reach the auto-save; blur discards the held text (reverts to the draft).
+  const dropRaw = (k: string) => setEditRaw((m) => { if (!(k in m)) return m; const n = { ...m }; delete n[k]; return n; });
   const numIn = (k: keyof TournamentCfg, opts: { min?: number; max?: number; step?: number; nullable?: boolean; width?: number; def?: number } = {}): ReactNode => (
-    <input type="number" value={(draft?.[k] as number | null | undefined) ?? opts.def ?? ""} min={opts.min} max={opts.max} step={opts.step ?? 1}
-      onChange={(e) => set(k, (e.target.value === "" ? (opts.nullable ? null : 0) : Number(e.target.value)) as TournamentCfg[typeof k])}
+    <input type="number" value={editRaw[k] ?? ((draft?.[k] as number | null | undefined) ?? opts.def ?? "")} min={opts.min} max={opts.max} step={opts.step ?? 1}
+      onChange={(e) => {
+        const t = e.target.value;
+        if (t === "" && opts.nullable) { dropRaw(k); set(k, null as TournamentCfg[typeof k]); return; }
+        const n = Number(t);
+        if (t === "" || !Number.isFinite(n)) { setEditRaw((m) => ({ ...m, [k]: t })); return; } // hold — no transient 0 into the draft
+        dropRaw(k); set(k, n as TournamentCfg[typeof k]);
+      }}
+      onBlur={() => dropRaw(k)}
       style={{ ...inputStyle, width: opts.width ?? 120 }} />
   );
   const section = (title: string, children: ReactNode, style?: CSSProperties): ReactNode => (

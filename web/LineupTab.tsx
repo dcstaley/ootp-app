@@ -72,18 +72,28 @@ export function LineupTab({
 
   // Assign a defensive position to a player (swap if the position is taken). "-"
   // benches them. Changing position clears any lock (the lock no longer matches).
+  // A displaced holder inherits the vacated position only if he's ELIGIBLE there
+  // (can play it — Learn); otherwise he goes to the bench instead of getting a
+  // blank/bogus assignment he can't play.
   const changePos = (id: string, newPos: string) => {
     const old = pos[side][id] ?? "-";
     if (newPos === old) return;
     const lk = lockOf(id); if (lk && lk.pos !== newPos) clearLockIfSet(id);
+    const holder = newPos !== "-" ? order[side].find((x) => x !== id && pos[side][x] === newPos) : undefined;
+    const hh = holder ? byId.get(holder) : undefined;
+    const holderKeeps = !!hh && old !== "-" && (hh.allPositions ?? hh.positions).includes(old);
+    if (holder && !holderKeeps) clearLockIfSet(holder); // benched → any lock he held is stale
     mutPos((p) => {
       const next = { ...p };
-      if (newPos !== "-") { const holder = order[side].find((x) => x !== id && next[x] === newPos); if (holder) next[holder] = old; }
+      if (holder) next[holder] = holderKeeps ? old : "-";
       next[id] = newPos;
       return next;
     });
-    if (newPos === "-") mutOrder((o) => o.filter((x) => x !== id));
-    else if (!order[side].includes(id)) mutOrder((o) => [...o, id]);
+    mutOrder((o) => {
+      let next = newPos === "-" ? o.filter((x) => x !== id) : (o.includes(id) ? o : [...o, id]);
+      if (holder && !holderKeeps) next = next.filter((x) => x !== holder);
+      return next;
+    });
   };
 
   const firstOpenPos = (id: string): string => {

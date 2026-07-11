@@ -460,8 +460,11 @@ export function RosterPage() {
     for (const h of curHitters) m.set(h.id, { kind: "hitter", row: h });
     for (const p of curPitchers) m.set(p.id, { kind: "pitcher", row: p });
     return m;
+    // `roster` must be a dep: after Regenerate the lists rebuild from the NEW generation's
+    // pool, and a drag must resolve the fresh rows (value/cost), not the stale ones. The
+    // list lengths alone can't see that (both are capped at NB_RENDER).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availCat, curHitters.length, curPitchers.length, nbOwnedOnly, nbMaxValue, nbSearch, added.length, removed.size]);
+  }, [roster, availCat, curHitters.length, curPitchers.length, nbOwnedOnly, nbMaxValue, nbSearch, added.length, removed.size]);
   const availItems: ReactNode[] = activeCat.kind === "hitter" ? curHitters.map(availHitterCard) : curPitchers.map(availPitcherCard);
   const poolSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const onPoolDragEnd = (e: DragEndEvent) => {
@@ -479,8 +482,9 @@ export function RosterPage() {
     { key: "woba", label: "OVR", align: "r", width: 76, value: (p) => p.woba, render: (p) => num(p.woba) },
     { key: "stam", label: "Stam", align: "r", width: 56, value: (p) => p.stamina },
     { key: "pit", label: "# Pit", align: "r", width: 56, value: (p) => p.pitchTypes },
-    // Staff lock: pin the arm to the rotation (SP) or bullpen (RP). Auto-regenerates, so the
-    // row relocates to the right table. SP disabled when the arm doesn't qualify as a starter.
+    // Staff lock: pin the arm to the rotation (SP) or bullpen (RP). Toggling sets `dirty`;
+    // the row relocates on the next manual Regenerate (locks are LP constraints — there is
+    // no auto-regen). SP disabled when the arm doesn't qualify as a starter.
     { key: "lock", label: "Lock", align: "c", width: 78, value: (p) => staffLocks.get(p.id) ?? "", render: (p) => {
       const spOk = p.stamina >= (roster?.minStarterStamina ?? 70) && p.pitchTypes >= (roster?.minPitchTypes ?? 3);
       const cur = staffLocks.get(p.id);

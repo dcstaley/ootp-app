@@ -1,6 +1,18 @@
 // Shared types + theme used across the shell and pages.
 import type { CSSProperties } from "react";
 
+// Shared fetch helpers — uniform `r.ok` handling: a non-OK response throws with the
+// server's {error} message when present (falling back to the HTTP status), so failures
+// surface as messages instead of being silently installed as data.
+export async function getJson<T = any>(url: string, init?: RequestInit): Promise<T> {
+  const r = await fetch(url, init);
+  const d = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(d?.error ? String(d.error) : `${r.status} ${r.statusText}`);
+  return d as T;
+}
+export const postJson = <T = any>(url: string, body: unknown): Promise<T> =>
+  getJson<T>(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
 export interface Card {
   id: string; variant: string; title: string; first: string; last: string;
   bats: number; throws: number; value: number; owned: number;

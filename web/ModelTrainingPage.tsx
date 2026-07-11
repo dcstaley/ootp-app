@@ -1,11 +1,12 @@
-// M6 — Model Training page. First slice (SP-9): load the real per-(league, side,
-// year) outcome CSVs and show what the trainer will fit against. Ingestion only —
-// no model is fit here yet (the fit, diagnostics, and the D3 bake-off are the next
-// steps). The data was collected in a neutral league environment, so outcomes sum
-// directly. The dataset is grouped by (CID, variant, side): base and variant of a
-// player are separate observations; vL/vR stay separate.
+// M6 — Model Training page. Loads the real per-(league, side, year) outcome CSVs and
+// shows dataset coverage + integrity, the deployed model's coefficients and performance,
+// the bake-off evaluation scoreboard, per-card residual diagnostics ("where the model
+// misses"), and saved-model management (save / activate / delete). The data was
+// collected in a neutral league environment, so outcomes sum directly. The dataset is
+// grouped by (CID, variant, side): base and variant of a player are separate
+// observations; vL/vR stay separate.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { C, inputStyle } from "./shared.ts";
 
 type Side = "L" | "R";
@@ -492,7 +493,15 @@ export function ModelTrainingPage() {
   const [sbLoading, setSbLoading] = useState(false);
   const [years, setYears] = useState<number[]>([]); // GLOBAL training window (empty ⇒ server default: recent 2yr)
   const [resid, setResid] = useState<ResidResp | null>(null);
+  const [residLoading, setResidLoading] = useState(false);
   const [residRole, setResidRole] = useState<"hitter" | "pitcher">("hitter");
+  // Latest-wins tokens per section: rapid window/section toggles fire overlapping
+  // fetches (e.g. toggleYear chains all three loaders); only the NEWEST response per
+  // section may install its result, so a slow older response can't clobber a newer one.
+  const fitSeq = useRef(0);
+  const sbSeq = useRef(0);
+  const residSeq = useRef(0);
+  const activeSbSeq = useRef(0);
   // Each of the three sections has INDEPENDENT min PA/BF + variant filters (default
   // 1000 + variants on); they don't affect each other. The window above is shared.
   const [fitMin, setFitMin] = useState(1000); const [fitVar, setFitVar] = useState(true);
@@ -515,20 +524,29 @@ export function ModelTrainingPage() {
       .catch((e) => setErr(String(e))).finally(() => setLoading(false));
   };
   const loadFit = (ys: number[], pa = fitMin, incl = fitVar, reload = false) => {
+    const seq = ++fitSeq.current;
     setFitLoading(true);
     fetch(`/api/training/fit?minPA=${pa}${vq(incl)}${yq(ys)}${reload ? "&reload=true" : ""}`)
-      .then((r) => r.json()).then((d: FitResp) => setFit(d))
-      .catch((e) => setErr(String(e))).finally(() => setFitLoading(false));
+      .then((r) => r.json()).then((d: FitResp) => { if (seq === fitSeq.current) setFit(d); })
+      .catch((e) => { if (seq === fitSeq.current) setErr(String(e)); })
+      .finally(() => { if (seq === fitSeq.current) setFitLoading(false); });
   };
   const loadSb = (ys: number[], pa = sbMin, incl = sbVar, reload = false) => {
+    const seq = ++sbSeq.current;
     setSbLoading(true);
     fetch(`/api/training/scoreboard?minN=${pa}&k=5${vq(incl)}${yq(ys)}${reload ? "&reload=true" : ""}`)
-      .then((r) => r.json()).then((d: ScoreboardResp) => setSb(d))
-      .catch((e) => setErr(String(e))).finally(() => setSbLoading(false));
+      .then((r) => r.json()).then((d: ScoreboardResp) => { if (seq === sbSeq.current) setSb(d); })
+      .catch((e) => { if (seq === sbSeq.current) setErr(String(e)); })
+      .finally(() => { if (seq === sbSeq.current) setSbLoading(false); });
   };
-  const loadResid = (role: "hitter" | "pitcher", ys: number[], pa = residMin, incl = residVar, wt = residWeighted, reload = false) =>
-    fetch(`/api/training/residuals?role=${role}&minN=${pa}${vq(incl)}&weighted=${wt}${yq(ys)}${reload ? "&reload=true" : ""}`)
-      .then((r) => r.json()).then((d: ResidResp) => setResid(d)).catch((e) => setErr(String(e)));
+  const loadResid = (role: "hitter" | "pitcher", ys: number[], pa = residMin, incl = residVar, wt = residWeighted, reload = false) => {
+    const seq = ++residSeq.current;
+    setResidLoading(true);
+    return fetch(`/api/training/residuals?role=${role}&minN=${pa}${vq(incl)}&weighted=${wt}${yq(ys)}${reload ? "&reload=true" : ""}`)
+      .then((r) => r.json()).then((d: ResidResp) => { if (seq === residSeq.current) setResid(d); })
+      .catch((e) => { if (seq === residSeq.current) setErr(String(e)); })
+      .finally(() => { if (seq === residSeq.current) setResidLoading(false); });
+  };
   const applyModelsResp = (d: ModelsResp) => { setModels(d.models ?? []); setActiveModelId(d.activeId ?? null); };
   const loadModels = () => fetch("/api/training/models").then((r) => r.json()).then((d: ModelsResp) => {
     applyModelsResp(d);
@@ -543,8 +561,13 @@ export function ModelTrainingPage() {
       .then((r) => r.json()).then((d) => { if (d.ok) { applyModelsResp(d); setModelName(""); } else setErr(d.error); })
       .catch((e) => setErr(String(e))).finally(() => setSavingModel(false));
   };
-  const deleteModel = (id: string) => fetch(`/api/training/models/delete?id=${encodeURIComponent(id)}`, { method: "POST" }).then((r) => r.json()).then((d: ModelsResp) => applyModelsResp(d)).catch((e) => setErr(String(e)));
-  // Activate a #2 model for live scoring (or pass "" to revert to the log-linear baseline).
+  const deleteModel = (id: string) => {
+    const m = models.find((x) => x.id === id);
+    const activeNote = id === activeModelId ? " It is the ACTIVE live-scoring model." : "";
+    if (!window.confirm(`Delete trained model “${m?.name ?? id}”?${activeNote} This can't be undone.`)) return;
+    fetch(`/api/training/models/delete?id=${encodeURIComponent(id)}`, { method: "POST" }).then((r) => r.json()).then((d: ModelsResp) => applyModelsResp(d)).catch((e) => setErr(String(e)));
+  };
+  // Activate a saved model for live scoring (grid + optimizer + calibration).
   const activateModel = (id: string) => fetch(`/api/training/models/activate?id=${encodeURIComponent(id)}`, { method: "POST" })
     .then((r) => r.json()).then((d: ModelsResp & { ok?: boolean; error?: string }) => {
       if (d.ok === false) { setErr(d.error ?? "activate failed"); return; }
@@ -567,17 +590,23 @@ export function ModelTrainingPage() {
   // Deployed-performance scoreboard: scoped to the ACTIVE model's OWN window/min/variants
   // (independent of the page's exploration window); refetched whenever the active model changes.
   const loadActiveSb = (m: TrainedModelSummary) => {
+    const seq = ++activeSbSeq.current;
     setActiveSbLoading(true);
     fetch(`/api/training/scoreboard?minN=${m.minPA}&k=5${vq(m.includeVariants)}${yq(m.window)}`)
-      .then((r) => r.json()).then((d: ScoreboardResp) => setActiveSb(d))
-      .catch((e) => setErr(String(e))).finally(() => setActiveSbLoading(false));
+      .then((r) => r.json()).then((d: ScoreboardResp) => { if (seq === activeSbSeq.current) setActiveSb(d); })
+      .catch((e) => { if (seq === activeSbSeq.current) setErr(String(e)); })
+      .finally(() => { if (seq === activeSbSeq.current) setActiveSbLoading(false); });
   };
   useEffect(() => {
     const m = models.find((x) => x.id === activeModelId);
     if (m) loadActiveSb(m); else setActiveSb(null);
   }, [activeModelId, models]);
-  useEffect(() => { // deployed #2 curves for the coefficient panel (follows the active model)
-    fetch("/api/training/active-eventform").then((r) => r.json()).then((d) => setActiveForm(d.eventForm ?? null)).catch(() => {});
+  useEffect(() => { // deployed curves for the coefficient panel (follows the active model)
+    let stale = false;
+    fetch("/api/training/active-eventform").then((r) => r.json())
+      .then((d) => { if (!stale) setActiveForm(d.eventForm ?? null); })
+      .catch((e) => { if (!stale) setErr(String(e)); });
+    return () => { stale = true; };
   }, [activeModelId]);
   // Changing the GLOBAL window reloads all three (each with its own section settings).
   const toggleYear = (y: number) => {
@@ -605,8 +634,7 @@ export function ModelTrainingPage() {
         <b style={{ color: C.text }}> neutral league environment</b> (no park, neutral era) so outcomes sum
         directly. Observations are grouped by <b style={{ color: C.text }}>(card, variant, side)</b> — base
         and variant of a player are separate; vL and vR stay separate; outcomes are summed across every
-        league/year a card appears in. This page is <b style={{ color: C.text }}>ingestion only</b> for now —
-        fitting, diagnostics, and the D3 bake-off come next.
+        league/year a card appears in.
       </p>
 
       {err && <div style={{ padding: "10px 12px", border: "1px solid #ef4444", borderRadius: 8, background: "rgba(239,68,68,0.12)", color: "#f87171", marginBottom: 12 }}>{err}</div>}
@@ -726,7 +754,7 @@ export function ModelTrainingPage() {
             <span style={{ fontSize: 12, color: C.sub }}>snapshots the four fits at window {years.join("+") || "(default)"} · min {fitMin} · {fitVar ? "variants" : "base"}</span>
           </div>
           <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub, maxWidth: 820 }}>
-            <b style={{ color: "#22c55e" }}>●</b> marks the <b style={{ color: C.text }}>live scoring model</b> (D3 #2 raw-poly) — <b style={{ color: C.text }}>Use</b> activates it for the grid, optimizer &amp; calibration; <b style={{ color: C.text }}>Scoring ✓</b> reverts to the log-linear baseline. Each saved model freezes its own #2 form, so league vs (future) tournament models can be swapped.
+            <b style={{ color: "#22c55e" }}>●</b> marks the <b style={{ color: C.text }}>live scoring model</b> — <b style={{ color: C.text }}>Use</b> activates a model for the grid, optimizer &amp; calibration (the <b style={{ color: C.text }}>Scoring ✓</b> badge shows which one is live). Each saved model freezes its own event form, so league vs (future) tournament models can be swapped.
           </p>
           {models.length > 0 && (
             <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 4 }}>
@@ -747,7 +775,7 @@ export function ModelTrainingPage() {
                       <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 11 }}>{m.trainedAt.slice(0, 10)}</td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>
                         {activeModelId === m.id
-                          ? <button onClick={() => activateModel("")} title="Revert live scoring to the log-linear baseline" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, background: "#16a34a", color: "#fff", border: "1px solid #16a34a" }}>Scoring ✓</button>
+                          ? <span title="This model drives live scoring (grid + optimizer + calibration)" style={{ ...inputStyle, display: "inline-block", cursor: "default", padding: "2px 8px", fontSize: 12, background: "#16a34a", color: "#fff", border: "1px solid #16a34a" }}>Scoring ✓</span>
                           : <button onClick={() => activateModel(m.id)} disabled={!m.hasEventForm} title={m.hasEventForm ? "Use this model for live scoring (grid + optimizer + calibration)" : "Pre-#2 artifact — re-save to enable scoring"} style={{ ...inputStyle, cursor: m.hasEventForm ? "pointer" : "not-allowed", padding: "2px 8px", fontSize: 12, opacity: m.hasEventForm ? 1 : 0.5 }}>Use</button>}
                         <button onClick={() => loadModelConfig(m)} title="Load this model's window + min + variants into the page" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, marginLeft: 4 }}>Load</button>
                         <button onClick={() => deleteModel(m.id)} title="Delete" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, marginLeft: 4, color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
@@ -837,7 +865,7 @@ export function ModelTrainingPage() {
 
           {/* Where the model misses — per-card residual leaderboards + archetypes + grid */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "22px 0 4px", flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0, fontSize: 14 }}>Where the wOBA model misses</h3>
+            <h3 style={{ margin: 0, fontSize: 14 }}>Where the wOBA model misses {residLoading && <span style={{ fontSize: 12, color: C.sub }}>· computing…</span>}</h3>
             <span style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }}>
               {(["hitter", "pitcher"] as const).map((r) => (
                 <button key={r} onClick={() => chooseResidRole(r)} style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: "pointer", padding: "5px 11px", textTransform: "capitalize", background: residRole === r ? C.accent : C.input, color: residRole === r ? "#fff" : C.sub, fontWeight: residRole === r ? 700 : 400 }}>{r}</button>
