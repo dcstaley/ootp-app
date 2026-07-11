@@ -11,10 +11,20 @@
 // A thin, typed-by-caller repository: list / load / loadAll / save / delete per
 // collection, plus CSV read/write. Async (fs/promises) for the local server.
 
-import { readFile, writeFile, readdir, mkdir, rm } from "node:fs/promises";
+import { readFile, writeFile, readdir, mkdir, rm, rename } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseCatalogCsv, type Catalog } from "../data/catalog.ts";
+
+// Safe entity/import id: letters, digits, dot, underscore, hyphen — and never a `..`
+// traversal segment. Guards every path built from a caller-supplied id so a raw `?id=`
+// like `../../secret` can't escape the collection folder. Covers all collections since
+// every file path funnels through `file()` / the import helpers.
+const SAFE_ID = /^[A-Za-z0-9._-]+$/;
+export function isSafeId(id: string): boolean { return SAFE_ID.test(id) && !id.includes(".."); }
+function assertSafeId(id: string): void {
+  if (!isSafeId(id)) throw new Error(`unsafe id: ${JSON.stringify(id)}`);
+}
 
 export const COLLECTIONS = {
   tournaments: "tournaments",
@@ -33,19 +43,29 @@ export class Repository {
   constructor(root: string) { this.root = root; }
 
   private dir(collection: string): string { return join(this.root, collection); }
-  private file(collection: string, id: string): string { return join(this.dir(collection), `${id}.json`); }
+  private file(collection: string, id: string): string { assertSafeId(id); return join(this.dir(collection), `${id}.json`); }
 
-  /** Save an entity as <root>/<collection>/<id>.json (pretty-printed). */
+  /** Save an entity as <root>/<collection>/<id>.json (pretty-printed). Atomic:
+   *  write a temp file then rename, so a crash mid-write never leaves a truncated
+   *  JSON file that would break the next boot. */
   async save<T>(collection: Collection, id: string, obj: T): Promise<void> {
     await mkdir(this.dir(collection), { recursive: true });
-    await writeFile(this.file(collection, id), JSON.stringify(obj, null, 2), "utf8");
+    const f = this.file(collection, id);
+    const tmp = `${f}.tmp`;
+    await writeFile(tmp, JSON.stringify(obj, null, 2), "utf8");
+    await rename(tmp, f);
   }
 
-  /** Load one entity, or null if absent. */
+  /** Load one entity, or null if absent. Throws (with the file named) on a parse
+   *  error so callers can decide to skip-and-warn vs. fall back to defaults. */
   async load<T>(collection: Collection, id: string): Promise<T | null> {
     const f = this.file(collection, id);
     if (!existsSync(f)) return null;
-    return JSON.parse(await readFile(f, "utf8")) as T;
+    try {
+      return JSON.parse(await readFile(f, "utf8")) as T;
+    } catch (e) {
+      throw new Error(`corrupt ${collection}/${id}.json: ${(e as Error).message}`);
+    }
   }
 
   /** Ids present in a collection. */
@@ -55,12 +75,17 @@ export class Repository {
     return (await readdir(d)).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -".json".length)).sort();
   }
 
-  /** Load every entity in a collection. */
+  /** Load every entity in a collection. A single corrupt file is skipped-and-warned
+   *  (a library collection stays usable) rather than aborting the whole boot. */
   async loadAll<T>(collection: Collection): Promise<T[]> {
     const out: T[] = [];
     for (const id of await this.list(collection)) {
-      const v = await this.load<T>(collection, id);
-      if (v != null) out.push(v);
+      try {
+        const v = await this.load<T>(collection, id);
+        if (v != null) out.push(v);
+      } catch (e) {
+        console.warn(`[repo] skipping ${(e as Error).message}`);
+      }
     }
     return out;
   }
@@ -73,11 +98,16 @@ export class Repository {
 
   // ── CSV imports ────────────────────────────────────────────────────────────
   async saveImport(name: string, csvText: string): Promise<void> {
+    assertSafeId(name);
     await mkdir(join(this.root, "imports"), { recursive: true });
-    await writeFile(join(this.root, "imports", `${name}.csv`), csvText, "utf8");
+    const f = join(this.root, "imports", `${name}.csv`);
+    const tmp = `${f}.tmp`;
+    await writeFile(tmp, csvText, "utf8");
+    await rename(tmp, f);
   }
 
   async loadImport(name: string): Promise<Catalog | null> {
+    assertSafeId(name);
     const f = join(this.root, "imports", `${name}.csv`);
     if (!existsSync(f)) return null;
     return parseCatalogCsv(await readFile(f, "utf8"));

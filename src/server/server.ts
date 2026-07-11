@@ -30,7 +30,7 @@ import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, 
 import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { resolveTournamentAdjustment } from "../config/tournament.ts";
-import { Repository } from "../persistence/repository.ts";
+import { Repository, isSafeId } from "../persistence/repository.ts";
 import { seedDefaults, seedEras } from "../config/seed.ts";
 import { seedAccounts, slug } from "../data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../config/coeff-resolve.ts";
@@ -77,7 +77,15 @@ if (!model || tournaments.length === 0) {
 }
 
 let accounts = new Map((await repo.loadAll<AccountOverlay>("accounts")).map((a) => [a.id, a]));
-let state: AppState = (await repo.load<AppState>("state", "app")) ?? { activeAccountId: null, catalogSourceId: null, activeTournamentId: null };
+const DEFAULT_STATE: AppState = { activeAccountId: null, catalogSourceId: null, activeTournamentId: null };
+// A corrupt state file must not brick the server — fall back to defaults (rebuilt on next save).
+let state: AppState;
+try {
+  state = (await repo.load<AppState>("state", "app")) ?? { ...DEFAULT_STATE };
+} catch (e) {
+  console.warn(`[server] ${(e as Error).message} — resetting app state to defaults`);
+  state = { ...DEFAULT_STATE };
+}
 const saveState = () => repo.save("state", "app", state);
 
 // ── One-time id migration (D4): tournament ids track their display name. Older
@@ -131,6 +139,14 @@ const round = (x: number) => Math.round(x * 1e4) / 1e4;
 const LEARN: [string, string][] = [
   ["LearnC", "C"], ["Learn1B", "1B"], ["Learn2B", "2B"], ["Learn3B", "3B"],
   ["LearnSS", "SS"], ["LearnLF", "LF"], ["LearnCF", "CF"], ["LearnRF", "RF"],
+];
+
+// The minimum columns a shared-catalog CSV must carry (per docs/pt_card_list.csv). Guards
+// /api/accounts/import from adopting a wrong/partial CSV as state.catalogSourceId.
+const REQUIRED_CATALOG_COLUMNS = [
+  "Card ID", "Card Value", "Bats", "Throws",
+  "Power vR", "Eye vR", "Avoid K vR", "BABIP vR", "Gap vR",
+  "Control vR", "Stuff vR", "pBABIP vR", "pHR vR",
 ];
 const DEF_COLS = [
   "Infield Range", "Infield Error", "Infield Arm", "DP",
@@ -331,11 +347,25 @@ const accountSummary = () => ({
   activeId: state.activeAccountId, catalogSource,
 });
 
+// Drop EVERY derived cache keyed by (activeModelId, catalog). The per-tournament score
+// cache alone isn't enough: the pool-strength reference field, the E[win%] .500 anchor,
+// and the league exposure baseline are all keyed by `${activeModelId}|${catalogSource}`,
+// so a same-account CSV re-upload (same key) OR a model (de)activation would otherwise
+// keep serving stale references until a restart. Called from both refreshCatalog and
+// refreshActiveModel. (refFieldCache/leagueBaselineCache/refDCache are declared later but
+// this is a hoisted declaration only invoked at runtime, after they're initialized.)
+function invalidateDerivedCaches() {
+  cache = new Map();
+  refFieldCache = null;
+  leagueBaselineCache = null;
+  refDCache.clear();
+}
+
 // Recompute the shared catalog (after an upload changed the source) + drop caches.
 function refreshCatalog() {
   ({ catalog, source: catalogSource } = loadCatalog());
   catalogById = new Map(catalog.cards.map((c) => [cardId(c), c]));
-  cache = new Map();
+  invalidateDerivedCaches();
 }
 
 // ── Roster generation (M4 Phase D) ────────────────────────────────────────────
@@ -1309,7 +1339,7 @@ async function refreshActiveModel(): Promise<void> {
   activeWobaWeights = m?.wobaWeights ?? null;
   activeEnvelope = m?.ratingEnvelope ?? null;
   if (id && !m?.eventForm) { state.activeModelId = null; await saveState(); }
-  cache = new Map();
+  invalidateDerivedCaches(); // model change moves the reference field, .500 anchor, and exposure baseline
 }
 await refreshActiveModel();
 
@@ -1344,7 +1374,18 @@ function json(res: ServerResponse, data: unknown, code = 200) {
   res.end(JSON.stringify(data));
 }
 
-const server = createServer(async (req, res) => {
+// Top-level guard: any error thrown by a handler (a malformed JSON body, a dangling
+// era/park id in scoreTournament, an unsafe id in the repo) becomes a 500 JSON instead
+// of an unhandled rejection that Node 24 turns into a process exit.
+const server = createServer((req, res) => {
+  handleRequest(req, res).catch((err) => {
+    console.error("[server] request error:", err);
+    if (!res.headersSent && !res.writableEnded) json(res, { error: String((err as Error)?.message ?? err) }, 500);
+    else try { res.end(); } catch { /* already closed */ }
+  });
+});
+
+async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   const u = new URL(req.url ?? "/", "http://localhost");
   const url = u.pathname;
   const method = req.method ?? "GET";
@@ -1611,6 +1652,7 @@ const server = createServer(async (req, res) => {
   if (method === "POST" && url === "/api/training/models/delete") {
     const id = u.searchParams.get("id") || "";
     if (!id) return json(res, { ok: false, error: "id required" }, 400);
+    if (!isSafeId(id)) return json(res, { ok: false, error: "invalid id" }, 400); // reject path traversal
     await repo.delete("trained-models", id);
     if (state.activeModelId === id) { state.activeModelId = null; await saveState(); await refreshActiveModel(); }
     return json(res, { ok: true, models: await listModels(), activeId: state.activeModelId ?? null });
@@ -1789,13 +1831,21 @@ const server = createServer(async (req, res) => {
     // Raw CSV body. ?id= to update an existing account; else ?name= creates one.
     const text = await readBody(req);
     if (!text.trim()) return json(res, { error: "empty CSV body" }, 400);
+    // Re-slug BEFORE the existing-account lookup: a "new" account whose NAME slugs to an
+    // existing id must be treated as an update of that account (preserving its variant
+    // flags), not silently overwrite it with variantCardIds:[] (the collision bug).
     let id = u.searchParams.get("id") || "";
     const name = (u.searchParams.get("name") || "").trim();
-    const existing = id ? accounts.get(id) : null;
-    if (!existing) { id = slug(name || id || "account"); }
+    if (!id) id = slug(name || "account");
+    if (!isSafeId(id)) return json(res, { error: "invalid account id" }, 400);
+    const existing = accounts.get(id) ?? null;
     const finalName = existing?.name ?? name ?? id;
     const imported = parseCatalogCsv(text);
     if (!imported.cards.length) return json(res, { error: "no cards parsed from CSV" }, 400);
+    // Light schema guard: this upload becomes the SHARED catalog, so require the handful of
+    // columns the scoring core reads before committing catalogSourceId to it.
+    const missing = REQUIRED_CATALOG_COLUMNS.filter((c) => !imported.columns.includes(c));
+    if (missing.length) return json(res, { error: `CSV missing required columns: ${missing.join(", ")}` }, 400);
     await repo.saveImport(id, text);
     const overlay = overlayFromCatalog(imported, id, finalName);
     if (existing) overlay.variantCardIds = existing.variantCardIds; // preserve variants
@@ -1848,7 +1898,7 @@ const server = createServer(async (req, res) => {
   if (existsSync(index)) { res.setHeader("Content-Type", "text/html"); res.end(readFileSync(index)); return; }
   res.statusCode = 404;
   res.end("SPA not built. Run `npm run build:web` (or use `npm run dev:web` for live dev).");
-});
+}
 
 server.listen(PORT, () => {
   console.log(`[server] http://localhost:${PORT}  (${tournaments.length} tournaments; ${accounts.size} accounts; catalog: ${catalogSource}, ${catalog.cards.length} cards)`);
