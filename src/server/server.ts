@@ -733,6 +733,8 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
     mode: budgetMode(t), totalCap: t.total_cap ?? undefined, slotCounts: t.slot_counts,
     rosterSize: t.roster_size,
     bestOf: t.bestOf ?? 7, // series format → rotation usage (cap/slots E[wins] path)
+    // Variant cap: only meaningful when variants can be rostered; 0 = unlimited (editor convention).
+    maxVariants: t.variants_allowed ? t.max_variants_on_roster : 0,
   };
 }
 

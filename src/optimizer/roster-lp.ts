@@ -256,6 +256,23 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const sizeTerms = [...rhVars, ...rpVars, ...overlapCount.map((v) => `- ${v}`)];
   cons.push(` rsize: ${sizeTerms.join(" + ").replace(/\+ -/g, "-")} = ${rosterSize}`);
 
+  // ── Variant cap (S-6): ≤ maxVariants rostered VARIANT cards (0/undefined ⇒ unlimited).
+  // A variant candidate's id carries the `#V` display suffix. Count each physical card ONCE:
+  // sum variant hitter + variant pitcher memberships, minus the two-way overlap (a two-way
+  // variant holds both an rh and rp for one card) — mirroring the rsize netting. A single-role
+  // variant in both pools can't double (its sr constraint caps rh+rp ≤ 1). Locks that force
+  // more variants than the cap yield an Infeasible, same as any other lock conflict.
+  const maxVar = opts.maxVariants ?? 0;
+  if (maxVar > 0) {
+    const isVariant = (id: string) => /#V$/.test(id);
+    const vTerms = [
+      ...hitters.map((c, i) => (isVariant(c.id) ? `rh_${i}` : null)),
+      ...pitchers.map((c, j) => (isVariant(c.id) ? `rp_${j}` : null)),
+      ...twoWay.filter((o) => isVariant(hitters[o.i]!.id)).map((o) => `- rh_${o.i}`),
+    ].filter((x): x is string => x != null);
+    if (vTerms.length) cons.push(` maxvar: ${vTerms.join(" + ").replace(/\+ -/g, "-")} <= ${maxVar}`);
+  }
+
   // ── Required cards (locks): force the entity onto the roster ──
   const locked = new Set(opts.lockedIds ?? []);
   if (locked.size) {

@@ -155,6 +155,48 @@ describe("Q-1 — E[wins] cap/slots MILP", () => {
     expect(rotValue(high, byId)).toBeGreaterThanOrEqual(rotValue(low, byId) - 1e-9);
   });
 
+  it("max_variants_on_roster: caps rostered variant cards; 0/undefined = unlimited; two-way variant counts once", async () => {
+    // A pool RICH in strictly-better variant cards (id#V) — without a cap the optimizer takes them
+    // all. maxVariants=2 must leave exactly ≤2 variants on the roster, and prefer the best 2.
+    const baseCards = Array.from({ length: 9 }, (_, i) => mkH(`B${i}`, 0.01 + i * 0.001));
+    const varCards = Array.from({ length: 9 }, (_, i) => mkH(`V${i}#V`, 0.20 - i * 0.001)); // dominate on value
+    const H = [...baseCards, ...varCards];
+    const P = PPOOL;
+    const isVar = (id: string) => /#V$/.test(id);
+
+    // unlimited (no cap): the strong variants dominate the 9 hitter slots
+    const uncapped = await generateFullRoster(H, P, { ...BASE });
+    expect(uncapped.status).toBe("Optimal");
+    expect(uncapped.hitters.filter(isVar).length).toBeGreaterThan(2);
+
+    // cap = 2: at most 2 variants, and they should be the two best (V0#V, V1#V)
+    const capped = await generateFullRoster(H, P, { ...BASE, maxVariants: 2 });
+    expect(capped.status).toBe("Optimal");
+    const vars = capped.hitters.filter(isVar);
+    expect(vars.length).toBe(2);
+    expect(new Set(vars)).toEqual(new Set(["V0#V", "V1#V"]));
+
+    // cap = 0: unlimited (editor convention) — same as uncapped, variants allowed freely
+    const zero = await generateFullRoster(H, P, { ...BASE, maxVariants: 0 });
+    expect(zero.hitters.filter(isVar).length).toBeGreaterThan(2);
+  });
+
+  it("max_variants: a two-way variant counts once against the cap", async () => {
+    // TW#V is a two-way variant. With maxVariants=1 and one other variant hitter available, the
+    // solver may roster TW#V (counts as ONE variant though it fills a hitter + pitcher slot).
+    const twHit = mkH("TW#V", 0.09);
+    const twPit = mkP("TW#V", 0.05);
+    const otherVar = mkH("W0#V", 0.20); // a strong pure-hitter variant
+    const H = [...HPOOL, otherVar, twHit];
+    const P = [...PPOOL, twPit];
+    const isVar = (id: string) => /#V$/.test(id);
+    const r = await generateFullRoster(H, P, { ...BASE, maxVariants: 1, twoWayIds: ["TW#V"] });
+    expect(r.status).toBe("Optimal");
+    // distinct variant CARDS rostered ≤ 1 (TW#V counted once even in both pools)
+    const distinctVars = new Set([...r.hitters, ...r.pitchers].filter(isVar));
+    expect(distinctVars.size).toBeLessThanOrEqual(1);
+  });
+
   it("zst netting: a rostered non-starting bench bat occupies neither returned lineup", async () => {
     // nHitters 9 but 10 hitters can be rostered via the bench (bench credit is positive). The
     // 10th (a spare) must not appear in a lineup — the start-indicator (zst) keeps starters and

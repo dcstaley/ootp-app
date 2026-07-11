@@ -133,6 +133,11 @@ export interface RosterOptimizeOptions {
   // force-rostered (via lockedIds). A "sp" lock on a non-starter-qualified arm can't be
   // honored (no slot var) and is ignored.
   staffLocks?: { id: string; role: "sp" | "rp" }[];
+  // Variant cap (S-6): at most this many rostered VARIANT cards (candidate ids carrying the
+  // `#V` display suffix). 0 or undefined ⇒ unlimited (the product's "0 = unlimited" convention,
+  // per the tournament editor). A hard cap: a two-way variant counts once; if user locks force
+  // more variants than the cap, that's an Infeasible (same as other lock conflicts).
+  maxVariants?: number;
   // two-way players: candidate ids that appear in BOTH the hitter and pitcher
   // pools AND are designated two-way (Top-X overlap, or forced via the per-card
   // toggle). Such a card fills a hitter slot AND a pitcher slot with one entity —
