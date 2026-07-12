@@ -137,7 +137,7 @@
     }
   },
   "tournamentAdjustment": {
-    "enabled": true,
+    "enabled": false,
     "hr": 1.15,
     "bb": 0.85,
     "k": 1,
@@ -154,5 +154,6 @@
       2,
       2
     ]
-  }
+  },
+  "kind": "tournament"
 }

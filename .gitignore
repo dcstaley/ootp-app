@@ -30,3 +30,6 @@ fixtures/captures/*.json
 
 # Live training data (per-year league CSVs; grows weekly — keep local)
 League Files/
+
+# Real tournament outcome exports (validation/eval data; grows per running — keep local)
+Tournament Data/

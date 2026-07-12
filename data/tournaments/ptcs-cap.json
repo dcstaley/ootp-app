@@ -82,11 +82,17 @@
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
   "tournamentAdjustment": {
-    "enabled": true,
+    "enabled": false,
     "hr": 1.15,
     "bb": 0.85,
     "k": 1,
     "h": 1,
     "gap": 1
+  },
+  "tuning": {
+    "dials": {
+      "bullpen": 0.95,
+      "lineup": 1.05
+    }
   }
 }

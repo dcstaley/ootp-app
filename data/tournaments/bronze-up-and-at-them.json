@@ -1,20 +1,20 @@
 {
-  "id": "oaxaca-league",
-  "name": "Oaxaca League",
+  "id": "bronze-up-and-at-them",
+  "name": "Bronze Up and at them",
   "card_value_min": null,
-  "card_value_max": null,
+  "card_value_max": 69,
   "total_cap": null,
   "roster_size": 26,
-  "hitters": 14,
-  "pitchers": 12,
+  "hitters": 15,
+  "pitchers": 11,
   "min_starters": 5,
   "min_starter_stamina": 55,
   "min_pitch_types": 3,
   "dh": true,
   "variants_allowed": true,
   "max_variants_on_roster": 0,
-  "eraId": "era-2010",
-  "parkId": "park-1",
+  "eraId": "era-1995",
+  "parkId": "park-38",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -46,100 +46,111 @@
   },
   "eligibility": {
     "mode": "ALL",
-    "rules": []
+    "rules": [
+      {
+        "id": "r1783327228910-0",
+        "column": "Card Type",
+        "op": "set_not_in",
+        "values": [
+          "1"
+        ]
+      }
+    ]
   },
   "positionRanks": {
     "RF": {
       "starter": {}
-    },
-    "C": {
-      "backup": {}
     }
   },
-  "platoonVR": 0.58,
-  "platoonVL": 0.42,
+  "platoonVR": 0.5798834749058775,
+  "platoonVL": 0.4201165250941224,
   "budget_mode": "none",
+  "platoon": {
+    "r_hit_split": 0.5401288195738561,
+    "l_hit_split": 0.3368311079985764,
+    "s_hit_split": 0.5623230905283367,
+    "r_pitch_split": 0.48106468193606067,
+    "l_pitch_split": 0.29379892766447907,
+    "r_pitch_split_sp": 0.4714550685005527,
+    "l_pitch_split_sp": 0.2734945513505361,
+    "r_pitch_split_rp": 0.49899402992925335,
+    "l_pitch_split_rp": 0.33033183572548547
+  },
   "topHitters": 100,
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
-  "platoon": {
-    "r_hit_split": 0.54,
-    "l_hit_split": 0.337,
-    "s_hit_split": 0.562,
-    "r_pitch_split": 0.481,
-    "l_pitch_split": 0.294,
-    "r_pitch_split_sp": 0.471,
-    "l_pitch_split_sp": 0.273,
-    "r_pitch_split_rp": 0.499,
-    "l_pitch_split_rp": 0.33
+  "tournamentAdjustment": {
+    "enabled": false,
+    "hr": 1.15,
+    "bb": 0.85,
+    "k": 1,
+    "h": 1,
+    "gap": 1
   },
   "positionMins": {
     "C": {
-      "backup": {
-        "ability": 80,
-        "frame": 80,
-        "arm": 80
-      },
       "starter": {
-        "frame": 80,
-        "arm": 80,
-        "ability": 80
+        "ability": 65,
+        "frame": 60
+      },
+      "backup": {
+        "ability": 55,
+        "frame": 50
       }
     },
     "1B": {
-      "backup": {},
       "starter": {
         "range": 20
       }
     },
     "2B": {
-      "backup": {},
       "starter": {
-        "range": 85
+        "range": 74
+      },
+      "backup": {
+        "range": 70
       }
     },
     "3B": {
-      "backup": {},
       "starter": {
-        "arm": 65,
-        "range": 69
+        "range": 60,
+        "arm": 60
+      },
+      "backup": {
+        "range": 55,
+        "arm": 55
       }
     },
     "SS": {
-      "backup": {
-        "range": 95
-      },
       "starter": {
-        "range": 105
+        "range": 85
+      },
+      "backup": {
+        "range": 80
       }
     },
     "LF": {
       "starter": {
-        "range": 60
+        "range": 45
       }
     },
     "CF": {
       "starter": {
-        "range": 105
+        "range": 90
       },
       "backup": {
-        "range": 95
+        "range": 75
       }
     },
     "RF": {
       "starter": {
-        "range": 70,
-        "arm": 70
+        "range": 60,
+        "arm": 60
+      },
+      "backup": {
+        "range": 55,
+        "arm": 55
       }
     }
-  },
-  "tournamentAdjustment": {
-    "enabled": false,
-    "hr": 1,
-    "bb": 1,
-    "k": 1,
-    "h": 1,
-    "gap": 1
-  },
-  "kind": "league"
+  }
 }

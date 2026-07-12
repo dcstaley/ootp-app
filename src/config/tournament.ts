@@ -65,18 +65,19 @@ export interface Softcaps {
 // Tournament-scoped environment adjustment (D4): a SECOND set of era modifiers that
 // MULTIPLY onto the era factors (era 1.12 × adj 1.15 = 1.288), on top of era/park. Lets a
 // tournament tune its run environment beyond the shared era — e.g. a hotter HR / lower-walk
-// pool. Defaults: HR 1.15, BB 0.85, others 1.0. On by default (except the neutral pools).
+// pool. OFF unless a tournament explicitly enables it: real-tournament validation
+// (2026-07-12, plan doc §10) showed the blanket HR 1.15 / BB 0.85 default is mis-shaped —
+// the measured bias is role-asymmetric (hitter BB ≈ 0, pitcher BB over), which a symmetric
+// era multiplier cannot express; pool-strength effects belong to the pool transform instead.
 export interface TournamentAdjustment {
   enabled: boolean;
   hr: number; bb: number; k: number; h: number; gap: number;
 }
+// Seed values a manually-ENABLED adjustment starts from (the knob's initial position).
 export const TOURNAMENT_ADJ_DEFAULTS = { hr: 1.15, bb: 0.85, k: 1, h: 1, gap: 1 } as const;
-// Neutral/reference pools default the adjustment OFF (their scores stay era-pure).
-const ADJ_OFF_BY_DEFAULT = new Set(["default-neutral", "oaxaca-league"]);
-/** Effective adjustment for a tournament: its own field, else the default (off for the
- *  neutral pools, on with defaults for everything else). */
+/** Effective adjustment for a tournament: its own explicit field, else disabled. */
 export function resolveTournamentAdjustment(t: Tournament): TournamentAdjustment {
-  return t.tournamentAdjustment ?? { enabled: !ADJ_OFF_BY_DEFAULT.has(t.id), ...TOURNAMENT_ADJ_DEFAULTS };
+  return t.tournamentAdjustment ?? { enabled: false, ...TOURNAMENT_ADJ_DEFAULTS };
 }
 
 export interface Tournament {

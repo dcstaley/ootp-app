@@ -87,7 +87,7 @@
   "topPitchers": 50,
   "minPlayersPerPosition": 2,
   "tournamentAdjustment": {
-    "enabled": true,
+    "enabled": false,
     "hr": 1.15,
     "bb": 0.85,
     "k": 1,

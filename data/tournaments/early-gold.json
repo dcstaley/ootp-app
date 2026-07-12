@@ -72,8 +72,12 @@
   "minPlayersPerPosition": 2,
   "positionMins": {
     "C": {
-      "starter": {},
-      "backup": {}
+      "starter": {
+        "ability": 55
+      },
+      "backup": {
+        "ability": 50
+      }
     },
     "1B": {
       "starter": {
@@ -129,5 +133,13 @@
         "arm": 50
       }
     }
+  },
+  "tournamentAdjustment": {
+    "enabled": false,
+    "hr": 1.15,
+    "bb": 0.85,
+    "k": 1,
+    "h": 1,
+    "gap": 1
   }
 }

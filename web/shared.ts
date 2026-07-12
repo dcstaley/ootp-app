@@ -152,10 +152,11 @@ export interface TournamentTuning {
 export interface PositionMin { starter?: Record<string, number>; backup?: Record<string, number> }
 
 // Tournament environment adjustment — a second era-modifier set multiplied onto the era
-// factors (era × adj). Defaults: HR 1.15, BB 0.85, others 1.0; on by default (server decides
-// per-tournament — neutral pools default off). The editor edits it directly.
+// factors (era × adj). OFF by default everywhere (retired as a blanket default 2026-07-12 —
+// the bias it targeted is role-asymmetric; see src/config/tournament.ts). Enabling the knob
+// in the editor starts from HR 1.15 / BB 0.85 / others 1.0.
 export interface TournamentAdjustment { enabled: boolean; hr: number; bb: number; k: number; h: number; gap: number }
-export const TOURNAMENT_ADJ_DEFAULTS: TournamentAdjustment = { enabled: true, hr: 1.15, bb: 0.85, k: 1, h: 1, gap: 1 };
+export const TOURNAMENT_ADJ_DEFAULTS: TournamentAdjustment = { enabled: false, hr: 1.15, bb: 0.85, k: 1, h: 1, gap: 1 };
 
 // New-tournament defaults (the +New template). era-2010 = BBRef baseline; park-1 = Heinsohn
 // (neutral). platoon/platoonVR/VL are intentionally omitted so the server seeds them from the
