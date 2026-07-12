@@ -6,7 +6,7 @@
 import type { TrainObs } from "./loader.ts";
 import { loadWindow, availableYears } from "./loader.ts";
 import { evalMetrics, type EvalMetrics } from "./metrics.ts";
-import { type BakeoffModel, type RoleSpec, type BakeoffEntry, type GateStatus, BASE_ENTRIES } from "./bakeoff.ts";
+import { type BakeoffModel, type RoleSpec, type BakeoffEntry, type GateStatus, BASE_ENTRIES, HITTER, PITCHER } from "./bakeoff.ts";
 import { FORM_ENTRIES } from "./forms.ts";
 
 /** Deterministic fold assignment by observation key (FNV-1a hash → no RNG). */
@@ -26,17 +26,24 @@ interface EvalOpts { minN?: number; topN?: number; k?: number; window?: number[]
 // (variants stay in everything). Overridable via opts.foldKey for the one-time A/B.
 export const cvFoldKey = (o: TrainObs) => `${o.cid}|${o.side}`;
 
+// The complementary role's spec — used to hand joint-fit models (matchup-K) the other
+// role's observations alongside their own train set (see BakeoffModel.fit's `opp`).
+const oppSpecOf = (spec: RoleSpec): RoleSpec => (spec.role === "hitter" ? PITCHER : HITTER);
+
 /** k-fold CV: pooled out-of-sample predictions → one metric bundle. */
 export function crossValidate(obs: TrainObs[], model: BakeoffModel, spec: RoleSpec, opts: EvalOpts = {}): EvalMetrics {
   const { minN = 1000, topN = 26, k = 5 } = opts;
   const fk = opts.foldKey ?? cvFoldKey;
   const qual = obs.filter((o) => spec.qualifies(o, minN));
+  const oppQual = obs.filter((o) => oppSpecOf(spec).qualifies(o, minN));
   const pred: number[] = [], actual: number[] = [], weight: number[] = [];
   for (let f = 0; f < k; f++) {
     const test = qual.filter((o) => foldOf(fk(o), k) === f);
     const train = qual.filter((o) => foldOf(fk(o), k) !== f);
     if (test.length === 0 || train.length < 10) continue;
-    const params = model.fit(train);
+    // opp rows follow the SAME fold discipline (fk is cid|side for both roles), so a
+    // two-way card's other-role row never leaks into the fit of its held-out fold.
+    const params = model.fit(train, oppQual.filter((o) => foldOf(fk(o), k) !== f));
     const p = model.predict(params, test);
     test.forEach((o, i) => { pred.push(p[i]!); actual.push(spec.actualWoba(o)); weight.push(spec.weight(o)); });
   }
@@ -47,7 +54,7 @@ export function crossValidate(obs: TrainObs[], model: BakeoffModel, spec: RoleSp
 export function inSample(obs: TrainObs[], model: BakeoffModel, spec: RoleSpec, opts: EvalOpts = {}): EvalMetrics {
   const { minN = 1000, topN = 26 } = opts;
   const qual = obs.filter((o) => spec.qualifies(o, minN));
-  const params = model.fit(qual);
+  const params = model.fit(qual, obs.filter((o) => oppSpecOf(spec).qualifies(o, minN)));
   return evalMetrics(model.predict(params, qual), qual.map(spec.actualWoba), qual.map(spec.weight), spec.higherBetter, topN);
 }
 
@@ -56,7 +63,7 @@ export function outOfTime(trainObs: TrainObs[], testObs: TrainObs[], model: Bake
   const { minN = 1000, topN = 26 } = opts;
   const tr = trainObs.filter((o) => spec.qualifies(o, minN));
   const te = testObs.filter((o) => spec.qualifies(o, minN));
-  const params = model.fit(tr);
+  const params = model.fit(tr, trainObs.filter((o) => oppSpecOf(spec).qualifies(o, minN)));
   return evalMetrics(model.predict(params, te), te.map(spec.actualWoba), te.map(spec.weight), spec.higherBetter, topN);
 }
 
@@ -116,7 +123,8 @@ export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
     let gateStatus: GateStatus | undefined;
     if (gate) {
       const qual = winObs.filter((o) => spec.qualifies(o, minN));
-      if (qual.length >= 10) gateStatus = gate(model.fit(qual), qual);
+      const opp = winObs.filter((o) => oppSpecOf(spec).qualifies(o, minN));
+      if (qual.length >= 10) gateStatus = gate(model.fit(qual, opp), qual);
     }
     rows.push({ model: model.name, role: spec.role, evaluation: "in-sample", window: window.join("+"), metrics: inSample(winObs, model, spec, opts), gate: gateStatus });
     rows.push({ model: model.name, role: spec.role, evaluation: "cv", window: `${window.join("+")}, ${k}-fold`, metrics: crossValidate(winObs, model, spec, opts) });

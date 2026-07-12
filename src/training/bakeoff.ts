@@ -52,10 +52,15 @@ export function actualPitWoba(o: TrainObs): number {
 }
 
 // ── Model abstraction ──────────────────────────────────────────────────────────
+// `opp` = the COMPLEMENTARY role's qualifying observations from the same evaluation
+// context (same window; in CV, the same folds held out — fold keys are cid|side for
+// both roles, so a two-way card's rows travel together). The harness (evaluate.ts)
+// always passes it; only joint-fit models read it (the matchup-K hybrid fits ONE K
+// curve on BOTH roles' observations), every other model ignores the extra argument.
 export interface BakeoffModel {
   name: string;
   role: "hitter" | "pitcher";
-  fit(train: TrainObs[]): unknown;                 // opaque params
+  fit(train: TrainObs[], opp?: TrainObs[]): unknown;    // opaque params
   predict(params: unknown, test: TrainObs[]): number[]; // predicted wOBA per test obs
 }
 

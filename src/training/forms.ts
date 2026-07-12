@@ -121,14 +121,20 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   return { bb, k, hr, h, xbh };
 }
 
+// Predict-side assembly chain (BIP → H → XBH-split → wOBA) given the three fitted
+// count RATES — the ONE copy shared by the standard curve forms and the matchup-K
+// hybrid (which swaps only how the K rate is produced). Same operation order as the
+// pre-refactor inline chain, so predictions are bit-identical.
+function hitAssembly(bb: number, k: number, hr: number, h: FittedH, xbh: FittedEvent, babip: number, gap: number): number {
+  const bip = Math.max(600 - bb - k - hr - HIT_BIP_ADJ, 1);
+  const hn = hRate(h, babip, bip);
+  const x = Math.max(rate(xbh, gap) * hn, 0); // xbh curve gives the share of h
+  const oneB = Math.max(hn - x, 0);
+  return (W_BB * bb + W_BB * HBP + W_1B * oneB + W_XBH * x + W_HR * hr) / 600;
+}
 export function predictHitForm(m: FittedHit, o: TrainObs): number {
   const r = o.ratings.hit;
-  const bb = rate(m.bb, r.eye), k = rate(m.k, r.kRat), hr = rate(m.hr, r.pow);
-  const bip = Math.max(600 - bb - k - hr - HIT_BIP_ADJ, 1);
-  const h = hRate(m.h, r.babip, bip);
-  const xbh = Math.max(rate(m.xbh, r.gap) * h, 0); // xbh curve gives the share of h
-  const oneB = Math.max(h - xbh, 0);
-  return (W_BB * bb + W_BB * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600;
+  return hitAssembly(rate(m.bb, r.eye), rate(m.k, r.kRat), rate(m.hr, r.pow), m.h, m.xbh, r.babip, r.gap);
 }
 
 // ── Pitching form ──────────────────────────────────────────────────────────────
@@ -156,13 +162,16 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   return { bb, k, hr, h };
 }
 
-export function predictPitForm(m: FittedPit, o: TrainObs): number {
-  const r = o.ratings.pitch;
-  const bb = rateAux(m.bb, r.con, r.stu), k = rate(m.k, r.stu), hr = rateAux(m.hr, r.hrr, r.stu);
+// Pitching predict-side assembly — see hitAssembly (one copy, matchup-K reuses it).
+function pitAssembly(bb: number, k: number, hr: number, h: FittedH, pbabip: number): number {
   const bip = Math.max(600 - bb - k - hr - PIT_BIP_ADJ, 1);
-  const nHH = hRate(m.h, r.pbabip, bip);
+  const nHH = hRate(h, pbabip, bip);
   const xbh = nHH * 0.25, oneB = Math.max(nHH - xbh, 0);
   return (W_BB * bb + W_HBP * HBP + W_1B * oneB + W_XBH * xbh + W_HR * hr) / 600; // HBP included (matches scoring)
+}
+export function predictPitForm(m: FittedPit, o: TrainObs): number {
+  const r = o.ratings.pitch;
+  return pitAssembly(rateAux(m.bb, r.con, r.stu), rate(m.k, r.stu), rateAux(m.hr, r.hrr, r.stu), m.h, r.pbabip);
 }
 
 // ── Monotonicity + sane-extrapolation gate ─────────────────────────────────────
@@ -549,6 +558,119 @@ export const BIPLIN_PIT: PitForm = { ...LOG_PIT, name: "woba·biplin", hBip: LIN
 export const PERBIP_HIT: HitForm = { name: "woba·perbip", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: LOG, h: LOG, hBip: "unit" };
 export const PERBIP_PIT: PitForm = { name: "woba·perbip", bb: LOG, k: LOG, hr: LOG, h: LOG, hBip: "unit", stuffAug: true };
 
+// ── Matchup-K hybrid (candidate: woba·matchupK) ─────────────────────────────────
+// The deployed forms fit each role's K curve independently with "opponent = league
+// average" baked in; real-tournament validation (REBUILD_TOURNAMENT_MODEL_PLAN §10.3)
+// found the K channel under-separating (~55–70% of actual spread) on BOTH roles
+// off-frame while staying perfectly calibrated in-frame. The structural fix trialed
+// here: ONE shared curve f(x) on the MATCHUP difference x = stu − kRat, fit JOINTLY
+// on both roles' league observations —
+//   • a hitter obs contributes K/600 at x = μ_stu − kRat_i
+//   • a pitcher obs contributes K/600 at x = stu_j − μ_kRat
+// where μ_stu / μ_kRat are the exposure-weighted (BF / PA) league means of the
+// OPPOSING rating over the train obs, stored in the params as the model's reference
+// frame. League prediction plugs the stored μ back in (identical evaluation frame);
+// the payoff is OFF-FRAME, where a tournament pool's own opponent mean replaces μ.
+// This is the one candidate whose fit needs BOTH roles' observations — it consumes
+// the `opp` argument the harness passes to BakeoffModel.fit (see bakeoff.ts).
+// Curve family: rawpoly degree 2 in x (x spans negative values, so the z-scored
+// raw-poly basis + the standard monotone gate apply unchanged). Degree 1 (loses the
+// convexity, hit K Pearson 0.943 vs 0.955), degree 3 (no gain), and logistic-in-x
+// (grid over the asymptote; no gain, nonstandard primitive) were tried and rejected
+// on the league window.
+export interface FittedMatchupK { f: FittedEvent; muStu: number; muKRat: number }
+export const MATCHUP_K_CURVE: Curve = { kind: "rawpoly", degree: 2 };
+
+export function fitMatchupK(hitObs: TrainObs[], pitObs: TrainObs[], fitExp = 0.75): FittedMatchupK {
+  if (!hitObs.length || !pitObs.length) throw new Error("fitMatchupK needs BOTH roles' observations (the harness passes `opp` to BakeoffModel.fit)");
+  const wmean = (vals: number[], w: number[]) => vals.reduce((s, v, i) => s + v * w[i]!, 0) / w.reduce((s, v) => s + v, 0);
+  // Exposure-weighted league means of the opposing rating — the stored reference frame.
+  const muStu = wmean(pitObs.map((o) => o.ratings.pitch.stu), pitObs.map((o) => o.pitch.BF));
+  const muKRat = wmean(hitObs.map((o) => o.ratings.hit.kRat), hitObs.map((o) => o.hit.PA));
+  const xs: number[] = [], ys: number[] = [], ws: number[] = [];
+  for (const o of hitObs) { xs.push(muStu - o.ratings.hit.kRat); ys.push((o.hit.K / Math.max(o.hit.PA, 1)) * 600); ws.push(Math.pow(o.hit.PA, fitExp)); }
+  for (const o of pitObs) { xs.push(o.ratings.pitch.stu - muKRat); ys.push((o.pitch.K / Math.max(o.pitch.BF, 1)) * 600); ws.push(Math.pow(o.pitch.BF, fitExp)); }
+  return { f: fitEvent(MATCHUP_K_CURVE, xs, ys, ws), muStu, muKRat };
+}
+/** Hitter K/600 vs an opposing pool of mean Stuff `muStu` (default: the stored league frame). */
+export const matchupHitK = (mk: FittedMatchupK, kRat: number, muStu = mk.muStu) => rate(mk.f, muStu - kRat);
+/** Pitcher K/600 vs an opposing pool of mean AvoidK `muKRat` (default: the stored league frame). */
+export const matchupPitK = (mk: FittedMatchupK, stu: number, muKRat = mk.muKRat) => rate(mk.f, stu - muKRat);
+
+// Hybrid params: the deployed form's fitted events with the per-role K replaced by
+// the joint matchup fit. Deliberately NOT a FittedHit/FittedPit — mk.f is a curve
+// over x, not over the rating, and must never sit where rate(k, rating) is expected.
+export interface MatchupHitParams { bb: FittedEvent; hr: FittedEvent; h: FittedH; xbh: FittedEvent; mk: FittedMatchupK }
+export interface MatchupPitParams { bb: FittedEvent; hr: FittedEvent; h: FittedH; mk: FittedMatchupK }
+
+// Fit chains mirror fitHitForm(RAWPOLY_HIT) / fitPitForm(STUFFAUG_PIT) exactly, with
+// the K event swapped to the joint matchup fit (the BIP chain consumes the matchup K).
+export function fitHitMatchup(obs: TrainObs[], opp: TrainObs[], fitExp = 0.75): MatchupHitParams {
+  const mk = fitMatchupK(obs, opp, fitExp);
+  const w = obs.map((p) => Math.pow(p.hit.PA, fitExp));
+  const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.hit.PA, 1)) * 600);
+  const BB = per600((p) => Math.max(p.hit.BB - p.hit.IBB, 0)), HR = per600((p) => p.hit.HR); // uBB — see fitHitForm
+  const H = per600((p) => p.hit.H), XBH = per600((p) => p.hit.b2 + p.hit.b3);
+  const nonHRH = H.map((h, i) => h - HR[i]!);
+  const eye = obs.map((p) => p.ratings.hit.eye), pow = obs.map((p) => p.ratings.hit.pow);
+  const gap = obs.map((p) => p.ratings.hit.gap), babip = obs.map((p) => p.ratings.hit.babip);
+  const bb = fitEvent(RAWPOLY_HIT.bb, eye, BB, w);
+  const hr = fitEvent(RAWPOLY_HIT.hr, pow, HR, w);
+  const bip = obs.map((o, i) => Math.max(600 - rate(bb, eye[i]!) - matchupHitK(mk, o.ratings.hit.kRat) - rate(hr, pow[i]!) - HIT_BIP_ADJ, 1));
+  const h = fitH(babip, bip, nonHRH, w, RAWPOLY_HIT.h, RAWPOLY_HIT.hBip ?? LOG);
+  const hP = obs.map((_, i) => hRate(h, babip[i]!, bip[i]!));
+  const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
+  const xbh = fitEvent(RAWPOLY_HIT.xbh, gap, share, w);
+  return { bb, hr, h, xbh, mk };
+}
+export function fitPitMatchup(obs: TrainObs[], opp: TrainObs[], fitExp = 0.75): MatchupPitParams {
+  const mk = fitMatchupK(opp, obs, fitExp); // opp = hitters here
+  const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));
+  const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.pitch.BF, 1)) * 600);
+  const BB = per600((p) => Math.max(p.pitch.BB - p.pitch.IBB, 0)), HR = per600((p) => p.pitch.HR); // uBB
+  const nHH = per600((p) => p.pitch.b1 + p.pitch.b2 + p.pitch.b3);
+  const con = obs.map((p) => p.ratings.pitch.con), stu = obs.map((p) => p.ratings.pitch.stu);
+  const hrr = obs.map((p) => p.ratings.pitch.hrr), pbabip = obs.map((p) => p.ratings.pitch.pbabip);
+  const bb = fitEventAux(STUFFAUG_PIT.bb, con, stu, BB, w); // stuffAug — matches the deployed pit form
+  const hr = fitEventAux(STUFFAUG_PIT.hr, hrr, stu, HR, w);
+  const bip = obs.map((o, i) => Math.max(600 - rateAux(bb, con[i]!, stu[i]!) - matchupPitK(mk, o.ratings.pitch.stu) - rateAux(hr, hrr[i]!, stu[i]!) - PIT_BIP_ADJ, 1));
+  const h = fitH(pbabip, bip, nHH, w, STUFFAUG_PIT.h, STUFFAUG_PIT.hBip ?? LOG);
+  return { bb, hr, h, mk };
+}
+export function predictHitMatchup(m: MatchupHitParams, o: TrainObs): number {
+  const r = o.ratings.hit;
+  return hitAssembly(rate(m.bb, r.eye), matchupHitK(m.mk, r.kRat), rate(m.hr, r.pow), m.h, m.xbh, r.babip, r.gap);
+}
+export function predictPitMatchup(m: MatchupPitParams, o: TrainObs): number {
+  const r = o.ratings.pitch;
+  return pitAssembly(rateAux(m.bb, r.con, r.stu), matchupPitK(m.mk, r.stu), rateAux(m.hr, r.hrr, r.stu), m.h, r.pbabip);
+}
+
+// Matchup gates: standard event checks, with K's monotonicity sampled over the role's
+// own x-domain (x = μ − kRat is DECREASING in kRat, so "no reversal" is the right test
+// on both roles; chkEvent is direction-agnostic).
+export function gateMatchupHit(m: MatchupHitParams, obs: TrainObs[]): GateStatus {
+  const notes: string[] = [];
+  const chk = (name: string, e: FittedEvent, vals: number[]) => chkEvent(notes, name, e, vals);
+  chk("HR", m.hr, obs.map((o) => o.ratings.hit.pow));
+  chk("XBH", m.xbh, obs.map((o) => o.ratings.hit.gap));
+  chk("BB", m.bb, obs.map((o) => o.ratings.hit.eye));
+  chk("K", m.mk.f, obs.map((o) => m.mk.muStu - o.ratings.hit.kRat));
+  chkH(notes, m.h, obs.map((o) => o.ratings.hit.babip));
+  return { status: notes.some((n) => n.includes("non-monotone")) ? "warn" : "pass", notes };
+}
+export function gateMatchupPit(m: MatchupPitParams, obs: TrainObs[]): GateStatus {
+  const notes: string[] = [];
+  const chk = (name: string, e: FittedEvent, vals: number[]) => chkEvent(notes, name, e, vals);
+  chk("HR", m.hr, obs.map((o) => o.ratings.pitch.hrr));
+  chk("BB", m.bb, obs.map((o) => o.ratings.pitch.con));
+  chk("K", m.mk.f, obs.map((o) => o.ratings.pitch.stu - m.mk.muKRat));
+  chkH(notes, m.h, obs.map((o) => o.ratings.pitch.pbabip));
+  return { status: notes.some((n) => n.includes("non-monotone")) ? "warn" : "pass", notes };
+}
+const matchupHitModel: BakeoffModel = { name: "woba·matchupK", role: "hitter", fit: (t, opp = []) => fitHitMatchup(t, opp), predict: (p, test) => test.map((o) => predictHitMatchup(p as MatchupHitParams, o)) };
+const matchupPitModel: BakeoffModel = { name: "woba·matchupK", role: "pitcher", fit: (t, opp = []) => fitPitMatchup(t, opp), predict: (p, test) => test.map((o) => predictPitMatchup(p as MatchupPitParams, o)) };
+
 const hitEntry = (f: HitForm): BakeoffEntry => ({ model: hitFormModel(f), spec: HITTER, gate: (p, obs) => gateHit(p as FittedHit, obs) });
 const pitEntry = (f: PitForm): BakeoffEntry => ({ model: pitFormModel(f), spec: PITCHER, gate: (p, obs) => gatePit(p as FittedPit, obs) });
 
@@ -564,6 +686,10 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   hitEntry(HLIN_HIT), pitEntry(HLIN_PIT),
   hitEntry(BIPLIN_HIT), pitEntry(BIPLIN_PIT),   // BIP term linear vs log
   hitEntry(PERBIP_HIT), pitEntry(PERBIP_PIT),   // unit BIP elasticity (per-BIP rate)
+  // Matchup-K hybrid — ONE shared K curve f(stu − kRat) fit jointly on both roles
+  // (consumes the harness-passed `opp` obs); everything else = the deployed forms.
+  { model: matchupHitModel, spec: HITTER, gate: (p, obs) => gateMatchupHit(p as MatchupHitParams, obs) },
+  { model: matchupPitModel, spec: PITCHER, gate: (p, obs) => gateMatchupPit(p as MatchupPitParams, obs) },
   // #8 count GLMs — Poisson + negative-binomial, exposure offset, log link.
   { model: glmHitModel("woba·poisson", false), spec: HITTER, gate: (p, obs) => gateGLMHit(p as GLMHitParams, obs) },
   { model: glmPitModel("woba·poisson", false), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },
