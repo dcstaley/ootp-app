@@ -312,7 +312,28 @@ dead-ball XBH-share gap (0.227 vs 0.249) — a separate, smaller era_gap-channel
 rebuild era/role-aware. **10.7 Correction:** the earlier "Bronze biases ≈ 0" note was wrong (confounded
 run); raw Bronze biases are the largest measured.
 
-**Next:** (1) strong-pool (Diamond ≤100) data would confirm gaps→0 ⇒ corrections→0 (the frame story
-predicts it); (2) decide own-gap → opponent-gap production change (needs the channel map + envelope
-semantics); (3) attack the K-channel attribution with a tournament-informed refit or a stu/kRat slope
-recalibration; (4) re-check the 26-man top-26 impact once (2)+(3) land.
+**10.8 Frame correction v2 — the reference-basing discovery + K spread constant (2026-07-13,
+`tools/tournament-kslope.ts`).** Two results that complete the transform design:
+- **The reference frame was mis-based.** Gaps were computed vs the CATALOG TOP-50 field, but the
+  model's true frame is its TRAINING opposition (PA/BF-weighted league means). Measured diff
+  (ref − league): **hit.eye +16.0** (huge), hit.pow +7.7, pit.hrr +5.2, pit.stu +3.6, everything
+  else ≤1.5. This exactly explains the "unfixable" pitcher-BB flat offset: both tournaments
+  demanded a constant EXTRA CON shift of +16.4/+16.8 beyond the eye-channel opp-gap — i.e. λ→1
+  once the reference is the training mean. Hitter BB / K levels looked calibrated all along
+  because con/kRat/stu training means ≈ catalog-top-50 means. FIX: artifact stores per-channel
+  `trainingMeans` (like ratingEnvelope); the opp-gap shift becomes
+  `r + (μ_train_oppChannel − μ_pool_oppChannel)`, channel-crossed as in §10.2.
+- **K spread scaling is a CONSTANT ~1.75, not gap-proportional.** Fitted s* (WLS, post-shift):
+  EG·hit 1.75, BR·hit 1.72 (gaps 27 vs 47 — flat!), BR·pit 1.82; EG·pit 2.31 (outlier, dead-ball
+  era_k or the then-mis-based level). Constant-s cross-validates (fit BR→EG: 1.03/0.81; fit
+  EG→BR: 1.22/1.13 slope ratios from 0.46–0.60); linear-in-gap FAILS (overshoots to 2.05).
+  Mechanism: `K_corr = K̄_pool + s·(K_pred − K̄_pool)` per role, s→1 in-frame. The RAMP shape
+  (gap 0 → ~17) is unobservable with current data — the quicks ladder's gold/open points
+  resolve it; conservative form s = 1 + 0.75·clamp(gap/17, 0, 1). DEPLOYMENT GATED on quicks.
+
+**Next:** (1) implement frame-v2: `trainingMeans` on the artifact + training-mean-based opp-gap
+shift + K spread scaling behind a transform-mode setting, re-fit s* with the corrected reference
+(EG·pit 2.31 may normalize), validate levels+slopes on EG/Bronze; (2) quicks ladder when
+available: gold/open pin the s ramp, low tiers (iron/bronze) cover the below-support K range —
+deployment gate; (3) era_gap channel: run the era_h-style per-BIP/share semantics check (dead-ball
+XBH share 0.227 vs 0.249); (4) re-check top-26 impact once (1) lands.
