@@ -458,7 +458,7 @@ export function TournamentsPage() {
                       style={{ ...inputStyle, width: 62, padding: "3px 6px", fontSize: 13 }} />
                   </label>
                 ))}
-              </div>, "Multiplied onto the era factors (era × adjustment). Default HR 1.15, BB 0.85.")}
+              </div>, "Multiplied onto the era factors (era × adjustment). Off by default — pool-strength effects are handled by the pool transform; enable only for a deliberate environment tweak (starts at HR 1.15 / BB 0.85).")}
             </div>)}
 
             {/* Small sections, side by side to use width */}

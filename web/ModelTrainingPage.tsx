@@ -80,6 +80,10 @@ interface PlatoonExposure {
 interface TrainedModelSummary {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
   hasEventForm: boolean; platoon?: PlatoonExposure;
+  formatVersion?: number; // evaluation-semantics version at train time; absent ⇒ predates versioning (v1)
+  currentFormatVersion: number; // the server's live MODEL_FORMAT_VERSION
+  stale: boolean; // artifact predates current evaluation semantics — re-save to retrain
+  validation?: { errors: number; warnings: number; excluded: string[]; forced: boolean }; // dataset state at train time
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
@@ -766,7 +770,15 @@ export function ModelTrainingPage() {
                 <tbody>
                   {models.map((m) => (
                     <tr key={m.id}>
-                      <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{activeModelId === m.id && <span title="live scoring model (grid + optimizer)" style={{ color: "#22c55e", marginRight: 4 }}>●</span>}{m.name}{!m.includeVariants && <span style={{ color: C.sub, fontSize: 10 }}> · base</span>}</td>
+                      <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>
+                        {activeModelId === m.id && <span title="live scoring model (grid + optimizer)" style={{ color: "#22c55e", marginRight: 4 }}>●</span>}{m.name}{!m.includeVariants && <span style={{ color: C.sub, fontSize: 10 }}> · base</span>}
+                        {m.stale && <span title="Artifact predates current evaluation semantics (uBB targets / format v3) — re-save to retrain on current semantics" style={{ color: "#f59e0b", fontSize: 10, fontWeight: 600, marginLeft: 6, padding: "1px 5px", border: "1px solid #f59e0b", borderRadius: 4, whiteSpace: "nowrap" }}>v{m.formatVersion ?? 1} → v{m.currentFormatVersion}</span>}
+                        {m.validation && (m.validation.forced || m.validation.errors > 0
+                          ? <span title={`trained over ${m.validation.errors} dataset error(s)${m.validation.excluded.length ? ` — excluded: ${m.validation.excluded.join(", ")}` : ""}`} style={{ color: "#ef4444", fontSize: 10, fontWeight: 600, marginLeft: 6, padding: "1px 5px", border: "1px solid #ef4444", borderRadius: 4, whiteSpace: "nowrap" }}>⚠ forced</span>
+                          : m.validation.warnings > 0
+                            ? <span title={`${m.validation.warnings} dataset warning(s) at train time`} style={{ color: C.sub, fontSize: 10, marginLeft: 6, whiteSpace: "nowrap" }}>· {m.validation.warnings} warn</span>
+                            : null)}
+                      </td>
                       <td style={{ ...td, textAlign: "left", color: C.sub, fontSize: 12 }}>{m.datasetRoot}</td>
                       <td style={{ ...td, textAlign: "left" }}>{m.window.join("+")}</td>
                       <td style={{ ...td, color: C.sub }}>{m.minPA}</td>
@@ -822,6 +834,11 @@ export function ModelTrainingPage() {
               ? <span style={{ fontSize: 12, color: C.sub }}><b style={{ color: C.text }}>{activeModel.name}</b> · window {activeModel.window.join("+")} · min {activeModel.minPA} · {activeModel.includeVariants ? "variants" : "base"} — raw-poly hitting · log pitching</span>
               : <span style={{ fontSize: 12, color: "#eab308" }}>No model active — live scoring is the log-linear baseline. Click <b>Use</b> on a saved model above.</span>}
           </div>
+          {activeModel?.stale && (
+            <p style={{ margin: "0 0 8px", fontSize: 12, color: "#f59e0b" }}>
+              Active model is format v{activeModel.formatVersion ?? 1} (current v{activeModel.currentFormatVersion}) — re-save to retrain.
+            </p>
+          )}
           {activeModel && (activeSb?.scoreboard ? (() => {
             const rows = activeSb.scoreboard.rows.filter((r) => (r.role === "hitter" && r.model === DEPLOYED_HIT_MODEL) || (r.role === "pitcher" && r.model === DEPLOYED_PIT_MODEL));
             return rows.length
