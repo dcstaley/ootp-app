@@ -19,6 +19,13 @@ export interface Coeffs {
   // Era
   era_bb: number; era_k: number; era_avg: number; era_hr: number;
   era_bip: number; era_gap: number; era_thr: number;
+  // Per-BIP non-HR-hit era factor, computed from the era's rates block at resolve time
+  // (resolveCoeffs). When present it REPLACES the era_avg-derived era_h — era_avg is a
+  // per-PA ratio, but era_h multiplies a per-BIP quantity in the recompute, so deriving
+  // one from the other double-counts the era's K/BB-driven BIP expansion (the dead-ball
+  // 1B over-prediction; plan doc §10). Absent (captures, synthetic/neutral eras) ⇒ the
+  // legacy per-PA derivation applies unchanged.
+  era_h_bip?: number;
 
   // Soft caps (hitting)
   cap_k_top: number;     cap_k_bot: number;     pen_k: number;
@@ -70,8 +77,9 @@ export interface Coeffs {
   p_xbh_share: number; p_xbh_norm: number;
   p_leagueNorm_bb: number; p_leagueNorm_hr: number; p_leagueNorm_h: number;
 
-  // tolerate extra keys present in captures (position weights, etc.)
-  [key: string]: number | boolean;
+  // tolerate extra keys present in captures (position weights, etc.); undefined admits
+  // the optional resolver-attached fields (era_h_bip)
+  [key: string]: number | boolean | undefined;
 }
 
 // Pool-dependent calibration/anchor scales (from the old backend calcAnchorWoba,

@@ -295,8 +295,18 @@ dominate native everywhere. Ranking nuance: the own-gap MULTIPLICATIVE transform
 pitcher ranking (adds K-channel spread, masking 10.3); an additive opp-gap fix must land together with
 the K fix or pitcher ranking may regress even as levels improve.
 
-**10.5 Era-specific, separate:** EG 1B over-prediction (+16 hitters / +22 pitchers) is dead-ball-only
-(absent in Bronze) — the known era-1920 BIP/H extrapolation; unaffected by any frame correction.
+**10.5 Era-specific, separate — RESOLVED (2026-07-12, structural fix shipped):** EG 1B
+over-prediction (+16 hitters / +22 pitchers) was neither BIP extrapolation (falsified: the fitted
+H↔BIP elasticity ≈0.86/0.92 is genuinely identified; unit elasticity made it WORSE) nor pool
+strength (≤1.5/600). Root cause: **era-factor semantics mismatch** — `era_avg` is a PER-PA hits
+ratio but the derived `era_h` multiplies a PER-BIP quantity in the recompute (after BIP already
+expanded under era_bb/era_k/era_hr), double-counting the era's BIP expansion. Library-wide: error
+= the era's BIP ratio (dead-ball +18%; SIGN FLIPS for modern high-K eras, e.g. era-2019 ~−8% =
+hits under-predicted). Fix: `resolveCoeffs` computes `era_h_bip = ((h−hr)/bip)_era / ((h−hr)/bip)_2010`
+from the era's rates block; `computeDerived` prefers it (legacy per-PA path kept for rates-less
+capture/synthetic configs). Validated: EG 1B bias +15.7→−4.1 (hit) / +23.0→+2.9 (pit), XBH
+pitcher +11.4→+4.7; Bronze unchanged (reference era). Remaining EG XBH residual ≈+3 = the
+dead-ball XBH-share gap (0.227 vs 0.249) — a separate, smaller era_gap-channel item.
 **10.6 The blind HR 1.15/BB 0.85 default adjustment is mis-shaped:** measured biases are role-asymmetric
 (post-frame hitter BB ≈ 0; pitcher BB +4..+7) — a symmetric era-multiplier can't express that; retire or
 rebuild era/role-aware. **10.7 Correction:** the earlier "Bronze biases ≈ 0" note was wrong (confounded
