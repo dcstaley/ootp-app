@@ -24,6 +24,7 @@ import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
+import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
 import { HIT_BIP_ADJ, PIT_BIP_ADJ } from "../model/curves.ts";                    // BIP convention, for the trace
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
@@ -1268,7 +1269,11 @@ function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number
 // direction-aware monotone cap (T-5). On activation a model whose version predates this is
 // flagged (server log + a `stale` field the UI surfaces) so it can be retrained.
 //   v1 = pre-versioning (implicit)  ·  v2 = direction-aware monotone cap + fit-domain (T-5)
-const MODEL_FORMAT_VERSION = 2;
+//   v3 = unit-elasticity H↔BIP (perBip: H = perBIP(rating)×BIP; a fitted BIP coefficient
+//        was unidentified in league data and extrapolated badly in extreme eras) + uBB
+//        (BB−IBB) fit targets. v≤2 artifacts keep their fitted-BIP-term shape and
+//        evaluate exactly as before (hRate branches on the stored FittedH shape).
+const MODEL_FORMAT_VERSION = 3;
 
 interface TrainedModel {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
@@ -1639,6 +1644,20 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       tournament: t.name, n: topN, eligible: elig.length,
       pitVR: top("pitVR", true), pitVL: top("pitVL", true), hitVR: top("hitVR", false), hitVL: top("hitVL", false),
     });
+  }
+  // Cross-role consistency alarm: every PA has one hitter + one pitcher, so the two
+  // independently-fitted curve families must roughly agree on a closed pool's implied
+  // event totals. The signal is divergence GROWTH vs the full-catalog referenceEvents
+  // baseline (not exact equality — deployment weights differ); the per-channel frame
+  // gaps say how far out of the training frame the pool sits. See src/eval/consistency.ts.
+  if (method === "GET" && url === "/api/debug/consistency") {
+    const tid = u.searchParams.get("t") || DEFAULT_TOURNAMENT_ID;
+    const { t, s } = scoredFor(tid);
+    const ef = s.ctx.config.eventForm;
+    if (!ef) return json(res, { tournament: t.name, active: false, note: "no #2 model active — the consistency readout needs the event model" });
+    const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
+    const report = computeConsistency(basePool, catalog.cards.filter(isBaseCard), s.ctx.config.coeffs, makeRawPolyModel(ef), { fieldN: FIELD_N });
+    return json(res, { tournament: t.name, active: true, ...report });
   }
   if (method === "GET" && url === "/api/training/fit") {
     const minPA = Math.max(0, Number(u.searchParams.get("minPA") ?? 1000) || 1000);
