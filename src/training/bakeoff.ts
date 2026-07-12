@@ -31,7 +31,8 @@ export function predictHitWoba(c: WobaHittingCoeffs, o: TrainObs): number {
 export function actualHitWoba(o: TrainObs): number {
   const pa = Math.max(o.hit.PA, 1), s = 600 / pa;
   const hr = o.hit.HR * s, xbh = (o.hit.b2 + o.hit.b3) * s, oneB = (o.hit.H - o.hit.HR - o.hit.b2 - o.hit.b3) * s;
-  return (W_BB * o.hit.BB * s + W_BB * HBP + W_1B * Math.max(oneB, 0) + W_XBH * xbh + W_HR * hr) / 600;
+  const uBB = Math.max(o.hit.BB - o.hit.IBB, 0); // wOBA convention excludes IBB (models fit + predict uBB)
+  return (W_BB * uBB * s + W_BB * HBP + W_1B * Math.max(oneB, 0) + W_XBH * xbh + W_HR * hr) / 600;
 }
 
 export function predictPitWoba(c: WobaPitchingCoeffs, o: TrainObs): number {
@@ -46,7 +47,8 @@ export function predictPitWoba(c: WobaPitchingCoeffs, o: TrainObs): number {
 }
 export function actualPitWoba(o: TrainObs): number {
   const bf = Math.max(o.pitch.BF, 1), s = 600 / bf;
-  return (W_BB * o.pitch.BB * s + W_HBP * o.pitch.HP * s + W_1B * o.pitch.b1 * s + W_XBH * (o.pitch.b2 + o.pitch.b3) * s + W_HR * o.pitch.HR * s) / 600;
+  const uBB = Math.max(o.pitch.BB - o.pitch.IBB, 0); // wOBA convention excludes IBB (models fit + predict uBB)
+  return (W_BB * uBB * s + W_HBP * o.pitch.HP * s + W_1B * o.pitch.b1 * s + W_XBH * (o.pitch.b2 + o.pitch.b3) * s + W_HR * o.pitch.HR * s) / 600;
 }
 
 // ── Model abstraction ──────────────────────────────────────────────────────────

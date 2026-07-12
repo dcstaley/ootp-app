@@ -22,7 +22,7 @@ import { wls } from "./fit.ts";
 import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
 import { DEFAULT_WOBA_WEIGHTS } from "../scoring-core/woba-weights.ts";
 import {
-  ln1, dot, baseVal, row, rate, rateRaw, rateAux, capActive, hDesign, hRate, LOG, HIT_BIP_ADJ, PIT_BIP_ADJ,
+  ln1, dot, baseVal, row, rowTerms, rate, rateRaw, rateAux, capActive, hDesign, hRate, LOG, HIT_BIP_ADJ, PIT_BIP_ADJ,
   type Curve, type FittedEvent, type CurveFit, type FittedH, type FittedHit, type FittedPit,
 } from "../model/curves.ts";
 
@@ -68,24 +68,41 @@ function fitEventAux(curve: Curve, vals: number[], auxVals: number[], y: number[
   return { beta, mu, sd, curve, aux: { beta: auxBeta, mu: amu, sd: asd }, ...uDomain(curve, vals, mu, sd) };
 }
 
-// The H (non-HR hit) event has TWO inputs, each with its OWN curve: the BABIP/PBABIP
-// RATING and the derived BIP count (eval lives in curves.ts as hDesign/hRate). Both
-// default to log (parity); both configurable so neither is assumed.
-function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[], rCurve: Curve, bCurve: Curve): FittedH {
+// The H (non-HR hit) event has TWO inputs: the BABIP/PBABIP RATING and the derived
+// BIP count (eval lives in curves.ts as hRate — the ONE H↔BIP definition).
+// bCurve = "unit" (the DEFAULT) pins the BIP elasticity to 1: H = perBIP(rating) × BIP.
+// We fit the per-BIP rate y/BIP on the rating design with weights w·BIP², which is
+// algebraically the same WLS objective as fitting H itself: Σ w·(H − f(r)·BIP)² =
+// Σ (w·BIP²)·(H/BIP − f(r))². A fitted BIP coefficient (a Curve bCurve) is nearly
+// unidentified in league data (BIP barely varies across players) and extrapolates
+// badly when extreme eras move BIP ±18% — kept only for explicit bake-off forms.
+function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[], rCurve: Curve, bCurve: Curve | "unit"): FittedH {
   const rating = { curve: rCurve, ...curveNorm(rCurve, ratingVals, w) };
+  if (bCurve === "unit") {
+    const yb = y.map((v, i) => v / Math.max(bipVals[i]!, 1));
+    const wb = w.map((v, i) => v * bipVals[i]! ** 2);
+    const X = ratingVals.map((rv) => [1, ...rowTerms(rCurve, rv, rating.mu, rating.sd)]);
+    return { beta: wls(X, yb, wb), rating, perBip: true };
+  }
   const bip = { curve: bCurve, ...curveNorm(bCurve, bipVals, w) };
   return { beta: wls(ratingVals.map((rv, i) => hDesign(rating, rv, bip, bipVals[i]!)), y, w), rating, bip };
 }
 
 // ── Hitting form ───────────────────────────────────────────────────────────────
-// `h` is the curve on the BABIP rating in the non-HR-hit event (BIP term stays log).
+// `h` is the curve on the BABIP rating in the non-HR-hit event. `hBip` picks the H↔BIP
+// relation: absent ⇒ the fitted log-BIP term (the DEPLOYED shape — the fit finds elasticity
+// ≈0.86 hit / 0.92 pit, which real dead-ball tournament data validated over unit; see
+// PERBIP_* below); "unit" ⇒ H = perBIP(rating) × BIP, kept as a bake-off candidate.
 // The XBH curve fits the SHARE of (predicted) hits that go for extra bases.
-export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve }
+export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve | "unit" }
 
 export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): FittedHit {
   const w = obs.map((p) => Math.pow(p.hit.PA, fitExp));
   const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.hit.PA, 1)) * 600);
-  const BB = per600((p) => p.hit.BB), K = per600((p) => p.hit.K), HR = per600((p) => p.hit.HR);
+  // BB target = UNINTENTIONAL walks (BB − IBB): IBB is manager behavior, not talent —
+  // tiny in league data (~0.4/600) but 1.2–2.4/600 in tournaments. Predicted BB is uBB
+  // everywhere downstream (wOBA convention also excludes IBB).
+  const BB = per600((p) => Math.max(p.hit.BB - p.hit.IBB, 0)), K = per600((p) => p.hit.K), HR = per600((p) => p.hit.HR);
   const H = per600((p) => p.hit.H), XBH = per600((p) => p.hit.b2 + p.hit.b3);
   const nonHRH = H.map((h, i) => h - HR[i]!);
   const eye = obs.map((p) => p.ratings.hit.eye), kr = obs.map((p) => p.ratings.hit.kRat);
@@ -98,7 +115,7 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2).
   const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rate(k, kr[i]!) - rate(hr, pow[i]!) - HIT_BIP_ADJ, 1));
   const h = fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG);
-  const hP = obs.map((_, i) => Math.max(dot(h.beta, hDesign(h.rating, babip[i]!, h.bip, bip[i]!)), 0));
+  const hP = obs.map((_, i) => hRate(h, babip[i]!, bip[i]!));
   const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
   const xbh = fitEvent(form.xbh, gap, share, w);
   return { bb, k, hr, h, xbh };
@@ -115,15 +132,17 @@ export function predictHitForm(m: FittedHit, o: TrainObs): number {
 }
 
 // ── Pitching form ──────────────────────────────────────────────────────────────
-// `h` = curve on the PBABIP rating (BIP term log); XBH stays the fixed 0.25 share.
+// `h` = curve on the PBABIP rating (`hBip` as in HitForm: absent ⇒ fitted log-BIP
+// term, the deployed shape; "unit" ⇒ per-BIP candidate); XBH stays the fixed 0.25 share.
 // `stuffAug` adds a linear ln(Stuff) term to the BB and HR fits — high Stuff suppresses
 // walks/homers beyond Control/HRR (an outcome-measured channel the K route alone misses).
-export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve; hBip?: Curve; stuffAug?: boolean }
+export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve; hBip?: Curve | "unit"; stuffAug?: boolean }
 
 export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): FittedPit {
   const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));
   const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.pitch.BF, 1)) * 600);
-  const BB = per600((p) => p.pitch.BB), K = per600((p) => p.pitch.K), HR = per600((p) => p.pitch.HR);
+  // BB target = UNINTENTIONAL walks (BB − IBB) — see fitHitForm; predicted BB is uBB.
+  const BB = per600((p) => Math.max(p.pitch.BB - p.pitch.IBB, 0)), K = per600((p) => p.pitch.K), HR = per600((p) => p.pitch.HR);
   const nHH = per600((p) => p.pitch.b1 + p.pitch.b2 + p.pitch.b3);
   const con = obs.map((p) => p.ratings.pitch.con), stu = obs.map((p) => p.ratings.pitch.stu);
   const hrr = obs.map((p) => p.ratings.pitch.hrr), pbabip = obs.map((p) => p.ratings.pitch.pbabip);
@@ -196,10 +215,11 @@ export function gateHit(m: FittedHit, obs: TrainObs[]): GateStatus {
 // H monotonicity is in the BABIP rating; the BIP term is additive so any fixed BIP
 // works (450 ≈ a typical balls-in-play count).
 function chkH(notes: string[], h: FittedH, ratings: number[]) {
-  // monotonicity of each H input independently (the other is additive, so its value
-  // is irrelevant): the rating over its domain, and BIP over a typical 300–480 range.
+  // monotonicity of each H input independently (the other enters separably, so its
+  // value is irrelevant): the rating over its domain, and BIP over a typical 300–480
+  // range. Under perBip the BIP relation is H ∝ BIP — monotone by construction.
   if (h.rating.curve.kind !== "log") { const [lo, hi] = span(ratings); if (!monotoneSampled((v) => hRate(h, v, 450), lo, hi)) notes.push("H·rating non-monotone in-domain"); }
-  if (h.bip.curve.kind !== "log" && !monotoneSampled((v) => hRate(h, 100, v), 300, 480)) notes.push("H·BIP non-monotone in-domain");
+  if (h.bip && h.bip.curve.kind !== "log" && !monotoneSampled((v) => hRate(h, 100, v), 300, 480)) notes.push("H·BIP non-monotone in-domain");
 }
 export function gatePit(m: FittedPit, obs: TrainObs[]): GateStatus {
   const notes: string[] = [];
@@ -270,7 +290,7 @@ export function fitHitGLM(obs: TrainObs[], nb: boolean): GLMHitParams {
   const lne = obs.map((p) => ln1(p.ratings.hit.eye)), lnk = obs.map((p) => ln1(p.ratings.hit.kRat));
   const lnp = obs.map((p) => ln1(p.ratings.hit.pow)), lng = obs.map((p) => ln1(p.ratings.hit.gap));
   const lnb = obs.map((p) => ln1(p.ratings.hit.babip));
-  const bb = fitCount(obs.map((_, i) => [1, lne[i]!]), obs.map((p) => p.hit.BB), PA, nb);
+  const bb = fitCount(obs.map((_, i) => [1, lne[i]!]), obs.map((p) => Math.max(p.hit.BB - p.hit.IBB, 0)), PA, nb); // uBB (see fitHitForm)
   const k = fitCount(obs.map((_, i) => [1, lnk[i]!]), obs.map((p) => p.hit.K), PA, nb);
   const hr = fitCount(obs.map((_, i) => [1, lnp[i]!]), obs.map((p) => p.hit.HR), PA, nb);
   // training-consistent BIP from the predicted per-600 counts
@@ -294,7 +314,7 @@ export function fitPitGLM(obs: TrainObs[], nb: boolean): GLMPitParams {
   const BF = obs.map((p) => Math.max(p.pitch.BF, 1));
   const lnc = obs.map((p) => ln1(p.ratings.pitch.con)), lns = obs.map((p) => ln1(p.ratings.pitch.stu));
   const lnh = obs.map((p) => ln1(p.ratings.pitch.hrr)), lnpb = obs.map((p) => ln1(p.ratings.pitch.pbabip));
-  const bb = fitCount(obs.map((_, i) => [1, lnc[i]!]), obs.map((p) => p.pitch.BB), BF, nb);
+  const bb = fitCount(obs.map((_, i) => [1, lnc[i]!]), obs.map((p) => Math.max(p.pitch.BB - p.pitch.IBB, 0)), BF, nb); // uBB (see fitHitForm)
   const k = fitCount(obs.map((_, i) => [1, lns[i]!]), obs.map((p) => p.pitch.K), BF, nb);
   const hr = fitCount(obs.map((_, i) => [1, lnh[i]!]), obs.map((p) => p.pitch.HR), BF, nb);
   const bip = obs.map((_, i) => Math.max(600 - expRate(bb, [lnc[i]!]) - expRate(k, [lns[i]!]) - expRate(hr, [lnh[i]!]) - 6, 1));
@@ -370,14 +390,17 @@ function logitFit(rating: number[], y: number[], n: number[], iters = 60): numbe
 export interface SeqHitParams { bb: number[]; k: number[]; hr: number[]; h: number[]; xbh: number[] }
 export function fitHitSeq(obs: TrainObs[]): SeqHitParams {
   // Per-stage (successes y, trials n) from ACTUAL counts; clamp n ≥ y for the binomial.
+  // BB stage fits uBB (BB − IBB; IBB is manager behavior) — downstream denominators
+  // still remove TOTAL BB (an IBB'd PA isn't available to the later stages).
   const PA = obs.map((o) => o.hit.PA), BB = obs.map((o) => o.hit.BB), HP = obs.map((o) => o.hit.HP);
+  const uBB = obs.map((o) => Math.max(o.hit.BB - o.hit.IBB, 0));
   const K = obs.map((o) => o.hit.K), HR = obs.map((o) => o.hit.HR);
   const Hn = obs.map((o) => Math.max(o.hit.H - o.hit.HR, 0)), XBH = obs.map((o) => o.hit.b2 + o.hit.b3);
   const nK = obs.map((_, i) => Math.max(PA[i]! - BB[i]! - HP[i]!, K[i]!));
   const nHR = obs.map((_, i) => Math.max(nK[i]! - K[i]!, HR[i]!));
   const nH = obs.map((_, i) => Math.max(nHR[i]! - HR[i]!, Hn[i]!));
   return {
-    bb: logitFit(obs.map((o) => o.ratings.hit.eye), BB, PA),
+    bb: logitFit(obs.map((o) => o.ratings.hit.eye), uBB, PA),
     k: logitFit(obs.map((o) => o.ratings.hit.kRat), K, nK),
     hr: logitFit(obs.map((o) => o.ratings.hit.pow), HR, nHR),
     h: logitFit(obs.map((o) => o.ratings.hit.babip), Hn, nH),
@@ -397,13 +420,14 @@ export function predictHitSeq(m: SeqHitParams, o: TrainObs): number {
 export interface SeqPitParams { bb: number[]; k: number[]; hr: number[]; h: number[] }
 export function fitPitSeq(obs: TrainObs[]): SeqPitParams {
   const BF = obs.map((o) => o.pitch.BF), BB = obs.map((o) => o.pitch.BB), HP = obs.map((o) => o.pitch.HP);
+  const uBB = obs.map((o) => Math.max(o.pitch.BB - o.pitch.IBB, 0)); // uBB stage target (see fitHitSeq)
   const K = obs.map((o) => o.pitch.K), HR = obs.map((o) => o.pitch.HR);
   const Hn = obs.map((o) => o.pitch.b1 + o.pitch.b2 + o.pitch.b3);
   const nK = obs.map((_, i) => Math.max(BF[i]! - BB[i]! - HP[i]!, K[i]!));
   const nHR = obs.map((_, i) => Math.max(nK[i]! - K[i]!, HR[i]!));
   const nH = obs.map((_, i) => Math.max(nHR[i]! - HR[i]!, Hn[i]!));
   return {
-    bb: logitFit(obs.map((o) => o.ratings.pitch.con), BB, BF),
+    bb: logitFit(obs.map((o) => o.ratings.pitch.con), uBB, BF),
     k: logitFit(obs.map((o) => o.ratings.pitch.stu), K, nK),
     hr: logitFit(obs.map((o) => o.ratings.pitch.hrr), HR, nHR),
     h: logitFit(obs.map((o) => o.ratings.pitch.pbabip), Hn, nH),
@@ -476,13 +500,18 @@ export function pitFormModel(form: PitForm): BakeoffModel {
 }
 
 // All-log forms — identical to the parity woba models; used only by the regression test.
-export const LOG_HIT: HitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, xbh: LOG, h: LOG };
-export const LOG_PIT: PitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, h: LOG };
+// hBip is the EXPLICIT legacy log-BIP term (the parity design fitted a BIP coefficient).
+export const LOG_HIT: HitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, xbh: LOG, h: LOG, hBip: LOG };
+export const LOG_PIT: PitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, h: LOG, hBip: LOG };
 
 // Candidate #2 — targeted raw-polynomial (only the events the residuals implicate); H log.
 // XBH is LOG (not rawpoly-quad): the quad over-fit the concavity and turned over past gap ~165
 // (a higher rating predicting FEWER XBH — see the monotone gate); log is monotone-increasing
 // with diminishing returns and fits the pool identically (Δ Pearson ~1e-4). HR stays quad.
+// hBip omitted ⇒ fitted log-BIP term — the deployed shape. (Unit elasticity was tried
+// 2026-07-12 and REJECTED as the default: the fit's elasticity ≈0.86/0.92 is genuinely
+// identified, and pinning 1.0 made the Early Gold dead-ball 1B bias WORSE, +16→+21.
+// It survives as the PERBIP_* bake-off candidates below for the quicks-ladder round.)
 export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: LOG, h: LOG };
 export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, h: LOG };
 // DEPLOYED pitching form: log baseline + a linear Stuff term on BB and HR (fixes the
@@ -514,6 +543,11 @@ export const HLIN_PIT: PitForm = { name: "woba·rawpoly-hlin", bb: LOG, k: LOG, 
 // log. Isolate it on the clean log baseline — only the H BIP term changes.
 export const BIPLIN_HIT: HitForm = { ...LOG_HIT, name: "woba·biplin", hBip: LIN };
 export const BIPLIN_PIT: PitForm = { ...LOG_PIT, name: "woba·biplin", hBip: LIN };
+// Per-BIP unit elasticity (H = perBIP(rating) × BIP) on the deployed curve set — the
+// physically-motivated H↔BIP shape; judged against the fitted-elasticity default on
+// off-frame (tournament-ladder) data, where the two genuinely differ.
+export const PERBIP_HIT: HitForm = { name: "woba·perbip", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: LOG, h: LOG, hBip: "unit" };
+export const PERBIP_PIT: PitForm = { name: "woba·perbip", bb: LOG, k: LOG, hr: LOG, h: LOG, hBip: "unit", stuffAug: true };
 
 const hitEntry = (f: HitForm): BakeoffEntry => ({ model: hitFormModel(f), spec: HITTER, gate: (p, obs) => gateHit(p as FittedHit, obs) });
 const pitEntry = (f: PitForm): BakeoffEntry => ({ model: pitFormModel(f), spec: PITCHER, gate: (p, obs) => gatePit(p as FittedPit, obs) });
@@ -529,6 +563,7 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   hitEntry(QPOWLIN_HIT), pitEntry(QPOWLIN_PIT),
   hitEntry(HLIN_HIT), pitEntry(HLIN_PIT),
   hitEntry(BIPLIN_HIT), pitEntry(BIPLIN_PIT),   // BIP term linear vs log
+  hitEntry(PERBIP_HIT), pitEntry(PERBIP_PIT),   // unit BIP elasticity (per-BIP rate)
   // #8 count GLMs — Poisson + negative-binomial, exposure offset, log link.
   { model: glmHitModel("woba·poisson", false), spec: HITTER, gate: (p, obs) => gateGLMHit(p as GLMHitParams, obs) },
   { model: glmPitModel("woba·poisson", false), spec: PITCHER, gate: (p, obs) => gateGLMPit(p as GLMPitParams, obs) },

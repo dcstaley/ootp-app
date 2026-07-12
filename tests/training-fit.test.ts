@@ -1,27 +1,33 @@
-// M6 — parity test for the per-event model fit. The old app's `trained_models.json`
-// "37-38" woba_hitting model was fit on this same neutral-environment dataset
-// (minPA=1000); our port must reproduce its coefficients.
+// M6 — frozen-baseline regression test for the per-event model fit. Originally a
+// bit-level parity oracle vs the old app's `trained_models.json` "37-38" trainer
+// (raw-BB targets). Re-baselined 2026-07-12: the fit targets deliberately changed to
+// UNINTENTIONAL walks (uBB = BB − IBB; IBB is manager behavior, and the wOBA
+// convention excludes it), which moves every BB-dependent coefficient (bb, h via the
+// BIP chain, xbh via predicted hits, leagueNorm.bb). K/HR coefficients are untouched
+// and still match the old oracle exactly. Constants below = the uBB-target fit on the
+// frozen 37-38 fixture; the tolerance stays bit-tight (regression guard, not parity).
 
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import { loadWindow } from "../src/training/loader.ts";
 import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching } from "../src/training/fit.ts";
 
-// Parity uses the committed, frozen 37-38 oracle fixture (League Files is local +
-// gitignored, so it can't back a clone's parity run). Window-selection itself is
+// Baseline uses the committed, frozen 37-38 fixture (League Files is local +
+// gitignored, so it can't back a clone's run). Window-selection itself is
 // covered in training.test.ts against League Files.
 const DIR = "Model 2037 and 2038";
 const PARITY_WINDOW = [2037, 2038];
 
-// Oracle: trained_models.json "37-38" woba_hitting (C:\ootp_app\backend).
+// Frozen baseline: uBB-target fit on the 37-38 fixture (re-baselined 2026-07-12;
+// k/hr rows still equal the old-app oracle — their targets didn't change).
 const ORACLE = {
   rowCount: 159,
-  bb: { intercept: -160.27892235728777, eye: 45.13218230541101 },
+  bb: { intercept: -157.71109705982389, eye: 44.48744177361066 },
   k: { intercept: 546.4189751104443, k: -90.84705642616986 },
   hr: { intercept: -43.5802955986308, pow: 12.627006049066486 },
-  h: { intercept: -713.6094975843864, ba: 28.363820822264593, bipba: 116.84194132448617 },
-  xbh: { logA: -0.5429438609501159, logB: 0.17009373283502627 },
-  leagueNorm: { bb: 0.989556, k: 1.001195, hr: 0.982529, h: 0.996074, xbh: 0.997353 },
+  h: { intercept: -717.8178310493616, ba: 28.36948327989533, bipba: 117.51592980017583 },
+  xbh: { logA: -0.5429868572313908, logB: 0.17010272786293937 },
+  leagueNorm: { bb: 0.998143, k: 1.001195, hr: 0.982529, h: 0.996074, xbh: 0.997358 },
 };
 
 describe.skipIf(!existsSync(DIR))("trainWobaHitting — parity vs old trainer", () => {
@@ -73,14 +79,15 @@ describe.skipIf(!existsSync(DIR))("trainWobaHitting — parity vs old trainer", 
   });
 });
 
-// Oracle: "37-38" woba_pitching (minBF=1000).
+// Frozen baseline: "37-38" woba_pitching (minBF=1000), uBB targets (re-baselined
+// 2026-07-12 — see the hitting block; k/hr rows still equal the old-app oracle).
 const ORACLE_P = {
   rowCount: 129,
-  bb: { intercept: 262.7588424534687, con: -46.62850372855541 },
+  bb: { intercept: 257.27891957164525, con: -45.54095115380587 },
   k: { intercept: -138.5679986653758, stu: 53.983051661947705 },
   hr: { intercept: 84.68888507055685, hrr: -14.686153600012728 },
-  h: { intercept: -497.07228036869134, pbabip: -15.500531653947304, bip: 115.57741562275744 },
-  leagueNorm: { bb: 0.977922, k: 1.003271, hr: 0.988549, h: 0.986275, xbh: 0.984286 },
+  h: { intercept: -507.07598753634164, pbabip: -15.490489289609435, bip: 117.20701714439878 },
+  leagueNorm: { bb: 0.987854, k: 1.003271, hr: 0.988549, h: 0.986275, xbh: 0.984286 },
 };
 describe.skipIf(!existsSync(DIR))("trainWobaPitching — parity vs old trainer", () => {
   const { observations } = loadWindow(DIR, PARITY_WINDOW);
@@ -103,20 +110,21 @@ describe.skipIf(!existsSync(DIR))("trainWobaPitching — parity vs old trainer",
   });
 });
 
-// Oracle: "37-38" basic models (intercept clamped to 0). Jacobi solver → looser tol.
-describe.skipIf(!existsSync(DIR))("basic models — parity vs old trainer", () => {
+// Frozen baseline: "37-38" basic models (intercept clamped to 0), uBB wOBA targets
+// (re-baselined 2026-07-12). Jacobi solver → looser tol.
+describe.skipIf(!existsSync(DIR))("basic models — frozen baseline", () => {
   const { observations } = loadWindow(DIR, PARITY_WINDOW);
   const near = (a: number, b: number, tol = 1e-5) => expect(Math.abs(a - b)).toBeLessThan(tol);
   it("trainBasicHitting reproduces the weight coefficients", () => {
     const c = trainBasicHitting(observations, 1000).coefficients;
     expect(c.basic_intercept).toBe(0); // negative intercept clamped
-    near(c.w_babip, 13.109641222522812); near(c.w_pow, 12.468767521068079);
-    near(c.w_eye, 12.2203409552218); near(c.w_k, 14.8920049520125); near(c.w_gap, 5.390092995993487);
+    near(c.w_babip, 12.848505279548823); near(c.w_pow, 12.208653166962902);
+    near(c.w_eye, 11.956177511964409); near(c.w_k, 14.71439503416033); near(c.w_gap, 5.408583216678257);
   });
   it("trainBasicPitching reproduces the weight coefficients", () => {
     const c = trainBasicPitching(observations, 1000).coefficients;
     expect(c.basic_intercept).toBe(0);
-    near(c.p_stuff, 14.23917960232144); near(c.p_control, 14.816672536446086);
-    near(c.p_babip, 8.075912036489093); near(c.p_hr, 15.933055873479155);
+    near(c.p_stuff, 14.374214772101634); near(c.p_control, 14.461315957038016);
+    near(c.p_babip, 8.005938437952791); near(c.p_hr, 16.035162541116666);
   });
 });

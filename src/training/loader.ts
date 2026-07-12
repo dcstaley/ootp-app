@@ -196,7 +196,9 @@ function aggregate(found: FoundFile[], root: string, window: number[] | null): L
       fpa += h.PA;
       // wRAA ≈ (1/scale)·Σ(w_e·event) − (lg/scale)·PA — exactly linear in events + PA
       // with NO intercept, so a no-intercept regression recovers the game's weights.
-      if (h.PA >= 50) { wbX.push([h.BB, h.HP, h.b1, h.b2, h.b3, h.HR, h.PA]); wbY.push(num(r["wRAA"])); n2tot += h.b2; n3tot += h.b3; }
+      // BB column = uBB (BB − IBB): the wOBA/wRAA convention excludes intentional walks,
+      // so regressing on raw BB would mis-attribute the IBB share to the BB weight.
+      if (h.PA >= 50) { wbX.push([Math.max(h.BB - h.IBB, 0), h.HP, h.b1, h.b2, h.b3, h.HR, h.PA]); wbY.push(num(r["wRAA"])); n2tot += h.b2; n3tot += h.b3; }
       // Role-conditional split: classify THIS deployment by its own start-share and
       // add its per-side BF. thr 1=R/2=L only (no switch pitchers); g>0 guards rookies.
       if (p.BF > 0) {

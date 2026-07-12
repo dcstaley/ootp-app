@@ -31,7 +31,7 @@ export function makeRawPolyModel(form: EventForm): EventModel {
     // BIP chain mirrors forms.ts predictHitForm exactly (shared HIT_BIP_ADJ).
     const BIP = Math.max(600 - BB - SO - HR - HIT_BIP_ADJ, 1);
     const AB = Math.max(600 - BB - 4 - 3 - 6, 1); // for completeness (unused downstream)
-    const H = hRate(hit.h, r.babip, BIP);    // non-HR hit rate (log H + log BIP term)
+    const H = hRate(hit.h, r.babip, BIP);    // non-HR hits: perBIP(babip)×BIP (legacy artifacts: fitted BIP term)
     const share = rate(hit.xbh, r.gap);      // quadratic XBH-share in raw GAP
     const GAP = Math.max(share * H, 0);
     const oneB = Math.max(H - GAP, 0);

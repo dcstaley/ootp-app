@@ -101,14 +101,31 @@ export const rateAux = (e: FittedEvent, v: number, auxV: number) => {
   return Math.max(base + a, 0);
 };
 
-// The H (non-HR hit) event has TWO inputs, each with its OWN curve: the BABIP/PBABIP
-// RATING and the derived BIP count. Design = [1, <rating basis>, <bip basis>] (shared
-// intercept). Both default to log (parity); both configurable so neither is assumed.
+// The H (non-HR hit) event has TWO inputs: the BABIP/PBABIP RATING and the derived
+// BIP count. TWO shapes exist:
+//   • perBip (CURRENT, unit BIP elasticity): H = perBIP_rate(rating) × BIP. The BIP
+//     relation is PINNED to proportionality — in league training BIP barely varies
+//     across players, so a FITTED BIP coefficient is nearly unidentified in-frame and
+//     extrapolates arbitrarily when extreme eras move BIP ~18% (the dead-ball +16/600
+//     1B over-prediction). `beta` spans the RATING design only: [1, <rating basis>].
+//   • legacy (persisted artifacts, formatVersion ≤ 2): the BIP count enters the design
+//     as its OWN fitted curve — beta over [1, <rating basis>, <bip basis>]. Kept
+//     evaluating EXACTLY as fitted so already-deployed artifacts score unchanged.
+// This is the ONE definition of the H↔BIP relation — training (forms.ts), the deployed
+// model (raw-poly.ts), and the scoring-core recompute (woba.ts) all evaluate via hRate.
 export interface CurveFit { curve: Curve; mu: number; sd: number }
-export interface FittedH { beta: number[]; rating: CurveFit; bip: CurveFit }
+export interface FittedH {
+  beta: number[];
+  rating: CurveFit;
+  bip?: CurveFit;   // legacy shape only (fitted BIP curve); absent under perBip
+  perBip?: boolean; // true ⇒ unit-elasticity shape (beta is the per-BIP rate curve)
+}
 export const rowTerms = (c: Curve, v: number, mu: number, sd: number) => row(c, v, mu, sd).slice(1); // basis minus the shared intercept
 export const hDesign = (r: CurveFit, rv: number, b: CurveFit, bv: number) => [1, ...rowTerms(r.curve, rv, r.mu, r.sd), ...rowTerms(b.curve, bv, b.mu, b.sd)];
-export const hRate = (m: FittedH, rv: number, bv: number) => Math.max(dot(m.beta, hDesign(m.rating, rv, m.bip, bv)), 0);
+export const hRate = (m: FittedH, rv: number, bv: number) =>
+  m.perBip
+    ? Math.max(dot(m.beta, [1, ...rowTerms(m.rating.curve, rv, m.rating.mu, m.rating.sd)]), 0) * bv
+    : Math.max(dot(m.beta, hDesign(m.rating, rv, m.bip!, bv)), 0);
 
 // ── Fitted #2 (raw-poly) parameter sets — one per-event Curve fit each ──────────
 // Produced by fitHitForm/fitPitForm (src/training/forms.ts) and consumed at predict

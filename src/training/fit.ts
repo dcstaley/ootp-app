@@ -180,7 +180,7 @@ export function trainWobaHitting(obs: TrainObs[], minPA = 1000): WobaHittingFit 
   const weights = players.map((p) => Math.pow(p.hit.PA, 0.75));
   const per600 = (f: (o: TrainObs) => number) => players.map((p) => f(p) / p.hit.PA * 600);
 
-  const BB = per600((p) => p.hit.BB);
+  const BB = per600((p) => Math.max(p.hit.BB - p.hit.IBB, 0)); // uBB: IBB is manager behavior, not talent (matches forms.ts)
   const K = per600((p) => p.hit.K);
   const HR = per600((p) => p.hit.HR);
   const H = per600((p) => p.hit.H);
@@ -271,7 +271,7 @@ export function trainWobaPitching(obs: TrainObs[], minBF = 1000): WobaPitchingFi
   const weights = players.map((p) => Math.pow(p.pitch.BF, 0.75));
   const per600 = (f: (o: TrainObs) => number) => players.map((p) => f(p) / p.pitch.BF * 600);
 
-  const BB = per600((p) => p.pitch.BB);
+  const BB = per600((p) => Math.max(p.pitch.BB - p.pitch.IBB, 0)); // uBB (see trainWobaHitting)
   const K = per600((p) => p.pitch.K);
   const HR = per600((p) => p.pitch.HR);
   const nHH = per600((p) => p.pitch.b1 + p.pitch.b2 + p.pitch.b3);
@@ -342,7 +342,8 @@ export function trainBasicHitting(obs: TrainObs[], minPA = 1000, clampIntercept 
   // Y: actual wOBA × 333 (per PA, matching the basic-hitting score scale).
   const y = players.map((p) => {
     const b1 = Math.max(p.hit.H - p.hit.HR - p.hit.b2 - p.hit.b3, 0);
-    return (WW.bb * p.hit.BB + WW.b1 * b1 + WW.xbh * (p.hit.b2 + p.hit.b3) + WW.hr * p.hit.HR) / Math.max(p.hit.PA, 1) * 333;
+    const uBB = Math.max(p.hit.BB - p.hit.IBB, 0); // wOBA convention excludes IBB
+    return (WW.bb * uBB + WW.b1 * b1 + WW.xbh * (p.hit.b2 + p.hit.b3) + WW.hr * p.hit.HR) / Math.max(p.hit.PA, 1) * 333;
   });
   const r = players.map((p) => p.ratings.hit);
   const X = players.map((_, i) => [1, ln1(r[i]!.babip), ln1(r[i]!.pow), ln1(r[i]!.eye), ln1(r[i]!.kRat), ln1(r[i]!.gap)]);
@@ -367,7 +368,8 @@ export function trainBasicPitching(obs: TrainObs[], minBF = 1000, clampIntercept
   // Y: (0.64 − wOBA allowed) × 333 — higher = better pitcher.
   const y = players.map((p) => {
     const xbh = p.pitch.b2 + p.pitch.b3;
-    const wobaAllowed = (WW.bb * p.pitch.BB + WW.b1 * p.pitch.b1 + WW.xbh * xbh + WW.hr * p.pitch.HR) / Math.max(p.pitch.BF, 1);
+    const uBB = Math.max(p.pitch.BB - p.pitch.IBB, 0); // wOBA convention excludes IBB
+    const wobaAllowed = (WW.bb * uBB + WW.b1 * p.pitch.b1 + WW.xbh * xbh + WW.hr * p.pitch.HR) / Math.max(p.pitch.BF, 1);
     return (0.64 - wobaAllowed) * 333;
   });
   const r = players.map((p) => p.ratings.pitch);
