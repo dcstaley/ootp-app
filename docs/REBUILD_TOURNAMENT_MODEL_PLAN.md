@@ -252,3 +252,57 @@ factor must cancel for native use, so any gap is pure pipeline residual (no tour
 - **How to set/calibrate `ρ` per format.** Fixed per tournament type from field norms, calibrated from the
   §3 aggregate inversion once enough tournaments accrue, or a hybrid (prior = format default, updated as
   data arrives). Decide the resolution order and where the value lives in the tournament config.
+
+---
+
+## 10. Findings from real tournament data (2026-07-12) — the opponent-frame result
+
+Validation against Early Gold (era-1920, ≤89, 7 runnings, ~280k PA) and Return of the Bronze
+(era-2010, ≤69, 3 runnings), tools: `tournament-ptdiag.ts` / `tournament-cv.ts` / `tournament-role-k.ts` /
+`league-bias-scan.ts`. All at ≥500 PA/BF, PA-weighted.
+
+**10.1 The model is calibrated in its own frame.** On league holdout (2040+41, neutral env), per-event
+level bias by rating quintile is ≤±3/600 everywhere (K-by-STU, BB-by-CON both flat). Tournament pool
+ratings sit INSIDE the league's individual-rating range (league STU 50–187) — the old "own-rating
+extrapolation" theory is dead. The cdmx catalog reference is fine (294 cards value-90s + 158 at 100+).
+
+**10.2 Tournament bias is an OPPONENT-frame effect.** The curves predict a card's line **vs
+league-average opposition**; in a weak pool everyone faces weak opposition. The correct first-order
+re-basing is to shift each rating **additively by the OPPOSING channel's mean gap** (ref − pool), crossing
+the matchup channels: `H.eye↔P.con` (BB), `H.kRat↔P.stu` (K), `H.pow↔P.hrr` (HR), `H.babip/gap↔P.pbabip`
+(BIP). Tested on both tournaments, this collapses level bias: hitter events within ±4/600 in BOTH eras
+(hitter K in Bronze: +37 raw → −3.6), pitcher BB +25→+7 (Bronze) / +10→+4 (EG). It also made all four
+prior residual patterns quantitatively predictable in sign/size from the channel-gap asymmetries.
+The production own-gap faded mean-scalar is directionally right (halves the bias — gaps are roughly
+symmetric within a pool) but conceptually wrong: it lifts a rating by its OWN pool's gap where the
+opponent's gap is what matters, and the two diverge in asymmetric pools (Bronze pitcher STU gap 47 vs
+hitter kRat gap 19 → the big misses).
+
+**10.3 The one surviving model defect: the K channel under-separates, both roles.** After frame
+correction, predicted K spread by the K-channel rating is ~55–70 % of actual — in BOTH tournaments, BOTH
+roles (pitcher K-by-STU AND hitter K-by-kRat), and WITHIN role (SP-only / RP-only splits reproduce it →
+not a times-through-order mix artifact). League data faintly flags the same channels (AvoidK→K +1.11,
+STU→K −0.68 residual-slope pts/SD — the two largest). Interpretation: in-frame calibration masks
+attribution error via rating collinearity; out-of-frame pools expose it. This IS the long-open
+"Stuff-residual" (over-rates low-Stuff/high-Control pitchers ⇔ under-separates K). It is a LEAGUE-model
+defect visible in tournaments, not a tournament effect.
+
+**10.4 Do we need native tournament models? No.** 5-fold-CV native fits win only with volume (EG
+pitchers, 7 runnings: wOBA Pearson 0.67 vs league 0.57 — it learns the steeper K slope) and lose badly
+thin (Bronze pitchers: 0.38 vs league 0.57). League + opp-gap frame beats native for EG hitters (0.86 vs
+0.80). A league model with (a) opponent-gap frame correction and (b) a K-channel separation fix should
+dominate native everywhere. Ranking nuance: the own-gap MULTIPLICATIVE transform accidentally helps
+pitcher ranking (adds K-channel spread, masking 10.3); an additive opp-gap fix must land together with
+the K fix or pitcher ranking may regress even as levels improve.
+
+**10.5 Era-specific, separate:** EG 1B over-prediction (+16 hitters / +22 pitchers) is dead-ball-only
+(absent in Bronze) — the known era-1920 BIP/H extrapolation; unaffected by any frame correction.
+**10.6 The blind HR 1.15/BB 0.85 default adjustment is mis-shaped:** measured biases are role-asymmetric
+(post-frame hitter BB ≈ 0; pitcher BB +4..+7) — a symmetric era-multiplier can't express that; retire or
+rebuild era/role-aware. **10.7 Correction:** the earlier "Bronze biases ≈ 0" note was wrong (confounded
+run); raw Bronze biases are the largest measured.
+
+**Next:** (1) strong-pool (Diamond ≤100) data would confirm gaps→0 ⇒ corrections→0 (the frame story
+predicts it); (2) decide own-gap → opponent-gap production change (needs the channel map + envelope
+semantics); (3) attack the K-channel attribution with a tournament-informed refit or a stu/kRat slope
+recalibration; (4) re-check the 26-man top-26 impact once (2)+(3) land.
