@@ -14,7 +14,7 @@
 import type { Coeffs, Derived, CalScales, KSpread } from "../config/types.ts";
 import type { EventModel, RawHitting, RawPitching } from "../model/types.ts";
 import type { EventForm } from "../model/curves.ts";
-import { applyAffine, applyFrameShift, type PoolTransform, type FrameShift } from "../model/pool-transform.ts";
+import { applyAffine, applyFrameShift, applyKSpread, type PoolTransform, type FrameShift } from "../model/pool-transform.ts";
 import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
 import { scoreCard } from "./score-card.ts";
@@ -45,7 +45,7 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       { eye: applyFrameShift(applyAffine(n(card[`Eye ${side}`]), t?.eye), f?.eye), pow: applyFrameShift(applyAffine(n(card[`Power ${side}`]), t?.pow), f?.pow), kRat: applyFrameShift(applyAffine(n(card[`Avoid K ${side}`]), t?.kRat), f?.kRat), babip: applyFrameShift(applyAffine(n(card[`BABIP ${side}`]), t?.babip), f?.babip), gap: applyFrameShift(applyAffine(n(card[`Gap ${side}`]), t?.gap), f?.gap), speed, steal, run },
       coeffs,
     );
-    if (ks) e.SO = Math.max(0, ks.meanHit + ks.sHit * (e.SO - ks.meanHit));
+    if (ks) e.SO = applyKSpread(e.SO, ks.meanHit, ks.sHit);
     return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, noSsp ? 1 : coeffs.ssp_adv_hitting), speed, steal, run, coeffs) };
   };
   const pit = (side: "vR" | "vL") => {
@@ -54,7 +54,7 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       { con: applyFrameShift(applyAffine(n(card[`Control ${side}`]), tp?.con), fp?.con), stu: applyFrameShift(applyAffine(n(card[`Stuff ${side}`]), tp?.stu), fp?.stu), pbabip: applyFrameShift(applyAffine(n(card[`pBABIP ${side}`]), tp?.pbabip), fp?.pbabip), hrr: applyFrameShift(applyAffine(n(card[`pHR ${side}`]), tp?.hrr), fp?.hrr) },
       coeffs,
     );
-    if (ks) e.K = Math.max(0, ks.meanPit + ks.sPit * (e.K - ks.meanPit));
+    if (ks) e.K = applyKSpread(e.K, ks.meanPit, ks.sPit);
     return { e, woba: assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, noSsp ? 1 : coeffs.ssp_basic_pitching), coeffs) };
   };
   return { bats, thr, hVR: hit("vR"), hVL: hit("vL"), pVR: pit("vR"), pVL: pit("vL") };

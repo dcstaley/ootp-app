@@ -7,7 +7,7 @@ import type { ScoringConfig, Side } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
-import { applyAffine, applyFrameShift } from "../model/pool-transform.ts";
+import { applyAffine, applyFrameShift, applyKSpread } from "../model/pool-transform.ts";
 import {
   n, cp, parkAvgFactor, parkHrFactor, sameSidePenaltyHitting, sameSidePenaltyPitching,
 } from "./helpers.ts";
@@ -68,7 +68,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     // K spread scaling (frame-v2): rescale raw predicted K about the pool mean BEFORE the BIP
     // chain, so BIP = 600 − BB − K_scaled − HR − adj (woba.ts) recomputes hits consistently.
     // Pre-era by construction (era_k applies later, once) — see §10.8d.
-    if (kSpread) e.SO = Math.max(0, kSpread.meanHit + kSpread.sHit * (e.SO - kSpread.meanHit));
+    if (kSpread) e.SO = applyKSpread(e.SO, kSpread.meanHit, kSpread.sHit);
 
     // Matchup: the event model got OWN ratings (it shifts internally), but the rating-DIRECT
     // basic metric must see the SAME effective coordinate → shift here from matchup.shift. Absent
@@ -116,7 +116,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
       hrr: applyFrameShift(applyAffine(n(card[`pHR ${side}`]), tp?.hrr), fp?.hrr),
     };
     const e = evModel.predictPitching(ratings, coeffs);
-    if (kSpread) e.K = Math.max(0, kSpread.meanPit + kSpread.sPit * (e.K - kSpread.meanPit)); // §10.8d
+    if (kSpread) e.K = applyKSpread(e.K, kSpread.meanPit, kSpread.sPit); // §10.8d
 
     // Matchup: basic reads the effective coordinate (see the hitting note). Absent ⇒ bRp === ratings.
     const mp = matchup?.shift.pit[side];

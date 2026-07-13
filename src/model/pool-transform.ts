@@ -111,6 +111,15 @@ export interface FrameShift {
  *  Absent delta ⇒ identity (parity: an unshifted / in-frame channel is untouched). */
 export const applyFrameShift = (r: number, d: number | undefined) => (d ? Math.max(0, r + d) : r);
 
+/**
+ * K-spread rescale about the pool mean (frame-v2, §10.8d): the ONE copy of the transform
+ * `K_corr = max(0, mean + s·(K − mean))`. Applied to raw predicted K (hitting `SO` / pitching `K`)
+ * BEFORE the BIP chain so `era_k` applies once. Scalar (no KSpread type import — config/types.ts
+ * imports FROM this module, so the coupling can only go one way).
+ */
+export const applyKSpread = (k: number, mean: number, s: number): number =>
+  Math.max(0, mean + s * (k - mean));
+
 // The full transform: a per-rating map for each role × platoon side. Absent entries fall
 // back to identity (applyAffine with undefined → raw r), so a partial transform is safe.
 export interface PoolTransform {

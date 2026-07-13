@@ -77,12 +77,11 @@ describe.skipIf(!TDIR || !existsSync(TRAIN))("evaluateTournamentLevels — poole
     };
     const coeffs = neutralCoeffs();
     computeDerived(coeffs); // sanity: derivation runs on these coeffs
-    const evModel = makeRawPolyModel(form);
     const exposure = tournamentExposure(obs);
     expect(exposure.wRhit).toBeGreaterThan(0);
     expect(exposure.wRhit).toBeLessThanOrEqual(1);
 
-    const table = evaluateTournamentLevels(obs, evModel, coeffs, exposure);
+    const table = evaluateTournamentLevels(obs, { coeffs, eventForm: form }, exposure);
     expect(table.hit.map((r) => r.event)).toEqual(["uBB", "K", "HR", "H-HR"]);
     expect(table.pit.map((r) => r.event)).toEqual(["uBB", "K", "HR", "H-HR"]);
     for (const r of [...table.hit, ...table.pit]) {

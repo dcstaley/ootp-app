@@ -1763,7 +1763,6 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const minBF = Number(u.searchParams.get("minBF") ?? 100) || 100;
     const { t, s } = scoredFor(tid);
     const ef = s.ctx.config.eventForm;
-    const evModel: EventModel = ef ? makeRawPolyModel(ef) : logLinearModel;
     // AUTO-CLEANING ON INGEST (roadmap Batch 1.3): run the PA−BF ledger + per-org asymmetry
     // diagnostic on EVERY running, clean when it fires, and record a per-running status. The
     // cleaner is wired via DI (imported from ../eval/tournament-clean.ts) so the loader stays
@@ -1784,7 +1783,13 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     };
     const obs = loadTournamentOutcomes(fullDir, { clean });
     const exposure = tournamentExposure(obs);
-    const levels = evaluateTournamentLevels(obs, evModel, s.ctx.config.coeffs, exposure, { minPA, minBF });
+    // Evaluate against the SAME scoring config the app uses for this tournament (honors the active
+    // transformMode + runs the real BIP recompute — not a frozen-BIP shortcut). See evaluateTournamentLevels.
+    const cfg = s.ctx.config;
+    const levels = evaluateTournamentLevels(obs, {
+      coeffs: cfg.coeffs, eventForm: cfg.eventForm,
+      poolTransform: cfg.poolTransform, frameShift: cfg.frameShift, kSpread: cfg.kSpread, matchup: cfg.matchup,
+    }, exposure, { minPA, minBF });
     // Aggregate per-dataset status: unreliable if ANY running fails to reconcile; cleaned if any
     // was cleaned; else clean.
     const datasetStatus = runnings.some((r) => r.status === "unreliable")

@@ -11,8 +11,8 @@
 import type { Coeffs } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import {
-  ratingStats, buildAffines, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform, type RatingEnvelope,
-  type TrainingMeans, type FrameShift,
+  ratingStats, buildAffines, applyFrameShift, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform,
+  type RatingEnvelope, type TrainingMeans, type FrameShift,
 } from "../model/pool-transform.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba } from "./woba.ts";
@@ -139,7 +139,7 @@ export function buildFrameShift(train: TrainingMeans, pool: FieldStats): FrameSh
  *  each per-side cohort; pitchers on the combined-wOBA top-N, both sides pooled. Predictions
  *  use the shift so K̄ and the per-card K live in the same shifted frame (plan §10.8d). */
 export function poolMeanK(cards: any[], coeffs: Coeffs, model: EventModel, fs: FrameShift, topN: number): { hit: number; pit: number } {
-  const sh = (v: number, d: number | undefined) => (d ? Math.max(0, v + d) : v);
+  const sh = applyFrameShift; // §10.8d frame shift — the one copy lives in pool-transform.ts
   const recs = cards.map((c) => {
     const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
     const hitK = (side: "vR" | "vL") => {

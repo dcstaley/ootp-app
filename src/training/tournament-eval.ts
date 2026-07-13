@@ -22,7 +22,12 @@ import Papa from "papaparse";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { computeDerived } from "../scoring-core/index.ts";
-import type { Coeffs } from "../config/types.ts";
+import { hittingComponents, pitchingComponents } from "../scoring-core/woba.ts";
+import { makeRawPolyModel } from "../model/raw-poly.ts";
+import { logLinearModel } from "../model/log-linear.ts";
+import { applyAffine, applyFrameShift, applyKSpread, type PoolTransform, type FrameShift } from "../model/pool-transform.ts";
+import type { EventForm } from "../model/curves.ts";
+import type { Coeffs, KSpread } from "../config/types.ts";
 import type { EventModel, HittingRatings, PitchingRatings } from "../model/types.ts";
 
 const num = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
@@ -163,49 +168,88 @@ export interface TournamentLevelTable { hit: LevelBias[]; pit: LevelBias[] }
 export interface EvaluateOpts { minPA?: number; minBF?: number }
 
 /**
- * Pooled predicted-vs-actual per-600 level-bias table. Predictions come STRAIGHT from the
- * scoring core (evModel.predictHitting / predictPitching + the coeffs' era factors) — this
- * function writes NO event math of its own (one-core rule). vR/vL predictions are blended by
- * the realized exposure weights, exactly as tools/quicks-levelbias.ts does.
+ * The scoring config the level table evaluates against — the SAME objects the server threads into
+ * scoreCard/calibrate for this tournament, so the eval reflects EXACTLY how the app scores it. When
+ * only `coeffs` (+ optional `eventForm`) is supplied, it evaluates the raw base model (own-gap with
+ * no transform), matching the historical behavior.
+ */
+export interface TournamentEvalConfig {
+  coeffs: Coeffs;
+  eventForm?: EventForm;
+  poolTransform?: PoolTransform;   // own-gap
+  frameShift?: FrameShift;         // frame-v2
+  kSpread?: KSpread;               // frame-v2 / matchup K-spread
+  matchup?: { model: EventModel; shift: FrameShift }; // matchup mode (model shifts internally)
+}
+
+/**
+ * Pooled predicted-vs-actual per-600 level-bias table. Predictions run through the REAL scoring
+ * recompute — the shared `hittingComponents`/`pitchingComponents` (calibrate BB/HR → era/park →
+ * BIP recompute → re-derived hits), NOT a frozen-BIP shortcut — so non-neutral eras move BIP and
+ * hits consistently with production. It also HONORS the active `transformMode`: own-gap
+ * (`poolTransform`), frame-v2 (`frameShift` + `kSpread`), or matchup (`matchup.model` shifts
+ * internally). Each side is recomputed to its final component rates, then the two sides are blended
+ * by the realized exposure weights (blend-of-finals, since the BIP recompute is nonlinear).
  */
 export function evaluateTournamentLevels(
-  obs: TournamentObs[], evModel: EventModel, coeffs: Coeffs, exposure: TournamentExposure, opts: EvaluateOpts = {},
+  obs: TournamentObs[], config: TournamentEvalConfig, exposure: TournamentExposure, opts: EvaluateOpts = {},
 ): TournamentLevelTable {
+  const { coeffs, eventForm, poolTransform, frameShift, kSpread, matchup } = config;
   const derived = computeDerived(coeffs, true);
-  const eBB = coeffs.era_bb, eK = coeffs.era_k, eHR = derived.era_effective_hr, eH = derived.era_h, eGAP = derived.era_gap;
+  // Model selection mirrors scoreCard: matchup wrapper (shifts internally) → #2 raw-poly → parity log.
+  const evModel: EventModel = matchup?.model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
   const minPA = opts.minPA ?? 100, minBF = opts.minBF ?? 100;
   const bl = (a: number, b: number, w: number) => w * a + (1 - w) * b;
 
+  // Per-side predicted final event levels via the real recompute. Rating re-basing mirrors
+  // score-card exactly: own-gap `applyAffine` and/or frame-v2 `applyFrameShift` (skipped under
+  // matchup, whose model shifts internally), then K-spread on the raw predicted K pre-era. K has
+  // no BIP dependence, so it is finalized as `predicted_K × era_k` (the established one-core pattern).
+  const hitLevels = (o: TournamentObs, side: "vR" | "vL"): EventLevels => {
+    const t = poolTransform?.hit[side], fs = frameShift?.hit[side];
+    const raw = o.ratings.hit[side];
+    const rat = matchup ? raw : {
+      ...raw,
+      eye: applyFrameShift(applyAffine(raw.eye, t?.eye), fs?.eye),
+      pow: applyFrameShift(applyAffine(raw.pow, t?.pow), fs?.pow),
+      kRat: applyFrameShift(applyAffine(raw.kRat, t?.kRat), fs?.kRat),
+      babip: applyFrameShift(applyAffine(raw.babip, t?.babip), fs?.babip),
+      gap: applyFrameShift(applyAffine(raw.gap, t?.gap), fs?.gap),
+    };
+    const e = evModel.predictHitting(rat, coeffs);
+    if (kSpread) e.SO = applyKSpread(e.SO, kSpread.meanHit, kSpread.sHit);
+    const k = hittingComponents(e, 1, 1, o.bats, side, coeffs, derived, eventForm);
+    return { uBB: k.BB_fin, K: e.SO * coeffs.era_k, HR: k.HR_fin, HmHR: k.oneB_fin + k.GAP_fin };
+  };
+  const pitLevels = (o: TournamentObs, side: "vR" | "vL"): EventLevels => {
+    const tp = poolTransform?.pit[side], fp = frameShift?.pit[side];
+    const raw = o.ratings.pit[side];
+    const rat = matchup ? raw : {
+      con: applyFrameShift(applyAffine(raw.con, tp?.con), fp?.con),
+      stu: applyFrameShift(applyAffine(raw.stu, tp?.stu), fp?.stu),
+      pbabip: applyFrameShift(applyAffine(raw.pbabip, tp?.pbabip), fp?.pbabip),
+      hrr: applyFrameShift(applyAffine(raw.hrr, tp?.hrr), fp?.hrr),
+    };
+    const e = evModel.predictPitching(rat, coeffs);
+    if (kSpread) e.K = applyKSpread(e.K, kSpread.meanPit, kSpread.sPit);
+    const k = pitchingComponents(e, 1, 1, side, coeffs, derived, eventForm);
+    return { uBB: k.BB_fin, K: e.K * coeffs.era_k, HR: k.HR_fin, HmHR: k.oneB_fin + k.XBH_fin };
+  };
+  const blendLevels = (Rr: EventLevels, L: EventLevels, w: number): EventLevels => ({
+    uBB: bl(Rr.uBB, L.uBB, w), K: bl(Rr.K, L.K, w), HR: bl(Rr.HR, L.HR, w), HmHR: bl(Rr.HmHR, L.HmHR, w),
+  });
+
   interface Row { w: number; pred: EventLevels; actual: EventLevels }
-  const hitRows: Row[] = obs.filter((o) => o.pa >= minPA).map((o) => {
-    const s = (side: "vR" | "vL") => evModel.predictHitting(o.ratings.hit[side], coeffs);
-    const L = s("vL"), Rr = s("vR"), w = exposure.wRhit;
-    return {
-      w: o.pa,
-      pred: {
-        uBB: bl(Rr.BB, L.BB, w) * eBB,
-        K: bl(Rr.SO, L.SO, w) * eK,
-        HR: bl(Rr.HR, L.HR, w) * eHR,
-        HmHR: bl(Rr.oneB + Rr.GAP * eGAP, L.oneB + L.GAP * eGAP, w) * eH,
-      },
-      actual: o.actual.hit,
-    };
-  });
-  const pitRows: Row[] = obs.filter((o) => o.bf >= minBF).map((o) => {
-    const w = exposure.wRpit[thr(o.throws)]!;
-    const s = (side: "vR" | "vL") => evModel.predictPitching(o.ratings.pit[side], coeffs);
-    const L = s("vL"), Rr = s("vR");
-    return {
-      w: o.bf,
-      pred: {
-        uBB: bl(Rr.BB, L.BB, w) * eBB,
-        K: bl(Rr.K, L.K, w) * eK,
-        HR: bl(Rr.HR, L.HR, w) * eHR,
-        HmHR: bl(Rr.nHH, L.nHH, w) * eH,
-      },
-      actual: o.actual.pit,
-    };
-  });
+  const hitRows: Row[] = obs.filter((o) => o.pa >= minPA).map((o) => ({
+    w: o.pa,
+    pred: blendLevels(hitLevels(o, "vR"), hitLevels(o, "vL"), exposure.wRhit),
+    actual: o.actual.hit,
+  }));
+  const pitRows: Row[] = obs.filter((o) => o.bf >= minBF).map((o) => ({
+    w: o.bf,
+    pred: blendLevels(pitLevels(o, "vR"), pitLevels(o, "vL"), exposure.wRpit[thr(o.throws)]!),
+    actual: o.actual.pit,
+  }));
 
   const wmean = (rows: Row[], get: (r: Row) => number) => {
     let nn = 0, dd = 0; for (const r of rows) { nn += r.w * get(r); dd += r.w; } return dd ? nn / dd : 0;
