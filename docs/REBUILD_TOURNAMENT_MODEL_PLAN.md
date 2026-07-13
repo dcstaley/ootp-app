@@ -314,14 +314,32 @@ run); raw Bronze biases are the largest measured.
 
 **10.8 Frame correction v2 — the reference-basing discovery + K spread constant (2026-07-13,
 `tools/tournament-kslope.ts`).** Two results that complete the transform design:
+
+> **⚠ AUDIT RETRACTION (2026-07-13, adversarial audit + ledger forensics — supersedes the "λ→1"
+> claim in the bullet below; memory `tournament-opponent-frame` item 14).** The "λ→1 once the
+> reference is the training mean" claim was a **SIGN ERROR** and is FALSE. The +16.4/+16.8 extra CON
+> shift the tournaments demanded means the reference should be ~16 pts *HIGHER* than catalog top-50,
+> NOT lower; the usage-mean coincidence (`refF − TM ≈ +16` on hit.eye) pointed the wrong way. λ→1 was
+> asserted, never computed. Recomputed: under the usage-weighted TM the pitcher-uBB bias **DOUBLES**
+> to +13/+17 (λ*≈3.8). The SHIPPED **matched-legs** frame (`μ_train` = top-50 of the training league,
+> eye 120.3 ≈ catalog 123) accidentally restored **catalog-level basing** — that is what actually
+> works, and it is a *relative* comparison, robust to data cleaning. A pitcher-uBB residual of
+> **+6..+8/600 at λ=1 REMAINS OPEN** (λ* 1.65–2.7, NOT tournament-stable) — likely a genuine CON→BB
+> channel residual (cf. league CON→BB +0.59), the BB-channel sibling of the K under-separation →
+> **Phase-1 scope** (fit it as a BB-channel level/tail term with a per-tournament free level term).
+> The K-spread result below SURVIVES the audit fully (see the retraction note on the second bullet).
+
 - **The reference frame was mis-based.** Gaps were computed vs the CATALOG TOP-50 field, but the
   model's true frame is its TRAINING opposition (PA/BF-weighted league means). Measured diff
   (ref − league): **hit.eye +16.0** (huge), hit.pow +7.7, pit.hrr +5.2, pit.stu +3.6, everything
-  else ≤1.5. This exactly explains the "unfixable" pitcher-BB flat offset: both tournaments
+  else ≤1.5. ~~This exactly explains the "unfixable" pitcher-BB flat offset: both tournaments
   demanded a constant EXTRA CON shift of +16.4/+16.8 beyond the eye-channel opp-gap — i.e. λ→1
-  once the reference is the training mean. Hitter BB / K levels looked calibrated all along
-  because con/kRat/stu training means ≈ catalog-top-50 means. FIX: artifact stores per-channel
-  `trainingMeans` (like ratingEnvelope); the opp-gap shift becomes
+  once the reference is the training mean.~~ **[RETRACTED — sign error; see box above. The extra CON
+  shift means the reference should be HIGHER, not the training mean; matched-legs (top-50 of training
+  = catalog-level basing) is what shipped and works; +6..+8/600 pitcher-uBB remains OPEN.]** Hitter
+  BB / K levels looked calibrated all along because con/kRat/stu training means ≈ catalog-top-50
+  means. FIX (as shipped, `f88912c`): artifact stores per-channel `trainingMeans` = **top-50 of the
+  training league** (matched to the top-50 pool μ); the opp-gap shift becomes
   `r + (μ_train_oppChannel − μ_pool_oppChannel)`, channel-crossed as in §10.2.
 - **K spread scaling is a CONSTANT ~1.75, not gap-proportional.** Fitted s* (WLS, post-shift):
   EG·hit 1.75, BR·hit 1.72 (gaps 27 vs 47 — flat!), BR·pit 1.82; EG·pit 2.31 (outlier, dead-ball
@@ -330,6 +348,11 @@ run); raw Bronze biases are the largest measured.
   Mechanism: `K_corr = K̄_pool + s·(K_pred − K̄_pool)` per role, s→1 in-frame. The RAMP shape
   (gap 0 → ~17) is unobservable with current data — the quicks ladder's gold/open points
   resolve it; conservative form s = 1 + 0.75·clamp(gap/17, 0, 1). DEPLOYMENT GATED on quicks.
+  **[AUDIT 2026-07-13 — SURVIVES.** s* ≈ 1.67–2.0 is reference-robust across all frame permutations
+  AND cleaning-robust (ghost-cleaned s* moves ≤0.02 — ghosts are 0.5–2.8% of rows, negligible in a
+  slope statistic). The EG·pit 2.3–2.5 outlier PERSISTS unexplained, sitting atop an EG pitcher-K
+  −10/600 dead-ball level residual. In-frame (Open Quicks) the slope ratio is ~1.0 → the defect is a
+  frame artifact, not intrinsic. Mechanism + placement (pre-BIP, pre-era, once) verified correct.]**
 
 **Next:** (1) implement frame-v2: `trainingMeans` on the artifact + training-mean-based opp-gap
 shift + K spread scaling behind a transform-mode setting, re-fit s* with the corrected reference
@@ -396,17 +419,35 @@ value → pool-wide level shift, not stud-concentration, not contamination); EG 
 despite a LOOSER cap → era-1920 is a genuine level add-on. Mechanism needs a cap-varied era-2010
 tournament to separate cap from era.
 
-**11.7 Ghost contamination — mechanism, detection, cleaning (all validated).** A manager who submits
-no lineup is replaced by GHOSTS that play the (128-team, Bo7) bracket but DON'T export; the ghost's
-real opponent plays 4 blowout games and carries a massively inflated combined line. The "scrub-cluster"
-fingerprint is VOID (ghosts are invisible). DETECTORS that survive: (1) team-count shortfall
-`N = expectedTeams − distinctORG`; (2) EXCESS-OFFENSE outlier `PA × (teamRate − poolRate)` (NOT raw
-rate — raw false-positives on small-sample luck). SURGICAL CLEANING VALIDATED: remove the top-N
-excess teams → pool converges to the clean baseline (Bronze Jul-7 138.2→136.4 H/600 vs clean Jul-11
-135.2; flags Portsmouth Wunderfunk / DC Capital Giants — Derek's ground truth). Module
-`src/eval/tournament-clean.ts` (`3a161db`) + `tools/clean-bronze.ts`. Cleaning IS possible here
-because Bo7 ghost inflation is extreme + concentrated on one identifiable team. → the QA gate for
-ingestion.
+**11.7 Ghost contamination — mechanism, detection, cleaning.** A manager who submits no lineup is
+replaced by GHOSTS that play the bracket but DON'T export; the ghost's real opponent carries a
+massively inflated combined line. The "scrub-cluster" fingerprint is VOID (ghosts are invisible).
+
+> **⚠ SUPERSEDED (2026-07-13, ledger forensics + roadmap Batch 1 — memory item 16).** The
+> excess-offense detector `PA × (teamRate − poolRate)` and the `expectedTeams − distinctORG`
+> team-count shortfall described below are **RETIRED**. Excess-offense TRUNCATES REAL WINNERS and
+> manufactures a fake offense-suppression signal; distinct-ORG counting mis-reads multi-entry orgs
+> (one ORG string fielding several teams). The decisive test is the **PA−BF LEDGER**: a complete
+> export satisfies `ΣPA == ΣBF` exactly (Bronze July-11 = 0), so contamination = partial exports
+> where an org carries `PA ≫ BF` and opens the pool ledger. **New detector**
+> (`src/eval/tournament-clean.ts`, rewritten Batch 1): `|ΣPA − ΣBF| ≤ tol` ⇒ clean; else greedily
+> remove the largest same-sign, `|asym| ≥ 0.10` orgs (asym = `(PA−BF)/(PA+BF)`) until the ledger
+> reconciles (cleaned) or culprits exhaust (unreliable). Sign-matching + magnitude excludes small
+> blown-out teams (Bronze July-7 Oslo Royals, −15.9% asym but opposite sign) and catches Portsmouth
+> (13.7% asym, which a flat >15% rule misses). It reproduces the validated Bronze cleaning EXACTLY
+> (DC Capital Giants, Portsmouth Wunderfunk) and runs on EVERY ingest. `tools/clean-tournament.ts`
+> (generalizes `clean-bronze.ts`) produced **Early Gold − CLEANED** (all 7 runnings contaminated,
+> ledger +228..+855 → residual ≤40; pool H/600 −1.5..−6.0). Per-dataset ledger status:
+> **QUICKS clean** (ledger 0 ×5; the "shortfalls" were duplicate team NAMES, not ghosts — Derek
+> confirmed 16 real teams in-game); **EARLY GOLD contaminated ×7** (partial exports); **BRONZE**
+> cleaning validated. The old detail below is kept for provenance only.
+
+~~DETECTORS that survive: (1) team-count shortfall `N = expectedTeams − distinctORG`; (2)
+EXCESS-OFFENSE outlier `PA × (teamRate − poolRate)`.~~ SURGICAL CLEANING (old excess method): remove
+the top-N excess teams → pool converges to the clean baseline (Bronze Jul-7 138.2→136.4 H/600 vs clean
+Jul-11 135.2; flags Portsmouth Wunderfunk / DC Capital Giants — Derek's ground truth). This still
+holds descriptively for Bronze (the ledger detector flags the same teams), but the ledger is the
+name-independent, deterministic general test.
 
 **11.8 Eval-only tournament ingestion** (`c05ed9d`). `src/training/tournament-eval.ts`: combined-line
 loader (`TournamentObs` tagged `combined/evalOnly`, structurally isolated from training — distinct
@@ -532,11 +573,19 @@ Every significant decision this session, with the reasoning and the alternative 
   the wrong quantity and diverges in lopsided pools (Bronze pitcher-Stuff gap 47 vs hitter-kRat gap 19).
   Measured: opp-gap collapsed level bias in BOTH eras (Bronze hitter-K +37→−3.6) where own-gap only
   halved it. REJECTED own-gap (directionally right, conceptually wrong).
-- **Reference = the model's TRAINING-opponent means (`trainingMeans`), not the catalog top-50 field.**
-  WHY: the model predicts vs the opposition it *trained against*, so the frame must be measured against
-  that — not an arbitrary catalog slice. The catalog top-50 mis-bases by up to +16 on hit.eye
-  (measured refF−TM +15.9), which was the long-"unfixable" pitcher-BB flat offset — it vanished once the
-  reference was the training mean (λ→1). REJECTED the catalog top-50 as the reference.
+- **Reference = the model's TRAINING-LEAGUE top-50 field (`trainingMeans`, matched-legs), not the
+  catalog top-50 field.** WHY: the model predicts vs the opposition it *trained against*, so the frame
+  must be measured against that. As SHIPPED (`f88912c`), `trainingMeans` = the **top-50 of the training
+  league**, matched to the top-50 pool μ so the in-frame gap is identically 0; the matched-legs check
+  held the out-of-frame levels AND net-improved pitcher uBB (11→6 EG / 14→8 BR).
+  **⚠ RETRACTION (memory item 14):** the original rationale — "catalog top-50 mis-bases by +16 on
+  hit.eye; the pitcher-BB flat offset vanished once the reference was the training mean (λ→1)" — was a
+  **SIGN ERROR**. Under the *usage-weighted* training mean the pitcher-uBB bias DOUBLES (+13/+17,
+  λ*≈3.8); the shipped top-50-of-training frame (eye 120.3 ≈ catalog 123) is really **catalog-LEVEL
+  basing restored**, and a **+6..+8/600 pitcher-uBB residual REMAINS OPEN** at λ=1 (λ* 1.65–2.7,
+  Phase-1 scope). REJECTED the *usage-weighted* training mean; what shipped is the *top-50* training
+  field. The level-matching test's value was CONFIRMING matched-legs with a mechanism, not the
+  coincidence the sign-error rationale claimed.
 - **K-spread scaling S≈1.75 constant (ramped only below G0≈17), not gap-proportional.**
   WHY: measured `s*` ≈ 1.67–1.84, essentially FLAT across own-gaps 17–47 (EG·hit 1.67 at gap 24 ≈
   BR·hit 1.68 at gap 43). Constant-`s` cross-validates EG↔Bronze; a linear-in-gap form OVERSHOOTS on
