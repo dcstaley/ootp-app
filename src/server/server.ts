@@ -1336,7 +1336,7 @@ interface TrainedModel {
   platoon?: PlatoonExposure; // measured platoon exposure (OVR splits + team VR/VL) — seeds new-tournament defaults
   wobaWeights?: WobaWeights; // wRAA-derived wOBA event weights for this model's leagues (optional; absent ⇒ defaults)
   ratingEnvelope?: RatingEnvelope; // per-rating training maxima → pool-transform saturation ceilings (optional)
-  trainingMeans?: TrainingMeans; // per-channel PA/BF-weighted training-opponent means → frame-v2 opp-gap reference (optional)
+  trainingMeans?: TrainingMeans; // per-channel top-50-field training-opponent means (matched to μ_pool) → frame-v2/matchup opp-gap reference (optional)
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
@@ -1384,21 +1384,39 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     hit: { eye: maxOf(hitQual, (o) => o.ratings.hit.eye), pow: maxOf(hitQual, (o) => o.ratings.hit.pow), kRat: maxOf(hitQual, (o) => o.ratings.hit.kRat), babip: maxOf(hitQual, (o) => o.ratings.hit.babip), gap: maxOf(hitQual, (o) => o.ratings.hit.gap) },
     pit: { con: maxOf(pitQual, (o) => o.ratings.pitch.con), stu: maxOf(pitQual, (o) => o.ratings.pitch.stu), pbabip: maxOf(pitQual, (o) => o.ratings.pitch.pbabip), hrr: maxOf(pitQual, (o) => o.ratings.pitch.hrr) },
   };
-  // Per-channel training-OPPONENT means — the model's true reference frame for the frame-v2
-  // opp-gap shift (plan §10.8; measured to differ from the catalog top-50 field by up to +16
-  // on hit.eye). PA-weighted for hitters, BF-weighted for pitchers, pooled over sides (same
-  // qualifying cohort as ratingEnvelope), so a weak pool is re-based against what the model
-  // actually trained against, not the catalog field.
-  const paOf = (o: TrainObs) => o.sources.reduce((s, x) => s + x.pa, 0);
-  const bfOf = (o: TrainObs) => o.sources.reduce((s, x) => s + x.bf, 0);
-  const wMean = (rows: TrainObs[], w: (o: TrainObs) => number, get: (o: TrainObs) => number) => {
-    let num = 0, den = 0; for (const o of rows) { const wt = w(o); num += wt * get(o); den += wt; } return den > 0 ? num / den : 0;
-  };
-  const hMean = (get: (o: TrainObs) => number) => wMean(hitQual, paOf, get);
-  const pMean = (get: (o: TrainObs) => number) => wMean(pitQual, bfOf, get);
+  // Per-channel training-OPPONENT means — the model's reference frame for the frame-v2 / matchup
+  // opp-gap shift. MATCHED-LEGS (plan §11.13/§12, verified 2026-07-13): computed as the TOP-50 FIELD
+  // of the training league via the SAME computeUnifiedFieldStats that builds μ_pool at scoring time —
+  // so both legs of the gap `μ_train − μ_pool` use the identical top-N selection. This collapses the
+  // in-frame gap to ~0 (the old PA/BF-weighted usage means carried a spurious −4..−11 selection
+  // offset), holds out-of-frame level-matching, and net-improves the worst residual (pitcher uBB
+  // −5..−6/600). The top-50 SELECTION is env/softcap-independent (it ranks by raw model wOBA × the
+  // model's weights — no era/park/softcap), so any coeffs bag carrying the model's wobaWeights works:
+  // resolve one neutral bag. FORWARD-ONLY — existing artifacts keep their usage-weighted means.
+  // (the module-level scoring `model` is shadowed here by the local artifact — reload it)
+  const tmScoringModel = (await repo.loadAll<Model>("models"))[0]!;
+  const tmCoeffs = resolveCoeffs(tmScoringModel, eras.get("era-2010")!,
+    { id: "neutral", name: "neutral", avg_l: 1, avg_r: 1, hr_l: 1, hr_r: 1, gap: 1 }, tournaments[0]!.softcaps);
+  applyWobaWeights(tmCoeffs, windowLoaded(window).wobaWeights);
+  const tmModel = makeRawPolyModel(eventForm);
+  // Reconstruct training-league cards (join each card's vR+vL obs) in the CSV-column shape
+  // computeUnifiedFieldStats reads; keep both-sides-present cards, role-qualified by max PA/BF.
+  const tmCards = new Map<string, Record<string, unknown>>();
+  for (const o of obs) {
+    const key = `${o.cid}|${o.variant ? "V" : "B"}`;
+    let c = tmCards.get(key);
+    if (!c) { c = { maxPA: 0, maxBF: 0, Bats: o.bats, Throws: o.throws, Speed: o.ratings.hit.speed, Stealing: o.ratings.hit.steal, Baserunning: o.ratings.hit.run }; tmCards.set(key, c); }
+    const s = o.side; // "R" | "L"
+    c[`Eye v${s}`] = o.ratings.hit.eye; c[`Power v${s}`] = o.ratings.hit.pow; c[`Avoid K v${s}`] = o.ratings.hit.kRat; c[`BABIP v${s}`] = o.ratings.hit.babip; c[`Gap v${s}`] = o.ratings.hit.gap;
+    c[`Control v${s}`] = o.ratings.pitch.con; c[`Stuff v${s}`] = o.ratings.pitch.stu; c[`pBABIP v${s}`] = o.ratings.pitch.pbabip; c[`pHR v${s}`] = o.ratings.pitch.hrr;
+    c.maxPA = Math.max(c.maxPA as number, o.hit.PA); c.maxBF = Math.max(c.maxBF as number, o.pitch.BF);
+  }
+  const tmAll = [...tmCards.values()].filter((c) => c["Eye vR"] != null && c["Eye vL"] != null && c["Control vR"] != null && c["Control vL"] != null);
+  const tmFieldHit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxPA as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true);
+  const tmFieldPit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxBF as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true);
   const trainingMeans: TrainingMeans = {
-    hit: { eye: hMean((o) => o.ratings.hit.eye), pow: hMean((o) => o.ratings.hit.pow), kRat: hMean((o) => o.ratings.hit.kRat), babip: hMean((o) => o.ratings.hit.babip), gap: hMean((o) => o.ratings.hit.gap) },
-    pit: { con: pMean((o) => o.ratings.pitch.con), stu: pMean((o) => o.ratings.pitch.stu), pbabip: pMean((o) => o.ratings.pitch.pbabip), hrr: pMean((o) => o.ratings.pitch.hrr) },
+    hit: { eye: tmFieldHit.hit.vR.eye!.mu, pow: tmFieldHit.hit.vR.pow!.mu, kRat: tmFieldHit.hit.vR.kRat!.mu, babip: tmFieldHit.hit.vR.babip!.mu, gap: tmFieldHit.hit.vR.gap!.mu },
+    pit: { con: tmFieldPit.pit.vR.con!.mu, stu: tmFieldPit.pit.vR.stu!.mu, pbabip: tmFieldPit.pit.vR.pbabip!.mu, hrr: tmFieldPit.pit.vR.hrr!.mu },
   };
   // Realized RHP/LHP exposure over ALL window obs (OVR/team splits from aggregated
   // obs) + role-conditional pitch splits (row grain, from the loader before CID
