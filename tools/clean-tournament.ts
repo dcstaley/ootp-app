@@ -1,5 +1,8 @@
-// clean-tournament.ts — apply the PA−BF ledger ghost-cleaner to every running in a tournament
-// directory and write cleaned copies to a NEW "<dir> - CLEANED" directory (source is never touched).
+// clean-tournament.ts — READ-ONLY diagnostic. Apply the PA−BF ledger ghost-cleaner to every running
+// in a tournament directory and PRINT the report (status / ledger / flagged orgs / rows removed /
+// pool H-600 before→after). It writes NO files — the retired "- CLEANED" mirror dirs are gone; the
+// one source of truth is the raw CSV + the in-memory cleaner (src/eval/tournament-clean.ts), which
+// the app and analysis tools apply on ingest.
 //
 //   run: node tools/clean-tournament.ts "Tournament Data/Early Gold"
 //        node tools/clean-tournament.ts "Tournament Data/Return of the Bronze"
@@ -8,9 +11,8 @@
 // The detector is ledger-based (ΣPA − ΣBF) + per-org PA/BF asymmetry — no external team count is
 // needed (roadmap Batch 1). See src/eval/tournament-clean.ts for the method + validation.
 import Papa from "papaparse";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import {
-  detectContamination,
   cleanTournamentRows,
   type Row,
 } from "../src/eval/tournament-clean.ts";
@@ -34,9 +36,7 @@ function cleanDir(srcDir: string): void {
     console.error(`Source directory not found: ${srcDir}`);
     return;
   }
-  const outDir = `${srcDir} - CLEANED`;
-  mkdirSync(outDir, { recursive: true });
-  console.log(`\n=== ${srcDir} → ${outDir} ===`);
+  console.log(`\n=== ${srcDir} (read-only report — no files written) ===`);
 
   const files = readdirSync(srcDir)
     .filter((f) => f.toLowerCase().endsWith(".csv"))
@@ -50,12 +50,6 @@ function cleanDir(srcDir: string): void {
     const { cleaned, removed, report } = cleanTournamentRows(rows);
     const before = poolH600(rows);
     const after = poolH600(cleaned);
-
-    const out = Papa.unparse(
-      { fields: (parsed.meta.fields ?? []) as string[], data: cleaned },
-      { newline: "\r\n" },
-    );
-    writeFileSync(`${outDir}/${file}`, out, "utf8");
 
     const flaggedStr =
       report.flagged.length > 0

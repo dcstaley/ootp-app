@@ -4,7 +4,7 @@
 // §11 numbers can be updated on clean data. era_bip_adj is at its resolved default (ON).
 //
 //   run: node tools/tournament-levels-clean.ts
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { Repository } from "../src/persistence/repository.ts";
 import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
@@ -34,8 +34,7 @@ const fmt = (n: number) => (n >= 0 ? "+" : "") + n.toFixed(2);
 
 console.log(`Level tables on CLEANED data — active model ${trained.id}, transformMode(state)=${state.transformMode}, era_bip_adj default (ON)\n`);
 
-for (const [name, RAW, TID] of [["Early Gold", "Tournament Data/Early Gold", "early-gold"], ["Return of the Bronze", "Tournament Data/Return of the Bronze", "bronze-return"]] as const) {
-  const TDIR = existsSync(`${RAW} - CLEANED`) ? `${RAW} - CLEANED` : RAW;
+for (const [name, TDIR, TID] of [["Early Gold", "Tournament Data/Early Gold", "early-gold"], ["Return of the Bronze", "Tournament Data/Return of the Bronze", "bronze-return"]] as const) {
   const t = (await repo.loadAll<Tournament>("tournaments")).find((x) => x.id === TID)!;
   const coeffs = resolveCoeffs(model, eras.get(t.eraId)!, parks.get(t.parkId)!, t.softcaps);
   if (trained.wobaWeights) applyWobaWeights(coeffs, trained.wobaWeights);
@@ -48,7 +47,7 @@ for (const [name, RAW, TID] of [["Early Gold", "Tournament Data/Early Gold", "ea
 
   const obs = loadTournamentOutcomes(TDIR, { clean: (rows) => cleanTournamentRows(rows).cleaned });
   const exposure = tournamentExposure(obs);
-  console.log(`\n======== ${name} (${t.eraId}) — ${TDIR.endsWith("CLEANED") ? "CLEANED" : "RAW"}, ${obs.length} obs ========`);
+  console.log(`\n======== ${name} (${t.eraId}) — RAW (ghost-cleaned in-memory), ${obs.length} obs ========`);
   for (const [fr, extra] of [["base   ", {}], ["frameV2", { frameShift, kSpread }]] as const) {
     const tbl = evaluateTournamentLevels(obs, { coeffs, eventForm, ...extra }, exposure);
     const line = (role: "hit" | "pit") => tbl[role].map((r) => `${r.event}:${fmt(r.bias)}`).join("  ");

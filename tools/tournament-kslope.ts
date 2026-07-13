@@ -13,6 +13,7 @@
 //
 import Papa from "papaparse";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { cleanTournamentRows } from "../src/eval/tournament-clean.ts";
 import { Repository } from "../src/persistence/repository.ts";
 import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
@@ -82,11 +83,10 @@ interface TCase {
 }
 const cases: TCase[] = [];
 
-// Prefer the ghost-CLEANED mirror when it exists (roadmap: analysis tools default to cleaned dirs).
-const pickDir = (raw: string) => (existsSync(`${raw} - CLEANED`) ? `${raw} - CLEANED` : raw);
-for (const [name, RAWDIR, TID] of [["EG", "Tournament Data/Early Gold", "early-gold"], ["BR", "Tournament Data/Return of the Bronze", "bronze-return"]] as const) {
-  const TDIR = pickDir(RAWDIR);
-  console.log(`[${name}] data dir: ${TDIR}${TDIR.endsWith("CLEANED") ? " (ghost-cleaned)" : " (RAW — no cleaned mirror found)"}`);
+// One source of truth: read the RAW dir and ghost-clean each file IN-MEMORY via cleanTournamentRows
+// (the deterministic detector that reproduced the retired "- CLEANED" mirror exactly).
+for (const [name, TDIR, TID] of [["EG", "Tournament Data/Early Gold", "early-gold"], ["BR", "Tournament Data/Return of the Bronze", "bronze-return"]] as const) {
+  console.log(`[${name}] data dir: ${TDIR} (RAW — ghost-cleaned in-memory)`);
   const t = (await repo.loadAll<Tournament>("tournaments")).find((x) => x.id === TID)!;
   const coeffs = resolveCoeffs(model, eras.get(t.eraId)!, parks.get(t.parkId)!, t.softcaps);
   if (trained.wobaWeights) applyWobaWeights(coeffs, trained.wobaWeights);
@@ -117,7 +117,10 @@ for (const [name, RAWDIR, TID] of [["EG", "Tournament Data/Early Gold", "early-g
   const m = new Map<string, Agg>();
   let bfR = 0, bfAll = 0, paR = 0, paL = 0, paS = 0;
   for (const f of readdirSync(TDIR).filter((x) => x.endsWith(".csv"))) {
-    for (const r of Papa.parse(readFileSync(`${TDIR}/${f}`, "utf8"), { header: true, skipEmptyLines: true }).data as any[]) {
+    const rawRows = Papa.parse(readFileSync(`${TDIR}/${f}`, "utf8"), { header: true, skipEmptyLines: true }).data as any[];
+    const { cleaned, removed, report } = cleanTournamentRows(rawRows);
+    console.log(`  [${name}] ${f}: ${report.status} (ledger ${report.ledger}→${report.residual}, removed ${removed.length}/${rawRows.length})`);
+    for (const r of cleaned as any[]) {
       const pa = num(r.PA), bf = num(r.BF);
       if (bf > 0) { bfAll += bf; if (String(r.T) === "R") bfR += bf; }
       if (pa > 0) { const b = String(r.B); if (b === "R") paR += pa; else if (b === "L") paL += pa; else paS += pa; }

@@ -7,7 +7,6 @@
 // hitter non-HR-hit residual without worsening the pitcher chain; else revert the default to 1.
 //
 //   run: node tools/era-bipadj-measure.ts
-import { existsSync } from "node:fs";
 import { Repository } from "../src/persistence/repository.ts";
 import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
@@ -33,8 +32,8 @@ const parks = new Map((await repo.loadAll<Park>("parks")).map((p) => [p.id, p]))
 const trained = (await repo.loadAll<any>("trained-models")).find((x) => x.id === state.activeModelId);
 const eventForm = trained.eventForm;
 
-const RAW = "Tournament Data/Early Gold";
-const TDIR = existsSync(`${RAW} - CLEANED`) ? `${RAW} - CLEANED` : RAW;
+// One source of truth: the RAW dir, ghost-cleaned in-memory by the clean DI below.
+const TDIR = "Tournament Data/Early Gold";
 const t = (await repo.loadAll<Tournament>("tournaments")).find((x) => x.id === "early-gold")!;
 const coeffsOn = resolveCoeffs(model, eras.get(t.eraId)!, parks.get(t.parkId)!, t.softcaps);
 if (trained.wobaWeights) applyWobaWeights(coeffsOn, trained.wobaWeights);
