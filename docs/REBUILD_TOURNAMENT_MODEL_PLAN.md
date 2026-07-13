@@ -1029,6 +1029,28 @@ context-invariance but not tightly pinned; (3) still need the ACCEPTANCE BATTERY
 BOTH axes — ordering AND spacing — out-of-frame) + the monotone-gate + stu-residual guardrails before the
 sunset call. NEXT: acceptance battery (the final gate) + guardrails; gather pitcher depth to tighten (2).
 
+**11.30 HR ASYMMETRY + TRANSFORM MECHANISM (`tools/hr-and-transform.ts`; Derek's catches).**
+- **HR asymmetry — the "log holds every seat" claim (§11.28) was IMPRECISE.** Hitter HR was ALWAYS
+  rawpoly-2 (RAWPOLY_HIT). Reverting hitter HR→log drops in-frame spread **0.967→0.925** (all-log same),
+  so **hitter HR must stay raw-quad** (power event, +0.04 spread); the LOG seats are the contact/discipline
+  channels (bb/k/xbh/h), which hold. **Pitcher HR IS log** in StuffAug — an INCONSISTENCY (hitter power =
+  raw-quad, pitcher power = log) — and pit HR→raw2 was the biggest single spread lever (§11.27); the winner
+  (rawquad-all+aux) fixes it. Corrected takeaway: log holds only for contact/discipline; power (HR) is
+  raw-quad for BOTH roles in the winner.
+- **Transform mechanism — own-gap faded mean-scalar. My "own-gap COMPRESSES spacing" (last handback) was
+  PREMATURE / wrong for pitchers.** `applyAffine`: multiplicative `k=league.μ/pool.μ`, lift `r·(1+(k−1)·fade)`,
+  fade→0 near the rating ceiling. Bronze-t stu (ceiling 187, ratings 50–110 well below the fade midpoint ~165):
+  own-gap is ~pure ×1.565 → **EXPANDS rating spread 60→83.5 (139%)**; frame-v2 (+gap) PRESERVES it (100%). So
+  the ad-hoc ceiling fade barely bites for high-ceiling channels (stu); the value-SD drop I saw under own-gap
+  (§ quad test) is a CURVE interaction, not a clean rating-spread compression — **claim retracted.** What
+  STANDS: (1) own-gap is an ad-hoc multiplicative mean-scalar + ceiling fade; (2) the ADDITIVE opponent-gap
+  shift (frame-v2) is the ESTABLISHED-CORRECT form (§10.2/memory item 2 — opponent-frame is additive in the
+  OPPONENT's rating; own-gap lifts by the wrong side's gap, multiplicatively); (3) the two do materially
+  different things to ratings. The value-spacing effect of each × the rawquad form needs the JOINT two-axis
+  measurement (levels + spacing together, rawquad × {own-gap, frame-v2}) — deferred, not done. Transforms ARE
+  required (levels; Derek), the quad captures spacing in base frame (§ quad test), and the correct transform
+  form is very likely the ADDITIVE frame-v2 — but the joint measurement is the arbiter.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
