@@ -427,7 +427,25 @@ of hand-tuned. **Phases:** 0 = scaffold now (Form A, `src/model/matchup.ts`, `tr
 in-frame-equivalence + parity tests; league-only ⇒ = frame-v2, keep KSpread as the interim K patch);
 1 = fit the tail on Bronze+Gold; 2 = full-ladder refit, retire KSpread → the fitted tail. **OPEN
 DECISION:** an eval-only carve-out to *fit* the K SHAPE on quicks rows (argued as a structural matchup
-constant, not per-card talent) — needs sign-off before Phase 1.
+constant, not per-card talent) — needs sign-off before Phase 1. **UPDATE:** Derek APPROVED both
+(opp-side as default + the eval-only carve-out for the K-shape fit). **Phase 0 SHIPPED (`815ce9b`):**
+`transformMode:"matchup"` binds the frame-v2 shift into the model (`makeMatchupModel`) with the
+Phase-1 seams (`tail`, per-role `aRole`) pinned to identity + `kSpread` retained → **bit-identical to
+frame-v2** (max per-card diff EXACTLY 0, proven in `tests/matchup.test.ts`), so league is untouched by
+construction. Next: Phase 1 fits the `tail` on Bronze+Gold, protected by `league_curve + tail`
+(tail ≡ 0 in-support) + a league-RMSE gate.
+
+**11.12 Frame-v2 vs own-gap validation** (closes two handover open items; measured on EG + Bronze via
+the current-code TM). (a) **Anchor is already a near-no-op in BOTH modes** (every scale ≤4% off 1.0 —
+both level in rating-space before calibration); frame-v2 tightens it for EG (pitch 2.5%→1.2%), slightly
+loosens for the deeper Bronze. So "frame-v2 → anchor no-op" holds, but it was already near-unit.
+(b) **Top-26 moves substantially — SET and ORDER, not cosmetic.** own-gap vs frame-v2: top-26 kept =
+EG hit 22/26, EG pit 22/26, Bronze hit 17/26, **Bronze pit 14/26** (Spearman 0.80/0.81/0.75/**0.64**).
+So weak-pool pitchers see ~12 of the top-26 SWAP, driven by the saturated K-spread (`s=1.75`) stretching
+the K axis (low-K contact arms fall, high-K rise). **Implications:** the default-flip is genuinely
+roster-changing (so gating it on quicks is not pedantic); and the churn is driven by a FLAT `s`, while
+pitchers actually want `s≈1.8–2.3` per §11.5 — the *fitted* opp-side tail captures that and de-risks the
+exact margin that reshuffles.
 
 **11.10 Quicks ladder.** Card values: Iron ≤59, Bronze ≤69, Silver ≤79, Gold ≤89, Diamond ≤99, Open =
 none. All era-2010 neutral, Bo5 16-team. Frame-gap order (small→big): Open(~0) < Diamond < Gold <
@@ -438,8 +456,8 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
 (ramp between gap 0 and ~18 assumed linear until then). Target 3–5 runnings/tier.
 
 **11.11 Open decisions / next.**
-- **Build opp-side Phase 0** (league-only = frame-v2, KSpread interim, `league_curve + tail` guarantee) — awaiting go-ahead.
-- **Eval-only carve-out sign-off** for the K-shape fit on quicks.
+- ~~Build opp-side Phase 0~~ — DONE (`815ce9b`). ~~Eval-only carve-out sign-off~~ — APPROVED.
+- **Phase 1** (fit the K tail on Bronze+Gold quicks) — data-gated.
 - **Format adjustment** (BB×0.85 / HR×0.87 / hits×0.96) — HOLD; firm up on more Open runnings + tiers.
 - **`BIP_ADJ` era-aware** — optional small scoring fix (completes the dead-ball story).
 - **Cleanup bundle** (log-linear removal, tHR, softcaps, hitter SF+4) — solo, low priority (conflicts with everything).
