@@ -511,9 +511,11 @@ teams (missing teams ARE the ghosts; their OPPONENTS' padded lines are the conta
    measured. Bronze cleaning is UNAFFECTED (4× excess cliffs + Derek's ground truth, and its
    ghosts were fingerprint-mismatched ROWS — a different mechanism).
 1. DONE (2026-07-13, inline diagnostic) — per-dataset status settled:
-   • QUICKS: clean (ledger 0 all runnings; shortfalls = duplicate team NAMES — players name
-     teams freely; count teams by roster volume, never by ORG string). Derek in-game confirmed
-     16 real teams in 1303/1306. No cleaning, ever, for this format.
+   • QUICKS: these 5 runnings VERIFIED clean (ledger 0 in all; the "shortfalls" were duplicate
+     team NAMES — players name teams freely; count teams by roster volume, never by ORG string).
+     Derek in-game confirmed 16 real teams in 1303/1306. NOTE: the format is NOT immune —
+     future quicks runnings can contain ghosts; the ledger diagnostic runs on EVERY ingest of
+     EVERY dataset, and cleaning applies wherever it fires.
    • EARLY GOLD: REAL contamination, all 7 runnings — ledger imbalance +228..+855 PA, with 1–4
      per-org PA/BF-ASYMMETRIC orgs per running (>15% asymmetry = partial exports). Audit R1
      stands: level validations used contaminated actuals. Fix via item 1b below.
