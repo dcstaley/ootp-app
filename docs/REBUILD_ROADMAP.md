@@ -498,17 +498,40 @@ Four-auditor adversarial review of a1e129b..ebab189 (full findings: plan doc §1
 teams (missing teams ARE the ghosts; their OPPONENTS' padded lines are the contamination, and at
 16-team scale beneficiaries can't be identified statistically — no cliff). Execute in order:
 
-**Batch 1 — data integrity (blocks re-validation)**
-1. Clean Early Gold: run the Bronze-style pass, expectedTeams=128 → `Tournament Data/Early Gold
-   - CLEANED`; all analysis tools default to cleaned dirs. (EG is ghost-touched in all 7 runnings,
-   1.1–6.7% of PA; every LEVEL validation to date used inflated actuals, ~+4.3 hits/600.)
-2. Detector fixes: cap flags at min(nGhosts, cliffSize); endpoint warns "shortfall detected,
-   uncleaned" whenever cleaning is off but a shortfall exists.
-3. Automatic cleaning on ingest (app feature): expectedTeams comes from tournament config
-   (bracket size); auto-detect shortfall; apply surgical cleaning when cliff-safe; otherwise mark
-   the dataset "contaminated, level-unreliable" and rely on fit-time level absorption (Batch 4).
-4. Quicks ghost annotation (Derek, optional but best): per-running sidecar noting which teams
-   played the ghost slots → exact removal, no statistics. Ask at each export.
+**Batch 1 — data integrity (blocks re-validation) — REVISED 2026-07-13 after ledger check**
+0. NEW FINDING (supersedes the audit's R1/R2 ghost claims): the QUICKS "shortfalls" are NOT
+   ghosts — they are MULTI-ENTRY ORGS (Freedom Grabbers 52/71/72 rows = 2–3 entries; every
+   running = exactly 16 entries). The PA/BF ledger balances EXACTLY (PA−BF = 0 all 5 runnings)
+   and per-team PA≈BF ⇒ the quicks export is a closed, internally-consistent system. QUICKS
+   NEED NO CLEANING; the format-effect ghost confounder is void. Early Gold shows NO multi-entry
+   signature (127 orgs, max 26 rows) — its "1–5 missing teams" rests on the ASSUMPTION the field
+   is a fixed 128. PENDING DEREK: is EG a fixed-128 bracket that always fills, and can one org
+   enter the same cards twice (which would hide as doubled PA, not doubled rows)? If EG's field
+   is variable-fill, EG has no ghosts either and the existing level validations stand as
+   measured. Bronze cleaning is UNAFFECTED (4× excess cliffs + Derek's ground truth, and its
+   ghosts were fingerprint-mismatched ROWS — a different mechanism).
+1. DONE (2026-07-13, inline diagnostic) — per-dataset status settled:
+   • QUICKS: clean (ledger 0 all runnings; shortfalls = duplicate team NAMES — players name
+     teams freely; count teams by roster volume, never by ORG string). Derek in-game confirmed
+     16 real teams in 1303/1306. No cleaning, ever, for this format.
+   • EARLY GOLD: REAL contamination, all 7 runnings — ledger imbalance +228..+855 PA, with 1–4
+     per-org PA/BF-ASYMMETRIC orgs per running (>15% asymmetry = partial exports). Audit R1
+     stands: level validations used contaminated actuals. Fix via item 1b below.
+   • BRONZE: cleaning VALIDATED — known-clean July 11 balances exactly (0); contaminated 5/7
+     July (+405/+360, 1 asym org each) → cleaned versions ≈0 (−41/+91). Residual: July 7
+     cleaned retains one small asym org — inspect, likely minor.
+1b. NEW DETECTOR (replaces excess-offense flagging for this class): flag orgs whose own
+   PA-vs-BF asymmetry exceeds threshold (~15%, tune on Bronze ground truth) + reconcile the
+   pool ledger to ≈0 after removal. Deterministic, name-independent, no champion false
+   positives. Then produce "Early Gold - CLEANED" with it and re-run the Batch-2 level tables.
+2. Detector fixes: entry counting must use per-org ROW/PA volume (entries ≈ rows/26), never
+   distinct-ORG count; excess-offense flagging requires a Bronze-grade cliff (≥~3× the clean
+   ceiling), else no flag — blind top-excess removal truncates real performance and manufactures
+   a fake offense-suppression "format effect"; cap flags at min(shortfall, cliffSize); warn
+   "shortfall detected, uncleaned" when serving uncleaned data.
+3. Automatic cleaning on ingest (app feature): per-tournament expected ENTRY count from config;
+   run the ledger + entry diagnostic on ingest; surgical cleaning only when cliff-safe; else
+   mark "level-unreliable" and rely on fit-time level absorption (Batch 4).
 
 **Batch 2 — re-validation on clean data**
 5. Re-run all level tables (era trilogy, frame-v2/matched-legs, ptdiag) on cleaned EG + cleaned
