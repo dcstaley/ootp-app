@@ -337,3 +337,110 @@ shift + K spread scaling behind a transform-mode setting, re-fit s* with the cor
 available: gold/open pin the s ramp, low tiers (iron/bronze) cover the below-support K range —
 deployment gate; (3) era_gap channel: run the era_h-style per-BIP/share semantics check (dead-ball
 XBH share 0.227 vs 0.249); (4) re-check top-26 impact once (1) lands.
+
+---
+
+## 11. Build + resolutions — 2026-07-13 (this session)
+
+Consolidated record of what was built, measured, and decided. Commits are on `main` (pushed).
+Working detail also lives in memory `quicks-null-test-and-format-effect.md` /
+`tournament-opponent-frame.md`; this section is the durable, version-controlled source.
+
+**11.1 Frame-v2 SHIPPED** (`a5f4357`..`10c7fa1`). `trainingMeans` on the artifact (PA/BF-weighted
+per-channel training-opponent means); additive channel-crossed opp-gap shift
+`r + (μ_train_opp − μ_pool_opp)` + per-role K spread scaling `K_corr = K̄_pool + s·(K_pred − K̄_pool)`
+(`S_K=1.75`, `G0_K=17`, provisional) behind `state.transformMode` (`own-gap` default | `frame-v2`).
+`scoreCard` + `calibrate` apply both; K scaled PRE-era so `era_k` applies once. `K̄_pool` = top-50
+field mean (my call, Derek deferred; revisit with quicks). Guard tests `tests/frame-v2.test.ts`.
+kslope re-fit on the training-mean reference confirmed the mis-basing (`refF−TM`: hit.eye +15.9,
+hit.pow +7.5, pit.stu +3.5, pit.hrr +5.3 — matches §10.8). **own-gap stays production default;
+frame-v2 is quicks-gated.**
+
+**11.2 era_gap per-share fix SHIPPED** (`27816dd`). `era_gap` was a per-PA XBH ratio but `woba.ts`
+multiplies it onto `GAP_rate × BA_fin`, which already carries `era_h_bip` + the BIP expansion →
+triple-count (same class as the `era_h` bug). Fix: `era_gap_share = ((b2+b3)/(h−hr))/2010` from the
+rates block; `computeDerived` prefers it (legacy per-PA fallback for rates-less configs). Dead-ball
+XBH over-prediction +4.6/600 removed; sign flips modern (era-2019 share 1.070). **Shifts library-era
+XBH → regenerate affected tournaments (manual).** Guard `tests/era-gap-share.test.ts`.
+
+**11.3 BIP-recompute audit — VALID + NECESSARY; one open item.** The BIP recompute is the VOLUME
+channel (`era_bb/era_k/era_hr → BIP → hits`); freezing BIP mispredicts hits −22/+10 per 600 in
+1920/2019. `era_h_bip` + `era_gap_share` FULLY reconciled the double-count (bit-exact at the 2010
+reference). **Remaining (revises §10.5's attribution):** the FIXED `HIT_BIP_ADJ=5`/`PIT_BIP_ADJ=6`
+constants don't adapt to dead-ball's ~24/600 HBP+SH+SF (vs ~10 at ref) → +2.65% hits/XBH in 1920,
+~0 modern. This — NOT an XBH-share issue — is the true final EG XBH residual. OPTIONAL fix: era-aware
+`BIP_ADJ` from the rates block (`1 − bb − k − hr − bip`), resolver pattern like the other two.
+
+**11.4 Open Quicks null test (5 runnings, era-2010 full-pool neutral).** (a) **FRAME STORY CONFIRMED:**
+in-frame K-by-rating slope ratio ~1.0 (hitter 1.13 / pitcher 0.92) vs 0.4–0.6 in weak pools → the K
+under-separation is a frame/opponent artifact that VANISHES in-frame. (b) **NEW universal FORMAT
+effect** (deployment/TTO, orthogonal to pool strength): the model over-predicts offense — BB ×0.85,
+HR ×0.87, non-HR hits ×0.96, pitcher K ~×1.03. Vindicates the retired `BB 0.85` default, REFUTES
+`HR 1.15` (data says 0.87). **PROVISIONAL — HOLD, make NO changes** (Derek not convinced): 5 runnings
+only; firm up with more Open runnings + tiers. Tiers double as a format-CONSISTENCY test (a true
+format effect is ~constant across tiers after removing the frame correction). `tools/quicks-levelbias.ts`.
+
+**11.5 K-slope defect RE-VERIFIED — real, not a ghost artifact, `s≈1.75` stands.** With all fixes
+active and on ghost-CLEANED data: out-of-frame predicted K spread is still only 0.43–0.61 of actual;
+`s*` = hitters 1.67–1.76, Bronze pitchers 1.83–1.84, EG pitchers ~2.34. Cleaning moves `s*` by ≤0.02
+(NOT a ghost artifact — ghosts are 0.5–2.8% of rows, negligible in per-card aggregates; `s*` is a
+slope statistic a few rows can't tilt). In-frame ~1.0. **Verdict:** defect real; `s≈1.75` a sound
+central value, but a real role/tournament spread (hit ~1.7, pit ~1.8–2.3) means a FLAT constant
+under-corrects EG pitchers → motivates the *fitted* opp-side curve over a hand-tuned constant.
+
+**11.6 IBB.** Quicks 0.39 ≈ league 0.36; Bronze 1.23 (real, stable across runnings, FLAT across card
+value → pool-wide level shift, not stud-concentration, not contamination); EG 2.38. EG > Bronze
+despite a LOOSER cap → era-1920 is a genuine level add-on. Mechanism needs a cap-varied era-2010
+tournament to separate cap from era.
+
+**11.7 Ghost contamination — mechanism, detection, cleaning (all validated).** A manager who submits
+no lineup is replaced by GHOSTS that play the (128-team, Bo7) bracket but DON'T export; the ghost's
+real opponent plays 4 blowout games and carries a massively inflated combined line. The "scrub-cluster"
+fingerprint is VOID (ghosts are invisible). DETECTORS that survive: (1) team-count shortfall
+`N = expectedTeams − distinctORG`; (2) EXCESS-OFFENSE outlier `PA × (teamRate − poolRate)` (NOT raw
+rate — raw false-positives on small-sample luck). SURGICAL CLEANING VALIDATED: remove the top-N
+excess teams → pool converges to the clean baseline (Bronze Jul-7 138.2→136.4 H/600 vs clean Jul-11
+135.2; flags Portsmouth Wunderfunk / DC Capital Giants — Derek's ground truth). Module
+`src/eval/tournament-clean.ts` (`3a161db`) + `tools/clean-bronze.ts`. Cleaning IS possible here
+because Bo7 ghost inflation is extreme + concentrated on one identifiable team. → the QA gate for
+ingestion.
+
+**11.8 Eval-only tournament ingestion** (`c05ed9d`). `src/training/tournament-eval.ts`: combined-line
+loader (`TournamentObs` tagged `combined/evalOnly`, structurally isolated from training — distinct
+type, no fit/window imports, guard test), `tournamentExposure`, `evaluateTournamentLevels`
+(predicted-vs-actual per-600 level bias; predictions straight from the scoring core — one-core).
+`GET /api/debug/tournament-eval?dir=&expectedTeams=` (ghost-cleaner via DI). Cross-role consistency
+badge (`e8d092c`) on the tournament editor.
+
+**11.9 Opp-side matchup-channel model — DESIGN + decisions** (`docs/REBUILD_MATCHUP_CHANNEL_PLAN.md`,
+`38af66d`). Evaluate each channel at the matchup coordinate `x = own_rating − μ_opp` → native pool
+re-basing that SUBSUMES frame-v2's shift + the KSpread patch. **Form A** = one shared shape `g(x)` +
+per-role slope `a_role` (handles the item-4 shared-level/different-slope finding). **Key identity:**
+opp-side trained on LEAGUE-ONLY ≡ frame-v2's additive shift (reparametrization) — same accuracy today,
+cleaner architecture; the K-slope fix REQUIRES quicks because the steeper off-frame slope sits OUTSIDE
+the league rating range (a data-support problem, not a structure problem). **Decisions (Derek):**
+(1) build opp-side as the DEFAULT tournament model (not "frame-v2 as a disposable bridge");
+(2) LEAGUE-PROTECTION GUARANTEE — the curve is `league_curve(x) + tail(x)` with `tail ≡ 0` inside
+league support, so quicks fits ONLY the beyond-support tail → **league accuracy unchanged by
+construction** (+ a hard league-RMSE gate as backstop); this is the KSpread structure *fitted* instead
+of hand-tuned. **Phases:** 0 = scaffold now (Form A, `src/model/matchup.ts`, `transformMode:"matchup"`,
+in-frame-equivalence + parity tests; league-only ⇒ = frame-v2, keep KSpread as the interim K patch);
+1 = fit the tail on Bronze+Gold; 2 = full-ladder refit, retire KSpread → the fitted tail. **OPEN
+DECISION:** an eval-only carve-out to *fit* the K SHAPE on quicks rows (argued as a structural matchup
+constant, not per-card talent) — needs sign-off before Phase 1.
+
+**11.10 Quicks ladder.** Card values: Iron ≤59, Bronze ≤69, Silver ≤79, Gold ≤89, Diamond ≤99, Open =
+none. All era-2010 neutral, Bo5 16-team. Frame-gap order (small→big): Open(~0) < Diamond < Gold <
+Silver < Bronze < Iron. HAVE: Open (5 runnings). COMING: Bronze + Gold soonest (1–2 days), full ladder
+~1 week. Recommendation was Diamond #1 (the unmeasured knee, gap ~5–12) / Gold #2; **Bronze + Gold is
+ACCEPTABLE** — Open+Gold+Bronze in one format = the format-consistency test + a clean plateau
+cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later knee-interior refinement
+(ramp between gap 0 and ~18 assumed linear until then). Target 3–5 runnings/tier.
+
+**11.11 Open decisions / next.**
+- **Build opp-side Phase 0** (league-only = frame-v2, KSpread interim, `league_curve + tail` guarantee) — awaiting go-ahead.
+- **Eval-only carve-out sign-off** for the K-shape fit on quicks.
+- **Format adjustment** (BB×0.85 / HR×0.87 / hits×0.96) — HOLD; firm up on more Open runnings + tiers.
+- **`BIP_ADJ` era-aware** — optional small scoring fix (completes the dead-ball story).
+- **Cleanup bundle** (log-linear removal, tHR, softcaps, hitter SF+4) — solo, low priority (conflicts with everything).
+- **Derek manual actions:** retrain + activate a fresh model (picks up uBB targets + `trainingMeans`, clears the stale badge); regenerate rosters (era_gap XBH shift).
