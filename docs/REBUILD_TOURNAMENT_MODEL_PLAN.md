@@ -946,6 +946,27 @@ extrapolation GATE, not spread) before shipping it.
    memory item 3 → the mechanism is a spread-blind curve-family choice, and a monotone-capped raw-poly K is
    the form-level fix. The pool-conditioned remainder is Hyp-1's (smaller) job.
 
+**11.26 STEP-0 CEILING TEST — role-mix REFUTED; the pitcher ceiling is ~0.78, form-recoverable not
+role-recoverable (`tools/ceiling-test.ts`).** Deconvolved value spread-ratio within STRICT role cohorts
+(SP GS/G≥0.8 N=17; RP ≤0.2 N=66; 56 swingmen dropped), league in-frame, under deployed (StuffAug K=log) and
+rawquad_pit, ±95% boot CI:
+
+| form | all (N=139) | SP (N=17) | RP (N=66) |
+|---|---|---|---|
+| deployed (K=log) | 0.62 [.55,.69] | 0.63 [.50,.81] | 0.65 [.55,.77] |
+| rawquad_pit | 0.76 [.67,.87] | 0.77 [.60,1.05] | 0.79 [.66,.92] |
+
+**Verdict:** (1) **Role-mix is NOT the cause** — within-SP and within-RP ≈ pooled (RP 0.65/0.79 ≈ all
+0.62/0.76; SP same direction, N=17 noisy). Fable's "if within-role ≈0.9+ it's role-mix" is REFUTED (it's
+~0.78) → the compression is a real WITHIN-role form deficit, and **role-aware scoring would NOT raise it**
+(off the table as a ceiling-raiser). (2) **The form fix is real and role-invariant** — rawquad recovers
+~0.14 within EACH role (RP 0.65→0.79, the reliable N=66 read). (3) **MEASURED CEILING ≈ 0.78** (rawquad
+within-role; RP CI [.66,.92]) — this is the yardstick: do NOT chase in-frame spacing above ~0.78 (per Fable
+§11.25 item 3, shrinkage is correct; the ~0.22 gap to 1.0 is plausibly the irreducible ratings-don't-fully-
+determine-value floor + estimation shrinkage, NOT a defect). Caveat: SP N=17 under-powered; the RP cohort
+carries the conclusion. Downstream context-invariance target = the adopted form's ~0.78 in-frame ratio,
+never 1.0. NEXT: Step-1 factorial form sweep (both roles, all metrics incl. top-decile slice), CI-verified.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
