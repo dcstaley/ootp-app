@@ -18,6 +18,7 @@
 //   old "XBH share of non-HR hits vs 2010" definition (kept as `gapShare` for reference).
 
 import Papa from "papaparse";
+import { validateRates } from "../config/coeff-resolve.ts";
 import type { Era } from "../config/tournament.ts";
 
 // Blank / "--" → NaN (so the ratio falls back to neutral), NOT 0 — Number("") is 0.
@@ -49,10 +50,14 @@ export function computeEras(text: string, baselineYear = 2010): Era[] {
   const baseRow = rows.find((r) => Number(r["Year"]) === baselineYear);
   if (!baseRow) throw new Error(`baseline year ${baselineYear} not found in CSV`);
   const b = ratesOf(baseRow);
+  // Reject a malformed baseline LOUDLY (it divides every ratio → Infinity era factors).
+  validateRates(b, `BBRef baseline ${baselineYear}`);
 
   return rows.map((r) => {
     const year = Number(r["Year"]);
     const c = ratesOf(r);
+    // Reject a partial row (missing H/BIP/etc → 0) before it becomes a divide-by-zero era file.
+    validateRates(c, `BBRef year ${year}`);
     return {
       id: `era-${year}`, name: String(year),
       bb: r6(ratio(c.bb, b.bb)), k: r6(ratio(c.k, b.k)), avg: r6(ratio(c.h, b.h)),

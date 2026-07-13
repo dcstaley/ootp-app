@@ -35,6 +35,24 @@ const eraFactors = (e: Era): EraFactors => ({
 // baseline era (all era factors are ratios to 2010). Guarded by a test against the era file.
 const REF_NHH_PER_BIP = (0.22944 - 0.02488) / 0.68832;
 
+/** Fields the per-BIP era factors read; a partial/malformed block silently produces Infinity/NaN
+ *  factors (÷ bip, ÷ (h−hr)) → Infinity scores downstream. Validated at ingestion + resolve. */
+const RATES_FIELDS = ["bb", "k", "hr", "h", "b2", "b3", "bip"] as const;
+
+/**
+ * Reject a partial/malformed era rates block LOUDLY rather than let it produce Infinity scores.
+ * Requires every rate to be a finite number and the two divisors (bip, h−hr) to be strictly
+ * positive. Called at BBRef ingestion (so a bad row never gets written) and defensively in
+ * resolveCoeffs (so a hand-edited era file can't silently corrupt scoring).
+ */
+export function validateRates(rates: Partial<NonNullable<Era["rates"]>> | null | undefined, ctx = "era"): asserts rates is NonNullable<Era["rates"]> {
+  if (!rates || typeof rates !== "object") throw new Error(`${ctx}: rates block missing or not an object`);
+  const bad = RATES_FIELDS.filter((f) => !Number.isFinite((rates as any)[f]));
+  if (bad.length) throw new Error(`${ctx}: rates block has non-finite/missing field(s): ${bad.join(", ")}`);
+  if (rates.bip! <= 0) throw new Error(`${ctx}: rates.bip must be > 0 (got ${rates.bip})`);
+  if (rates.h! - rates.hr! <= 0) throw new Error(`${ctx}: rates.h − rates.hr must be > 0 (got h=${rates.h}, hr=${rates.hr})`);
+}
+
 /** Per-BIP non-HR-hit era factor from an era's raw rates block: how an era moves hits PER
  *  BALL IN PLAY, not per PA. The per-PA `avg` double-counts the era's K/BB-driven BIP
  *  expansion when applied to the recompute's per-BIP hit chain (the dead-ball 1B
@@ -86,7 +104,12 @@ export function resolveCoeffs(model: Model, era: Era, park: Park, softcaps: Soft
   });
   // Attached post-assembly (not part of the lossless split/assemble partition — captures
   // predate it and keep the legacy per-PA era_h derivation). Library eras all carry rates.
-  if (era.rates) { bag.era_h_bip = eraHBip(era.rates); bag.era_gap_share = eraGapShare(era.rates); bag.era_bip_adj = eraBipAdj(era.rates); }
+  // A PRESENT-but-partial block is rejected (would divide-by-zero into Infinity scores); an
+  // ABSENT block is the legitimate legacy path (captures/synthetic → per-PA fallback).
+  if (era.rates) {
+    validateRates(era.rates, `resolveCoeffs(era ${era.id ?? "?"})`);
+    bag.era_h_bip = eraHBip(era.rates); bag.era_gap_share = eraGapShare(era.rates); bag.era_bip_adj = eraBipAdj(era.rates);
+  }
   return bag;
 }
 

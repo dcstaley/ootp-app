@@ -1394,9 +1394,17 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   // model's weights — no era/park/softcap), so any coeffs bag carrying the model's wobaWeights works:
   // resolve one neutral bag. FORWARD-ONLY — existing artifacts keep their usage-weighted means.
   // (the module-level scoring `model` is shadowed here by the local artifact — reload it)
-  const tmScoringModel = (await repo.loadAll<Model>("models"))[0]!;
-  const tmCoeffs = resolveCoeffs(tmScoringModel, eras.get("era-2010")!,
-    { id: "neutral", name: "neutral", avg_l: 1, avg_r: 1, hr_l: 1, hr_r: 1, gap: 1 }, tournaments[0]!.softcaps);
+  // Fresh-install guard: computing trainingMeans needs the seeded model + era-2010 + a tournament
+  // (for its softcaps). On a bare DB these are absent — fail with a clear message instead of a
+  // cryptic `undefined.coeffs` / `undefined.softcaps` crash deep in resolveCoeffs.
+  const tmScoringModel = (await repo.loadAll<Model>("models"))[0];
+  const tmEra2010 = eras.get("era-2010");
+  const tmTourney = tournaments[0];
+  if (!tmScoringModel || !tmEra2010 || !tmTourney) {
+    throw new Error("cannot train: the config DB is not seeded (models/era-2010/tournaments missing) — restart the server to seed defaults, then retrain");
+  }
+  const tmCoeffs = resolveCoeffs(tmScoringModel, tmEra2010,
+    { id: "neutral", name: "neutral", avg_l: 1, avg_r: 1, hr_l: 1, hr_r: 1, gap: 1 }, tmTourney.softcaps);
   applyWobaWeights(tmCoeffs, windowLoaded(window).wobaWeights);
   const tmModel = makeRawPolyModel(eventForm);
   // Reconstruct training-league cards (join each card's vR+vL obs) in the CSV-column shape
@@ -1414,10 +1422,18 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   const tmAll = [...tmCards.values()].filter((c) => c["Eye vR"] != null && c["Eye vL"] != null && c["Control vR"] != null && c["Control vL"] != null);
   const tmFieldHit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxPA as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true);
   const tmFieldPit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxBF as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true);
-  const trainingMeans: TrainingMeans = {
-    hit: { eye: tmFieldHit.hit.vR.eye!.mu, pow: tmFieldHit.hit.vR.pow!.mu, kRat: tmFieldHit.hit.vR.kRat!.mu, babip: tmFieldHit.hit.vR.babip!.mu, gap: tmFieldHit.hit.vR.gap!.mu },
-    pit: { con: tmFieldPit.pit.vR.con!.mu, stu: tmFieldPit.pit.vR.stu!.mu, pbabip: tmFieldPit.pit.vR.pbabip!.mu, hrr: tmFieldPit.pit.vR.hrr!.mu },
-  };
+  // Defensive: a sparse training window (few qualifying cards) can leave a channel's field stat
+  // absent → `undefined.mu` crash. Extract each channel safely; if ANY is missing, omit
+  // trainingMeans entirely (the model still saves — own-gap works without it; frame-v2/matchup
+  // just won't be selectable, and refreshActiveModel warns on activation).
+  const mu = (f: Record<string, { mu: number } | undefined>, k: string): number | undefined => f[k]?.mu;
+  const tmHit = { eye: mu(tmFieldHit.hit.vR, "eye"), pow: mu(tmFieldHit.hit.vR, "pow"), kRat: mu(tmFieldHit.hit.vR, "kRat"), babip: mu(tmFieldHit.hit.vR, "babip"), gap: mu(tmFieldHit.hit.vR, "gap") };
+  const tmPit = { con: mu(tmFieldPit.pit.vR, "con"), stu: mu(tmFieldPit.pit.vR, "stu"), pbabip: mu(tmFieldPit.pit.vR, "pbabip"), hrr: mu(tmFieldPit.pit.vR, "hrr") };
+  const tmComplete = [...Object.values(tmHit), ...Object.values(tmPit)].every((x) => Number.isFinite(x));
+  const trainingMeans: TrainingMeans | undefined = tmComplete
+    ? { hit: tmHit as TrainingMeans["hit"], pit: tmPit as TrainingMeans["pit"] }
+    : undefined;
+  if (!tmComplete) console.warn("[server] ⚠ trainingMeans incomplete (sparse training field) — model saved WITHOUT a frame reference; frame-v2/matchup will be unavailable for it.");
   // Realized RHP/LHP exposure over ALL window obs (OVR/team splits from aggregated
   // obs) + role-conditional pitch splits (row grain, from the loader before CID
   // aggregation — computePlatoon can't see role from the aggregated obs).
@@ -1459,6 +1475,12 @@ async function refreshActiveModel(): Promise<void> {
   // surfaces `stale` via modelSummary).
   if (m && (m.formatVersion ?? 1) < MODEL_FORMAT_VERSION) {
     console.warn(`[server] ⚠ active model '${m.id}' is formatVersion ${m.formatVersion ?? 1} < current ${MODEL_FORMAT_VERSION} — its betas score under updated evaluation semantics; RETRAIN to re-validate.`);
+  }
+  // transformMode ↔ trainingMeans coherence: frame-v2/matchup NEED the artifact's trainingMeans;
+  // without them scoreTournament silently falls back to own-gap. Warn loudly at activation so the
+  // active transform isn't silently a no-op (the UI reads hasTrainingMeans from the status endpoint).
+  if ((state.transformMode === "frame-v2" || state.transformMode === "matchup") && !activeTrainingMeans) {
+    console.warn(`[server] ⚠ transformMode='${state.transformMode}' but active model '${m?.id ?? "(none)"}' has NO trainingMeans — scoring SILENTLY falls back to own-gap. Retrain to embed trainingMeans, or switch transformMode to own-gap.`);
   }
   if (id && !m?.eventForm) { state.activeModelId = null; await saveState(); }
   invalidateDerivedCaches(); // model change moves the reference field, .500 anchor, and exposure baseline
