@@ -518,6 +518,9 @@ export function ModelTrainingPage() {
   const [activeSb, setActiveSb] = useState<ScoreboardResp | null>(null);
   const [activeSbLoading, setActiveSbLoading] = useState(false);
   const [activeForm, setActiveForm] = useState<DeployedForm | null>(null); // deployed #2 curves for the coefficient panel
+  // §10.8 frame-correction v2 — experimental A/B transform mode (server-side re-scores on switch).
+  const [transformMode, setTransformMode] = useState<"own-gap" | "frame-v2">("own-gap");
+  const [hasTrainingMeans, setHasTrainingMeans] = useState(false);
 
   const yq = (ys: number[]) => (ys.length ? `&years=${ys.join(",")}` : "");
   const vq = (incl: boolean) => `&variants=${incl ? "all" : "base"}`;
@@ -590,7 +593,7 @@ export function ModelTrainingPage() {
     loadSb(m.window, m.minPA, m.includeVariants);
     loadResid(residRole, m.window, m.minPA, m.includeVariants);
   };
-  useEffect(() => { load(); loadModels(); }, []); // loadModels routes to the active model's config (or default-window loads)
+  useEffect(() => { load(); loadModels(); loadTransformMode(); }, []); // loadModels routes to the active model's config (or default-window loads)
   // Deployed-performance scoreboard: scoped to the ACTIVE model's OWN window/min/variants
   // (independent of the page's exploration window); refetched whenever the active model changes.
   const loadActiveSb = (m: TrainedModelSummary) => {
@@ -605,6 +608,21 @@ export function ModelTrainingPage() {
     const m = models.find((x) => x.id === activeModelId);
     if (m) loadActiveSb(m); else setActiveSb(null);
   }, [activeModelId, models]);
+  // §10.8 frame correction — current transform mode + whether the active model can support frame-v2.
+  const loadTransformMode = () => fetch("/api/training/transform-mode").then((r) => r.json())
+    .then((d: { mode: "own-gap" | "frame-v2"; hasTrainingMeans: boolean }) => { setTransformMode(d.mode); setHasTrainingMeans(!!d.hasTrainingMeans); })
+    .catch((e) => setErr(String(e)));
+  // Switch transform mode. Server clears the scoring cache (re-scores everything), so refresh the
+  // active-model views on success; surfaces the 400 error (e.g. frame-v2 without trainingMeans).
+  const applyTransformMode = (mode: "own-gap" | "frame-v2") => fetch(`/api/training/transform-mode?mode=${mode}`, { method: "POST" })
+    .then((r) => r.json()).then((d: { ok: boolean; mode?: "own-gap" | "frame-v2"; hasTrainingMeans?: boolean; error?: string }) => {
+      if (!d.ok) { setErr(d.error ?? "frame-correction switch failed"); return; }
+      setErr(null);
+      setTransformMode(d.mode ?? mode);
+      if (d.hasTrainingMeans != null) setHasTrainingMeans(d.hasTrainingMeans);
+      const m = models.find((x) => x.id === activeModelId); // re-scored server-side → refresh this model's views
+      if (m) { loadModelConfig(m); loadActiveSb(m); }
+    }).catch((e) => setErr(String(e)));
   useEffect(() => { // deployed curves for the coefficient panel (follows the active model)
     let stale = false;
     fetch("/api/training/active-eventform").then((r) => r.json())
@@ -798,6 +816,20 @@ export function ModelTrainingPage() {
               </table>
             </div>
           )}
+
+          {/* §10.8 frame-correction v2 — experimental A/B transform mode; switching re-scores everything server-side */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0 4px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Frame correction:</span>
+            <span style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 6, overflow: "hidden" }}>
+              {([["own-gap", "own-gap (default)", true], ["frame-v2", "frame-v2 (experimental)", hasTrainingMeans]] as const).map(([mode, label, enabled]) => (
+                <button key={mode} onClick={() => { if (enabled && transformMode !== mode) applyTransformMode(mode); }} disabled={!enabled}
+                  title={mode === "frame-v2" && !hasTrainingMeans ? "active model has no trainingMeans — retrain to enable" : undefined}
+                  style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: enabled ? "pointer" : "not-allowed", padding: "5px 11px", fontSize: 12, fontWeight: transformMode === mode ? 700 : 400, background: transformMode === mode ? C.accent : C.input, color: transformMode === mode ? "#fff" : C.sub, opacity: enabled ? 1 : 0.5 }}>{label}</button>
+              ))}
+            </span>
+            {!hasTrainingMeans && <span style={{ fontSize: 11, color: C.sub }}>(active model has no trainingMeans — retrain to enable)</span>}
+            <span style={{ fontSize: 11, color: "#eab308" }}>experimental A/B toggle — not the production default; switching re-scores everything.</span>
+          </div>
 
           </>)}
 
