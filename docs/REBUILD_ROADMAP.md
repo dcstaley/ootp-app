@@ -490,6 +490,68 @@ trivial and agreed.
 
 ---
 
+## Audit-fix plan (2026-07-13) — post-adversarial-audit of the frame/matchup/era session
+
+Four-auditor adversarial review of a1e129b..ebab189 (full findings: plan doc §10–§13 + memory
+`tournament-opponent-frame` items 14–15). Derek decisions: experimental transformMode=frame-v2 on
+41-42-temp is BLESSED (leave it); quicks brackets ALWAYS fill to 16 ⇒ export shortfalls = ghost
+teams (missing teams ARE the ghosts; their OPPONENTS' padded lines are the contamination, and at
+16-team scale beneficiaries can't be identified statistically — no cliff). Execute in order:
+
+**Batch 1 — data integrity (blocks re-validation)**
+1. Clean Early Gold: run the Bronze-style pass, expectedTeams=128 → `Tournament Data/Early Gold
+   - CLEANED`; all analysis tools default to cleaned dirs. (EG is ghost-touched in all 7 runnings,
+   1.1–6.7% of PA; every LEVEL validation to date used inflated actuals, ~+4.3 hits/600.)
+2. Detector fixes: cap flags at min(nGhosts, cliffSize); endpoint warns "shortfall detected,
+   uncleaned" whenever cleaning is off but a shortfall exists.
+3. Automatic cleaning on ingest (app feature): expectedTeams comes from tournament config
+   (bracket size); auto-detect shortfall; apply surgical cleaning when cliff-safe; otherwise mark
+   the dataset "contaminated, level-unreliable" and rely on fit-time level absorption (Batch 4).
+4. Quicks ghost annotation (Derek, optional but best): per-running sidecar noting which teams
+   played the ghost slots → exact removal, no statistics. Ask at each export.
+
+**Batch 2 — re-validation on clean data**
+5. Re-run all level tables (era trilogy, frame-v2/matched-legs, ptdiag) on cleaned EG + cleaned
+   Bronze; update §11 numbers. Levels are currently "suggestive"; slopes already verified clean.
+6. era_bip_adj: measure on/off vs cleaned EG (it was justified under stale unit-elasticity
+   comments; actual deployed H curve is fitted log-BIP; it delivers ~half the counted correction
+   and pushes the pitcher hit chain −0.3..−1.9%). Keep only if it measurably helps; else revert
+   to scale 1. MUST land before roster regeneration.
+7. kslope harness sync: read trainingMeans off the ARTIFACT (matched-legs; the tool still
+   computes usage-weighted means = a frame production doesn't use); fix λ bisection (reject
+   bracket-boundary solutions); change the s* fit to center on the SAME top-50-field poolMeanK
+   production uses (fit matches production, not vice versa); re-fit S_K per role on clean data
+   (expect pit > hit; current flat 1.75 under-corrects pitchers).
+
+**Batch 3 — code corrections (parallel with Batch 2)**
+8. One-core consolidation: single applyKSpread helper (score-card.ts ×2 + calibrate.ts ×2);
+   poolMeanK uses applyFrameShift (not its local re-implementation); tournament-eval.ts routes
+   through the real recompute (it currently re-implements event math with FROZEN BIP — wrong on
+   non-neutral eras) and honors the active transformMode (currently always raw base model).
+9. Guards: validate era rates block at resolveCoeffs + BBRef ingestion (partial/null block →
+   reject, not Infinity scores); fix saveTrainedModel fresh-install non-null crashes; warn at
+   model activation when transformMode needs trainingMeans the artifact lacks (currently silent
+   own-gap fallback).
+10. Stale comments: woba.ts/curves.ts/server.ts claim unit-elasticity H (deployed = fitted
+    log-BIP — this rot misled the era_bip_adj reasoning); matchup.ts OppMeans comment predates
+    matched-legs; MODEL_FORMAT_VERSION=3 description wrong.
+11. Correct the record: §10.8/§12 "λ→1" claim is a SIGN ERROR (reproduced: usage-TM frame
+    doubles pitcher uBB bias to +13/+17, λ*≈3.8; shipped matched-legs ≈ catalog basing, residual
+    +6..+8/600 at λ=1, λ* 1.65–2.7). Rewrite with the real numbers; the +6..+8 pitcher-uBB
+    residual is OPEN and Phase-1 scope (BB sibling of the K under-separation).
+12. Test gap: one hand-computed hittingComponents integration expectation at era-1920 (era tests
+    are resolver-only; a misplaced woba.ts multiply would pass all 15).
+
+**Batch 4 — Phase 1 (matchup K-tail fit on quicks) entry criteria**
+13. Fit with a PER-TOURNAMENT FREE LEVEL TERM (each tournament gets a level knob; the curve
+    learns only shape) — this is also what makes ghost-inflated quicks usable when annotation
+    (item 4) is unavailable.
+14. Include the pitcher-uBB +6..+8 residual as a BB-channel level/tail term in the SAME
+    out-of-frame fit. 15. Fit only on cleaned/annotated or level-absorbed data; iron/bronze
+    quicks (when they arrive) provide the below-support rating coverage that constrains the tail.
+16. Format effect stays HELD (BB×0.85 real signal, value confounded by realized-field residual
+    ±3-4.5/600 + ghost inflation; HR suggestive; hits weak); the tier ladder is its test.
+
 ## Right now
 
 > **CURRENT STATE (2026-07-11, main @ audit fixes).** M0–M6 done. The deployed scoring model is the
