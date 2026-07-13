@@ -1828,6 +1828,14 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       exposure, thresholds: { minPA, minBF }, levels,
     });
   }
+  // The tournament-data directories available for validation (immediate subdirs of "Tournament Data").
+  if (method === "GET" && url === "/api/tournament/data-dirs") {
+    const TOURNEY_ROOT = "Tournament Data";
+    const dirs = existsSync(TOURNEY_ROOT)
+      ? readdirSync(TOURNEY_ROOT, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).sort()
+      : [];
+    return json(res, { dirs });
+  }
   // PREDICTIVE SCORECARD (roadmap §11.15/§11.16): per-card predicted-vs-realized wOBA →
   // discrimination metrics (Pearson / Spearman / RMSE / spread-ratio / value-regret) per role, for
   // EVERY AVAILABLE transform mode. The mode list is DATA-DRIVEN (base + own-gap always; frame-v2 only

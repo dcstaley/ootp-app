@@ -789,6 +789,8 @@ export function ModelTrainingPage() {
             <span style={{ fontSize: 11, color: "#eab308" }}>experimental A/B toggle — not the production default; switching re-scores everything.</span>
           </div>
 
+          <TournamentValidation />
+
           </>)}
 
           {tab === "bakeoff" && (<>
@@ -957,6 +959,143 @@ export function ModelTrainingPage() {
           )}
           </>)}
         </>
+      )}
+    </div>
+  );
+}
+
+// ── Tournament Validation — the PREDICTIVE SCORECARD (roadmap §11.15/§11.16) ──────────────────
+// Level bias measures calibration; this measures DISCRIMINATION (does the model rank + predict each
+// card well?) — the roster-relevant thing. Mode columns are DATA-DRIVEN off the response, so this
+// survives the own-gap/frame-v2 → matchup sunset with no rewrite.
+interface RoleScore {
+  n: number; predMean: number; realMean: number; levelBias: number;
+  pearson: number; spearman: number; rmse: number; spreadRatio: number;
+  valueRegret: number; topNOverlap: number; topN: number;
+}
+interface ModeScore { mode: string; hit: RoleScore | null; pit: RoleScore | null }
+interface ScorecardResp {
+  dir: string; tournament: string; model: string; active?: boolean; note?: string; error?: string;
+  obsCount: number; datasetStatus: "clean" | "cleaned" | "unreliable"; activeMode: string;
+  runnings: { file: string; status: string; ledger: number; residual: number }[];
+  thresholds: { minPA: number; minBF: number; topN: number }; modes: ModeScore[];
+}
+
+// metric rows: label, accessor, formatter, and the direction that is BETTER (for highlighting).
+const METRICS: { label: string; get: (s: RoleScore) => number; fmt: (v: number) => string; better: "high" | "low" | "one" | "zero"; hint: string }[] = [
+  { label: "Spearman ρ (rank)", get: (s) => s.spearman, fmt: (v) => v.toFixed(3), better: "high", hint: "the roster metric — are cards in the right order?" },
+  { label: "value-regret", get: (s) => s.valueRegret, fmt: (v) => v.toFixed(3), better: "low", hint: "wOBA the model's top-N picks leave on the table vs the true best" },
+  { label: "top-N overlap", get: (s) => s.topNOverlap, fmt: (v) => (v * 100).toFixed(0) + "%", better: "high", hint: "fraction of the true best-N the model also picks" },
+  { label: "Pearson r", get: (s) => s.pearson, fmt: (v) => v.toFixed(3), better: "high", hint: "predicted vs realized wOBA correlation" },
+  { label: "spread ratio", get: (s) => s.spreadRatio, fmt: (v) => v.toFixed(3), better: "one", hint: "SD(pred)/SD(actual) — <1 = the model UNDER-separates (K defect)" },
+  { label: "RMSE (wOBA)", get: (s) => s.rmse, fmt: (v) => v.toFixed(3), better: "low", hint: "typical per-card miss" },
+  { label: "level bias", get: (s) => s.levelBias, fmt: (v) => (v >= 0 ? "+" : "") + v.toFixed(3), better: "zero", hint: "calibration only — NOT roster-relevant" },
+];
+
+function TournamentValidation() {
+  const [dirs, setDirs] = useState<string[]>([]);
+  const [dir, setDir] = useState<string>("");
+  const [card, setCard] = useState<ScorecardResp | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/tournament/data-dirs").then((r) => r.json())
+      .then((d: { dirs: string[] }) => setDirs(d.dirs ?? [])).catch(() => {});
+  }, []);
+  const run = (d: string) => {
+    setDir(d);
+    if (!d) { setCard(null); return; }
+    setLoading(true); setErr(null); setCard(null);
+    fetch(`/api/tournament/scorecard?dir=${encodeURIComponent(d)}`).then((r) => r.json())
+      .then((c: ScorecardResp) => { if (c.error) setErr(c.error); else if (c.active === false) setErr(c.note ?? "no active model"); else setCard(c); })
+      .catch((e) => setErr(String(e))).finally(() => setLoading(false));
+  };
+
+  const badge = (status: string) => {
+    const col = status === "clean" ? "#22c55e" : status === "cleaned" ? "#eab308" : "#f87171";
+    return <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: col, borderRadius: 4, padding: "1px 7px" }}>{status}</span>;
+  };
+  // best mode index per metric row (for bold), given the "better" direction.
+  const bestIdx = (modes: ModeScore[], role: "hit" | "pit", m: typeof METRICS[number]): number => {
+    let bi = -1, bv = 0;
+    modes.forEach((mo, i) => {
+      const s = mo[role]; if (!s) return;
+      const v = m.get(s);
+      const score = m.better === "high" ? v : m.better === "low" ? -v : m.better === "one" ? -Math.abs(v - 1) : -Math.abs(v);
+      if (bi < 0 || score > bv) { bi = i; bv = score; }
+    });
+    return bi;
+  };
+
+  const roleTable = (role: "hit" | "pit") => {
+    if (!card) return null;
+    const modes = card.modes;
+    const any = modes.find((m) => m[role]);
+    if (!any) return <p style={{ fontSize: 12, color: C.sub }}>Too few {role === "hit" ? "hitters" : "pitchers"} above the PA/BF threshold.</p>;
+    const s0 = any[role]!;
+    return (
+      <div style={{ overflowX: "auto", marginTop: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 3 }}>
+          {role === "hit" ? "Hitters" : "Pitchers"} <span style={{ color: C.sub, fontWeight: 400 }}>(N={s0.n}, top-{s0.topN})</span>
+        </div>
+        <table style={{ borderCollapse: "collapse", fontSize: 12 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", padding: "2px 10px 2px 0", color: C.sub, fontWeight: 600 }}>metric</th>
+              {modes.map((m) => (
+                <th key={m.mode} style={{ textAlign: "right", padding: "2px 10px", color: m.mode === card.activeMode ? C.link : C.sub, fontWeight: 700 }}>
+                  {m.mode}{m.mode === card.activeMode ? " ●" : ""}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {METRICS.map((met) => {
+              const bi = bestIdx(modes, role, met);
+              return (
+                <tr key={met.label} title={met.hint} style={{ borderTop: `1px solid ${C.border}` }}>
+                  <td style={{ padding: "2px 10px 2px 0", color: C.text }}>{met.label}</td>
+                  {modes.map((m, i) => {
+                    const sc = m[role];
+                    return (
+                      <td key={m.mode} style={{ textAlign: "right", padding: "2px 10px", fontVariantNumeric: "tabular-nums", fontWeight: i === bi ? 700 : 400, color: i === bi ? C.text : C.sub }}>
+                        {sc ? met.fmt(met.get(sc)) : "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ marginTop: 22, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <h3 style={{ margin: 0, fontSize: 14 }}>Tournament validation <span style={{ fontSize: 11, color: C.sub, fontWeight: 400 }}>· predictive scorecard (discrimination, not just level bias)</span></h3>
+        <select value={dir} onChange={(e) => run(e.target.value)} style={{ ...inputStyle, padding: "5px 8px", fontSize: 12 }}>
+          <option value="">select a tournament dataset…</option>
+          {dirs.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+        {loading && <span style={{ fontSize: 12, color: C.sub }}>computing…</span>}
+      </div>
+      {err && <p style={{ color: "#f87171", fontSize: 12 }}>{err}</p>}
+      {card && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: C.sub, flexWrap: "wrap" }}>
+            {badge(card.datasetStatus)}
+            <span>{card.obsCount} cards · model <b style={{ color: C.text }}>{card.model}</b> · active frame <b style={{ color: C.link }}>{card.activeMode}</b> · ≥{card.thresholds.minPA} PA / ≥{card.thresholds.minBF} BF</span>
+          </div>
+          {card.datasetStatus === "unreliable" && <p style={{ color: "#f87171", fontSize: 12, margin: "4px 0" }}>⚠ Ledger does not reconcile for some runnings — metrics may be contaminated by partial exports.</p>}
+          <p style={{ fontSize: 11, color: C.sub, margin: "6px 0 2px" }}>Higher Spearman / overlap and lower value-regret = better ranking (the roster metric). Bold = best mode per row; ● = active frame.</p>
+          {roleTable("hit")}
+          <div style={{ height: 10 }} />
+          {roleTable("pit")}
+        </div>
       )}
     </div>
   );
