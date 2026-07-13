@@ -70,6 +70,16 @@ export function parseTrainingFilename(name: string): { league: string; side: Sid
   return { league: rest.join(" ").replace(/\s+/g, ""), side, year };
 }
 
+/** A combined league export — one line per card, NO vL/vR split (e.g. "2042 HD450 ALL.csv").
+ *  These carry an "ALL" token and no side, and are NOT valid per-side training input (the fit
+ *  needs the split), so the per-side loader SKIPS them rather than flagging them as unparsed —
+ *  they're preserved on disk for potential future combined-league use. A genuinely malformed
+ *  name (no side AND no ALL) still reports as unparsed. */
+export function isCombinedLeagueFile(name: string): boolean {
+  const tokens = name.replace(/\.csv$/i, "").trim().split(/\s+/);
+  return tokens.some((t) => /^all$/i.test(t)) && !tokens.some((t) => /^v[lr]$/i.test(t));
+}
+
 export interface HitOutcomes { PA: number; AB: number; H: number; b1: number; b2: number; b3: number; HR: number; BB: number; IBB: number; HP: number; SH: number; SF: number; K: number; GIDP: number }
 export interface PitchOutcomes { BF: number; IP: number; AB: number; b1: number; b2: number; b3: number; HR: number; BB: number; IBB: number; K: number; HP: number; SH: number; SF: number }
 
@@ -139,7 +149,7 @@ export interface LoadedTraining { summary: TrainingSummary; observations: TrainO
 interface FoundFile { file: string; abs: string; tag: { league: string; side: Side; year: number } | null }
 function discover(root: string): FoundFile[] {
   const rels = readdirSync(root, { recursive: true }) as string[];
-  return rels.filter((r) => /\.csv$/i.test(r))
+  return rels.filter((r) => /\.csv$/i.test(r) && !isCombinedLeagueFile(basename(r)))
     .map((rel) => ({ file: rel.replace(/\\/g, "/"), abs: join(root, rel), tag: parseTrainingFilename(basename(rel)) }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }

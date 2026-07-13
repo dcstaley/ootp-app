@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
-import { parseTrainingFilename, loadTrainingDir, loadWindow, availableYears } from "../src/training/loader.ts";
+import { parseTrainingFilename, isCombinedLeagueFile, loadTrainingDir, loadWindow, availableYears } from "../src/training/loader.ts";
 
 const DIR = "League Files";
 
@@ -24,6 +24,20 @@ describe("parseTrainingFilename — robust to token order + naming", () => {
   it("returns null when side or year is missing", () => {
     expect(parseTrainingFilename("HD 450 2037.csv")).toBeNull();
     expect(parseTrainingFilename("HD 450 vL.csv")).toBeNull();
+  });
+});
+
+describe("isCombinedLeagueFile — combined (no-split) ALL exports are skipped, not errored", () => {
+  it("detects the combined ALL exports (an ALL token, no side)", () => {
+    expect(isCombinedLeagueFile("2042 HD450 ALL.csv")).toBe(true);
+    expect(isCombinedLeagueFile("2042 PEL ALL.csv")).toBe(true);
+  });
+  it("does NOT flag per-side files (they have a side token)", () => {
+    expect(isCombinedLeagueFile("2042 HD450 vL.csv")).toBe(false);
+    expect(isCombinedLeagueFile("HD 452 2038 vR.csv")).toBe(false);
+  });
+  it("does NOT flag a genuinely malformed name (no side AND no ALL) — that stays unparsed", () => {
+    expect(isCombinedLeagueFile("HD 450 2037.csv")).toBe(false);
   });
 });
 
