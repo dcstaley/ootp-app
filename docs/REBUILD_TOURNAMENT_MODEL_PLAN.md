@@ -503,6 +503,17 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
   inconsistency; its practical impact is tiny (anchor-absorbed) but it should be resolved before Phase 1.
   Note: this also touches `K̄_pool` centering (same top-50). Doubles as a ghost detector (contaminated
   running's realized field is anomalously weak vs the eligible catalog).
+  **RESOLVED — matched-legs check RAN, verdict ADOPT, SHIPPED (`f88912c`).** Recomputed the frame with
+  `μ_train` = top-50 of the training league (matched to `μ_pool`) and RE-RAN the kslope/ptdiag
+  level-matching on ghost-cleaned EG+Bronze: (a) in-frame gap → identically 0 (was −3.6..−11.2);
+  (b) out-of-frame level-matching HELD (no channel broke past its A baseline by more than ~2), and the
+  worst residual — pitcher uBB — IMPROVED 11→6 (EG) / 14→8 (BR), ~5–6/600; (c) `s*` essentially
+  unchanged (rose ~7–8%, same K story). So the field-mean argument and the level-matching AGREE (matched
+  legs *correct* a real under-correction). `saveTrainedModel` now computes `trainingMeans` via
+  `computeUnifiedFieldStats` over reconstructed training-league cards; env/softcap-independent selection,
+  neutral coeffs. FORWARD-ONLY — existing artifacts keep usage-weighted means; takes effect at the next
+  retrain. Tradeoff accepted: the clean in-frame identity + the pitcher-uBB fix outweigh ~2/600 hitter-K
+  movement (both within the frame-v2/matchup path, not production own-gap).
 - **Hitter SF+4 — NOT a bug, refit-coupled cosmetic.** Hitter BIP_ADJ = HBP 6 + SH 3 − SF 4 = 5;
   pitcher = 6. Training (`forms/fit/bakeoff`) AND inference (`raw-poly`/`woba`/`HIT_BIP_ADJ`) use the
   IDENTICAL constant, so the fitted curve absorbs the convention and scores are correct (guarded by
@@ -616,6 +627,10 @@ Every significant decision this session, with the reasoning and the alternative 
   fix `μ_pool`") conflicts with §10.8/§11.5, where the kslope/ptdiag level-matching used this SAME top-50
   and the level bias DID collapse. The shift is calibrated by LEVEL-MATCHING, not field-means, so the
   level test is the arbiter — acting on the field-mean argument could break what empirically works.
+  OUTCOME: the check RAN and vindicated the process — matched legs held the levels AND net-improved
+  pitcher uBB, so the arbiter and the field-mean argument agreed; ADOPTED (`f88912c`). The value of
+  insisting on the level test wasn't that it overturned the field-mean argument — it's that it *confirmed*
+  it with a mechanism instead of a coincidence, so we ship on evidence, not a hunch.
 
 ### Process / scope
 
