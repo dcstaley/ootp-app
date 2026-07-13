@@ -574,6 +574,12 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
 re-run on cleaned EG + cleaned Bronze through the CORRECTED eval (`evaluateTournamentLevels` now uses
 the real BIP recompute + honors the active transformMode — was frozen-BIP + raw-base-model).
 
+**RE-CONFIRMED on the retrained `league-41-42` model (2026-07-13, HD452/2042 added, full window).** All
+numbers below (measured on the throwaway `41-42-temp`) reproduce within ~0.5/600 on the real model:
+frame-v2 EG HIT H−HR +2.4 / PIT uBB +5.6 / PIT K −9.7; Bronze HIT H−HR +3.9 / PIT uBB +6.9. era_bip_adj
+still KEEP (hitter |bias| 3.9→2.4, pitcher 7.7→5.7). Decisions transfer; roster regen is safe.
+
+
 **IN-FRAME REGRESSION CHECK (2026-07-13) — PASS.** Before trusting the cleaned-data tables, the rewritten
 eval was re-validated in-frame on the 2042 ALL-league combined files (full pool, neutral env = the
 model's training frame, base frame): max |bias| = **0.89/600** (HIT uBB −0.19 / K +0.78 / HR +0.18 /
