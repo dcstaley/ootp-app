@@ -400,11 +400,20 @@ hit/XBH → regenerate.
 **11.4 Open Quicks null test (5 runnings, era-2010 full-pool neutral).** (a) **FRAME STORY CONFIRMED:**
 in-frame K-by-rating slope ratio ~1.0 (hitter 1.13 / pitcher 0.92) vs 0.4–0.6 in weak pools → the K
 under-separation is a frame/opponent artifact that VANISHES in-frame. (b) **NEW universal FORMAT
-effect** (deployment/TTO, orthogonal to pool strength): the model over-predicts offense — BB ×0.85,
-HR ×0.87, non-HR hits ×0.96, pitcher K ~×1.03. Vindicates the retired `BB 0.85` default, REFUTES
-`HR 1.15` (data says 0.87). **PROVISIONAL — HOLD, make NO changes** (Derek not convinced): 5 runnings
-only; firm up with more Open runnings + tiers. Tiers double as a format-CONSISTENCY test (a true
-format effect is ~constant across tiers after removing the frame correction). `tools/quicks-levelbias.ts`.
+effect** (deployment/TTO, orthogonal to pool strength): the model over-predicts offense — measured
+level moves ≈ BB ×0.85, HR ×0.87, non-HR hits ×0.96, pitcher K ~×1.03.
+> **⚠ LANGUAGE / FRAMING NOTE (Derek, 2026-07-13). These are MEASURED level moves, NOT a multiplier we
+> plan to hardcode — and "0.85" is not a number the code should ever contain.** Two distinct things get
+> conflated: (1) the OLD app's blanket `BB 0.85 / HR 1.15` adjustment — a hand-set fudge with no
+> empirical basis, RETIRED (§10.6, explicit-field-only). (2) THIS measurement, which independently
+> lands BB near 0.85 (coincidence with the retired value — do NOT read it as "the magic number was
+> right") and REFUTES the old HR 1.15 (data says 0.87, opposite direction). The measurement is
+> CONFOUNDED (realized-field ±3–4.5/600 + possible ghost inflation → a lower bound) and on 5 runnings.
+> **End-state is NOT a global multiplier**: Phase 1 absorbs the format level via a per-tournament FREE
+> LEVEL TERM fit from data (roadmap Batch 4.13), so each format gets its own fitted knob and no hand-set
+> constant enters the code. Until then: **HOLD, make NO changes.**
+Tiers double as a format-CONSISTENCY test (a true format effect is ~constant across tiers after removing
+the frame correction). `tools/quicks-levelbias.ts`.
 
 **11.5 K-slope defect RE-VERIFIED — real, not a ghost artifact, `s≈1.75` stands.** With all fixes
 active and on ghost-CLEANED data: out-of-frame predicted K spread is still only 0.43–0.61 of actual;
@@ -564,6 +573,16 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
 **11.14 Batch-2 re-validation on GHOST-CLEANED data (2026-07-13, roadmap Batch 2).** Level tables
 re-run on cleaned EG + cleaned Bronze through the CORRECTED eval (`evaluateTournamentLevels` now uses
 the real BIP recompute + honors the active transformMode — was frozen-BIP + raw-base-model).
+
+**IN-FRAME REGRESSION CHECK (2026-07-13) — PASS.** Before trusting the cleaned-data tables, the rewritten
+eval was re-validated in-frame on the 2042 ALL-league combined files (full pool, neutral env = the
+model's training frame, base frame): max |bias| = **0.89/600** (HIT uBB −0.19 / K +0.78 / HR +0.18 /
+H−HR +0.45; PIT uBB −0.39 / K +0.89 / HR −0.04 / H−HR +0.27) — reproduces §11.13's frozen-BIP result to
+~0.01. Expected: at neutral era the real recompute and frozen-BIP coincide (they diverge only on
+non-neutral eras, where the fix matters). ⇒ the Batch-3.8 rewrite introduced NO in-frame regression; the
+cleaned-data tables below rest on a proven-correct pipeline. (The faint +0.8 K over-pred both roles is
+the known in-frame K tendency, not an aggregation artifact.)
+
 `tools/tournament-levels-clean.ts`, active model `41-42-temp` (frame-v2). Per-600 level BIAS
 (pred−actual), events uBB / K / HR / H−HR:
 
