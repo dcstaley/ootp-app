@@ -1007,6 +1007,28 @@ top-decile unmeasurable yet.**
   uncapped?), stu-residual meta-model (aux KEPT → expect it holds, verify), and Step-3 out-of-frame ladder
   context-invariance → the early-exit (form-only vs Hyp-1) decision.
 
+**11.29 STEP-3 CONTEXT-INVARIANCE — the form fix LARGELY RESTORES it; early-exit in view
+(`tools/context-invariance.ts`).** Adopted form (pit rawquad-all+aux, hit RAWPOLY_HIT), BASE frame (NO
+transform), out-of-frame deconvolved value spread ± CI (in-frame ref: pit ~0.78, hit ~0.97):
+
+| dataset | HIT spread | PIT spread |
+|---|---|---|
+| Open / Bronze-q / Gold-q | CIs BLOWN UP (floor-dominated — uninformative) | " |
+| **EG-clean (N 293/166)** | **1.06 [.90,1.23]** | **1.01 [.77,1.84]** |
+| **Bronze-t (N 131/123)** | **1.14 [.80,1.72]** | **0.74 [.54,1.24]** |
+
+**Reliable reads (EG, Bronze-t):** with the form fix in the BASE frame, **out-of-frame pitcher spread ≈ the
+in-frame ~0.78** (Bronze-t 0.74) to ABOVE it (EG 1.01) — vs the deployed collapse to 0.52–0.70. **The
+pool-conditioned pitcher under-spread was largely a FORM artifact** (log curves compressing in the
+out-of-frame rating regions), not a genuine opponent-frame *spread* effect — the form fix restores context-
+invariance without any transform. Hitters hold (EG 1.06 / BR 1.14 ≈ 0.97). **⇒ EARLY EXIT IS IN VIEW: raw
+model + adopted form + anchor, NO transforms — sunset own-gap/frame-v2/matchup.** CAVEATS (why "in view",
+not "done"): (1) quicks CIs are uninformative (floor-dominated) — they can't confirm the spacing yet;
+(2) EG/Bronze-t pit CIs are wide ([.54,1.84]) and the two straddle 0.78 (avg ~0.87) — consistent with
+context-invariance but not tightly pinned; (3) still need the ACCEPTANCE BATTERY (form-only vs own-gap on
+BOTH axes — ordering AND spacing — out-of-frame) + the monotone-gate + stu-residual guardrails before the
+sunset call. NEXT: acceptance battery (the final gate) + guardrails; gather pitcher depth to tighten (2).
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
