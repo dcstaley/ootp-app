@@ -726,6 +726,23 @@ is low) — comforting for roster-building. Recommendation: FIT NOW (≥7/tier i
 Gold to firm the noisier pit plateau); do NOT wait for ranking confidence that capped quicks can't
 provide; use Open / wider-value pools when ranking IS the question.**
 
+**⚠ CORRECTION (2026-07-13, `tools/quicks-rank-check.ts` — Derek pushed back on "cards are close").**
+The "talent ≈ noise / cards indistinguishable" read above was an OVER-READ: it came from a fragile
+de-noising (spread² − noise² → ~0) applied to the range-restricted HIGH-PA ELITE subset (≥300–500 PA
+selects the most-played staples, a narrow top band; spread shrinks as the threshold rises). Over the
+FULL played pool (≥100 PA, N≈52–71 cards/tier) the model's OFFENSIVE ranking is a REAL, moderate signal,
+NOT noise: own-gap Spearman ρ — Gold HIT **~0.50** (stable across thresholds), Bronze PIT 0.39→0.57,
+Bronze HIT ~0.30, Open ~0.20 (Open is the WEAKEST — its played pool is elite-only = narrowest band; the
+CAPPED tiers have the WIDER played-value band and rank BETTER). So: **the cards are NOT close** — a
+value-88 card really does out-produce a value-55 card and the model tracks that (ρ~0.5 where the band is
+wide + PA decent). The honest limits are (i) MODERATE not crisp correlation (per-card noise + we only
+observe OFFENSE, not defense/position/two-way, which the app's full card VALUE includes and tournament
+stat lines cannot validate), and (ii) fine ranking WITHIN a narrow elite band stays noise-limited. More
+runnings DO help the full-pool estimate (tightens ρ, adds cards); the earlier pessimism was the wrong
+(elite-subset) lens. NOTE the scorecard's predicted wOBA already INCLUDES the rating scaling (fitted
+curves + env + pool/frame transform); it EXCLUDES only the anchor (a global scale, irrelevant to rank)
+and non-offensive value (unmeasurable here).
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
