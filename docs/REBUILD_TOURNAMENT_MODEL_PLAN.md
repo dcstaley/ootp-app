@@ -870,6 +870,30 @@ once, like own-gap but gap-anchored/fitted), and what single-channel K s(gap) ca
 own-gap's ordering (axis 1) + a fitted MULTI-channel spacing that reaches ~1.0 on VALUE (axis 2). This partly
 REVISES Fable's Consequence-1 ("s(gap) is the spacing champion" — true only for the K channel, not value).
 
+**11.23 AXIS-2 NOISE-DECONVOLVED (Fable method fix + Derek inverse-variance rule, `tools/phase1-spacing.ts`).**
+`σ²_true = σ²_obs − mean_w(SE²_card)`, binomial SE on the wOBA scale; spread-ratio = σ_pred/σ_TRUE (target
+~1.0); card-bootstrap CIs; inverse-variance aggregate across ALL datasets (no blacklist — quicks are
+floor-dominated, σ_obs≈σ_noise ⇒ CIs blow up [e.g. Open hit 0.75..427] ⇒ auto-down-weighted; EG/Bronze-t
+dominate). **INVERSE-VARIANCE AGGREGATE (deconvolved):**
+
+| | own-gap | s(gap) |
+|---|---|---|
+| HIT spread-ratio | **1.02** (≈correct; Bronze-t 1.25 = mild over) | **0.71** (UNDER — s(gap) COMPRESSES hitters) |
+| PIT spread-ratio | **0.75** (UNDER-spread) | 0.79 (~same) |
+| PIT/HIT compression | **0.69** (cap bias) | 1.03 (FALSE balance) |
+
+**Findings (deconvolution corrects §11.22):** (1) **own-gap hitters are genuinely ~correctly spaced (1.02)** —
+not "over-spreading" (my raw-0.98 read was noise-suppressed; the mild over is only Bronze-t). (2) **The cap
+bias is a PITCHER under-spread** — own-gap pit spacing 0.75 of true, pit/hit **0.69** (pitcher upside
+understated ~30% vs hitters; reliable on EG 0.79 / Bronze-t 0.56). This is the live cap-allocation tilt to
+hitters — CONFIRMED, moderate. (3) **s(gap) does NOT fix it — it FALSE-BALANCES**: pit/hit 1.03 is reached by
+COMPRESSING HITTERS (1.02→0.71), not by fixing pitchers (0.75→0.79). Not deployable; it breaks the one thing
+own-gap gets right. **SHIP BAR (Fable): deconv pit/hit ≥ ~0.9, strictly > own, without losing axis-1 or hit
+spacing. own FAILS (0.69), s(gap) FAILS (false-balance / hitter damage).** **Hyp-1 TARGET, now precise: raise
+PIT spread-ratio 0.75→~1.0 while PRESERVING hit ~1.0** (own-gap is the hitter reference to beat, not the K
+term). Caveat: even deconv pit CIs are wide (Bronze-t pit [0.50,1.20]); the ~0.75 point estimate has real
+uncertainty — the aggregate is the best read, tightens as PA/card accrues.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
