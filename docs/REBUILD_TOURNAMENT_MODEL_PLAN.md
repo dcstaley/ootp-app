@@ -807,6 +807,18 @@ cross-tier ladder identifies the ramp (per-tier s* are noisy points on it); same
 **SEQUENCING:** ~~x-overlap verify + Open uBB role split~~ — DONE (both confirm the design) → s(gap) fit →
 knobs → acceptance battery.
 
+**11.20 s(gap) FIT — done (`tools/fit-sgap.ts`).** Joint per-card K fit over the quicks ladder
+(Open/Bronze-q/Gold-q, ≥100 PA/BF, PA/BF-weighted, ghost-cleaned), closed-form A per fixed G, grid G:
+- **HIT: `s(g)=1+0.76·(1−e^{−g/17.5})`, plateau 1.76** — ≈ the interim hand-tuned (1.75, G0 17); the hand
+  value was right for hitters. wRMSE/600 18.2 (no-corr) → 14.3 (fitted ≈ hand).
+- **PIT: `s(g)=1+1.03·(1−e^{−g/14.5})`, plateau 2.03** — role split confirmed (higher plateau), but at the
+  observed gaps (22–26) fitted s≈1.8, only modestly above the flat 1.75 (RMSE 14.3→12.4 ≈ hand). The higher
+  plateau matters for extrapolation to bigger gaps (lower tiers), unobserved yet.
+- **s at gaps:** Open ~1.0/1.33, Gold(g26/22) 1.59/1.81, Bronze-q(g42/26) 1.69/1.85; checks EG 1.59/1.81,
+  Bronze-t 1.70/1.83. **Caveat:** RMSE gains are modest at current gaps ⇒ the decisive test is the RANKING
+  gate (scorecard Spearman/value-regret), not RMSE. SEs not yet clustered-by-running (uncertainty on A_pit
+  vs A_hit is real given the small gains). NEXT: per-tournament×role knobs → acceptance battery.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
