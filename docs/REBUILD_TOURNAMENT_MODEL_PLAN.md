@@ -623,6 +623,30 @@ era_bip_adj ON (resolved 2.398) vs OFF (=1), read in the PRODUCTION frame-v2:
   UNDER-prediction) — not the frame production scores in. **Decision: KEEP; default not reverted;
   machinery + `era-bip-adj.test.ts` retained.** Safe for roster regeneration.
 
+**11.15 Transform-mode LIFECYCLE + the validation scorecard (design constraint, Derek 2026-07-13).**
+The three transform modes are NOT a permanent menu — they collapse post-Phase-1:
+- **own-gap** (multiplicative faded-scalar) → **RETIRE.** The only genuinely different mode; the
+  predictive scorecard (below) is the evidence gate to pull it (expect matchup ≥ frame-v2 > own-gap on
+  Spearman / value-regret).
+- **frame-v2** → **FOLDS INTO matchup.** frame-v2 IS matchup-with-`tail`≡0 (Phase-0 bit-identity), so
+  it's not a separate mode once the tail is fit — it's "matchup before Phase 1." No risky swap.
+- **matchup** (opp-side, fitted tail) → the SINGLE surviving transform + production default.
+- **Sunset cleanup (tracked, do at Phase 2):** remove the own-gap `poolTransform` machinery, the
+  frame-v2 `kSpread` interim patch (replaced by the fitted tail), the UI toggle's dead options, and the
+  `scoreTournament` per-mode branches. A real chunk of dead code — remove it, don't leave it behind a
+  collapsed toggle.
+
+**Validation panel = a PREDICTIVE SCORECARD, not a level-bias table** (Derek's point: level bias is
+calibration, not discrimination; the K under-separation is a pure ranking defect INVISIBLE to level
+bias). Per tournament × role × mode, on the FINAL scored wOBA (era/park/frame/calibration applied) vs
+realized wOBA (same artifact wOBA weights): **Pearson r, Spearman ρ (the roster metric), RMSE, spread
+ratio (SD_pred/SD_actual — exposes under-separation per-tournament), value-regret / top-N overlap (the
+roster-honest metric), + level bias as the calibration row.** Machinery already exists (bake-off
+scoreboard = weighted Pearson + value-regret + CV; `tournament-cv.ts` = native-CV Pearson) — surface it
+per tournament. **BUILD MODE-AGNOSTIC:** the mode axis is DATA-DRIVEN (render whatever modes the backend
+reports; loop generically), NEVER a hardcoded own-gap/frame-v2 pair — so it survives the sunset with
+zero rewrite and doubles as the retirement gate.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
