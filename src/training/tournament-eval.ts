@@ -78,12 +78,10 @@ interface Agg {
 }
 
 export interface LoadTournamentOpts {
-  /** Fixed team count for the ghost-cleaner (Bronze = 128). Passed THROUGH to `clean` as its
-   *  2nd arg — a plain `(rows) => rows` cleaner simply ignores it. */
-  expectedTeams?: number;
-  /** Ghost-cleaner, INJECTED by the caller (do NOT import it here). Applied per-running (per CSV).
-   *  Receives (rows, expectedTeams) so the caller can either pre-bake the count or read it here. */
-  clean?: (rows: Row[], expectedTeams?: number) => Row[];
+  /** Ghost-cleaner, INJECTED by the caller (do NOT import it here — DI keeps this module isolated
+   *  from the cleaner). Applied per-running (per CSV). Receives (rows, filename) so the caller can
+   *  record a per-running diagnostic keyed by file. Returns the rows to keep. */
+  clean?: (rows: Row[], file: string) => Row[];
 }
 
 /**
@@ -98,7 +96,7 @@ export function loadTournamentOutcomes(dir: string, opts: LoadTournamentOpts = {
     let rows = (parsed.data ?? []).filter((r) => r && r["CID"] != null && String(r["CID"]) !== "");
     // Ghost-clean this running (one CSV = one running) via the injected cleaner. DI — the
     // cleaner is a caller concern; this module stays data-shape-agnostic and import-free of it.
-    if (opts.clean) rows = opts.clean(rows, opts.expectedTeams);
+    if (opts.clean) rows = opts.clean(rows, f);
     for (const r of rows) {
       const cid = String(r["CID"]);
       const vlvl = num(r["VLvl"]);

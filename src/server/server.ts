@@ -1759,23 +1759,45 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       : [];
     if (!allowed.includes(dirParam)) return json(res, { error: `unknown dir '${dirParam}'`, available: allowed }, 400);
     const fullDir = join(TOURNEY_ROOT, dirParam);
-    const expectedTeams = Number(u.searchParams.get("expectedTeams") ?? "") || undefined;
     const minPA = Number(u.searchParams.get("minPA") ?? 100) || 100;
     const minBF = Number(u.searchParams.get("minBF") ?? 100) || 100;
     const { t, s } = scoredFor(tid);
     const ef = s.ctx.config.eventForm;
     const evModel: EventModel = ef ? makeRawPolyModel(ef) : logLinearModel;
-    // Ghost-cleaner wired via DI (import from ../eval/tournament-clean.ts). Only cleans when an
-    // expectedTeams count is supplied (a running with no ghost count is passed through untouched).
-    const clean = expectedTeams
-      ? (rows: any[], teams?: number) => cleanTournamentRows(rows, teams ?? expectedTeams).cleaned
-      : undefined;
-    const obs = loadTournamentOutcomes(fullDir, { expectedTeams, clean });
+    // AUTO-CLEANING ON INGEST (roadmap Batch 1.3): run the PA−BF ledger + per-org asymmetry
+    // diagnostic on EVERY running, clean when it fires, and record a per-running status. The
+    // cleaner is wired via DI (imported from ../eval/tournament-clean.ts) so the loader stays
+    // isolated from it. A dataset whose ledger doesn't reconcile is served with a LOUD warning.
+    const runnings: {
+      file: string; status: string; ledger: number; residual: number; tol: number;
+      distinctOrgs: number; entriesEst: number;
+      flagged: { org: string; imb: number; asym: number; pa: number; bf: number }[];
+    }[] = [];
+    const clean = (rows: any[], file: string) => {
+      const { cleaned, report } = cleanTournamentRows(rows);
+      runnings.push({
+        file, status: report.status, ledger: report.ledger, residual: report.residual, tol: report.tol,
+        distinctOrgs: report.distinctOrgs, entriesEst: report.entriesEst,
+        flagged: report.flagged.map((f) => ({ org: f.org, imb: f.imb, asym: f.asym, pa: f.pa, bf: f.bf })),
+      });
+      return cleaned;
+    };
+    const obs = loadTournamentOutcomes(fullDir, { clean });
     const exposure = tournamentExposure(obs);
     const levels = evaluateTournamentLevels(obs, evModel, s.ctx.config.coeffs, exposure, { minPA, minBF });
+    // Aggregate per-dataset status: unreliable if ANY running fails to reconcile; cleaned if any
+    // was cleaned; else clean.
+    const datasetStatus = runnings.some((r) => r.status === "unreliable")
+      ? "unreliable"
+      : runnings.some((r) => r.status === "cleaned")
+        ? "cleaned"
+        : "clean";
+    const warning = datasetStatus === "unreliable"
+      ? `Ledger does NOT reconcile for ${runnings.filter((r) => r.status === "unreliable").map((r) => r.file).join(", ")} — level bias may be contaminated by partial exports.`
+      : null;
     return json(res, {
       dir: dirParam, tournament: t.name, model: model!.name, activeForm: !!ef,
-      obsCount: obs.length, cleaned: !!expectedTeams, expectedTeams: expectedTeams ?? null,
+      obsCount: obs.length, datasetStatus, warning, runnings,
       exposure, thresholds: { minPA, minBF }, levels,
     });
   }

@@ -1,25 +1,41 @@
 // Tournament ghost-cleaning — a reusable, data-shape-agnostic module.
 //
-// WHY: OOTP tournaments run a fixed team count (Bronze = 128, best-of-7). A manager who
-// never submits a lineup is replaced by GHOST teams that play the bracket but DON'T export
-// to the running CSV. The ghost loses every game by blowout (Bo7 → 4 games, 40+ runs each),
-// so the ghost's real OPPONENT racks up a massively inflated combined stat line. The result:
-//   (a) the running shows FEWER distinct teams than expected (each ghost = one missing team), and
-//   (b) a handful of real teams carry absurd offensive totals from beating the ghosts.
+// WHY (the PA−BF LEDGER, the decisive ghost test — 2026-07-13 forensics, roadmap Batch 1):
+// A tournament running is a CLOSED system: every batting plate appearance (PA) is simultaneously
+// one batter-faced (BF) on the pitching side, so a COMPLETE export satisfies ΣPA == ΣBF EXACTLY
+// (validated: Return-of-the-Bronze July-11, a known-clean 128-team running, has ΣPA−ΣBF = 0 to the
+// unit). Contamination = a ONE-SIDED / PARTIAL export: an org (or a ghosted manager's opponent)
+// whose batting lines export but whose pitching lines don't (or vice-versa). That org carries
+// PA ≫ BF, and the pool ledger ΣPA−ΣBF opens up by exactly that org's imbalance.
 //
-// METHOD (validated on real Return-of-the-Bronze data, July 2026):
-//   1. nGhosts = expectedTeams − distinctTeamCount   (a "team" = a distinct non-empty ORG).
-//   2. Score every team by EXCESS OFFENSE = teamPA × (teamRate − poolRate), where `rate` is a
-//      wOBA-proxy per PA. Excess (not raw wOBA) is used because raw rate throws false positives
-//      on small-sample luck; multiplying by PA demands the inflation be BOTH large AND on volume.
-//   3. The top-nGhosts teams by excess ARE the ghost opponents → remove all their rows.
-//   Validation: July-7 flags "Portsmouth Wunderfunk" (excess≈193); July-5 flags
-//   "DC Capital Giants" (≈178); a clean 128-team running (July-11) has nGhosts=0 and a smooth
-//   top (max excess≈49) → removes nothing.
+// This SUPERSEDES the earlier excess-offense heuristic (`PA × (rate − poolRate)`), which was
+// retired because it TRUNCATES REAL WINNERS and manufactures a fake offense-suppression signal
+// (roadmap Batch 1.1d). The ledger is name-independent, deterministic, and needs no external
+// team-count assumption.
 //
-// Parse conventions mirror tools/tournament-kslope.ts: numeric fields via Number()||0; the
-// batting columns are PA, ORG, BB, 1B_1, 2B_1, 3B_1, HR. Callers pass already-parsed row
-// objects (a CSV read lives in the caller), keeping this module data-shape-agnostic.
+// DETECTOR (tuned on Return-of-the-Bronze ground truth; reproduces its validated cleaning EXACTLY):
+//   1. ledger L = ΣPA − ΣBF over every row in the running.
+//   2. |L| ≤ tol  ⇒  status "clean", remove nothing.
+//   3. Otherwise, CULPRITS = orgs whose per-org imbalance (PA − BF) shares L's SIGN and whose own
+//      |asymmetry| = |PA − BF| / (PA + BF) exceeds `asymFloor`. Sign-matching is essential: it
+//      excludes opposite-sign orgs (e.g. Bronze July-7's Oslo Royals, −15.9% asym, a blown-out
+//      team, NOT a partial exporter) that a bare asymmetry threshold would false-positive.
+//   4. Remove the largest-|imbalance| culprits GREEDILY (each only if it moves the ledger toward 0)
+//      until |residual| ≤ tol (status "cleaned") or culprits run out (status "unreliable").
+//
+// VALIDATION (matches Derek's in-game ground truth, byte-for-byte with the prior validated output):
+//   • Bronze July-11: L=0 → clean, removes nothing.
+//   • Bronze July-5:  L=+405 → removes DC Capital Giants (imb +314, asym 16.2%) → residual +91.
+//   • Bronze July-7:  L=+360 → removes Portsmouth Wunderfunk (imb +401, asym 13.7%) → residual −41.
+//     Note Portsmouth is only 13.7% asym — a flat >15% rule would MISS the real culprit and instead
+//     flag the opposite-sign Oslo Royals. Clean orgs top out at ~4–8% asym, culprits at ≥13.7%, so
+//     `asymFloor` sits in that gap (default 0.10).
+//   • Early Gold (all 7 runnings): L=+228..+855 → removes 1–4 partial-export orgs each (asym 17–38%),
+//     reconciling every ledger to |residual| ≤ 40.
+//
+// Parse conventions mirror tools/tournament-kslope.ts: numeric fields via Number() with non-finite
+// → 0. Callers pass already-parsed row objects (a CSV read lives in the caller), keeping this module
+// data-shape-agnostic. The batting-PA column is `PA`, the pitching batters-faced column is `BF`.
 
 // A parsed CSV row. String-keyed; values are whatever the CSV parser produced (usually string).
 export type Row = Record<string, unknown>;
@@ -30,99 +46,165 @@ const num = (v: unknown): number => {
   return Number.isFinite(x) ? x : 0;
 };
 
-/** wOBA-proxy numerator for one row (per-PA offensive value, un-normalized). */
-const wobaNumerator = (r: Row): number =>
-  0.7 * num(r.BB) +
-  0.9 * num(r["1B_1"]) +
-  1.25 * num(r["2B_1"]) +
-  1.6 * num(r["3B_1"]) +
-  2 * num(r.HR);
-
-/** Team identity = the trimmed, non-empty ORG field. Empty ORG rows count toward the pool but form no team. */
+/** Team identity = the trimmed, non-empty ORG field. Empty ORG rows count toward the pool ledger
+ *  (PA/BF still sum) but form no removable team. */
 const orgOf = (r: Row): string => String(r.ORG ?? "").trim();
 
-export interface FlaggedTeam {
-  org: string;
-  /** Excess offense = teamPA × (teamRate − poolRate). Higher = more ghost-inflated. */
-  excess: number;
-  /** Total batting PA accumulated by the team across all its rows. */
-  pa: number;
-  /** The team's PA-weighted wOBA-proxy rate. */
-  woba: number;
+export interface DetectOptions {
+  /** Absolute ledger tolerance (|ledger| below this ⇒ clean / reconciled). Overrides relTol/minTol. */
+  tol?: number;
+  /** Relative tolerance as a fraction of ΣPA (default 0.0035). Effective tol = max(minTol, relTol·ΣPA). */
+  relTol?: number;
+  /** Absolute floor for the derived tolerance (default 150). */
+  minTol?: number;
+  /** Per-org |asymmetry| gate for culprit eligibility (default 0.10). Clean orgs sit ≤~0.08; the
+   *  lowest real culprit measured (Bronze Portsmouth) is 0.137 — 0.10 sits safely in the gap. */
+  asymFloor?: number;
+  /** Rows-per-entry divisor for the roster-volume entry estimate (default 26). */
+  entriesPerTeam?: number;
 }
 
-export interface DetectResult {
-  /** expectedTeams − distinctTeamCount; the number of ghost opponents to remove (clamped ≥ 0). */
-  nGhosts: number;
-  /** The top-nGhosts teams by excess offense — the ghost opponents. Empty when nGhosts = 0. */
-  flagged: FlaggedTeam[];
-  /** PA-weighted pool mean wOBA-proxy rate across every row. */
-  poolWoba: number;
-  /** Distinct non-empty ORG count (for callers that want to report it). */
-  distinctTeams: number;
+/** Per-org ledger record. */
+export interface OrgLedger {
+  org: string;
+  pa: number;
+  bf: number;
+  /** PA − BF. Positive = batting over-represented (partial pitching export / ghost opponent). */
+  imb: number;
+  /** (PA − BF) / (PA + BF); signed. |asym| is the partial-export magnitude. */
+  asym: number;
+  /** Row count for this org. */
+  rows: number;
+  /** Roster-volume entry estimate = round(rows / entriesPerTeam). >1 ⇒ a multi-entry org (one ORG
+   *  string fielding several teams, e.g. the quicks case) — a roster-volume count, NEVER a name count. */
+  entries: number;
+}
+
+export type DatasetStatus = "clean" | "cleaned" | "unreliable";
+
+export interface ContaminationReport {
+  /** clean = ledger already balanced; cleaned = flagged orgs removed, ledger reconciled; unreliable
+   *  = ledger imbalanced but no cliff-safe set of culprits reconciles it (serve with a loud warning). */
+  status: DatasetStatus;
+  /** ΣPA − ΣBF over the original rows. */
+  ledger: number;
+  /** ΣPA − ΣBF after removing the flagged orgs (equals `ledger` when nothing is flagged). */
+  residual: number;
+  /** The tolerance actually applied. */
+  tol: number;
+  sPA: number;
+  sBF: number;
+  distinctOrgs: number;
+  /** round(nRows / entriesPerTeam) — pool-wide roster-volume entry estimate. */
+  entriesEst: number;
+  /** Orgs to remove (empty when status = clean, or unreliable with no eligible culprits). */
+  flagged: OrgLedger[];
+  /** Every org, sorted by |imb| desc — for reporting / inspection. */
+  orgs: OrgLedger[];
 }
 
 /**
- * Detect ghost-opponent teams in a tournament running.
- *
- * @param rows          already-parsed CSV row objects (one per card line).
- * @param expectedTeams the tournament's fixed team count (Bronze = 128). A 16-team Bo5 "quicks"
- *                      running would pass 16 here, which recomputes both the ghost count AND the
- *                      clean ceiling (fewer teams → each ghost is a larger share of the field).
+ * Run the PA−BF ledger diagnostic on one tournament running and identify the partial-export orgs to
+ * remove. Pure and deterministic; performs no I/O. See the module header for the method + validation.
  */
-export function detectGhostOpponents(rows: Row[], expectedTeams: number): DetectResult {
-  let poolNum = 0;
-  let poolPA = 0;
-  const teams = new Map<string, { pa: number; n: number }>();
+export function detectContamination(rows: Row[], opts: DetectOptions = {}): ContaminationReport {
+  const asymFloor = opts.asymFloor ?? 0.1;
+  const entriesPerTeam = opts.entriesPerTeam ?? 26;
 
+  let sPA = 0;
+  let sBF = 0;
+  const teams = new Map<string, { pa: number; bf: number; rows: number }>();
   for (const r of rows) {
     const pa = num(r.PA);
-    const n = wobaNumerator(r);
-    poolNum += n;
-    poolPA += pa;
+    const bf = num(r.BF);
+    sPA += pa;
+    sBF += bf;
     const org = orgOf(r);
     if (!org) continue;
     let a = teams.get(org);
     if (!a) {
-      a = { pa: 0, n: 0 };
+      a = { pa: 0, bf: 0, rows: 0 };
       teams.set(org, a);
     }
     a.pa += pa;
-    a.n += n;
+    a.bf += bf;
+    a.rows += 1;
   }
 
-  const poolWoba = poolPA > 0 ? poolNum / poolPA : 0;
-  const ranked: FlaggedTeam[] = [...teams.entries()]
+  const orgs: OrgLedger[] = [...teams.entries()]
     .map(([org, a]) => {
-      const woba = a.pa > 0 ? a.n / a.pa : 0;
-      return { org, excess: a.pa * (woba - poolWoba), pa: a.pa, woba };
+      const imb = a.pa - a.bf;
+      const denom = a.pa + a.bf;
+      return {
+        org,
+        pa: a.pa,
+        bf: a.bf,
+        imb,
+        asym: denom > 0 ? imb / denom : 0,
+        rows: a.rows,
+        entries: Math.max(1, Math.round(a.rows / entriesPerTeam)),
+      };
     })
-    .sort((x, y) => y.excess - x.excess);
+    .sort((x, y) => Math.abs(y.imb) - Math.abs(x.imb));
 
-  const distinctTeams = teams.size;
-  const nGhosts = Math.max(0, expectedTeams - distinctTeams);
-  return { nGhosts, flagged: ranked.slice(0, nGhosts), poolWoba, distinctTeams };
+  const ledger = sPA - sBF;
+  const tol = opts.tol ?? Math.max(opts.minTol ?? 150, (opts.relTol ?? 0.0035) * sPA);
+  const entriesEst = Math.round(rows.length / entriesPerTeam);
+  const base = {
+    ledger,
+    tol,
+    sPA,
+    sBF,
+    distinctOrgs: teams.size,
+    entriesEst,
+    orgs,
+  };
+
+  if (Math.abs(ledger) <= tol) {
+    return { ...base, status: "clean", residual: ledger, flagged: [] };
+  }
+
+  // Greedy sign-matched reconciliation: remove the largest same-sign, sufficiently-asymmetric orgs
+  // until the residual ledger is within tolerance. Each removal must move the ledger TOWARD zero
+  // (guards against a single over-large org overshooting into a bigger opposite imbalance).
+  const sign = ledger > 0 ? 1 : -1;
+  const candidates = orgs.filter((o) => Math.sign(o.imb) === sign && Math.abs(o.asym) >= asymFloor);
+  const flagged: OrgLedger[] = [];
+  let residual = ledger;
+  for (const c of candidates) {
+    if (Math.abs(residual) <= tol) break;
+    if (Math.abs(residual - c.imb) >= Math.abs(residual)) continue; // removal would not help
+    flagged.push(c);
+    residual -= c.imb;
+  }
+
+  const status: DatasetStatus = Math.abs(residual) <= tol ? "cleaned" : "unreliable";
+  return { ...base, status, residual, flagged };
 }
 
 export interface CleanResult {
-  /** All rows EXCEPT those belonging to a flagged ghost-opponent team (order preserved). */
+  /** All rows EXCEPT those belonging to a flagged org (order preserved). */
   cleaned: Row[];
-  /** The removed rows (belonging to flagged teams). */
+  /** The removed rows (belonging to flagged orgs). */
   removed: Row[];
+  /** The full ledger diagnostic (status, ledger before/after, flagged orgs). */
+  report: ContaminationReport;
 }
 
 /**
- * Remove every row belonging to a detected ghost-opponent team.
- * When nGhosts = 0 (a clean running), `cleaned` equals `rows` and `removed` is empty.
+ * Remove every row belonging to a detected partial-export org. When the running is clean (or
+ * unreliable with no eligible culprits), `cleaned` equals `rows` and `removed` is empty. The
+ * `report.status` distinguishes clean (nothing to do) from unreliable (imbalance persists — the
+ * caller should warn when serving it).
  */
-export function cleanTournamentRows(rows: Row[], expectedTeams: number): CleanResult {
-  const { flagged } = detectGhostOpponents(rows, expectedTeams);
-  const drop = new Set(flagged.map((f) => f.org));
+export function cleanTournamentRows(rows: Row[], opts: DetectOptions = {}): CleanResult {
+  const report = detectContamination(rows, opts);
+  const drop = new Set(report.flagged.map((f) => f.org));
   const cleaned: Row[] = [];
   const removed: Row[] = [];
   for (const r of rows) {
     if (drop.has(orgOf(r))) removed.push(r);
     else cleaned.push(r);
   }
-  return { cleaned, removed };
+  return { cleaned, removed, report };
 }

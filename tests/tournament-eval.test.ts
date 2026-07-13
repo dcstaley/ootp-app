@@ -59,8 +59,7 @@ describe.skipIf(!TDIR)("loadTournamentOutcomes — eval-only ingestion", () => {
   it("injected ghost-cleaner is applied (DI) and never adds volume", () => {
     const without = loadTournamentOutcomes(TDIR!);
     const cleaned = loadTournamentOutcomes(TDIR!, {
-      expectedTeams: 128,
-      clean: (rows, teams) => cleanTournamentRows(rows, teams ?? 128).cleaned,
+      clean: (rows) => cleanTournamentRows(rows).cleaned,
     });
     const pa = (o: TournamentObs[]) => o.reduce((s, x) => s + x.pa, 0);
     expect(pa(cleaned)).toBeLessThanOrEqual(pa(without));
