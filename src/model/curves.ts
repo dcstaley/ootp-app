@@ -103,14 +103,17 @@ export const rateAux = (e: FittedEvent, v: number, auxV: number) => {
 
 // The H (non-HR hit) event has TWO inputs: the BABIP/PBABIP RATING and the derived
 // BIP count. TWO shapes exist:
-//   • perBip (CURRENT, unit BIP elasticity): H = perBIP_rate(rating) × BIP. The BIP
-//     relation is PINNED to proportionality — in league training BIP barely varies
-//     across players, so a FITTED BIP coefficient is nearly unidentified in-frame and
-//     extrapolates arbitrarily when extreme eras move BIP ~18% (the dead-ball +16/600
-//     1B over-prediction). `beta` spans the RATING design only: [1, <rating basis>].
-//   • legacy (persisted artifacts, formatVersion ≤ 2): the BIP count enters the design
-//     as its OWN fitted curve — beta over [1, <rating basis>, <bip basis>]. Kept
-//     evaluating EXACTLY as fitted so already-deployed artifacts score unchanged.
+//   • fitted log-BIP (the DEPLOYED shape — RAWPOLY_HIT/PIT omit `hBip` ⇒ default LOG, so
+//     the BIP count enters the design as its OWN fitted curve — beta over [1, <rating
+//     basis>, <bip basis>]). This is what production scores with. The fitted BIP elasticity
+//     is genuinely identified (≈0.86 hit / 0.92 pit).
+//   • perBip (unit BIP elasticity): H = perBIP_rate(rating) × BIP — the BIP relation PINNED
+//     to proportionality. `beta` spans the RATING design only: [1, <rating basis>]. This is
+//     the physically-motivated alternative, kept ONLY as the `woba·perbip` bake-off
+//     candidate and NOT adopted (pinning elasticity to 1.0 made the dead-ball 1B bias WORSE).
+//     Reached only when a form sets hBip:"unit" (PERBIP_*) or an artifact stored perBip:true.
+// AUDIT NOTE (2026-07-13, finding C): earlier comments here mislabeled perBip as "CURRENT" and
+// fitted log-BIP as "legacy ≤ v2" — BACKWARDS. Deployed = fitted log-BIP; trust the artifact.
 // This is the ONE definition of the H↔BIP relation — training (forms.ts), the deployed
 // model (raw-poly.ts), and the scoring-core recompute (woba.ts) all evaluate via hRate.
 export interface CurveFit { curve: Curve; mu: number; sd: number }
@@ -118,7 +121,7 @@ export interface FittedH {
   beta: number[];
   rating: CurveFit;
   bip?: CurveFit;   // legacy shape only (fitted BIP curve); absent under perBip
-  perBip?: boolean; // true ⇒ unit-elasticity shape (beta is the per-BIP rate curve)
+  perBip?: boolean; // true ⇒ unit-elasticity shape (beta is the per-BIP rate curve). The DEPLOYED model leaves this absent (fitted log-BIP); only PERBIP_* / perBip-stored artifacts set it.
 }
 export const rowTerms = (c: Curve, v: number, mu: number, sd: number) => row(c, v, mu, sd).slice(1); // basis minus the shared intercept
 export const hDesign = (r: CurveFit, rv: number, b: CurveFit, bv: number) => [1, ...rowTerms(r.curve, rv, r.mu, r.sd), ...rowTerms(b.curve, bv, b.mu, b.sd)];

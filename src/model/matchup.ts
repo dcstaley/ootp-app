@@ -23,8 +23,11 @@ import type { EventModel, HittingRatings, PitchingRatings, RawHitting, RawPitchi
 import { applyFrameShift, type TrainingMeans, type FrameShift } from "./pool-transform.ts";
 import { buildFrameShift, type FieldStats } from "../scoring-core/pool-stats.ts";
 
-// The opponent means the matchup coordinate is measured against: the model's PA/BF-weighted
-// TRAINING opponent means (the reference frame) and the tournament POOL's unified field means.
+// The opponent means the matchup coordinate is measured against: the model's TRAINING-league
+// opponent means (the reference frame) and the tournament POOL's unified field means. Since the
+// matched-legs change (f88912c), fresh artifacts store `trainingMeans` = the TOP-50 field of the
+// training league (matched to the top-50 pool μ, so the in-frame gap is 0). FORWARD-ONLY: artifacts
+// trained before f88912c still carry the older PA/BF usage-weighted means (a mismatched leg).
 export interface OppMeans { train: TrainingMeans; pool: FieldStats }
 
 // Phase-1 structure, PINNED to identity in Phase 0. `tail` = an additive K offset; `aRole` = a

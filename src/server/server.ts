@@ -1318,10 +1318,10 @@ function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number
 // direction-aware monotone cap (T-5). On activation a model whose version predates this is
 // flagged (server log + a `stale` field the UI surfaces) so it can be retrained.
 //   v1 = pre-versioning (implicit)  ·  v2 = direction-aware monotone cap + fit-domain (T-5)
-//   v3 = unit-elasticity H↔BIP (perBip: H = perBIP(rating)×BIP; a fitted BIP coefficient
-//        was unidentified in league data and extrapolated badly in extreme eras) + uBB
-//        (BB−IBB) fit targets. v≤2 artifacts keep their fitted-BIP-term shape and
-//        evaluate exactly as before (hRate branches on the stored FittedH shape).
+//   v3 = uBB (BB−IBB) fit targets, both roles — the semantics change that bumped v2→v3.
+//        (The deployed H↔BIP shape stayed FITTED log-BIP; unit-elasticity perBip was a
+//        bake-off candidate NOT adopted — trust the artifact, not the earlier note here that
+//        credited v3 with perBip.) v≤2 artifacts predate uBB targets → flagged stale on activation.
 const MODEL_FORMAT_VERSION = 3;
 
 interface TrainedModel {

@@ -10,8 +10,9 @@ const HR_SHARE_OF_HITS = 5525 / (5525 + 34700 + 10550 + 1075);
  *  tournament_hr_adjust/era_thr path stays only for the log-linear parity baseline; the
  *  full config-field removal rides with the log-model retirement.
  *
- *  era_h is a PER-BIP multiplier (woba.ts applies it to perBIP(rating) × BIP_fin, after
- *  BIP has already expanded/contracted under era_bb/era_k/era_hr). When the resolver
+ *  era_h is a PER-BIP multiplier (woba.ts applies it to the re-derived non-HR-hit rate from
+ *  hRate(rating, BIP_fin), after BIP has already expanded/contracted under era_bb/era_k/era_hr).
+ *  When the resolver
  *  provides `era_h_bip` (computed from the era's raw rates block), use it directly —
  *  the legacy formula below derives era_h from the PER-PA `era_avg`, which double-counts
  *  the era's BIP expansion (dead-ball 1920: 1.152 per-PA vs 0.974 per-BIP; validated

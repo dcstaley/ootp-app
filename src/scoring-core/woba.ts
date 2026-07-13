@@ -55,9 +55,10 @@ export function hittingComponents(
     : Math.max(600 - BB_fin - (coeffs.adv_hbp ?? 6) - (coeffs.adv_sh ?? 0) - SO_fin - HR_fin, 1);
   // BA (non-HR hit rate) and the GAP-share are RE-DERIVED here because era/park move
   // BIP and hits depend on BIP. With #2 (eventForm present) the re-derivation uses the
-  // fitted curves via hRate — the ONE H↔BIP definition (current fits: H = perBIP(babip)
-  // × BIP, unit elasticity; legacy artifacts: fitted log-BIP term, evaluated as fitted)
-  // — the SAME curves the deployed model uses (one core). Otherwise the parity log-linear formulas
+  // fitted curves via hRate — the ONE H↔BIP definition. The DEPLOYED fits use a fitted
+  // log-BIP term (H = curve(rating, BIP); elasticity ≈0.86); `perBip` unit elasticity is a
+  // NON-deployed bake-off candidate (see curves.ts — earlier notes here had this backwards).
+  // Same curves the deployed model uses (one core). Otherwise the parity log-linear formulas
   // (e.babipSC/e.gapSC are the raw ratings under #2, the softcapped values under log).
   const BA_raw = eventForm
     ? hRate(eventForm.hit.h, e.babipSC, BIP_fin)
