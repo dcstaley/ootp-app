@@ -846,6 +846,30 @@ Phase 1 is BLOCKED on the pitcher channel-weighting problem** (the frame fixes l
 the K-spread magnitude is not the lever). The s(gap) fit + the clean level reconciliation stand as results;
 the ranking fix is a different, open problem.
 
+**11.22 TWO-AXIS GATE (Fable's cardinal-value correction) — adopted; but s(gap) does NOT fix assembled-
+VALUE spacing (`tools/phase1-twoaxis.ts`).** Gate revised: the optimizer consumes CARDINAL VALUES (cap/
+slots budget math + marginal defense/offense trade-offs need gap SIZES, not order), so judge BOTH axes on
+assembled value (wOBA; D2 signed distance is an affine of it): AXIS 1 ORDERING (value-regret + top-N overlap
++ Spearman), AXIS 2 SPACING (spread-ratio SD_pred/SD_actual →1.0 + `gapDistortionRmse`, the affine-invariant
+metric in `src/training/metrics.ts`). Reuse it, don't reinvent.
+**Result (own-gap vs s(gap), ≥100 PA/BF):**
+- **s(gap) does NOT win axis 2 on assembled VALUE.** Pitcher value spread-ratio stays **0.22–0.48** (own
+  0.30/sgap 0.34 Bronze-q; 0.22/0.23 Gold-q) — far from 1.0, barely above own-gap; `gapRMSE` is
+  own≈sgap everywhere. The §11.17 "K spread 0.5→1.0" was the K CHANNEL fit (tautological: s* is fit to equate
+  K spread); it does NOT propagate to VALUE, because pitcher under-separation is MULTI-CHANNEL (§11.18: K +
+  hits + BB-level). For HITTERS own-gap is actually the BETTER-spaced (EG spread-ratio own 0.98 vs sgap 0.65;
+  Bronze-t 0.82 vs 0.68). So **neither transform restores pitcher value spacing; a K-only fix is insufficient.**
+- **AXIS 1 unchanged:** own-gap orders pitchers ≥ s(gap) (regret/overlap ~tie or own better).
+- **CAP-BIAS readout (Fable Consequence 2 — the LIVE production bias): CONFIRMED, modest.** Pit-vs-hit value-
+  spread compression (pred/real) under own-gap: **EG 0.95, Bronze-t 0.74** (reliable, N 120–290) — pitcher
+  upside understated ~5–25% relative to hitters, tilting cap $ to hitters via D2; quicks show more extreme
+  (0.41–0.60) but small-N/noisy. **s(gap) does NOT cleanly fix it** (pit/hit 0.43–1.39, over/under by dataset).
+**IMPLICATION:** fixing pitcher VALUE spacing (the cap-allocation fix) needs a MULTI-CHANNEL spread restore —
+which is exactly what **rating-space widening (Hyp-1)** does (multiplicative-in-ratings widens ALL channels at
+once, like own-gap but gap-anchored/fitted), and what single-channel K s(gap) cannot. Hyp-1's two-axis job:
+own-gap's ordering (axis 1) + a fitted MULTI-channel spacing that reaches ~1.0 on VALUE (axis 2). This partly
+REVISES Fable's Consequence-1 ("s(gap) is the spacing champion" — true only for the K channel, not value).
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.

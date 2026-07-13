@@ -377,3 +377,28 @@ export function tournamentScorecard(
   }));
   return { hit: score(hitRows), pit: score(pitRows) };
 }
+
+/** Raw per-card predicted vs realized wOBA (+ PA/BF weight) per role, for a given config — the inputs
+ *  to `src/training/metrics.ts` (evalMetrics/gapDistortionRmse) and the two-axis / cap-bias readouts.
+ *  Predicted wOBA carries the active transform (own-gap/frame-v2/matchup); realized is from actuals. */
+export interface CardValues { pred: number[]; real: number[]; w: number[] }
+export function tournamentCardValues(
+  obs: TournamentObs[], config: TournamentEvalConfig, exposure: TournamentExposure, opts: ScorecardOpts = {},
+): { hit: CardValues; pit: CardValues } {
+  const ctx = makeCtx(config);
+  const coeffs = config.coeffs;
+  const minPA = opts.minPA ?? 500, minBF = opts.minBF ?? 500;
+  const bl = (a: number, b: number, w: number) => w * a + (1 - w) * b;
+  const hit = obs.filter((o) => o.pa >= minPA);
+  const pit = obs.filter((o) => o.bf >= minBF);
+  return {
+    hit: {
+      pred: hit.map((o) => bl(compToWoba(hitComp(o, "vR", ctx), coeffs), compToWoba(hitComp(o, "vL", ctx), coeffs), exposure.wRhit)),
+      real: hit.map((o) => actualWoba(o.actual.hit, coeffs)), w: hit.map((o) => o.pa),
+    },
+    pit: {
+      pred: pit.map((o) => bl(compToWoba(pitComp(o, "vR", ctx), coeffs), compToWoba(pitComp(o, "vL", ctx), coeffs), exposure.wRpit[thr(o.throws)]!)),
+      real: pit.map((o) => actualWoba(o.actual.pit, coeffs)), w: pit.map((o) => o.bf),
+    },
+  };
+}
