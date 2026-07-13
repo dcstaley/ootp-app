@@ -94,6 +94,15 @@ type ExposureInfo = {
   baseline?: { platoonVR: number; r_pitch_split: number; l_pitch_split: number };
   effective?: ExpSplits;
 };
+// GET /api/debug/consistency?t=<id> — cross-role divergence alarm (src/eval/consistency.ts).
+// active:false ⇒ no event model. events keyed by BB/K/HR/1B/XBH; each carries a signed
+// per-600 diff (hitter − pitcher). maxAbsEventDiffPer600 = worst |diff| across events.
+type ConsistencyEventRO = { hitterPer600: number; pitcherPer600: number; diffPer600: number; ratio: number };
+type ConsistencyInfo = {
+  active: boolean; note?: string;
+  events?: Record<string, ConsistencyEventRO>;
+  maxAbsEventDiffPer600?: number;
+};
 
 export function TournamentsPage() {
   const { tournaments, tournamentId, reloadTournaments, reloadView } = useAppData();
@@ -106,6 +115,7 @@ export function TournamentsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [exposure, setExposure] = useState<ExposureInfo | null>(null);
+  const [consistency, setConsistency] = useState<ConsistencyInfo | null>(null);
   // Raw text of a numeric field mid-edit (keyed by field). While a field holds unparseable
   // text (e.g. cleared for retyping) the DRAFT is left untouched, so the auto-save never
   // persists a transient 0 — the draft only moves on parseable values (W-5).
@@ -231,11 +241,15 @@ export function TournamentsPage() {
   // Platoon-exposure provenance (baseline → deployment → effective) for the selected
   // tournament. Server computes from the SAVED config, so refetch on select + after saves.
   useEffect(() => {
-    if (!selId) { setExposure(null); return; }
+    if (!selId) { setExposure(null); setConsistency(null); return; }
     let stale = false; // latest-wins: a slow response for a previous select/save is dropped
     fetch("/api/exposure?t=" + encodeURIComponent(selId)).then((r) => r.json())
       .then((d) => { if (!stale) setExposure(d); })
       .catch(() => { if (!stale) setExposure(null); });
+    // Parallel: cross-role consistency alarm for this same tournament (?t= mirrors exposure).
+    fetch("/api/debug/consistency?t=" + encodeURIComponent(selId)).then((r) => r.json())
+      .then((d) => { if (!stale) setConsistency(d); })
+      .catch(() => { if (!stale) setConsistency(null); });
     return () => { stale = true; };
   }, [selId, msg?.text]);
 
@@ -530,6 +544,25 @@ export function TournamentsPage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                );
+              })()}
+              {consistency?.active && consistency.events && typeof consistency.maxAbsEventDiffPer600 === "number" && (() => {
+                // Reference cross-role per-600 divergence (roughly what an in-frame pool shows).
+                const BASE = 6.3;
+                const maxAbs = consistency.maxAbsEventDiffPer600!;
+                // Worst event = the one whose |diffPer600| is largest (== maxAbsEventDiffPer600).
+                const [name, ro] = Object.entries(consistency.events!)
+                  .reduce((a, b) => (Math.abs(b[1].diffPer600) > Math.abs(a[1].diffPer600) ? b : a));
+                const color = maxAbs < 2 * BASE ? "#86efac" : maxAbs < 5 * BASE ? "#fbbf24" : "#f87171";
+                const label = `${name} ${ro.diffPer600 >= 0 ? "+" : ""}${ro.diffPer600.toFixed(1)}/600`;
+                return (
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
+                    <span style={{ fontSize: 11, color: C.sub, textTransform: "uppercase", letterSpacing: 0.4 }}>Cross-role consistency</span>
+                    <span title="Worst per-600 hitter−pitcher event divergence for this pool (green &lt;12.6, amber &lt;31.5, else red)."
+                      style={{ display: "inline-flex", alignItems: "center", fontSize: 12, fontWeight: 700, color: C.bg, background: color, borderRadius: 999, padding: "2px 9px", fontVariantNumeric: "tabular-nums" }}>
+                      {label}
+                    </span>
                   </div>
                 );
               })()}
