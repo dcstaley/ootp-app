@@ -674,6 +674,43 @@ opp-side frame a ranking improvement). CAVEATS: small N (61–115 cards), combin
 noise → the ~0.03–0.05 gaps are within noise, but BR·pit's 0.22 gap is large and directionally consistent
 with the prior finding. The scorecard is now the standing instrument for every future frame/model change.
 
+**11.17 QUICKS LADDER measured — the K-ramp + format effect (2026-07-13, `tools/quicks-ladder.ts`).**
+Open + Bronze + Gold quicks in (7 / 7 / 5 runnings, era-2010 neutral, ghost-cleaned in-memory — Open+Bronze
+ledger 0; one Gold ghost auto-removed). Active model `league-41-42`. **This is the Phase-1 fit data.**
+
+**(A) The K-slope RAMP is now observed** — `s*` (K spread the data wants, WLS centered on production K̄_pool):
+
+| tier | hit gap | pit gap | s* hit | s* pit |
+|---|---|---|---|---|
+| **Open** (val≤∞) | 0.1 | 5.6 | **0.99** | 1.28 |
+| **Bronze** (≤69) | 42.3 | 25.8 | 1.71 | 1.64 |
+| **Gold** (≤89) | 26.1 | 22.3 | 1.72 | 2.06 |
+
+**Open in-frame `s* hit = 0.99 ≈ 1.0` — the previously-UNOBSERVABLE ramp base (§10.8) is now pinned.** The
+frame story is fully confirmed: in-frame the K spread is correct; out-of-frame the model under-separates and
+`s*` ramps to ~1.7 (hit) / ~1.6–2.1 (pit). Hitters plateau ~1.71 by gap ~26 (flat 26→42); pitchers want
+HIGHER (~1.6–2.1, role split confirmed). The hand-tuned `1 + 0.75·clamp(gap/17)` (→1.75) is roughly right for
+hitters but under-shoots pit. **The fitted tail now has real anchors: s→1 at gap 0 (Open), s≈1.7 hit / ~1.9
+pit at the Bronze/Gold gaps.**
+
+**(B) Format effect confirmed IN-FRAME (Open, gap≈0 → pure format, no frame artifact), now on 7 runnings:**
+hitter uBB **+8.3**, K +2.5, HR +0.9, H−HR **+3.5**; pitcher uBB +5.4, K −0.6, H−HR +3.5. The model
+over-predicts offense by a roughly constant format amount — BB most (~+6–8/600 ⇒ the held ~×0.85), hits
+mild (~+3.5 ⇒ ~×0.975), HR ~flat, K slightly over. Frame-corrected uBB stays +7..+11 across all three tiers
+(same sign/scale ⇒ a real format level, not a frame artifact that scales with gap). **This is still the
+per-tournament FREE LEVEL TERM's job (§11.4) — not a hardcoded multiplier.**
+
+**(C) Discrimination (scorecard) confirms the flat kSpread under-serves pitchers:** frame-v2's pit spread
+ratio stays 0.29–0.53 (still under-separated even with s=1.75 — because pit wants ~2.0), and pit Spearman is
+mixed (frame-v2 hurts Bronze pit 0.41 vs own 0.52, helps Gold pit 0.53 vs 0.47). Hitter value-regret is
+consistently LOWER under frame-v2 (Open .006 vs .009, Gold .007 vs .013). **⇒ the FITTED per-role tail (pit
+s≈2.0) is what makes the opp-side frame a ranking win; the flat constant doesn't get there.** Small N
+(Spearman over 19–31 cards/tier — noisy; the s* slopes over more cards are the robust part).
+
+**Phase-1 READY.** The ladder gives: the ramp anchors (A), the format level to absorb with free knobs (B),
+and the discrimination gate the fitted tail must beat (C). Next: fit `tail`+`aRole` on matchup's seam
+(Open anchors s→1, Bronze/Gold the plateau, per role) + the pitcher-uBB BB-channel term, league-RMSE-gated.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
