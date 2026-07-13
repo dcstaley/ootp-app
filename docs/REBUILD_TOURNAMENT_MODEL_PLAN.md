@@ -508,3 +508,128 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
   IDENTICAL constant, so the fitted curve absorbs the convention and scores are correct (guarded by
   `raw-poly.test.ts` parity). "Fixing" = align the hitter/pitcher conventions + REFIT (scores
   ~unchanged); do it at a retrain if ever. The weakest cleanup-bundle item.
+
+## 12. Decisions & rationale — WHY we chose each (2026-07-13)
+
+Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
+
+### Frame correction
+
+- **Additive channel-crossed OPPONENT-gap shift, over the shipped own-gap multiplicative transform.**
+  WHY: a card's outcomes depend on the *opponent's* channel, not its own — strikeouts on the pitcher's
+  Stuff, walks on the pitcher's Control, etc. Own-gap lifts a rating by its OWN side's pool gap, which is
+  the wrong quantity and diverges in lopsided pools (Bronze pitcher-Stuff gap 47 vs hitter-kRat gap 19).
+  Measured: opp-gap collapsed level bias in BOTH eras (Bronze hitter-K +37→−3.6) where own-gap only
+  halved it. REJECTED own-gap (directionally right, conceptually wrong).
+- **Reference = the model's TRAINING-opponent means (`trainingMeans`), not the catalog top-50 field.**
+  WHY: the model predicts vs the opposition it *trained against*, so the frame must be measured against
+  that — not an arbitrary catalog slice. The catalog top-50 mis-bases by up to +16 on hit.eye
+  (measured refF−TM +15.9), which was the long-"unfixable" pitcher-BB flat offset — it vanished once the
+  reference was the training mean (λ→1). REJECTED the catalog top-50 as the reference.
+- **K-spread scaling S≈1.75 constant (ramped only below G0≈17), not gap-proportional.**
+  WHY: measured `s*` ≈ 1.67–1.84, essentially FLAT across own-gaps 17–47 (EG·hit 1.67 at gap 24 ≈
+  BR·hit 1.68 at gap 43). Constant-`s` cross-validates EG↔Bronze; a linear-in-gap form OVERSHOOTS on
+  cross-validation. Re-verified on ghost-cleaned data (moves ≤0.02). REJECTED gap-proportional. The
+  sub-17 ramp is unobserved → provisional until quicks. (A flat `s` under-corrects EG pitchers, which is
+  itself an argument for the *fitted* opp-side curve — see below.)
+- **Production default stays own-gap; frame-v2 is quicks-gated.** WHY: the switch is roster-CHANGING
+  (validation §11.12: weak-pool pitchers lose ~12 of the top-26, K-spread-driven), so flipping it needs
+  the deployment gate (quicks confirming the K ramp), not just level-bias improvement.
+- **`K̄_pool` centering = top-50 field (Derek deferred the call).** WHY: it's consistent with how `s*` was
+  fit (the kslope centers on the realized/≈field mean), it reuses the shift's existing machinery, and it's
+  the conservative choice (won't over-scale). Structured as a one-line swap for the realized field once
+  quicks measure it. (The realized-field measurement §11.13 later showed top-50 over-states the field —
+  flagged for the matched-legs check before Phase 1.)
+- **K scaled PRE-era (before `era_k`).** WHY: scaling `e.SO`/`e.K` before era, about the pre-era pool
+  mean, is algebraically identical to scaling post-era about the post-era mean (`era_k` factors out of
+  the linear map) — so `era_k` applies exactly once, resolving the "K-scaling × era_k double-apply" open
+  question.
+
+### Era semantics (the trilogy)
+
+- **`era_gap` → per-SHARE (`era_gap_share`), not per-PA.** WHY: `woba.ts` multiplies `era_gap` onto
+  `GAP_rate × BA_fin`, and `BA_fin` already carries the hit level (`era_h`) AND the BIP expansion — so a
+  per-PA `era_gap` triple-counts. The only piece it should carry is the XBH *composition* change (share
+  of hits that are extra-base), i.e. `(b2+b3)/(h−hr)` ratio. Decomposition holds to 6 dp. Same class as
+  the earlier `era_h` fix.
+- **`era_bip_adj` — the fixed BIP constant made era-aware.** WHY: the H-curve was fit on
+  `BIP = 600 − BB − K − HR − BIP_ADJ` with a FIXED `BIP_ADJ`, but the real non-BIP-out level (HBP+SH+SF)
+  varies by era (dead-ball ~24/600 vs 2010 ~10) — so a fixed constant over/understates BIP in extreme
+  eras (+2.65% dead-ball hits/XBH). Scale it per era from the rates block; 2010→1 preserves the fitted
+  convention. This — not an XBH-share issue — is the true final EG residual (BIP-recompute audit corrected
+  §10.5's attribution).
+- **Kept the BIP recompute (did not remove it).** WHY: it is the VOLUME channel — the mechanism that
+  turns `era_bb/era_k/era_hr` into hit volume via the shared 600-PA budget. Freezing BIP mis-predicts
+  hits by −22/+10 per 600 in extreme eras. The per-grain fixes were designed to compose WITH it (carry
+  only the residual grain), not replace it. Audit confirmed no remaining double-count.
+
+### Opp-side / matchup model
+
+- **Opp-side matchup model as the eventual DEFAULT — not "frame-v2 as a disposable bridge."** WHY (Derek's
+  framing): it's the target architecture, so deploy it and refine *in place* (a curve refit as data
+  arrives) rather than ship a bolt-on correction we later rip out. Every data drop then improves one
+  model. Grounded in the identity that opp-side trained league-only IS frame-v2's shift, so there's no
+  league-only accuracy regression in adopting it.
+- **Phase 0 = reparametrize frame-v2 into the model seam with NO refit (bit-identical).** WHY: this is the
+  LEAGUE-SAFETY guarantee made structural — proving matchup == frame-v2 (max per-card diff EXACTLY 0)
+  means the seam is in place with zero risk of an accidental refit/regression. And because league-only
+  opp-side is mathematically frame-v2, there was no accuracy to gain by fitting anything league-only —
+  only the architecture + the Phase-1 seam. REJECTED "fit a Form-A curve in Phase 0" (would risk a league
+  regression for no gain).
+- **`league_curve + tail` partition (tail ≡ 0 in-support) for the Phase-1 fit.** WHY: makes "quicks can't
+  hurt league" a PROPERTY OF THE CODE, not a hope — the league-covered region is fit on league data and
+  frozen; quicks fits only the beyond-support tail (which league never observes). Plus a hard league-RMSE
+  gate as backstop. REJECTED a joint league+quicks fit (could bend the league region to fit quicks).
+- **Eval-only carve-out: the K-SHAPE may be *fit* on quicks (the one exception to eval-only).** WHY: the
+  eval-only rule exists to protect TALENT estimates from tournament noise (combined lines, format effects,
+  ghosts). The K *shape* is MECHANICS — how outcomes bend as the matchup gets lopsided, a structural
+  constant of the engine, not per-card talent — so fitting it on quicks does not threaten what the rule
+  protects. Narrowly fenced (only the K shape; league region frozen; RMSE gate).
+- **The K-slope fix REQUIRES quicks (cannot be done league-only).** WHY: the steeper off-frame K slope
+  sits OUTSIDE the league's rating range (EG Q1 hitters kRat 43 < league min ~60) — a data-SUPPORT
+  problem no model structure can fix. Confirmed both ways: out-of-frame the spread is 0.4–0.6 of actual;
+  in-frame (Open Quicks) the slope ratio is ~1.0, so the defect is a frame artifact, not intrinsic.
+
+### Data QA / ingestion
+
+- **Ghost detection = team-count shortfall + EXCESS-offense (`PA×(rate−pool)`), not raw wOBA or a
+  scrub-cluster search.** WHY: forfeit players are GHOSTS that don't export, so the "cluster of low-value
+  scrubs" fingerprint is void by construction (the first integrity check searched for it and wrongly
+  cleared Bronze). The signals that SURVIVE ghosting are the team-count shortfall (missing team) and the
+  ghost-opponent's inflated line. Excess is PA-weighted, NOT raw rate, because raw rate false-positives on
+  small-sample luck (July-7 raw #1 was a 488-PA fluke; excess correctly picked the 1667-PA ghost opponent
+  Portsmouth). Validated against Derek's ground truth.
+- **Surgical cleaning (drop the ghost opponent) over discarding the file.** WHY: Bo7 ghost inflation is
+  both extreme AND concentrated on one identifiable team, so it's removable — removal converges the pool
+  to the clean 128-team baseline. (Earlier "cleaning is impossible" was wrong for THIS failure mode; it
+  would only be unrecoverable if the inflation were small and smeared.) Cost is one team's legit games
+  too (~3% PA) — a good trade vs tossing the running.
+- **Tournament ingestion is EVALUATION-ONLY, structurally isolated.** WHY: tournament data is messy for
+  learning TALENT (combined lines with no split, format/deployment effects, ghosts, thin per-card
+  samples); letting it re-fit `f(ratings)` would corrupt the clean league talent curves. Enforced by a
+  distinct `TournamentObs` type (lacks the fields fitters read) + no fit/window imports + a guard test.
+- **Loader SKIPS combined "ALL" league files (does not error on them).** WHY: they carry no vL/vR split
+  so they cannot feed a per-side fit — but they're valid future data (combined-league baseline), so skip
+  rather than flag as malformed; a genuinely bad name still reports unparsed.
+- **Realized-field: run the "matched-legs" check before touching `μ_pool` — do NOT blindly apply the
+  under-correction fix.** WHY: the subagent's field-mean inference ("top-50 over-states → under-correct →
+  fix `μ_pool`") conflicts with §10.8/§11.5, where the kslope/ptdiag level-matching used this SAME top-50
+  and the level bias DID collapse. The shift is calibrated by LEVEL-MATCHING, not field-means, so the
+  level test is the arbiter — acting on the field-mean argument could break what empirically works.
+
+### Process / scope
+
+- **Consolidated plan lives in the repo doc (§11–§12), not only in memory.** WHY: memory is private and
+  gitignored; the version-controlled doc is the shared source of truth the team can read and maintain.
+- **Format adjustment (BB×0.85 / HR×0.87 / hits×0.96) is on HOLD.** WHY (Derek): only 5 Open runnings; BB
+  is robust but HR/hits are small multiples of the noise floor; possible ghost inflation in Open makes
+  the multipliers a lower bound; and tiers are needed as the constant-across-tiers consistency test. Not
+  a change until the data firms it up.
+- **Cleanup bundle DEFERRED (log-linear/tHR/softcaps); only the provably-dead slice removed.** WHY: the
+  items are coupled (tHR ↔ the log-linear parity path), risky (removing the log-linear fallback breaks
+  ~10 no-eventForm callers), low-value, and premature while the scoring core is in active flux. Took only
+  the decoupled dead code (unreferenced ModelTrainingPage helpers) + a stale-README fix.
+- **Parallelized via subagents, with worktree isolation where needed and file-disjoint scoping.** WHY:
+  independent analyses/builds run concurrently for speed, but scoring-core edits share files and can't be
+  parallel — so those were sequenced (Phase 0 → BIP_ADJ), read-only validations ran in parallel (one in a
+  git worktree to be immune to main-tree edits), and every subagent's output was reviewed before commit.
