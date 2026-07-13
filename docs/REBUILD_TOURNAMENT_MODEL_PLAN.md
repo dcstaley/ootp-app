@@ -478,14 +478,31 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
   still missing** → the 41–42 window is partial until it lands. New combined **"ALL" league files**
   (`2042 {HD450,HD451,HD453,PEL} ALL.csv`, one line/card, NO vL/vR split — same format as tournament
   exports) — the per-side loader SKIPS them (`isCombinedLeagueFile`, `b3b0607`), preserved on disk.
-- **ALL-data uses:** (1) validate the combined-line eval pipeline IN-FRAME (league bias ≈0 expected);
-  (2) realized-field measurement; (3) a combined-league baseline for the format-effect work. Lower
-  value: platoon/IBB (the per-side files already carry those).
-- **Realized-field / pool-μ (open):** the frame gap is `μ_train (realized, PA/BF-weighted) − μ_pool
-  (top-50 PROXY)` — an asymmetry. Measure the usage-weighted realized field from outcome data, compare
-  to top-50, validate or correct the proxy. Inference is stuck with top-50 (no usage at scoring time),
-  but validation + `K̄_pool` centering can use the realized field. Doubles as a ghost detector (a
-  contaminated running's realized field is anomalously weak vs the eligible catalog).
+- **ALL-data uses:** (1) validate the combined-line eval pipeline IN-FRAME — **DONE 2026-07-13:** on the
+  2042 ALL files (active model `41-42-temp`), every event bias ≤ 0.9/600 (uBB −0.2/−0.4, K +0.8/+0.9,
+  HR +0.2/−0.0, H−HR +0.5/+0.3) → the pipeline (exposure blend, combined-line aggregation, level table)
+  is TRUSTWORTHY; safe to point `evaluateTournamentLevels` at quicks. Faint same-sign K over-pred (~0.8,
+  both roles, under noise) = a faint in-frame K tendency, not an aggregation artifact. (2) realized-field
+  measurement (below); (3) combined-league baseline for the format-effect work.
+- **Realized-field / pool-μ — MEASURED 2026-07-13 (subagent):** the top-50 `μ_pool` proxy is
+  SYSTEMATICALLY HIGHER than the usage-weighted realized field (a top-N selection effect: the best 50 sit
+  above the PA-weighted mean), and the gap GROWS as the pool restricts — ALL-league Δ ≈ +2..+7, Quicks
+  eye +16 / stu +11, Bronze pow +14.5, Early Gold pow +31.9. Meanwhile the realized field ≈ `trainingMeans`
+  almost exactly in-frame (real−TM within ±1 ALL / ±4.5 Quicks), confirming **TM's usage-weighting is the
+  right reference — the top-50 proxy is the weak leg.** So frame-v2's gap `μ_train (usage-wtd) − μ_pool
+  (top-50)` uses INCONSISTENT weighting; power/eye/stu are the worst-biased channels, babip/gap track well.
+  **CAUTION — the subagent's "under-correction, fix μ_pool" verdict is a FIELD-MEAN inference that is in
+  TENSION with §10.8/§11.5: the kslope/ptdiag level-matching used this SAME top-50 μ_pool and the level
+  bias DID collapse (≤±4). The shift is calibrated by LEVEL-MATCHING, not field-means, so the proxy may be
+  operationally correct despite not equalling the realized field.** ACTIONABLE (Phase-1 prep, before the
+  matchup fit which uses μ_pool): run a "matched-legs" check — recompute with consistent weighting (e.g.
+  `trainingMeans` = top-50 of the training league, so the in-frame gap → 0) and RE-RUN the kslope/ptdiag
+  level-matching. If levels still collapse → adopt the consistent version (removes the small in-frame
+  spurious shift, elegant). If levels BREAK → the top-50 proxy was doing real work; keep it. The in-frame
+  spurious shift (TM−proxy −4..−6 on eye/pow/stu in the ALL league) is the clean evidence of the
+  inconsistency; its practical impact is tiny (anchor-absorbed) but it should be resolved before Phase 1.
+  Note: this also touches `K̄_pool` centering (same top-50). Doubles as a ghost detector (contaminated
+  running's realized field is anomalously weak vs the eligible catalog).
 - **Hitter SF+4 — NOT a bug, refit-coupled cosmetic.** Hitter BIP_ADJ = HBP 6 + SH 3 − SF 4 = 5;
   pitcher = 6. Training (`forms/fit/bakeoff`) AND inference (`raw-poly`/`woba`/`HIT_BIP_ADJ`) use the
   IDENTICAL constant, so the fitted curve absorbs the convention and scores are correct (guarded by
