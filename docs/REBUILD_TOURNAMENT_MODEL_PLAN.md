@@ -756,6 +756,14 @@ Honest list of the least-certain calls this session — the places to scrutinize
   UNDER-corrects the K spread. Deferred deliberately — the quicks Phase-1 fit REPLACES the hand-tuned `s`
   with a fitted tail, so retuning the interim constant now is throwaway. But it means the current
   (matched-legs + `S_K=1.75`) pairing is a knowingly-slightly-mismatched interim until Phase 1.
+  **CONFIRMED (Derek, 2026-07-13): LEAVE `S_K=1.75` as-is** (do NOT ship a role-split interim like
+  hit 1.8 / pit 1.9, even though the Batch-2.7 re-fit shows pitchers want more). The Phase-1 fitted
+  per-role K tail replaces it properly (ramp + level residual + the pitcher-uBB BB-channel term all in
+  one out-of-frame fit); a hand-tuned per-role constant would be throwaway and could itself be wrong
+  (EG·pit ~2.5 is confounded by the −10/600 dead-ball pitcher-K level residual). Re-fit values on
+  clean, production-centered, matched-legs data: **hitters ~1.8 (EG 1.88 / BR 1.76), pitchers BR 1.86,
+  EG·pit confounded**; pitcher-uBB residual +6..+8/600 (λ\* EG 2.62 / BR 1.63) — the BB-channel sibling,
+  Phase-1 scope.
 - **`K̄_pool` centering still uses the pool's top-50 field** (unchanged by matched-legs, which only touched
   `μ_train`). Verify this is consistent with the now-top-50 `μ_train` frame and doesn't reintroduce an
   asymmetry in the K-scaling centering.
