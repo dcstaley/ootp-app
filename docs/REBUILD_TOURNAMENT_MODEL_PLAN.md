@@ -967,6 +967,30 @@ determine-value floor + estimation shrinkage, NOT a defect). Caveat: SP N=17 und
 carries the conclusion. Downstream context-invariance target = the adopted form's ~0.78 in-frame ratio,
 never 1.0. NEXT: Step-1 factorial form sweep (both roles, all metrics incl. top-decile slice), CI-verified.
 
+**11.27 STEP-1 LOCATOR — pitcher spread is MULTI-CHANNEL; winner keeps StuffAug (`tools/pit-channel-locator.ts`).**
+One-channel-at-a-time from deployed (StuffAug: bb log+aux, k log, hr log+aux, h log), in-frame league pit
+spread / Pearson / level-bias (all level-bias ~0 — in-frame fit re-centers):
+
+| variant | spread | Pearson |
+|---|---|---|
+| deployed (all log + aux) | 0.623 | 0.796 |
+| K→raw2 | 0.652 | 0.795 |
+| BB→raw2 (keep aux) | 0.658 | 0.790 |
+| **HR→raw2 (keep aux)** | **0.690** | 0.807 |
+| H→raw2 | 0.652 | 0.788 |
+| aux OFF (all log) | 0.628 | 0.800 |
+| rawquad_pit (all raw, aux OFF) | 0.763 | 0.796 |
+| **ALL rawquad2 + aux ON** | **0.780** | **0.804** |
+
+**Verdict:** (1) **No single channel is the lever** — each flip adds only ~0.03–0.07 (HR biggest single); the
+compression is DISTRIBUTED across every log curve. (2) **WINNER: all-channel rawquad(2) + StuffAug aux ON** —
+in-frame spread **0.780 (= the §11.26 ceiling)**, Pearson 0.804 (best), level-bias ~0. (3) **aux ON (0.780) >
+aux OFF (0.763)** ⇒ **NO axis trade** — keeping StuffAug's ordering fix and recovering full spread are
+compatible; the §11.24 "drop StuffAug" framing is DISSOLVED (it was the aux-off confound). Candidate pitcher
+form = **rawquad-all + aux**. REMAINING before adoption: bootstrap CIs (Step 2), monotone-gate the raw-poly
+tails (cap active), out-of-frame ladder spread + top-decile slice, stu-residual meta-model (aux is KEPT →
+ordering concern largely moot but verify), and the hitter-side factorial + cancellation decomposition.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
