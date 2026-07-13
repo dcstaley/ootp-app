@@ -12,7 +12,7 @@
 //   run: node tools/tournament-kslope.ts
 //
 import Papa from "papaparse";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { Repository } from "../src/persistence/repository.ts";
 import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
@@ -20,6 +20,8 @@ import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import { computeDerived, makeRawPolyModel, applyWobaWeights, computeUnifiedFieldStats } from "../src/scoring-core/index.ts";
 import { parseCatalogCsv } from "../src/data/catalog.ts";
 import { rowEligible } from "../src/config/eligibility.ts";
+import { loadWindow, type TrainObs } from "../src/training/loader.ts";
+import { HITTER, PITCHER } from "../src/training/bakeoff.ts";
 import type { EventForm } from "../src/model/curves.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 
@@ -39,6 +41,30 @@ const eventForm: EventForm = trained.eventForm;
 const cat = parseCatalogCsv(readFileSync("data/imports/cdmx.csv", "utf8"));
 const isB = (c: any) => String(c["Variant"] ?? "").toUpperCase() !== "Y";
 
+// ── FRAME-V2 REFERENCE: the model's TRAINING-opponent means (PA/BF-weighted, pooled over
+// sides) — mirrors saveTrainedModel's persisted `trainingMeans` EXACTLY, so the re-fit here
+// predicts production frame-v2 behavior. This SUPERSEDES the old catalog-top-50 `refF` base
+// (which mis-based the opp-gap by up to +16 on hit.eye → the "pitcher-BB flat offset"). §10.8.
+const TRAINING_DIR = ["League Files", "Model 2037 and 2038"].find((d) => existsSync(d)) ?? "League Files";
+const trWindow: number[] = Array.isArray(trained.window) && trained.window.length ? trained.window : [];
+const trained_obs = loadWindow(TRAINING_DIR, trWindow.length ? trWindow : undefined).observations
+  .filter((o: TrainObs) => (trained.includeVariants ?? true) || !o.variant);
+const minPA = Math.max(0, Number(trained.minPA ?? 1000) || 1000);
+const hqTr = trained_obs.filter((o) => HITTER.qualifies(o, minPA));
+const pqTr = trained_obs.filter((o) => PITCHER.qualifies(o, minPA));
+const paOf = (o: TrainObs) => o.sources.reduce((s, x) => s + x.pa, 0);
+const bfOf = (o: TrainObs) => o.sources.reduce((s, x) => s + x.bf, 0);
+const wm = (rows: TrainObs[], w: (o: TrainObs) => number, get: (o: TrainObs) => number) => {
+  let nn = 0, dd = 0; for (const o of rows) { const t = w(o); nn += t * get(o); dd += t; } return dd ? nn / dd : 0;
+};
+const TM = {
+  hit: { eye: wm(hqTr, paOf, (o) => o.ratings.hit.eye), pow: wm(hqTr, paOf, (o) => o.ratings.hit.pow), kRat: wm(hqTr, paOf, (o) => o.ratings.hit.kRat), babip: wm(hqTr, paOf, (o) => o.ratings.hit.babip), gap: wm(hqTr, paOf, (o) => o.ratings.hit.gap) },
+  pit: { con: wm(pqTr, bfOf, (o) => o.ratings.pitch.con), stu: wm(pqTr, bfOf, (o) => o.ratings.pitch.stu), pbabip: wm(pqTr, bfOf, (o) => o.ratings.pitch.pbabip), hrr: wm(pqTr, bfOf, (o) => o.ratings.pitch.hrr) },
+};
+console.log(`\n=== trainingMeans (PA/BF-weighted, window ${trWindow.join("+") || "all"}, minPA ${minPA}; hitObs ${hqTr.length}, pitObs ${pqTr.length}) ===`);
+console.log(`  hit: eye ${TM.hit.eye.toFixed(1)}  pow ${TM.hit.pow.toFixed(1)}  kRat ${TM.hit.kRat.toFixed(1)}  babip ${TM.hit.babip.toFixed(1)}  gap ${TM.hit.gap.toFixed(1)}`);
+console.log(`  pit: con ${TM.pit.con.toFixed(1)}  stu ${TM.pit.stu.toFixed(1)}  pbabip ${TM.pit.pbabip.toFixed(1)}  hrr ${TM.pit.hrr.toFixed(1)}`);
+
 interface TCase {
   name: string; role: "hit" | "pit";
   gapOwn: number;            // own K-channel gap (hit: kRat; pit: stu)
@@ -56,9 +82,13 @@ for (const [name, TDIR, TID] of [["EG", "Tournament Data/Early Gold", "early-gol
   const inV = (c: any) => { const v = Number(c["Card Value"]) || 0; return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const refF = computeUnifiedFieldStats(cat.cards.filter(isB), coeffs, rp, 50, true);
   const poolF = computeUnifiedFieldStats(cat.cards.filter((c) => isB(c) && inV(c) && rowEligible(c as any, t)), coeffs, rp, 50, true);
-  const gap = (role: "hit" | "pit", k: string) => (refF as any)[role].vR[k].mu - (poolF as any)[role].vR[k].mu;
+  // FRAME-V2 gap: reference is the TRAINING mean (TM), NOT the catalog top-50 field (refF).
+  const gap = (role: "hit" | "pit", k: string) => (TM as any)[role][k] - (poolF as any)[role].vR[k].mu;
   const OG = { hit: { eye: gap("pit", "con"), kRat: gap("pit", "stu"), pow: gap("pit", "hrr"), babip: gap("pit", "pbabip"), gap: gap("pit", "pbabip") },
                pit: { con: gap("hit", "eye"), stu: gap("hit", "kRat"), hrr: gap("hit", "pow"), pbabip: gap("hit", "babip") } };
+  // Sanity: the mis-basing the re-base removes (catalog refF − TM), per the §10.8 measurement.
+  const misBase = (role: "hit" | "pit", k: string) => (refF as any)[role].vR[k].mu - (TM as any)[role][k];
+  console.log(`[${name}] refF−TM mis-basing: hit.eye ${misBase("hit", "eye").toFixed(1)}  hit.pow ${misBase("hit", "pow").toFixed(1)}  pit.stu ${misBase("pit", "stu").toFixed(1)}  pit.hrr ${misBase("pit", "hrr").toFixed(1)}`);
 
   interface Agg { r: any; hPA: number; hK: number; pBF: number; pK: number; pBB: number; pIBB: number }
   const m = new Map<string, Agg>();
