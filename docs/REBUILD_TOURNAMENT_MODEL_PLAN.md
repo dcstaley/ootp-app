@@ -370,6 +370,9 @@ reference). **Remaining (revises §10.5's attribution):** the FIXED `HIT_BIP_ADJ
 constants don't adapt to dead-ball's ~24/600 HBP+SH+SF (vs ~10 at ref) → +2.65% hits/XBH in 1920,
 ~0 modern. This — NOT an XBH-share issue — is the true final EG XBH residual. OPTIONAL fix: era-aware
 `BIP_ADJ` from the rates block (`1 − bb − k − hr − bip`), resolver pattern like the other two.
+**SHIPPED (`4381d93`):** `era_bip_adj` scale (2010 → 1, 1920 → ~2.4, 2019 → ~0.9), `woba.ts`
+multiplies `HIT_BIP_ADJ`/`PIT_BIP_ADJ` by it. Era-semantics trilogy complete. Shifts library-era
+hit/XBH → regenerate.
 
 **11.4 Open Quicks null test (5 runnings, era-2010 full-pool neutral).** (a) **FRAME STORY CONFIRMED:**
 in-frame K-by-rating slope ratio ~1.0 (hitter 1.13 / pitcher 0.92) vs 0.4–0.6 in weak pools → the K
