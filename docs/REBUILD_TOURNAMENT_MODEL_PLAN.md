@@ -561,6 +561,43 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
   `raw-poly.test.ts` parity). "Fixing" = align the hitter/pitcher conventions + REFIT (scores
   ~unchanged); do it at a retrain if ever. The weakest cleanup-bundle item.
 
+**11.14 Batch-2 re-validation on GHOST-CLEANED data (2026-07-13, roadmap Batch 2).** Level tables
+re-run on cleaned EG + cleaned Bronze through the CORRECTED eval (`evaluateTournamentLevels` now uses
+the real BIP recompute + honors the active transformMode — was frozen-BIP + raw-base-model).
+`tools/tournament-levels-clean.ts`, active model `41-42-temp` (frame-v2). Per-600 level BIAS
+(pred−actual), events uBB / K / HR / H−HR:
+
+| | base HIT | base PIT | **frame-v2 HIT** | **frame-v2 PIT** |
+|---|---|---|---|---|
+| **EG (era-1920)** | +0.3 / +4.6 / −1.5 / −3.8 | +11.8 / −12.9 / +1.6 / +7.2 | **+6.6 / −4.2 / −1.0 / +2.3** | **+6.1 / −9.8 / +0.9 / +5.8** |
+| **Bronze (era-2010)** | −6.8 / +36.1 / −4.8 / −11.0 | +25.3 / −17.2 / +6.0 / +6.4 | **+5.2 / −1.5 / −1.5 / +4.3** | **+7.6 / −3.9 / +1.2 / +4.1** |
+
+**What moved vs the prior (contaminated / frozen-BIP) numbers:**
+- **The frame story SURVIVES cleaning.** frame-v2 still collapses the raw opponent-frame bias:
+  Bronze base HIT K **+36.1 → −1.5**, Bronze base PIT uBB **+25.3 → +7.6** (matches §10.2's "+37→−3.6",
+  "+25→+7" — now on clean data). EG base PIT uBB +11.8 → +6.1.
+- **The audit's EG level numbers WERE overstated by contamination.** The old "EG 1B over-prediction
+  +15.7 → −4.1" (§10.5, on inflated actuals) is GONE: on cleaned data the frame-v2 hitter H−HR residual
+  is only **+2.3** (mild over-pred). The dead-ball hit over-prediction the era trilogy targeted is small
+  once ghosts are removed — but era_bip_adj still nets an improvement (§ era_bip_adj below).
+- **The +6..+8/600 pitcher-uBB residual is CONFIRMED on clean data** (frame-v2: EG +6.1, Bronze +7.6) —
+  the OPEN residual (§10.8 retraction), Phase-1 scope.
+- **The EG·pit K −10/600 dead-ball level residual is real** (frame-v2 EG PIT K −9.8) and distinct from
+  Bronze (−3.9) — the persistent EG·pit outlier (finding B).
+- **Hitter uBB is now a positive ~+5–6.6 residual in frame-v2** (EG +6.6, Bronze +5.2) — the
+  format/frame residual (BB channel), consistent with the held format effect (BB×0.85).
+
+**era_bip_adj — MEASURED, KEEP (default unchanged).** `tools/era-bipadj-measure.ts`, cleaned EG,
+era_bip_adj ON (resolved 2.398) vs OFF (=1), read in the PRODUCTION frame-v2:
+- **Hitter H−HR residual: OFF +3.85 → ON +2.32** (|bias| ↓ 1.53). **Pitcher H−HR: OFF +7.81 → ON +5.77**
+  (|bias| ↓ 2.04). ON reduces BOTH — the keep rule ("reduce hit+XBH residual without worsening the
+  pitcher chain") is satisfied; era_bip_adj IMPROVES the pitcher chain, it doesn't worsen it.
+- The audit's "−0.3..−1.9% pitcher hit push" is real (measured −1.4%, 147.4→145.3) but BENEFICIAL on
+  clean data (pitchers over-predict, so pushing down helps). The base-frame view (where OFF looked
+  better for hitters) is confounded by the uncorrected opponent-frame bias (weak-pool hitter
+  UNDER-prediction) — not the frame production scores in. **Decision: KEEP; default not reverted;
+  machinery + `era-bip-adj.test.ts` retained.** Safe for roster regeneration.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
