@@ -141,11 +141,6 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 const th: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 11, color: C.sub, textTransform: "uppercase", letterSpacing: 0.3, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
 const td: React.CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 13, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
 const Coef = ({ v }: { v: number }) => <code style={{ color: C.link }}>{sig(v)}</code>;
-// The assembled-wOBA fidelity as a DiagTable row (the bottom line: events → wOBA →
-// vs actual). RMSE is in wOBA units (~0.006), unlike the per-event rows (per-600).
-const wobaRow = (w?: SbMetrics): { label: string; e: EventDiag }[] =>
-  w ? [{ label: "→ wOBA", e: { r2: w.r2, rmse: w.rmse, spearman: w.spearman, pearson: w.pearson, n: w.n } }] : [];
-
 // Diagnostics table shared by all four models (per-event rows, or one "weights" row).
 function DiagTable({ rows }: { rows: { label: string; e: EventDiag }[] }) {
   return (
@@ -167,29 +162,6 @@ function DiagTable({ rows }: { rows: { label: string; e: EventDiag }[] }) {
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-// Residual-by-rating heat strip for one event: low→high rating, left→right; each
-// cell is a weight-balanced bin coloured by the over-valuation signal (red = model
-// over-values that region, green = under-values). Intensity scaled within the event.
-function ResidualHeat({ label, rating, bins }: { label: string; rating: string; bins: ResidualBin[] }) {
-  const maxAbs = Math.max(1e-9, ...bins.map((b) => Math.abs(b.signal)));
-  const cell = (b: ResidualBin, i: number) => {
-    const a = Math.min(1, Math.abs(b.signal) / maxAbs) * 0.8;
-    const bg = b.signal >= 0 ? `rgba(239,68,68,${a})` : `rgba(34,197,94,${a})`; // red over, green under
-    return (
-      <div key={i} title={`${rating} ${b.lo}–${b.hi} · signal ${b.signal >= 0 ? "+" : ""}${b.signal} (${b.signal >= 0 ? "over" : "under"}-values) · N=${b.n} · sumW=${b.sumW}`}
-        style={{ flex: 1, minWidth: 0, height: 26, background: bg, borderRight: `1px solid ${C.bg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: C.text }}>
-        {b.signal >= 0 ? "+" : ""}{b.signal.toFixed(1)}
-      </div>
-    );
-  };
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-      <span style={{ width: 34, fontSize: 11, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>{label}</span>
-      <div style={{ flex: 1, display: "flex", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }}>{bins.map(cell)}</div>
     </div>
   );
 }
@@ -453,20 +425,6 @@ function MissesView({ a }: { a: ResidualAnalysis }) {
         <p style={{ margin: "4px 0 0", fontSize: 10, color: C.sub }}><b style={{ color: C.text }}>{gridMode === "interErrPts" ? "Interaction" : "Raw"}</b> view · <span style={{ color: "#fca5a5" }}>red</span> over / <span style={{ color: "#86efac" }}>green</span> under (wOBA pts, {a.weighted ? `${vol}-wt` : "unwt"}). <b style={{ color: C.text }}>interaction</b> = raw − the 1-D marginals, so non-zero = a true 2-way effect; <b style={{ color: C.text }}>raw</b> mostly re-shows the marginals.</p>
       </div>
       </div>
-    </div>
-  );
-}
-
-function ResidualPanel({ d, events }: { d: Record<string, EventDiag>; events: [string, string][] }) {
-  return (
-    <div style={{ marginTop: 16 }}>
-      <h4 style={{ margin: "0 0 6px", fontSize: 13 }}>Residual by rating — over-valuation diagnostic</h4>
-      {events.map(([ev, rt]) => (d[ev]?.bins ? <ResidualHeat key={ev} label={ev} rating={rt} bins={d[ev]!.bins!} /> : null))}
-      <p style={{ margin: "6px 0 0", fontSize: 11, color: C.sub, maxWidth: 760 }}>
-        Weight-balanced bins, low→high rating left→right. <span style={{ color: "#ef4444" }}>Red</span> = the model
-        over-values that region (predicts more good-event / fewer K than reality); <span style={{ color: "#22c55e" }}>green</span> = under-values.
-        Diagnostic only — no softcap is derived (the softcap concept is under review).
-      </p>
     </div>
   );
 }
