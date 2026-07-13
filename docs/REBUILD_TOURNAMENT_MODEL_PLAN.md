@@ -743,6 +743,32 @@ runnings DO help the full-pool estimate (tightens ρ, adds cards); the earlier p
 curves + env + pool/frame transform); it EXCLUDES only the anchor (a global scale, irrelevant to rank)
 and non-offensive value (unmeasurable here).
 
+**11.18 PER-CHANNEL off-frame separation (`tools/quicks-channels.ts`) — it IS mostly a K thing, and
+StuffAug's HR term looks needed.** s* (spread scale the data wants, after the opp-gap level shift, no
+per-channel spread correction) per tier × role × channel:
+
+| | BB | K | HR | H−HR |
+|---|---|---|---|---|
+| Open HIT (in-frame) | 1.06 | **1.00** | 0.81 | 0.89 |
+| Open PIT (~in-frame) | 0.80 | 1.35 | 0.56 | 1.09 |
+| Bronze HIT | 1.13 | **1.71** | 1.14 | 1.82 |
+| Bronze PIT | 1.91 | **1.80** | 1.05 | 2.00 |
+| Gold HIT | 1.11 | **1.71** | 1.08 | 1.50 |
+| Gold PIT | 0.80 | **2.10** | 1.46 | 1.21 |
+
+**Findings** (N 19–31/cell — directions solid, values noisy): (1) **K under-separates strongly off-frame
+in BOTH roles** (1.7–2.1) and is ≈1.0 in-frame (Open HIT K = 1.00) — the tail is really a **K thing**.
+(2) **HR is basically FINE off-frame** (≈1.0–1.1, hit and pit) — un-augmented K under-separates but
+Stuff-augmented HR does NOT ⇒ **StuffAug's HR-Stuff term looks like it's WORKING; evidence to KEEP it,
+not remove it** at the opp-side switch. (3) **BB's issue is LEVEL, not spread** — the spread s* is mild
+and INCONSISTENT (pit 1.91 Bronze vs 0.80 Gold) while the level bias is a stable +7..+10 (pitcher) — so
+the planned **pitcher-uBB LEVEL term** handles BB, not a BB spread tail; StuffAug's BB-Stuff term is
+ambiguous (doesn't fix the level, spread unclear) → re-examine at the re-fit. (4) **H−HR (hits)
+under-separates (1.5–2.0) but largely DOWNSTREAM of K via BIP** (BIP = 600−BB−K−HR−adj; a too-narrow K
+spread compresses the BIP→hits spread) ⇒ fixing the K tail should tighten hits too; likely **no
+independent hit tail**. **Net: Phase 1 = K tail (both roles) + pitcher-uBB level term — CONFIRMED and
+SIMPLER than per-channel tails; HR needs nothing (StuffAug covers it), hits follow from K, BB is level.**
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
