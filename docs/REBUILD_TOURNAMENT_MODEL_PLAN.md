@@ -648,3 +648,41 @@ Every significant decision this session, with the reasoning and the alternative 
   independent analyses/builds run concurrently for speed, but scoring-core edits share files and can't be
   parallel — so those were sequenced (Phase 0 → BIP_ADJ), read-only validations ran in parallel (one in a
   git worktree to be immune to main-tree edits), and every subagent's output was reviewed before commit.
+
+## 13. Known soft-spots — where a second opinion is most valuable (audit targets)
+
+Honest list of the least-certain calls this session — the places to scrutinize hardest.
+
+- **PRODUCTION IS UNCHANGED. Read this first.** The production default is STILL `own-gap`. Everything in
+  §11–§12 (frame-v2, matchup, era fixes' effect on the *frame path*, matched-legs) is validated but
+  quicks-GATED, NOT deployed. The era-semantics fixes (era_gap_share, era_bip_adj) DO change production
+  scores for library eras (any tournament, own-gap or not) — those are live. The frame/matchup transform
+  changes are not.
+- **`era_bip_adj` scaling form.** We scale the FIXED `HIT_BIP_ADJ = 6+3−4 = 5` multiplicatively by the
+  era's `(1−bb−k−hr−bip)` ratio. But that constant sign-conflates HBP (non-BIP, subtracted), SH (a BIP
+  event) and SF (+4). The era ratio uses the aggregate non-BIP-out fraction, which is dominated in
+  dead-ball by SAC BUNTS (SH). Is a multiplicative scale of a sign-conflated constant the right grain, vs
+  an absolute per-era value or a per-component (HBP vs SH vs SF) treatment? It's small (dead-ball-only,
+  ~+2.6% pre-anchor) but it's the shakiest of the three era fixes.
+- **Matched-legs ↔ `S_K` interaction (real, un-retuned).** Adopting matched-legs (`trainingMeans` = top-50
+  of training) shifted the `s*` the data wants UP ~7–8% (EG·hit 1.70→1.85, BR·pit 1.87→1.98, EG·pit
+  2.36→2.50). The code still uses the constant `S_K = 1.75`, so under the matched frame it now mildly
+  UNDER-corrects the K spread. Deferred deliberately — the quicks Phase-1 fit REPLACES the hand-tuned `s`
+  with a fitted tail, so retuning the interim constant now is throwaway. But it means the current
+  (matched-legs + `S_K=1.75`) pairing is a knowingly-slightly-mismatched interim until Phase 1.
+- **`K̄_pool` centering still uses the pool's top-50 field** (unchanged by matched-legs, which only touched
+  `μ_train`). Verify this is consistent with the now-top-50 `μ_train` frame and doesn't reintroduce an
+  asymmetry in the K-scaling centering.
+- **Format effect (BB×0.85 / HR×0.87 / hits×0.96)** rests on 5 Open runnings; HR/hits are small multiples
+  of noise; if Open itself has ghosts the multipliers are a lower bound. Correctly on HOLD — but don't let
+  it be read as settled.
+- **`S_K=1.75` sub-`G0=17` ramp** is entirely unobserved (`G0` is a guess); provisional until quicks.
+- **Sample sizes.** Many findings rest on few runnings (Bronze 3, EG 7, Quicks 5) and few high-PA cards
+  per tournament — weigh the statistical power, especially per-role, per-channel splits.
+- **The temp `41-42` model** used in several late validations may or may not be uBB-trained — if it
+  predicts raw BB, the pitcher-uBB residuals carry an IBB confound (tournament IBB 1–2.4/600). Re-check
+  the uBB-vs-rawBB status of whatever model backs any pitcher-BB conclusion.
+- **Falsified hypotheses (don't re-litigate, but verify we killed them correctly):** per-BIP unit
+  elasticity (made EG worse), gap-proportional K scaling (overshot cross-val), weak-pool own-rating
+  extrapolation (ratings sit inside league range), and the first "Bronze is clean" ghost check (used the
+  wrong fingerprint — ghosts are invisible).
