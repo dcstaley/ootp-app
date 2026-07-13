@@ -462,6 +462,32 @@ cross-check of the (ghost-touched) Bronze Return; Diamond deferred = the later k
 - ~~Build opp-side Phase 0~~ — DONE (`815ce9b`). ~~Eval-only carve-out sign-off~~ — APPROVED.
 - **Phase 1** (fit the K tail on Bronze+Gold quicks) — data-gated.
 - **Format adjustment** (BB×0.85 / HR×0.87 / hits×0.96) — HOLD; firm up on more Open runnings + tiers.
-- **`BIP_ADJ` era-aware** — optional small scoring fix (completes the dead-ball story).
-- **Cleanup bundle** (log-linear removal, tHR, softcaps, hitter SF+4) — solo, low priority (conflicts with everything).
-- **Derek manual actions:** retrain + activate a fresh model (picks up uBB targets + `trainingMeans`, clears the stale badge); regenerate rosters (era_gap XBH shift).
+- ~~`BIP_ADJ` era-aware~~ — SHIPPED (`4381d93`); era-semantics trilogy complete.
+- **Buildable now (low-value):** (a) validate `evaluateTournamentLevels` IN-FRAME on the league ALL
+  files (bias should ≈0 → confirms the combined-line pipeline before quicks); (b) realized-field /
+  pool-μ measurement (§11.13); (c) cleanup bundle (log-linear/tHR/softcaps/SF+4 — SF+4 is the weakest,
+  see §11.13; solo, conflicts with everything).
+- **Derek manual actions:** retrain + activate a fresh model on current code (picks up `trainingMeans`
+  + uBB + era_h/era_gap/era_bip_adj + the new form; clears the stale badge; makes frame-v2/matchup live
+  on the toggle) — do it once HD452 (2042) lands so the 41–42 window is complete; regenerate rosters
+  (era_gap + era_bip_adj shifted library-era hit/XBH scores).
+
+**11.13 Post-shipping data state + newly-surfaced items (2026-07-13, late).**
+- **Data state:** a temp 41–42 model was trained (throwaway; if trained on current code it carries
+  `trainingMeans` → frame-v2/matchup are selectable via the Model-Training toggle). **HD452 (2042) is
+  still missing** → the 41–42 window is partial until it lands. New combined **"ALL" league files**
+  (`2042 {HD450,HD451,HD453,PEL} ALL.csv`, one line/card, NO vL/vR split — same format as tournament
+  exports) — the per-side loader SKIPS them (`isCombinedLeagueFile`, `b3b0607`), preserved on disk.
+- **ALL-data uses:** (1) validate the combined-line eval pipeline IN-FRAME (league bias ≈0 expected);
+  (2) realized-field measurement; (3) a combined-league baseline for the format-effect work. Lower
+  value: platoon/IBB (the per-side files already carry those).
+- **Realized-field / pool-μ (open):** the frame gap is `μ_train (realized, PA/BF-weighted) − μ_pool
+  (top-50 PROXY)` — an asymmetry. Measure the usage-weighted realized field from outcome data, compare
+  to top-50, validate or correct the proxy. Inference is stuck with top-50 (no usage at scoring time),
+  but validation + `K̄_pool` centering can use the realized field. Doubles as a ghost detector (a
+  contaminated running's realized field is anomalously weak vs the eligible catalog).
+- **Hitter SF+4 — NOT a bug, refit-coupled cosmetic.** Hitter BIP_ADJ = HBP 6 + SH 3 − SF 4 = 5;
+  pitcher = 6. Training (`forms/fit/bakeoff`) AND inference (`raw-poly`/`woba`/`HIT_BIP_ADJ`) use the
+  IDENTICAL constant, so the fitted curve absorbs the convention and scores are correct (guarded by
+  `raw-poly.test.ts` parity). "Fixing" = align the hitter/pitcher conventions + REFIT (scores
+  ~unchanged); do it at a retrain if ever. The weakest cleanup-bundle item.
