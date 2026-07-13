@@ -29,14 +29,16 @@ export interface CardScores {
 }
 
 export function scoreCard(card: any, config: ScoringConfig, model?: EventModel): CardScores {
-  const { coeffs, derived, calScales, eventForm, poolTransform, frameShift, kSpread } = config;
-  // Model selection (D3): an explicit `model` wins (tests/tools); otherwise #2 raw-poly
-  // when the config carries a fitted eventForm. PRODUCTION always passes an eventForm
-  // (server threads the active model into BOTH the wOBA and basic configs), so the
-  // log-linear fallback below is now reached ONLY by no-eventForm test/tool callers — it
-  // is dead in general scoring. (Full removal of the fallback + branch collapse is a
-  // separate pass; it requires giving those ~10 callers a synthetic eventForm.)
-  const evModel = model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
+  const { coeffs, derived, calScales, eventForm, poolTransform, frameShift, kSpread, matchup } = config;
+  // Model selection (D3): an explicit `model` wins (tests/tools); then the matchup wrapper
+  // (Phase 0 — it binds the frame-v2 shift into the model, so score-card passes OWN ratings and
+  // the wrapper shifts internally); otherwise #2 raw-poly when the config carries a fitted
+  // eventForm. PRODUCTION always passes an eventForm (server threads the active model into BOTH
+  // the wOBA and basic configs), so the log-linear fallback below is now reached ONLY by
+  // no-eventForm test/tool callers — it is dead in general scoring. (Full removal of the
+  // fallback + branch collapse is a separate pass; it requires giving those ~10 callers a
+  // synthetic eventForm.)
+  const evModel = model ?? matchup?.model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
   const bats = n(card["Bats"]);
   const thr = n(card["Throws"]);
   const gb = n(card["GB"]);
@@ -68,6 +70,16 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     // Pre-era by construction (era_k applies later, once) — see §10.8d.
     if (kSpread) e.SO = Math.max(0, kSpread.meanHit + kSpread.sHit * (e.SO - kSpread.meanHit));
 
+    // Matchup: the event model got OWN ratings (it shifts internally), but the rating-DIRECT
+    // basic metric must see the SAME effective coordinate → shift here from matchup.shift. Absent
+    // matchup ⇒ bR === ratings (own-gap/frame-v2 basic path byte-unchanged).
+    const mh = matchup?.shift.hit[side];
+    const bR = mh ? {
+      eye: applyFrameShift(ratings.eye, mh.eye), pow: applyFrameShift(ratings.pow, mh.pow),
+      kRat: applyFrameShift(ratings.kRat, mh.kRat), babip: applyFrameShift(ratings.babip, mh.babip),
+      gap: applyFrameShift(ratings.gap, mh.gap),
+    } : ratings;
+
     // SSP (same-side platoon penalty) — REMOVED under #2 (value → 1); log-linear keeps it (parity).
     const sspAdv = sameSidePenaltyHitting(bats, side, eventForm ? 1 : coeffs.ssp_adv_hitting);
     const rawWoba = assembleRawHittingWoba(e, sspAdv, speed, steal, run, coeffs);
@@ -75,7 +87,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
 
     // Basic metric: direct basic-hitting score × pool scale × cross-pool multiplier.
     const basicRaw = basicHittingSide({
-      babipRaw: ratings.babip, powRaw: ratings.pow, eyeRaw: ratings.eye, kRaw: ratings.kRat, gapRaw: ratings.gap,
+      babipRaw: bR.babip, powRaw: bR.pow, eyeRaw: bR.eye, kRaw: bR.kRat, gapRaw: bR.gap,
       babipMod: derived.era_h * parkAvgFactor(bats, side, coeffs),
       powMod: derived.era_effective_hr * parkHrFactor(bats, side, coeffs),
       eyeMod: coeffs.era_bb,
@@ -106,6 +118,12 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     const e = evModel.predictPitching(ratings, coeffs);
     if (kSpread) e.K = Math.max(0, kSpread.meanPit + kSpread.sPit * (e.K - kSpread.meanPit)); // §10.8d
 
+    // Matchup: basic reads the effective coordinate (see the hitting note). Absent ⇒ bRp === ratings.
+    const mp = matchup?.shift.pit[side];
+    const bRp = mp ? {
+      con: applyFrameShift(ratings.con, mp.con), stu: applyFrameShift(ratings.stu, mp.stu),
+      pbabip: applyFrameShift(ratings.pbabip, mp.pbabip), hrr: applyFrameShift(ratings.hrr, mp.hrr),
+    } : ratings;
 
     const sspP = sameSidePenaltyPitching(thr, side, eventForm ? 1 : coeffs.ssp_basic_pitching);
     const rawWoba = assembleRawPitchingWoba(e, sspP, coeffs);
@@ -113,7 +131,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
 
     const vR = side === "vR";
     const basicRaw = basicPitchingSide({
-      stuffRaw: ratings.stu, ctrlRaw: ratings.con, pbabipRaw: ratings.pbabip, hrrRaw: ratings.hrr, gb,
+      stuffRaw: bRp.stu, ctrlRaw: bRp.con, pbabipRaw: bRp.pbabip, hrrRaw: bRp.hrr, gb,
       eraK: coeffs.era_k, eraBb: coeffs.era_bb,
       eraBabipParkAvg: derived.era_h * cp(vR ? coeffs.park_avg_r : coeffs.park_avg_l),
       eraEffHrParkHr: derived.era_effective_hr * cp(vR ? coeffs.park_hr_r : coeffs.park_hr_l),

@@ -5,6 +5,7 @@
 
 import type { EventForm } from "../model/curves.ts";
 import type { PoolTransform, FrameShift } from "../model/pool-transform.ts";
+import type { EventModel } from "../model/types.ts";
 
 export type Side = "vR" | "vL";
 
@@ -144,8 +145,15 @@ export interface ScoringConfig {
   // Frame-correction v2 (additive, channel-crossed opponent-gap shift), applied to ratings
   // BEFORE the model — the alternative to `poolTransform`. Absent ⇒ identity. See §10.8.
   frameShift?: FrameShift;
-  // K spread scaling (frame-v2 only): rescale the model's raw predicted K about the pool mean
-  // per role, applied BEFORE the BIP chain so hits recompute consistently. Absent ⇒ no scaling;
-  // s → 1 in-frame. See §10.8d and the KSpread type.
+  // K spread scaling (frame-v2 AND matchup): rescale the model's raw predicted K about the pool
+  // mean per role, applied BEFORE the BIP chain so hits recompute consistently. Absent ⇒ no
+  // scaling; s → 1 in-frame. See §10.8d and the KSpread type.
   kSpread?: KSpread;
+  // Matchup reparametrization (Phase 0): the frame-v2 opponent-gap shift bound INTO the event
+  // model (makeMatchupModel) rather than applied to ratings in score-card. `model` shifts the
+  // event-model coordinate internally; `shift` is the SAME crossed shift, used by the rating-
+  // direct BASIC metric (which never goes through the event model) so basic re-bases on the
+  // identical coordinate. Absent ⇒ no-op (parity). Bit-identical to `frameShift`+`kSpread` in
+  // Phase 0 (tail = 0, aRole = 1). Mutually exclusive with `poolTransform`/`frameShift`.
+  matchup?: { model: EventModel; shift: FrameShift };
 }

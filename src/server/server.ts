@@ -26,6 +26,7 @@ import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/f
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
 import { HIT_BIP_ADJ, PIT_BIP_ADJ } from "../model/curves.ts";                    // BIP convention, for the trace
+import { makeMatchupModel, matchupShift } from "../model/matchup.ts";              // Phase-0 matchup reparametrization
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
 import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
@@ -54,7 +55,7 @@ const DATA_ROOT = process.env.DATA_ROOT ?? "data";
 const TRAINING_DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"]
   .find((d): d is string => !!d && existsSync(d)) ?? "League Files";
 
-interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null; transformMode?: "own-gap" | "frame-v2" }
+interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null; transformMode?: "own-gap" | "frame-v2" | "matchup" }
 
 // ── Boot: config DB + accounts + catalog ──────────────────────────────────────
 console.log("[server] loading catalog + tournaments database…");
@@ -229,9 +230,12 @@ const isBaseCard = (c: Record<string, unknown>) => String(c["Variant"] ?? "").to
 // ── Frame-correction v2 (§10.8) — transform-mode selector + K-spread ramp constants ──
 // The rating re-basing mode. own-gap = the shipped multiplicative PoolTransform (production
 // default; DEPLOYMENT-GATED on quicks per the plan). frame-v2 = the additive channel-crossed
-// opponent-gap shift + K spread scaling, requires a `trainingMeans`-bearing active model.
-type TransformMode = "own-gap" | "frame-v2";
-const transformMode = (): TransformMode => (state.transformMode === "frame-v2" ? "frame-v2" : "own-gap");
+// opponent-gap shift + K spread scaling. matchup = the SAME shift + K spread, but the shift is
+// bound INTO the event model (Phase 0 — bit-identical to frame-v2; the seam for the Phase-1 K
+// tail fit). frame-v2 and matchup both require a `trainingMeans`-bearing active model.
+type TransformMode = "own-gap" | "frame-v2" | "matchup";
+const transformMode = (): TransformMode =>
+  state.transformMode === "frame-v2" ? "frame-v2" : state.transformMode === "matchup" ? "matchup" : "own-gap";
 // K spread scaling: s = 1 + (S_K − 1)·clamp(gap/G0_K, 0, 1), per role, ramped by that role's
 // own K-channel opponent-gap. S_K measured ≈1.75 constant for clearly-out-of-frame pools
 // (kslope.ts); the ramp below G0_K (~17) is UNOBSERVED with current data — both PROVISIONAL,
@@ -287,24 +291,37 @@ function scoreTournament(t: Tournament): Scored {
   // era_gap is now DERIVED (per-share when rates-backed), so its adjustment applies here —
   // multiplying coeffs.era_gap pre-derive would be dropped whenever era_gap_share wins.
   if (adj.enabled) { derived.era_effective_hr *= adj.hr; derived.era_h *= adj.h; derived.era_gap *= adj.gap; }
-  // Rating re-basing (#2 only) — one of two mutually-exclusive shapes, chosen by transformMode:
+  // Rating re-basing (#2 only) — one of three mutually-exclusive shapes, chosen by transformMode:
   //  • own-gap (default): reference = top-50 of the full NON-VARIANT catalog, pool = top-50 of
   //    the eligible subset → lift pool toward reference (saturating mean-scalar, envelope-capped).
   //  • frame-v2: additive channel-crossed opponent-gap shift measured against the model's
   //    trainingMeans (the true frame), + K spread scaling about the pool mean. Requires a
   //    trainingMeans-bearing active model; absent ⇒ falls back to own-gap (parity).
+  //  • matchup (Phase 0): the SAME shift + K spread, but the shift is bound INTO the event model
+  //    (makeMatchupModel) instead of applied to ratings — bit-identical to frame-v2 here; the
+  //    seam for the Phase-1 K tail fit. Same trainingMeans requirement/fallback as frame-v2.
   // Variants are still scored (toRow runs on the whole catalog) — they just don't set the
-  // distribution. No eventForm (log-linear baseline) ⇒ neither transform.
+  // distribution. No eventForm (log-linear baseline) ⇒ no transform.
   let poolTransform: PoolTransform | undefined;
   let frameShift: FrameShift | undefined;
   let kSpread: { sHit: number; sPit: number; meanHit: number; meanPit: number } | undefined;
+  let matchup: { model: EventModel; shift: FrameShift } | undefined;
   if (eventForm) {
     const poolField = computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true);
-    if (transformMode() === "frame-v2" && activeTrainingMeans) {
-      frameShift = buildFrameShift(activeTrainingMeans, poolField);
-      const kBar = poolMeanK(basePool, coeffs, evModel, frameShift, FIELD_N);
+    const mode = transformMode();
+    if ((mode === "frame-v2" || mode === "matchup") && activeTrainingMeans) {
+      // The crossed opponent-gap shift + K spread are shared by both modes. matchup binds the
+      // shift into the model; frame-v2 applies it to ratings in score-card. Same numbers.
+      const shift = buildFrameShift(activeTrainingMeans, poolField);
+      const kBar = poolMeanK(basePool, coeffs, evModel, shift, FIELD_N);
       // Per-role s ramped by each role's own K-channel opp-gap (hit ← pit.stu, pit ← hit.kRat).
-      kSpread = { sHit: kRamp(frameShift.hit.vR.kRat ?? 0), sPit: kRamp(frameShift.pit.vR.stu ?? 0), meanHit: kBar.hit, meanPit: kBar.pit };
+      kSpread = { sHit: kRamp(shift.hit.vR.kRat ?? 0), sPit: kRamp(shift.pit.vR.stu ?? 0), meanHit: kBar.hit, meanPit: kBar.pit };
+      if (mode === "matchup") {
+        const oppMeans = { train: activeTrainingMeans, pool: poolField };
+        matchup = { model: makeMatchupModel(evModel, oppMeans), shift: matchupShift(oppMeans) };
+      } else {
+        frameShift = shift;
+      }
     } else {
       const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
       poolTransform = buildPoolTransform(ref, poolField, activeEnvelope ?? undefined);
@@ -313,10 +330,10 @@ function scoreTournament(t: Tournament): Scored {
   // wOBA config uses the active #2 form + whichever re-basing is active. The anchor is computed
   // on NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
   // rating-direct but still gets the re-basing (it re-bases ratings, which basic reads).
-  const config = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread }) };
+  const config = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup }) };
   // eventForm threaded in so the basic path's (discarded) wOBA uses #2, not the log-linear
   // fallback — basic_* is rating-direct and unchanged; this keeps log-linear out of production.
-  const basicConfig = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, calScales: calibrateBasic(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread }) };
+  const basicConfig = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, calScales: calibrateBasic(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup }) };
 
   const inValueRange = (c: Record<string, unknown>) => {
     const v = n(c["Card Value"]); const lo = t.card_value_min, hi = t.card_value_max;
@@ -1764,13 +1781,15 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   }
   if (method === "GET" && url === "/api/training/models") return json(res, { models: await listModels(), activeId: state.activeModelId ?? null });
   // Frame-correction transform mode (§10.8): own-gap (shipped default, quicks-gated) vs frame-v2
-  // (additive opp-gap shift + K spread). frame-v2 needs a trainingMeans-bearing active model.
+  // (additive opp-gap shift + K spread) vs matchup (Phase 0 — same shift bound into the model,
+  // bit-identical to frame-v2). frame-v2 AND matchup need a trainingMeans-bearing active model.
   if (method === "GET" && url === "/api/training/transform-mode")
     return json(res, { mode: transformMode(), hasTrainingMeans: !!activeTrainingMeans, sK: S_K, g0K: G0_K });
   if (method === "POST" && url === "/api/training/transform-mode") {
-    const mode = u.searchParams.get("mode") === "frame-v2" ? "frame-v2" : "own-gap";
-    if (mode === "frame-v2" && !activeTrainingMeans)
-      return json(res, { ok: false, error: "active model has no trainingMeans — retrain to enable frame-v2" }, 400);
+    const raw = u.searchParams.get("mode");
+    const mode = raw === "frame-v2" ? "frame-v2" : raw === "matchup" ? "matchup" : "own-gap";
+    if ((mode === "frame-v2" || mode === "matchup") && !activeTrainingMeans)
+      return json(res, { ok: false, error: `active model has no trainingMeans — retrain to enable ${mode}` }, 400);
     state.transformMode = mode;
     await saveState();
     invalidateDerivedCaches(); // re-score under the new mode
