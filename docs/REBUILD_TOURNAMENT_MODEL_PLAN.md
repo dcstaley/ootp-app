@@ -819,6 +819,33 @@ knobs → acceptance battery.
   gate (scorecard Spearman/value-regret), not RMSE. SEs not yet clustered-by-running (uncertainty on A_pit
   vs A_hit is real given the small gains). NEXT: per-tournament×role knobs → acceptance battery.
 
+**11.21 PHASE-1 ACCEPTANCE — s(gap) FAILS the pitcher ranking gate; it's a CHANNEL-WEIGHTING problem,
+not spread (`tools/phase1-accept.ts`, plan §11.19 acceptance).** matchup + fitted s(gap) vs own-gap,
+Spearman + value-regret, per role, ≥100 PA/BF, ghost-cleaned:
+
+| dataset | HIT Spearman own→sgap | PIT Spearman own→sgap |
+|---|---|---|
+| Open | 0.197→0.203 ✓ | 0.217→0.232 ✓ |
+| Bronze-q | 0.315→0.343 ✓ | 0.392→**0.309 ✗** |
+| Gold-q | 0.506→0.474 ✗ | 0.338→0.318 ✗ |
+| EG-clean | 0.592→0.641 ✓ | 0.588→0.565 ✗ |
+| Bronze-t | 0.566→0.549 ✗ | 0.574→**0.387 ✗** |
+
+**VERDICT: the gate is NOT passed.** (1) **PITCHERS: s(gap) REGRESSES ranking on 4/5 datasets** (Bronze-t
+0.574→0.387 is a big, N=123 drop on own-gap's home turf) — the SAME regression frame-v2 showed (§11.16), and
+the fitted higher s (~1.8–2.0) does NOT rescue it. This **refutes Fable's mechanistic hypothesis** ("s_pit(gap)
+recovers the gap"); per Fable's own pre-registration, **the remaining deficit is a CHANNEL-WEIGHTING problem,
+not a spread problem — reported, not tuned past.** Own-gap's multiplicative lift reweights ALL channels
+(implicitly over-weighting the dominant one → better pitcher ranking); s(gap) only rescales K spread, so it
+can't reproduce that. (2) **HITTERS: mixed** (wins 3/5 Spearman) — s(gap) modestly helps hitters. (3) **LEVELS
+reconcile CLEANLY** (the accounting closes): sgap collapses every channel toward small residuals (Bronze-t PIT
+K −17.2→−4.4, uBB +25.1→+6.9, HR +5.9→+0.8, H−HR +6.7→+4.5). The residual **uBB knob is ~gap-constant
++6..+10 both roles, present at Open (gap 0)** → **CONFIRMS Change 2**: it's a format constant, not a frame
+residual. **CONSEQUENCE: do NOT flip the default to matchup+s(gap) — it fails the pitcher gate. own-gap stays.
+Phase 1 is BLOCKED on the pitcher channel-weighting problem** (the frame fixes levels but not pitcher ranking;
+the K-spread magnitude is not the lever). The s(gap) fit + the clean level reconciliation stand as results;
+the ranking fix is a different, open problem.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
