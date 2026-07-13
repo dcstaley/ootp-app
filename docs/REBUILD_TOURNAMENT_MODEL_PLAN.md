@@ -711,6 +711,21 @@ s≈2.0) is what makes the opp-side frame a ranking win; the flat constant doesn
 and the discrimination gate the fitted tail must beat (C). Next: fit `tail`+`aRole` on matchup's seam
 (Open anchors s→1, Bronze/Gold the plateau, per role) + the pitcher-uBB BB-channel term, league-RMSE-gated.
 
+**11.17b Statistical power — the quicks are a strong FIT instrument, a WEAK RANKING instrument
+(`tools/quicks-power.ts`).** Measured per-card realized-wOBA SPREAD (talent) vs per-card sampling NOISE
+(∝1/√PA) → signal-to-noise for per-card ranking: Open HIT S/N **0.44**, Bronze HIT 0.62, Gold HIT 1.02;
+Open PIT 1.32, Bronze PIT **≈0.01** (talent ≈ noise — cards indistinguishable), Gold PIT 0.52. **The
+talent spread within a value-capped pool is COMPARABLE TO OR SMALLER THAN the measurement noise** — a
+RANGE-RESTRICTION floor, NOT a sample-size problem. To lift Open HIT to S/N 2 needs ~×20 runnings (~145
+total); Bronze PIT is unreachable (signal≈0). **⇒ (1) The per-card Spearman/value-regret on quicks is,
+and will stay, NOISY — the quicks validate the model's SLOPE/CALIBRATION, not fine within-pool ranking;
+don't over-read the scorecard's ranking cells on capped tiers. (2) The FIT does NOT need this — `s*` is an
+aggregate slope over the whole swept RATING range (strong signal), so the ramp (A) is robust on current
+data. (3) value-regret stays small precisely because the cards are close (roster COST of a ranking error
+is low) — comforting for roster-building. Recommendation: FIT NOW (≥7/tier is plenty for the slope; +3–5
+Gold to firm the noisier pit plateau); do NOT wait for ranking confidence that capped quicks can't
+provide; use Open / wider-value pools when ranking IS the question.**
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
