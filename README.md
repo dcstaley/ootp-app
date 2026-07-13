@@ -14,30 +14,17 @@ per-tournament captures from the old app to validate against the user's trusted 
 | Path | What |
 |---|---|
 | `src/scoring-core/` | The one scoring core (helpers, basic, wOBA+calibration, orchestrator) |
-| `src/model/` | D3 swappable event model (`EventModel`); `log-linear.ts` is the current parity port |
+| `src/model/` | D3 swappable event model (`EventModel`); `raw-poly.ts` is the deployed form (`log-linear.ts` retired) |
 | `src/config/` | Coeffs / CalScales / Derived types + `derived` values |
-| `tools/golden/` | Throwaway validation harness — verbatim extract of the OLD app's scoring code |
-| `tools/capture-snippet.js` | Paste into the old app's console to export a tournament's scoring env |
-| `fixtures/captures/` | Captured `{coeffs, calScales}` per tournament (inputs to the golden) |
-| `fixtures/golden/` | Generated reference scores the rebuilt core must reproduce |
+| `fixtures/captures/` | Captured `{coeffs, calScales}` per tournament — scoring-input fixtures for the test suite |
 
-## Validating parity against the old app
-
-The benchmark of truth is the old **Roster & Lineup page's** calibrated scores (not the datagrid).
-
-1. In the old app, open the Roster & Lineup page, select a tournament, click **Generate** once
-   (this computes the calibration scales).
-2. Open DevTools → Console, edit `LABEL` in `tools/capture-snippet.js`, paste it, run. A file
-   downloads.
-3. Drop the file in `fixtures/captures/`.
-4. `npm run golden` then `npm test`.
-
-Repeat per tournament / era / park setting you want covered.
+> Old-app **parity is sunset** (2026-07-01): the `tools/golden/` harness, `fixtures/golden/` snapshots,
+> the `npm run golden` script, and the parity test were removed. The deployed model is the data-driven
+> raw-poly event model; scoring changes no longer validate against the old app. See CLAUDE.md.
 
 ## Commands
 
 ```
-npm test            # parity tests
-npm run golden      # regenerate golden refs from fixtures/captures
+npm test            # unit + integration tests
 npm run typecheck   # tsc --noEmit
 ```
