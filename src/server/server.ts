@@ -14,7 +14,7 @@
 // frozen file), so new card releases flow in on upload.
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, extname } from "node:path";
 import { parseCatalogCsv, cardId, type Catalog } from "../data/catalog.ts";
 import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
@@ -43,6 +43,8 @@ import { HITTER, PITCHER, predictHitWoba, predictPitWoba, actualHitWoba, actualP
 import { evalMetrics, type EvalMetrics } from "../training/metrics.ts";
 import { analyzeResiduals, type ResidualAnalysis } from "../training/residuals.ts";
 import { validateDataset } from "../training/validate.ts";
+import { loadTournamentOutcomes, tournamentExposure, evaluateTournamentLevels } from "../training/tournament-eval.ts";
+import { cleanTournamentRows } from "../eval/tournament-clean.ts"; // ghost-cleaner wired via DI into the tournament-eval endpoint
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -1707,6 +1709,40 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
     const report = computeConsistency(basePool, catalog.cards.filter(isBaseCard), s.ctx.config.coeffs, makeRawPolyModel(ef), { fieldN: FIELD_N });
     return json(res, { tournament: t.name, active: true, ...report });
+  }
+  // EVALUATION-ONLY tournament outcomes: load the combined-line CSVs under `dir` (a subdir of
+  // "Tournament Data/"), ghost-clean each running via DI, and return the pooled predicted-vs-actual
+  // per-600 level-bias table under the ACTIVE model + the chosen tournament's environment. This is
+  // read-only diagnostics — the tournament path is structurally isolated from training (it can never
+  // enter a fit; see src/training/tournament-eval.ts + tests/tournament-eval.test.ts).
+  if (method === "GET" && url === "/api/debug/tournament-eval") {
+    const TOURNEY_ROOT = "Tournament Data";
+    const dirParam = u.searchParams.get("dir") || "";
+    // Path-traversal guard: `dir` must be a real immediate subdirectory of TOURNEY_ROOT.
+    const allowed = existsSync(TOURNEY_ROOT)
+      ? readdirSync(TOURNEY_ROOT, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)
+      : [];
+    if (!allowed.includes(dirParam)) return json(res, { error: `unknown dir '${dirParam}'`, available: allowed }, 400);
+    const fullDir = join(TOURNEY_ROOT, dirParam);
+    const expectedTeams = Number(u.searchParams.get("expectedTeams") ?? "") || undefined;
+    const minPA = Number(u.searchParams.get("minPA") ?? 100) || 100;
+    const minBF = Number(u.searchParams.get("minBF") ?? 100) || 100;
+    const { t, s } = scoredFor(tid);
+    const ef = s.ctx.config.eventForm;
+    const evModel: EventModel = ef ? makeRawPolyModel(ef) : logLinearModel;
+    // Ghost-cleaner wired via DI (import from ../eval/tournament-clean.ts). Only cleans when an
+    // expectedTeams count is supplied (a running with no ghost count is passed through untouched).
+    const clean = expectedTeams
+      ? (rows: any[], teams?: number) => cleanTournamentRows(rows, teams ?? expectedTeams).cleaned
+      : undefined;
+    const obs = loadTournamentOutcomes(fullDir, { expectedTeams, clean });
+    const exposure = tournamentExposure(obs);
+    const levels = evaluateTournamentLevels(obs, evModel, s.ctx.config.coeffs, exposure, { minPA, minBF });
+    return json(res, {
+      dir: dirParam, tournament: t.name, model: model!.name, activeForm: !!ef,
+      obsCount: obs.length, cleaned: !!expectedTeams, expectedTeams: expectedTeams ?? null,
+      exposure, thresholds: { minPA, minBF }, levels,
+    });
   }
   if (method === "GET" && url === "/api/training/fit") {
     const minPA = Math.max(0, Number(u.searchParams.get("minPA") ?? 1000) || 1000);
