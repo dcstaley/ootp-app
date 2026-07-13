@@ -21,7 +21,7 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
@@ -52,7 +52,7 @@ const DATA_ROOT = process.env.DATA_ROOT ?? "data";
 const TRAINING_DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"]
   .find((d): d is string => !!d && existsSync(d)) ?? "League Files";
 
-interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null }
+interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null; transformMode?: "own-gap" | "frame-v2" }
 
 // ── Boot: config DB + accounts + catalog ──────────────────────────────────────
 console.log("[server] loading catalog + tournaments database…");
@@ -216,12 +216,27 @@ let activeEventForm: EventForm | null = null;
 let activePlatoon: PlatoonExposure | null = null; // active model's measured platoon exposure → new-tournament defaults
 let activeWobaWeights: WobaWeights | null = null; // active model's wRAA-derived wOBA weights → folded into coeffs
 let activeEnvelope: RatingEnvelope | null = null; // active model's per-rating training maxima → pool-transform saturation ceilings
+let activeTrainingMeans: TrainingMeans | null = null; // active model's per-channel training-opponent means → frame-v2 opp-gap reference (absent ⇒ own-gap)
 
 // Pool-strength rating transform (#2 only). NON-VARIANT cards set every average/distribution
 // (the field-size diagnostic was no-variants too); variants are scored but never enter the
 // stats. FIELD_N = the validated realistic-field size (tools/field-size.ts).
 const FIELD_N = 50;
 const isBaseCard = (c: Record<string, unknown>) => String(c["Variant"] ?? "").toUpperCase() !== "Y";
+
+// ── Frame-correction v2 (§10.8) — transform-mode selector + K-spread ramp constants ──
+// The rating re-basing mode. own-gap = the shipped multiplicative PoolTransform (production
+// default; DEPLOYMENT-GATED on quicks per the plan). frame-v2 = the additive channel-crossed
+// opponent-gap shift + K spread scaling, requires a `trainingMeans`-bearing active model.
+type TransformMode = "own-gap" | "frame-v2";
+const transformMode = (): TransformMode => (state.transformMode === "frame-v2" ? "frame-v2" : "own-gap");
+// K spread scaling: s = 1 + (S_K − 1)·clamp(gap/G0_K, 0, 1), per role, ramped by that role's
+// own K-channel opponent-gap. S_K measured ≈1.75 constant for clearly-out-of-frame pools
+// (kslope.ts); the ramp below G0_K (~17) is UNOBSERVED with current data — both PROVISIONAL,
+// pinned by the quicks ladder (gold/open) before the production default flips. s → 1 in-frame.
+const S_K = 1.75;
+const G0_K = 17;
+const kRamp = (gap: number) => 1 + (S_K - 1) * Math.min(Math.max(gap / G0_K, 0), 1);
 // Reference field = top-50 of the FULL (non-variant) catalog by predicted wOBA — the
 // unrestricted "league," dynamic (recomputed when the active model OR catalog changes),
 // tournament-independent (raw wOBA is era/park-free). Cached.
@@ -268,23 +283,36 @@ function scoreTournament(t: Tournament): Scored {
   if (adj.enabled) { coeffs.era_bb *= adj.bb; coeffs.era_k *= adj.k; coeffs.era_gap *= adj.gap; }
   const derived = computeDerived(coeffs, !!eventForm); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
   if (adj.enabled) { derived.era_effective_hr *= adj.hr; derived.era_h *= adj.h; }
-  // Pool transform (#2 only): reference = top-50 of the full NON-VARIANT catalog, pool =
-  // top-50 of the eligible NON-VARIANT subset → lift pool toward reference (saturating
-  // mean-scalar, capped at the active model's training envelope). Variants are still scored
-  // (toRow runs on the whole catalog) — they just don't set the distribution. undefined ⇒
-  // no transform (unrestricted pool ⇒ k≈1 ⇒ identity; no #2 model ⇒ log-linear baseline).
+  // Rating re-basing (#2 only) — one of two mutually-exclusive shapes, chosen by transformMode:
+  //  • own-gap (default): reference = top-50 of the full NON-VARIANT catalog, pool = top-50 of
+  //    the eligible subset → lift pool toward reference (saturating mean-scalar, envelope-capped).
+  //  • frame-v2: additive channel-crossed opponent-gap shift measured against the model's
+  //    trainingMeans (the true frame), + K spread scaling about the pool mean. Requires a
+  //    trainingMeans-bearing active model; absent ⇒ falls back to own-gap (parity).
+  // Variants are still scored (toRow runs on the whole catalog) — they just don't set the
+  // distribution. No eventForm (log-linear baseline) ⇒ neither transform.
   let poolTransform: PoolTransform | undefined;
+  let frameShift: FrameShift | undefined;
+  let kSpread: { sHit: number; sPit: number; meanHit: number; meanPit: number } | undefined;
   if (eventForm) {
-    const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
-    poolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true), activeEnvelope ?? undefined);
+    const poolField = computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true);
+    if (transformMode() === "frame-v2" && activeTrainingMeans) {
+      frameShift = buildFrameShift(activeTrainingMeans, poolField);
+      const kBar = poolMeanK(basePool, coeffs, evModel, frameShift, FIELD_N);
+      // Per-role s ramped by each role's own K-channel opp-gap (hit ← pit.stu, pit ← hit.kRat).
+      kSpread = { sHit: kRamp(frameShift.hit.vR.kRat ?? 0), sPit: kRamp(frameShift.pit.vR.stu ?? 0), meanHit: kBar.hit, meanPit: kBar.pit };
+    } else {
+      const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
+      poolTransform = buildPoolTransform(ref, poolField, activeEnvelope ?? undefined);
+    }
   }
-  // wOBA config uses the active #2 form + pool transform. The anchor is computed on
-  // NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
-  // rating-direct but still gets the pool transform (it re-bases ratings, which basic reads).
-  const config = { coeffs, derived, eventForm, poolTransform, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform }) };
+  // wOBA config uses the active #2 form + whichever re-basing is active. The anchor is computed
+  // on NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
+  // rating-direct but still gets the re-basing (it re-bases ratings, which basic reads).
+  const config = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread }) };
   // eventForm threaded in so the basic path's (discarded) wOBA uses #2, not the log-linear
   // fallback — basic_* is rating-direct and unchanged; this keeps log-linear out of production.
-  const basicConfig = { coeffs, derived, eventForm, poolTransform, calScales: calibrateBasic(basePool, { coeffs, derived, eventForm, poolTransform }) };
+  const basicConfig = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, calScales: calibrateBasic(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread }) };
 
   const inValueRange = (c: Record<string, unknown>) => {
     const v = n(c["Card Value"]); const lo = t.card_value_min, hi = t.card_value_max;
@@ -1287,6 +1315,7 @@ interface TrainedModel {
   platoon?: PlatoonExposure; // measured platoon exposure (OVR splits + team VR/VL) — seeds new-tournament defaults
   wobaWeights?: WobaWeights; // wRAA-derived wOBA event weights for this model's leagues (optional; absent ⇒ defaults)
   ratingEnvelope?: RatingEnvelope; // per-rating training maxima → pool-transform saturation ceilings (optional)
+  trainingMeans?: TrainingMeans; // per-channel PA/BF-weighted training-opponent means → frame-v2 opp-gap reference (optional)
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
@@ -1334,6 +1363,22 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     hit: { eye: maxOf(hitQual, (o) => o.ratings.hit.eye), pow: maxOf(hitQual, (o) => o.ratings.hit.pow), kRat: maxOf(hitQual, (o) => o.ratings.hit.kRat), babip: maxOf(hitQual, (o) => o.ratings.hit.babip), gap: maxOf(hitQual, (o) => o.ratings.hit.gap) },
     pit: { con: maxOf(pitQual, (o) => o.ratings.pitch.con), stu: maxOf(pitQual, (o) => o.ratings.pitch.stu), pbabip: maxOf(pitQual, (o) => o.ratings.pitch.pbabip), hrr: maxOf(pitQual, (o) => o.ratings.pitch.hrr) },
   };
+  // Per-channel training-OPPONENT means — the model's true reference frame for the frame-v2
+  // opp-gap shift (plan §10.8; measured to differ from the catalog top-50 field by up to +16
+  // on hit.eye). PA-weighted for hitters, BF-weighted for pitchers, pooled over sides (same
+  // qualifying cohort as ratingEnvelope), so a weak pool is re-based against what the model
+  // actually trained against, not the catalog field.
+  const paOf = (o: TrainObs) => o.sources.reduce((s, x) => s + x.pa, 0);
+  const bfOf = (o: TrainObs) => o.sources.reduce((s, x) => s + x.bf, 0);
+  const wMean = (rows: TrainObs[], w: (o: TrainObs) => number, get: (o: TrainObs) => number) => {
+    let num = 0, den = 0; for (const o of rows) { const wt = w(o); num += wt * get(o); den += wt; } return den > 0 ? num / den : 0;
+  };
+  const hMean = (get: (o: TrainObs) => number) => wMean(hitQual, paOf, get);
+  const pMean = (get: (o: TrainObs) => number) => wMean(pitQual, bfOf, get);
+  const trainingMeans: TrainingMeans = {
+    hit: { eye: hMean((o) => o.ratings.hit.eye), pow: hMean((o) => o.ratings.hit.pow), kRat: hMean((o) => o.ratings.hit.kRat), babip: hMean((o) => o.ratings.hit.babip), gap: hMean((o) => o.ratings.hit.gap) },
+    pit: { con: pMean((o) => o.ratings.pitch.con), stu: pMean((o) => o.ratings.pitch.stu), pbabip: pMean((o) => o.ratings.pitch.pbabip), hrr: pMean((o) => o.ratings.pitch.hrr) },
+  };
   // Realized RHP/LHP exposure over ALL window obs (OVR/team splits from aggregated
   // obs) + role-conditional pitch splits (row grain, from the loader before CID
   // aggregation — computePlatoon can't see role from the aggregated obs).
@@ -1351,6 +1396,7 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     platoon,
     wobaWeights,
     ratingEnvelope,
+    trainingMeans,
     diag: { hitPearson: f.wobaDiagHit?.pearson ?? null, pitPearson: f.wobaDiagPit?.pearson ?? null, rowsHit: f.woba_hitting.rowCount, rowsPit: f.woba_pitching.rowCount },
     trainedAt: new Date().toISOString(), notes: body.notes ? String(body.notes) : undefined,
   };
@@ -1368,6 +1414,7 @@ async function refreshActiveModel(): Promise<void> {
   activePlatoon = m?.platoon ?? null;
   activeWobaWeights = m?.wobaWeights ?? null;
   activeEnvelope = m?.ratingEnvelope ?? null;
+  activeTrainingMeans = m?.trainingMeans ?? null;
   // T-4: an activated artifact whose evaluation semantics predate the current version scores
   // its betas under DIFFERENT math than it was validated with — warn loudly (the UI also
   // surfaces `stale` via modelSummary).
@@ -1678,6 +1725,19 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     return json(res, getResiduals(role, parseYears(u.searchParams.get("years")), minN, includeVariants, weighted, u.searchParams.get("reload") === "true"));
   }
   if (method === "GET" && url === "/api/training/models") return json(res, { models: await listModels(), activeId: state.activeModelId ?? null });
+  // Frame-correction transform mode (§10.8): own-gap (shipped default, quicks-gated) vs frame-v2
+  // (additive opp-gap shift + K spread). frame-v2 needs a trainingMeans-bearing active model.
+  if (method === "GET" && url === "/api/training/transform-mode")
+    return json(res, { mode: transformMode(), hasTrainingMeans: !!activeTrainingMeans, sK: S_K, g0K: G0_K });
+  if (method === "POST" && url === "/api/training/transform-mode") {
+    const mode = u.searchParams.get("mode") === "frame-v2" ? "frame-v2" : "own-gap";
+    if (mode === "frame-v2" && !activeTrainingMeans)
+      return json(res, { ok: false, error: "active model has no trainingMeans — retrain to enable frame-v2" }, 400);
+    state.transformMode = mode;
+    await saveState();
+    invalidateDerivedCaches(); // re-score under the new mode
+    return json(res, { ok: true, mode, hasTrainingMeans: !!activeTrainingMeans });
+  }
   // The DEPLOYED #2 event model's fitted curves (for the Model-Training coefficient panel —
   // so it shows what actually scores, not the retired log-linear baseline). null ⇒ no model active.
   if (method === "GET" && url === "/api/training/active-eventform") return json(res, { eventForm: activeEventForm });
