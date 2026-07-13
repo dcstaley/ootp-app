@@ -921,6 +921,31 @@ inverse-variance/bootstrap treatment of §11.23); check OUT-OF-FRAME LEVEL bias 
 fixed levels, not just spread); and re-check why the original bake-off REJECTED rawquad (monotonicity/
 extrapolation GATE, not spread) before shipping it.
 
+**11.25 PHASE-1c PLAN (Fable, form-first then sized widening) — agreed; two key reframes.** Sequence:
+1. **HYBRID FORM eval:** K=rawquad(2)+direction-aware monotone cap; BB/HR=LOG+StuffAug aux; H=log. Two-axis
+   vs deployed AND vs uniform rawquad; RE-EXAMINE the original rawquad rejection with the CAP active (it
+   predates both the cap and spread-aware metrics — the cap is already applied at scoring; the bake-off GATE
+   flags the UNCAPPED turnover, so a cap-rescued rawquad may be shippable). NOTE from §11.24: the hybrid
+   (StuffAug BB/HR + rawquad K) only reached ~0.65 vs uniform rawquad 0.76 — the level-vs-spread tradeoff
+   (keep StuffAug's level fix + less spread, or drop it + more spread) is the decision, needs the level check.
+2. **CEILING TEST:** deconvolved value spread WITHIN SP-only / RP-only cohorts (roleOf = GS≥G/2, cf.
+   `tournament-role-k.ts`). If within-role ≈0.9+, the in-frame 0.76 residual is ROLE-MIX variance (SP/RP have
+   different value distributions the usage-blind model can't match), NOT a form ceiling — record as the
+   MEASURED ceiling; role-aware scoring (`pitchRoleSplits` already on the artifact) is the future ceiling-raiser,
+   OUT OF SCOPE this phase.
+3. **HYP-1 SIZING (after 1):** fit s_pit to CONTEXT-INVARIANCE — out-of-frame spread-ratio == the chosen form's
+   OWN in-frame ratio. **⚠ KEY REFRAME: do NOT target 1.0.** Shrunk predictions are correct posterior means
+   (E[value|ratings] has less variance than realized value); un-shrinking DEGRADES decisions. Never widen
+   in-frame. So the target is the form's in-frame ratio (e.g. 0.76), lifted at the out-of-frame gap — this
+   RESOLVES the "form ceiling < 1.0" worry (0.76 is correct shrinkage, not a deficiency).
+4. **SHIP BAR (relaxed):** deconv pit/hit ≥ ~**0.80** with CI clear of own-gap's 0.69; hitters within CI of
+   their ~1.0; axis-1 ≥ own-gap. Document the remaining gap vs the measured ceiling from (2).
+5. **STUFF-RESIDUAL TICKET CLOSED (mechanism):** the in-frame pitcher spread compression (§11.24, deployed
+   0.62; K=log flattens high-Stuff) IS the long-open Stuff-residual (over-rates low-Stuff/high-Control
+   pitchers; the faint league STU→K −0.68 residual slope was this). Links `overscoring-stuff-residual` +
+   memory item 3 → the mechanism is a spread-blind curve-family choice, and a monotone-capped raw-poly K is
+   the form-level fix. The pool-conditioned remainder is Hyp-1's (smaller) job.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
