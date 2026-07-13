@@ -38,6 +38,11 @@ export interface Coeffs {
   // expansion — so a per-PA era_gap triple-counts. The correct multiplier is the XBH SHARE
   // ratio ((b2+b3)/(h−hr) vs 2010). Absent (captures/synthetic eras) ⇒ legacy per-PA era_gap.
   era_gap_share?: number;
+  // Per-era scale for the fixed BIP_ADJ constant (HBP+SH+SF stand-in), from the era rates block.
+  // The fitted H-curve trained on BIP = 600 − BB − K − HR − BIP_ADJ with a FIXED BIP_ADJ, but the
+  // real non-BIP-out level varies by era; this scales it (2010 → 1, dead-ball → ~2.4). Absent
+  // (captures/synthetic eras) ⇒ 1 (fixed constant, unchanged). Same class as era_h_bip.
+  era_bip_adj?: number;
 
   // Soft caps (hitting)
   cap_k_top: number;     cap_k_bot: number;     pen_k: number;
@@ -117,6 +122,9 @@ export interface Derived {
   // Effective XBH-share era factor: the resolver's per-share `era_gap_share` when present,
   // else the legacy per-PA `era_gap` (rates-less configs unchanged). woba.ts reads this.
   era_gap: number;
+  // Per-era BIP_ADJ scale (rates-derived; 1 when absent). woba.ts multiplies HIT_BIP_ADJ /
+  // PIT_BIP_ADJ by this so the BIP recompute tracks the era's non-BIP-out level.
+  era_bip_adj: number;
 }
 
 export interface ScoreSettings {

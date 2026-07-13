@@ -26,5 +26,8 @@ export function computeDerived(coeffs: Coeffs, removeTHR = false): Derived {
   // era_gap: prefer the resolver's per-share factor (rates-derived); fall back to the legacy
   // per-PA coeff for captures/synthetic eras (bit-identical). See eraGapShare / Job 2.1.
   const era_gap = coeffs.era_gap_share ?? coeffs.era_gap;
-  return { era_h, era_effective_hr, era_gap };
+  // BIP_ADJ scale: resolver's rates-derived value, else 1 (fixed constant unchanged) for
+  // captures/synthetic eras. woba.ts multiplies HIT_BIP_ADJ/PIT_BIP_ADJ by this.
+  const era_bip_adj = coeffs.era_bip_adj ?? 1;
+  return { era_h, era_effective_hr, era_gap, era_bip_adj };
 }

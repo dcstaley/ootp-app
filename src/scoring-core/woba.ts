@@ -51,7 +51,7 @@ export function hittingComponents(
   // HIT_BIP_ADJ (shared constant, curves.ts) — evaluate it on the SAME convention.
   // Legacy (no-eventForm, retired log path): the coeff-driven adv_hbp+adv_sh, unchanged.
   const BIP_fin = eventForm
-    ? Math.max(600 - BB_fin - SO_fin - HR_fin - HIT_BIP_ADJ, 1)
+    ? Math.max(600 - BB_fin - SO_fin - HR_fin - HIT_BIP_ADJ * derived.era_bip_adj, 1)
     : Math.max(600 - BB_fin - (coeffs.adv_hbp ?? 6) - (coeffs.adv_sh ?? 0) - SO_fin - HR_fin, 1);
   // BA (non-HR hit rate) and the GAP-share are RE-DERIVED here because era/park move
   // BIP and hits depend on BIP. With #2 (eventForm present) the re-derivation uses the
@@ -84,7 +84,7 @@ export function pitchingComponents(
   // Same convention rule as hitting: eventForm ⇒ the training constant (PIT_BIP_ADJ);
   // legacy ⇒ coeff-driven adv_hbp (production carries 6, so these coincide).
   const BIP_fin = eventForm
-    ? Math.max(600 - BB_fin - K_fin - HR_fin - PIT_BIP_ADJ, 1)
+    ? Math.max(600 - BB_fin - K_fin - HR_fin - PIT_BIP_ADJ * derived.era_bip_adj, 1)
     : Math.max(600 - BB_fin - (coeffs.adv_hbp ?? 6) - K_fin - HR_fin, 1);
   // nHH (non-HR hits) is RE-DERIVED here because era/park move BIP. With #2 (eventForm
   // present) it uses the fitted pitcher hit-curve — symmetric with the hitter BA path.

@@ -56,6 +56,21 @@ const REF_XBH_SHARE_NHH = (0.04584 + 0.00471) / (0.22944 - 0.02488);
 export function eraGapShare(rates: NonNullable<Era["rates"]>): number {
   return ((rates.b2 + rates.b3) / (rates.h - rates.hr)) / REF_XBH_SHARE_NHH;
 }
+
+// Reference non-BIP-out fraction = era-2010's (1 − bb − k − hr − bip) = HBP+SH+SF+misc per PA.
+// The BIP recompute subtracts a FIXED HIT_BIP_ADJ/PIT_BIP_ADJ (curves.ts) for these outs, but
+// their real level varies by era (dead-ball 1920 ≈ 4.0% vs 2010 ≈ 1.68% — heavy sacrifice
+// bunting), so a fixed constant over/understates BIP in extreme eras → the residual dead-ball
+// hit/XBH over-prediction (BIP-recompute audit; plan §11.3). Guarded by a test.
+const REF_NONBIP_2010 = 1 - (0.08512 + 0.18491 + 0.02488 + 0.68832);
+
+/** Per-era scale for the fixed BIP_ADJ constant: how the era's non-BIP-out (HBP+SH+SF) level
+ *  compares to 2010. `BIP_ADJ_era = BIP_ADJ × eraBipAdj(rates)`, so 2010 → 1 (the fitted
+ *  convention is preserved), dead-ball 1920 → ~2.4 (more non-BIP outs → smaller BIP → fewer
+ *  hits), modern high-K 2019 → ~0.9. Same class as era_h_bip / era_gap_share. */
+export function eraBipAdj(rates: NonNullable<Era["rates"]>): number {
+  return (1 - (rates.bb + rates.k + rates.hr + rates.bip)) / REF_NONBIP_2010;
+}
 const parkFactors = (p: Park): ParkFactors => ({
   avg_l: p.avg_l, avg_r: p.avg_r, hr_l: p.hr_l, hr_r: p.hr_r, gap: p.gap,
 });
@@ -71,7 +86,7 @@ export function resolveCoeffs(model: Model, era: Era, park: Park, softcaps: Soft
   });
   // Attached post-assembly (not part of the lossless split/assemble partition — captures
   // predate it and keep the legacy per-PA era_h derivation). Library eras all carry rates.
-  if (era.rates) { bag.era_h_bip = eraHBip(era.rates); bag.era_gap_share = eraGapShare(era.rates); }
+  if (era.rates) { bag.era_h_bip = eraHBip(era.rates); bag.era_gap_share = eraGapShare(era.rates); bag.era_bip_adj = eraBipAdj(era.rates); }
   return bag;
 }
 
