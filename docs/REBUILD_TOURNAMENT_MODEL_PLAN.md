@@ -894,6 +894,33 @@ PIT spread-ratio 0.75→~1.0 while PRESERVING hit ~1.0** (own-gap is the hitter 
 term). Caveat: even deconv pit CIs are wide (Bronze-t pit [0.50,1.20]); the ~0.75 point estimate has real
 uncertainty — the aggregate is the best read, tightens as PA/card accrues.
 
+**11.24 PRE-HYP-1 family sweep under TWO-AXIS (`tools/family-twoaxis.ts`, Derek's pre-step) — the curve
+FAMILY matters for spacing, MORE than predicted; `rawquad_pit` is the candidate.** The family was picked on
+spread-blind Pearson; re-evaluated under deconvolved VALUE spread-ratio (in-frame league + out-of-frame
+EG/Bronze-t, own-gap), hitter FIXED at deployed RAWPOLY_HIT (untouched: in-frame 0.967, EG-hit 1.08, BR-hit
+1.24 across all rows). Pitcher value spread-ratio (→1.0):
+
+| pit form | in-frame | in-frame Pearson | EG-pit | BR-pit |
+|---|---|---|---|---|
+| **deployed StuffAug (K=log)** | 0.62 | 0.796 | 0.78 | 0.52 |
+| stuffaug+rawquadK (hybrid) | 0.65 | 0.795 | 0.82 | 0.52 |
+| rawpoly_pit (K=log, no SA) | 0.69 | 0.805 | 0.75 | 0.62 |
+| **rawquad_pit (all raw quad)** | **0.76** | 0.796 | **0.94** | **0.66** |
+| rawcubic_pit (all raw cubic) | 0.77 | 0.800 | 0.84 | 0.65 |
+
+**Findings:** (1) **Pitcher value spread is compressed EVEN IN-FRAME (0.62)** — a curve-CURVATURE issue
+(the deployed K=log flattens at high Stuff), NOT only an opp-frame effect. (2) **`rawquad_pit` raises it on
+BOTH axes** (in-frame 0.62→0.76, EG 0.78→0.94, BR 0.52→0.66) with **Pearson unchanged and hitters untouched**
+— passes the pre-step decision rule and EXCEEDS Fable's "shave to 0.80" prediction. (3) **K alone isn't it:**
+the StuffAug+raw-K hybrids barely moved (0.62→0.65) — the compression is MULTI-CHANNEL (K+BB+HR log-flattened;
+§11.18), and dropping StuffAug's BB/HR aux itself helps spread (rawpoly_pit 0.69 > deployed 0.62), a tension
+with §11.18's "keep StuffAug" that needs the level check. **CANDIDATE: `rawquad_pit`.** It shrinks the Hyp-1
+pitcher deficit substantially but BR-pit stays 0.66 (pool-conditioned residual) → **Hyp-1 remains, smaller —
+exactly Fable's structure.** **CAVEATS before adoption:** single-dataset POINT estimates (no CI — needs the
+inverse-variance/bootstrap treatment of §11.23); check OUT-OF-FRAME LEVEL bias with StuffAug dropped (the aux
+fixed levels, not just spread); and re-check why the original bake-off REJECTED rawquad (monotonicity/
+extrapolation GATE, not spread) before shipping it.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
