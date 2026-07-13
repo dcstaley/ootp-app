@@ -647,6 +647,33 @@ per tournament. **BUILD MODE-AGNOSTIC:** the mode axis is DATA-DRIVEN (render wh
 reports; loop generically), NEVER a hardcoded own-gap/frame-v2 pair — so it survives the sunset with
 zero rewrite and doubles as the retirement gate.
 
+**11.16 SCORECARD SHIPPED — first result: frame-v2 REGRESSES ranking despite fixing calibration
+(2026-07-13, `tools/tournament-scorecard.ts` + `tournamentScorecard`).** Per-card predicted-vs-realized
+RAW wOBA on ghost-cleaned EG + Bronze, active model `league-41-42`. **Spearman ρ (the roster/ranking
+metric)** by role × mode:
+
+| cell | base | own-gap | frame-v2 |
+|---|---|---|---|
+| EG·hit | 0.53 | 0.51 | **0.59** ← frame-v2 wins |
+| EG·pit | 0.64 | 0.64 | 0.61 |
+| BR·hit | 0.65 | 0.57 | 0.53 |
+| BR·pit | 0.63 | **0.68** | 0.46 ← frame-v2 much worse |
+
+**RMSE + level bias UNIFORMLY favor the transforms** (own-gap/frame-v2 ≪ base — calibration improves),
+but **Spearman + value-regret tell the roster story**: frame-v2 improves ranking ONLY for EG hitters; for
+PITCHERS (both eras) and Bronze hitters it ranks WORSE than own-gap — starkly for BR·pit (own-gap 0.68 vs
+frame-v2 0.46). value-regret agrees (own-gap ≤ frame-v2 on BR·pit .007 vs .011, EG·hit). The spread-ratio
+row shows the mechanism: frame-v2's flat `S_K=1.75` K-spread distorts the wOBA spread (EG·hit 0.65 vs base
+0.96). **This QUANTITATIVELY CONFIRMS the long-standing prediction (§10.4 / memory item 4): the additive
+opp-gap shift without the K-slope fix REGRESSES pitcher ranking even as it fixes levels.** Implications:
+(1) **for roster generation TODAY, own-gap likely ranks pitchers better than frame-v2** — frame-v2's level
+win does not translate to roster value; (2) **do NOT sunset own-gap on level bias** — the sunset gate is
+the scorecard showing matchup-with-fitted-tail beating own-gap on Spearman/value-regret, which frame-v2
+alone does NOT clear; (3) it's the empirical case FOR Phase 1 (the fitted tail must land to make the
+opp-side frame a ranking improvement). CAVEATS: small N (61–115 cards), combined lines, per-card realized
+noise → the ~0.03–0.05 gaps are within noise, but BR·pit's 0.22 gap is large and directionally consistent
+with the prior finding. The scorecard is now the standing instrument for every future frame/model change.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
