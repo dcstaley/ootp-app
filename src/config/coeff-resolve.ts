@@ -43,6 +43,19 @@ const REF_NHH_PER_BIP = (0.22944 - 0.02488) / 0.68832;
 export function eraHBip(rates: NonNullable<Era["rates"]>): number {
   return ((rates.h - rates.hr) / rates.bip) / REF_NHH_PER_BIP;
 }
+
+// Reference XBH share of non-HR hits = era-2010's (b2+b3)/(h−hr). Guarded by a test.
+const REF_XBH_SHARE_NHH = (0.04584 + 0.00471) / (0.22944 - 0.02488);
+
+/** Per-non-HR-hit XBH SHARE era factor from an era's raw rates block: how an era moves the
+ *  extra-base COMPOSITION of hits, not the XBH rate per PA. woba.ts applies era_gap onto
+ *  GAP_rate × BA_fin, where BA_fin already carries the hit level (era_h) and the BIP
+ *  expansion; the per-PA `gap` factor re-applies both (Job 2.1, same class as eraHBip). The
+ *  share ratio isolates only the composition move (era-1920 0.855 vs per-PA 0.987; era-2019
+ *  1.070 — sign flips: modern XBH was UNDER-predicted). */
+export function eraGapShare(rates: NonNullable<Era["rates"]>): number {
+  return ((rates.b2 + rates.b3) / (rates.h - rates.hr)) / REF_XBH_SHARE_NHH;
+}
 const parkFactors = (p: Park): ParkFactors => ({
   avg_l: p.avg_l, avg_r: p.avg_r, hr_l: p.hr_l, hr_r: p.hr_r, gap: p.gap,
 });
@@ -58,7 +71,7 @@ export function resolveCoeffs(model: Model, era: Era, park: Park, softcaps: Soft
   });
   // Attached post-assembly (not part of the lossless split/assemble partition — captures
   // predate it and keep the legacy per-PA era_h derivation). Library eras all carry rates.
-  if (era.rates) bag.era_h_bip = eraHBip(era.rates);
+  if (era.rates) { bag.era_h_bip = eraHBip(era.rates); bag.era_gap_share = eraGapShare(era.rates); }
   return bag;
 }
 

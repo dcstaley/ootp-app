@@ -280,9 +280,11 @@ function scoreTournament(t: Tournament): Scored {
   // except the neutral pools. Applied before the pool transform + calibration, so the whole
   // environment (and the anchor) reflects the adjusted rates.
   const adj = resolveTournamentAdjustment(t);
-  if (adj.enabled) { coeffs.era_bb *= adj.bb; coeffs.era_k *= adj.k; coeffs.era_gap *= adj.gap; }
+  if (adj.enabled) { coeffs.era_bb *= adj.bb; coeffs.era_k *= adj.k; }
   const derived = computeDerived(coeffs, !!eventForm); // #2 ⇒ tHR removed (era_effective_hr = era_hr)
-  if (adj.enabled) { derived.era_effective_hr *= adj.hr; derived.era_h *= adj.h; }
+  // era_gap is now DERIVED (per-share when rates-backed), so its adjustment applies here —
+  // multiplying coeffs.era_gap pre-derive would be dropped whenever era_gap_share wins.
+  if (adj.enabled) { derived.era_effective_hr *= adj.hr; derived.era_h *= adj.h; derived.era_gap *= adj.gap; }
   // Rating re-basing (#2 only) — one of two mutually-exclusive shapes, chosen by transformMode:
   //  • own-gap (default): reference = top-50 of the full NON-VARIANT catalog, pool = top-50 of
   //    the eligible subset → lift pool toward reference (saturating mean-scalar, envelope-capped).
@@ -1621,7 +1623,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       return {
         effRatings: { con: r4(eR.con), stu: r4(eR.stu), pbabip: r4(eR.pbabip), hrr: r4(eR.hrr) },
         baseEvents_per600: { BB: r4(e.BB), K: r4(e.K), HR: r4(e.HR) },
-        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: co.era_gap, park_hr: r4(cp(vR ? co.park_hr_r : co.park_hr_l)), park_avg: r4(cp(vR ? co.park_avg_r : co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
+        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: r4(dv.era_gap), park_hr: r4(cp(vR ? co.park_hr_r : co.park_hr_l)), park_avg: r4(cp(vR ? co.park_avg_r : co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
         calScales: { pBBScale: r4(sBB), pHRScale: r4(sHR), pitchScale: r4(sFinal) },
         finalEvents_per600: { BB: r4(k.BB_fin), K: r4(K_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.XBH_fin), BIP: r4(BIP_fin) },
       };
@@ -1644,7 +1646,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       return {
         effRatings: { eye: r4(eR.eye), pow: r4(eR.pow), kRat: r4(eR.kRat), babip: r4(eR.babip), gap: r4(eR.gap) },
         baseEvents_per600: { BB: r4(e.BB), SO: r4(e.SO), HR: r4(e.HR) },
-        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: co.era_gap, park_hr: r4(getParkFactor(bats, vR, co.park_hr_r, co.park_hr_l)), park_avg: r4(getParkFactor(bats, vR, co.park_avg_r, co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
+        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: r4(dv.era_gap), park_hr: r4(getParkFactor(bats, vR, co.park_hr_r, co.park_hr_l)), park_avg: r4(getParkFactor(bats, vR, co.park_avg_r, co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
         calScales: { hitBBScale: r4(sBB), hitHRScale: r4(sHR), hitScale: r4(sFinal) },
         finalEvents_per600: { BB: r4(k.BB_fin), SO: r4(SO_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.GAP_fin), BIP: r4(BIP_fin) },
       };

@@ -66,7 +66,7 @@ export function hittingComponents(
   const GAP_rate = eventForm
     ? rate(eventForm.hit.xbh, e.gapSC)
     : Math.max((coeffs.gapLogA ?? 0) + (coeffs.gapLogB ?? 0) * Math.log(Math.max(e.gapSC, 1)), 0);
-  const GAP_fin = Math.max(GAP_rate * BA_fin * coeffs.era_gap * cp(coeffs.park_gap), 0);
+  const GAP_fin = Math.max(GAP_rate * BA_fin * derived.era_gap * cp(coeffs.park_gap), 0);
   const oneB_fin = Math.max(BA_fin - GAP_fin, 0);
   return { BB_fin, HR_fin, oneB_fin, GAP_fin };
 }
@@ -99,7 +99,7 @@ export function pitchingComponents(
   // (post-parity reconciliation: pitching previously used raw park_gap, a parity quirk).
   // #2 uses the fixed 0.25 share (matching the bake-off) and drops p_xbh_norm (old norm).
   const xbhShare = eventForm ? 0.25 : (coeffs.p_xbh_share ?? 0.25) * (coeffs.p_xbh_norm ?? 1);
-  const XBH_fin = nHH_fin * xbhShare * coeffs.era_gap * cp(coeffs.park_gap);
+  const XBH_fin = nHH_fin * xbhShare * derived.era_gap * cp(coeffs.park_gap);
   const oneB_fin = Math.max(nHH_fin - XBH_fin, 0);
   return { BB_fin, HR_fin, oneB_fin, XBH_fin };
 }

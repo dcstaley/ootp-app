@@ -31,6 +31,12 @@ export interface Coeffs {
   // 1B over-prediction; plan doc §10). Absent (captures, synthetic/neutral eras) ⇒ the
   // legacy per-PA derivation applies unchanged.
   era_h_bip?: number;
+  // Per-non-HR-hit XBH-SHARE era factor, computed from the era's rates block at resolve time.
+  // era_gap (per-PA XBH ratio) is mis-grained the same way era_avg was: woba.ts multiplies it
+  // onto GAP_rate × BA_fin, and BA_fin already carries the hit level (era_h) AND the BIP
+  // expansion — so a per-PA era_gap triple-counts. The correct multiplier is the XBH SHARE
+  // ratio ((b2+b3)/(h−hr) vs 2010). Absent (captures/synthetic eras) ⇒ legacy per-PA era_gap.
+  era_gap_share?: number;
 
   // Soft caps (hitting)
   cap_k_top: number;     cap_k_bot: number;     pen_k: number;
@@ -107,6 +113,9 @@ export interface CalScales {
 export interface Derived {
   era_h: number;
   era_effective_hr: number;
+  // Effective XBH-share era factor: the resolver's per-share `era_gap_share` when present,
+  // else the legacy per-PA `era_gap` (rates-less configs unchanged). woba.ts reads this.
+  era_gap: number;
 }
 
 export interface ScoreSettings {

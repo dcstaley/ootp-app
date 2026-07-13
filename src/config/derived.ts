@@ -23,5 +23,8 @@ export function computeDerived(coeffs: Coeffs, removeTHR = false): Derived {
     : coeffs.era_hr;
   const era_h = coeffs.era_h_bip
     ?? (coeffs.era_avg - HR_SHARE_OF_HITS * era_effective_hr) / (1 - HR_SHARE_OF_HITS);
-  return { era_h, era_effective_hr };
+  // era_gap: prefer the resolver's per-share factor (rates-derived); fall back to the legacy
+  // per-PA coeff for captures/synthetic eras (bit-identical). See eraGapShare / Job 2.1.
+  const era_gap = coeffs.era_gap_share ?? coeffs.era_gap;
+  return { era_h, era_effective_hr, era_gap };
 }
