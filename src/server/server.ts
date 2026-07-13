@@ -44,7 +44,7 @@ import { HITTER, PITCHER, predictHitWoba, predictPitWoba, actualHitWoba, actualP
 import { evalMetrics, type EvalMetrics } from "../training/metrics.ts";
 import { analyzeResiduals, type ResidualAnalysis } from "../training/residuals.ts";
 import { validateDataset } from "../training/validate.ts";
-import { loadTournamentOutcomes, tournamentExposure, evaluateTournamentLevels } from "../training/tournament-eval.ts";
+import { loadTournamentOutcomes, tournamentExposure, evaluateTournamentLevels, tournamentScorecard, type TournamentEvalConfig } from "../training/tournament-eval.ts";
 import { cleanTournamentRows } from "../eval/tournament-clean.ts"; // ghost-cleaner wired via DI into the tournament-eval endpoint
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -1826,6 +1826,59 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       dir: dirParam, tournament: t.name, model: model!.name, activeForm: !!ef,
       obsCount: obs.length, datasetStatus, warning, runnings,
       exposure, thresholds: { minPA, minBF }, levels,
+    });
+  }
+  // PREDICTIVE SCORECARD (roadmap §11.15/§11.16): per-card predicted-vs-realized wOBA →
+  // discrimination metrics (Pearson / Spearman / RMSE / spread-ratio / value-regret) per role, for
+  // EVERY AVAILABLE transform mode. The mode list is DATA-DRIVEN (base + own-gap always; frame-v2 only
+  // when the active model carries trainingMeans) so the client stays mode-agnostic through the
+  // own-gap/frame-v2 → matchup sunset. Same eval-only ghost-clean path as tournament-eval.
+  if (method === "GET" && url === "/api/tournament/scorecard") {
+    const TOURNEY_ROOT = "Tournament Data";
+    const dirParam = u.searchParams.get("dir") || "";
+    const allowed = existsSync(TOURNEY_ROOT)
+      ? readdirSync(TOURNEY_ROOT, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)
+      : [];
+    if (!allowed.includes(dirParam)) return json(res, { error: `unknown dir '${dirParam}'`, available: allowed }, 400);
+    const fullDir = join(TOURNEY_ROOT, dirParam);
+    const minPA = Number(u.searchParams.get("minPA") ?? 500) || 500;
+    const minBF = Number(u.searchParams.get("minBF") ?? 500) || 500;
+    const topN = Number(u.searchParams.get("topN") ?? 26) || 26;
+    const { t, s } = scoredFor(tid);
+    const ef = s.ctx.config.eventForm;
+    if (!ef) return json(res, { dir: dirParam, tournament: t.name, active: false, note: "no #2 model active — the scorecard needs the event model" });
+    const coeffs = s.ctx.config.coeffs;
+    const evModel = makeRawPolyModel(ef);
+    // Build each available mode's transform config from the SAME primitives scoreTournament uses.
+    const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
+    const poolField = computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true);
+    const modeCfgs: { mode: string; cfg: TournamentEvalConfig }[] = [
+      { mode: "base", cfg: { coeffs, eventForm: ef } },
+      { mode: "own-gap", cfg: { coeffs, eventForm: ef, poolTransform: buildPoolTransform(referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel), poolField, activeEnvelope ?? undefined) } },
+    ];
+    if (activeTrainingMeans) {
+      const shift = buildFrameShift(activeTrainingMeans, poolField);
+      const kBar = poolMeanK(basePool, coeffs, evModel, shift, FIELD_N);
+      const kSpread = { sHit: kRamp(shift.hit.vR.kRat ?? 0), sPit: kRamp(shift.pit.vR.stu ?? 0), meanHit: kBar.hit, meanPit: kBar.pit };
+      modeCfgs.push({ mode: "frame-v2", cfg: { coeffs, eventForm: ef, frameShift: shift, kSpread } });
+      // matchup is bit-identical to frame-v2 until the Phase-1 tail is fit → omitted (a redundant
+      // column). Add it here when the fitted tail makes it diverge (plan §11.15).
+    }
+    const runnings: { file: string; status: string; ledger: number; residual: number }[] = [];
+    const clean = (rows: any[], file: string) => {
+      const { cleaned, report } = cleanTournamentRows(rows);
+      runnings.push({ file, status: report.status, ledger: report.ledger, residual: report.residual });
+      return cleaned;
+    };
+    const obs = loadTournamentOutcomes(fullDir, { clean });
+    const exposure = tournamentExposure(obs);
+    const modes = modeCfgs.map((m) => ({ mode: m.mode, ...tournamentScorecard(obs, m.cfg, exposure, { minPA, minBF, topN }) }));
+    const datasetStatus = runnings.some((r) => r.status === "unreliable") ? "unreliable"
+      : runnings.some((r) => r.status === "cleaned") ? "cleaned" : "clean";
+    return json(res, {
+      dir: dirParam, tournament: t.name, model: model!.name, active: true,
+      obsCount: obs.length, datasetStatus, runnings,
+      thresholds: { minPA, minBF, topN }, activeMode: transformMode(), modes,
     });
   }
   if (method === "GET" && url === "/api/training/fit") {
