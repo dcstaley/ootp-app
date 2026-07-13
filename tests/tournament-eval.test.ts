@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import {
-  loadTournamentOutcomes, tournamentExposure, evaluateTournamentLevels,
+  loadTournamentOutcomes, tournamentExposure, evaluateTournamentLevels, tournamentScorecard,
   type TournamentObs,
 } from "../src/training/tournament-eval.ts";
 import { cleanTournamentRows } from "../src/eval/tournament-clean.ts";
@@ -88,6 +88,29 @@ describe.skipIf(!TDIR || !existsSync(TRAIN))("evaluateTournamentLevels — poole
       expect(Number.isFinite(r.pred)).toBe(true);
       expect(Number.isFinite(r.actual)).toBe(true);
       expect(r.bias).toBeCloseTo(r.pred - r.actual, 10);
+    }
+  });
+
+  it("tournamentScorecard returns sane per-role discrimination metrics", () => {
+    const obs = loadTournamentOutcomes(TDIR!);
+    const { observations } = loadWindow(TRAIN, [2037, 2038]);
+    const form: EventForm = {
+      hit: fitHitForm(RAWPOLY_HIT, observations.filter((o) => o.hit.PA >= 1000)),
+      pit: fitPitForm(RAWPOLY_PIT, observations.filter((o) => o.pitch.BF >= 1000)),
+    };
+    const coeffs = neutralCoeffs();
+    const exposure = tournamentExposure(obs);
+    const card = tournamentScorecard(obs, { coeffs, eventForm: form }, exposure, { minPA: 200, minBF: 200 });
+    for (const role of [card.hit, card.pit]) {
+      if (!role) continue; // too few cards at this threshold
+      expect(role.n).toBeGreaterThan(0);
+      expect(role.pearson).toBeGreaterThanOrEqual(-1); expect(role.pearson).toBeLessThanOrEqual(1);
+      expect(role.spearman).toBeGreaterThanOrEqual(-1); expect(role.spearman).toBeLessThanOrEqual(1);
+      expect(role.rmse).toBeGreaterThanOrEqual(0);
+      expect(role.spreadRatio).toBeGreaterThan(0);
+      expect(role.topNOverlap).toBeGreaterThanOrEqual(0); expect(role.topNOverlap).toBeLessThanOrEqual(1);
+      expect(role.valueRegret).toBeGreaterThanOrEqual(0); // best top-N ≥ picked top-N by construction
+      expect(role.levelBias).toBeCloseTo(role.predMean - role.realMean, 10);
     }
   });
 });
