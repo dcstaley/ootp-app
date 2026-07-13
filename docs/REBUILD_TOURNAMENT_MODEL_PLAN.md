@@ -769,6 +769,44 @@ spread compresses the BIP→hits spread) ⇒ fixing the K tail should tighten hi
 independent hit tail**. **Net: Phase 1 = K tail (both roles) + pitcher-uBB level term — CONFIRMED and
 SIMPLER than per-channel tails; HR needs nothing (StuffAug covers it), hits follow from K, BB is level.**
 
+**11.19 PHASE-1 REVISED after Fable's pressure-test — VERIFIED, adopted (2026-07-13, `tools/matchup-xoverlap.ts`;
+memory `tournament-opponent-frame` item 17).** Two structural changes, both gate-checked before building:
+
+- **CHANGE 1 — replace `tail(x)`≡0-in-support with a fitted gap-conditioned spread scalar `s_role(gap)`.**
+  VERIFIED: in the matchup frame the weak pools land INSIDE league x-support (frame-shifted p10–p90:
+  **Gold-q HIT [82,159] / PIT [90,143] — fully within league [88,160]/[90,151]** — yet demand s*=1.72/2.06;
+  Open-q in-support wants s≈1). Same x, different slope ⇒ **x is not a sufficient statistic; a tail that
+  vanishes in-support cannot represent the effect.** Structure: `K_corr = K̄_pool + s_role(gap)·(K_pred − K̄_pool)`,
+  `s(0)=1` hard-anchored (league protection automatic, no partition), fit on the ladder (gap≈0 league+Open,
+  Bronze-q/Gold-q plateaus, EG/Bronze-t as out-of-ladder checks), ≤2 params/role (A_role, shared G), e.g.
+  `s(g)=1+A·(1−e^{−g/G})`. `gap` = the own-channel K-rating gap (μ_train−μ_pool: stu for pit, kRat for hit),
+  the SAME quantity at fit and score time. Lives on the matchup seam (Phase-0 identity at s≡1). Out-of-support
+  SHAPE (EG kRat-43 below own-rating support) is SECONDARY — defer unless cleaned-EG residuals still demand it.
+- **CHANGE 2 — no standalone pitcher-uBB level term; per-tournament×role level KNOBS only.** The "+6..+8
+  off-frame pitcher-uBB" and the Open-quicks format uBB are the SAME number (~constant across gaps) — a
+  context level bias, never a frame residual; a global term + free knobs is collinear/unidentifiable.
+  VERIFIED role split: Open in-frame uBB **hitter +7.9 / pitcher +5.7** (symmetric context effect). Fit knobs,
+  then READ the pattern: constant across tiers incl. gap≈0 ⇒ that constant IS the format effect (record §11,
+  promotion-to-term is a later tier-ladder decision); varies with gap ⇒ resurrects a frame component, report
+  first. HARD RULE: the uBB correction is never per-card-Stuff-dependent (would double-model StuffAug's BB aux).
+  StuffAug stays (keep HR term — off-frame HR≈1.0 is evidence it works; re-exam BB-Stuff at re-fit).
+
+**Mechanism (why this should clear the gate frame-v2 failed):** §11.16's pit-ranking crash (0.68→0.46) =
+the flat s=1.75 UNDER-weighting K for pitchers (data wants ~2.1) → finesse arms float up = the Stuff-residual
+re-emerging; own-gap wins "by accident" (multiplicative lifts implicitly over-weight strong channels).
+`s_pit(gap)` at full strength is the deliberate version. **TEST:** matchup+s(gap) should recover most of the
+Bronze-pit Spearman gap vs own-gap; if not, the remainder is a channel-WEIGHTING problem, not spread — report.
+
+**ACCEPTANCE (before any default flip / own-gap sunset):** (1) RECONCILIATION TABLE — every dataset (Open,
+Bronze-q, Gold-q, EG-cleaned, Bronze-t) × role × channel, raw vs post-correction bias, showing levels =
+format-constant + gap-term with no unexplained leftovers. (2) Scorecard gate — matchup+s(gap)+knobs beats
+own-gap on Spearman AND value-regret, per role, on the quicks ladder AND EG-cleaned + Bronze-t (own-gap's
+home turf); league in-sample/CV unchanged within the RMSE backstop. (3) The knob-pattern readout recorded.
+**FIT HYGIENE:** cluster SEs by running (Bo5 survivorship); ≥100 PA, PA/BF-weighted, ledger-verified only;
+cross-tier ladder identifies the ramp (per-tier s* are noisy points on it); same-x sanity check post-fit.
+**SEQUENCING:** ~~x-overlap verify + Open uBB role split~~ — DONE (both confirm the design) → s(gap) fit →
+knobs → acceptance battery.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
