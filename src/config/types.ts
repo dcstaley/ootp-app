@@ -4,9 +4,14 @@
 // here we keep one bag and a logical model/calibration seam in code.
 
 import type { EventForm } from "../model/curves.ts";
-import type { PoolTransform } from "../model/pool-transform.ts";
+import type { PoolTransform, FrameShift } from "../model/pool-transform.ts";
 
 export type Side = "vR" | "vL";
+
+// K spread scaling params (frame-v2): per-role scale `s` + the per-role pool-mean predicted K
+// the scaling centers on. K_corr = mean + s·(K_pred − mean), applied to the raw model K BEFORE
+// the BIP chain. See src/scoring-core/score-card.ts and plan §10.8d.
+export interface KSpread { sHit: number; sPit: number; meanHit: number; meanPit: number }
 
 export interface Coeffs {
   tournament_hr_adjust: boolean;
@@ -122,8 +127,16 @@ export interface ScoringConfig {
   derived: Derived;
   calScales: CalScales | null;
   eventForm?: EventForm;
-  // Pool-strength rating transform (z-score), applied to ratings BEFORE the model.
-  // Absent ⇒ no transform (bit-identical scores). Present ⇒ the pool is re-based onto
-  // the league reference frame. See src/model/pool-transform.ts.
+  // Pool-strength rating transform (own-gap, multiplicative), applied to ratings BEFORE the
+  // model. Absent ⇒ no transform (bit-identical scores). Present ⇒ the pool is re-based onto
+  // the league reference frame. See src/model/pool-transform.ts. Mutually exclusive with
+  // `frameShift` — the transform-mode setting selects one path.
   poolTransform?: PoolTransform;
+  // Frame-correction v2 (additive, channel-crossed opponent-gap shift), applied to ratings
+  // BEFORE the model — the alternative to `poolTransform`. Absent ⇒ identity. See §10.8.
+  frameShift?: FrameShift;
+  // K spread scaling (frame-v2 only): rescale the model's raw predicted K about the pool mean
+  // per role, applied BEFORE the BIP chain so hits recompute consistently. Absent ⇒ no scaling;
+  // s → 1 in-frame. See §10.8d and the KSpread type.
+  kSpread?: KSpread;
 }

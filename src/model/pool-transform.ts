@@ -87,6 +87,30 @@ export type PitRating = (typeof PIT_RATINGS)[number];
 // model. Pooled over sides (curves are fit on both sides' values together).
 export interface RatingEnvelope { hit: Record<string, number>; pit: Record<string, number> }
 
+// ── Frame-correction v2 (additive, channel-crossed opponent-gap shift) ─────────
+// The model predicts each card's line vs its TRAINING opposition; in a weak pool everyone
+// faces weak opposition. The first-order re-basing (plan §10.2/§10.8) shifts each rating
+// ADDITIVELY by the OPPOSING channel's mean gap (μ_train − μ_pool), crossing the matchup
+// channels (H.eye↔P.con, H.kRat↔P.stu, H.pow↔P.hrr, H.babip/gap↔P.pbabip). This SUPERSEDES
+// the own-gap multiplicative PoolTransform when a `trainingMeans`-bearing model is active.
+//
+// Per-channel PA/BF-weighted TRAINING opponent means — the model's true reference frame
+// (NOT the catalog top-50 field; measured to differ by up to +16 on hit.eye). Stored on the
+// artifact like RatingEnvelope, pooled over sides.
+export interface TrainingMeans { hit: Record<string, number>; pit: Record<string, number> }
+
+// The additive shift, per role × platoon side × channel (a plain rating delta). Side-unified
+// at build time (vR === vL, matching the side-unified pool field), but carried per side so the
+// score-card call site is symmetric with PoolTransform. Absent channel ⇒ 0 (identity).
+export interface FrameShift {
+  hit: { vR: Partial<Record<HitRating, number>>; vL: Partial<Record<HitRating, number>> };
+  pit: { vR: Partial<Record<PitRating, number>>; vL: Partial<Record<PitRating, number>> };
+}
+
+/** Apply an additive frame shift to a raw rating (clamped ≥ 0, matching applyAffine).
+ *  Absent delta ⇒ identity (parity: an unshifted / in-frame channel is untouched). */
+export const applyFrameShift = (r: number, d: number | undefined) => (d ? Math.max(0, r + d) : r);
+
 // The full transform: a per-rating map for each role × platoon side. Absent entries fall
 // back to identity (applyAffine with undefined → raw r), so a partial transform is safe.
 export interface PoolTransform {

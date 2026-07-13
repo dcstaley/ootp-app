@@ -7,7 +7,7 @@ import type { ScoringConfig, Side } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
-import { applyAffine } from "../model/pool-transform.ts";
+import { applyAffine, applyFrameShift } from "../model/pool-transform.ts";
 import {
   n, cp, parkAvgFactor, parkHrFactor, sameSidePenaltyHitting, sameSidePenaltyPitching,
 } from "./helpers.ts";
@@ -29,7 +29,7 @@ export interface CardScores {
 }
 
 export function scoreCard(card: any, config: ScoringConfig, model?: EventModel): CardScores {
-  const { coeffs, derived, calScales, eventForm, poolTransform } = config;
+  const { coeffs, derived, calScales, eventForm, poolTransform, frameShift, kSpread } = config;
   // Model selection (D3): an explicit `model` wins (tests/tools); otherwise #2 raw-poly
   // when the config carries a fitted eventForm. PRODUCTION always passes an eventForm
   // (server threads the active model into BOTH the wOBA and basic configs), so the
@@ -49,17 +49,24 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
 
   // ── Hitting, per side ──────────────────────────────────────────────────────
   const hit = (side: Side) => {
-    // Pool transform (rating space, BEFORE the model). Absent ⇒ applyAffine returns raw.
+    // Rating-space re-basing (BEFORE the model): own-gap multiplicative PoolTransform OR the
+    // frame-v2 additive shift — mutually exclusive (the transform-mode setting sets one).
+    // Both are identity when absent, so own-gap scoring is bit-unchanged.
     const t = poolTransform?.hit[side];
+    const fs = frameShift?.hit[side];
     const ratings = {
-      eye: applyAffine(n(card[`Eye ${side}`]), t?.eye),
-      pow: applyAffine(n(card[`Power ${side}`]), t?.pow),
-      kRat: applyAffine(n(card[`Avoid K ${side}`]), t?.kRat),
-      babip: applyAffine(n(card[`BABIP ${side}`]), t?.babip),
-      gap: applyAffine(n(card[`Gap ${side}`]), t?.gap),
+      eye: applyFrameShift(applyAffine(n(card[`Eye ${side}`]), t?.eye), fs?.eye),
+      pow: applyFrameShift(applyAffine(n(card[`Power ${side}`]), t?.pow), fs?.pow),
+      kRat: applyFrameShift(applyAffine(n(card[`Avoid K ${side}`]), t?.kRat), fs?.kRat),
+      babip: applyFrameShift(applyAffine(n(card[`BABIP ${side}`]), t?.babip), fs?.babip),
+      gap: applyFrameShift(applyAffine(n(card[`Gap ${side}`]), t?.gap), fs?.gap),
       speed, steal, run,
     };
     const e = evModel.predictHitting(ratings, coeffs);
+    // K spread scaling (frame-v2): rescale raw predicted K about the pool mean BEFORE the BIP
+    // chain, so BIP = 600 − BB − K_scaled − HR − adj (woba.ts) recomputes hits consistently.
+    // Pre-era by construction (era_k applies later, once) — see §10.8d.
+    if (kSpread) e.SO = Math.max(0, kSpread.meanHit + kSpread.sHit * (e.SO - kSpread.meanHit));
 
     // SSP (same-side platoon penalty) — REMOVED under #2 (value → 1); log-linear keeps it (parity).
     const sspAdv = sameSidePenaltyHitting(bats, side, eventForm ? 1 : coeffs.ssp_adv_hitting);
@@ -89,13 +96,16 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
   // ── Pitching, per side ─────────────────────────────────────────────────────
   const pitch = (side: Side) => {
     const tp = poolTransform?.pit[side];
+    const fp = frameShift?.pit[side];
     const ratings = {
-      con: applyAffine(n(card[`Control ${side}`]), tp?.con),
-      stu: applyAffine(n(card[`Stuff ${side}`]), tp?.stu),
-      pbabip: applyAffine(n(card[`pBABIP ${side}`]), tp?.pbabip),
-      hrr: applyAffine(n(card[`pHR ${side}`]), tp?.hrr),
+      con: applyFrameShift(applyAffine(n(card[`Control ${side}`]), tp?.con), fp?.con),
+      stu: applyFrameShift(applyAffine(n(card[`Stuff ${side}`]), tp?.stu), fp?.stu),
+      pbabip: applyFrameShift(applyAffine(n(card[`pBABIP ${side}`]), tp?.pbabip), fp?.pbabip),
+      hrr: applyFrameShift(applyAffine(n(card[`pHR ${side}`]), tp?.hrr), fp?.hrr),
     };
     const e = evModel.predictPitching(ratings, coeffs);
+    if (kSpread) e.K = Math.max(0, kSpread.meanPit + kSpread.sPit * (e.K - kSpread.meanPit)); // §10.8d
+
 
     const sspP = sameSidePenaltyPitching(thr, side, eventForm ? 1 : coeffs.ssp_basic_pitching);
     const rawWoba = assembleRawPitchingWoba(e, sspP, coeffs);

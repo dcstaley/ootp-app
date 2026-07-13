@@ -12,6 +12,7 @@ import type { Coeffs } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import {
   ratingStats, buildAffines, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform, type RatingEnvelope,
+  type TrainingMeans, type FrameShift,
 } from "../model/pool-transform.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba } from "./woba.ts";
@@ -99,5 +100,68 @@ export function buildPoolTransform(ref: FieldStats, pool: FieldStats, env?: Rati
   return {
     hit: { vR: buildAffines(HIT_RATINGS, ref.hit.vR, pool.hit.vR, h), vL: buildAffines(HIT_RATINGS, ref.hit.vL, pool.hit.vL, h) },
     pit: { vR: buildAffines(PIT_RATINGS, ref.pit.vR, pool.pit.vR, p), vL: buildAffines(PIT_RATINGS, ref.pit.vL, pool.pit.vL, p) },
+  };
+}
+
+// ── Frame-correction v2 (additive, channel-crossed) ────────────────────────────
+// The additive opponent-gap shift for a channel is the OPPOSING channel's (μ_train − μ_pool)
+// gap: a hitting channel is re-based by the pitching training/pool means it faces, and vice
+// versa (the §10.2 crossing). Both means are side-unified, so the shift is one number per
+// (role, channel) applied to both sides. μ_train = the artifact's PA/BF-weighted training
+// opponent means; μ_pool = the tournament pool's unified top-N field means. When the pool
+// means equal the training means (in-frame) every delta is 0 ⇒ identity.
+export function buildFrameShift(train: TrainingMeans, pool: FieldStats): FrameShift {
+  const pHit = pool.hit.vR, pPit = pool.pit.vR; // side-unified (vR === vL)
+  const gap = (mu: number | undefined, p: RatingStats | undefined) => (mu != null && p ? mu - p.mu : 0);
+  // Hitting channels re-based by the opposing PITCHING gap (eye↔con, kRat↔stu, pow↔hrr,
+  // babip & gap ↔ pbabip).
+  const hit = {
+    eye: gap(train.pit.con, pPit.con),
+    kRat: gap(train.pit.stu, pPit.stu),
+    pow: gap(train.pit.hrr, pPit.hrr),
+    babip: gap(train.pit.pbabip, pPit.pbabip),
+    gap: gap(train.pit.pbabip, pPit.pbabip),
+  };
+  // Pitching channels re-based by the opposing HITTING gap.
+  const pit = {
+    con: gap(train.hit.eye, pHit.eye),
+    stu: gap(train.hit.kRat, pHit.kRat),
+    hrr: gap(train.hit.pow, pHit.pow),
+    pbabip: gap(train.hit.babip, pHit.babip),
+  };
+  return { hit: { vR: { ...hit }, vL: { ...hit } }, pit: { vR: { ...pit }, vL: { ...pit } } };
+}
+
+/** Per-role mean predicted K over the top-N field, computed on FRAME-V2-SHIFTED ratings —
+ *  the centering mean K̄_pool for the K spread scaling K_corr = K̄ + s·(K_pred − K̄). Uses the
+ *  same top-N cohort (by raw predicted wOBA) the frame shift is built from, so the mean the
+ *  specialists deviate from matches how s* was fit. Hitters center on the deployment-side K of
+ *  each per-side cohort; pitchers on the combined-wOBA top-N, both sides pooled. Predictions
+ *  use the shift so K̄ and the per-card K live in the same shifted frame (plan §10.8d). */
+export function poolMeanK(cards: any[], coeffs: Coeffs, model: EventModel, fs: FrameShift, topN: number): { hit: number; pit: number } {
+  const sh = (v: number, d: number | undefined) => (d ? Math.max(0, v + d) : v);
+  const recs = cards.map((c) => {
+    const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
+    const hitK = (side: "vR" | "vL") => {
+      const d = fs.hit[side];
+      const e = model.predictHitting({ eye: sh(n(c[`Eye ${side}`]), d.eye), pow: sh(n(c[`Power ${side}`]), d.pow), kRat: sh(n(c[`Avoid K ${side}`]), d.kRat), babip: sh(n(c[`BABIP ${side}`]), d.babip), gap: sh(n(c[`Gap ${side}`]), d.gap), speed, steal, run }, coeffs);
+      return { woba: assembleRawHittingWoba(e, 1, speed, steal, run, coeffs), k: e.SO };
+    };
+    const pitK = (side: "vR" | "vL") => {
+      const d = fs.pit[side];
+      const e = model.predictPitching({ con: sh(n(c[`Control ${side}`]), d.con), stu: sh(n(c[`Stuff ${side}`]), d.stu), pbabip: sh(n(c[`pBABIP ${side}`]), d.pbabip), hrr: sh(n(c[`pHR ${side}`]), d.hrr) }, coeffs);
+      return { woba: assembleRawPitchingWoba(e, 1, coeffs), k: e.K };
+    };
+    return { hVR: hitK("vR"), hVL: hitK("vL"), pVR: pitK("vR"), pVL: pitK("vL") };
+  });
+  const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
+  // Hitters: top-N per-side cohort by raw wOBA, deployment-side K pooled.
+  const hVR = recs.map((r) => r.hVR).sort((a, b) => b.woba - a.woba).slice(0, topN);
+  const hVL = recs.map((r) => r.hVL).sort((a, b) => b.woba - a.woba).slice(0, topN);
+  // Pitchers: top-N by combined allowed wOBA (lower = better), both sides' K pooled.
+  const pTop = [...recs].sort((a, b) => (a.pVR.woba + a.pVL.woba) - (b.pVR.woba + b.pVL.woba)).slice(0, topN);
+  return {
+    hit: mean([...hVR.map((x) => x.k), ...hVL.map((x) => x.k)]),
+    pit: mean([...pTop.map((r) => r.pVR.k), ...pTop.map((r) => r.pVL.k)]),
   };
 }
