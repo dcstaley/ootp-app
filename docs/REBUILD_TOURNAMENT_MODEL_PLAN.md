@@ -991,6 +991,22 @@ form = **rawquad-all + aux**. REMAINING before adoption: bootstrap CIs (Step 2),
 tails (cap active), out-of-frame ladder spread + top-decile slice, stu-residual meta-model (aux is KEPT →
 ordering concern largely moot but verify), and the hitter-side factorial + cancellation decomposition.
 
+**11.28 STEP-1(hitter) + STEP-2 CI (`tools/hitter-tails.ts`) — pitcher form CI-clear; hitters hold log;
+top-decile unmeasurable yet.**
+- **HITTERS: log holds every seat.** One-channel flips + all-raw2 all give in-frame spread 0.96–0.97 (=
+  deployed 0.967), Pearson 0.920 unchanged. No hitter form change earns a seat → **keep RAWPOLY_HIT** (the
+  "log survives re-election" evidence Derek wanted; hitters already ~ceiling).
+- **PITCHER WINNER CI-CLEAR (Step-2 bar met).** Paired bootstrap (same cards, both forms), in-frame spread:
+  deployed 0.623 → **winner (rawquad-all+aux) 0.780**, **Δ +0.157 [0.129, 0.194] — CI excludes 0**. Materially
+  + robustly better; Pearson 0.804 ≥ 0.796; keeps StuffAug. **Adoptable for pitchers on in-frame evidence.**
+- **TOP-DECILE SLICE — uncomputable at current depth.** The deconvolution is unstable in the small elite
+  slice (σ_true→0 as the elite are near-identical + thin PA; hitter top-decile ratio blew up to ~199, N=17).
+  The elite-tail compression question CANNOT be answered yet — needs more per-card PA. Reported as a data
+  limitation, not a result. (Fable's flagged surprise-spot stays unresolved by data, not by evidence-of-null.)
+- REMAINING before final adoption: monotone gate on the raw-poly tails (cap active — does rawquad turn over
+  uncapped?), stu-residual meta-model (aux KEPT → expect it holds, verify), and Step-3 out-of-frame ladder
+  context-invariance → the early-exit (form-only vs Hyp-1) decision.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
