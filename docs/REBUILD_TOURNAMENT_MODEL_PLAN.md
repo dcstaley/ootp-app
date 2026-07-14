@@ -1533,3 +1533,18 @@ observed **0.106**, IP≥1500, ~0 noise — the elite-spread question is no long
 
 Judge both against the deployed pareto with cwhit at ~10× power; adopt only on a CI-clear improvement in
 BOTH the elite-tail spread (→0.106) AND regret/top-26, with no in-frame order loss.
+
+**FRAME ATTRIBUTION RIGOROUSLY CONFIRMED (2026-07-14, `tools/insample-frame-check.ts`).** All FOUR
+remaining audit defects are FRAME/population effects, not fittable model defects — proven by measuring
+in-sample league bias (pred−obs, PA/BF-weighted, by rating quartile) on the deployed forms:
+- hitter HR←Power in-sample **+0.03** (flat) vs cwhit −0.5..−1.6 (under) ⇒ FRAME.
+- hitter non-HR-hits←BABIP in-sample **+0.06** (~flat) vs cwhit +0.008..+0.013 (over) ⇒ FRAME.
+- pitcher uBB←Control in-sample **−0.19** (~0, non-monotone quartile noise) vs cwhit +0.66..+1.85 (over)
+  ⇒ FRAME.
+- pitcher K←Stuff in-sample **+0.38** overall, **+2.1** in the top-stuff quartile (we already OVER-predict
+  high-stuff K in-frame) vs cwhit UNDER (tournaments need MORE K at high stuff) ⇒ FRAME, and DECISIVELY
+  un-fittable: league data can't support a steeper stuff→K (the extra Ks exist only vs tournament hitters).
+CONCLUSION: after baserunning (the one clean fixable gap, SHIPPED), the audit's remaining yield is a single
+frame class. Per-channel fixes are impossible-by-construction (in-frame is unbiased); the only non-settled
+path is the M8 matchup model (option B above) with cwhit as its evaluator, or accept as frame-bound. The
+hitter HR/BABIP items join the pitcher stuff/BB in this bucket. Baserunning is the audit's actionable result.
