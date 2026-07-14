@@ -1233,6 +1233,36 @@ more predictions fall.** New data: bronze 9 runnings/41.8k PA, gold 8/37.6k, ope
   P4 "EG over-amplification", P5 spread-prediction (untestable → concordance closes it). The iron gate is the
   next real discriminator (own-gap k on quad channels + the fade region both hit max stress there).
 
+**11.33 SYNTHETIC RECON + EB ELITE-SPREAD (2026-07-14). The top-end distortion is LATENT-not-live; the elite
+cardinal-spread question is DATA-BOUND by any estimator.** Tools: `synthetic-recon`, `eb-elite-spread`.
+- **⚠ FRAMING CORRECTION (Derek): the "diamond = 180–250 ratings" band was INVENTED.** Diamond = value 90–99;
+  catalog ratings run 0–213 (max eye 204, kRat 213, stu 187, con 176). SPIKY cards (one rating ≫ the card's own
+  others) are a LARGE population concentrated in the LOW tiers, not diamond: 186 hitters + 699 pitchers with
+  intra-card spike ≥60, e.g. a value-50 hitter with kRat 191 / median 43. Always read the catalog, never carry
+  a handback's numbers unverified.
+- **Synthetic recon (a MAP, not evidence):** (c) spike census — the spikes land overwhelmingly on CAP-SAFE
+  channels: hitter kRat (86; log AND value-benign — K barely enters hitter wOBA) and pitcher pbabip (638; the
+  h channel, fitted near-linear, B.4 vertex ~1940). Only ~50 cards spike on a genuine cap-risk QUAD channel
+  (pit stu 13, hrr 22; hit pow 15). (b) cap census — **0 of ~900 iron-pool cards cap-clamp** on stu/hrr/pow even
+  after own-gap lift, because the quad vertices (242–272, B.4) sit far above any rating even lifted (~180–190
+  max). ⇒ **The hypothesized "spiked power cards get flattened gaps at the top" distortion is EMPIRICALLY EMPTY
+  in this catalog** — it only activates with quad-channel ratings ~230+ that no current card reaches. Real as a
+  mechanism, latent as a population. STRUCTURAL: any sub-catalog pool ⊆ the full-catalog reference ⇒ k ≥ 1
+  always; **the k<1 down-scaling regime is UNREACHABLE here** (needs a stronger-than-reference/diamond set) — a
+  real gap only diamond quicks can fill.
+- **EB elite-spread estimator (Fable's interim answer to the co-equal open question):** an ML variance model
+  (y_i ~ N(θ_i, SE_i²), θ_i ~ N(m, τ²), τ² by MLE) instead of the exploding method-of-moments deconvolution.
+  **Validated on the FULL pool** (Bronze-t pit 0.58 ≈ the deconvolution; τ_full ~1e-2, well-estimated) — the
+  estimator WORKS where data supports it. **But τ_elite COLLAPSES to ~1e-9 (numerically 0) in every reliable
+  elite slice** (36–47 cards, ~250–500 BF) ⇒ SD(pred)/τ explodes for ALL. The elite cards have NO measurable
+  true-talent variance at current depth: signal < per-card noise. **⇒ the elite cardinal-spread question is
+  DATA-BOUND, not estimator-bound — no method (deconvolution, MoM, EB) resolves it; it requires 15–20
+  runnings/tier.** The co-equal-doctrine open question stays OPEN, now rigorously attributed to depth (not lack
+  of estimator). (Bronze-q FULL also explodes — quicks ≥250 BF is itself elite-usage-selected, cf. P5.)
+- **NET:** production unchanged. The top-end/spike regime is a sized-and-labeled MAP awaiting iron+diamond
+  quicks; the elite-spread question is confirmed depth-bound. Iron (low, big k) + diamond (top-end + k<1 +
+  spiky cards) are co-equal data priorities; general depth to 15–20 runnings/tier.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
