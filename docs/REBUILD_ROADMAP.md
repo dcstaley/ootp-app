@@ -568,6 +568,16 @@ teams (missing teams ARE the ghosts; their OPPONENTS' padded lines are the conta
     are resolver-only; a misplaced woba.ts multiply would pass all 15).
 
 **Batch 4 — Phase 1 (matchup K-tail fit on quicks) entry criteria**
+> **⚠ LARGELY SUPERSEDED (plan §11.31, 2026-07-14).** Phase-1c settled the transform question: the pitcher
+> spread deficit was a FORM defect (log flattening), fixed by the rawquad pitcher form — NOT an
+> opponent-frame *spread* effect needing a K-tail/matchup fit. The JOINT RUN kept **own-gap** and REFUTED
+> frame-v2 on the value path (additive shift compresses hitters, CI-clear; kSpread K-only, can't fix it).
+> **kSpread / frame-v2 / matchup are NOT adopted for scoring** (frame-v2 stays the levels/diagnostic frame);
+> the matchup K-tail fit below is NOT the path forward. What REMAINS live from this batch: the LEVEL
+> reconciliation (per-tournament free level knob + the format constant, items 13/16) and the +6..+8
+> pitcher-uBB residual (item 14) are LEVEL questions the anchor absorbs — not gating for the form ship.
+> The form ships (pareto {HR,K,H}+aux recommended); Derek retrains + activates.
+
 13. Fit with a PER-TOURNAMENT FREE LEVEL TERM (each tournament gets a level knob; the curve
     learns only shape) — this is also what makes ghost-inflated quicks usable when annotation
     (item 4) is unavailable.

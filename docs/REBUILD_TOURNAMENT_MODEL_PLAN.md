@@ -1035,8 +1035,13 @@ sunset call. NEXT: acceptance battery (the final gate) + guardrails; gather pitc
   so **hitter HR must stay raw-quad** (power event, +0.04 spread); the LOG seats are the contact/discipline
   channels (bb/k/xbh/h), which hold. **Pitcher HR IS log** in StuffAug — an INCONSISTENCY (hitter power =
   raw-quad, pitcher power = log) — and pit HR→raw2 was the biggest single spread lever (§11.27); the winner
-  (rawquad-all+aux) fixes it. Corrected takeaway: log holds only for contact/discipline; power (HR) is
-  raw-quad for BOTH roles in the winner.
+  (rawquad-all+aux) fixes it.
+  **⚠ RULE CORRECTION (Derek, memory 26b; verified in §11.31): the "power=quad, contact/discipline=log,
+  BOTH roles" takeaway is WRONG — it contradicts Step-1 ("no single flip reaches 0.78", §11.27). The
+  empirical structure is ASYMMETRIC: HITTERS = quad HR + log the rest (bb/k/xbh/h); PITCHERS = quad
+  EVERYTHING (bb/k/hr/h) + Stuff aux. The pitcher quad terms on bb/k/h are NOT "the engine is quadratic in
+  con" — they proxy OMITTED pitch-level info correlated with the 4 aggregates (same class as the Stuff aux).
+  §11.31 turns this asymmetry into a shippable pareto and settles the transform question.**
 - **Transform mechanism — own-gap faded mean-scalar. My "own-gap COMPRESSES spacing" (last handback) was
   PREMATURE / wrong for pitchers.** `applyAffine`: multiplicative `k=league.μ/pool.μ`, lift `r·(1+(k−1)·fade)`,
   fade→0 near the rating ceiling. Bronze-t stu (ceiling 187, ratings 50–110 well below the fade midpoint ~165):
@@ -1051,11 +1056,136 @@ sunset call. NEXT: acceptance battery (the final gate) + guardrails; gather pitc
   required (levels; Derek), the quad captures spacing in base frame (§ quad test), and the correct transform
   form is very likely the ADDITIVE frame-v2 — but the joint measurement is the arbiter.
 
+**11.31 VERIFICATION DEBTS (B.1–B.4) + THE JOINT RUN — own-gap KEPT, frame-v2 REFUTED under the new form,
+form ships as a PARETO (2026-07-14).** Tools: `phase1c-b1-cv.ts`, `phase1c-b2-pareto.ts`, `phase1c-b3-edgelevels.ts`,
+`phase1c-b4-monotone.ts`, `phase1c-hit-cancellation.ts`, `phase1c-joint-run.ts`, `phase1c-framev2-kspread.ts`.
+
+**B.1 — league CV/OOT (the original rejection ground).** rawquad-all+aux vs deployed StuffAug, window 41-42,
+OOT-down→32-33 (extrapolate to a weak pool = the tournament-like stress), OOT-up→reverse:
+
+| pit form | CV r | CV ρ | CV regret | OOT-dn r | OOT-dn ρ | OOT-up r | OOT-up ρ | gate |
+|---|---|---|---|---|---|---|---|---|
+| deployed StuffAug | 0.776 | 0.745 | 0.0053 | 0.764 | 0.715 | 0.794 | 0.758 | pass |
+| rawquad (aux OFF) | 0.752 | 0.744 | 0.0044 | 0.735 | 0.681 | 0.769 | 0.748 | warn: BB |
+| **rawquad+aux (WINNER)** | 0.777 | **0.757** | 0.0046 | 0.757 | **0.727** | 0.789 | **0.767** | **warn: BB** |
+
+**Verdict:** the winner does NOT over-fit worse than deployed (identical in-sample→CV gap ~0.020; the ORIGINAL
+"quad-everything" rejection reproduces ONLY for aux-OFF, CV r 0.752). It BEATS deployed on Spearman in every
+split (+0.009..+0.012) and ties on Pearson (OOT r ~0.005–0.007 lower, within noise). **BUT it FAILS the
+monotone gate: pitcher BB (rawquad) turns over in-domain.** aux-OFF also warns on BB → the offender is
+rawquad-BB, present with or without aux.
+
+**B.2 — channel-subset pareto (aux ON, log elsewhere).** in-frame deconvolved pit value spread (the axis-2 the
+quad buys) vs CV/OOT ordering (the axis-1 it risks) vs gate:
+
+| subset | in-frame spread | CV r/ρ | OOT-dn r/ρ | gate |
+|---|---|---|---|---|
+| deployed {} | 0.623 | 0.776/0.745 | 0.764/0.715 | pass |
+| {HR} | 0.690 | 0.774/0.746 | 0.761/0.730 | pass |
+| {HR,K} | 0.719 | 0.773/0.745 | 0.758/0.715 | pass |
+| **{HR,K,H} (BB log) — PARETO** | **0.743** | 0.774/0.743 | **0.764**/0.713 | **pass** |
+| {HR,K,BB} | 0.752 | 0.777/0.758 | 0.753/0.726 | warn: BB |
+| {all} = WINNER | 0.780 | 0.777/0.757 | 0.757/0.727 | warn: BB |
+
+**Verdict:** BB-quad is the SOLE gate offender and buys only ~0.037 spread + ~0.012 ρ — the smallest-value AND
+the dangerous channel. **{HR,K,H} (BB stays log) = 0.743 spread (95% of the winner's 0.780) with a CLEAN gate
+and the BEST OOT-down Pearson (0.764, ties deployed).** The trade the handoff asked to surface, not skip: 95%
+of the spread for 3 quad tails instead of 4, dropping the one that turns over.
+
+**B.3 — edge-level calibration under quad.** Per-channel pred−actual per-600 by rating tercile: no form's LOW or
+HIGH bias exceeds ~3/600. The quad channels calibrate the EDGES BETTER than log (HR: deployed ±0.4–0.6 → quad
+±0.04; BB-quad IMPROVES the low/mid con edges −2.78→−1.19). Only K-high is mildly worse (+2.87 vs log +1.60 — the
+steeper K slope, a spread FEATURE). Quad introduces no edge miscalibration.
+
+**B.4 — monotone gate at pool extremes.** Of all quad channels across both roles, **only pitcher BB turns over
+INSIDE the production pool** (vertex con≈149, ∪ falls→rises; pool con range [20,189]; cap engages con≈149,
+flattens cleanly — capped curve never re-reverses). K (vertex stu≈260), HR (hrr≈272), H (pbabip≈1940), and the
+hitter HR (pow≈242) all have vertices OUTSIDE the pool region → monotone where real cards live; their caps never
+engage. So the winner's cap is load-bearing for exactly ONE channel (elite-control pitchers, con 150–189, above
+league max) — safe (flattens to the sensible walk floor) but a mild mis-spacing precisely where the winner claims
+to add value; the pareto avoids it entirely (BB log = monotone, no cap).
+
+**Hitter cancellation (item 25) — CLOSED, no cancellation.** Per-channel deconvolved value spread ratio, in-frame:
+uBB 0.99, HR 0.98, 1B 0.88, XBH 0.92 (K 0.99 but value-irrelevant, wt 0). Every value-relevant channel is
+shrunk-or-accurate; NONE over-spread → nothing offsets. The pooled 0.967 is the honest aggregate, not lucky
+cancellation. No pool-composition-sensitivity flag. (The 1B/XBH mild under-spread is uniform shrinkage — correct.)
+
+**THE JOINT RUN — form × transform, both axes, ladder, deconvolved, ±95% boot CI.** Two candidate forms (winner,
+pareto) × two arms (own-gap = production incumbent; frame-v2 BARE = additive opp-gap shift, no kSpread) × ladder ×
+both roles. RELIABLE datasets (EG-clean, Bronze-t; quicks floor-dominated at ~100 PA). own-gap results (the
+decisive arm):
+
+| dataset·role | deployed spread | winner spread | pareto spread | in-frame ref |
+|---|---|---|---|---|
+| EG pit | 0.789 | 0.929 [.70,1.53] | 0.933 [.69,2.13] | 0.78 |
+| EG hit | 1.083 | 1.083 [.88,1.24] | 1.083 | 0.97 |
+| Bronze-t pit | 0.511 | 0.634 [.46,1.07] | 0.625 [.45,1.03] | 0.78 |
+| Bronze-t hit | 1.250 | 1.250 | 1.250 | 0.97 |
+| **EG cap-bias pit/hit** | **0.728** | **0.857** | **0.861** | (bar ≥~0.80) |
+| Bronze-t cap-bias | 0.409 | 0.507 | 0.500 | (ceiling residual) |
+
+**Findings:**
+1. **The FORM FIX ships.** Under own-gap the new form lifts EG cap-bias 0.728→0.86 (crosses the 0.80 bar) and
+   Bronze-t 0.41→0.50, and EG pit spread 0.789→0.93 — a material, out-of-frame improvement over deployed on both
+   reliable datasets, on top of the in-frame +0.157 CI-clear (§11.28) and CV/OOT ordering ≥ deployed (B.1).
+2. **WINNER vs PARETO is a statistical TIE out-of-frame** (EG pit 0.929 vs 0.933; Bronze-t 0.634 vs 0.625;
+   cap-bias 0.857 vs 0.861 — CIs overlap almost entirely). The winner's extra IN-frame spread (0.78 vs 0.74) does
+   NOT translate to an out-of-frame advantage. Given B.4 (winner's BB cap-dependent inside the pool; pareto fully
+   clean), **the PARETO {HR,K,H}+aux is the recommended production form** — same out-of-frame behavior, no
+   monotonicity liability, cleaner extrapolation for future iron/diamond pools. (The winner's sole edge is a
+   consistent +0.012 in-frame/OOT Spearman; Derek's call at retrain.)
+3. **frame-v2 BARE is REFUTED under the new form (ship bar: beat own-gap on BOTH axes).**
+   - axis-1: paired Δregret(own−bare) CI includes 0 on every reliable read (ties own-gap; own-gap point-better on
+     Bronze-t pit, −0.013 [−0.022,0.001]). Does NOT beat.
+   - axis-2 HITTERS: bare COMPRESSES EG hitters 1.083→0.674 [.62,.73] — CI EXCLUDES the in-frame 0.967. A CI-clear
+     failure of the "hitters within CI of ~1.0" rule. This is the item-21 concavity algebra CONFIRMED with CI: the
+     additive shift moves hitters up the concave log bb/1b/xbh curves → value spread collapses ~35%.
+   - own-gap (multiplicative, spread-neutral on log channels) preserves hitter spread (1.08/1.25 ≈ in-frame) and
+     already meets the cap-bias bar on EG. **own-gap keeps production.**
+4. **ARM 3 (frame-v2 + refit kSpread) is structurally MOOT.** kSpread s_pit sweep {1.0, 2.03, 3.0, 4.0}: HIT spread
+   is CONSTANT across s_pit (EG 0.674, Bronze-t 0.980) — kSpread scales only K, and K enters hitter value only via
+   BIP→1B (negligible). So NO kSpread refit can un-compress the hitters that sink bare; frame-v2 is unrescuable by
+   a K-spread refit. kSpread RETIRED (redundant under quad — its job was patching log-flattening, which the quad
+   already does; and it cannot fix the arm's actual failure).
+
+**PREDICTIONS ON RECORD — survived/died:**
+- (1) "under rawquad the frame-v2 ORDERING regression DISSOLVES (§11.16, ρ 0.68→0.46)": **SURVIVED.** The pit ρ
+  crash does NOT reappear (bare Bronze-t pit ρ 0.206–0.212 ≈ own 0.194–0.215) — the form fix genuinely cured the
+  concavity-de-weighting-K mechanism. BUT the corollary "frame-v2+rawquad plausibly wins both axes" **DIED** — bare
+  wins neither. "Watch for overshoot": bare does not overshoot pit; it OVER-COMPRESSES hit.
+- (2) "kSpread REDUNDANT under rawquad; bare should win or tie, else refit S_K": the redundant half is CONFIRMED
+  (arm 3), but "bare wins or ties" **DIED on axis-2** (bare compresses EG hitters, CI-clear). kSpread retired not
+  because bare reached context-invariance, but because bare fails regardless of kSpread.
+- The presumptive additive-arm thesis (additive is mechanically correct for the transform): **DIED on the SCORING
+  path** — additive is correct for LEVELS (frame-v2 stays a diagnostic/levels tool) but spread-harmful for VALUE
+  (concavity, now CI-confirmed). This is the pre-registered STOPPING RULE outcome: additive failed again under the
+  new form → own-gap keeps production, STOP transform iteration (no fourth iteration without a new mechanism).
+
+**NET:** ship the PITCHER FORM (pareto {HR,K,H}+aux recommended; winner rawquad-all+aux the alternative — Derek's
+retrain call). KEEP own-gap as the scoring transform. Do NOT adopt frame-v2 / kSpread / matchup for scoring
+(frame-v2 remains the levels/diagnostic frame). The pool-conditioned pitcher under-spread that survives on
+Bronze-t (0.50–0.63 vs in-frame 0.78) is the MEASURED pitcher form ceiling (§11.26 ~0.78; the omitted
+pitch-level residual), fixable only by role/pitch-level info, out of scope — not by any transform tried.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
 
 ### Frame correction
+
+> **⚠ SUPERSEDED FOR SCORING (§11.31, 2026-07-14) — own-gap KEPT, frame-v2 REFUTED on the value path.**
+> The decisions below were the 2026-07-13 state (frame-v2 as the presumptive transform, quicks-gated). The
+> JOINT RUN (form × transform, §11.31) settled it: under the new pitcher rawquad form, **frame-v2 (bare or
+> +kSpread) fails the ship bar** — it does not beat own-gap on axis-1 (ordering ties), and it COMPRESSES
+> hitters on axis-2 (EG 1.08→0.67, CI-clear; the item-21 additive-concavity mechanism confirmed), which no
+> kSpread refit can fix (kSpread is K-only; hitter spread is bb/1b/xbh). **own-gap keeps production** as the
+> scoring transform; **kSpread / frame-v2 / matchup are NOT adopted for scoring.** frame-v2 survives ONLY as
+> the levels/diagnostic frame (its additive opp-gap shift is still the correct LEVEL reasoning; it is
+> spread-harmful for VALUE). Pre-registered stopping rule TRIGGERED: no further transform iteration without a
+> new mechanism. The chain: own-gap (shipped) → frame-v2 (proposed §10, quicks-gated) → **frame-v2 refuted on
+> the value path, own-gap retained** (§11.31). The reader-facing takeaway: the pitcher spread deficit was a
+> FORM defect (log flattening), fixed by the form, NOT an opponent-frame *spread* effect — so no rating-space
+> transform beyond own-gap's level re-basing is needed.
 
 - **Additive channel-crossed OPPONENT-gap shift, over the shipped own-gap multiplicative transform.**
   WHY: a card's outcomes depend on the *opponent's* channel, not its own — strikeouts on the pitcher's
