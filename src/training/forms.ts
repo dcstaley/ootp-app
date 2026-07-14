@@ -101,7 +101,8 @@ function fitSatEvent(vals: number[], y: number[], w: number[], auxVals?: number[
 // unidentified in league data (BIP barely varies across players) and extrapolates
 // badly when extreme eras move BIP ±18% — kept only for explicit bake-off forms.
 function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[], rCurve: Curve, bCurve: Curve | "unit"): FittedH {
-  const rating = { curve: rCurve, ...curveNorm(rCurve, ratingVals, w) };
+  const rNorm = curveNorm(rCurve, ratingVals, w);
+  const rating = { curve: rCurve, ...rNorm, ...uDomain(rCurve, ratingVals, rNorm.mu, rNorm.sd) }; // stamp the z-domain so the deploy gate can locate an in-domain vertex on a quad H-rating curve
   if (bCurve === "unit") {
     const yb = y.map((v, i) => v / Math.max(bipVals[i]!, 1));
     const wb = w.map((v, i) => v * bipVals[i]! ** 2);

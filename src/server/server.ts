@@ -25,7 +25,7 @@ import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
-import { HIT_BIP_ADJ, PIT_BIP_ADJ } from "../model/curves.ts";                    // BIP convention, for the trace
+import { HIT_BIP_ADJ, PIT_BIP_ADJ, formVertexOffenders } from "../model/curves.ts";  // BIP convention, for the trace + the deploy-time vertex gate
 import { makeMatchupModel, matchupShift } from "../model/matchup.ts";              // Phase-0 matchup reparametrization
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
@@ -1331,6 +1331,7 @@ interface TrainedModel {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
   formatVersion?: number; // T-4: evaluation-semantics version; absent ⇒ predates versioning (v1)
   validation?: { errors: number; warnings: number; excluded: string[]; forced: boolean }; // T-3: dataset state at train time
+  vertexGate?: { ok: boolean; forced: boolean; offenders: { channel: string; vertexZ: number }[] }; // Batch-1 item 1: in-domain-vertex outcome at deploy time (ok ⇒ no quad turned over in its fit domain; forced ⇒ persisted over a live offender)
   coefficients: { woba_hitting: WobaHittingCoeffs; woba_pitching: WobaPitchingCoeffs; basic_hitting: BasicHittingCoeffs; basic_pitching: BasicPitchingCoeffs };
   // D3 #2 (raw-poly) fitted form — the DEPLOYED event math, frozen here so scoring is
   // reproducible even as the (gitignored, weekly-changing) training data moves. Optional
@@ -1380,6 +1381,16 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
   const hitQual = obs.filter((o) => HITTER.qualifies(o, minPA)), pitQual = obs.filter((o) => PITCHER.qualifies(o, minPA));
   const eventForm: EventForm = { hit: fitHitForm(RAWPOLY_HIT, hitQual), pit: fitPitForm(PARETO_PIT, pitQual) };
+  // Deploy-time vertex gate (Batch-1 item 1, T-3 pattern): BLOCK persisting a form whose fitted quad
+  // turned over WITHIN its own fit domain — the cap/tangent extension keep it safe to evaluate but the
+  // SHAPE is corrupt (a better rating scoring worse over that band). Force-override records the fact on
+  // the artifact; never a silent fallback. The named-channel remedy is the log baseline for that event.
+  const vertexOffenders = formVertexOffenders(eventForm);
+  const vertexGate = { ok: vertexOffenders.length === 0, forced: vertexOffenders.length > 0 && !!body.force, offenders: vertexOffenders };
+  if (vertexOffenders.length && !body.force) {
+    const names = vertexOffenders.map((o) => `${o.channel} (vertex z=${o.vertexZ.toFixed(2)})`).join(", ");
+    throw new Error(`fitted quad turns over in-domain on channel(s): ${names} — a better rating would score worse over that band. Switch the channel(s) to the log baseline in the form spec, or resave with force=true to deploy anyway (recorded on the artifact).`);
+  }
   // Per-rating training MAX over the fitting obs (pooled across sides) — the saturation
   // ceilings the pool transform won't lift past. Recomputed per model, so it tracks retrains.
   const maxOf = (rows: TrainObs[], get: (o: TrainObs) => number) => rows.reduce((m, o) => Math.max(m, get(o)), 0);
@@ -1449,6 +1460,7 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     id, name, datasetRoot: TRAINING_DIR, window, minPA, includeVariants,
     formatVersion: MODEL_FORMAT_VERSION,
     validation: { errors: validation.errors, warnings: validation.warnings, excluded: validation.excluded, forced: !validation.ok },
+    vertexGate,
     coefficients: { woba_hitting: f.woba_hitting.coefficients, woba_pitching: f.woba_pitching.coefficients, basic_hitting: f.basic_hitting.coefficients, basic_pitching: f.basic_pitching.coefficients },
     eventForm,
     platoon,

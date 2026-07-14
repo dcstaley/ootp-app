@@ -124,6 +124,43 @@ export const capActive = (e: FittedEvent, lo: number, hi: number): boolean => {
   for (let i = 0; i <= 40; i++) { const v = lo + ((hi - lo) * i) / 40; if (Math.abs(rate(e, v) - rateRaw(e, v)) > 1e-9) return true; }
   return false;
 };
+
+// ── Deploy-time vertex gate (Batch-1 item 1) — the ONE vertex-in-domain detector ───────────────
+// The monotone cap and tangent-linear extension make an interior-vertex quad SAFE to *evaluate*,
+// but a fitted quad that turns over WITHIN its own fit domain is still a corrupt SHAPE: over that
+// band a better rating predicts a worse rate, and the cap only masks it downstream. The T-3 pattern
+// is to BLOCK persisting such a form (force-override, error names the channel, suggests the log
+// fallback) rather than silently deploying a capped-over lie. These helpers locate the vertex; the
+// gate that throws lives at the persist site (server.saveTrainedModel).
+/** For a rawpoly-2 FittedEvent with a stored fit domain, the z-vertex iff it lies STRICTLY inside
+ *  [uMin,uMax] (a real in-domain turn-over); null for every other curve/degree or missing domain. */
+export function inDomainVertex(e: FittedEvent): number | null {
+  if (e.curve.kind !== "rawpoly" || e.curve.degree !== 2 || e.uMin == null || e.uMax == null) return null;
+  const b1 = e.beta[1] ?? 0, b2 = e.beta[2] ?? 0;
+  if (Math.abs(b2) < 1e-12) return null;              // ~linear ⇒ no vertex
+  const vertex = -b1 / (2 * b2);
+  return vertex > e.uMin && vertex < e.uMax ? vertex : null;
+}
+/** Same test for the H event's RATING quad (its coeffs sit at beta[1],beta[2] under both the fitted
+ *  log-BIP and perBip shapes; the domain rides on rating.uMin/uMax). null unless rating is rawpoly-2. */
+export function inDomainVertexH(h: FittedH): number | null {
+  const r = h.rating;
+  if (r.curve.kind !== "rawpoly" || r.curve.degree !== 2 || r.uMin == null || r.uMax == null) return null;
+  const b1 = h.beta[1] ?? 0, b2 = h.beta[2] ?? 0;
+  if (Math.abs(b2) < 1e-12) return null;
+  const vertex = -b1 / (2 * b2);
+  return vertex > r.uMin && vertex < r.uMax ? vertex : null;
+}
+/** Every quad channel of a form whose fit turned over in-domain (the ONE place that knows the
+ *  channel layout). Empty ⇒ the form is gate-clean. Consumed by the deploy-time gate. */
+export function formVertexOffenders(form: EventForm): { channel: string; vertexZ: number }[] {
+  const out: { channel: string; vertexZ: number }[] = [];
+  const ev = (name: string, e: FittedEvent) => { const vz = inDomainVertex(e); if (vz != null) out.push({ channel: name, vertexZ: vz }); };
+  const hh = (name: string, m: FittedH) => { const vz = inDomainVertexH(m); if (vz != null) out.push({ channel: name, vertexZ: vz }); };
+  ev("hit.bb", form.hit.bb); ev("hit.k", form.hit.k); ev("hit.hr", form.hit.hr); ev("hit.xbh", form.hit.xbh); hh("hit.h", form.hit.h);
+  ev("pit.bb", form.pit.bb); ev("pit.k", form.pit.k); ev("pit.hr", form.pit.hr); hh("pit.h", form.pit.h);
+  return out;
+}
 /** Like `rate`, plus the optional Stuff (or other) aux term. `auxV` = the aux rating
  *  value; ignored when the event has no `aux`, so this is safe to call everywhere. */
 export const rateAux = (e: FittedEvent, v: number, auxV: number) => {
@@ -147,7 +184,7 @@ export const rateAux = (e: FittedEvent, v: number, auxV: number) => {
 // fitted log-BIP as "legacy ≤ v2" — BACKWARDS. Deployed = fitted log-BIP; trust the artifact.
 // This is the ONE definition of the H↔BIP relation — training (forms.ts), the deployed
 // model (raw-poly.ts), and the scoring-core recompute (woba.ts) all evaluate via hRate.
-export interface CurveFit { curve: Curve; mu: number; sd: number }
+export interface CurveFit { curve: Curve; mu: number; sd: number; uMin?: number; uMax?: number } // uMin/uMax: z-domain the curve was fit over (poly only) — for the deploy-time vertex gate on the H rating quad
 export interface FittedH {
   beta: number[];
   rating: CurveFit;
