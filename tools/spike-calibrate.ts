@@ -34,13 +34,13 @@ const canPitch = (c: any) => n(c["Pos Rating P"]) > 0 || learn(c, "P");
 // Build the raw augmented columns (matching computeAugmentedRows) from our core.
 function augment(c: any) {
   const bats = n(c["Bats"]), thr = n(c["Throws"]);
-  const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
+  const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]), stealRate = n(c["Steal Rate"]);
   const hit = (side: "vR" | "vL") => {
     const e = logLinearModel.predictHitting(
       { eye: n(c[`Eye ${side}`]), pow: n(c[`Power ${side}`]), kRat: n(c[`Avoid K ${side}`]), babip: n(c[`BABIP ${side}`]), gap: n(c[`Gap ${side}`]), speed, steal, run },
       coeffs,
     );
-    const woba = assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting), speed, steal, run, coeffs);
+    const woba = assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting), speed, stealRate, steal, run, coeffs);
     return { e, woba };
   };
   const pit = (side: "vR" | "vL") => {

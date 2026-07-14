@@ -45,6 +45,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
   const speed = n(card["Speed"]);
   const steal = n(card["Stealing"]);
   const run = n(card["Baserunning"]);
+  const stealRate = n(card["Steal Rate"]);
   const hold = n(card["Hold"]);
 
   const hitCross = calScales?.crossPoolHitterMultiplier ?? 1;
@@ -82,8 +83,8 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
 
     // SSP (same-side platoon penalty) — REMOVED under #2 (value → 1); log-linear keeps it (parity).
     const sspAdv = sameSidePenaltyHitting(bats, side, eventForm ? 1 : coeffs.ssp_adv_hitting);
-    const rawWoba = assembleRawHittingWoba(e, sspAdv, speed, steal, run, coeffs);
-    const woba = trustedHittingWoba(e, rawWoba, bats, side, coeffs, derived, calScales, eventForm);
+    const rawWoba = assembleRawHittingWoba(e, sspAdv, speed, stealRate, steal, run, coeffs);
+    const woba = trustedHittingWoba(e, rawWoba, bats, side, coeffs, derived, calScales, eventForm, speed, stealRate, steal, run);
 
     // Basic metric: direct basic-hitting score × pool scale × cross-pool multiplier.
     const basicRaw = basicHittingSide({

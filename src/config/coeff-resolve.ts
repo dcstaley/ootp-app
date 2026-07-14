@@ -46,6 +46,11 @@ const REF_NHH_PER_BIP = (0.22944 - 0.02488) / 0.68832;
 const WOBA_SCALE = 1.25;
 const ADV_SPEED_UBR = 0.0177 * (WOBA_SCALE / 600); // ≈ 0.0000369 wOBA per Speed pt (2010 baseline)
 const ADV_RUN_UBR = 0.0650 * (WOBA_SCALE / 600);   // ≈ 0.0001354 wOBA per Baserunning pt (2010 baseline)
+// STEAL value = tendency×ability (fit: wSB/600 ~ b_sr·SR + b_int·(SR·Stealing/100), b_sr −0.04606,
+// b_int 0.05110; breakeven ability ≈90). woba.ts's baserunningWoba applies adv_stealRate·SR +
+// adv_stealInt·(SR·Stealing/100). Era-scaled by sbFreq·runVal (running frequency × run scarcity).
+const ADV_STEALRATE = -0.04606 * (WOBA_SCALE / 600); // ≈ −0.0000960 wOBA per Steal-Rate pt (2010 baseline)
+const ADV_STEALINT = 0.05110 * (WOBA_SCALE / 600);   // ≈ 0.0001065 wOBA per (SR·STE/100) unit (2010 baseline)
 
 /** Fields the per-BIP era factors read; a partial/malformed block silently produces Infinity/NaN
  *  factors (÷ bip, ÷ (h−hr)) → Infinity scores downstream. Validated at ingestion + resolve. */
@@ -122,12 +127,18 @@ export function resolveCoeffs(model: Model, era: Era, park: Park, softcaps: Soft
     validateRates(era.rates, `resolveCoeffs(era ${era.id ?? "?"})`);
     bag.era_h_bip = eraHBip(era.rates); bag.era_gap_share = eraGapShare(era.rates); bag.era_bip_adj = eraBipAdj(era.rates);
   }
-  // Baserunning value (UBR), league-fit + era-scaled by run scarcity. runVal absent (capture/synthetic
-  // eras) ⇒ neutral 1. Overrides the model's extras adv_speed/adv_run (historically 0). adv_steal
-  // untouched (0) — steal deferred. Only the hitter wOBA (woba.ts) reads these.
-  const runVal = era.runVal ?? 1;
+  // Baserunning value, league-fit + era-scaled (Derek's design: fit in runs, scale at resolve). Missing
+  // era factors (capture/synthetic eras) ⇒ neutral 1. Overrides the model's extras (historically 0).
+  // Only the hitter wOBA (woba.ts baserunningWoba) reads these.
+  //   • UBR (Speed/Baserunning) × runVal (run scarcity).
+  //   • STEAL (tendency×ability) × sbFreq·runVal (running frequency × run scarcity).
+  //   • adv_steal (old ability-only linear) retired to 0 — value is the tendency×ability product.
+  const runVal = era.runVal ?? 1, sbFreq = era.sbFreq ?? 1;
   bag.adv_speed = ADV_SPEED_UBR * runVal;
   bag.adv_run = ADV_RUN_UBR * runVal;
+  bag.adv_steal = 0;
+  bag.adv_stealRate = ADV_STEALRATE * sbFreq * runVal;
+  bag.adv_stealInt = ADV_STEALINT * sbFreq * runVal;
   return bag;
 }
 

@@ -12,15 +12,28 @@ import { rate, hRate, HIT_BIP_ADJ, PIT_BIP_ADJ, type EventForm } from "../model/
 import { cp, getParkFactor } from "./helpers.ts";
 import { wobaWeightsFromCoeffs } from "./woba-weights.ts";
 
+// ── Baserunning value (hitter only) — the ONE place ─────────────────────────
+// Additive wOBA from the four baserunning ratings, league-fit + era-scaled in resolveCoeffs:
+//   • UBR (extra bases on hits): adv_speed·Speed + adv_run·Baserunning (era-scaled by runVal).
+//   • STEAL (tendency×ability): adv_stealRate·SR + adv_stealInt·(SR·Stealing/100) (by sbFreq·runVal).
+//     SR = Steal Rate (tendency), Stealing = ability. The product is the driver — ability alone is
+//     ≈0 value; a high-tendency/low-ability runner nets NEGATIVE (gets caught). adv_steal (the old
+//     ability-only linear term) is retired to 0. All coeffs absent ⇒ 0 (pre-wiring parity).
+export const STEAL_PROD_SCALE = 100;
+export function baserunningWoba(speed: number, stealRate: number, steal: number, run: number, c: Coeffs): number {
+  return (c.adv_speed ?? 0) * speed + (c.adv_run ?? 0) * run + (c.adv_steal ?? 0) * steal
+    + (c.adv_stealRate ?? 0) * stealRate + (c.adv_stealInt ?? 0) * ((stealRate * steal) / STEAL_PROD_SCALE);
+}
+
 // ── Raw wOBA assembly (per-event weights + ssp) — the stored "wOBA" columns ──
 // Weights come from the coeff bag (model-derived when present, else the historical
 // constants — bit-identical without a weights-bearing model). See woba-weights.ts.
 export function assembleRawHittingWoba(
-  e: RawHitting, ssp: number, speed: number, steal: number, run: number, c: Coeffs,
+  e: RawHitting, ssp: number, speed: number, stealRate: number, steal: number, run: number, c: Coeffs,
 ): number {
   const w = wobaWeightsFromCoeffs(c);
   return (((w.bb * e.BB) + (w.hbp * c.adv_hbp) + (w.b1 * e.oneB) + (w.xbh * e.GAP) + (w.hr * e.HR)) / 600 +
-    (c.adv_speed * speed) + (c.adv_steal * steal) + (c.adv_run * run)) * ssp;
+    baserunningWoba(speed, stealRate, steal, run, c)) * ssp;
 }
 
 export function assembleRawPitchingWoba(e: RawPitching, ssp: number, c: Coeffs): number {
@@ -109,6 +122,7 @@ export function pitchingComponents(
 export function trustedHittingWoba(
   e: RawHitting, rawWoba: number, bats: number, side: "vR" | "vL",
   coeffs: Coeffs, derived: Derived, calScales: CalScales | null, eventForm?: EventForm,
+  speed = 0, stealRate = 0, steal = 0, run = 0,
 ): number {
   if (!rawWoba) return 0;
   if (!calScales) return rawWoba;
@@ -120,7 +134,10 @@ export function trustedHittingWoba(
   const w = wobaWeightsFromCoeffs(coeffs);
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const ssp = eventForm ? 1 : ((bats === 1 && vR) || (bats === 2 && !vR) ? (calScales.ssp_adv_hitting ?? 0.97) : 1);
-  const finalWoba = ((w.bb * k.BB_fin + w.hbp * adv_hbp + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600) * ssp;
+  // Baserunning is a per-side-invariant additive bonus; it rides the same ssp as the events and the
+  // final anchor scale (the anchor includes it too, so the top-N mean stays at target).
+  const finalWoba = ((w.bb * k.BB_fin + w.hbp * adv_hbp + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600
+    + baserunningWoba(speed, stealRate, steal, run, coeffs)) * ssp;
   return finalWoba * sFinal;
 }
 
@@ -150,11 +167,14 @@ export function trustedPitchingSideWoba(
 // under eventForm ssp ≡ 1, and the legacy log path keeps the old anchor semantics.
 export function anchorHittingWoba(
   e: RawHitting, sBB: number, sHR: number, bats: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
-  eventForm?: EventForm,
+  eventForm?: EventForm, speed = 0, stealRate = 0, steal = 0, run = 0,
 ): number {
   const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
   const w = wobaWeightsFromCoeffs(coeffs);
-  return (w.bb * k.BB_fin + w.hbp * (coeffs.adv_hbp ?? 6) + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600;
+  // Include baserunning so the top-N anchor mean (→ TARGET_WOBA) matches the trusted score's terms;
+  // otherwise the trusted scores drift up by the field's mean baserunning value.
+  return (w.bb * k.BB_fin + w.hbp * (coeffs.adv_hbp ?? 6) + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600
+    + baserunningWoba(speed, stealRate, steal, run, coeffs);
 }
 
 export function anchorPitchingWoba(

@@ -30,12 +30,12 @@ interface CardRec { hitVR: SideRec; hitVL: SideRec; pitVR: SideRec; pitVL: SideR
 // on the same ssp-free basis. false ⇒ legacy log-path behavior (coeff ssp), unchanged.
 function cardRec(c: any, coeffs: Coeffs, model: EventModel, sspFree: boolean): CardRec {
   const bats = n(c["Bats"]), thr = n(c["Throws"]);
-  const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
+  const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]), stealRate = n(c["Steal Rate"]);
   const hit = (side: "vR" | "vL"): SideRec => {
     const rat: Record<string, number> = { eye: n(c[`Eye ${side}`]), pow: n(c[`Power ${side}`]), kRat: n(c[`Avoid K ${side}`]), babip: n(c[`BABIP ${side}`]), gap: n(c[`Gap ${side}`]) };
     const e = model.predictHitting({ eye: rat.eye!, pow: rat.pow!, kRat: rat.kRat!, babip: rat.babip!, gap: rat.gap!, speed, steal, run }, coeffs);
     const ssp = sspFree ? 1 : sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting);
-    return { rat, woba: assembleRawHittingWoba(e, ssp, speed, steal, run, coeffs) };
+    return { rat, woba: assembleRawHittingWoba(e, ssp, speed, stealRate, steal, run, coeffs) };
   };
   const pit = (side: "vR" | "vL"): SideRec => {
     const rat: Record<string, number> = { con: n(c[`Control ${side}`]), stu: n(c[`Stuff ${side}`]), pbabip: n(c[`pBABIP ${side}`]), hrr: n(c[`pHR ${side}`]) };
@@ -141,11 +141,11 @@ export function buildFrameShift(train: TrainingMeans, pool: FieldStats): FrameSh
 export function poolMeanK(cards: any[], coeffs: Coeffs, model: EventModel, fs: FrameShift, topN: number): { hit: number; pit: number } {
   const sh = applyFrameShift; // §10.8d frame shift — the one copy lives in pool-transform.ts
   const recs = cards.map((c) => {
-    const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
+    const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]), stealRate = n(c["Steal Rate"]);
     const hitK = (side: "vR" | "vL") => {
       const d = fs.hit[side];
       const e = model.predictHitting({ eye: sh(n(c[`Eye ${side}`]), d.eye), pow: sh(n(c[`Power ${side}`]), d.pow), kRat: sh(n(c[`Avoid K ${side}`]), d.kRat), babip: sh(n(c[`BABIP ${side}`]), d.babip), gap: sh(n(c[`Gap ${side}`]), d.gap), speed, steal, run }, coeffs);
-      return { woba: assembleRawHittingWoba(e, 1, speed, steal, run, coeffs), k: e.SO };
+      return { woba: assembleRawHittingWoba(e, 1, speed, stealRate, steal, run, coeffs), k: e.SO };
     };
     const pitK = (side: "vR" | "vL") => {
       const d = fs.pit[side];

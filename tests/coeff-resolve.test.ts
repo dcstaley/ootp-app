@@ -20,15 +20,22 @@ describe("baserunning value: derived + era-scaled by runVal", () => {
   it.runIf(has)("adv_speed/adv_run are nonzero at baseline and scale linearly with runVal", () => {
     const bag = loadCoeffs(synth);
     const model = modelFromCoeffs(bag, "m", "m"), park = parkFromCoeffs(bag, "p", "p"), sc = softcapsFromCoeffs(bag);
-    const era1 = { ...eraFromCoeffs(bag, "e", "e"), runVal: 1 };
-    const era2 = { ...eraFromCoeffs(bag, "e", "e"), runVal: 2 };
+    const era1 = { ...eraFromCoeffs(bag, "e", "e"), runVal: 1, sbFreq: 1 };
+    const era2 = { ...eraFromCoeffs(bag, "e", "e"), runVal: 2, sbFreq: 1 };
+    const era3 = { ...eraFromCoeffs(bag, "e", "e"), runVal: 2, sbFreq: 3 };
     const r1 = resolveCoeffs(model, era1, park, sc);
     const r2 = resolveCoeffs(model, era2, park, sc);
-    expect(r1.adv_speed).toBeGreaterThan(0);      // baserunning is now valued (was 0)
+    const r3 = resolveCoeffs(model, era3, park, sc);
+    expect(r1.adv_speed).toBeGreaterThan(0);      // UBR valued (was 0)
     expect(r1.adv_run).toBeGreaterThan(r1.adv_speed); // Baserunning rating weighted above Speed (per the fit)
-    expect(r2.adv_speed).toBeCloseTo(r1.adv_speed * 2, 12); // run-scarcity doubles the value
+    expect(r2.adv_speed).toBeCloseTo(r1.adv_speed * 2, 12); // UBR scales by runVal only
     expect(r2.adv_run).toBeCloseTo(r1.adv_run * 2, 12);
-    expect(r1.adv_steal).toBe(0);                 // steal deferred (needs a tendency×ability term)
+    expect(r1.adv_steal).toBe(0);                 // ability-only linear steal retired
+    // steal coeffs: tendency term negative, interaction positive; both scale by sbFreq×runVal.
+    expect(r1.adv_stealRate!).toBeLessThan(0);
+    expect(r1.adv_stealInt!).toBeGreaterThan(0);
+    expect(r2.adv_stealInt!).toBeCloseTo(r1.adv_stealInt! * 2, 12);   // ×runVal (sbFreq=1)
+    expect(r3.adv_stealInt!).toBeCloseTo(r1.adv_stealInt! * 6, 12);   // ×(sbFreq 3 · runVal 2)
   });
   it.runIf(has)("missing runVal (capture/synthetic era) falls back to neutral scaling", () => {
     const bag = loadCoeffs(synth);
@@ -48,12 +55,14 @@ describe("resolveCoeffs reproduces the capture bag", () => {
         parkFromCoeffs(bag, "p", "p"),
         softcapsFromCoeffs(bag),
       );
-      // adv_speed/adv_run are now DERIVED post-assembly (league-fit baserunning value × era runVal),
-      // like era_h_bip — no longer passed through from the bag, so they're excluded from the
-      // byte-identity round-trip (the keys still match; only these two values are recomputed).
-      const derived = new Set(["adv_speed", "adv_run"]);
-      for (const k of Object.keys(bag)) if (!derived.has(k)) expect(resolved[k]).toBe(bag[k]);
-      expect(Object.keys(resolved).sort()).toEqual(Object.keys(bag).sort());
+      // Baserunning coeffs are now DERIVED post-assembly (league-fit value × era factors), like
+      // era_h_bip — not passed through from the bag. adv_speed/adv_run are recomputed (value differs);
+      // adv_stealRate/adv_stealInt are NEW keys absent from older capture bags. Exclude both from the
+      // byte-identity round-trip.
+      const derivedVal = new Set(["adv_speed", "adv_run", "adv_stealRate", "adv_stealInt"]);
+      const newKeys = new Set(["adv_stealRate", "adv_stealInt"]); // added by resolve, not in captures
+      for (const k of Object.keys(bag)) if (!derivedVal.has(k)) expect(resolved[k]).toBe(bag[k]);
+      expect(Object.keys(resolved).filter((k) => !newKeys.has(k)).sort()).toEqual(Object.keys(bag).filter((k) => !newKeys.has(k)).sort());
     });
   }
 });

@@ -32,13 +32,13 @@ export const P_SECTION3 = { BB: 47.80, HR: 14.96 };
 export interface CalibrateConfig { coeffs: Coeffs; derived: Derived; eventForm?: EventForm; poolTransform?: PoolTransform; frameShift?: FrameShift; kSpread?: KSpread; matchup?: { model: EventModel; shift: FrameShift } }
 
 interface SideRaw { e: RawHitting | RawPitching; woba: number }
-interface Aug { bats: number; thr: number; hVR: { e: RawHitting; woba: number }; hVL: { e: RawHitting; woba: number }; pVR: SideRaw; pVL: SideRaw }
+interface Aug { bats: number; thr: number; speed: number; stealRate: number; steal: number; run: number; hVR: { e: RawHitting; woba: number }; hVL: { e: RawHitting; woba: number }; pVR: SideRaw; pVL: SideRaw }
 
 // Re-basing here MUST mirror score-card exactly (own-gap OR frame-v2 + K scaling), so the
 // 0.320 anchor is computed on the same re-based events the display scores use.
 function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransform, noSsp = false, fs?: FrameShift, ks?: KSpread): Aug {
   const bats = n(card["Bats"]), thr = n(card["Throws"]);
-  const speed = n(card["Speed"]), steal = n(card["Stealing"]), run = n(card["Baserunning"]);
+  const speed = n(card["Speed"]), steal = n(card["Stealing"]), run = n(card["Baserunning"]), stealRate = n(card["Steal Rate"]);
   const hit = (side: "vR" | "vL") => {
     const t = pt?.hit[side]; const f = fs?.hit[side]; // pool transform / frame shift (rating space), absent ⇒ raw
     const e = model.predictHitting(
@@ -46,7 +46,7 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       coeffs,
     );
     if (ks) e.SO = applyKSpread(e.SO, ks.meanHit, ks.sHit);
-    return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, noSsp ? 1 : coeffs.ssp_adv_hitting), speed, steal, run, coeffs) };
+    return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, noSsp ? 1 : coeffs.ssp_adv_hitting), speed, stealRate, steal, run, coeffs) };
   };
   const pit = (side: "vR" | "vL") => {
     const tp = pt?.pit[side]; const fp = fs?.pit[side];
@@ -57,7 +57,7 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
     if (ks) e.K = applyKSpread(e.K, ks.meanPit, ks.sPit);
     return { e, woba: assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, noSsp ? 1 : coeffs.ssp_basic_pitching), coeffs) };
   };
-  return { bats, thr, hVR: hit("vR"), hVL: hit("vL"), pVR: pit("vR"), pVL: pit("vL") };
+  return { bats, thr, speed, stealRate, steal, run, hVR: hit("vR"), hVL: hit("vL"), pVR: pit("vR"), pVL: pit("vL") };
 }
 
 const mean = (arr: number[]) => { const v = arr.filter((x) => x > 0); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : 0; };
@@ -96,8 +96,8 @@ export function calibrate(pool: any[], config: CalibrateConfig, model?: EventMod
   const pBBScale = noEvCal ? 1 : evScale(pAnch.map((x) => (x.pVR.e as RawPitching).BB), P_SECTION3.BB);
   const pHRScale = noEvCal ? 1 : evScale(pAnch.map((x) => (x.pVR.e as RawPitching).HR), P_SECTION3.HR);
 
-  const anchorMeanVR = mean(hAnchVR.map((x) => anchorHittingWoba(x.hVR.e, hitBBScaleVR, hitHRScaleVR, x.bats, "vR", coeffs, derived, eventForm)));
-  const anchorMeanVL = mean(hAnchVL.map((x) => anchorHittingWoba(x.hVL.e, hitBBScaleVL, hitHRScaleVL, x.bats, "vL", coeffs, derived, eventForm)));
+  const anchorMeanVR = mean(hAnchVR.map((x) => anchorHittingWoba(x.hVR.e, hitBBScaleVR, hitHRScaleVR, x.bats, "vR", coeffs, derived, eventForm, x.speed, x.stealRate, x.steal, x.run)));
+  const anchorMeanVL = mean(hAnchVL.map((x) => anchorHittingWoba(x.hVL.e, hitBBScaleVL, hitHRScaleVL, x.bats, "vL", coeffs, derived, eventForm, x.speed, x.stealRate, x.steal, x.run)));
   const anchorMeanPVR = mean(pAnch.map((x) => anchorPitchingWoba(x.pVR.e as RawPitching, pBBScale, pHRScale, "vR", coeffs, derived, eventForm)));
   const anchorMeanPVL = mean(pAnch.map((x) => anchorPitchingWoba(x.pVL.e as RawPitching, pBBScale, pHRScale, "vL", coeffs, derived, eventForm)));
   const anchorMeanPOVR = (anchorMeanPVR + anchorMeanPVL) / 2;

@@ -69,8 +69,11 @@ export interface Coeffs {
   w_babip: number; w_pow: number; w_eye: number; w_k: number; w_gap: number;
   w_speed: number; w_run: number; w_steal: number;
 
-  // Advanced hitting weights
+  // Advanced hitting weights (baserunning). adv_speed/adv_run = UBR (Speed/Baserunning); adv_steal is
+  // RETIRED (ability-alone ≈ 0 value) → adv_stealRate·SR + adv_stealInt·(SR·STE/100) = steal value as
+  // tendency×ability. All era-scaled in resolveCoeffs (UBR by runVal; steal by sbFreq·runVal).
   adv_speed: number; adv_run: number; adv_steal: number;
+  adv_stealRate?: number; adv_stealInt?: number;
   adv_sf: number; adv_sh: number; adv_hbp: number;
 
   // Advanced hitting model

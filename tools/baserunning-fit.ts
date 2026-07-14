@@ -55,6 +55,26 @@ console.log(`FIT wSB/600 (steal runs) — is it tendency, ability, or their inte
 report("speed+tendency+ability     ", wsb, [{ name: "spe", x: cen.spe }, { name: "srTend", x: cen.sr }, { name: "stlAbil", x: cen.stl }]);
 const inter = hit.map((_, i) => cen.sr[i]! * cen.stl[i]!);
 report("+ tendency×ability         ", wsb, [{ name: "spe", x: cen.spe }, { name: "srTend", x: cen.sr }, { name: "stlAbil", x: cen.stl }, { name: "tend×abil", x: inter }]);
+
+// ── RAW-SPACE steal model for WIRING (uncentered, so coeffs apply to raw ratings in woba.ts). The
+//    product SR·STE/100 IS the tendency×ability driver; test whether raw main effects add anything. ──
+console.log(`RAW-SPACE wSB/600 for wiring (product SR·STE/100 = tendency×ability):`);
+const prod = hit.map((r, i) => (sr[i]! * stl[i]!) / 100);
+const rawFit = (label: string, cols: { name: string; x: number[] }[]) => {
+  const X = hit.map((_, i) => [1, ...cols.map((c) => c.x[i]!)]);
+  const beta = wls(X, wsb, w);
+  const yhat = X.map((xr) => xr.reduce((s, v, j) => s + v * beta[j]!, 0));
+  console.log(`  ${label}: b0 ${fmt(beta[0]!, 3)}  ` + cols.map((c, j) => `b_${c.name} ${fmt(beta[j + 1]!, 5)}`).join("  ") + `  | r ${fmt(corr(yhat, wsb), 3)}`);
+  return beta;
+};
+rawFit("speed + SR·STE/100        ", [{ name: "spe", x: spe }, { name: "prod", x: prod }]);
+rawFit("speed + SR + SR·STE/100   ", [{ name: "spe", x: spe }, { name: "sr", x: sr }, { name: "prod", x: prod }]);
+// WIRED FORM (speed drops out ≈0 — it already feeds UBR): steal value = b_sr·SR + b_int·(SR·STE/100).
+const bSteal = rawFit("SR + SR·STE/100 (WIRED)   ", [{ name: "sr", x: sr }, { name: "prod", x: prod }]);
+const stealVal = (srr: number, ste: number) => bSteal[1]! * srr + bSteal[2]! * (srr * ste / 100);
+console.log(`  archetypes (runs/600, intercept dropped): high-tend high-abil(180/180) ${fmt(stealVal(180, 180), 2)}  |  high-tend LOW-abil(180/40) ${fmt(stealVal(180, 40), 2)}  |  low-tend high-abil(40/180) ${fmt(stealVal(40, 180), 2)}`);
+console.log(`  breakeven ability STE = ${fmt(-bSteal[1]! / (bSteal[2]! / 100), 0)} (below ⇒ stealing LOSES value); a high-tend/LOW-abil runner nets negative.`);
+console.log(`  WIRE → adv_stealRate ${fmt(bSteal[1]! * (WOBA_SCALE / 600), 7)}  adv_stealInt ${fmt(bSteal[2]! * (WOBA_SCALE / 600), 7)}  (× sbFreq·runVal at resolve)`);
 // ── UBR (other baserunning) ──
 console.log(`FIT UBR/600 (other baserunning):`);
 report("speed+baserunning          ", ubr, [{ name: "spe", x: cen.spe }, { name: "run", x: cen.run }]);

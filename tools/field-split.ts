@@ -62,10 +62,10 @@ const pool = catalog.cards.filter(isBase);
 interface Rec { bats: number; thr: number; hVR: number; hVL: number; pVR: number; pVL: number }
 const recs: Rec[] = pool.map((c: any) => {
   const bats = n(c["Bats"]), thr = n(c["Throws"]);
-  const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]);
+  const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]), stealRate = n(c["Steal Rate"]);
   const hit = (side: "vR" | "vL") => {
     const e = rp.predictHitting({ eye: n(c[`Eye ${side}`]), pow: n(c[`Power ${side}`]), kRat: n(c[`Avoid K ${side}`]), babip: n(c[`BABIP ${side}`]), gap: n(c[`Gap ${side}`]), speed, steal, run }, coeffs);
-    return assembleRawHittingWoba(e, 1, speed, steal, run, coeffs); // ssp-free: mirrors computeUnifiedFieldStats under eventForm
+    return assembleRawHittingWoba(e, 1, speed, stealRate, steal, run, coeffs); // ssp-free: mirrors computeUnifiedFieldStats under eventForm
   };
   const pit = (side: "vR" | "vL") => {
     const e = rp.predictPitching({ con: n(c[`Control ${side}`]), stu: n(c[`Stuff ${side}`]), pbabip: n(c[`pBABIP ${side}`]), hrr: n(c[`pHR ${side}`]) }, coeffs);
