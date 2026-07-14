@@ -19,39 +19,60 @@ const corr = (xs: number[], ys: number[]) => { const nn = xs.length, mx = xs.red
 
 const files = globSync("League Files/**/*ALL*.csv");
 console.log(`[baserunning-fit] ${files.length} ALL (unsplit) league files: ${files.map((f) => f.split(/[\\/]/).pop()).join(", ")}\n`);
-type Row = { pa: number; wSB: number; UBR: number; SB: number; CS: number; spe: number; stl: number; run: number; pos: string };
+type Row = { pa: number; wSB: number; UBR: number; SB: number; CS: number; spe: number; sr: number; stl: number; run: number; pos: string };
 const rows: Row[] = [];
 for (const f of files) {
   const parsed = Papa.parse<Record<string, string>>(readFileSync(f, "utf8"), { header: true, skipEmptyLines: true });
   for (const r of parsed.data ?? []) {
     if (!r || r["PA"] == null) continue;
-    rows.push({ pa: num(r["PA"]), wSB: num(r["wSB"]), UBR: num(r["UBR"]), SB: num(r["SB"]), CS: num(r["CS"]), spe: num(r["SPE"]), stl: num(r["STE"]), run: num(r["RUN"]), pos: String(r["POS"] ?? "") });
+    // Ratings: SPE=Speed, SR=Steal Rate (TENDENCY), STE=Stealing (ABILITY), RUN=Baserunning.
+    rows.push({ pa: num(r["PA"]), wSB: num(r["wSB"]), UBR: num(r["UBR"]), SB: num(r["SB"]), CS: num(r["CS"]), spe: num(r["SPE"]), sr: num(r["SR"]), stl: num(r["STE"]), run: num(r["RUN"]), pos: String(r["POS"] ?? "") });
   }
 }
 // Hitters with real PT (drop pitchers hitting + tiny samples).
 const hit = rows.filter((r) => r.pa >= 300 && r.pos.toUpperCase() !== "P" && r.pos !== "1");
 const per600 = (v: number, pa: number) => (v / Math.max(pa, 1)) * 600;
-const spe = hit.map((r) => r.spe), stl = hit.map((r) => r.stl), run = hit.map((r) => r.run);
+const col = (g: (r: Row) => number) => hit.map(g);
+const spe = col((r) => r.spe), sr = col((r) => r.sr), stl = col((r) => r.stl), run = col((r) => r.run);
 const wsb = hit.map((r) => per600(r.wSB, r.pa)), ubr = hit.map((r) => per600(r.UBR, r.pa)), tot = hit.map((_, i) => wsb[i]! + ubr[i]!);
 const w = hit.map((r) => r.pa);
 console.log(`N=${hit.length} hitter-seasons (PA≥300, non-P). Observed runs/600: wSB mean ${fmt(wsb.reduce((a, b) => a + b, 0) / hit.length, 2)} SD ${fmt(sd(wsb), 2)} | UBR mean ${fmt(ubr.reduce((a, b) => a + b, 0) / hit.length, 2)} SD ${fmt(sd(ubr), 2)} | total SD ${fmt(sd(tot), 2)}`);
-console.log(`Rating→outcome corr: Stealing→wSB ${fmt(corr(stl, wsb), 3)}  Speed→wSB ${fmt(corr(spe, wsb), 3)}  Baserunning→UBR ${fmt(corr(run, ubr), 3)}  Speed→UBR ${fmt(corr(spe, ubr), 3)}\n`);
+console.log(`Rating→wSB corr: StealRate/tendency→wSB ${fmt(corr(sr, wsb), 3)}  Stealing/ability→wSB ${fmt(corr(stl, wsb), 3)}  Speed→wSB ${fmt(corr(spe, wsb), 3)}`);
+console.log(`Rating→UBR corr: Baserunning→UBR ${fmt(corr(run, ubr), 3)}  Speed→UBR ${fmt(corr(spe, ubr), 3)}  StealRate→UBR ${fmt(corr(sr, ubr), 3)}\n`);
 
-// ── FIT: total baserunning runs/600 ~ speed + steal + run (PA-weighted OLS, centered) ──
-const mu = { spe: spe.reduce((a, b) => a + b, 0) / hit.length, stl: stl.reduce((a, b) => a + b, 0) / hit.length, run: run.reduce((a, b) => a + b, 0) / hit.length };
-const X = hit.map((_, i) => [1, spe[i]! - mu.spe, stl[i]! - mu.stl, run[i]! - mu.run]);
-const beta = wls(X, tot, w);
-const yhat = X.map((xr) => xr.reduce((s, v, j) => s + v * beta[j]!, 0));
-console.log(`FIT total(wSB+UBR)/600 ~ speed+steal+run (PA-weighted, centered at spe ${fmt(mu.spe, 0)}/ste ${fmt(mu.stl, 0)}/run ${fmt(mu.run, 0)}):`);
-console.log(`  intercept ${fmt(beta[0]!, 3)} runs/600  |  β_speed ${fmt(beta[1]!, 4)}  β_steal ${fmt(beta[2]!, 4)}  β_run ${fmt(beta[3]!, 4)}  (runs/600 per rating pt)`);
-console.log(`  fit corr(pred, obs) = ${fmt(corr(yhat, tot), 3)}  |  pred SD ${fmt(sd(yhat), 2)} vs obs SD ${fmt(sd(tot), 2)} runs/600 (rest = single-season noise)`);
+const meanOf = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+const mu = { spe: meanOf(spe), sr: meanOf(sr), stl: meanOf(stl), run: meanOf(run) };
+const cen = { spe: spe.map((x) => x - mu.spe), sr: sr.map((x) => x - mu.sr), stl: stl.map((x) => x - mu.stl), run: run.map((x) => x - mu.run) };
+const report = (label: string, y: number[], cols: { name: string; x: number[] }[]) => {
+  const X = hit.map((_, i) => [1, ...cols.map((c) => c.x[i]!)]);
+  const beta = wls(X, y, w);
+  const yhat = X.map((xr) => xr.reduce((s, v, j) => s + v * beta[j]!, 0));
+  console.log(`  ${label}: ` + cols.map((c, j) => `β_${c.name} ${fmt(beta[j + 1]!, 4)}`).join("  ") + `  | fit r ${fmt(corr(yhat, y), 3)}  predSD ${fmt(sd(yhat), 2)}`);
+  return beta;
+};
+// ── wSB (steal value): tendency × ability is the real driver — test the interaction ──
+console.log(`FIT wSB/600 (steal runs) — is it tendency, ability, or their interaction?`);
+report("speed+tendency+ability     ", wsb, [{ name: "spe", x: cen.spe }, { name: "srTend", x: cen.sr }, { name: "stlAbil", x: cen.stl }]);
+const inter = hit.map((_, i) => cen.sr[i]! * cen.stl[i]!);
+report("+ tendency×ability         ", wsb, [{ name: "spe", x: cen.spe }, { name: "srTend", x: cen.sr }, { name: "stlAbil", x: cen.stl }, { name: "tend×abil", x: inter }]);
+// ── UBR (other baserunning) ──
+console.log(`FIT UBR/600 (other baserunning):`);
+report("speed+baserunning          ", ubr, [{ name: "spe", x: cen.spe }, { name: "run", x: cen.run }]);
+// ── TOTAL with all four ratings (the value the model should carry) ──
+console.log(`FIT total(wSB+UBR)/600 with ALL four ratings:`);
+const betaTot = report("spe+tend+abil+run          ", tot, [{ name: "spe", x: cen.spe }, { name: "srTend", x: cen.sr }, { name: "stlAbil", x: cen.stl }, { name: "run", x: cen.run }]);
+const yhatTot = hit.map((_, i) => betaTot[1]! * cen.spe[i]! + betaTot[2]! * cen.sr[i]! + betaTot[3]! * cen.stl[i]! + betaTot[4]! * cen.run[i]!);
 
-// ── adv_* coeffs for woba.ts (adds adv_*·rating to per-PA wOBA). The intercept is DROPPED: a constant
-//    baserunning level shifts all hitters equally (no ranking effect) and the anchor absorbs it. ──
-const adv = { speed: beta[1]! * (WOBA_SCALE / 600), steal: beta[2]! * (WOBA_SCALE / 600), run: beta[3]! * (WOBA_SCALE / 600) };
-console.log(`\nadv_* (wOBA per rating pt, for woba.ts; intercept dropped):`);
-console.log(`  adv_speed ${fmt(adv.speed, 6)}  adv_steal ${fmt(adv.steal, 6)}  adv_run ${fmt(adv.run, 6)}`);
-console.log(`  value SPREAD added: pred baserunning SD ${fmt(sd(yhat) * RUNS600_TO_MWOBA, 1)} mwOBA; range ${fmt((Math.max(...yhat) - Math.min(...yhat)) * RUNS600_TO_MWOBA, 1)} mwOBA top-to-bottom.`);
+// ── coeffs for scoring (runs/600 per rating pt → wOBA per rating pt). NOTE: STEAL VALUE needs BOTH
+//    tendency (SR) and ability (STE); the current scoring model has only ONE steal input ("Stealing"
+//    =ability) — a tendency term (adv_stealRate + w_stealRate) must be ADDED for a faithful fit. ──
+const toWoba = (b: number) => b * (WOBA_SCALE / 600);
+console.log(`\nSCORING COEFFS (runs/600 per pt → adv_* wOBA/pt; basic w_* = runs/600 per pt):`);
+console.log(`  Speed:      β ${fmt(betaTot[1]!, 4)}  adv ${fmt(toWoba(betaTot[1]!), 6)}`);
+console.log(`  StealRate:  β ${fmt(betaTot[2]!, 4)}  adv ${fmt(toWoba(betaTot[2]!), 6)}   ← TENDENCY (no scoring input today)`);
+console.log(`  Stealing:   β ${fmt(betaTot[3]!, 4)}  adv ${fmt(toWoba(betaTot[3]!), 6)}   ← ability (current adv_steal)`);
+console.log(`  Baserunning:β ${fmt(betaTot[4]!, 4)}  adv ${fmt(toWoba(betaTot[4]!), 6)}`);
+console.log(`  value SPREAD added: pred baserunning SD ${fmt(sd(yhatTot) * RUNS600_TO_MWOBA, 1)} mwOBA; range ${fmt((Math.max(...yhatTot) - Math.min(...yhatTot)) * RUNS600_TO_MWOBA, 1)} mwOBA top-to-bottom.`);
 
 // ── EXTERNAL CONFIRMATION vs cwhit (tools/cwhit-audit-deployed-hit.ts): obs total SD ≈ 2.93 runs/600;
 //    Baserunning→UBR 0.93, Speed→UBR 0.89, Stealing→wSB 0.52. ──
