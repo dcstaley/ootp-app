@@ -83,7 +83,10 @@ console.log(`(in-frame top-decile blew to ~199, N=17). Needs ~2-3× more per-car
 console.log(`stabilize. Cannot confirm OR deny elite-tail compression yet — parked, revisit when quicks depth arrives.`);
 console.log(`\nCANCELLATION (in-frame, phase1c-hit-cancellation.ts): per-channel deconvolved ratios uBB .99 / HR .98 / 1B .88 /`);
 console.log(`XBH .92 — all shrunk-or-accurate, NONE over-spread → the 0.967 is genuine, no offsetting. No pool-comp flag.`);
-console.log(`\nVERDICT: hitter model is HEALTHY. In-frame re-elected (log holds), out-of-frame context-invariant on the`);
-console.log(`reliable datasets (own-gap), no cancellation. The ONE open item is the elite tail — a DATA-DEPTH limit, not a`);
-console.log(`model defect. Hitters need NO form change; the pitcher form ship does not touch them.`);
+console.log(`\nNOTE: the deployed hitter form is NOT all-log — HR is ALREADY raw-quad (power event); log is the family only on`);
+console.log(`the CONTACT/DISCIPLINE channels (bb/k/xbh/h). The in-frame re-election confirms those log seats hold AND HR`);
+console.log(`stays quad — no channel earns a family change (every flip 0.960-0.970 spread, hitter-tails.ts).`);
+console.log(`\nVERDICT: hitter model is HEALTHY. In-frame form re-elected (log holds its contact/discipline seats; HR stays`);
+console.log(`quad), out-of-frame context-invariant on the reliable datasets (own-gap), no cancellation. The ONE open item is`);
+console.log(`the elite tail — a DATA-DEPTH limit, not a defect. Hitters need NO form change; the pitcher form ship doesn't touch them.`);
 process.exit(0);
