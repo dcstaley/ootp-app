@@ -35,6 +35,18 @@ const eraFactors = (e: Era): EraFactors => ({
 // baseline era (all era factors are ratios to 2010). Guarded by a test against the era file.
 const REF_NHH_PER_BIP = (0.22944 - 0.02488) / 0.68832;
 
+// ── Baserunning value (the ONE place) ──────────────────────────────────────────
+// UBR (extra-base-taking) value per rating point, FIT on our league data (tools/baserunning-fit.ts:
+// UBR/600 ~ Speed + Baserunning, β_speed 0.0177, β_run 0.0650 runs/600/pt) at the 2010-baseline run
+// environment, converted runs/600 → wOBA/pt via the standard wOBA scale (1.25 runs/pt ÷ 600). Added
+// to the hitter wOBA in woba.ts as adv_speed·Speed + adv_run·Baserunning, then era-scaled by runVal
+// (run scarcity) in resolveCoeffs. adv_steal stays 0 — steal value is tendency×ability and needs a
+// new scoring input (deferred). The BASIC-score path (w_speed/w_run) is a separate anchored scale
+// (TARGET_BASIC 100 vs wOBA 0.320, log vs linear form) and is NOT wired here — a follow-up.
+const WOBA_SCALE = 1.25;
+const ADV_SPEED_UBR = 0.0177 * (WOBA_SCALE / 600); // ≈ 0.0000369 wOBA per Speed pt (2010 baseline)
+const ADV_RUN_UBR = 0.0650 * (WOBA_SCALE / 600);   // ≈ 0.0001354 wOBA per Baserunning pt (2010 baseline)
+
 /** Fields the per-BIP era factors read; a partial/malformed block silently produces Infinity/NaN
  *  factors (÷ bip, ÷ (h−hr)) → Infinity scores downstream. Validated at ingestion + resolve. */
 const RATES_FIELDS = ["bb", "k", "hr", "h", "b2", "b3", "bip"] as const;
@@ -110,6 +122,12 @@ export function resolveCoeffs(model: Model, era: Era, park: Park, softcaps: Soft
     validateRates(era.rates, `resolveCoeffs(era ${era.id ?? "?"})`);
     bag.era_h_bip = eraHBip(era.rates); bag.era_gap_share = eraGapShare(era.rates); bag.era_bip_adj = eraBipAdj(era.rates);
   }
+  // Baserunning value (UBR), league-fit + era-scaled by run scarcity. runVal absent (capture/synthetic
+  // eras) ⇒ neutral 1. Overrides the model's extras adv_speed/adv_run (historically 0). adv_steal
+  // untouched (0) — steal deferred. Only the hitter wOBA (woba.ts) reads these.
+  const runVal = era.runVal ?? 1;
+  bag.adv_speed = ADV_SPEED_UBR * runVal;
+  bag.adv_run = ADV_RUN_UBR * runVal;
   return bag;
 }
 
