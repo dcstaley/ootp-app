@@ -22,7 +22,7 @@ import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
-import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../training/forms.ts";
+import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT } from "../training/forms.ts";
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
 import { HIT_BIP_ADJ, PIT_BIP_ADJ } from "../model/curves.ts";                    // BIP convention, for the trace
@@ -1323,7 +1323,9 @@ function getResiduals(role: "hitter" | "pitcher", window: number[], minN: number
 //        (The deployed H↔BIP shape stayed FITTED log-BIP; unit-elasticity perBip was a
 //        bake-off candidate NOT adopted — trust the artifact, not the earlier note here that
 //        credited v3 with perBip.) v≤2 artifacts predate uBB targets → flagged stale on activation.
-const MODEL_FORMAT_VERSION = 3;
+// v4 (2026-07-14): the DEPLOYED pitcher form changed StuffAug (all-log+aux) → PARETO_PIT (log BB + Stuff aux,
+//        raw-quad K/HR/H, §11.31). v≤3 artifacts fit the old flatter pitching curves → flagged stale until retrained.
+const MODEL_FORMAT_VERSION = 4;
 
 interface TrainedModel {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
@@ -1369,15 +1371,15 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   const f = getFit(window, minPA, includeVariants);
   if (!f.available || !f.woba_hitting || !f.woba_pitching || !f.basic_hitting || !f.basic_pitching) throw new Error(f.error ?? "fit unavailable");
   // Freeze the deployed D3 #2 form, fit on the SAME qualifying obs as the log-linear fit
-  // (one fit path — reuse the bake-off's fitHitForm/fitPitForm). DEPLOYED FORMS (bake-off,
-  // CV/OOT-validated): HITTING = raw-poly (quadratic POW/GAP captures real accelerating
-  // power structure); PITCHING = LOG curve + a linear Stuff term on BB & HR (STUFFAUG_PIT)
-  // — high Stuff suppresses walks/homers beyond Control/HRR, an outcome-measured channel the
-  // K route alone misses; it fixes the low-Stuff over-rating and beats plain LOG forward &
-  // backward OOT. (The raw-poly HR curve earned nothing OOS, so pitching stays log-curve.)
+  // (one fit path — reuse the bake-off's fitHitForm/fitPitForm). DEPLOYED FORMS (bake-off +
+  // Phase-1c two-axis validated): HITTING = raw-poly (quadratic POW captures real accelerating
+  // power; contact/discipline log). PITCHING = the PARETO form (PARETO_PIT): log BB + Stuff aux,
+  // raw-quad K/HR/H. It restores the pitcher value SPREAD the deployed all-log StuffAug flattened
+  // (in-frame 0.62→0.74, CI-clear; EG cap-bias 0.73→0.86) while BB stays log — the only channel that
+  // turned over under all-quad — so the monotone gate is fully clean (plan §11.31).
   const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
   const hitQual = obs.filter((o) => HITTER.qualifies(o, minPA)), pitQual = obs.filter((o) => PITCHER.qualifies(o, minPA));
-  const eventForm: EventForm = { hit: fitHitForm(RAWPOLY_HIT, hitQual), pit: fitPitForm(STUFFAUG_PIT, pitQual) };
+  const eventForm: EventForm = { hit: fitHitForm(RAWPOLY_HIT, hitQual), pit: fitPitForm(PARETO_PIT, pitQual) };
   // Per-rating training MAX over the fitting obs (pooled across sides) — the saturation
   // ceilings the pool transform won't lift past. Recomputed per model, so it tracks retrains.
   const maxOf = (rows: TrainObs[], get: (o: TrainObs) => number) => rows.reduce((m, o) => Math.max(m, get(o)), 0);

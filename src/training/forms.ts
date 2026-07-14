@@ -559,6 +559,13 @@ export const STUFFAUG_PIT: PitForm = { name: "woba·stuffaug", bb: LOG, k: LOG, 
 // (the con-overvalue diagnostic: +7.0 Bronze-t / +3.3 EG). τ is a placeholder here; fitSatEvent grids it.
 const Q2: Curve = { kind: "rawpoly", degree: 2 };
 export const SATBB_PIT: PitForm = { name: "woba·satbb", bb: { kind: "satexp", tau: 60 }, k: Q2, hr: Q2, h: Q2, stuffAug: true };
+// DEPLOYED PITCHER FORM (Phase-1c pareto, §11.31): LOG BB + Stuff aux, raw-quad on K/HR/H. Beats the prior
+// StuffAug (all-log+aux) on in-frame value spread (0.62→0.74, CI-clear +0.157) and out-of-frame cap-bias
+// (EG 0.73→0.86), with a FULLY CLEAN monotone gate — BB stays log because rawquad-BB was the only channel
+// that turned over in-domain (B.2/B.4); dropping it to log costs only 0.78→0.74 and clears the cap. Hitters
+// unchanged (RAWPOLY_HIT). This is the pareto pick over the all-quad "winner" (statistical tie out-of-frame,
+// but the winner's BB-quad is cap-dependent inside the pool).
+export const PARETO_PIT: PitForm = { name: "woba·pareto", bb: LOG, k: Q2, hr: Q2, h: Q2, stuffAug: true };
 
 // Uniform-curve forms apply one curve to EVERY rating-driven event (incl. the BABIP
 // term of H) — the "is log the right curve" comparison, now including H.
