@@ -1161,8 +1161,22 @@ decisive arm):
   (concavity, now CI-confirmed). This is the pre-registered STOPPING RULE outcome: additive failed again under the
   new form → own-gap keeps production, STOP transform iteration (no fourth iteration without a new mechanism).
 
-**NET:** ship the PITCHER FORM (pareto {HR,K,H}+aux recommended; winner rawquad-all+aux the alternative — Derek's
-retrain call). KEEP own-gap as the scoring transform. Do NOT adopt frame-v2 / kSpread / matchup for scoring
+**DECISION (Derek, 2026-07-14): SHIP `{HR,K,H}`+aux (the pareto), NOT the all-quad winner.** The decision
+process, for the Fable handback: the two forms are a **statistical tie out-of-frame** (EG pit 0.929 vs 0.933,
+Bronze-t 0.634 vs 0.625, cap-bias 0.857 vs 0.861 — CIs overlap almost entirely), so the winner's only real
+advantage is a **+0.012 in-frame/OOT Spearman** edge. Against that, the winner's BB-quad is **non-monotone
+inside the production pool** (B.4: vertex con≈149, cap load-bearing for elite-control cards con 150–189) — a
+real extrapolation liability that grows with future iron/diamond pools. **Under Derek's own discipline
+(material + CI-clear + OOT-confirmed), a non-CI-clear +0.012 ρ does not justify taking a cap-dependent channel.**
+So the pareto wins on the tie-breaker: identical out-of-frame value for a strictly cleaner, cap-free
+extrapolation surface. FABLE SHOULD PRESSURE-TEST: (i) is +0.012 ρ (in-frame + OOT-both-directions,
+consistent sign) truly ignorable, or does the optimizer's top-26 selection feel it? (ii) does dropping BB-quad
+forfeit any *level* calibration the winner's BB-quad bought (B.3 showed BB-quad IMPROVED the in-league con
+edges −2.78→−1.19 — but that region is below the cap and the anchor absorbs levels anyway); (iii) the choice is
+reversible at the next retrain if quicks-ladder depth later shows the winner's spread edge is real at the
+elite tail (currently unmeasurable, §11.28).
+
+**NET:** ship the PITCHER FORM (`{HR,K,H}`+aux, Derek's decision above). KEEP own-gap as the scoring transform. Do NOT adopt frame-v2 / kSpread / matchup for scoring
 (frame-v2 remains the levels/diagnostic frame). The pool-conditioned pitcher under-spread that survives on
 Bronze-t (0.50–0.63 vs in-frame 0.78) is the MEASURED pitcher form ceiling (§11.26 ~0.78; the omitted
 pitch-level residual), fixable only by role/pitch-level info, out of scope — not by any transform tried.
