@@ -167,14 +167,15 @@ export function trustedPitchingSideWoba(
 // under eventForm ssp ≡ 1, and the legacy log path keeps the old anchor semantics.
 export function anchorHittingWoba(
   e: RawHitting, sBB: number, sHR: number, bats: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
-  eventForm?: EventForm, speed = 0, stealRate = 0, steal = 0, run = 0,
+  eventForm?: EventForm,
 ): number {
   const k = hittingComponents(e, sBB, sHR, bats, side, coeffs, derived, eventForm);
   const w = wobaWeightsFromCoeffs(coeffs);
-  // Include baserunning so the top-N anchor mean (→ TARGET_WOBA) matches the trusted score's terms;
-  // otherwise the trusted scores drift up by the field's mean baserunning value.
-  return (w.bb * k.BB_fin + w.hbp * (coeffs.adv_hbp ?? 6) + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600
-    + baserunningWoba(speed, stealRate, steal, run, coeffs);
+  // Baserunning is DELIBERATELY excluded from the anchor: it's ADDITIVE value on top of the
+  // batting-anchored wOBA (like WAR's batting + baserunning runs), so the anchor calibrates BATTING
+  // to TARGET_WOBA and baserunning is a pure bonus in the trusted score — a non-runner keeps its
+  // batting wOBA rather than being re-centered down when baserunners enter the field.
+  return (w.bb * k.BB_fin + w.hbp * (coeffs.adv_hbp ?? 6) + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600;
 }
 
 export function anchorPitchingWoba(
