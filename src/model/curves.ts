@@ -22,8 +22,12 @@ export const PIT_BIP_ADJ = 6;
 export type Curve =
   | { kind: "log" }                          // [1, ln(max(r,1))] — parity baseline, NOT z-scored
   | { kind: "rawpoly"; degree: 1 | 2 | 3 }   // [1, u, u², …] with u = z(r)        — raw curvature
-  | { kind: "logpoly"; degree: 2 | 3 };      // [1, u, u², …] with u = z(ln r)      — higher-order log
+  | { kind: "logpoly"; degree: 2 | 3 }       // [1, u, u², …] with u = z(ln r)      — higher-order log
+  | { kind: "satexp"; tau: number };         // [1, e^(−r/τ)] — SATURATING: monotone to a positive asymptote
 export const LOG: Curve = { kind: "log" };
+// Saturating-exponential design term: exp(−r/τ). A fit gives rate = b0 + b1·e^(−r/τ), which for b1>0 is
+// monotone-DECREASING from b0+b1 (at r=0) to the floor b0 (as r→∞) — a walk/HR curve with a real floor and
+// NO cap needed (monotone everywhere, no vertex). τ is chosen by a grid search at fit time (fitSatEvent).
 
 // `aux` = an OPTIONAL secondary z-scored ln(rating) LINEAR term on top of the primary
 // curve. Pitching BB and HR carry a Stuff aux (high Stuff suppresses walks/homers beyond
@@ -44,6 +48,7 @@ export const baseVal = (curve: Curve, v: number) => (curve.kind === "logpoly" ? 
 /** Design row for one rating value under a curve (uses stored μ/σ for poly curves). */
 export function row(curve: Curve, v: number, mu: number, sd: number): number[] {
   if (curve.kind === "log") return [1, ln1(v)];
+  if (curve.kind === "satexp") return [1, Math.exp(-Math.max(v, 0) / curve.tau)];
   const u = sd > 1e-9 ? (baseVal(curve, v) - mu) / sd : 0;
   const out = [1];
   for (let d = 1; d <= curve.degree; d++) out.push(u ** d);
@@ -77,13 +82,39 @@ function monoZ(beta: number[], curve: Curve, u: number, uMin?: number, uMax?: nu
 /** Design row with the monotone guard applied (needs beta + fit-domain to locate the vertex). */
 function rowMono(beta: number[], curve: Curve, v: number, mu: number, sd: number, uMin?: number, uMax?: number): number[] {
   if (curve.kind === "log") return [1, ln1(v)];
+  if (curve.kind === "satexp") return [1, Math.exp(-Math.max(v, 0) / curve.tau)]; // monotone by construction — no cap
   const u = monoZ(beta, curve, sd > 1e-9 ? (baseVal(curve, v) - mu) / sd : 0, uMin, uMax);
   const out = [1];
   for (let d = 1; d <= curve.degree; d++) out.push(u ** d);
   return out;
 }
-/** Fitted per-event rate at a rating value, clamped ≥ 0 (matches the chain), monotone-guarded. */
-export const rate = (e: FittedEvent, v: number) => Math.max(dot(e.beta, rowMono(e.beta, e.curve, v, e.mu, e.sd, e.uMin, e.uMax)), 0);
+// ── Per-family OUT-OF-DOMAIN policy (the ONE place; the card meta is non-stationary, so every channel must
+// FAIL SAFE beyond current catalog support, not just fit it) ──────────────────────────────────────────────
+//   • log:      native flattening (ln grows sub-linearly) — safe as-is.
+//   • satexp:   native positive asymptote (the floor b0) — safe as-is.
+//   • rawpoly-2: TANGENT-LINEAR EXTENSION beyond the fitted domain edge (slope at uMax/uMin), instead of riding
+//     the accelerating quad toward its vertex and clamping there. Fixes BOTH future failure modes of a
+//     quad-channel spike appearing later (over-credit in the edge→vertex band; TIED predictions past the
+//     vertex). WITHIN the fitted domain, evaluation is BYTE-IDENTICAL to the prior clamped quad. Legacy
+//     artifacts (no uMin/uMax) keep the old behavior. rawpoly-1/3 & logpoly: unchanged (degree-1 is already
+//     linear; degree-3/logpoly are not spike channels).
+/** Curve base value with the out-of-domain policy applied (tangent-linear for domained rawpoly-2). */
+function curveBase(e: FittedEvent, v: number): number {
+  const c = e.curve;
+  if (c.kind === "rawpoly" && c.degree === 2 && e.uMin != null && e.uMax != null) {
+    const u = e.sd > 1e-9 ? (v - e.mu) / e.sd : 0;
+    const b0 = e.beta[0] ?? 0, b1 = e.beta[1] ?? 0, b2 = e.beta[2] ?? 0;
+    const q = (x: number) => b0 + b1 * x + b2 * x * x, dq = (x: number) => b1 + 2 * b2 * x;
+    if (u >= e.uMin && u <= e.uMax) return q(monoZ(e.beta, c, u, e.uMin, e.uMax)); // in-domain: clamped quad (identical to rowMono·dot)
+    const ue = u > e.uMax ? e.uMax : e.uMin;                                       // out-of-domain: tangent from the near edge
+    const uc = monoZ(e.beta, c, ue, e.uMin, e.uMax);                               // clamped edge (= ue unless the edge sits past an interior vertex)
+    const slope = uc === ue ? dq(ue) : 0;                                         // flat continuation if the edge was already clamped
+    return q(uc) + slope * (u - ue);
+  }
+  return dot(e.beta, rowMono(e.beta, c, v, e.mu, e.sd, e.uMin, e.uMax));
+}
+/** Fitted per-event rate at a rating value, clamped ≥ 0 (matches the chain), monotone-guarded + tangent-safe. */
+export const rate = (e: FittedEvent, v: number) => Math.max(curveBase(e, v), 0);
 /** UNCAPPED fitted rate — the raw curve before the monotone guard. The gate samples THIS so an
  *  over-fit turn-over stays visible (the cap must not hide corruption from bake-off comparison). */
 export const rateRaw = (e: FittedEvent, v: number) => Math.max(dot(e.beta, row(e.curve, v, e.mu, e.sd)), 0);
@@ -96,7 +127,7 @@ export const capActive = (e: FittedEvent, lo: number, hi: number): boolean => {
 /** Like `rate`, plus the optional Stuff (or other) aux term. `auxV` = the aux rating
  *  value; ignored when the event has no `aux`, so this is safe to call everywhere. */
 export const rateAux = (e: FittedEvent, v: number, auxV: number) => {
-  const base = dot(e.beta, rowMono(e.beta, e.curve, v, e.mu, e.sd, e.uMin, e.uMax));
+  const base = curveBase(e, v);
   const a = e.aux ? e.aux.beta * (e.aux.sd > 1e-9 ? (ln1(auxV) - e.aux.mu) / e.aux.sd : 0) : 0;
   return Math.max(base + a, 0);
 };

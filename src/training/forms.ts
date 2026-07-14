@@ -34,7 +34,7 @@ const W_BB = DEFAULT_WOBA_WEIGHTS.bb, W_HBP = DEFAULT_WOBA_WEIGHTS.hbp, W_1B = D
 
 /** Weighted μ/σ of a curve's base term (for z-score conditioning; log needs none). */
 function curveNorm(curve: Curve, vals: number[], w: number[]): { mu: number; sd: number } {
-  if (curve.kind === "log") return { mu: 0, sd: 1 };
+  if (curve.kind === "log" || curve.kind === "satexp") return { mu: 0, sd: 1 };
   const W = w.reduce((s, x) => s + x, 0), b = vals.map((v) => baseVal(curve, v));
   const mu = b.reduce((s, v, i) => s + w[i]! * v, 0) / W;
   return { mu, sd: Math.sqrt(b.reduce((s, v, i) => s + w[i]! * (v - mu) ** 2, 0) / W) || 1 };
@@ -42,7 +42,7 @@ function curveNorm(curve: Curve, vals: number[], w: number[]): { mu: number; sd:
 /** The z-score domain the curve is fit over (poly curves only) — stored on the FittedEvent so
  *  the direction-aware monotone cap can tell an interior vertex from an out-of-domain one. */
 function uDomain(curve: Curve, vals: number[], mu: number, sd: number): { uMin?: number; uMax?: number } {
-  if (curve.kind === "log" || !vals.length) return {};
+  if (curve.kind === "log" || curve.kind === "satexp" || !vals.length) return {};
   const s = sd > 1e-9 ? sd : 1;
   let uMin = Infinity, uMax = -Infinity;
   for (const v of vals) { const u = (baseVal(curve, v) - mu) / s; if (u < uMin) uMin = u; if (u > uMax) uMax = u; }
@@ -66,6 +66,30 @@ function fitEventAux(curve: Curve, vals: number[], auxVals: number[], y: number[
   const beta = wls(X, y, w);
   const auxBeta = beta.pop()!; // last column = the aux coefficient
   return { beta, mu, sd, curve, aux: { beta: auxBeta, mu: amu, sd: asd }, ...uDomain(curve, vals, mu, sd) };
+}
+
+// Saturating-exponential fit: rate = b0 + b1·e^(−r/τ) (+ optional ln(aux) linear term). For a FIXED τ the
+// design [1, e^(−r/τ)] is linear ⇒ WLS; τ is nonlinear, so we GRID it and keep the min weighted-SSE fit. This
+// is the walk-floor form (Fable): monotone-decreasing to the asymptote b0, no vertex, no cap — a scaled-up high
+// CON can't extrapolate below the floor (the log-BB runaway the con-overvalue diagnostic found). auxVals given ⇒
+// jointly fit a z-scored ln(aux) column (the retained Stuff aux), split back out exactly like fitEventAux.
+const SAT_TAU_GRID = [10, 15, 22, 32, 46, 66, 95, 140, 210];
+function fitSatEvent(vals: number[], y: number[], w: number[], auxVals?: number[]): FittedEvent {
+  const W = w.reduce((s, x) => s + x, 0);
+  let amu = 0, asd = 1, la: number[] = [];
+  if (auxVals) { la = auxVals.map(ln1); amu = la.reduce((s, v, i) => s + w[i]! * v, 0) / W; asd = Math.sqrt(la.reduce((s, v, i) => s + w[i]! * (v - amu) ** 2, 0) / W) || 1; }
+  let best: { sse: number; beta: number[]; tau: number } | null = null;
+  for (const tau of SAT_TAU_GRID) {
+    const X = vals.map((v, i) => auxVals ? [1, Math.exp(-Math.max(v, 0) / tau), (la[i]! - amu) / asd] : [1, Math.exp(-Math.max(v, 0) / tau)]);
+    const beta = wls(X, y, w);
+    let sse = 0; for (let i = 0; i < y.length; i++) { const yhat = beta.reduce((s, b, j) => s + b * X[i]![j]!, 0); sse += w[i]! * (y[i]! - yhat) ** 2; }
+    if (!best || sse < best.sse) best = { sse, beta, tau };
+  }
+  const beta = best!.beta.slice();
+  const curve: Curve = { kind: "satexp", tau: best!.tau };
+  if (!auxVals) return { beta, mu: 0, sd: 1, curve };
+  const auxBeta = beta.pop()!;
+  return { beta, mu: 0, sd: 1, curve, aux: { beta: auxBeta, mu: amu, sd: asd } };
 }
 
 // The H (non-HR hit) event has TWO inputs: the BABIP/PBABIP RATING and the derived
@@ -153,7 +177,10 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const con = obs.map((p) => p.ratings.pitch.con), stu = obs.map((p) => p.ratings.pitch.stu);
   const hrr = obs.map((p) => p.ratings.pitch.hrr), pbabip = obs.map((p) => p.ratings.pitch.pbabip);
 
-  const bb = form.stuffAug ? fitEventAux(form.bb, con, stu, BB, w) : fitEvent(form.bb, con, BB, w);
+  // BB: saturating-exponential (grid-τ) when form.bb is satexp, else the standard curve; Stuff aux retained either way.
+  const bb = form.bb.kind === "satexp"
+    ? fitSatEvent(con, BB, w, form.stuffAug ? stu : undefined)
+    : (form.stuffAug ? fitEventAux(form.bb, con, stu, BB, w) : fitEvent(form.bb, con, BB, w));
   const k = fitEvent(form.k, stu, K, w);
   const hr = form.stuffAug ? fitEventAux(form.hr, hrr, stu, HR, w) : fitEvent(form.hr, hrr, HR, w);
   // Predicted BB/HR (with the Stuff aux when present) drive BIP — training mirrors inference.
@@ -196,7 +223,7 @@ function monotoneSampled(fn: (r: number) => number, lo: number, hi: number): boo
 // Sample the UNCAPPED curve (rateRaw) so a real turn-over stays visible — the direction-aware
 // cap must not hide corruption from the bake-off's gate comparison (T-5).
 function eventMonotone(e: FittedEvent, rmin: number, rmax: number): boolean {
-  return e.curve.kind === "log" ? true : monotoneSampled((v) => rateRaw(e, v), rmin, rmax);
+  return e.curve.kind === "log" || e.curve.kind === "satexp" ? true : monotoneSampled((v) => rateRaw(e, v), rmin, rmax);
 }
 const span = (vals: number[]): [number, number] => [Math.min(...vals), Math.max(...vals)];
 
@@ -526,6 +553,12 @@ export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr
 // DEPLOYED pitching form: log baseline + a linear Stuff term on BB and HR (fixes the
 // low-Stuff over-rating; validated OOT — beats plain LOG forward & backward).
 export const STUFFAUG_PIT: PitForm = { name: "woba·stuffaug", bb: LOG, k: LOG, hr: LOG, h: LOG, stuffAug: true };
+// SATURATING-BB candidate — the shipped pareto ({HR,K,H} quad + log BB + Stuff aux) with the BB curve swapped
+// LOG → SATURATING-exponential (b0 + b1·e^(−con/τ), grid-τ). The floor b0 caps how much walk-suppression credit
+// high control can earn, killing the log-BB runaway that over-values scaled-up high-CON pitchers at low tiers
+// (the con-overvalue diagnostic: +7.0 Bronze-t / +3.3 EG). τ is a placeholder here; fitSatEvent grids it.
+const Q2: Curve = { kind: "rawpoly", degree: 2 };
+export const SATBB_PIT: PitForm = { name: "woba·satbb", bb: { kind: "satexp", tau: 60 }, k: Q2, hr: Q2, h: Q2, stuffAug: true };
 
 // Uniform-curve forms apply one curve to EVERY rating-driven event (incl. the BABIP
 // term of H) — the "is log the right curve" comparison, now including H.

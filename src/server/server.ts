@@ -46,6 +46,7 @@ import { analyzeResiduals, type ResidualAnalysis } from "../training/residuals.t
 import { validateDataset } from "../training/validate.ts";
 import { loadTournamentOutcomes, tournamentExposure, evaluateTournamentLevels, tournamentScorecard, type TournamentEvalConfig } from "../training/tournament-eval.ts";
 import { cleanTournamentRows } from "../eval/tournament-clean.ts"; // ghost-cleaner wired via DI into the tournament-eval endpoint
+import { catalogQuadCensus } from "../eval/catalog-census.ts"; // standing quad-spike tripwire on catalog import
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = "web/dist";
@@ -2151,6 +2152,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     if (state.activeAccountId == null) state.activeAccountId = id;
     await saveState();
     refreshCatalog();
+    // Standing quad-spike tripwire: warn if any imported card pushes a cap-risk quad channel out of the model's
+    // fitted support / near a vertex (the non-stationary-meta guard — see src/eval/catalog-census.ts).
+    if (activeEventForm) {
+      const census = catalogQuadCensus(imported.cards as Record<string, unknown>[], activeEventForm);
+      for (const w of census.warnings) console.warn(`[import] ⚠ quad-spike tripwire — ${w}`);
+    }
     return json(res, accountSummary());
   }
 

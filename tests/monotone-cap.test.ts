@@ -55,3 +55,30 @@ describe("T-5 direction-aware monotone cap", () => {
     expect(rate(e, 1)).toBeGreaterThan(rate(e, 0));
   });
 });
+
+describe("tangent-linear out-of-domain extension (rawpoly-2 fail-safe)", () => {
+  it("WITHIN the fitted domain: byte-identical to the plain quad (no behavior change)", () => {
+    const e = mk([0, 2, 0.5], 0, 4); // vertex −2, increasing on [0,4]
+    for (const u of [0, 1, 2, 3, 4]) expect(rate(e, u)).toBeCloseTo(rateRaw(e, u), 12);
+  });
+
+  it("BEYOND uMax: extends LINEARLY from the edge (tangent), NOT the accelerating quad", () => {
+    const e = mk([0, 2, 0.5], 0, 4); // f(u)=2u+0.5u², f(4)=16, f'(4)=2+4=6; convex ⇒ quad rises faster
+    // tangent value = f(uMax) + f'(uMax)·(u−uMax)
+    expect(rate(e, 6)).toBeCloseTo(16 + 6 * 2, 9); // 28
+    expect(rate(e, 8)).toBeCloseTo(16 + 6 * 4, 9); // 40
+    // linear: equal increments per unit u (the quad would accelerate)
+    expect(rate(e, 8) - rate(e, 6)).toBeCloseTo(rate(e, 6) - rate(e, 4), 9);
+    // and strictly BELOW the accelerating raw quad out there (no over-credit)
+    expect(rate(e, 8)).toBeLessThan(rateRaw(e, 8));
+  });
+
+  it("vertex just beyond the domain: tangent stays MONOTONE past it — no turn-over, no ties", () => {
+    const e = mk([0, 4, -1], 0, 1.9); // ∩ vertex at u=2, just outside [0,1.9]; slope at 1.9 = +0.2
+    // the raw quad TURNS OVER past u=2 (a higher rating scoring lower — the failure mode)
+    expect(rateRaw(e, 3)).toBeLessThan(rateRaw(e, 1.9));
+    // the tangent extension keeps rising (monotone), so bigger ratings never tie or invert
+    expect(rate(e, 3)).toBeGreaterThan(rate(e, 1.9));
+    expect(rate(e, 5)).toBeGreaterThan(rate(e, 3));
+  });
+});

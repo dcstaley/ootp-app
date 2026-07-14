@@ -1263,6 +1263,27 @@ cardinal-spread question is DATA-BOUND by any estimator.** Tools: `synthetic-rec
   quicks; the elite-spread question is confirmed depth-bound. Iron (low, big k) + diamond (top-end + k<1 +
   spiky cards) are co-equal data priorities; general depth to 15–20 runnings/tier.
 
+**11.34 BUILD ROUND — saturating-BB REFUTED, tangent-linear + import tripwire SHIPPED (2026-07-14, 266 tests).**
+- **Saturating-BB (the proposed Donohue closing fix) — BUILT, REFUTED.** Added a `satexp` curve `b0+b1·e^(−r/τ)`
+  to curves.ts (one-core, non-breaking) + a grid-τ fit; bake-off (`satbb-bakeoff`) vs the shipped log-BB. The
+  high-CON over-valuation did NOT collapse (satbb Bronze-t +7.09 ≈ pareto +7.03; EG +3.19 ≈ +3.25). Reasons:
+  the best-fit τ=66 puts the walk floor beyond the populated con range (con 90–150, scaled ~160–170, where
+  satbb ≈ log), and — decisive — the model already OVER-predicts high-con walks (+3.75), so the over-valuation
+  is NOT a walk phenomenon. It is the **K-side Stuff-residual** (high-con ⟷ low-Stuff); the Donohue fix is
+  RE-POINTED from BB to the K channel (open). satbb not adopted; the fade's conditional-retirement trigger did
+  not fire → fade stays iron-gated.
+- **Tangent-linear out-of-domain quad extension — SHIPPED to curves.ts one-core.** A rawpoly-2 beyond its fitted
+  domain now extends LINEARLY from the edge (slope at uMax/uMin) instead of riding the accelerating quad to the
+  vertex and clamping there — killing both future spike failure modes (edge→vertex over-credit; past-vertex
+  ties). WITHIN the fitted domain it is byte-identical (266 green incl. the one-core guard). The per-family
+  out-of-domain policy (log native-flatten / satexp native-asymptote / rawpoly-2 tangent / legacy unchanged) is
+  documented in one place. Live effect on cdmx: exactly 1 card (pow 169 > hit-HR domain max 160) moves +0.056
+  HR/600 — marginal; all other cards in-domain (0 change).
+- **Catalog-import spike tripwire — SHIPPED.** `src/eval/catalog-census.ts`, wired into `/api/accounts/import`:
+  warns when an imported card pushes a cap-risk quad channel out of the fitted domain or within 15 of a vertex.
+  Auto-tracks retrains (reads the artifact's fitted curves). On cdmx today only hit HR is quad (deployed =
+  StuffAug log pit); no real alarm. When Derek retrains to the pareto, pit K/HR/H become policed too.
+
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
 Every significant decision this session, with the reasoning and the alternative rejected. Ordered by area.
