@@ -1036,12 +1036,17 @@ sunset call. NEXT: acceptance battery (the final gate) + guardrails; gather pitc
   channels (bb/k/xbh/h), which hold. **Pitcher HR IS log** in StuffAug — an INCONSISTENCY (hitter power =
   raw-quad, pitcher power = log) — and pit HR→raw2 was the biggest single spread lever (§11.27); the winner
   (rawquad-all+aux) fixes it.
-  **⚠ RULE CORRECTION (Derek, memory 26b; verified in §11.31): the "power=quad, contact/discipline=log,
-  BOTH roles" takeaway is WRONG — it contradicts Step-1 ("no single flip reaches 0.78", §11.27). The
-  empirical structure is ASYMMETRIC: HITTERS = quad HR + log the rest (bb/k/xbh/h); PITCHERS = quad
-  EVERYTHING (bb/k/hr/h) + Stuff aux. The pitcher quad terms on bb/k/h are NOT "the engine is quadratic in
-  con" — they proxy OMITTED pitch-level info correlated with the 4 aggregates (same class as the Stuff aux).
-  §11.31 turns this asymmetry into a shippable pareto and settles the transform question.**
+  **⚠ RULE CORRECTION (Derek, memory 26b/30; verified §11.31–§11.32): the "power=quad,
+  contact/discipline=log, BOTH roles" takeaway is WRONG — it contradicts Step-1 ("no single flip reaches
+  0.78", §11.27). The structure is ASYMMETRIC, and the WINNER and the SHIPPED form differ:
+  • HITTERS (deployed, unchanged) = quad HR + LOG the rest (bb/k/xbh/h).
+  • PITCHER WINNER (the 0.78 candidate, NOT shipped) = rawquad on ALL FOUR channels (bb/k/hr/h) + Stuff aux.
+  • PITCHER SHIPPED (the pareto) = quad {HR,K,H} + LOG BB + Stuff aux (BB stays log — B.2/B.4: BB-quad is the
+    only non-monotone channel; dropping it costs only 0.78→0.74 and clears the gate).
+  The pitcher quad terms on k/h are GENUINE CURVATURE on the aggregate ratings — NOT a proxy for omitted
+  pitch-level info: P3 (§11.32) regressed the residual on repertoire/velocity/GB-FB and found ~0 signal under
+  BOTH the quad and the log form (joint R² 0.018≈0.019), FALSIFYING the proxy hypothesis. Never narrate as
+  "the engine is quadratic in con." §11.31 ships the pareto; §11.32 closes the proxy question.**
 - **Transform mechanism — own-gap faded mean-scalar. My "own-gap COMPRESSES spacing" (last handback) was
   PREMATURE / wrong for pitchers.** `applyAffine`: multiplicative `k=league.μ/pool.μ`, lift `r·(1+(k−1)·fade)`,
   fade→0 near the rating ceiling. Bronze-t stu (ceiling 187, ratings 50–110 well below the fade midpoint ~165):
@@ -1162,24 +1167,71 @@ decisive arm):
   new form → own-gap keeps production, STOP transform iteration (no fourth iteration without a new mechanism).
 
 **DECISION (Derek, 2026-07-14): SHIP `{HR,K,H}`+aux (the pareto), NOT the all-quad winner.** The decision
-process, for the Fable handback: the two forms are a **statistical tie out-of-frame** (EG pit 0.929 vs 0.933,
-Bronze-t 0.634 vs 0.625, cap-bias 0.857 vs 0.861 — CIs overlap almost entirely), so the winner's only real
-advantage is a **+0.012 in-frame/OOT Spearman** edge. Against that, the winner's BB-quad is **non-monotone
-inside the production pool** (B.4: vertex con≈149, cap load-bearing for elite-control cards con 150–189) — a
-real extrapolation liability that grows with future iron/diamond pools. **Under Derek's own discipline
-(material + CI-clear + OOT-confirmed), a non-CI-clear +0.012 ρ does not justify taking a cap-dependent channel.**
-So the pareto wins on the tie-breaker: identical out-of-frame value for a strictly cleaner, cap-free
-extrapolation surface. FABLE SHOULD PRESSURE-TEST: (i) is +0.012 ρ (in-frame + OOT-both-directions,
-consistent sign) truly ignorable, or does the optimizer's top-26 selection feel it? (ii) does dropping BB-quad
-forfeit any *level* calibration the winner's BB-quad bought (B.3 showed BB-quad IMPROVED the in-league con
-edges −2.78→−1.19 — but that region is below the cap and the anchor absorbs levels anyway); (iii) the choice is
-reversible at the next retrain if quicks-ladder depth later shows the winner's spread edge is real at the
-elite tail (currently unmeasurable, §11.28).
+process, recorded SPACING-FIRST (Fable correction 2 — spacing is CO-EQUAL with order; the confirming check is
+the FULL paired set gapDistortionRmse + deconvolved spread + ΔTop-26/Δregret, never a single metric; this is
+now twice-corrected — do not relapse to ordering-primacy). The forms are a **statistical tie out-of-frame** on
+the full paired set: P1 (§11.32) shows every paired Δ(winner−pareto) CI spans 0 (gapRMSE, dec-spread, regret,
+overlap, ρ across EG/Bronze-t/Gold-q). So the winner buys no CI-clear advantage on EITHER axis. The
+tie-breaker is SHAPE INTEGRITY: the winner's BB-quad **mis-shapes gaps in the elite-CON region** — its vertex
+at con≈149 means, uncapped, elite-control cards get a WRONG-SIGN gap (more walks for better control), and
+capped, their gaps are FLATTENED (B.4). Better slightly-shrunk gaps everywhere (pareto, BB log, monotone) than
+wrong-shaped gaps at the cap-decision margin. FABLE SHOULD PRESSURE-TEST: (i) is the winner's +0.012 in-frame
+ρ truly ignorable given P1's Δρ CI spans 0 out-of-frame? (ii) the choice is reversible next retrain if
+iron/quicks depth shows a real elite-tail winner edge.
 
-**NET:** ship the PITCHER FORM (`{HR,K,H}`+aux, Derek's decision above). KEEP own-gap as the scoring transform. Do NOT adopt frame-v2 / kSpread / matchup for scoring
-(frame-v2 remains the levels/diagnostic frame). The pool-conditioned pitcher under-spread that survives on
-Bronze-t (0.50–0.63 vs in-frame 0.78) is the MEASURED pitcher form ceiling (§11.26 ~0.78; the omitted
-pitch-level residual), fixable only by role/pitch-level info, out of scope — not by any transform tried.
+**NET:** ship the PITCHER FORM (`{HR,K,H}`+aux, Derek's decision above). KEEP own-gap as the scoring transform.
+Do NOT adopt frame-v2 / kSpread / matchup for scoring (frame-v2 remains the levels/diagnostic frame).
+**⚠ CEILING CLAIM RETIRED (Fable correction 3, confirmed §11.32/P5):** the earlier reading — "the Bronze-t
+pitcher under-spread 0.50–0.63 is the MEASURED form ceiling" — is WITHDRAWN. Bronze-t is 3 runnings; its
+deconvolved-spread CI includes in-frame 0.74 (anchors nothing). Bronze-quicks (same ≤69 pool, powered) can't
+read spread either (elite-usage range restriction explodes the deconvolution). Concordance shows the ≤69 pool
+is discriminated as well as the reference (all-pairs 0.70 ≈ 0.72). **No sub-0.78 ceiling is established; the
+elite tail is intrinsically low-signal (data-bound), not a proven defect.** Reopen only with iron/more-runnings
+depth.
+
+**11.32 FORWARD-QUEUE RESULTS — quicks-powered adjudication (2026-07-14). Nothing changes production; four
+more predictions fall.** New data: bronze 9 runnings/41.8k PA, gold 8/37.6k, open 7/32.2k. Tools:
+`quicks-ledger-check`, `p5-bronze-adjudicator`, `fade-microstudy`, `p1-winner-vs-pareto`, `p3-pitch-info`,
+`p4-quad-amplification`, `h3-eghitter-decomp`.
+- **Gold ledger anomaly (auto-handled):** `Quicks - Gold 3238.csv` had ledger +240 from one org (`Ann Arbor
+  Blue - CG`, imb +218 / asym 27%). `cleanTournamentRows` flags and removes it (residual +22 < tol 150); every
+  other quicks file is ledger-clean (0). All analyses use the injected cleaner → handled, no manual exclusion.
+- **P5 — ceiling adjudicator (retires the ceiling claim).** The deconvolved SPREAD instrument FAILS on
+  bronze-quicks: a card reaches ≥500 BF only by being stapled across the 9 Bo5 runnings ⇒ elite-usage range
+  restriction ⇒ σ_true→0 ⇒ the ratio explodes (184 at ≥250, 2.2 at ≥500). Bronze-t (single 128-team) is stable
+  but its CI [~0.44,~0.82] INCLUDES in-frame 0.74. CONCORDANCE (weighted rank-AUC, range-restriction-robust —
+  the H2 estimator) is the usable read: all-pairs **0.70 bronze-quicks ≈ 0.72 bronze-t** (the ≤69 pool is
+  discriminated AS WELL as the reference), elite ~0.55 both (intrinsically similar elites). **No sub-0.74
+  ceiling; no ≤69 defect. P5's spread prediction was UNTESTABLE (instrument failed as item-8 warned); the
+  concordance surrogate closes it as "no defect."**
+- **FADE micro-study — the fade is EMPIRICALLY INERT (Fable's "fits better" prediction REFUTED).** Near-ceiling
+  cards across EG/Bronze-t/3 quicks tiers, affine-aligned residual: fade-on vs pure-×k differ **≤0.002 wOBA,
+  non-systematic in sign** (pure-×k marginally WORSE in 3/8 cells). The taper neither helps nor hurts at any
+  validated pool — "zero coverage where it acts" CONFIRMED. **No evidence-based reason to change the fade now;
+  the decision is IRON-GATED** (only iron k~1.6–2.2 + max near-ceiling coverage can stress it). Do NOT propose a
+  production fade change on current data. (The mechanistic critique in §12/memory-28 stands as a concern, but
+  its measurable effect is below noise here.)
+- **P1 — winner vs pareto, full paired set.** gapRMSE + dec-spread + Δregret + overlap + ρ, paired bootstrap:
+  every interpretable Δ(winner−pareto) CI SPANS 0 (EG/Bronze-t/Gold-q; Bronze-q dec-spread range-restriction-
+  blown, ignored). Winner ≈ pareto out-of-frame on BOTH axes → the clean-gate tie-breaker STANDS. Form CLOSED.
+- **P3 — pitch-info falsification (proxy narrative DIES).** Pitcher value residual vs PIT (repertoire) / VELO /
+  G-F, pooled reliable ladder N=278: joint **R² = 0.018 under the quad form ≈ 0.019 under the log form** — the
+  log residual carries NO pitch-info signal the quad "absorbed"; both ~0. The pitcher quad terms are GENUINE
+  CURVATURE, not an omitted-variable proxy. A repertoire aux is NOT a principled ceiling-raiser. (Faint VELO
+  marginal corr ~−0.11, ~1% R², present under both forms — not worth a term.) Corrects the 26b interpretation.
+- **P4 — quad-amplification bound (EG hint DISMISSED).** Predicted pit value SD, shipped form: own-gap/base ≤ 1
+  at EVERY gap (both transforms SHRINK vs base — no over-expansion). mult-vs-additive on the {HR,K,H} quads
+  diverge own/add 1.02 (Open) → 1.12 (Bronze), small and gap-growing → ≈tie at tested gaps, IRON discriminates
+  (memory 28b confirmed). **The "EG pit 0.93 > in-frame 0.78 = multiplicative over-amplification" hint is
+  DISMISSED** — own-gap's predicted SD is BELOW base at EG; the 0.93 was actual-side deconvolution noise.
+- **H2/H3.** H2 = the concordance estimator (done in P5). H3 EG-hitter compression decomposition: under the
+  additive shift the compression is CHANNEL-LOCALIZED, dominated by **1B (add/own 0.435 — the BIP-derived
+  concave path)**; uBB/XBH mild (0.90–0.93); HR-quad 0.92 = own-gap's quad amplification, not additive
+  compression. Confirms the item-21 concavity mechanism, NOT an eval-stack bookkeeping artifact.
+- **NET:** production unchanged — ship the pareto form, keep own-gap, leave the fade (inert, iron-gated), no
+  repertoire aux (proxy false). Predictions dead this round: fade "fits better", P3 "quad proxies pitch-info",
+  P4 "EG over-amplification", P5 spread-prediction (untestable → concordance closes it). The iron gate is the
+  next real discriminator (own-gap k on quad channels + the fade region both hit max stress there).
 
 ## 12. Decisions & rationale — WHY we chose each (2026-07-13)
 
@@ -1200,6 +1252,27 @@ Every significant decision this session, with the reasoning and the alternative 
 > the value path, own-gap retained** (§11.31). The reader-facing takeaway: the pitcher spread deficit was a
 > FORM defect (log flattening), fixed by the form, NOT an opponent-frame *spread* effect — so no rating-space
 > transform beyond own-gap's level re-basing is needed.
+>
+> **The settled production architecture (Fable corrections 4–6, 2026-07-14):**
+> - **Level fixes belong in EVENT space, not rating space (correction 4).** wOBA is LINEAR in events but
+>   NONLINEAR in ratings, so a level correction applied to ratings distorts spacing through the curves. The
+>   architecture is three separable layers: **own-gap** (relative structure / rating re-basing) + **form**
+>   (curvature) + **anchor** (levels, in event/output space). The additive frame + per-tournament knobs are an
+>   EVAL-only stack (levels diagnostics), never on the scoring path.
+> - **own-gap multiplicative is CORRECT, not lucky, on the log channels (correction 5, memory 28b).** The log
+>   response is ratio-based (`b·ln(k·r) = b·ln k + b·ln r`) — a pure level shift the anchor absorbs, PRESERVING
+>   the curve's ratio-encoding (which matches Derek's "relative % gaps are what matter" intuition and the
+>   engine's own math). Additive DESTROYS that ratio structure (the EG-hitter 0.67-vs-1.0 compression is the
+>   empirical proof, channel-localized in 1B per §11.32/H3). The only OPEN question is the QUAD channels, where
+>   multiplicative amplifies ~k²: tested gaps (≤~27) TIE vs additive (§11.32/P4, own/add 1.02–1.12), and the
+>   EG-0.93 over-amplification hint is DISMISSED — **iron (k~1.6–2.2) is the discriminator.**
+> - **The FADE SPEC IS RESCINDED (correction 6, Derek: "probably wrong, don't take it as a rule").** The fade
+>   (lift tapering to ~0 near the trained ceiling C) is the weakest production link: mechanistically backwards
+>   (opponent benefit doesn't shrink with a card's OWN rating; through log channels it imposes a ~b·ln(k)
+>   RELATIVE penalty on near-ceiling cards the anchor cannot absorb), hand-tuned, and — measured (§11.32/fade
+>   micro-study) — EMPIRICALLY INERT at every validated pool (fade-on ≈ pure-×k, ≤0.002 wOBA). It is NOT retired
+>   yet (the data can't justify a change either way — zero coverage where it acts), but it is flagged as
+>   suspect and IRON-GATED. The `raw-above-C+buffer` clamp is a separate Derek-spec'd rule that can stay.
 
 - **Additive channel-crossed OPPONENT-gap shift, over the shipped own-gap multiplicative transform.**
   WHY: a card's outcomes depend on the *opponent's* channel, not its own — strikeouts on the pitcher's
