@@ -20,6 +20,18 @@ describe("BBRef era modifiers", () => {
   it("2010 baseline is all-1.0 (≡ neutral)", () => {
     const e = byId.get("era-2010")!;
     for (const k of ["bb", "k", "avg", "hr", "gap", "bip", "hbp"] as const) expect(e[k]).toBeCloseTo(1, 6);
+    expect(e.sbFreq).toBeCloseTo(1, 6);   // baserunning factors neutral at baseline
+    expect(e.runVal).toBeCloseTo(1, 6);
+  });
+
+  it("baserunning era factors: sbFreq (stealing frequency) + runVal (run scarcity)", () => {
+    const y1911 = byId.get("era-1911")!, y1968 = byId.get("era-1968")!, y2019 = byId.get("era-2019")!;
+    expect(y1911.sbFreq!).toBeCloseTo(2.27, 1);  // dead-ball ran ~2.3× as much as 2010
+    expect(y1911.runVal!).toBeCloseTo(0.97, 1);
+    expect(y1968.sbFreq!).toBeLessThan(1);        // low-steal era…
+    expect(y1968.runVal!).toBeCloseTo(1.28, 1);   // …but the pitcher's era makes each run worth more
+    expect(y2019.sbFreq!).toBeCloseTo(0.77, 1);   // modern game steals less
+    expect(byId.get("era-2010")!.rates!.sb).toBeCloseTo(0.61 / 38.18, 4); // raw SB/PA stored
   });
 
   it("2026 modifiers match hand-computed rates vs 2010", () => {

@@ -35,7 +35,12 @@ export interface Era {
   // Optional enrichments from the BBRef per-year import (baseline = 2010).
   year?: number;
   hbp?: number;        // HBP modifier (stored; not consumed by scoring yet, like bip)
-  rates?: { bb: number; k: number; hr: number; h: number; b2: number; b3: number; hbp: number; bip: number }; // raw per-PA league rates (recompute-without-refetch)
+  // Baserunning era scaling (BBRef SB/CS/R). sbFreq = era SB/PA ÷ baseline (stealing frequency —
+  // scales STEAL value); runVal = baseline R/G ÷ era R/G (run scarcity — scales ALL baserunning value).
+  // See eras-bbref.ts for the UBR-vs-steal scaling decision. Absent on capture/synthetic eras ⇒ neutral 1.
+  sbFreq?: number;
+  runVal?: number;
+  rates?: { bb: number; k: number; hr: number; h: number; b2: number; b3: number; hbp: number; bip: number; sb?: number; cs?: number; rg?: number }; // raw per-PA league rates (recompute-without-refetch) + raw SB/CS per PA and R/G
 }
 
 export interface Park {

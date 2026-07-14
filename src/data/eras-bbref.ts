@@ -33,7 +33,18 @@ const r5 = (x: number) => Math.round(x * 1e5) / 1e5;
 /** Ratio guarded against missing/invalid source data → neutral 1. */
 const ratio = (cur: number, base: number) => (Number.isFinite(cur) && Number.isFinite(base) && base > 0 && cur >= 0 ? cur / base : 1);
 
-interface Rates { bb: number; k: number; hr: number; h: number; b2: number; b3: number; hbp: number; bip: number; gapShare: number }
+// Baserunning era scaling (SB/CS/R). TWO independent factors, both from this same BBRef export:
+//   • sbFreq = era SB/PA ÷ baseline SB/PA — how much STEALING an era does (0.77×–2.27× over history).
+//   • runVal = baseline R/G ÷ era R/G — run scarcity: a baserunning run is worth MORE when runs are
+//     scarce (the 1968 pitcher's era lifts run value even though it ran little).
+// DECISION (2026-07-14, pass to Fable for eval) — how these apply per baserunning component:
+//   • STEAL value (wSB) scales by sbFreq × runVal (both the frequency of running AND the run value).
+//   • UBR value (taking extra bases on hits) scales by runVal ONLY. Rationale: taking the extra base is
+//     a skill that translates across eras, and its OPPORTUNITY frequency is driven by hit rates (already
+//     era-captured via `avg`/`gap`), NOT by an era's stolen-base aggressiveness — so applying sbFreq to
+//     UBR would conflate two different phenomena. BBRef has no extra-base-taken frequency to measure it
+//     directly. Conservative call; revisit if per-era UBR/XBT data appears.
+interface Rates { bb: number; k: number; hr: number; h: number; b2: number; b3: number; hbp: number; bip: number; gapShare: number; sb: number; cs: number; rg: number }
 const ratesOf = (r: Record<string, string>): Rates => {
   const pa = num(r["PA"]);
   const h = num(r["H"]), hr = num(r["HR"]), b2 = num(r["2B"]), b3 = num(r["3B"]);
@@ -41,6 +52,7 @@ const ratesOf = (r: Record<string, string>): Rates => {
     bb: num(r["BB"]) / pa, k: num(r["SO"]) / pa, hr: hr / pa, h: h / pa,
     b2: b2 / pa, b3: b3 / pa, hbp: num(r["HBP"]) / pa, bip: num(r["BIP"]) / pa,
     gapShare: (b2 + b3) / (h - hr), // XBH share of non-HR hits (what era_gap scales)
+    sb: num(r["SB"]) / pa, cs: num(r["CS"]) / pa, rg: num(r["R/G"]), // baserunning: per-PA SB/CS + runs/game
   };
 };
 
@@ -64,7 +76,11 @@ export function computeEras(text: string, baselineYear = 2010): Era[] {
       hr: r6(ratio(c.hr, b.hr)), gap: r6(ratio(c.b2 + c.b3, b.b2 + b.b3)), bip: 1, // gap = temp 2B+3B weighted rate; bip pinned neutral
       thr_toggle: false, thr: 1,
       year, hbp: r6(ratio(c.hbp, b.hbp)),
-      rates: { bb: r5(c.bb), k: r5(c.k), hr: r5(c.hr), h: r5(c.h), b2: r5(c.b2), b3: r5(c.b3), hbp: r5(c.hbp), bip: r5(c.bip) },
+      // Baserunning era factors (see the block above). ratio() falls back to neutral 1 on missing
+      // source data (e.g. pre-1900 CS blanks), so an era with no SB/R data scores baserunning flat.
+      sbFreq: r6(ratio(c.sb, b.sb)),   // stealing frequency vs baseline
+      runVal: r6(ratio(b.rg, c.rg)),   // run scarcity vs baseline (inverse of R/G)
+      rates: { bb: r5(c.bb), k: r5(c.k), hr: r5(c.hr), h: r5(c.h), b2: r5(c.b2), b3: r5(c.b3), hbp: r5(c.hbp), bip: r5(c.bip), sb: r6(c.sb), cs: r6(c.cs), rg: r5(c.rg) },
     } satisfies Era;
   });
 }
