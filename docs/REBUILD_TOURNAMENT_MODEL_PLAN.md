@@ -1501,3 +1501,35 @@ Honest list of the least-certain calls this session — the places to scrutinize
   elasticity (made EG worse), gap-proportional K scaling (overshot cross-val), weak-pool own-rating
   extrapolation (ratings sit inside league range), and the first "Bronze is clean" ghost check (used the
   wrong fingerprint — ghosts are invisible).
+
+## 14. cwhit calibration program — FABLE HANDOFF (deferred pitching options, 2026-07-14)
+
+Context: the cwhitstats full-surface audit (`tools/cwhit-audit-deployed*.ts`, memory
+`cwhit-program-batch-state`) ran on the deployed pareto+own-gap model over the neutral-env Quick tiers.
+Batch-3 **#1 = baserunning SHIPPED** (UBR + steal tendency×ability, era-scaled from newly-imported BBRef
+SB/CS/R; `src/scoring-core/woba.ts baserunningWoba`). Batch-3 **#2 = pitcher STUFF slope** — cwhit-
+confirmed defect (deployed stuff under-credited +1.53 mwOBA/+10; elite SP wOBAA spread pred **0.068** vs
+observed **0.106**, IP≥1500, ~0 noise — the elite-spread question is no longer data-bound, it's MEASURED).
+
+**Why it's parked (Derek 2026-07-14):** the two levers are both blocked under current rules.
+1. **Form is maxed.** `tools/family-twoaxis.ts`: more rawquad pitcher channels → more deconv spread
+   (in-frame 0.62→0.76, EG 0.77→0.95, Pearson flat ~0.80). Deployed pareto already = rawquad K/HR/H;
+   **BB can't go quad** (vertex in-domain → fails the deploy vertex gate). Even full-rawquad tops at 0.76
+   in-frame (not 1.0) — residual compression.
+2. **The spread knob (kSpread / "Hyp-1 s_pit") is a SETTLED-DEAD negative** (§11.22/§11.23 joint run;
+   rejected on the value path). Not revived unilaterally.
+
+**TWO OPTIONS FOR FABLE (evaluate later; both reopen/escalate, so need the CI-clear bar):**
+- **(A) Reconsider kSpread with the NEW external cwhit evidence.** kSpread died on league-deconvolution
+  evidence; cwhit is independent ground truth (0.106). Re-test ONLY as a fully-gated study: fit s_pit on
+  OUR league data, two-axis gate (order AND spacing, CIs), PLUS the external gate — the deployed elite-SP
+  spread must reach ~0.106 at cwhit depth (`tools/cwhit-audit-deployed.ts` §3). If it clears CI-clear,
+  it's no longer a settled negative; if not, kSpread stays dead with stronger evidence. Reuse
+  `tools/phase1-spacing.ts` + `eb-elite-spread.ts`.
+- **(B) Escalate to the M8 two-argument matchup model** (`docs/REBUILD_MATCHUP_CHANNEL_PLAN.md`) as a
+  bake-off candidate — fit on our data, cwhit as the EVAL set. The Tier-3 trigger (broad out-of-frame
+  defect). Prior matchup was refuted on the value path (§11.19–11.23); the new angle is cwhit as an
+  external evaluator rather than league-deconvolution. Large effort.
+
+Judge both against the deployed pareto with cwhit at ~10× power; adopt only on a CI-clear improvement in
+BOTH the elite-tail spread (→0.106) AND regret/top-26, with no in-frame order loss.
