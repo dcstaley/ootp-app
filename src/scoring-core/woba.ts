@@ -134,11 +134,22 @@ export function trustedHittingWoba(
   const w = wobaWeightsFromCoeffs(coeffs);
   const adv_hbp = coeffs.adv_hbp ?? 6;
   const ssp = eventForm ? 1 : ((bats === 1 && vR) || (bats === 2 && !vR) ? (calScales.ssp_adv_hitting ?? 0.97) : 1);
-  // Baserunning is a per-side-invariant additive bonus; it rides the same ssp as the events and the
-  // final anchor scale (the anchor includes it too, so the top-N mean stays at target).
-  const finalWoba = ((w.bb * k.BB_fin + w.hbp * adv_hbp + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600
-    + baserunningWoba(speed, stealRate, steal, run, coeffs)) * ssp;
-  return finalWoba * sFinal;
+  // Our "wOBA" is really OFFENSE (wRAA + BsR) as a rate stat, so baserunning is credited here — but it
+  // is NOT part of the batting event model, and that changes how it must be applied:
+  //  • NOT scaled by sFinal. sFinal is the CALIBRATION correction for the batting model's scale drift
+  //    (anchoring its raw output to TARGET_WOBA). It is NOT ~1 — it's 1.15 at bronze, 1.06 gold, 1.02
+  //    neutral — so multiplying baserunning by it would inflate it 15% at bronze and MORE at lower tiers
+  //    (a tier-dependent distortion). The baserunning term is fit in REAL wOBA units from league wSB/UBR
+  //    runs, so it is already on the true scale: add it AFTER calibration.
+  //  • NOT scaled by ssp (baserunning has no platoon component; it's side-invariant).
+  //  • CENTERED on the pool mean (calScales.brCenterHit) ⇒ the average card scores ~0 and cards are +/- by
+  //    their baserunning EDGE; below-average baserunners correctly go NEGATIVE. Baserunning ratings are
+  //    level-stable across tiers (Derek; verified: Speed mean 52/53/53/55/61 iron→diamond), so the pool
+  //    center barely moves by tier — and they're deliberately excluded from the own-gap lift for the same
+  //    reason. Also excluded from the anchor (batting-only) ⇒ a non-runner keeps its batting wOBA.
+  const battingWoba = ((w.bb * k.BB_fin + w.hbp * adv_hbp + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600) * ssp;
+  const brBonus = baserunningWoba(speed, stealRate, steal, run, coeffs) - (calScales.brCenterHit ?? 0);
+  return battingWoba * sFinal + brBonus;
 }
 
 export function trustedPitchingSideWoba(

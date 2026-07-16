@@ -19,7 +19,7 @@ import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
 import { scoreCard } from "./score-card.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
-import { assembleRawHittingWoba, assembleRawPitchingWoba, anchorHittingWoba, anchorPitchingWoba } from "./woba.ts";
+import { assembleRawHittingWoba, assembleRawPitchingWoba, anchorHittingWoba, anchorPitchingWoba, baserunningWoba } from "./woba.ts";
 
 export const TARGET_WOBA = 0.320;
 export const TARGET_BASIC = 100;
@@ -106,7 +106,14 @@ export function calibrate(pool: any[], config: CalibrateConfig, model?: EventMod
   const hitScaleVL = anchorMeanVL > 0 ? TARGET_WOBA / anchorMeanVL : 1;
   const pitchScale = anchorMeanPOVR > 0 ? TARGET_WOBA / anchorMeanPOVR : 1;
 
+  // Baserunning CENTER = the pool's mean baserunning value (side-invariant). Our "wOBA" is the offense
+  // component of WAR (batting + baserunning + steal runs), so baserunning is credited as runs ABOVE/BELOW
+  // the average card in the pool — subtracted in trustedHittingWoba so the average card gets ~0 (not a
+  // universal uplift) and below-average baserunners go negative, as intended.
+  const brCenterHit = mean(aug.map((x) => baserunningWoba(x.speed, x.stealRate, x.steal, x.run, coeffs)));
+
   return {
+    brCenterHit,
     hitScaleVR, hitScaleVL, pitchScale, pitchScaleVR: pitchScale, pitchScaleVL: pitchScale,
     hitBBScaleVR, hitHRScaleVR, hitBBScaleVL, hitHRScaleVL,
     pBBScaleVR: pBBScale, pBBScaleVL: pBBScale, pHRScaleVR: pHRScale, pHRScaleVL: pHRScale,
