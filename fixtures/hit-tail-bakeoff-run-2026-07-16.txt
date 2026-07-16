@@ -1,0 +1,301 @@
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  HITTER HR+BABIP PAIRED TAIL BAKE-OFF — gap-conditioned tail vs league form change vs mix     ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-41-42-pareto' | catalog 'oaxaca' | RAW event line, own-gap ON, no anchor | hitters only (BUILD-1 owns pitchers)
+reassembly self-check: max |reassembled − ours.woba| = 1.11e-16 ⇒ EXACT
+judged hitters: 358 well-sampled (PA≥1000) across 5 tiers
+
+own-gap strengths g = k−1 (pool-composition property; the A-candidates' conditioning variable):
+tier      g(POW)   g(BABIP)   w_sat(gPOW)  [w_sat = 1−e^(−g/0.1) — the tier-flat shape]
+iron       0.627    0.615     0.998
+bronze     0.406    0.346     0.983
+silver     0.273    0.184     0.935
+gold       0.156    0.169     0.789
+diamond    0.083    0.106     0.565
+
+
+╔═══ 1. CANDIDATE A — family × gap-shape sweep per channel (grid λ on the slope loss) ═══╗
+loss = 2·(pooled−1)² + (top-band−1)² + (rest-band−1)² on tier-demeaned pooled rows; slope targets only —
+archetypes/ordering are ACCEPTANCE axes (§3), never fit targets. SO's "top" band = the WHIFF tail (most Ks).
+
+channel  family×shape    λ*      slope→   top→    rest→   loss
+hr       hinge-lin        2.70     0.95     1.05    0.91  0.0143
+hr       hinge-sat        1.40     0.89     1.11    0.86  0.0557
+hr       hinge50-lin      1.80     0.91     1.09    0.84  0.0505
+hr       hinge50-sat      1.05     0.83     1.25    0.76  0.1784
+hr       quad-lin         2.75     1.17     1.53    1.11  0.3494
+hr       quad-sat         0.45     1.17     1.53    1.11  0.3494
+hr       pivot-lin        1.25     0.88     1.13    0.78  0.0969
+hr       pivot-sat        0.70     0.82     1.46    0.72  0.3594
+hr       step-lin         2.35     0.82     1.21    0.73  0.1828
+hr       step-sat         1.35     0.75     1.48    0.65  0.4743
+bab      hinge-lin        2.45     1.05     0.89    1.15  0.0386
+bab      hinge-sat        1.10     0.99     0.98    1.09  0.0087
+bab      hinge50-lin      1.80     1.03     0.94    1.06  0.0091
+bab      hinge50-sat      0.95     0.94     1.06    0.98  0.0119
+bab      quad-lin         0.30     1.43     1.52    1.45  0.8471
+bab      quad-sat         0.05     1.42     1.69    1.38  0.9683
+bab      pivot-lin        1.05     0.95     1.11    0.87  0.0330
+bab      pivot-sat        0.55     0.91     1.23    0.84  0.0944
+bab      step-lin         2.10     0.93     1.08    0.87  0.0318
+bab      step-sat         1.30     0.85     1.31    0.77  0.1983
+so       hinge-lin        0.40     1.14     0.92    1.12  0.0579
+so       hinge-sat        0.10     1.14     0.92    1.12  0.0576
+so       hinge50-lin      0.40     1.12     0.91    1.11  0.0481
+so       hinge50-sat      0.10     1.12     0.91    1.11  0.0479
+so       quad-lin         0.00     1.16     0.99    1.12  0.0639
+so       quad-sat         0.00     1.16     0.99    1.12  0.0639
+so       pivot-lin        0.45     1.05     0.89    1.01  0.0180
+so       pivot-sat        0.10     1.06     0.90    1.02  0.0187
+so       step-lin         1.05     1.03     0.91    1.01  0.0090
+so       step-sat         0.30     1.01     0.90    1.00  0.0094
+
+per-channel finalists: HR → hinge-lin, hinge50-lin | BABIP → hinge-sat, hinge50-lin | SO (optional 3rd leg) → step-lin
+
+
+╔═══ 2. CANDIDATE B — form change, refit on LEAGUE data (window 2041+2042) ═══╗
+league hitters: 169 qualifying (PA≥1000) in window 2041+2042
+B0 refit sanity: max |refit hr β − deployed hr β| = 0.000000 (EXACT — the refit pipeline is the server's)
+
+LEAGUE OOT (fit one year → test the other; slope(obs~pred) per channel, composite Pearson):
+form         dir        HRslope   BABslope   wOBAslope   wOBAcorr   HR-bias by POW qtile on test (pred−obs per 600)
+B0-quad(dep) 2041→2042    0.879     1.337      1.014      0.862      [+0.27, -0.09, +0.91, +1.57]
+B0-quad(dep) 2042→2041    1.130     0.749      1.001      0.831      [-0.43, -0.30, -0.46, -1.99]
+B-hrlin      2041→2042    0.871     1.336      1.009      0.854      [+0.44, -0.32, +0.80, +1.91]
+B-hrlin      2042→2041    1.189     0.748      1.037      0.837      [-0.01, -0.69, -0.82, -1.56]
+B-hrcub      2041→2042    0.878     1.337      1.011      0.861      [+0.31, -0.09, +0.86, +1.62]
+B-hrcub      2042→2041    1.127     0.749      1.002      0.831      [-0.46, -0.31, -0.43, -2.00]
+B-h2         2041→2042    0.879     1.334      1.017      0.860      [+0.27, -0.09, +0.91, +1.57]
+B-h2         2042→2041    1.130     0.748      1.000      0.830      [-0.43, -0.30, -0.46, -1.99]
+B-hrcub-h2   2041→2042    0.878     1.334      1.014      0.860      [+0.31, -0.09, +0.86, +1.62]
+B-hrcub-h2   2042→2041    1.127     0.748      1.001      0.831      [-0.46, -0.31, -0.43, -2.00]
+
+cwhit OUT-OF-FRAME rebuild per B form (full pipeline, both-years fit):
+B-hrlin      N=358   HRslope 1.21 top 1.80   BABslope 1.37 top 1.94   wOBAcorr 0.674
+B-hrcub      N=358   HRslope 1.17 top 2.46   BABslope 1.39 top 1.94   wOBAcorr 0.666
+B-h2         N=358   HRslope 1.17 top 2.42   BABslope 1.49 top 2.30   wOBAcorr 0.669
+B-hrcub-h2   N=358   HRslope 1.17 top 2.48   BABslope 1.48 top 2.29   wOBAcorr 0.669
+
+
+╔═══ 3. FULL EVAL — baseline, A mixes (HR-family × BABIP-family), B forms ═══╗
+
+── BASELINE (deployed) ──
+  HR600  pooled slope 1.17 [1.12,1.23]   top-band 2.44 [1.36,3.16]   Δ(top−rest) +1.44 [+0.36,+2.19]
+  BABIP  pooled slope 1.39 [1.25,1.56]   top-band 1.94 [1.49,2.43]   Δ(top−rest) +0.66 [+0.20,+1.15]
+  SO%    pooled slope 1.16 [1.13,1.19]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR -0.94  BABIP +0.009  SO +2.30
+  ordering: pooled wOBA corr 0.667   Δcorr vs baseline +0.000 [+0.000,+0.000] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   -0.14  [-1.55,+1.28] (hr -3.6 bab +2.6 so +1.2 bb -0.3) n200
+    contact       -1.84* [-2.95,-0.70] (hr +1.1 bab -3.0 so -0.1 bb -0.1) n237
+    whiff-slugger -2.17  [-5.28,+1.19] (hr -5.9 bab -0.1 so +3.8 bb -0.3) n57
+    walk-machine  +0.59  [-1.25,+2.35] (hr -0.2 bab +1.3 so -0.2 bb -0.2) n153
+
+── A[hr:hinge-lin + bab:hinge-sat]  (λHR 2.70, λBAB 1.10, λSO 0.00) ──
+  HR600  pooled slope 0.95 [0.92,0.99]   top-band 1.05 [0.75,1.27]   Δ(top−rest) +0.13 [-0.17,+0.37]
+  BABIP  pooled slope 0.99 [0.92,1.06]   top-band 0.98 [0.71,1.21]   Δ(top−rest) -0.11 [-0.40,+0.13]
+  SO%    pooled slope 1.16 [1.13,1.19]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR +0.52  BABIP +0.016  SO +2.30
+  ordering: pooled wOBA corr 0.705   Δcorr vs baseline +0.038 [+0.013,+0.066] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   +1.91* [+0.54,+3.30] (hr -0.1 bab +1.0 so +1.2 bb -0.3) n200
+    contact       -0.85  [-1.89,+0.24] (hr +0.0 bab -0.8 so -0.1 bb -0.1) n237
+    whiff-slugger +2.93* [+0.18,+5.97] (hr +0.2 bab -1.3 so +3.8 bb -0.3) n57
+    walk-machine  +0.82  [-0.95,+2.63] (hr +0.3 bab +1.0 so -0.2 bb -0.2) n153
+
+── A[hr:hinge-lin + bab:hinge-sat + so:step-lin]  (λHR 2.70, λBAB 1.10, λSO 1.05) ──
+  HR600  pooled slope 0.95 [0.92,0.99]   top-band 1.05 [0.75,1.27]   Δ(top−rest) +0.13 [-0.17,+0.37]
+  BABIP  pooled slope 0.99 [0.92,1.06]   top-band 0.98 [0.71,1.21]   Δ(top−rest) -0.11 [-0.40,+0.13]
+  SO%    pooled slope 1.03 [1.00,1.05]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR +0.52  BABIP +0.016  SO +2.08
+  ordering: pooled wOBA corr 0.712   Δcorr vs baseline +0.045 [+0.021,+0.070] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   +1.22  [-0.10,+2.56] (hr -0.1 bab +1.0 so +0.5 bb -0.3) n200
+    contact       -0.83  [-1.82,+0.22] (hr +0.0 bab -0.8 so -0.1 bb -0.1) n237
+    whiff-slugger +0.05  [-2.70,+3.05] (hr +0.2 bab -1.3 so +1.0 bb -0.3) n57
+    walk-machine  +0.31  [-1.43,+2.06] (hr +0.3 bab +1.0 so -0.7 bb -0.2) n153
+
+── A[hr:hinge-lin + bab:hinge50-lin + so:step-lin]  (λHR 2.70, λBAB 1.80, λSO 1.05) ──
+  HR600  pooled slope 0.95 [0.92,0.99]   top-band 1.05 [0.75,1.27]   Δ(top−rest) +0.13 [-0.17,+0.37]
+  BABIP  pooled slope 1.03 [0.96,1.11]   top-band 0.94 [0.75,1.17]   Δ(top−rest) -0.12 [-0.34,+0.14]
+  SO%    pooled slope 1.03 [1.00,1.05]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR +0.52  BABIP +0.016  SO +2.08
+  ordering: pooled wOBA corr 0.710   Δcorr vs baseline +0.042 [+0.022,+0.066] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   +1.37  [-0.01,+2.67] (hr -0.1 bab +1.2 so +0.5 bb -0.3) n200
+    contact       -0.84  [-1.80,+0.23] (hr +0.0 bab -0.8 so -0.1 bb -0.1) n237
+    whiff-slugger +0.21  [-2.58,+3.35] (hr +0.2 bab -1.1 so +1.0 bb -0.3) n57
+    walk-machine  +0.28  [-1.44,+1.99] (hr +0.3 bab +0.9 so -0.7 bb -0.2) n153
+
+── A[hr:hinge50-lin + bab:hinge-sat + so:step-lin]  (λHR 1.80, λBAB 1.10, λSO 1.05) ──
+  HR600  pooled slope 0.91 [0.87,0.94]   top-band 1.09 [0.76,1.43]   Δ(top−rest) +0.25 [-0.09,+0.59]
+  BABIP  pooled slope 0.99 [0.92,1.06]   top-band 0.98 [0.71,1.21]   Δ(top−rest) -0.11 [-0.40,+0.13]
+  SO%    pooled slope 1.03 [1.00,1.05]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR +1.16  BABIP +0.016  SO +2.08
+  ordering: pooled wOBA corr 0.702   Δcorr vs baseline +0.035 [+0.011,+0.059] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   +2.10* [+0.71,+3.45] (hr +0.8 bab +1.0 so +0.5 bb -0.3) n200
+    contact       -1.16* [-2.18,-0.06] (hr -0.3 bab -0.8 so -0.1 bb -0.1) n237
+    whiff-slugger +0.05  [-2.67,+3.15] (hr +0.2 bab -1.3 so +1.0 bb -0.3) n57
+    walk-machine  +0.21  [-1.49,+2.00] (hr +0.2 bab +1.0 so -0.7 bb -0.2) n153
+
+── B-hrlin ──
+  HR600  pooled slope 1.21 [1.16,1.29]   top-band 1.80 [1.18,2.37]   Δ(top−rest) +0.74 [+0.10,+1.29]
+  BABIP  pooled slope 1.37 [1.23,1.54]   top-band 1.94 [1.48,2.40]   Δ(top−rest) +0.68 [+0.19,+1.15]
+  SO%    pooled slope 1.15 [1.12,1.19]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR +0.11  BABIP +0.009  SO +2.60
+  ordering: pooled wOBA corr 0.674   Δcorr vs baseline +0.007 [-0.003,+0.017] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   -0.30  [-1.70,+1.06] (hr -3.7 bab +2.5 so +1.2 bb -0.3) n200
+    contact       -1.85* [-2.92,-0.70] (hr +1.1 bab -2.9 so -0.2 bb -0.1) n237
+    whiff-slugger -1.84  [-4.85,+1.45] (hr -5.5 bab -0.2 so +3.8 bb -0.3) n57
+    walk-machine  +0.86  [-0.92,+2.58] (hr +0.1 bab +1.2 so -0.2 bb -0.1) n153
+
+── B-hrcub ──
+  HR600  pooled slope 1.17 [1.12,1.23]   top-band 2.46 [1.36,3.27]   Δ(top−rest) +1.46 [+0.35,+2.25]
+  BABIP  pooled slope 1.39 [1.25,1.56]   top-band 1.94 [1.48,2.43]   Δ(top−rest) +0.66 [+0.20,+1.15]
+  SO%    pooled slope 1.16 [1.13,1.19]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR -0.94  BABIP +0.009  SO +2.30
+  ordering: pooled wOBA corr 0.666   Δcorr vs baseline -0.001 [-0.002,-0.001] *** ORDERING DEGRADED (CI-clear) ***
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   -0.15  [-1.56,+1.28] (hr -3.7 bab +2.6 so +1.2 bb -0.3) n200
+    contact       -1.85* [-2.95,-0.69] (hr +1.1 bab -3.0 so -0.1 bb -0.1) n237
+    whiff-slugger -2.18  [-5.30,+1.18] (hr -5.9 bab -0.1 so +3.8 bb -0.3) n57
+    walk-machine  +0.60  [-1.24,+2.36] (hr -0.2 bab +1.3 so -0.2 bb -0.2) n153
+
+── B-h2 ──
+  HR600  pooled slope 1.17 [1.12,1.23]   top-band 2.42 [1.36,3.21]   Δ(top−rest) +1.43 [+0.36,+2.18]
+  BABIP  pooled slope 1.49 [1.37,1.61]   top-band 2.30 [1.69,2.90]   Δ(top−rest) +0.89 [+0.28,+1.48]
+  SO%    pooled slope 1.16 [1.13,1.19]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR -0.94  BABIP +0.009  SO +2.32
+  ordering: pooled wOBA corr 0.669   Δcorr vs baseline +0.002 [-0.004,+0.009] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   -0.02  [-1.47,+1.39] (hr -3.6 bab +2.7 so +1.2 bb -0.3) n200
+    contact       -1.92* [-3.03,-0.78] (hr +1.1 bab -3.1 so -0.1 bb -0.1) n237
+    whiff-slugger -2.08  [-5.10,+1.34] (hr -5.9 bab -0.1 so +3.8 bb -0.3) n57
+    walk-machine  +0.75  [-1.08,+2.46] (hr -0.2 bab +1.5 so -0.2 bb -0.2) n153
+
+── B-hrcub-h2 ──
+  HR600  pooled slope 1.17 [1.12,1.23]   top-band 2.48 [1.36,3.24]   Δ(top−rest) +1.48 [+0.35,+2.25]
+  BABIP  pooled slope 1.48 [1.37,1.61]   top-band 2.29 [1.69,2.90]   Δ(top−rest) +0.88 [+0.27,+1.47]
+  SO%    pooled slope 1.16 [1.13,1.19]
+  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR -0.93  BABIP +0.009  SO +2.33
+  ordering: pooled wOBA corr 0.669   Δcorr vs baseline +0.001 [-0.005,+0.008] (not degraded)
+  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):
+    elite-power   -0.03  [-1.48,+1.38] (hr -3.7 bab +2.7 so +1.2 bb -0.3) n200
+    contact       -1.92* [-3.02,-0.78] (hr +1.1 bab -3.1 so -0.1 bb -0.1) n237
+    whiff-slugger -2.11  [-5.12,+1.32] (hr -5.9 bab -0.1 so +3.8 bb -0.3) n57
+    walk-machine  +0.75  [-1.09,+2.46] (hr -0.2 bab +1.5 so -0.2 bb -0.2) n153
+
+
+╔═══ 4. WINNER + POW-QUARTILE GRIDS — does the non-monotone hump flatten? ═══╗
+
+gate scoreboard (7 gates: HR/BAB slope CIs cover 1, HR/BAB tail Δ CIs cover 0, ordering intact,
+elite-power CI covers 0, contact improves):
+  A[hr:hinge-lin + bab:hinge-sat]        5/7   FAILS: HR slope CI excludes 1; elite-power mis-valued CI-clear
+  A[hr:hinge-lin + bab:hinge-sat + so:step-lin] 6/7   FAILS: HR slope CI excludes 1
+  A[hr:hinge-lin + bab:hinge50-lin + so:step-lin] 6/7   FAILS: HR slope CI excludes 1
+  A[hr:hinge50-lin + bab:hinge-sat + so:step-lin] 5/7   FAILS: HR slope CI excludes 1; elite-power mis-valued CI-clear
+  B-hrlin                                2/7   FAILS: HR slope CI excludes 1; BABIP slope CI excludes 1; HR tail Δ CI excludes 0; BABIP tail Δ CI excludes 0; contact did not improve
+  B-hrcub                                1/7   FAILS: HR slope CI excludes 1; BABIP slope CI excludes 1; HR tail Δ CI excludes 0; BABIP tail Δ CI excludes 0; ordering degraded CI-clear; contact did not improve
+  B-h2                                   2/7   FAILS: HR slope CI excludes 1; BABIP slope CI excludes 1; HR tail Δ CI excludes 0; BABIP tail Δ CI excludes 0; contact did not improve
+  B-hrcub-h2                             2/7   FAILS: HR slope CI excludes 1; BABIP slope CI excludes 1; HR tail Δ CI excludes 0; BABIP tail Δ CI excludes 0; contact did not improve
+
+WINNER (most gates, then slope distance): A[hr:hinge-lin + bab:hinge-sat + so:step-lin]
+
+BASELINE:
+  HR600: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    iron     -0.11 ±0.73(19)   +1.39 ±1.48(17)   +1.46*±0.92(17)   -3.81*±1.53(47)     NON-MONO
+    bronze   -0.85*±0.51(21)   +0.88 ±1.22(12)   +1.75*±1.12(14)   -1.02*±0.91(52)     NON-MONO
+    silver   -0.86 ±1.12(10)   +0.87 ±1.22(9)    +1.94*±0.63(13)   -2.19*±0.85(46)     NON-MONO
+    gold     -0.25 ±1.23(7)    +1.31 ±3.21(5)    -0.61 ±2.20(8)    -2.42*±0.97(44)     NON-MONO
+    diamond  —                 +1.26 ±5.41(3)    +2.91*±2.81(3)    +0.27 ±2.40(11)     NON-MONO
+    ALL      -0.53*±0.36(57)   +1.14*±0.68(46)   +1.42*±0.53(55)   -2.18*±0.54(200)    NON-MONO
+  BABIP: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    iron     +0.001 ±0.007(19) +0.012*±0.007(17) +0.003 ±0.007(17) +0.018*±0.003(47)   NON-MONO
+    bronze   +0.003 ±0.005(21) +0.007 ±0.010(12) +0.005 ±0.006(14) +0.012*±0.003(52)   NON-MONO
+    silver   +0.017*±0.015(10) -0.001 ±0.010(9)  +0.005 ±0.010(13) +0.013*±0.004(46)   NON-MONO
+    gold     +0.003 ±0.013(7)  -0.003 ±0.020(5)  -0.001 ±0.011(8)  +0.010*±0.004(44)   NON-MONO
+    diamond  —                 +0.000 ±0.026(3)  +0.004 ±0.024(3)  +0.008 ±0.008(11) 
+    ALL      +0.005*±0.004(57) +0.006*±0.004(46) +0.003*±0.003(55) +0.013*±0.002(200)  NON-MONO
+
+A[hr:hinge-lin + bab:hinge-sat + so:step-lin]:
+  HR600: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    iron     -0.11 ±0.73(19)   +1.39 ±1.48(17)   +1.46*±0.92(17)   +0.21 ±1.47(47)     NON-MONO
+    bronze   -0.85*±0.51(21)   +0.88 ±1.22(12)   +1.75*±1.12(14)   +1.77*±0.82(52)   
+    silver   -0.86 ±1.12(10)   +0.87 ±1.22(9)    +1.94*±0.63(13)   +0.09 ±0.74(46)     NON-MONO
+    gold     -0.25 ±1.23(7)    +1.31 ±3.21(5)    -0.61 ±2.20(8)    -0.76 ±0.85(44)     NON-MONO
+    diamond  —                 +1.26 ±5.41(3)    +2.91*±2.81(3)    +1.09 ±2.33(11)     NON-MONO
+    ALL      -0.53*±0.36(57)   +1.14*±0.68(46)   +1.42*±0.53(55)   +0.42 ±0.49(200)    NON-MONO
+  BABIP: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    iron     +0.009*±0.005(19) +0.015*±0.006(17) +0.010*±0.005(17) +0.019*±0.003(47)   NON-MONO
+    bronze   +0.014*±0.005(21) +0.012*±0.011(12) +0.013*±0.008(14) +0.016*±0.003(52)   NON-MONO
+    silver   +0.024*±0.013(10) +0.015*±0.011(9)  +0.015*±0.008(13) +0.021*±0.004(46)   NON-MONO
+    gold     +0.015*±0.012(7)  +0.009 ±0.024(5)  +0.014*±0.009(8)  +0.017*±0.004(44)   NON-MONO
+    diamond  —                 +0.010 ±0.020(3)  +0.011 ±0.036(3)  +0.016*±0.007(11) 
+    ALL      +0.014*±0.003(57) +0.013*±0.004(46) +0.013*±0.003(55) +0.018*±0.002(200)  NON-MONO
+  (SO leg active — SO% by POW quartile, baseline then winner; the whiff-slugger story rides Q4)
+  SO% base: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    ALL      +3.18*±0.29(57)   +2.73*±0.50(46)   +2.54*±0.39(55)   +1.88*±0.24(200)  
+  SO% corr: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    ALL      +2.54*±0.28(57)   +2.23*±0.48(46)   +2.18*±0.35(55)   +1.90*±0.22(200)  
+
+runner-up A[hr:hinge-lin + bab:hinge50-lin + so:step-lin] (pooled row only):
+  HR600: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    ALL      -0.53*±0.36(57)   +1.14*±0.68(46)   +1.42*±0.53(55)   +0.42 ±0.49(200)    NON-MONO
+  BABIP: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))
+    ALL      +0.015*±0.003(57) +0.012*±0.004(46) +0.012*±0.003(55) +0.017*±0.002(200)  NON-MONO
+
+
+╔═══ 5. HELD-OUT-TIER OOT — A[hr:hinge-lin + bab:hinge-sat + so:step-lin]: λ refit on 4 tiers, judged on the 5th ═══╗
+tier(out)   λHR    λBAB   λSO    HR slope base→held   HRtop base→held    BAB slope base→held   BABtop base→held   SO slope base→held
+iron        1.55   0.90  1.00    1.24 → 1.07         3.78 → 1.92        1.39 → 1.17         2.28 → 1.20        1.18 → 1.01
+bronze      3.30   1.60  1.50    1.05 → 0.83         1.97 → 0.84        1.22 → 0.74         1.14 → 0.45        1.11 → 0.93
+silver      2.55   1.00  1.05    1.19 → 1.00         2.64 → 1.55        1.56 → 1.00         2.93 → 1.59        1.18 → 1.06
+gold        2.75   1.05  0.90    1.31 → 1.11         3.72 → 2.61        1.60 → 1.02         2.03 → 1.09        1.21 → 1.11
+diamond     2.60   1.10  1.10    1.26 → 1.12         -1.03 → -0.85        1.73 → 1.10         -0.50 → -0.29        1.11 → 1.07
+
+
+╔═══ 6. LEAGUE IDENTITY — candidate A at gap→0 ═══╗
+full-catalog pool vs reference: k(POW) = 1.000000, k(BABIP) = 1.000000 ⇒ g = 0.000000/0.000000
+w(0) = 0 for both shapes ⇒ the correction is EXACTLY the identity in the league frame — no league
+refit, no league OOT risk, by construction. (The scoring-path wiring must keep this property: the
+strength derives from the SAME pool-transform k the own-gap lift uses; league/unrestricted ⇒ k≤1 ⇒ off.)
+
+
+╔═══ 7. WEIRD-ENV CHECK — earlygolddaily / bronzeheartdaily / goldcapdaily (directional) ═══╗
+Per-format: DEPLOYED env-adjusted line (era/park applied via the scoring core), observed = cwhit daily
+fixture. A-correction applied on the RAW line and carried into the env line by the card's own env
+multiplier (stated approximation). Verdict: does the GLOBAL λ (fit on Quicks only) move the tail the
+RIGHT way in a non-neutral env, and does nothing blow up. One-format-deep — directional, never a fit.
+
+─── earlygolddaily (era era-1920 / park park-169) — N=89 joined well-sampled; g(POW)=0.149 g(BABIP)=0.166 ───
+  baseline (deployed env)  HR: -0.58*(15)     -0.54*(12)     -0.70 (19)     -1.56*(43)      slope 1.38   BABIP: +0.000 (15)    -0.004 (12)    -0.005 (19)    +0.002 (43)     slope 1.43
+  winner (global λ)        HR: -0.58*(15)     -0.54*(12)     -0.70 (19)     -1.24*(43)      slope 1.24   BABIP: +0.010*(15)    +0.007*(12)    +0.008*(19)    +0.011*(43)     slope 0.80
+
+─── bronzeheartdaily (era era-1939 / park park-191) — N=49 joined well-sampled; g(POW)=0.402 g(BABIP)=0.367 ───
+  baseline (deployed env)  HR: -1.19*(14)     +0.35 (9)      +1.11 (9)      -1.33 (17)      slope 1.09   BABIP: -0.014*(14)    -0.011 (9)     +0.003 (9)     +0.001 (17)     slope 1.65
+  winner (global λ)        HR: -1.19*(14)     +0.35 (9)      +1.11 (9)      -0.10 (17)      slope 0.98   BABIP: -0.007 (14)    -0.007 (9)     +0.006*(9)     +0.003 (17)     slope 1.17
+
+─── goldcapdaily (era era-2010 / park park-156 / cap 1580) — N=95 joined well-sampled; g(POW)=0.156 g(BABIP)=0.169 ───
+  baseline (deployed env)  HR: -2.17*(26)     -1.18 (7)      -2.06*(10)     -7.01*(52)      slope 1.37   BABIP: +0.002 (26)    -0.007 (7)     +0.003 (10)    +0.002 (52)     slope 1.24
+  winner (global λ)        HR: -2.17*(26)     -1.18 (7)      -2.06*(10)     -5.37*(52)      slope 1.23   BABIP: +0.006*(26)    +0.002 (7)     +0.012*(10)    +0.011*(52)     slope 0.86
+
+
+╔═══ 8. FINAL COMPARISON — all candidates on the acceptance axes ═══╗
+candidate                                HRslope[CI]         HRtopΔ[CI]            BABslope[CI]        ordΔcorr[CI]             elite-pwr   contact
+baseline                                 1.17 [1.12,1.23]   +1.44 [+0.36,+2.19]   1.39 [1.25,1.56]   +0.000 [+0.000,+0.000]   -0.1        -1.8*
+A[hr:hinge-lin + bab:hinge-sat]          0.95 [0.92,0.99]   +0.13 [-0.17,+0.37]   0.99 [0.92,1.06]   +0.038 [+0.013,+0.066]   +1.9*       -0.8 
+A[hr:hinge-lin + bab:hinge-sat + so:step-lin] 0.95 [0.92,0.99]   +0.13 [-0.17,+0.37]   0.99 [0.92,1.06]   +0.045 [+0.021,+0.070]   +1.2        -0.8 
+A[hr:hinge-lin + bab:hinge50-lin + so:step-lin] 0.95 [0.92,0.99]   +0.13 [-0.17,+0.37]   1.03 [0.96,1.11]   +0.042 [+0.022,+0.066]   +1.4        -0.8 
+A[hr:hinge50-lin + bab:hinge-sat + so:step-lin] 0.91 [0.87,0.94]   +0.25 [-0.09,+0.59]   0.99 [0.92,1.06]   +0.035 [+0.011,+0.059]   +2.1*       -1.2*
+B-hrlin                                  1.21 [1.16,1.29]   +0.74 [+0.10,+1.29]   1.37 [1.23,1.54]   +0.007 [-0.003,+0.017]   -0.3        -1.9*
+B-hrcub                                  1.17 [1.12,1.23]   +1.46 [+0.35,+2.25]   1.39 [1.25,1.56]   -0.001 [-0.002,-0.001]   -0.2        -1.8*
+B-h2                                     1.17 [1.12,1.23]   +1.43 [+0.36,+2.18]   1.49 [1.37,1.61]   +0.002 [-0.004,+0.009]   -0.0        -1.9*
+B-hrcub-h2                               1.17 [1.12,1.23]   +1.48 [+0.35,+2.25]   1.48 [1.37,1.61]   +0.001 [-0.005,+0.008]   -0.0        -1.9*
+
+GATES: HR/BAB pooled slope CI covers 1 · top-band Δ CI covers 0 · Δcorr CI covers 0 (ordering intact) ·
+elite-power CI covers 0 with drivers each near 0 (cancellation RESOLVED, not moved) · contact shrinks
+vs baseline −1.84* · held-out tier holds (§5) · league identity (§6, A) or league OOT clean (§2, B) ·
+weird-env directionally right (§7).

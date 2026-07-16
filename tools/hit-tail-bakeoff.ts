@@ -257,11 +257,11 @@ function rowsFromRecs(recs: Rec[]): ERow[] {
 }
 
 // ── per-tier context for candidate A: pool moments + own-gap strength g = k − 1 ───────────────────
-interface ChStat { m: number; s: number; p75: number; zLo: number }
-interface TierCtx { gPow: number; gBab: number; hr: ChStat; bab: ChStat }
+interface ChStat { m: number; s: number; p50: number; p75: number; zLo: number }
+interface TierCtx { gPow: number; gBab: number; gK: number; hr: ChStat; bab: ChStat; so: ChStat }
 function chStat(xs: number[]): ChStat {
   const m = mean(xs), s = sd(xs) || 1;
-  return { m, s, p75: pct(xs, 0.75), zLo: Math.min(...xs.map((x) => (x - m) / s)) };
+  return { m, s, p50: pct(xs, 0.50), p75: pct(xs, 0.75), zLo: Math.min(...xs.map((x) => (x - m) / s)) };
 }
 function buildCtx(d: SampleDeps, pools: { tier: string; role: string; byChannel: Record<string, number[]> }[]): Map<string, TierCtx> {
   const out = new Map<string, TierCtx>();
@@ -271,58 +271,69 @@ function buildCtx(d: SampleDeps, pools: { tier: string; role: string; byChannel:
     const basePool = d.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
     const fs = computeUnifiedFieldStats(basePool, d.coeffs, d.model, FIELD_N, true);
     const g = (k: string) => Math.max((d.ref.hit.vR[k]!.mu / Math.max(fs.hit.vR[k]!.mu, 1e-9)) - 1, 0);
-    out.set(tier, { gPow: g("pow"), gBab: g("babip"), hr: chStat(pd.byChannel.hr600!), bab: chStat(pd.byChannel.babip!) });
+    out.set(tier, {
+      gPow: g("pow"), gBab: g("babip"), gK: g("kRat"),
+      hr: chStat(pd.byChannel.hr600!), bab: chStat(pd.byChannel.babip!), so: chStat(pd.byChannel.soPct!),
+    });
   }
   return out;
 }
 
 // ── candidate A: the correction — ONE definition, applied per channel ─────────────────────────────
-type Family = "hinge" | "quad" | "pivot";
+type Family = "hinge" | "hinge50" | "quad" | "pivot" | "step";
 type WShape = "lin" | "sat";
 const SAT_G0 = 0.10;
 const wOf = (g: number, shape: WShape) => (shape === "lin" ? Math.max(g, 0) : 1 - Math.exp(-Math.max(g, 0) / SAT_G0));
 /** Apply one correction family to a predicted channel value. `lw` = λ·w(g) (the tier's strength).
- *  hinge: slope 1+lw above the pool p75 — monotone for lw > −1.
+ *  hinge / hinge50: slope 1+lw above the pool p75 / median — monotone for lw > −1.
  *  quad: convexity restore x + lw·s·(z²−1); the derivative 1+2·lw·z can only go negative on the
  *        pool's LEFT tail, so lw is clamped by |zLo| (the left edge), keeping ordering intact.
- *  pivot: pool-mean-preserving linear stretch (the kSpread class) — monotone for lw > −1. */
+ *  pivot: pool-mean-preserving linear stretch (the kSpread class) — monotone for lw > −1.
+ *  step: mid-band stretch x + lw·s·tanh(z) — flat at both ends (the inverse-tail instrument);
+ *        derivative 1 + lw·sech²(z) ≥ 1 for lw ≥ 0, monotone by construction. */
 function correctCh(x: number, st: ChStat, lw: number, fam: Family): number {
   if (!(lw > 0)) return x;
   if (fam === "hinge") return x + lw * Math.max(x - st.p75, 0);
+  if (fam === "hinge50") return x + lw * Math.max(x - st.p50, 0);
   if (fam === "pivot") return st.m + (1 + lw) * (x - st.m);
-  const lwEff = Math.min(lw, 0.45 / Math.max(-st.zLo, 1e-9));
   const z = (x - st.m) / st.s;
+  if (fam === "step") return x + lw * st.s * Math.tanh(z);
+  const lwEff = Math.min(lw, 0.45 / Math.max(-st.zLo, 1e-9));
   return x + lwEff * st.s * (z * z - 1);
 }
 interface ChCfg { fam: Family; shape: WShape; lam: number }
-interface ACfg { hr: ChCfg; bab: ChCfg }
+interface ACfg { hr: ChCfg; bab: ChCfg; so: ChCfg }
 const OFF: ChCfg = { fam: "hinge", shape: "lin", lam: 0 };
-/** Corrected copy of the rows under an A-configuration (composite reassembled through the ONE assembly). */
+/** Corrected copy of the rows under an A-configuration (composite reassembled through the ONE assembly).
+ *  The SO leg raises whiff-tail strikeouts, which shrinks BIP and hence hits in the reassembly —
+ *  the physically-consistent value effect. */
 function applyA(rows: ERow[], ctx: Map<string, TierCtx>, cfg: ACfg): ERow[] {
   return rows.map((r) => {
     const c = ctx.get(r.tier);
     if (!c) return r;
     const hr = Math.max(correctCh(r.hr, c.hr, cfg.hr.lam * wOf(c.gPow, cfg.hr.shape), cfg.hr.fam), 0);
     const bab = Math.min(Math.max(correctCh(r.bab, c.bab, cfg.bab.lam * wOf(c.gBab, cfg.bab.shape), cfg.bab.fam), 0), 0.6);
-    return { ...r, hr, bab, predW: hitWobaFromCh(r.bb, r.so, hr, bab, r.share) };
+    const so = Math.max(correctCh(r.so, c.so, cfg.so.lam * wOf(c.gK, cfg.so.shape), cfg.so.fam), 0);
+    return { ...r, hr, bab, so, predW: hitWobaFromCh(r.bb, so, hr, bab, r.share) };
   });
 }
 
 // ── λ grid fit: minimize calibration-slope loss on the fitting tiers ──────────────────────────────
-const chanPO = (rows: ERow[], ch: "hr" | "bab"): PO[] =>
-  rows.map((r) => ({ tier: r.tier, pred: ch === "hr" ? r.hr : r.bab, obs: ch === "hr" ? r.obsHr : r.obsBab }));
+type Chan = "hr" | "bab" | "so";
+const chanPO = (rows: ERow[], ch: Chan): PO[] =>
+  rows.map((r) => ({ tier: r.tier, pred: ch === "hr" ? r.hr : ch === "bab" ? r.bab : r.so, obs: ch === "hr" ? r.obsHr : ch === "bab" ? r.obsBab : r.obsSo }));
+/** Slope loss for the λ grid: pooled slope weighted 2× (the headline verdict), band slopes 1× each. */
 function slopeLoss(rows: PO[]): number {
   const { p, o } = demean(rows);
   const s = slopeOf(p, o), bd = bands(p, o);
-  return (s - 1) ** 2 + (Number.isFinite(bd.top) ? (bd.top - 1) ** 2 : 0) + (Number.isFinite(bd.rest) ? (bd.rest - 1) ** 2 : 0);
+  return 2 * (s - 1) ** 2 + (Number.isFinite(bd.top) ? (bd.top - 1) ** 2 : 0) + (Number.isFinite(bd.rest) ? (bd.rest - 1) ** 2 : 0);
 }
-function fitLambda(rows: ERow[], ctx: Map<string, TierCtx>, fam: Family, shape: WShape, ch: "hr" | "bab", tiers?: Set<string>): { lam: number; loss: number } {
+const cfgFor = (ch: Chan, cc: ChCfg): ACfg => ({ hr: ch === "hr" ? cc : OFF, bab: ch === "bab" ? cc : OFF, so: ch === "so" ? cc : OFF });
+function fitLambda(rows: ERow[], ctx: Map<string, TierCtx>, fam: Family, shape: WShape, ch: Chan, tiers?: Set<string>): { lam: number; loss: number } {
   const use = tiers ? rows.filter((r) => tiers.has(r.tier)) : rows;
   let best = 0, bestLoss = Infinity;
   for (let lam = 0; lam <= 6.0001; lam += 0.05) {
-    const cc: ChCfg = { fam, shape, lam };
-    const cfg: ACfg = ch === "hr" ? { hr: cc, bab: OFF } : { hr: OFF, bab: cc };
-    const loss = slopeLoss(chanPO(applyA(use, ctx, cfg), ch));
+    const loss = slopeLoss(chanPO(applyA(use, ctx, cfgFor(ch, { fam, shape, lam })), ch));
     if (loss < bestLoss - 1e-12) { bestLoss = loss; best = lam; }
   }
   return { lam: best, loss: bestLoss };
@@ -355,9 +366,9 @@ const membOf = (r: ERow): string[] => {
   const q = poolQ.get(r.tier)!;
   return ARCH.filter((a) => a.test(r.ratings, q)).map((a) => a.id);
 };
-interface ArchRow { n: number; est: number; lo: number; hi: number; sig: boolean; drvHr: number; drvBab: number }
+interface ArchRow { n: number; est: number; lo: number; hi: number; sig: boolean; drvHr: number; drvBab: number; drvSo: number; drvBb: number }
 /** Level-free archetype mis-valuation (mwOBA, + = over-valued) with a within-tier card bootstrap,
- *  plus the HR/BABIP channel-driver contributions (one-at-a-time substitution, tier-centered). */
+ *  plus the per-channel driver contributions (one-at-a-time substitution, tier-centered). */
 function archTable(rows: ERow[]): Map<string, ArchRow> {
   const by = new Map<string, ERow[]>();
   for (const r of rows) (by.get(r.tier) ?? by.set(r.tier, []).get(r.tier)!).push(r);
@@ -367,6 +378,8 @@ function archTable(rows: ERow[]): Map<string, ArchRow> {
     return [r.key, {
       hr: attribWoba(r.obsBb, r.obsSo, r.hr, r.obsBab) - base,
       bab: attribWoba(r.obsBb, r.obsSo, r.obsHr, r.bab) - base,
+      so: attribWoba(r.obsBb, r.so, r.obsHr, r.obsBab) - base,
+      bb: attribWoba(r.bb, r.obsSo, r.obsHr, r.obsBab) - base,
     }];
   }));
   const point = (groups: Map<string, ERow[]>, get: (r: ERow) => number): Map<string, { n: number; mean: number }> => {
@@ -381,6 +394,8 @@ function archTable(rows: ERow[]): Map<string, ArchRow> {
   const pt = point(by, total);
   const ptHr = point(by, (r) => drv.get(r.key)!.hr);
   const ptBab = point(by, (r) => drv.get(r.key)!.bab);
+  const ptSo = point(by, (r) => drv.get(r.key)!.so);
+  const ptBb = point(by, (r) => drv.get(r.key)!.bb);
   const rnd = rng(20260716);
   const boots = new Map<string, number[]>(ARCH.map((a) => [a.id, []]));
   for (let b = 0; b < 1000; b++) {
@@ -397,6 +412,7 @@ function archTable(rows: ERow[]): Map<string, ArchRow> {
     out.set(a.id, {
       n: p.n, est: p.mean, lo, hi, sig: Number.isFinite(lo) && lo * hi > 0,
       drvHr: ptHr.get(a.id)?.mean ?? NaN, drvBab: ptBab.get(a.id)?.mean ?? NaN,
+      drvSo: ptSo.get(a.id)?.mean ?? NaN, drvBb: ptBb.get(a.id)?.mean ?? NaN,
     });
   }
   return out;
@@ -411,7 +427,7 @@ for (const { tier, cap } of QUICK) {
 }
 const bucketOf = (x: number, c: [number, number, number]) => (x < c[0] ? 0 : x < c[1] ? 1 : x < c[2] ? 2 : 3);
 const monoOf = (bs: number[]) => bs.length < 3 || bs.every((v, i) => i === 0 || v <= bs[i - 1]!) || bs.every((v, i) => i === 0 || v >= bs[i - 1]!);
-function powGrid(rows: ERow[], ch: "hr" | "bab", label: string, d = 2, perTier = true) {
+function powGrid(rows: ERow[], ch: Chan, label: string, d = 2, perTier = true) {
   console.log(`  ${label}: bias = pred − obs by POOL POW quartile (± card t 95% half-width (n))`);
   const pooledCells: number[][] = [[], [], [], []];
   for (const { tier } of QUICK) {
@@ -420,7 +436,7 @@ function powGrid(rows: ERow[], ch: "hr" | "bab", label: string, d = 2, perTier =
     const cuts = powCuts.get(tier)!;
     const cells: string[] = []; const biases: number[] = [];
     for (let b = 0; b < 4; b++) {
-      const cell = rs.filter((r) => bucketOf(r.pow, cuts) === b).map((r) => (ch === "hr" ? r.hr - r.obsHr : r.bab - r.obsBab));
+      const cell = rs.filter((r) => bucketOf(r.pow, cuts) === b).map((r) => (ch === "hr" ? r.hr - r.obsHr : ch === "bab" ? r.bab - r.obsBab : r.so - r.obsSo));
       if (!cell.length) { cells.push("—".padEnd(18)); continue; }
       pooledCells[b]!.push(...cell);
       const e = meanEst(cell);
@@ -465,18 +481,22 @@ interface Summary {
   name: string;
   hrSlope: number; hrCI: CI; hrTop: number; hrTopCI: CI; hrDelta: number; hrDeltaCI: CI;
   babSlope: number; babCI: CI; babTop: number; babTopCI: CI; babDelta: number; babDeltaCI: CI;
+  soSlope: number; soCI: CI;
+  lvlHr: number; lvlBab: number; lvlSo: number;   // pooled mean bias per channel (level footprint)
   corr: number; dCorr: { d: number; lo: number; hi: number };
   arch: Map<string, ArchRow>;
 }
 function summarize(name: string, rows: ERow[], base: ERow[]): Summary {
-  const hrPO = chanPO(rows, "hr"), babPO = chanPO(rows, "bab");
-  const { p: hp, o: ho } = demean(hrPO); const { p: bp, o: bo } = demean(babPO);
+  const hrPO = chanPO(rows, "hr"), babPO = chanPO(rows, "bab"), soPO = chanPO(rows, "so");
+  const { p: hp, o: ho } = demean(hrPO); const { p: bp, o: bo } = demean(babPO); const { p: sp, o: so } = demean(soPO);
   const hb = bands(hp, ho), bb = bands(bp, bo);
-  const hBoot = bootSlope(hrPO), bBoot = bootSlope(babPO);
+  const hBoot = bootSlope(hrPO), bBoot = bootSlope(babPO), sBoot = bootSlope(soPO);
   return {
     name,
     hrSlope: slopeOf(hp, ho), hrCI: hBoot.slope, hrTop: hb.top, hrTopCI: hBoot.top, hrDelta: hb.delta, hrDeltaCI: hBoot.delta,
     babSlope: slopeOf(bp, bo), babCI: bBoot.slope, babTop: bb.top, babTopCI: bBoot.top, babDelta: bb.delta, babDeltaCI: bBoot.delta,
+    soSlope: slopeOf(sp, so), soCI: sBoot.slope,
+    lvlHr: mean(rows.map((r) => r.hr - r.obsHr)), lvlBab: mean(rows.map((r) => r.bab - r.obsBab)), lvlSo: mean(rows.map((r) => r.so - r.obsSo)),
     corr: ordering(rows), dCorr: orderingDelta(rows, base),
     arch: archTable(rows),
   };
@@ -485,8 +505,10 @@ function printSummary(s: Summary) {
   console.log(`\n── ${s.name} ──`);
   console.log(`  HR600  pooled slope ${f(s.hrSlope)} [${f(s.hrCI.lo)},${f(s.hrCI.hi)}]   top-band ${f(s.hrTop)} [${f(s.hrTopCI.lo)},${f(s.hrTopCI.hi)}]   Δ(top−rest) ${sgn(s.hrDelta)} [${sgn(s.hrDeltaCI.lo)},${sgn(s.hrDeltaCI.hi)}]`);
   console.log(`  BABIP  pooled slope ${f(s.babSlope)} [${f(s.babCI.lo)},${f(s.babCI.hi)}]   top-band ${f(s.babTop)} [${f(s.babTopCI.lo)},${f(s.babTopCI.hi)}]   Δ(top−rest) ${sgn(s.babDelta)} [${sgn(s.babDeltaCI.lo)},${sgn(s.babDeltaCI.hi)}]`);
+  console.log(`  SO%    pooled slope ${f(s.soSlope)} [${f(s.soCI.lo)},${f(s.soCI.hi)}]`);
+  console.log(`  levels (pooled mean bias, judged sample; the uniform part is frame/convention — footprint only): HR ${sgn(s.lvlHr)}  BABIP ${sgn(s.lvlBab, 3)}  SO ${sgn(s.lvlSo)}`);
   console.log(`  ordering: pooled wOBA corr ${f(s.corr, 3)}   Δcorr vs baseline ${sgn(s.dCorr.d, 3)} [${sgn(s.dCorr.lo, 3)},${sgn(s.dCorr.hi, 3)}] ${s.dCorr.hi < 0 ? "*** ORDERING DEGRADED (CI-clear) ***" : "(not degraded)"}`);
-  const a = (id: string) => { const v = s.arch.get(id)!; return `${sgn(v.est, 2)}${v.sig ? "*" : " "} [${sgn(v.lo, 2)},${sgn(v.hi, 2)}] (hr ${sgn(v.drvHr, 1)} bab ${sgn(v.drvBab, 1)}) n${v.n}`; };
+  const a = (id: string) => { const v = s.arch.get(id)!; return `${sgn(v.est, 2)}${v.sig ? "*" : " "} [${sgn(v.lo, 2)},${sgn(v.hi, 2)}] (hr ${sgn(v.drvHr, 1)} bab ${sgn(v.drvBab, 1)} so ${sgn(v.drvSo, 1)} bb ${sgn(v.drvBb, 1)}) n${v.n}`; };
   console.log(`  archetypes (level-free mwOBA, + = over-valued; drivers in mwOBA):`);
   console.log(`    elite-power   ${a("elite-power")}`);
   console.log(`    contact       ${a("contact")}`);
@@ -520,17 +542,16 @@ for (const { tier } of QUICK) {
 
 // ═══ 1. CANDIDATE A — per-channel family × gap-shape sweep (λ fit once on all 5 Quick tiers) ═══════
 console.log(`\n\n╔═══ 1. CANDIDATE A — family × gap-shape sweep per channel (grid λ on the slope loss) ═══╗`);
-console.log(`loss = (pooled−1)² + (top-band−1)² + (rest-band−1)² on tier-demeaned pooled rows; slope targets only —`);
-console.log(`archetypes/ordering are ACCEPTANCE axes (§3), never fit targets.`);
+console.log(`loss = 2·(pooled−1)² + (top-band−1)² + (rest-band−1)² on tier-demeaned pooled rows; slope targets only —`);
+console.log(`archetypes/ordering are ACCEPTANCE axes (§3), never fit targets. SO's "top" band = the WHIFF tail (most Ks).`);
 console.log(`\nchannel  family×shape    λ*      slope→   top→    rest→   loss`);
-interface Combo { ch: "hr" | "bab"; fam: Family; shape: WShape; lam: number; loss: number }
+interface Combo { ch: Chan; fam: Family; shape: WShape; lam: number; loss: number }
 const combos: Combo[] = [];
-for (const ch of ["hr", "bab"] as const) {
-  for (const fam of ["hinge", "quad", "pivot"] as Family[]) {
+for (const ch of ["hr", "bab", "so"] as const) {
+  for (const fam of ["hinge", "hinge50", "quad", "pivot", "step"] as Family[]) {
     for (const shape of ["lin", "sat"] as WShape[]) {
       const { lam, loss } = fitLambda(rows0, ctx0, fam, shape, ch);
-      const cc: ChCfg = { fam, shape, lam };
-      const rows = applyA(rows0, ctx0, ch === "hr" ? { hr: cc, bab: OFF } : { hr: OFF, bab: cc });
+      const rows = applyA(rows0, ctx0, cfgFor(ch, { fam, shape, lam }));
       const { p, o } = demean(chanPO(rows, ch));
       const bd = bands(p, o);
       combos.push({ ch, fam, shape, lam, loss });
@@ -538,9 +559,9 @@ for (const ch of ["hr", "bab"] as const) {
     }
   }
 }
-const bestBy = (ch: "hr" | "bab", n: number) => combos.filter((c) => c.ch === ch).sort((a, b) => a.loss - b.loss).slice(0, n);
-const hrTop2 = bestBy("hr", 2), babTop2 = bestBy("bab", 2);
-console.log(`\nper-channel finalists: HR → ${hrTop2.map((c) => `${c.fam}-${c.shape}`).join(", ")} | BABIP → ${babTop2.map((c) => `${c.fam}-${c.shape}`).join(", ")}`);
+const bestBy = (ch: Chan, n: number) => combos.filter((c) => c.ch === ch).sort((a, b) => a.loss - b.loss).slice(0, n);
+const hrTop2 = bestBy("hr", 2), babTop2 = bestBy("bab", 2), soBest = bestBy("so", 1)[0]!;
+console.log(`\nper-channel finalists: HR → ${hrTop2.map((c) => `${c.fam}-${c.shape}`).join(", ")} | BABIP → ${babTop2.map((c) => `${c.fam}-${c.shape}`).join(", ")} | SO (optional 3rd leg) → ${soBest.fam}-${soBest.shape}`);
 
 // ═══ 2. CANDIDATE B — league-refit HR/H form changes ═══════════════════════════════════════════════
 console.log(`\n\n╔═══ 2. CANDIDATE B — form change, refit on LEAGUE data (window ${trained.window?.join("+")}) ═══╗`);
@@ -634,21 +655,24 @@ console.log(`\n\n╔═══ 3. FULL EVAL — baseline, A mixes (HR-family × B
 printSummary(summarize("BASELINE (deployed)", rows0, rows0));
 const summaries: { key: string; s: Summary; rows: ERow[]; cfg?: ACfg }[] = [];
 const mixes: { key: string; cfg: ACfg }[] = [];
-for (const h of hrTop2) for (const b of babTop2) {
-  mixes.push({
-    key: `A[hr:${h.fam}-${h.shape} + bab:${b.fam}-${b.shape}]`,
-    cfg: { hr: { fam: h.fam, shape: h.shape, lam: h.lam }, bab: { fam: b.fam, shape: b.shape, lam: b.lam } },
-  });
-}
+const cc = (c: Combo): ChCfg => ({ fam: c.fam, shape: c.shape, lam: c.lam });
+const soCC = cc(soBest);
+const hrBest = hrTop2[0]!, hr2nd = hrTop2[1], babBest = babTop2[0]!, bab2nd = babTop2[1];
+const mixKey = (h: Combo, b: Combo, s?: Combo) =>
+  `A[hr:${h.fam}-${h.shape} + bab:${b.fam}-${b.shape}${s ? ` + so:${s.fam}-${s.shape}` : ""}]`;
+mixes.push({ key: mixKey(hrBest, babBest), cfg: { hr: cc(hrBest), bab: cc(babBest), so: OFF } });
+mixes.push({ key: mixKey(hrBest, babBest, soBest), cfg: { hr: cc(hrBest), bab: cc(babBest), so: soCC } });
+if (bab2nd) mixes.push({ key: mixKey(hrBest, bab2nd, soBest), cfg: { hr: cc(hrBest), bab: cc(bab2nd), so: soCC } });
+if (hr2nd) mixes.push({ key: mixKey(hr2nd, babBest, soBest), cfg: { hr: cc(hr2nd), bab: cc(babBest), so: soCC } });
 // the original both-hinge spec is kept in the lineup for the record even when not a per-channel finalist.
-if (!mixes.some((m) => m.cfg.hr.fam === "hinge" && m.cfg.bab.fam === "hinge")) {
+if (!mixes.some((m) => m.cfg.hr.fam === "hinge" && m.cfg.bab.fam === "hinge" && m.cfg.so.lam === 0)) {
   const h = combos.find((c) => c.ch === "hr" && c.fam === "hinge" && c.shape === "lin")!;
   const b = combos.find((c) => c.ch === "bab" && c.fam === "hinge" && c.shape === "lin")!;
-  mixes.push({ key: "A[both-hinge-lin]", cfg: { hr: { fam: "hinge", shape: "lin", lam: h.lam }, bab: { fam: "hinge", shape: "lin", lam: b.lam } } });
+  mixes.push({ key: "A[both-hinge-lin, no-SO]", cfg: { hr: cc(h), bab: cc(b), so: OFF } });
 }
 for (const m of mixes) {
   const rows = applyA(rows0, ctx0, m.cfg);
-  const s = summarize(`${m.key}  (λHR ${f(m.cfg.hr.lam)}, λBAB ${f(m.cfg.bab.lam)})`, rows, rows0);
+  const s = summarize(`${m.key}  (λHR ${f(m.cfg.hr.lam)}, λBAB ${f(m.cfg.bab.lam)}, λSO ${f(m.cfg.so.lam)})`, rows, rows0);
   summaries.push({ key: m.key, s, rows, cfg: m.cfg });
   printSummary(s);
 }
@@ -699,6 +723,11 @@ powGrid(rows0, "bab", "BABIP", 3);
 console.log(`\n${winner.key}:`);
 powGrid(winner.rows, "hr", "HR600");
 powGrid(winner.rows, "bab", "BABIP", 3);
+if (winner.cfg && winner.cfg.so.lam > 0) {
+  console.log(`  (SO leg active — SO% by POW quartile, baseline then winner; the whiff-slugger story rides Q4)`);
+  powGrid(rows0, "so", "SO% base", 2, false);
+  powGrid(winner.rows, "so", "SO% corr", 2, false);
+}
 const runnerUp = ranked[1];
 if (runnerUp) {
   console.log(`\nrunner-up ${runnerUp.key} (pooled row only):`);
@@ -709,17 +738,19 @@ if (runnerUp) {
 // ═══ 5. HELD-OUT TIER — the winning A mix generalizes across tiers? ════════════════════════════════
 if (winner.cfg) {
   console.log(`\n\n╔═══ 5. HELD-OUT-TIER OOT — ${winner.key}: λ refit on 4 tiers, judged on the 5th ═══╗`);
-  console.log(`tier(out)   λHR    λBAB    HR slope base→held   HRtop base→held    BAB slope base→held   BABtop base→held`);
+  console.log(`tier(out)   λHR    λBAB   λSO    HR slope base→held   HRtop base→held    BAB slope base→held   BABtop base→held   SO slope base→held`);
   for (const { tier } of QUICK) {
     const others = new Set(QUICK.map((q) => q.tier).filter((t) => t !== tier));
     const lamHr = fitLambda(rows0, ctx0, winner.cfg.hr.fam, winner.cfg.hr.shape, "hr", others).lam;
     const lamBab = fitLambda(rows0, ctx0, winner.cfg.bab.fam, winner.cfg.bab.shape, "bab", others).lam;
+    const lamSo = winner.cfg.so.lam > 0 ? fitLambda(rows0, ctx0, winner.cfg.so.fam, winner.cfg.so.shape, "so", others).lam : 0;
     const held0 = rows0.filter((r) => r.tier === tier);
     if (held0.length < 10) { console.log(`${tier.padEnd(11)} (N=${held0.length} — too thin to judge)`); continue; }
-    const held = applyA(held0, ctx0, { hr: { ...winner.cfg.hr, lam: lamHr }, bab: { ...winner.cfg.bab, lam: lamBab } });
-    const sl = (rs: ERow[], ch: "hr" | "bab") => mmse(rs.map((r) => (ch === "hr" ? r.hr : r.bab)), rs.map((r) => (ch === "hr" ? r.obsHr : r.obsBab))).slope.est;
-    const tp = (rs: ERow[], ch: "hr" | "bab") => bands(rs.map((r) => (ch === "hr" ? r.hr : r.bab)), rs.map((r) => (ch === "hr" ? r.obsHr : r.obsBab))).top;
-    console.log(`${tier.padEnd(11)} ${f(lamHr).padStart(4)}   ${f(lamBab).padStart(4)}     ${f(sl(held0, "hr"))} → ${f(sl(held, "hr"))}         ${f(tp(held0, "hr"))} → ${f(tp(held, "hr"))}        ${f(sl(held0, "bab"))} → ${f(sl(held, "bab"))}         ${f(tp(held0, "bab"))} → ${f(tp(held, "bab"))}`);
+    const held = applyA(held0, ctx0, { hr: { ...winner.cfg.hr, lam: lamHr }, bab: { ...winner.cfg.bab, lam: lamBab }, so: { ...winner.cfg.so, lam: lamSo } });
+    const val = (r: ERow, ch: Chan, obs: boolean) => (ch === "hr" ? (obs ? r.obsHr : r.hr) : ch === "bab" ? (obs ? r.obsBab : r.bab) : (obs ? r.obsSo : r.so));
+    const sl = (rs: ERow[], ch: Chan) => mmse(rs.map((r) => val(r, ch, false)), rs.map((r) => val(r, ch, true))).slope.est;
+    const tp = (rs: ERow[], ch: Chan) => bands(rs.map((r) => val(r, ch, false)), rs.map((r) => val(r, ch, true))).top;
+    console.log(`${tier.padEnd(11)} ${f(lamHr).padStart(4)}   ${f(lamBab).padStart(4)}  ${f(lamSo).padStart(4)}    ${f(sl(held0, "hr"))} → ${f(sl(held, "hr"))}         ${f(tp(held0, "hr"))} → ${f(tp(held, "hr"))}        ${f(sl(held0, "bab"))} → ${f(sl(held, "bab"))}         ${f(tp(held0, "bab"))} → ${f(tp(held, "bab"))}        ${f(sl(held0, "so"))} → ${f(sl(held, "so"))}`);
   }
 }
 
