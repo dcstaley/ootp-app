@@ -122,6 +122,28 @@ export const applyKSpread = (k: number, mean: number, s: number): number =>
 // s === 1 short-circuits to the raw K EXACTLY (not `mean + (k − mean)`, which can differ in the
 // last ulp) — the in-frame identity guarantee "s → 1 ⇒ bit-identical scores" is a test invariant.
 
+// ── Pitcher K-spread ramp (own-gap path; PRODUCTION, on by default) ─────────────
+// FIT PROVENANCE (2026-07-16, tools/fit-kspread-pit.ts; results doc
+// docs/CWHIT_KSPREAD_PIT_2026-07-16.md; Derek ruled 2026-07-17: ship on-by-default):
+// per-tier cwhit K9 calibration slopes (iron 1.90 / bronze 1.70 / silver 1.51 / gold 1.43 at
+// stu-gaps 27.7/25.7/22.5/19.3), precision-weighted; s(0)=1 hard — league in-frame K is already
+// calibrated (insample-frame-check), so the amplification is a tournament-frame parameter by
+// construction. G is identified only as a lower bound over the observed gap range (g≈19–28 is
+// near-linear, β≈0.0287/pt); A/G pinned by rule at the most-saturating member within 5% of the
+// linear-limit SSE (least extrapolated amplification beyond observed gaps). Held-out bronze:
+// predicted 1.77 [1.64,1.87] vs measured 1.70 [1.60,1.80]. Reference values: s(10)=1.29,
+// s(20)=1.58, s(28)=1.80. Gold-quick G2 exception overruled by Derek (thin pre-declared cell,
+// non-replicating at matched gap in gold-cap daily, instrument-inherent per the oracle-s test).
+export const K_SPREAD_PIT = { A: 9.5394, G: 319 } as const;
+
+/** s(gap) for the pitcher K-spread on the own-gap path: 1 + A·(1 − e^(−g/G)), with s(g ≤ 0) = 1
+ *  EXACTLY (league anchor; a stronger-than-training pool is never compressed). The caller applies
+ *  it via applyKSpread to the raw model K, PRE-BIP PRE-ERA (score-card.ts), so hits re-derive from
+ *  the corrected BIP and era_k applies once. gap = the own-K-channel stu gap,
+ *  buildFrameShift(trainingMeans, poolField).pit.vR.stu. */
+export const kSpreadPitRamp = (gap: number): number =>
+  (gap > 0 ? 1 + K_SPREAD_PIT.A * (1 - Math.exp(-gap / K_SPREAD_PIT.G)) : 1);
+
 // The full transform: a per-rating map for each role × platoon side. Absent entries fall
 // back to identity (applyAffine with undefined → raw r), so a partial transform is safe.
 export interface PoolTransform {

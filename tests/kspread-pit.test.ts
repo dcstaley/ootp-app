@@ -23,7 +23,7 @@ import {
   type Coeffs, type CalScales, type FrameShift, type PoolTransform, type EventForm,
 } from "../src/scoring-core/index.ts";
 import type { FieldStats } from "../src/scoring-core/pool-stats.ts";
-import { applyKSpread, type RatingStats } from "../src/model/pool-transform.ts";
+import { applyKSpread, kSpreadPitRamp, K_SPREAD_PIT, type RatingStats } from "../src/model/pool-transform.ts";
 import type { FittedEvent, FittedH } from "../src/model/curves.ts";
 import { ourPit, type SampleDeps, type KSpreadPit } from "../src/eval/cwhit/sample.ts";
 import { DEFAULT_WOBA_WEIGHTS } from "../src/scoring-core/woba-weights.ts";
@@ -53,6 +53,43 @@ function card(over: Record<string, number> = {}): Record<string, unknown> {
   }
   return c;
 }
+
+// ── 0) the production ramp (constants shipped 2026-07-17, Derek's ruling) ───────
+describe("kSpreadPitRamp — fitted constants + league anchor + shape (regression pins)", () => {
+  it("pins the fit provenance constants exactly (A=9.5394, G=319 — docs/CWHIT_KSPREAD_PIT_2026-07-16.md §2)", () => {
+    expect(K_SPREAD_PIT.A).toBe(9.5394);
+    expect(K_SPREAD_PIT.G).toBe(319);
+  });
+  it("s(0) === 1 EXACTLY, and s(g ≤ 0) === 1 (league anchor; stronger-than-training pools never compressed)", () => {
+    expect(kSpreadPitRamp(0)).toBe(1);
+    expect(kSpreadPitRamp(-5)).toBe(1);
+    expect(kSpreadPitRamp(-100)).toBe(1);
+  });
+  it("reproduces the fitted ramp values at the reference gaps (stable gate-run numbers, 2dp)", () => {
+    // From the shipping-candidate table in the results doc: s(10)=1.29, s(20)=1.58, s(28)=1.80.
+    expect(kSpreadPitRamp(10)).toBeCloseTo(1.29, 2);
+    expect(kSpreadPitRamp(20)).toBeCloseTo(1.58, 2);
+    expect(kSpreadPitRamp(28)).toBeCloseTo(1.80, 2);
+    // And at the measured Quick-tier gaps: iron 27.7→1.79, bronze 25.7→1.74, silver 22.5→1.65, gold 19.3→1.56.
+    expect(kSpreadPitRamp(27.7)).toBeCloseTo(1.79, 2);
+    expect(kSpreadPitRamp(25.7)).toBeCloseTo(1.74, 2);
+    expect(kSpreadPitRamp(22.5)).toBeCloseTo(1.65, 2);
+    expect(kSpreadPitRamp(19.3)).toBeCloseTo(1.56, 2);
+  });
+  it("is monotone non-decreasing in the gap and bounded by the plateau 1 + A", () => {
+    let prev = kSpreadPitRamp(0);
+    for (let g = 1; g <= 400; g += 1) {
+      const s = kSpreadPitRamp(g);
+      expect(s).toBeGreaterThanOrEqual(prev);
+      expect(s).toBeLessThan(1 + K_SPREAD_PIT.A);
+      prev = s;
+    }
+  });
+  it("in-frame identity is STRUCTURAL: s(0)=1 hits applyKSpread's exact short-circuit (bit-identical K)", () => {
+    const awkwardK = 137.29999999999998, awkwardMean = 121.90000000000003;
+    expect(applyKSpread(awkwardK, awkwardMean, kSpreadPitRamp(0))).toBe(awkwardK);
+  });
+});
 
 // ── 1) applyKSpread exact-identity + arithmetic ─────────────────────────────────
 describe("applyKSpread — s=1 exact identity, amplification, clamp, monotonicity", () => {

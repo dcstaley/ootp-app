@@ -128,3 +128,33 @@ meanPit: poolMeanKOwn(...).pit }` behind a default-OFF state flag, threading the
 `calibrate`/`calibrateBasic`; constants `A = 9.539, G = 319` (the §2 pin). Derek's calls: (a) accept
 the gold-quick G2 exception (pooled ordering passes; the cell is thin and non-replicating) and wire;
 (b) hold for the era-spread follow-up (§5) first; or (c) reject the instrument.
+
+## 7. 2026-07-17 — Derek's ruling: WIRED, ON BY DEFAULT (option (a), inverted to standard scoring)
+
+Derek overruled the gold-quick G2 exception (pre-declared thin cell, non-replicating at matched gap
+in gold-cap daily, instrument-inherent per the §4 oracle-s test) and ruled the ramp into the
+**standard scoring path** — not an opt-in flag. Wiring as executed:
+
+- **Constants:** `K_SPREAD_PIT = { A: 9.5394, G: 319 }` + `kSpreadPitRamp(gap)` in
+  `src/model/pool-transform.ts` (next to `applyKSpread` — the one home of this transform family,
+  exported through `scoring-core/index.ts`), with the full fit provenance in the comment.
+  `s(g ≤ 0) = 1` exactly.
+- **Path:** own-gap branch of `scoreTournament` (`src/server/server.ts`) computes
+  `gap = buildFrameShift(activeTrainingMeans, poolField).pit.vR.stu` and
+  `kSpread = { sHit: 1, sPit: kSpreadPitRamp(gap), meanHit/meanPit: poolMeanKOwn(...) }`, threaded
+  into `scoreCard` + `calibrate` + `calibrateBasic` via the existing plumbing (verified placement:
+  raw K, per side, pre-BIP pre-era; hits re-derive from the corrected BIP in the components
+  recompute). The `/api/tournament/scorecard` own-gap mode carries the same object, so eval mirrors
+  production. Requires a trainingMeans-bearing model; absent ⇒ ramp skipped + activation warning.
+- **KILL-SWITCH (rollback):** `state.kSpreadPit = "off"` — `POST /api/training/kspread-pit?enabled=false`
+  (re-enable with `?enabled=true`); `GET /api/training/kspread-pit` reports
+  `{ enabled, hasTrainingMeans, A, G }`. Unset/`"on"` = enabled (the default).
+- **Tests** (`tests/kspread-pit.test.ts`, 17): constants pinned exactly; ramp values at reference +
+  tier gaps as regression expectations (s(20)=1.58, s(27.7)=1.79 …); s(0)=1 structural bit-identity
+  via the s===1 short-circuit; monotone + plateau-bounded; scoreCard in-frame identity on the
+  own-gap path; pitcher-only isolation (hitter scores bit-identical under sPit>1).
+
+**Expected behavior change (intended):** on next Regenerate, pitcher scores in weak-pool (out-of-
+frame) tournaments re-space — elite-K arms up, control-soft/low-K arms down (the Donohue-class
+correction); in-frame pools are bit-identical. Hitters are untouched everywhere. The era-spread
+residual (§5: EG/BH stall at slope ≈1.44) is a known SEPARATE queue item, unchanged by this wiring.
