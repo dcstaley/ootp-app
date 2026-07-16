@@ -59,7 +59,10 @@ export function parseCwhitMeta(headerLine: string, role: CwhitRole): CwhitMeta {
   if (parts[0]) meta.format = parts[0].replace(/\s+(pitchers|hitters)\s*$/i, "").trim();
   for (const p of parts.slice(1)) {
     let m: RegExpMatchArray | null;
-    if ((m = p.match(/coverage\s+(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})/i))) { meta.coverageFrom = m[1]; meta.coverageTo = m[2]; }
+    // The `coverage` keyword is OPTIONAL — most captured headers write a bare "A to B" range
+    // (only iron/bronze carry the literal word). Matching on the date range itself makes the
+    // coverage window recoverable from every table, which the scorecard's window-overlap check needs.
+    if ((m = p.match(/(?:coverage\s+)?(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})/i))) { meta.coverageFrom = m[1]; meta.coverageTo = m[2]; }
     else if ((m = p.match(/(\d+)\s+of\s+(\d+)/))) { meta.instances = Number(m[1]); meta.totalInstances = Number(m[2]); }
     else if ((m = p.match(/top\s+(\d+)/i))) { meta.topN = Number(m[1]); }
   }

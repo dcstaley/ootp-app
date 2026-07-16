@@ -1,0 +1,103 @@
+# Diamond Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 3266 | model trained 2026-05-11..2026-07-11 (495 card rows | 560,668 PA; fit used cards >=2,000 PA: 60; sparse rating-tail hitters may enter with >=450 PA)
+# NOTE: HRpct is per-PA (observed table gives HR600); cwhit SOpct = K/AB (our convention = K/PA); cwhit pwOBA is BATTING-ONLY (our deployed score is Offense = wOBA + BsR).
+Name	Position	VAL	VLvl	Hand	pwOBA	pwOBA_vL	pwOBA_vR	BBpct	SOpct	HRpct	BABIP	XBHpct
+July Jewels - Baseball Reference 4 LF Al Simmons PHA 1930	LF	99	5	R	0.356	0.379	0.341	5.4	14.4	3.7	0.315	31.0
+July Jewels - Baseball Reference 4 LF Al Simmons PHA 1930	LF	99	0	R	0.343	0.364	0.328	4.9	15.7	3.4	0.311	29.8
+Memorial Day OnStream Builds - Super Utility SS Honus Wagner PIT 1903	SS	99	5	R	0.342	0.344	0.341	6.3	10.9	2.7	0.304	29.5
+Blue Jays 50th Anniversary 1B Carlos Delgado TOR 2000	1B	98	5	L	0.342	0.322	0.355	9.4	22.8	3.5	0.311	31.8
+July Jewels - Baseball Reference 4 LF Chick Hafey STL 1928	LF	89	5	R	0.336	0.339	0.333	5.2	21.4	3.9	0.306	33.7
+PTCS 4 - Historical All-Star CF Andy Pafko CHC 1950	CF	98	0	R	0.333	0.327	0.338	8.3	12.2	3.7	0.270	25.4
+Family Connections - Historical All-Star 1B Felipe Alou ATL 1966	1B	92	5	R	0.332	0.337	0.328	2.9	13.8	3.5	0.299	28.4
+Hardware Heroes 3B Gary Sheffield SD 1992	3B	99	5	R	0.331	0.344	0.322	5.7	13.5	3.5	0.287	26.2
+Blue Jays 50th Anniversary 1B Carlos Delgado TOR 2000	1B	98	0	L	0.329	0.309	0.342	9.0	24.4	3.3	0.308	30.7
+Future Legend 3B Sal Stewart CIN 2026	3B	97	5	R	0.329	0.339	0.323	8.0	18.9	3.4	0.294	27.0
+Obscure All-Stars - Baseball Reference 5 CF Cedric Mullins BAL 2021	CF	96	5	L	0.328	0.303	0.346	6.8	18.2	3.1	0.306	25.8
+Memorial Day OnStream Builds - Super Utility SS Honus Wagner PIT 1903	SS	99	0	R	0.327	0.326	0.327	5.7	12.4	2.4	0.299	28.5
+World Baseball Classic LF Masataka Yoshida JPN 2023	LF	94	5	L	0.326	0.322	0.329	7.7	16.0	3.5	0.285	21.3
+July Jewels - Baseball Reference 4 2B Chuck Knoblauch MIN 1996	2B	95	5	R	0.326	0.330	0.323	9.3	17.0	1.7	0.313	27.7
+60s Theme Week - Hall of Fame RF Al Kaline DET 1961	RF	99	5	R	0.326	0.338	0.318	6.2	14.1	2.1	0.304	31.6
+Clubhouse - SwitchKnucklers - Snapshot 1B John Anderson WAS 1898	1B	97	0	S	0.325	0.326	0.323	3.6	15.1	2.9	0.300	32.7
+Young & Old 1 - Veteran Presence 1B Hank Aaron ATL 1971	1B	98	5	R	0.325	0.308	0.336	7.9	18.3	4.0	0.276	24.1
+T4 Ep. 2 - Historical All-Star 1B Gregg Jefferies STL 1993	1B	84	5	S	0.324	0.334	0.317	6.4	11.4	2.4	0.303	16.5
+FLF 2 - Future Legend 2B JJ Wetherholt STL 2026	2B	96	5	L	0.323	0.313	0.330	8.1	16.4	1.9	0.307	28.3
+Family Connections - Hardware Heroes SS Fernando Tatis Jr. SD 2021	SS	95	5	R	0.323	0.327	0.321	8.2	27.4	4.1	0.302	26.9
+Negro League Star LF Wilson Redus SLS 1927	LF	99	5	R	0.323	0.321	0.324	3.9	20.1	3.7	0.299	29.7
+T4 Ep. 3 - Snapshot RF Willie Keeler BLN 1894	RF	77	5	L	0.323	0.308	0.333	2.8	6.6	1.5	0.312	24.0
+FLF 2 - Future Legend RF Chase DeLauter CLE 2026	RF	99	5	L	0.323	0.316	0.327	8.1	18.8	3.7	0.276	27.9
+Limited Edition/45 2B Mark Loretta SD 2004	2B	90	0	R	0.321	0.326	0.318	6.2	11.4	1.7	0.306	24.1
+SwitchKnucklers - Snapshot CF Walt Wilmot CHC 1890	CF	94	5	S	0.321	0.319	0.322	6.9	18.2	3.3	0.292	23.3
+Negro League Star SS John Beckwith HoGr 1929	SS	98	5	R	0.321	0.319	0.322	7.2	19.6	2.5	0.306	29.3
+July Jewels - Baseball Reference 4 LF Chick Hafey STL 1928	LF	89	0	R	0.320	0.323	0.319	4.6	23.2	3.7	0.302	32.4
+Limited Edition/58 C Sandy Alomar Jr. CLE 1997	C	91	0	R	0.320	0.322	0.320	2.1	15.5	2.9	0.306	29.5
+Family Connections - Historical All-Star RF Danny Tartabull KC 1991	RF	87	5	R	0.320	0.321	0.319	8.6	32.6	4.1	0.313	30.0
+FLF 15 & Co. - Future Legend C Alfredo Duno CIN 2026	C	95	5	R	0.320	0.327	0.315	9.6	28.4	3.7	0.306	24.4
+Clubhouse - SwitchKnucklers - Snapshot 2B Frankie Frisch STL 1927	2B	94	0	S	0.319	0.329	0.312	4.0	7.2	2.0	0.291	25.0
+World Baseball Classic SS Trea Turner USA 2023	SS	98	5	R	0.319	0.320	0.319	6.6	19.1	3.7	0.285	23.3
+FLF 13 & Co. - Future Legend SS Ethan Holliday COL 2026	SS	95	5	L	0.319	0.300	0.332	10.1	28.3	3.7	0.297	26.4
+Snapshot 3B Garrett Atkins COL 2008	3B	94	5	R	0.319	0.336	0.307	8.0	20.7	3.2	0.289	27.5
+Clubhouse - 60s Week - Snapshot LF Jerry Lynch CIN 1961	LF	94	0	L	0.318	0.329	0.310	7.3	22.3	3.4	0.289	30.0
+Hall of Fame C Ted Simmons STL 1977	C	99	5	S	0.318	0.322	0.316	7.9	15.5	3.0	0.283	20.7
+Baseball Reference 2 LF Rocky Colavito DET 1961	LF	96	5	R	0.318	0.298	0.332	11.1	19.0	4.0	0.256	18.3
+60s Theme Week - Hardware Heroes 3B Ken Boyer STL 1961	3B	96	5	R	0.318	0.311	0.322	7.8	23.5	2.9	0.308	27.5
+PTCS 2 - Hall of Fame 2B Red Schoendienst STL 1953	2B	94	0	S	0.317	0.314	0.319	5.1	12.2	1.9	0.304	26.0
+FLF 9 - Future Legend SS Colt Emerson SEA 2026	SS	98	5	L	0.317	0.303	0.326	8.5	22.4	2.5	0.304	29.6
+Opening Day HR Streak - Baseball Reference LF Tyler O'Neill STL 2021	LF	98	5	R	0.316	0.329	0.306	5.8	26.4	3.9	0.309	23.7
+Clubhouse - Historical All-Star SS Rico Petrocelli BOS 1969	SS	99	0	R	0.315	0.301	0.325	8.9	19.9	3.8	0.263	26.2
+PTCS 2 - Hall of Fame 3B Eddie Mathews ML1 1961	3B	98	0	L	0.315	0.295	0.328	8.9	24.1	3.5	0.296	18.8
+July Jewels - Baseball Reference 4 2B Chuck Knoblauch MIN 1996	2B	95	0	R	0.315	0.320	0.312	8.8	18.1	1.5	0.310	26.7
+Limited Edition/46 1B Prince Fielder MIL 2009	1B	99	0	L	0.315	0.306	0.320	7.5	26.4	3.9	0.296	23.6
+Limited Edition/36 3B Morgan Ensberg HOU 2005	3B	95	0	R	0.315	0.322	0.310	9.2	26.9	4.0	0.293	19.4
+Family Connections - Historical All-Star 1B Felipe Alou ATL 1966	1B	92	0	R	0.315	0.319	0.313	2.5	15.2	3.3	0.292	27.3
+HOF 1 - Hall of Fame 3B Ron Santo CHC 1969	3B	93	5	R	0.315	0.310	0.319	8.1	23.7	3.4	0.304	17.6
+Hardware Heroes SS Alex Rodriguez TEX 2001	SS	98	5	R	0.315	0.305	0.322	8.0	24.3	3.8	0.290	22.5
+Celebrating 42 - Negro League Star 2B Larry Doby NeEa 1946	2B	98	5	L	0.315	0.308	0.320	7.2	26.6	3.2	0.309	30.9
+Future Legend 3B Sal Stewart CIN 2026	3B	97	0	R	0.314	0.324	0.307	7.8	20.3	3.1	0.288	25.8
+Hardware Heroes 3B Gary Sheffield SD 1992	3B	99	0	R	0.314	0.327	0.306	5.1	14.8	3.2	0.281	24.8
+Obscure All-Stars - Baseball Reference 5 CF Cedric Mullins BAL 2021	CF	96	0	L	0.314	0.286	0.333	6.1	19.8	2.9	0.301	24.3
+Snapshot C Aaron Robinson NYY 1946	C	98	5	L	0.314	0.330	0.303	8.9	26.0	3.7	0.291	23.3
+Snapshot 3B Aramis Ramirez MIL 2012	3B	98	5	R	0.314	0.327	0.305	4.3	17.9	3.0	0.290	32.6
+4th of July On-Stream - Historical All-Star RF Austin Meadows TB 2019	RF	83	5	L	0.314	0.288	0.331	6.7	23.0	3.3	0.301	23.8
+Hall of Fame 1B Jeff Bagwell HOU 2000	1B	99	5	R	0.314	0.329	0.304	8.8	23.1	3.4	0.291	21.1
+60s Theme Week - Historical All-Star 1B Roy Sievers CWS 1961	1B	94	5	R	0.313	0.319	0.309	8.4	23.2	3.8	0.276	26.1
+Veteran Presence C Brian Harper MIN 1991	C	83	5	R	0.313	0.315	0.312	1.7	8.2	2.0	0.297	26.4
+Heart Attack - All-Time Legend SS Tony Fernandez TOR Peak	SS	96	5	S	0.313	0.303	0.319	7.0	16.1	1.6	0.306	28.2
+FLF 1 - Future Legend 1B Bryce Eldridge SF 2026	1B	97	5	L	0.313	0.298	0.323	8.1	25.1	3.5	0.293	25.5
+Young & Old 1 - Snapshot RF Tony Conigliaro BOS 1965	RF	95	5	R	0.313	0.306	0.317	6.4	24.8	3.9	0.293	24.7
+FLF 2 - Future Legend 2B JJ Wetherholt STL 2026	2B	96	0	L	0.312	0.300	0.321	7.8	17.7	1.8	0.303	27.2
+Limited Edition/40 RF Richie Scheinblum KC 1972	RF	87	0	S	0.312	0.295	0.324	6.9	15.8	2.2	0.298	22.2
+60s Theme Week - Hall of Fame RF Al Kaline DET 1961	RF	99	0	R	0.312	0.325	0.303	5.6	15.4	1.9	0.299	30.4
+SwitchKnucklers - Snapshot RF Ken Singleton MON 1973	RF	92	5	S	0.312	0.303	0.318	10.3	24.4	2.7	0.302	19.7
+In Memoriam - Snapshot 3B Bob Horner ATL 1983	3B	84	5	R	0.312	0.315	0.310	7.0	27.4	4.0	0.293	25.9
+Snapshot SS Charlie Hollocher CHC 1922	SS	96	5	L	0.312	0.291	0.326	6.2	10.4	0.9	0.308	25.8
+Baseball Reference 1 LF Bob Fothergill DET 1927	LF	86	5	R	0.312	0.326	0.303	5.1	18.4	2.2	0.311	27.2
+T4 Ep. 2 - Historical All-Star 1B Gregg Jefferies STL 1993	1B	84	0	S	0.311	0.316	0.307	6.1	12.8	2.3	0.299	14.5
+Limited Edition/38 CF Earl Averill CLE 1931	CF	93	0	L	0.311	0.293	0.323	6.1	21.3	3.5	0.284	27.0
+FLF 12 - Future Legend SS Eli Willits WSH 2026	SS	94	5	S	0.311	0.310	0.312	9.9	21.3	1.7	0.306	26.7
+Baseball Reference 1 1B Tino Martinez NYY 1997	1B	87	5	L	0.311	0.298	0.319	7.6	17.2	3.7	0.264	20.4
+4th of July On-Stream - Snapshot 2B Jack Burdock BSN 1883	2B	87	5	R	0.311	0.316	0.307	5.0	21.6	2.7	0.309	29.0
+World Baseball Classic LF Masataka Yoshida JPN 2023	LF	94	0	L	0.310	0.307	0.312	7.1	17.2	3.2	0.279	19.5
+Family Connections - Hardware Heroes SS Fernando Tatis Jr. SD 2021	SS	95	0	R	0.310	0.314	0.308	7.9	28.6	3.8	0.295	25.7
+Clubhouse - Baseball Reference 5 SS Zack Cozart CIN 2017	SS	83	0	R	0.310	0.331	0.295	8.0	20.9	2.8	0.293	22.1
+Young & Old 1 - Veteran Presence 1B Hank Aaron ATL 1971	1B	98	0	R	0.310	0.292	0.322	7.4	19.7	3.8	0.269	22.5
+60s Theme Week - Super Utility C Elston Howard NYY 1961	C	95	5	R	0.310	0.329	0.297	4.0	22.8	3.6	0.307	20.9
+FLF 3 - Future Legend CF Max Clark DET 2026	CF	98	5	L	0.310	0.298	0.319	8.3	20.4	2.0	0.303	27.0
+Clubhouse - Historical All-Star SS Dick Groat STL 1963	SS	89	0	R	0.309	0.321	0.300	6.2	13.2	1.1	0.301	31.3
+PTCS 3 - Hardware Heroes 1B Prince Fielder DET 2013	1B	87	0	L	0.309	0.310	0.309	8.0	21.3	3.2	0.289	18.5
+Clubhouse - Historical All-Star C Darren Daulton PHI 1992	C	93	0	L	0.309	0.298	0.317	9.5	28.6	3.8	0.279	30.4
+Negro League Star SS Willie Wells NeEa 1938	SS	91	5	R	0.309	0.326	0.297	7.7	18.6	2.2	0.295	24.9
+FLF 7 - Future Legend CF Ryan Waldschmidt AZ 2026	CF	94	5	R	0.309	0.314	0.305	9.3	27.8	3.7	0.283	25.0
+July Jewels - Baseball Reference 4 SS Julio Lugo TB 2005	SS	73	5	R	0.309	0.312	0.307	7.4	14.8	1.3	0.306	24.2
+Hardware Heroes 2B Eddie Collins CWS 1920	2B	98	5	L	0.309	0.281	0.328	7.5	11.7	0.8	0.303	24.8
+Family Connections - Historical All-Star RF Danny Tartabull KC 1991	RF	87	0	R	0.308	0.310	0.307	8.1	33.6	3.8	0.309	28.9
+Negro League Star LF Wilson Redus SLS 1927	LF	99	0	R	0.308	0.306	0.309	3.5	21.5	3.5	0.293	28.6
+T4 Ep. 3 - Snapshot RF Willie Keeler BLN 1894	RF	77	0	L	0.308	0.293	0.318	2.4	8.3	1.3	0.309	22.3
+FLF 2 - Future Legend RF Chase DeLauter CLE 2026	RF	99	0	L	0.308	0.302	0.313	7.8	20.2	3.5	0.269	26.7
+Live Collection Reward - Hardware Heroes 3B Home Run Baker PHA 1911	3B	99	0	L	0.308	0.300	0.313	3.6	15.2	2.9	0.283	28.2
+Negro League Star C Tom Young KCM 1929	C	91	5	L	0.308	0.287	0.321	6.8	21.0	2.7	0.290	28.7
+May Birthdays - Hardware Heroes 2B Robby Thompson SF 1993	2B	97	5	R	0.308	0.313	0.305	6.6	23.8	2.6	0.310	26.0
+FLF 14 & Co. - Future Legend CF Eduardo Quintero LAD 2026	CF	88	5	R	0.308	0.310	0.307	9.4	23.7	2.1	0.302	29.5
+Celebrating 42 - Negro League Star LF Lennie Pearson NeEa 1946	LF	93	5	R	0.308	0.315	0.304	6.5	21.9	3.6	0.280	26.5
+Baseball Reference 1 C Jason Kendall PIT 1998	C	91	5	R	0.308	0.321	0.299	6.7	16.9	1.9	0.301	23.9
+Snapshot 1B Harry Heilmann DET 1919	1B	96	5	R	0.308	0.318	0.300	4.6	20.9	2.7	0.302	29.2
+Veteran Presence 1B Jeff Conine BAL 2001	1B	94	5	R	0.308	0.317	0.303	7.7	17.8	2.6	0.288	21.7
+World Baseball Classic SS Yu Chang TPE 2023	SS	89	5	R	0.308	0.324	0.298	6.4	23.7	2.8	0.306	26.5

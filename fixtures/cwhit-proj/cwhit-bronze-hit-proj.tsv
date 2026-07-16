@@ -1,0 +1,103 @@
+# Bronze Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 1850 | model trained 2026-07-04..2026-07-12 (583 card rows | 698,350 PA; fit used cards >=2,000 PA: 70; sparse rating-tail hitters may enter with >=450 PA)
+# NOTE: HRpct is per-PA (observed table gives HR600); cwhit SOpct = K/AB (our convention = K/PA); cwhit pwOBA is BATTING-ONLY (our deployed score is Offense = wOBA + BsR).
+Name	Position	VAL	VLvl	Hand	pwOBA	pwOBA_vL	pwOBA_vR	BBpct	SOpct	HRpct	BABIP	XBHpct
+Blue Jays 50th Anniversary 1B John Olerud TOR 1992	1B	68	5	L	0.352	0.333	0.362	10.3	14.6	3.3	0.297	26.0
+Limited Edition/67 2B Jonathan Schoop BAL 2017	2B	67	0	R	0.344	0.350	0.341	5.6	19.6	3.9	0.317	24.5
+July Jewels - Baseball Reference 4 RF Ed Morgan CLE 1929	RF	66	5	R	0.342	0.350	0.337	10.6	16.8	1.4	0.324	31.9
+T4 Ep. 3 - Unsung Heroes LF Bill Buckner LAD 1974	LF	64	5	L	0.340	0.303	0.360	4.7	6.2	1.6	0.310	29.9
+May Flower - Super Utility C Mickey Tettleton DET 1994	C	69	5	S	0.338	0.327	0.344	14.0	28.8	4.0	0.296	23.0
+T4 Ep. 4 - Historical All-Star DH Mike Sweeney KC 2003	DH	63	5	R	0.338	0.332	0.341	11.3	13.1	3.0	0.283	18.5
+July Jewels - Baseball Reference 4 3B Dave Brain BSN 1907	3B	68	5	R	0.338	0.339	0.337	5.0	18.3	4.3	0.289	29.8
+T4 Ep. 4 - Historical All-Star SS Alan Trammell DET 1980	SS	63	5	R	0.336	0.332	0.338	9.8	14.7	2.1	0.308	22.7
+T4 Ep. 3 - Hardware Heroes SS Leo Cardenas CIN 1965	SS	68	5	R	0.333	0.348	0.325	8.6	20.7	2.5	0.320	26.5
+Blue Jays 50th Anniversary 1B John Olerud TOR 1992	1B	68	0	L	0.332	0.315	0.341	10.0	16.0	2.8	0.289	24.7
+4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	5	R	0.332	0.326	0.336	5.6	15.6	4.0	0.281	25.9
+July Jewels - Baseball Reference 4 CF Brett Butler LAD 1992	CF	64	5	L	0.331	0.318	0.337	10.5	13.0	0.8	0.322	21.5
+FLF 16 - Future Legend CF Roldy Brito COL 2026	CF	69	5	S	0.331	0.331	0.332	8.5	16.8	1.7	0.317	29.4
+June Gems - Baseball Reference 3 RF Tim Salmon CAL 1996	RF	65	5	R	0.330	0.330	0.330	10.9	25.9	4.2	0.288	21.5
+Historical All-Star SS Felipe Lopez CIN 2005	SS	68	5	S	0.330	0.284	0.355	7.8	20.7	3.4	0.300	26.6
+July Jewels - Baseball Reference 4 RF Ed Morgan CLE 1929	RF	66	0	R	0.328	0.337	0.323	10.0	18.9	1.2	0.321	30.8
+T4 Ep. 3 - Unsung Heroes LF Bill Buckner LAD 1974	LF	64	0	L	0.327	0.290	0.346	4.3	7.3	1.5	0.303	28.9
+Opening Day Heroes - Unsung Heroes DH Dmitri Young DET 2005	DH	64	5	S	0.327	0.315	0.333	5.1	19.6	3.9	0.294	25.4
+Negro League Star RF Donald Reeves ABC 1938	RF	69	5	L	0.327	0.320	0.331	5.8	15.3	3.4	0.287	25.3
+T4 Ep. 3 - Historical All-Star C Tim McCarver STL 1966	C	68	5	L	0.327	0.287	0.348	5.6	9.0	2.7	0.281	25.7
+Snapshot CF Mule Haas PHA 1931	CF	69	5	L	0.327	0.329	0.325	5.8	14.1	3.2	0.287	25.6
+Obscure All-Stars - Baseball Reference 5 1B Ty Wigginton BAL 2010	1B	54	5	R	0.326	0.313	0.332	7.4	16.0	3.4	0.278	25.2
+Memorial Day OnStream Builds - Snapshot 2B Dustin Pedroia BOS 2012	2B	66	5	R	0.326	0.343	0.317	7.1	10.0	2.1	0.284	30.7
+Played Where? - Veteran Presence LF Rickey Henderson NYM 1999	LF	68	5	R	0.326	0.352	0.312	12.0	25.9	2.2	0.321	24.4
+Baseball Reference 1 3B Ken Caminiti HOU 2000	3B	66	5	S	0.326	0.311	0.333	9.6	17.3	3.0	0.285	22.4
+Snapshot LF Dave Harris WS1 1930	LF	67	5	R	0.325	0.365	0.304	8.9	23.1	3.5	0.285	32.1
+Blue Jays 50th Anniversary RF Joe Carter TOR 1991	RF	64	5	R	0.325	0.352	0.311	5.7	21.8	4.1	0.282	31.9
+Limited Edition/96 CF Matty Alou PIT 1969	CF	69	0	L	0.324	0.302	0.336	5.2	8.0	0.3	0.319	30.2
+Snapshot 1B Dale Alexander DET 1931	1B	69	5	R	0.324	0.318	0.328	8.9	14.4	1.8	0.295	29.5
+May Flower - Super Utility C Mickey Tettleton DET 1994	C	69	0	S	0.323	0.307	0.331	13.2	29.9	3.7	0.288	21.3
+Celebrating 42 - Rookie Sensation 1B Jackie Robinson BRO 1947	1B	58	5	R	0.323	0.361	0.303	7.1	12.3	2.2	0.291	25.6
+Snapshot 1B Ed Delahanty PHI 1900	1B	68	5	R	0.323	0.317	0.326	7.2	15.9	1.9	0.303	29.5
+Unsung Heroes 2B Tom Carey BL1 1873	2B	65	5	R	0.323	0.327	0.321	3.7	13.4	2.7	0.290	32.8
+Limited Edition/69 SS Jimmy Rollins PHI 2012	SS	69	0	S	0.322	0.287	0.341	8.3	13.7	3.2	0.267	26.1
+July Jewels - Baseball Reference 4 3B Dave Brain BSN 1907	3B	68	0	R	0.322	0.323	0.322	4.6	20.3	4.2	0.282	28.6
+Family Connections - Super Utility RF Danny Tartabull SEA 1986	RF	63	5	R	0.322	0.315	0.326	10.0	30.4	3.4	0.314	26.5
+Rookie Sensation SS Ketel Marte SEA 2015	SS	68	5	S	0.322	0.315	0.325	9.1	15.0	0.8	0.317	27.5
+Veteran Presence 3B Evan Longoria SF 2021	3B	69	5	R	0.322	0.327	0.319	8.8	18.7	3.4	0.273	28.2
+July Jewels - Baseball Reference 4 CF Brett Butler LAD 1992	CF	64	0	L	0.321	0.308	0.327	10.1	14.1	0.7	0.319	20.0
+Veteran Presence RF Cy Williams PHI 1927	RF	69	5	L	0.321	0.293	0.335	8.0	15.5	4.2	0.262	15.5
+Rookie Sensation LF Gary Matthews SF 1973	LF	69	5	R	0.321	0.330	0.316	7.4	16.9	2.6	0.296	24.9
+Snapshot 1B Adam Lind WAS 2017	1B	67	5	L	0.321	0.310	0.326	6.9	14.5	3.2	0.278	21.6
+T4 Ep. 2 - Unsung Heroes 3B Jeimer Candelario DET 2021	3B	56	5	S	0.321	0.304	0.329	7.3	22.2	2.1	0.317	33.2
+Limited Edition/120 3B Larry Gardner CLE 1921	3B	68	0	L	0.320	0.314	0.323	9.4	10.4	1.1	0.291	27.4
+Snapshot C Andy Seminick PHI 1946	C	66	5	R	0.320	0.327	0.316	7.3	23.1	3.9	0.286	24.1
+Snapshot LF Lou Novikoff CHC 1942	LF	63	5	R	0.320	0.314	0.323	4.8	12.6	2.8	0.288	24.5
+T4 Ep. 4 - Historical All-Star DH Mike Sweeney KC 2003	DH	63	0	R	0.319	0.313	0.323	10.7	14.3	2.6	0.276	17.3
+Clubhouse - SwitchKnucklers - Historical All-Star 1B Justin Smoak TOR 2017	1B	69	0	S	0.319	0.347	0.304	9.4	22.8	3.9	0.272	21.0
+World Baseball Classic 2B Esteban Quiroz MEX 2017	2B	56	5	L	0.319	0.301	0.328	7.6	17.0	2.7	0.291	22.6
+Snapshot 1B George Kelly NY1 1926	1B	66	5	R	0.319	0.332	0.312	5.8	18.5	3.9	0.280	22.1
+T4 Ep. 2 - Historical All-Star 2B Tom Herr STL 1985	2B	58	5	S	0.319	0.296	0.330	8.3	13.7	1.1	0.308	25.8
+Rookie Sensation C Willson Contreras CHC 2016	C	69	5	R	0.319	0.311	0.324	7.2	23.7	3.4	0.305	20.7
+Dock's Patients C Chris Cannizzaro SD 1970	C	65	5	R	0.319	0.364	0.296	10.3	15.8	1.6	0.299	22.6
+T4 Ep. 4 - Historical All-Star SS Alan Trammell DET 1980	SS	63	0	R	0.318	0.317	0.319	9.0	16.5	2.0	0.301	21.0
+Clubhouse - Baseball Reference 5 C Jason Castro HOU 2013	C	68	0	L	0.318	0.304	0.325	8.5	29.5	3.3	0.317	25.0
+Snapshot RF Wally Westlake PIT 1949	RF	67	5	R	0.318	0.324	0.315	6.1	18.9	4.0	0.271	26.5
+Played Where? - Unsung Heroes RF Grady Sizemore TB 2015	RF	53	5	L	0.318	0.332	0.311	6.9	15.9	2.8	0.286	24.6
+Veteran Presence CF Dode Paskert PHI 1917	CF	64	5	R	0.318	0.309	0.323	8.4	17.6	3.2	0.266	31.1
+Rookie Sensation RF Wally Moses PHA 1935	RF	66	5	L	0.318	0.298	0.329	6.4	13.1	2.5	0.286	24.3
+Memorial Day OnStream Builds - Unsung Heroes CF Rick Monday CHC 1976	CF	69	5	L	0.318	0.306	0.324	8.3	29.6	4.3	0.293	24.2
+Snapshot 3B Pinky Higgins PHA 1935	3B	65	5	R	0.318	0.321	0.317	6.9	25.6	4.2	0.290	24.5
+Negro League Star 1B Eddie Douglass BRG 1924	1B	65	5	L	0.318	0.311	0.321	6.2	15.4	3.2	0.277	24.6
+Snapshot 1B Babe Dahlgren PIT 1944	1B	67	5	R	0.318	0.307	0.323	6.8	16.7	3.2	0.278	24.7
+FLF 14 & Co. - Snapshot CF Byron Buxton MIN 2019	CF	64	5	R	0.318	0.349	0.302	5.8	20.2	2.5	0.301	35.3
+June Gems - Baseball Reference 3 RF Tim Salmon CAL 1996	RF	65	0	R	0.317	0.317	0.317	10.4	27.5	4.1	0.281	19.8
+T4 Ep. 3 - Hardware Heroes SS Leo Cardenas CIN 1965	SS	68	0	R	0.317	0.331	0.309	7.9	22.7	2.3	0.316	25.3
+Snapshot C Babe Phelps BRO 1937	C	63	5	L	0.317	0.312	0.319	5.7	14.3	2.5	0.283	31.4
+Snapshot CF Jim Landis CWS 1958	CF	66	5	R	0.317	0.343	0.304	8.1	18.0	2.9	0.284	24.9
+Snapshot RF Danny Hoffman PHA 1904	RF	64	5	L	0.317	0.303	0.324	5.1	22.7	3.8	0.296	23.8
+Snapshot C Yainer Diaz HOU 2024	C	63	5	R	0.317	0.328	0.311	3.3	13.5	2.5	0.302	24.1
+Baseball Reference 1 SS Paul DeJong STL 2019	SS	68	5	R	0.317	0.311	0.320	7.7	19.6	3.6	0.272	26.6
+60s Theme Week - Veteran Presence LF Yogi Berra NYY 1961	LF	68	5	L	0.317	0.309	0.321	6.9	9.6	3.9	0.253	12.7
+Snapshot 3B Mark Teahen KC 2006	3B	65	5	L	0.316	0.295	0.327	7.5	19.8	3.4	0.279	26.7
+Historical All-Star 2B Charlie Neal LAD 1959	2B	67	5	R	0.316	0.316	0.316	6.2	16.9	2.9	0.286	26.9
+Unsung Heroes RF Beauty McGowan SLA 1928	RF	68	5	L	0.316	0.322	0.312	7.5	18.4	2.1	0.302	26.6
+World Baseball Classic LF Hyun-soo Kim KOR 2009	LF	68	5	L	0.316	0.299	0.324	10.0	15.6	0.4	0.310	29.8
+Unsung Heroes RF Mike Dorgan NY1 1886	RF	65	5	R	0.316	0.318	0.315	6.4	13.3	2.3	0.290	23.5
+HOF 1 - Veteran Presence CF Joe DiMaggio NYY 1951	CF	64	5	R	0.316	0.324	0.311	8.8	17.4	3.0	0.272	26.1
+Rookie Sensation 1B George Burns DET 1914	1B	63	5	R	0.316	0.287	0.331	5.8	18.4	2.3	0.307	26.1
+4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	0	R	0.315	0.304	0.320	5.1	17.5	3.8	0.274	24.5
+Limited Edition/86 CF Ian Desmond TEX 2016	CF	64	0	R	0.315	0.326	0.309	7.0	25.2	3.7	0.296	23.3
+Snapshot SS U L Washington KC 1982	SS	64	5	S	0.315	0.350	0.296	6.7	13.7	2.8	0.277	22.7
+Snapshot C Ed Taubensee CIN 1999	C	65	5	L	0.315	0.278	0.334	5.5	16.3	3.3	0.280	22.6
+Negro League Star 1B Joe Scott MRS 1927	1B	60	5	L	0.315	0.312	0.316	6.1	16.3	4.0	0.260	24.4
+Negro League Star LF Blainey Hall NYLG 1917	LF	66	5	R	0.315	0.318	0.313	7.3	14.5	2.1	0.289	25.6
+Unsung Heroes 3B Ed Goodson SF 1973	3B	61	5	L	0.315	0.285	0.330	3.8	14.3	3.1	0.285	25.0
+Snapshot 1B Donn Clendenon PIT 1964	1B	61	5	R	0.315	0.326	0.310	5.8	19.8	2.8	0.299	28.0
+Historical All-Star LF Jose Canseco TB 1999	LF	65	5	R	0.315	0.318	0.314	9.2	27.6	4.2	0.281	22.6
+Unsung Heroes 1B Dick Burrus BSN 1925	1B	62	5	L	0.315	0.303	0.321	7.1	13.9	2.0	0.290	24.0
+Snapshot LF Andrew Benintendi BOS 2019	LF	59	5	L	0.315	0.319	0.313	8.7	18.1	2.0	0.291	29.9
+Baseball Reference 2 1B Don Baylor ATH 1976	1B	64	5	R	0.315	0.331	0.307	8.1	14.6	3.3	0.259	25.0
+Historical All-Star SS Felipe Lopez CIN 2005	SS	68	0	S	0.314	0.268	0.339	6.9	22.6	3.3	0.293	25.1
+Rookie Sensation CF Glenn Wilson DET 1982	CF	69	5	R	0.314	0.308	0.317	4.8	18.0	3.4	0.286	23.2
+Snapshot 3B Randy Jackson CHC 1953	3B	62	5	R	0.314	0.310	0.316	6.1	17.4	3.4	0.275	26.2
+Veteran Presence 2B Tony Fernandez CLE 1997	2B	65	5	S	0.314	0.368	0.287	4.6	12.0	2.5	0.286	25.0
+Rookie Sensation C Frank Bruggy PHI 1921	C	68	5	R	0.314	0.301	0.321	7.7	21.1	3.3	0.289	20.3
+PTCS 2 - Veteran Presence 2B Joe Morgan PHI 1983	2B	65	0	L	0.313	0.279	0.331	13.2	15.6	3.1	0.240	20.8
+Limited Edition/69 2B Julio Franco TEX 1990	2B	69	0	R	0.313	0.316	0.311	9.3	18.3	1.7	0.307	19.5
+Clubhouse - Y&O 1 - Rookie Sensation SS Aledmys Diaz STL 2016	SS	64	0	R	0.313	0.290	0.325	6.3	14.7	2.7	0.279	25.5
+FLF 16 - Future Legend CF Roldy Brito COL 2026	CF	69	0	S	0.313	0.312	0.314	7.6	18.9	1.5	0.311	28.5

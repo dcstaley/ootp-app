@@ -1,0 +1,103 @@
+# Iron Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 1030 | model trained 2026-06-30..2026-07-12 (623 card rows | 692,263 PA; fit used cards >=2,000 PA: 76; sparse rating-tail hitters may enter with >=450 PA)
+# NOTE: HRpct is per-PA (observed table gives HR600); cwhit SOpct = K/AB (our convention = K/PA); cwhit pwOBA is BATTING-ONLY (our deployed score is Offense = wOBA + BsR).
+Name	Position	VAL	VLvl	Hand	pwOBA	pwOBA_vL	pwOBA_vR	BBpct	SOpct	HRpct	BABIP	XBHpct
+4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	5	R	0.370	0.351	0.380	6.3	16.1	5.7	0.291	25.6
+Obscure All-Stars - Baseball Reference 5 1B Ty Wigginton BAL 2010	1B	54	5	R	0.366	0.326	0.386	8.4	16.1	5.1	0.288	25.1
+4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	0	R	0.348	0.328	0.358	5.7	17.6	5.1	0.284	24.3
+Snapshot LF Gus Zernial CWS 1950	LF	59	5	R	0.347	0.345	0.348	6.1	22.0	5.5	0.292	20.3
+July Jewels - Baseball Reference 4 RF Clyde Vollmer BOS 1951	RF	55	5	R	0.347	0.343	0.349	10.7	25.5	6.3	0.263	16.1
+Obscure All-Stars - Baseball Reference 5 1B Ty Wigginton BAL 2010	1B	54	0	R	0.346	0.311	0.365	7.9	17.6	4.6	0.282	23.6
+Mr. May - Veteran Presence DH Dave Winfield MIN 1993	DH	55	5	R	0.345	0.332	0.352	6.3	23.0	5.2	0.295	24.2
+Opening Day Heroes - Unsung Heroes 1B Matt Davidson CWS 2018	1B	56	5	R	0.342	0.382	0.320	10.8	25.3	4.4	0.289	27.2
+Played Where? - Unsung Heroes RF Grady Sizemore TB 2015	RF	53	5	L	0.341	0.358	0.332	8.0	16.3	3.5	0.296	24.3
+Limited Edition/69 C Matt Nokes DET 1987	C	57	0	L	0.340	0.284	0.370	6.4	21.2	5.9	0.270	15.7
+World Baseball Classic 2B Esteban Quiroz MEX 2017	2B	56	5	L	0.340	0.316	0.353	8.7	17.3	3.3	0.301	22.4
+Celebrating 42 - Rookie Sensation 1B Jackie Robinson BRO 1947	1B	58	5	R	0.339	0.388	0.313	8.2	12.5	2.5	0.300	25.3
+T4 Ep. 3 - Snapshot CF Tony Armas BOS 1983	CF	48	5	R	0.338	0.342	0.336	5.3	30.3	6.9	0.274	26.4
+Snapshot LF Jim Lemon MIN 1961	LF	57	5	R	0.337	0.330	0.341	9.0	21.7	3.7	0.293	30.9
+Celebrating 42 - Negro League Star 1B Joe Scott BBB 1948	1B	54	5	L	0.336	0.330	0.339	10.8	19.6	4.1	0.263	31.7
+Baseball Reference 1 LF Eddie Rosario MIN 2019	LF	51	5	L	0.336	0.334	0.337	3.0	12.7	4.5	0.279	22.5
+Snapshot 1B Bob Oliver KC 1970	1B	57	5	R	0.335	0.342	0.332	6.6	19.3	4.7	0.277	25.6
+Snapshot 1B Tony Horton CLE 1970	1B	58	5	R	0.335	0.348	0.328	6.5	15.5	4.5	0.268	26.2
+T4 Ep. 2 - Unsung Heroes 3B Jeimer Candelario DET 2021	3B	56	5	S	0.335	0.311	0.348	8.2	21.5	2.4	0.323	31.8
+Young & Old 1 - Rookie Sensation 1B Mark Trumbo LAA 2011	1B	49	5	R	0.334	0.332	0.336	3.7	23.7	5.6	0.284	26.0
+Snapshot 3B Mike Pagliarulo NYY 1985	3B	56	5	L	0.334	0.318	0.343	10.0	21.6	5.1	0.253	25.6
+Rookie Sensation LF Mark Quinn KC 2000	LF	59	5	R	0.333	0.348	0.324	6.1	17.6	3.8	0.291	24.7
+Snapshot 2B Keith Ginter MIL 2004	2B	57	5	R	0.333	0.338	0.331	9.1	22.3	4.2	0.280	27.6
+T4 Ep. 1 - Veteran Presence 1B Jason Giambi COL 2011	1B	58	5	L	0.333	0.300	0.350	11.0	34.0	6.4	0.266	14.7
+Snapshot LF Gates Brown DET 1965	LF	58	5	L	0.332	0.337	0.329	7.2	17.8	4.5	0.262	30.3
+Snapshot 1B Don Bollweg NYY 1953	1B	50	5	L	0.332	0.329	0.334	9.3	24.7	4.0	0.296	24.5
+Snapshot RF Wally Post PHI 1959	RF	54	5	R	0.331	0.326	0.334	7.1	20.7	4.8	0.270	25.2
+Snapshot LF Andrew Benintendi BOS 2019	LF	59	5	L	0.331	0.334	0.330	10.0	18.1	2.2	0.301	29.8
+Unsung Heroes RF Tom Poorman BSN 1886	RF	58	5	L	0.330	0.322	0.334	6.5	18.6	3.8	0.288	26.2
+Snapshot LF Rube Oldring PHA 1914	LF	58	5	R	0.330	0.319	0.336	4.5	13.0	3.5	0.285	25.6
+Family Connections - Veteran Presence LF Ken Griffey Jr. SEA 2009	LF	50	5	L	0.330	0.332	0.329	11.3	22.2	5.0	0.250	21.0
+Clubhouse - Baseball Reference 5 RF Myril Hoag SLA 1939	RF	46	0	R	0.329	0.328	0.330	5.1	15.7	3.8	0.287	22.8
+Historical All-Star 3B Frank Malzone BOS 1958	3B	58	5	R	0.329	0.330	0.329	5.7	13.0	3.0	0.293	22.8
+Snapshot CF Jim Hickman NYM 1965	CF	56	5	R	0.329	0.362	0.311	7.4	18.8	4.7	0.259	28.3
+T4 Ep. 2 - Unsung Heroes SS Freddy Galvis TOR 2019	SS	58	5	S	0.329	0.324	0.332	4.3	22.0	4.0	0.308	23.7
+Historical All-Star 2B Ozzie Albies ATL 2021	2B	58	5	S	0.329	0.340	0.324	7.2	15.6	3.9	0.265	29.8
+Limited Edition/89 1B Andres Galarraga COL 1995	1B	59	0	R	0.328	0.332	0.326	4.8	31.4	5.7	0.303	22.2
+Snapshot LF Taylor Ward LAA 2023	LF	58	5	R	0.328	0.321	0.332	10.4	16.6	3.5	0.267	23.1
+Snapshot 3B Jonathan Villar NYM 2021	3B	58	5	S	0.328	0.296	0.344	8.5	23.2	3.7	0.301	21.1
+Snapshot LF Gary Roenicke BAL 1980	LF	59	5	R	0.328	0.334	0.325	11.0	18.5	4.3	0.249	24.8
+Snapshot 3B David Freese LAA 2014	3B	55	5	R	0.328	0.335	0.325	9.1	19.6	3.5	0.285	24.0
+Historical All-Star CF Gus Bell CIN 1957	CF	56	5	L	0.328	0.317	0.334	5.4	15.2	3.2	0.297	22.1
+July Jewels - Baseball Reference 4 RF Clyde Vollmer BOS 1951	RF	55	0	R	0.327	0.326	0.328	10.0	27.3	5.8	0.258	14.9
+Snapshot LF Wayne Nordhagen CWS 1980	LF	53	5	R	0.327	0.358	0.311	2.6	14.8	4.6	0.269	27.5
+All-Time Legend 2B Don Gutteridge SLA Peak	2B	59	5	R	0.327	0.320	0.331	7.8	15.5	2.7	0.286	29.6
+Snapshot RF Carl Reynolds CWS 1931	RF	59	5	R	0.326	0.318	0.330	6.3	12.9	3.4	0.274	26.0
+Snapshot 3B Greg Norton CWS 1999	3B	58	5	S	0.326	0.338	0.320	10.8	19.5	3.7	0.263	25.2
+All-Time Legend LF Pat Duncan CIN Peak	LF	59	5	R	0.326	0.316	0.332	7.2	14.0	2.7	0.287	25.9
+Live Collection Reward - Historical All-Star 3B Troy Glaus ANA 2003	3B	58	0	R	0.325	0.334	0.320	10.3	24.9	4.5	0.261	26.2
+All-Time Legend RF Xavier Nady PIT Peak	RF	56	5	R	0.325	0.329	0.323	6.1	17.8	3.9	0.280	24.8
+Rookie Sensation 1B Mike Jacobs FLO 2006	1B	52	5	L	0.325	0.300	0.338	8.1	20.0	3.9	0.267	31.0
+Snapshot LF Gus Zernial CWS 1950	LF	59	0	R	0.324	0.323	0.325	5.4	24.1	5.0	0.285	18.7
+Historical All-Star LF Claudell Washington ATH 1975	LF	59	5	L	0.324	0.313	0.330	5.0	17.1	2.7	0.313	22.0
+T4 Ep. 3 - Historical All-Star SS Cal Ripken Jr. BAL 1987	SS	58	5	R	0.324	0.306	0.333	10.1	13.7	3.6	0.253	22.2
+Rookie Sensation LF Austin McHenry STL 1918	LF	54	5	R	0.324	0.321	0.326	7.6	15.8	3.2	0.275	29.8
+T4 Ep. 2 - Historical All-Star 2B Tom Herr STL 1985	2B	58	5	S	0.324	0.304	0.335	9.4	14.2	0.8	0.315	26.4
+Clubhouse - April Fools' Day LF Mike Marshall LAD 1984	LF	56	0	R	0.323	0.356	0.305	6.1	25.7	4.6	0.291	23.0
+Historical All-Star 1B Eddie Robinson PHA 1953	1B	56	5	L	0.323	0.327	0.321	9.1	14.9	4.2	0.241	27.7
+T4 Ep. 1 - Snapshot C Jonathan Lucroy COL 2017	C	48	5	R	0.323	0.292	0.340	11.1	10.9	1.2	0.289	23.7
+Memorial Day OnStream Builds - Snapshot 1B Wilmer Flores NYM 2018	1B	59	5	R	0.323	0.276	0.348	6.7	9.4	2.5	0.276	25.7
+Veteran Presence RF Andre Dawson BOS 1993	RF	58	5	R	0.323	0.368	0.299	5.9	13.2	3.8	0.263	27.1
+Snapshot LF Dusty Baker LAD 1978	LF	56	5	R	0.323	0.325	0.322	8.6	16.1	3.4	0.273	22.4
+Mr. May - Veteran Presence DH Dave Winfield MIN 1993	DH	55	0	R	0.322	0.309	0.329	5.6	24.9	4.7	0.288	22.7
+Opening Day Heroes - Unsung Heroes 1B Matt Davidson CWS 2018	1B	56	0	R	0.322	0.362	0.300	10.3	27.1	4.0	0.282	25.6
+Snapshot SS Don Zimmer LAD 1958	SS	59	5	R	0.322	0.307	0.330	6.4	19.4	3.9	0.284	20.7
+Negro League Star LF Dee Williams KCRG 1910	LF	54	5	R	0.322	0.324	0.320	6.5	15.9	3.3	0.282	23.6
+Snapshot RF Dick Porter CLE 1932	RF	58	5	L	0.322	0.331	0.317	9.0	15.3	1.8	0.298	24.8
+Snapshot 1B Fred Merkle NY1 1913	1B	51	5	R	0.322	0.343	0.311	6.9	16.2	3.2	0.275	31.2
+Heart Attack - Snapshot SS Ron Hansen CWS 1967	SS	58	5	R	0.322	0.327	0.319	11.1	11.7	2.3	0.266	23.2
+Played Where? - Snapshot LF Eric Davis DET 1993	LF	54	5	R	0.322	0.299	0.334	9.5	25.0	4.6	0.270	19.1
+Snapshot RF Bobby Darwin MIN 1973	RF	53	5	R	0.322	0.304	0.332	7.4	22.7	3.9	0.288	23.4
+PTCS 3 - Snapshot LF Ken Berry CWS 1966	LF	55	0	R	0.321	0.343	0.310	7.4	16.5	2.2	0.304	23.6
+Rookie Sensation RF Will Venable SD 2009	RF	59	5	L	0.321	0.299	0.333	7.8	25.5	4.1	0.289	23.8
+Rookie Sensation C Jack Shepard PIT 1954	C	56	5	R	0.321	0.346	0.308	8.4	19.5	2.5	0.306	21.0
+Snapshot RF Wes Schulmerich BSN 1932	RF	51	5	R	0.321	0.290	0.338	7.6	20.7	4.3	0.264	26.1
+Snapshot CF Jay Payton NYM 2000	CF	58	5	R	0.321	0.328	0.316	6.0	13.8	3.5	0.275	20.9
+Snapshot 3B Corey Koskie TOR 2005	3B	55	5	L	0.321	0.301	0.331	10.4	22.4	3.3	0.281	24.3
+Rookie Sensation 3B Leo Gomez BAL 1991	3B	52	5	R	0.321	0.309	0.328	9.3	19.3	4.6	0.246	24.5
+Rookie Sensation RF Junior Felix TOR 1989	RF	57	5	S	0.321	0.313	0.326	8.1	22.8	3.4	0.296	23.6
+Snapshot RF Derek Bell HOU 1997	RF	58	5	R	0.321	0.290	0.338	8.4	18.0	3.4	0.275	24.9
+Snapshot CF Garret Anderson ANA 1999	CF	59	5	L	0.321	0.338	0.312	3.9	14.2	3.3	0.288	22.7
+Played Where? - Unsung Heroes RF Grady Sizemore TB 2015	RF	53	0	L	0.320	0.335	0.312	7.2	17.9	3.0	0.289	22.9
+Celebrating 42 - Rookie Sensation 1B Jackie Robinson BRO 1947	1B	58	0	R	0.320	0.366	0.296	7.3	13.6	2.1	0.293	23.8
+Unsung Heroes CF Johnny Rucker NY1 1945	CF	52	5	L	0.320	0.295	0.333	4.7	16.5	3.6	0.279	27.0
+Rookie Sensation 1B Tommy McCraw CWS 1963	1B	54	5	L	0.320	0.326	0.317	8.0	17.8	3.0	0.282	24.9
+Snapshot LF Greg Luzinski CWS 1984	LF	56	5	R	0.320	0.290	0.336	10.9	19.7	4.0	0.253	19.9
+Veteran Presence C Travis d'Arnaud ATL 2022	C	55	5	R	0.320	0.342	0.309	5.3	22.9	4.4	0.286	22.2
+Rookie Sensation CF Bobby Brown NYY 1980	CF	58	5	S	0.320	0.295	0.333	6.1	20.5	4.2	0.280	21.8
+Snapshot LF Glenn Braggs ML4 1989	LF	53	5	R	0.320	0.325	0.318	8.0	20.4	4.2	0.273	16.4
+World Baseball Classic 2B Esteban Quiroz MEX 2017	2B	56	0	L	0.319	0.298	0.330	7.9	18.8	2.9	0.294	20.8
+MLB 2026 Live RF Randal Grichuk CWS	RF	55	0	R	0.319	0.322	0.317	5.7	20.5	4.0	0.279	26.1
+Limited Edition/82 3B David Bell SF 2002	3B	56	0	R	0.319	0.322	0.318	9.2	17.4	3.1	0.277	20.5
+Historical All-Star 1B Eddie Waitkus PHI 1949	1B	52	5	L	0.319	0.294	0.332	9.5	16.0	1.6	0.295	28.8
+Rookie Sensation C Nelson Santovenia MON 1988	C	49	5	R	0.319	0.325	0.316	7.7	23.1	3.6	0.280	31.7
+Veteran Presence CF Terry Moore STL 1947	CF	54	5	R	0.319	0.312	0.323	6.9	15.1	2.8	0.288	20.2
+Snapshot CF Roberto Kelly ATL 1994	CF	53	5	R	0.319	0.316	0.321	7.6	16.4	2.6	0.292	22.0
+Earth Day - Unsung Heroes SS Pumpsie Green BOS 1961	SS	56	5	S	0.319	0.368	0.293	11.1	17.7	1.8	0.290	25.5
+Rookie Sensation CF Buster Adams PHI 1943	CF	57	5	R	0.319	0.333	0.312	8.6	20.1	2.9	0.291	23.6
+T4 Ep. 2 - Unsung Heroes 3B Jeimer Candelario DET 2021	3B	56	0	S	0.318	0.295	0.330	7.4	23.3	2.1	0.318	31.7
+Snapshot 3B Buck Weaver CWS 1920	3B	57	5	S	0.318	0.323	0.316	5.8	12.7	1.8	0.301	24.5
