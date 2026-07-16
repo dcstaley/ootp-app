@@ -14,7 +14,7 @@ import {
   type RosterHitterRow, type RosterPitcherRow, type RoleOverride, type AvailRow, type AvailHitterRow, type AvailPitcherRow, type AddedCard,
   type BiggestUpgrades, type UpgradeHitter, type UpgradePitcher, type RefinedValue,
 } from "./shared.ts";
-import { IF, OF, posStr, posCell, star, nameCell, defSummary, ROLE_OV } from "./roster-cells.tsx";
+import { IF, OF, posStr, posCell, star, nameCell, defSummary, ROLE_OV, bsrTag } from "./roster-cells.tsx";
 
 function Legend({ roles }: { roles: string[] }) {
   return (
@@ -344,6 +344,7 @@ export function RosterPage() {
     { key: "b", label: "B", align: "c", width: 26, value: (h) => h.bats },
     { key: "vL", label: "vL", align: "r", width: 58, value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
     { key: "vR", label: "vR", align: "r", width: 58, value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
+    { key: "bsr", label: "BsR", align: "r", width: 48, value: (h) => h.bsr, render: (h) => bsrTag(h.bsr) },
     { key: "pos", label: "Pos", width: 150, min: 44, shrink: 2, value: (h) => posStr(h.allPositions ?? h.positions), render: (h) => posCell(h.allPositions ?? h.positions, h.positions) },
     { key: "def", label: "Defense", width: 312, min: 90, shrink: 1, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
     { ...actionsCol<RosterHitterRow>(), width: 122 },

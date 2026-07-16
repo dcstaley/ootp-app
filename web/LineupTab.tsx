@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useAppData } from "./state.tsx";
 import { C, inputStyle, lockKey, type RosterHitterRow, type RosterSlotCard } from "./shared.ts";
-import { FIELD, star, nameCell, defStr, posCell } from "./roster-cells.tsx";
+import { FIELD, star, nameCell, defStr, posCell, bsrTag } from "./roster-cells.tsx";
 
 type Side = "L" | "R";
 const strip = (id: string) => id.replace(/#V$/, "");
@@ -161,7 +161,7 @@ export function LineupTab({
                     {(h.allPositions ?? h.positions).filter((q) => lineupPositions.includes(q)).map((q) => <option key={q} value={q}>{q}{h.positions.includes(q) ? "" : " ⚠"}</option>)}
                   </select>
                   <span style={{ ...ell, color: C.sub, fontSize: 11 }}>{defStr(h.def, p) || "—"}</span>
-                  <span style={{ textAlign: "right", fontSize: 12 }}>{num(score(id, side))}</span>
+                  <span style={{ textAlign: "right", fontSize: 12 }}>{num(score(id, side))} {bsrTag(h.bsr, true)}</span>
                   <button onClick={() => removeFromLineup(id)} title="Send to bench" style={xBtn}>✕</button>
                 </Row>
               );
@@ -179,7 +179,7 @@ export function LineupTab({
               return (
                 <Row key={id} grid="minmax(0,1fr) 52px 26px" style={roleBg("bench")}>
                   <span style={{ ...ell, fontSize: 12 }}>{nameCell(h)} <span style={{ color: C.sub, fontSize: 11 }}>· {posCell(h.allPositions ?? h.positions, h.positions)}</span></span>
-                  <span style={{ textAlign: "right", color: C.sub, fontSize: 11 }}>{num(score(id, side))}</span>
+                  <span style={{ textAlign: "right", color: C.sub, fontSize: 11 }}>{num(score(id, side))} {bsrTag(h.bsr, true)}</span>
                   <button onClick={() => addToLineup(id)} disabled={!canAdd} title={canAdd ? "Add to the lineup" : "No eligible position open"} style={addBtn(canAdd)}>+</button>
                 </Row>
               );

@@ -43,19 +43,22 @@ export const twoWayBadge = (
   <span title="Two-way: fills a hitter and a pitcher slot" style={{ marginLeft: 5, padding: "0 4px", borderRadius: 3, fontSize: 10, fontWeight: 700, background: ROSTER_COLORS.twoway, border: `1px solid ${ROSTER_BORDER.twoway}`, color: "#fde68a" }}>2W</span>
 );
 
-// BsR badge: flags a card's baserunning contribution (steals + extra bases), which is already folded
-// into the vL/vR Offense value but otherwise invisible. Only shown when notable (|BsR| ≥ 1.5 runs) so
-// average baserunners don't clutter the row; green = plus, red = minus. Full split is on the Cards grid.
-export const bsrBadge = (bsr: number | undefined): ReactNode => {
-  if (bsr == null || !Number.isFinite(bsr) || Math.abs(bsr) < 1.5) return null;
-  const pos = bsr >= 0, s = `${pos ? "+" : ""}${bsr.toFixed(1)}`;
-  return (
-    <span title={`Baserunning ${s} runs/600 (steals + extra bases) — already included in the vL/vR value; batting-only wOBA + BsR are on the Cards grid`}
-      style={{ marginLeft: 5, padding: "0 4px", borderRadius: 3, fontSize: 10, fontWeight: 700,
-        background: pos ? "rgba(34,197,94,0.16)" : "rgba(239,68,68,0.16)", border: `1px solid ${pos ? "#22c55e" : "#ef4444"}`, color: pos ? "#86efac" : "#fca5a5" }}>
-      {s} BsR
-    </span>
-  );
+// BsR value-tag: the card's baserunning runs/600 (extra bases + steals), side-invariant. Sits WITH the
+// score (a BsR column on the roster table, inline by the lineup score) — not the name. Green = plus, red
+// = minus, dim grey when negligible (|BsR| < 1.5). `inline` (lineup) hides the negligible ones entirely
+// to keep tight rows clean; the table column always shows the number.
+export const bsrTag = (bsr: number | undefined, inline = false): ReactNode => {
+  if (bsr == null || !Number.isFinite(bsr)) return inline ? null : <span style={{ color: C.sub }}>—</span>;
+  const notable = Math.abs(bsr) >= 1.5;
+  if (inline && !notable) return null; // tight lineup rows: only flag notable baserunners
+  const precise = `${bsr >= 0 ? "+" : ""}${bsr.toFixed(1)}`;
+  const color = !notable ? C.sub : bsr >= 0 ? "#86efac" : "#fca5a5";
+  const title = `Baserunning ${precise} runs/600 (extra bases + steals) — already included in the vL/vR value`;
+  // Inline (lineup, next to the score): a compact rounded flag so it fits the ~55px cell; the table
+  // column shows the exact value. A leading dot separates it from the score number.
+  return inline
+    ? <span title={title} style={{ color, fontWeight: 600, fontSize: 11 }}>·{bsr >= 0 ? "+" : ""}{Math.round(bsr)}</span>
+    : <span title={title} style={{ color, fontWeight: notable ? 600 : 400 }}>{precise}</span>;
 };
 
 // Role-override dropdown colours (Hit = green, Pitch = blue, 2way = amber).
@@ -68,7 +71,7 @@ export const ROLE_OV: Record<string, { bg: string; bd: string; fg: string }> = {
 // Card titles are "<series/type> <Pos> <First Last> <TEAM> <Year>". Rendered as plain inline
 // text (the cell truncates it on the right with an ellipsis); we only BOLD the player's name
 // (located via First+Last) for legibility. Falls back to the plain title if not found.
-export const nameCell = (r: { title: string; first?: string; last?: string; owned: number; twoWay?: boolean; bsr?: number }): ReactNode => {
+export const nameCell = (r: { title: string; first?: string; last?: string; owned: number; twoWay?: boolean }): ReactNode => {
   const name = [r.first, r.last].filter(Boolean).join(" ").trim();
   const idx = name ? r.title.toLowerCase().indexOf(name.toLowerCase()) : -1;
   const body: ReactNode = idx < 0
@@ -77,7 +80,7 @@ export const nameCell = (r: { title: string; first?: string; last?: string; owne
   return (
     <span>
       {r.owned <= 0 && <span style={{ color: "#ef4444", fontWeight: 700, marginRight: 4 }} title="Not owned">!</span>}
-      {body}{r.twoWay && twoWayBadge}{bsrBadge(r.bsr)}
+      {body}{r.twoWay && twoWayBadge}
     </span>
   );
 };
