@@ -29,7 +29,8 @@ import {
 } from "../../scoring-core/woba.ts";
 import type { Card } from "../../data/catalog.ts";
 import { makeVariant } from "../../data/variants.ts";
-import { PIT_BIP_ADJ, HIT_BIP_ADJ, type EventForm } from "../../model/curves.ts";
+import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/curves.ts";
+import { applyKSpread } from "../../model/pool-transform.ts";
 import { parseCwhitPit, parseCwhitHit } from "./parse.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "./join.ts";
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "./audit.ts";
@@ -78,6 +79,11 @@ export interface Rec {
 /** The full-pool predicted distribution for one tier×role — the reference the top-100 is selected FROM. */
 export interface PoolDist { tier: string; role: "pit" | "hit"; n: number; byChannel: Record<string, number[]> }
 
+/** Pitcher K-spread correction for the eval line: `s` = the spread scalar (s(gap) from the fitted
+ *  ramp), `mean` = K̄_pool per 600 in the RAW pre-era own-gap frame (poolMeanKOwn). Pitcher-ONLY —
+ *  the hitter path never sees it (the hitter fix is BUILD-2's separate tail-form workstream). */
+export interface KSpreadPit { s: number; mean: number }
+
 export interface SampleDeps {
   baseCards: Card[];
   coeffs: Coeffs;
@@ -89,6 +95,10 @@ export interface SampleDeps {
   envelope?: RatingEnvelope;
   pitExp: Exposure;
   hitExp: Exposure;
+  /** Optional per-Quick-tier pitcher K-spread (the eval mirror of production `config.kSpread` with
+   *  sHit = 1). Present ⇒ ourPit applies it at the PRODUCTION placement (raw K, pre-BIP, pre-era)
+   *  and the per-tier calibrate() sees the same correction. Absent ⇒ bit-identical to before. */
+  kSpreadPit?: Map<string, KSpreadPit>;
 }
 
 /** A card's two predicted lines. See `ourPit`/`ourHit` for why BOTH exist and what each answers. */
@@ -129,8 +139,9 @@ export interface SampleResult {
 // ⇒ the per-channel level biases are mathematically INVARIANT to calibration on this env; only the
 //   composite wOBA/wOBAA moves. The tool proves this empirically rather than resting on this comment.
 
-/** Pitcher: combined own-gap line → per-9 channels + a proxy wOBAA on OUR weights, RAW and DEPLOYED. */
-export function ourPit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales): TwoLines {
+/** Pitcher: combined own-gap line → per-9 channels + a proxy wOBAA on OUR weights, RAW and DEPLOYED.
+ *  `ks` (optional) = the pitcher K-spread correction, applied EXACTLY where production applies it. */
+export function ourPit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales, ks?: KSpreadPit): TwoLines {
   const { wR, wL } = d.pitExp.get(handLetter(n_(c["Throws"]))) ?? { wR: 0.5, wL: 0.5 };
   const thr = n_(c["Throws"]);
   const side = (s: "R" | "L") => {
@@ -141,6 +152,21 @@ export function ourPit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales
     }, d.coeffs);
   };
   const eR = side("R"), eL = side("L");
+  // Pitcher K-spread (eval mirror of score-card.ts line "if (kSpread) e.K = applyKSpread(...)"):
+  // rescale the RAW predicted K about the pool mean per side, BEFORE the BIP chain and BEFORE era —
+  // the production placement verified in the old joint run. The raw line then re-derives non-HR hits
+  // from the corrected BIP via the fitted H-curve — the SAME recompute the deployed pitchingComponents
+  // runs — so the raw babip/woba channels stay physical (more K ⇒ fewer BIP ⇒ fewer hits, BABIP ~flat)
+  // instead of carrying a stale hit count against a shrunken BIP. (Per-side, because hRate is
+  // nonlinear in BIP: correcting the blend instead would be a slightly different number.)
+  if (ks && ks.s !== 1) {
+    for (const e of [eR, eL]) {
+      e.K = applyKSpread(e.K, ks.mean, ks.s);
+      const bip = Math.max(600 - e.BB - e.K - e.HR - PIT_BIP_ADJ, 1);
+      e.nHH = hRate(d.eventForm.pit.h, e.pbabipSC, bip);
+      e.XBH = e.nHH * 0.25; // the model's fixed pitcher XBH share (raw-poly.ts)
+    }
+  }
   const per9 = BF_PER_9 / 600;
 
   // RAW — the event model's own numbers, used directly.
@@ -236,8 +262,13 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   for (const { tier, cap } of QUICK) {
     const basePool = d.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
     const pt = buildPoolTransform(d.ref, computeUnifiedFieldStats(basePool, d.coeffs, d.model, FIELD_N, true), d.envelope);
+    // Optional pitcher K-spread for this tier — threaded into calibrate too (production computes the
+    // anchor on the SAME corrected events the scores use). sHit=1 ⇒ the hitter side is untouched
+    // (applyKSpread short-circuits s===1 to the exact raw K).
+    const ks = d.kSpreadPit?.get(tier);
+    const kSpread = ks ? { sHit: 1, sPit: ks.s, meanHit: 0, meanPit: ks.mean } : undefined;
     // The REAL per-tier calibration — same call the deployed path makes (cf. tools/cwhit-bsr-validate.ts).
-    const cal = calibrate(basePool, { coeffs: d.coeffs, derived: d.derived, eventForm: d.eventForm, poolTransform: pt });
+    const cal = calibrate(basePool, { coeffs: d.coeffs, derived: d.derived, eventForm: d.eventForm, poolTransform: pt, kSpread });
     cals.push({ tier, cal });
 
     for (const role of ["pit", "hit"] as const) {
@@ -252,7 +283,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
           if (n_(c["Card Value"]) > cap) continue;
           if (role === "pit" ? !isPit(c) : isPit(c)) continue;
           const cid = `${bc["Card ID"]}|${vlvl}`;
-          const p = role === "pit" ? ourPit(c, pt, d, cal) : ourHit(c, pt, d, cal);
+          const p = role === "pit" ? ourPit(c, pt, d, cal, ks) : ourHit(c, pt, d, cal);
           // The JOIN fingerprint rides the same line the audit judges. Immaterial either way: the two
           // lines coincide per-channel on a neutral env (sBB=sHR=1, era/park=1) — the tool proves it.
           const fp = role === "pit"

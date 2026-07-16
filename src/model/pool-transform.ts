@@ -118,7 +118,9 @@ export const applyFrameShift = (r: number, d: number | undefined) => (d ? Math.m
  * imports FROM this module, so the coupling can only go one way).
  */
 export const applyKSpread = (k: number, mean: number, s: number): number =>
-  Math.max(0, mean + s * (k - mean));
+  (s === 1 ? Math.max(0, k) : Math.max(0, mean + s * (k - mean)));
+// s === 1 short-circuits to the raw K EXACTLY (not `mean + (k − mean)`, which can differ in the
+// last ulp) — the in-frame identity guarantee "s → 1 ⇒ bit-identical scores" is a test invariant.
 
 // The full transform: a per-rating map for each role × platoon side. Absent entries fall
 // back to identity (applyAffine with undefined → raw r), so a partial transform is safe.

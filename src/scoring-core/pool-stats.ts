@@ -11,8 +11,8 @@
 import type { Coeffs } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import {
-  ratingStats, buildAffines, applyFrameShift, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform,
-  type RatingEnvelope, type TrainingMeans, type FrameShift,
+  ratingStats, buildAffines, applyFrameShift, applyAffine, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform,
+  type RatingAffine, type RatingEnvelope, type TrainingMeans, type FrameShift,
 } from "../model/pool-transform.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba } from "./woba.ts";
@@ -132,24 +132,22 @@ export function buildFrameShift(train: TrainingMeans, pool: FieldStats): FrameSh
   return { hit: { vR: { ...hit }, vL: { ...hit } }, pit: { vR: { ...pit }, vL: { ...pit } } };
 }
 
-/** Per-role mean predicted K over the top-N field, computed on FRAME-V2-SHIFTED ratings —
- *  the centering mean K̄_pool for the K spread scaling K_corr = K̄ + s·(K_pred − K̄). Uses the
- *  same top-N cohort (by raw predicted wOBA) the frame shift is built from, so the mean the
- *  specialists deviate from matches how s* was fit. Hitters center on the deployment-side K of
- *  each per-side cohort; pitchers on the combined-wOBA top-N, both sides pooled. Predictions
- *  use the shift so K̄ and the per-card K live in the same shifted frame (plan §10.8d). */
-export function poolMeanK(cards: any[], coeffs: Coeffs, model: EventModel, fs: FrameShift, topN: number): { hit: number; pit: number } {
-  const sh = applyFrameShift; // §10.8d frame shift — the one copy lives in pool-transform.ts
+// One rating-mapper seam for the two K̄_pool variants below: frame-v2 centers on FRAME-SHIFTED
+// ratings, the own-gap K-spread centers on POOL-TRANSFORMED ratings. The cohort selection and
+// pooling are identical — only the rating re-basing differs — so the math lives here once.
+type KRatingMapper = (role: "hit" | "pit", side: "vR" | "vL", key: string, raw: number) => number;
+
+function poolMeanKBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, map: KRatingMapper): { hit: number; pit: number } {
   const recs = cards.map((c) => {
     const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]), stealRate = n(c["Steal Rate"]);
     const hitK = (side: "vR" | "vL") => {
-      const d = fs.hit[side];
-      const e = model.predictHitting({ eye: sh(n(c[`Eye ${side}`]), d.eye), pow: sh(n(c[`Power ${side}`]), d.pow), kRat: sh(n(c[`Avoid K ${side}`]), d.kRat), babip: sh(n(c[`BABIP ${side}`]), d.babip), gap: sh(n(c[`Gap ${side}`]), d.gap), speed, steal, run }, coeffs);
+      const g = (key: string, col: string) => map("hit", side, key, n(c[`${col} ${side}`]));
+      const e = model.predictHitting({ eye: g("eye", "Eye"), pow: g("pow", "Power"), kRat: g("kRat", "Avoid K"), babip: g("babip", "BABIP"), gap: g("gap", "Gap"), speed, steal, run }, coeffs);
       return { woba: assembleRawHittingWoba(e, 1, speed, stealRate, steal, run, coeffs), k: e.SO };
     };
     const pitK = (side: "vR" | "vL") => {
-      const d = fs.pit[side];
-      const e = model.predictPitching({ con: sh(n(c[`Control ${side}`]), d.con), stu: sh(n(c[`Stuff ${side}`]), d.stu), pbabip: sh(n(c[`pBABIP ${side}`]), d.pbabip), hrr: sh(n(c[`pHR ${side}`]), d.hrr) }, coeffs);
+      const g = (key: string, col: string) => map("pit", side, key, n(c[`${col} ${side}`]));
+      const e = model.predictPitching({ con: g("con", "Control"), stu: g("stu", "Stuff"), pbabip: g("pbabip", "pBABIP"), hrr: g("hrr", "pHR") }, coeffs);
       return { woba: assembleRawPitchingWoba(e, 1, coeffs), k: e.K };
     };
     return { hVR: hitK("vR"), hVL: hitK("vL"), pVR: pitK("vR"), pVL: pitK("vL") };
@@ -164,4 +162,23 @@ export function poolMeanK(cards: any[], coeffs: Coeffs, model: EventModel, fs: F
     hit: mean([...hVR.map((x) => x.k), ...hVL.map((x) => x.k)]),
     pit: mean([...pTop.map((r) => r.pVR.k), ...pTop.map((r) => r.pVL.k)]),
   };
+}
+
+/** Per-role mean predicted K over the top-N field, computed on FRAME-V2-SHIFTED ratings —
+ *  the centering mean K̄_pool for the K spread scaling K_corr = K̄ + s·(K_pred − K̄). Uses the
+ *  same top-N cohort (by raw predicted wOBA) the frame shift is built from, so the mean the
+ *  specialists deviate from matches how s* was fit. Hitters center on the deployment-side K of
+ *  each per-side cohort; pitchers on the combined-wOBA top-N, both sides pooled. Predictions
+ *  use the shift so K̄ and the per-card K live in the same shifted frame (plan §10.8d). */
+export function poolMeanK(cards: any[], coeffs: Coeffs, model: EventModel, fs: FrameShift, topN: number): { hit: number; pit: number } {
+  // §10.8d frame shift — the one copy lives in pool-transform.ts.
+  return poolMeanKBy(cards, coeffs, model, topN, (role, side, key, raw) => applyFrameShift(raw, (fs[role][side] as Record<string, number | undefined>)[key]));
+}
+
+/** OWN-GAP sibling of poolMeanK: the same top-N cohorts and pooling, but predictions run on
+ *  POOL-TRANSFORMED (own-gap) ratings — the centering mean K̄_pool for the pitcher K-spread
+ *  correction on the production own-gap path, so K̄ and each card's predicted K live in the
+ *  same own-gap frame score-card predicts in. Pre-era (raw model K per 600), like poolMeanK. */
+export function poolMeanKOwn(cards: any[], coeffs: Coeffs, model: EventModel, pt: PoolTransform, topN: number): { hit: number; pit: number } {
+  return poolMeanKBy(cards, coeffs, model, topN, (role, side, key, raw) => applyAffine(raw, (pt[role][side] as Record<string, RatingAffine | undefined>)[key]));
 }
