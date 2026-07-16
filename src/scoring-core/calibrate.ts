@@ -46,7 +46,11 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       coeffs,
     );
     if (ks) e.SO = applyKSpread(e.SO, ks.meanHit, ks.sHit);
-    return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, noSsp ? 1 : coeffs.ssp_adv_hitting), speed, stealRate, steal, run, coeffs) };
+    // BATTING-ONLY for the anchor (pass 0 for baserunning): the anchor selects its top-50 and normalizes
+    // to TARGET_WOBA on batting alone, so toggling baserunning can't shift the top-50 or sFinal. Baserunning
+    // is added additively (and pool-centered) in trustedHittingWoba; the pool's real BsR still feeds
+    // brCenterHit via the speed/stealRate/steal/run returned below. (Fixes the ~+1 mwOBA centering drift.)
+    return { e, woba: assembleRawHittingWoba(e, sameSidePenaltyHitting(bats, side, noSsp ? 1 : coeffs.ssp_adv_hitting), 0, 0, 0, 0, coeffs) };
   };
   const pit = (side: "vR" | "vL") => {
     const tp = pt?.pit[side]; const fp = fs?.pit[side];
@@ -110,7 +114,13 @@ export function calibrate(pool: any[], config: CalibrateConfig, model?: EventMod
   // component of WAR (batting + baserunning + steal runs), so baserunning is credited as runs ABOVE/BELOW
   // the average card in the pool — subtracted in trustedHittingWoba so the average card gets ~0 (not a
   // universal uplift) and below-average baserunners go negative, as intended.
-  const brCenterHit = mean(aug.map((x) => baserunningWoba(x.speed, x.stealRate, x.steal, x.run, coeffs)));
+  // Baserunning CENTER = the TRUE mean BsR over the pool's HITTERS (pitchers barely bat, so they'd
+  // drag the average down and make every hitter read falsely positive). A plain mean (incl. negatives),
+  // NOT the x>0-filtered `mean` helper. Subtracted in trustedHittingWoba ⇒ the average hitter's
+  // baserunning is ~0 and cards are +/- by their edge over the hitter field.
+  const brVals = pool.filter((c) => String(c["Position"] ?? "") !== "1")
+    .map((c) => baserunningWoba(n(c["Speed"]), n(c["Steal Rate"]), n(c["Stealing"]), n(c["Baserunning"]), coeffs));
+  const brCenterHit = brVals.length ? brVals.reduce((s, x) => s + x, 0) / brVals.length : 0;
 
   return {
     brCenterHit,
