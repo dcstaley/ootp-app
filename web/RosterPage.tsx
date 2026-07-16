@@ -377,7 +377,7 @@ export function RosterPage() {
   const NB_RENDER = 100; // cap rendered cards (keeps the DOM light; filter scans all)
   const activeCat = AVAIL_CATS.find((c) => c.id === availCat)!;
   const minStam = roster?.minStarterStamina ?? 70, minPit = roster?.minPitchTypes ?? 3;
-  const toHitter = (a: AvailRow): AvailHitterRow => ({ id: a.id, title: a.title, last: a.last, bats: a.bats, positions: a.positions, startPositions: a.startPositions, def: a.def, cost: a.cost, owned: a.owned, wobaVL: a.hitVL, wobaVR: a.hitVR });
+  const toHitter = (a: AvailRow): AvailHitterRow => ({ id: a.id, title: a.title, last: a.last, bats: a.bats, positions: a.positions, startPositions: a.startPositions, def: a.def, cost: a.cost, owned: a.owned, wobaVL: a.hitVL, wobaVR: a.hitVR, bsr: a.hitBsr });
   const toPitcher = (a: AvailRow): AvailPitcherRow => ({ id: a.id, title: a.title, last: a.last, throws: a.throws, cost: a.cost, owned: a.owned, stamina: a.stamina, pitchTypes: a.pitchTypes, woba: a.pitOVR, wobaVL: a.pitVL, wobaVR: a.pitVR });
   // Per-tab list: filter to position/role relevance, sort by the metric, top slice.
   const hitterList = (): AvailHitterRow[] => {

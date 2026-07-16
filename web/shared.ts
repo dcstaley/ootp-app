@@ -33,7 +33,7 @@ export interface RosterSlotCard { pos?: string; slot?: number; id: string; title
 export interface CardDef { ifR: number; ifE: number; ifA: number; dp: number; cAb: number; cFr: number; cAr: number; ofR: number; ofE: number; ofA: number }
 // `positions` = QUALIFIED to START (meets starter def min); `coverPositions` = QUALIFIED to
 // BACK UP (meets starter OR backup min); `allPositions` = ELIGIBLE (can play, Learn).
-export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; coverPositions?: string[]; allPositions?: string[]; def: CardDef; wobaVL: number; wobaVR: number; cost: number; owned: number }
+export interface RosterHitterRow { id: string; title: string; last: string; first?: string; bats: string; role: string; twoWay: boolean; positions: string[]; coverPositions?: string[]; allPositions?: string[]; def: CardDef; wobaVL: number; wobaVR: number; bsr: number; cost: number; owned: number }
 export interface RosterPitcherRow { id: string; title: string; last: string; first?: string; throws: string; role: string; twoWay: boolean; woba: number; wobaSP?: number; wobaRP?: number; stamina: number; pitchTypes: number; cost: number; owned: number }
 // Next Best Available pool (M5) — every available card as one unified row (both
 // hit + pitch values); the client derives hitter/pitcher cards per tab.
@@ -41,11 +41,11 @@ export interface RosterPitcherRow { id: string; title: string; last: string; fir
 export interface AvailRow {
   id: string; title: string; last: string; bats: string; throws: string;
   positions: string[]; startPositions?: string[]; def: CardDef; cost: number; owned: number;
-  hitVL: number; hitVR: number; pitOVR: number; pitVL: number; pitVR: number;
+  hitVL: number; hitVR: number; hitBsr: number; pitOVR: number; pitVL: number; pitVR: number;
   stamina: number; pitchTypes: number;
 }
 // Per-card shapes the Available cards + manual-add use (derived from AvailRow).
-export interface AvailHitterRow { id: string; title: string; last: string; bats: string; positions: string[]; startPositions?: string[]; def: CardDef; cost: number; owned: number; wobaVL: number; wobaVR: number }
+export interface AvailHitterRow { id: string; title: string; last: string; bats: string; positions: string[]; startPositions?: string[]; def: CardDef; cost: number; owned: number; wobaVL: number; wobaVR: number; bsr: number }
 export interface AvailPitcherRow { id: string; title: string; last: string; throws: string; cost: number; owned: number; stamina: number; pitchTypes: number; woba: number; wobaVL: number; wobaVR: number }
 // A manually-added card (fills an open roster slot); tagged by which table it joins.
 export type AddedCard = { kind: "hitter"; row: AvailHitterRow } | { kind: "pitcher"; row: AvailPitcherRow };

@@ -528,6 +528,7 @@ const hasAnyRank = (pr?: Record<string, { starter?: Record<string, number>; back
 interface Entry {
   dispId: string;
   hitVR: number; hitVL: number; pitVR: number; pitVL: number; pitOVR: number;
+  hitBsr: number; // baserunning runs/600 (side-invariant) — for the roster/lineup BsR badge
   positions: string[]; stamina: number; pitchTypes: number;
   bats: number; throws: number; title: string; cost: number;
   role: RoleOverride | "auto";
@@ -581,7 +582,7 @@ function rosterCandidates(
     const pRole: PitchRole = n(c0["Stamina"]) >= t.min_starter_stamina && pitchCount(c0) >= t.min_pitch_types ? "sp" : "rp";
     entries.push({
       dispId,
-      hitVR: hitVal(sc, "vR"), hitVL: hitVal(sc, "vL"),
+      hitVR: hitVal(sc, "vR"), hitVL: hitVal(sc, "vL"), hitBsr: Math.round(sc.hit.bsr600 * 10) / 10,
       pitVR, pitVL, pitOVR: blendPitch(pitVR, pitVL, sc.throws, pRole, ps, platoonVR, platoonVL),
       positions, stamina: n(c0["Stamina"]), pitchTypes: pitchCount(c0),
       bats: sc.bats, throws: sc.throws, title: String(sc.title), cost,
@@ -918,10 +919,11 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   // Raw Learn positions (all a card CAN play) per dispId — POS shows these; the
   // starter-eligible subset (c.positions) drives the def-requirement colour-coding.
   const rawPosByDisp = new Map(entries.map((e) => [e.dispId, e.positions]));
+  const bsrByDisp = new Map(entries.map((e) => [e.dispId, e.hitBsr])); // side-invariant BsR runs → roster badge
   const rosterHitters = r.hitters.map((id) => {
     const c = hById.get(id)!; const role = hitRole(id);
     return { id: strip(id), title: c.title, last: lastByDisp[id] ?? "", first: firstByDisp[id] ?? "", bats: BATS[c.bats] ?? "", role, twoWay: twoWaySet.has(strip(id)), positions: c.positions, coverPositions: c.coverPositions ?? c.positions, allPositions: rawPosByDisp.get(id) ?? c.positions, def: defByDisp[id],
-      wobaVL: hScore(c.valueVL), wobaVR: hScore(c.valueVR), cost: c.cost, owned: ownedByDisp[id] ?? 0 };
+      wobaVL: hScore(c.valueVL), wobaVR: hScore(c.valueVR), bsr: bsrByDisp.get(id) ?? 0, cost: c.cost, owned: ownedByDisp[id] ?? 0 };
   }).sort((a, b) => roleRank[a.role]! - roleRank[b.role]! || Math.max(b.wobaVL, b.wobaVR) - Math.max(a.wobaVL, a.wobaVR));
   // Both role blends per pitcher, so the UI shows the ROLE-APPROPRIATE score everywhere: SP in
   // the rotation + "available starters", RP in the bullpen (same arm, different context).
@@ -949,7 +951,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
     id: strip(e.dispId), title: e.title, last: lastByDisp[e.dispId] ?? "",
     bats: BATS[e.bats] ?? "", throws: THROWS[e.throws] ?? "",
     positions: e.positions, startPositions: starterPosByDisp[e.dispId] ?? [], def: defByDisp[e.dispId]!, cost: e.cost, owned: ownedByDisp[e.dispId] ?? 0,
-    hitVL: hScore(e.hitVL), hitVR: hScore(e.hitVR),
+    hitVL: hScore(e.hitVL), hitVR: hScore(e.hitVR), hitBsr: e.hitBsr,
     pitOVR: pScore(e.pitOVR), pitVL: pScore(e.pitVL), pitVR: pScore(e.pitVR),
     stamina: e.stamina, pitchTypes: e.pitchTypes,
   }));
