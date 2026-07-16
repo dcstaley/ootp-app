@@ -589,6 +589,11 @@ teams (missing teams ARE the ghosts; their OPPONENTS' padded lines are the conta
 
 ## Right now
 
+> **CURRENCY NOTE (2026-07-16).** The active thread is the cwhitstats calibration program — governance,
+> pinned definitions, and provisional markers live in `REBUILD_TOURNAMENT_MODEL_PLAN.md` **§15** (read it
+> before acting on any cwhit handoff doc); running record = memory `cwhit-program-batch-state`. Benchmark
+> scorecard shipped on branch `cwhit-scorecard-p1p2`; next = MMSE spacing battery → archetype ledger.
+
 > **CURRENT STATE (2026-07-11, main @ audit fixes).** M0–M6 done. The deployed scoring model is the
 > data-driven **raw-poly** event model (hitting) + **StuffAug** (pitching) behind the EventModel seam;
 > old-app parity is **SUNSET** (no golden harness — `npm run golden` is gone; scoring changes are made

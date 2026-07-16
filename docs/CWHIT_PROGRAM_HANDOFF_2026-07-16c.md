@@ -15,11 +15,14 @@ Branch `cwhit-scorecard-p1p2`, commit `1e9bc27` (P1+P2). Later work uncommitted.
   the missing 8 fixtures by hand).
 - **THE HEADLINE: cwhit's advantage is LEVEL and SPACING, not ORDERING.** 0 CI-clear shape wins for us,
   7 CI-clear losses, **all noise-scale** (corr .96 vs .97). ⇒ **P4 / two-argument M8 = NO-GO on this evidence.**
+  **[scope pinned — plan §15.5: no-go AS AN ORDERING FIX only; the spacing verdict awaits the MMSE battery]**
 - **v1's "his model wins BB9/HR9/BABIP" was a LEVEL result misreported as model quality.** The two-axis split
   dissolves it. This is the work-order's methodology fix landing exactly as predicted.
 - **The window-overlap confound RUNS THE WRONG WAY** — bronze (least in-sample, 60%) is where his edge is
   LARGEST. His level edge is a genuine frame effect, not memorization. Do not discount it as an artifact.
 - **DEREK'S RULING (kills most of P3 as written): levels are a CONVENTION, not a defect.** See §3.
+  **[scope pinned — plan §15.2: UNIFORM-within-role levels only; card-dependent effects stay live; level
+  measurements remain diagnostic; the anchor is load-bearing for cap budgets]**
 - **DEREK'S FOCUS: EVENTS, and whether we systematically mis-value PLAYER TYPES (e.g. HR hitters).** See §5.
   This is the live question. Not levels. Not composites.
 - **The live defect is SPACING**: 0 wins / 17 losses; K9 spread 0.52–0.66 against corr 0.95.
@@ -63,7 +66,8 @@ deconvolution. DUEL CIs = 2000-rep **paired** bootstrap (same cards ⇒ shared c
 diamond hit wOBA (−0.337). Everything else TIES. **All losses are noise-scale** (corr .96 vs .97) except the
 diamond-hit composite at N=17. **BABIP is the only channel with a consistent shape story** (negative at every
 tier, replicated across roles) — and even it is small. ⇒ **P4 NO-GO.** A two-argument matchup model is a large
-build justified by a frame-shape gap that mostly isn't there.
+build justified by a frame-shape gap that mostly isn't there. **[superseded in scope — plan §15.5: no-go as
+an ORDERING fix only]**
 
 **K — our supposed win, correctly characterised.** We beat him on K9 LEVEL at iron/bronze/silver/gold
 (Δ|level| −0.29..−0.87); he runs hot **+0.95..+1.04 at every tier** = a flat additive bias in HIS model.
@@ -145,6 +149,9 @@ My claim that the elite-power HR cliff was "probably an `sHR` artifact" is **RET
 dead-code read, not a data problem.
 
 ### 3d. DEREK'S RULING — the anchor is a CONVENTION, not a prediction
+
+> **[scope pinned — see plan §15.2]** Correct reading: uniform-within-role level errors are convention;
+> card-dependent (rating-varying) errors are spacing/shape and fully live; level measurements stay diagnostic.
 
 Verbatim in substance: *"I don't actually care about target_woba in this manner or how well we match cwhit
 projected wOBA, only relative (ex: pearson). It's interesting to look at our raw but we don't really want to

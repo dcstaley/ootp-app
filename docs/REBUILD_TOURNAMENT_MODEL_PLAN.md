@@ -1548,3 +1548,98 @@ CONCLUSION: after baserunning (the one clean fixable gap, SHIPPED), the audit's 
 frame class. Per-channel fixes are impossible-by-construction (in-frame is unbiased); the only non-settled
 path is the M8 matchup model (option B above) with cwhit as its evaluator, or accept as frame-bound. The
 hitter HR/BABIP items join the pitcher stuff/BB in this bucket. Baserunning is the audit's actionable result.
+
+---
+
+## 15. Program governance — pinned definitions and provisional markers (2026-07-16)
+
+**Why this section exists.** The 2026-07-16 session (delivery report: `docs/CWHIT_PROGRAM_HANDOFF_2026-07-16c.md`)
+produced solid artifacts (§15.6) but also over-read two of Derek's rulings, resurrected stale sunset-era
+threads, and mis-read retired code as live. **Derek's ruling on that session: nothing from it is settled
+beyond what is pinned here.** Where the handoff docs and this section disagree, this section wins. Companion
+running record: memory `cwhit-program-batch-state` (the two 2026-07-16 Fable review entries are the source
+of truth for this section).
+
+### 15.1 The three metrics — never conflate
+
+- **Offense** = wRAA + BsR, on the wOBA scale — `scoreCard.hit.offense_vL/vR/ovr`. This is what `valueFor`
+  and the **optimizer** consume. It is NOT real wOBA.
+- **wOBA** = batting-only, real wOBA — `hit.woba_*`. The like-for-like metric vs cwhit and the real world.
+- **BsR** = baserunning runs/600, side-invariant — `hit.bsr600`.
+- Pitcher `pitch.woba_*` = **genuine wOBA-against** (no baserunning component).
+- cwhit's wOBA is **batting-only** (confirmed two ways: his tables list wSB600/UBR600 separately, and our
+  batting-only reconstruction matched at corr 0.986). Any deployed-vs-cwhit comparison must either add his
+  wSB600+UBR600 or stay batting-only.
+- cwhit's **`pwOBA` column is never truth** — always recompute wOBA from his raw events with OUR weights.
+
+### 15.2 Ruling 1 — the anchor/levels ruling, at its CORRECT scope (do not over-read)
+
+Derek's ruling (handoff #3 §3d): the anchor is a convention, not a prediction. Its correct scope:
+
+- **UNIFORM-within-role level errors are a CONVENTION** — the per-role anchor absorbs them. `TARGET_WOBA`
+  is a readable scale plus the **cap optimizer's budget unit**, and the anchor **IS load-bearing for cap
+  budgets** — it is not vestigial and must not be treated as removable.
+- **Anything CARD-DEPENDENT** (an error that varies with ratings) is spacing/shape, is NOT absorbed by the
+  anchor, and is **fully live** as a fix target.
+- **Level measurements remain diagnostic evidence** even when scoring does not consume them (they locate
+  frame effects — the two-ledger channel work depends on them). Ruling 1 dropped the P3 "close the composite
+  level gap" program as a *fix target*; it did not outlaw measuring levels.
+
+### 15.3 Ruling 2 — the live question: event-level TYPE bias
+
+Derek's focus (handoff #3 §5): does the event model systematically mis-value particular player
+**archetypes** — HR hitters, power arms, control artists? This is the live question, framed at the event
+level, not levels and not composites. **Two-axis doctrine: ORDER and SPACING are co-equal.** "Relative"
+never means Pearson alone — spacing is where the model currently loses (0 spread wins / 17 losses).
+
+### 15.4 The dead-code trap
+
+This repo carries **live-looking log-linear/parity remnants** (full removal deferred — memory
+`m6-retirement-state`). `src/scoring-core/woba.ts` reads as if per-event BB/HR calibration were current.
+**Any claim about the live scoring path MUST first check the `eventForm` gating in
+`src/scoring-core/calibrate.ts`:** under the deployed raw-poly model (`eventForm` present) the per-event
+`sBB`/`sHR` scales are **1** — retired. **Own-gap is their successor** (same job — pool-relative BB/HR
+correction — moved from event space to rating space); they are not two corrections to stack. The only
+calibration the deployed path applies to the assembled wOBA is **`sFinal`**, a per-tier×side positive
+scalar that **cannot move ordering or spread ratios** — it moves only the composite level (which per §15.2
+is convention). This trap was fallen into twice on 2026-07-16 (handoff #3 §3b, §6.7).
+
+### 15.5 Provisional markers — recorded, NOT settled
+
+From the 2026-07-16 session. Each is a marker, not a decision; do not treat any as closed.
+
+- **P3-level-closure: dropped per Ruling 1** — at the §15.2 scope only (uniform-within-role levels are
+  convention; card-dependent effects stay live; level diagnostics continue).
+- **P4 / two-argument M8: no-go AS AN ORDERING FIX only** (0 CI-clear shape wins either way). The
+  **spacing verdict awaits the MMSE battery** — no spacing conclusion about M8 exists yet.
+- **kSpread / stuff-slope "settled dead" was an AI call Derek does not co-sign** (verbatim: "'settled dead'
+  was an AI choice, I have no strong opinion"). Reopenable on evidence — the 0-for-17 spread record is
+  candidate evidence — but sequenced behind the channel-level work (one defect per retrain cycle).
+- **"Form is maxed"** (full-rawquad ceiling ~0.76–0.78 in-frame spread) is a claim about the **CURRENT form
+  family measured on thin data**, under re-test — cwhit's K9 spread ratio ~1.15 on the same prediction
+  problem suggests the ceiling was the form's limit, not information-theoretic (caveat: his semi-in-sample
+  status could inflate his ratio honestly; MMSE on OUR model decides, his number is directional only).
+
+### 15.6 Solid results the next session may build on
+
+- **The benchmark scorecard exists** (`tools/cwhit-scorecard.ts` + `src/eval/cwhit/scorecard.ts`, fixtures
+  for all **5 Quick tiers × both roles**): cwhit's edge is **LEVEL + SPACING, NOT ordering** — 0 CI-clear
+  shape wins in either direction, all differences noise-scale (corr .96 vs .97). Ordering is already
+  competitive. This **supersedes** the v1 triangulation's "his model wins BB9/HR9/BABIP" (a LEVEL result
+  misreported as model quality).
+- **IRON GATE PASSED** — corr .88–.98 at k≈1.6–2.2 (N=44, best pitcher depth); no frame breakdown at the
+  bottom tier.
+- **Window confound FALSIFIED** — his edge is largest where he is LEAST in-sample (bronze, 60% overlap) ⇒
+  his level edge is a **genuine frame effect**, not memorization. Do not discount it.
+- **Two-ledger channel diagnostic** (`tools/cwhit-two-ledger.ts`): **BABIP passes both-sides 4/4** on sign
+  AND magnitude — the best-attested frame effect; **BB passes on sign 4/4 but with role-UNEQUAL magnitudes**
+  (2.1–3.7×, so not one shared constant); **HR fails the sign test** (3 flips) — **quarantined: no HR fit
+  while two measurements disagree on sign**.
+- **Baserunning invariants pinned** by 9 bug-verified regression tests (`tests/baserunning-invariants.test.ts`
+  — each test confirmed by reintroducing the original bug).
+
+**Sequenced next** (per memory `cwhit-program-batch-state`): land the MMSE spacing battery → archetype
+ledger (per-type mwOBA mis-valuation, level-free — Derek's Ruling-2 question in his own terms) → instrument
+decision: FLAT under-reaction ⇒ a universal per-channel calibration slope (kSpread resurrected WITH
+evidence, properties-legal); TAIL-concentrated ⇒ curve-tail form work, re-testing "form is maxed" with the
+calibration slope as a bake-off metric.

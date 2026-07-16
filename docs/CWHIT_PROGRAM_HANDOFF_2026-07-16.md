@@ -26,6 +26,8 @@ that gives the first concrete evidence on the parked M8 question. Companion: mem
   **his model beats ours on BB9/HR9/BABIP — exactly the frame-bound channels** we proved un-fittable on
   league data — **but ours beats his on K** (his runs hot; ours is accurate at high stuff). So a
   tournament-native (M8) model is evidence-backed for the frame channels, but must PRESERVE our K.
+  **[superseded — the benchmark scorecard's level/shape split showed these "wins" were LEVEL results, not
+  ordering; see plan §15 (governance) + handoff #3 §2]**
 
 ---
 
@@ -114,6 +116,11 @@ Who tracks observed better (mean |pred−obs|): **K9 OURS** (0.78 vs his 1.27), 
 
 ## 4. THE M8 EVIDENCE (the headline for Fable)
 
+> **[superseded — see plan §15 governance section]** The scorecard (handoff #3 §2) re-ran this with the
+> level/shape split: the BB9/HR9/BABIP "wins" below are LEVEL effects (real frame effects, but convention
+> per Ruling 1's scope), NOT ordering advantages — 0 CI-clear shape wins either way. M8 = no-go **as an
+> ordering fix**; the spacing verdict awaits the MMSE battery (plan §15.5).
+
 The triangulation is the first concrete read on the parked M8 (two-argument matchup) decision:
 - cwhit's **tournament-native model materially beats ours on BB9 / HR9 / BABIP** — precisely the
   **frame-bound channels** we PROVED un-fittable on league data (handoff #1 §4c, `insample-frame-check`).
@@ -130,7 +137,8 @@ The triangulation is the first concrete read on the parked M8 (two-argument matc
 
 ## 5. OPEN QUESTIONS / DIVE-DEEPER (for Fable)
 
-1. **Strengthen the triangulation before committing to M8.** N=30/one-tier/pitchers-only. Capture cwhit
+1. **[done — the benchmark scorecard delivered this across all 5 Quick tiers × both roles; verdict in plan
+   §15.6]** **Strengthen the triangulation before committing to M8.** N=30/one-tier/pitchers-only. Capture cwhit
    Projected Pitchers for more Quick tiers (iron/silver/gold/diamond) + Projected Hitters, and re-run
    `cwhit-triangulate.ts` (generalize it past bronze). Confirm the "his-model-wins-on-BB/HR/BABIP,
    ours-wins-on-K" pattern holds across tiers. This is the gate before any M8 build. (Browsing: in-app
