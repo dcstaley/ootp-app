@@ -78,7 +78,7 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
     for (const o of hitObs) {
       const s = scoreCard(cardFrom(o), { coeffs, derived, calScales: null, eventForm: fit });
       const ref = predictHitForm(fit.hit, o);
-      worst = Math.max(worst, Math.abs(s.hit.offense_vR - ref));
+      worst = Math.max(worst, Math.abs(s.hit.woba_vR - ref));
     }
     expect(worst).toBeLessThan(1e-9);
   });
@@ -101,7 +101,7 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
     let worst = 0;
     for (const o of hitObs) {
       const s = scoreCard(cardFrom(o), { coeffs, derived, calScales: IDENTITY, eventForm: fit });
-      worst = Math.max(worst, Math.abs(s.hit.offense_vR - predictHitForm(fit.hit, o)));
+      worst = Math.max(worst, Math.abs(s.hit.woba_vR - predictHitForm(fit.hit, o)));
     }
     expect(worst).toBeLessThan(1e-9);
   });
@@ -112,7 +112,7 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
       const card = cardFrom(o);
       const e = model.predictHitting({ ...o.ratings.hit, speed: 0, steal: 0, run: 0 }, coeffs);
       const anchor = anchorHittingWoba(e, 1, 1, 1, "vR", coeffs, derived, fit);
-      const trusted = scoreCard(card, { coeffs, derived, calScales: IDENTITY, eventForm: fit }).hit.offense_vR;
+      const trusted = scoreCard(card, { coeffs, derived, calScales: IDENTITY, eventForm: fit }).hit.woba_vR;
       expect(Math.abs(anchor - trusted)).toBeLessThan(1e-12);
     }
     for (const o of pitObs.slice(0, 60)) {
@@ -141,7 +141,7 @@ describe.skipIf(!existsSync(DIR))("raw-poly (#2) integration — deployed model 
     for (const o of hitObs.slice(0, 40)) {
       const withForm = scoreCard(cardFrom(o), { coeffs, derived, calScales: IDENTITY, eventForm: fit });
       const noForm = scoreCard(cardFrom(o), { coeffs, derived, calScales: IDENTITY }); // log-linear default
-      maxDiff = Math.max(maxDiff, Math.abs(withForm.hit.offense_vR - noForm.hit.offense_vR));
+      maxDiff = Math.max(maxDiff, Math.abs(withForm.hit.woba_vR - noForm.hit.woba_vR));
       // sanity: an all-log eventForm and the #2 eventForm differ on the power events
       void logFit;
     }

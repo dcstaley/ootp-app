@@ -20,6 +20,18 @@ import { wobaWeightsFromCoeffs } from "./woba-weights.ts";
 //     ≈0 value; a high-tendency/low-ability runner nets NEGATIVE (gets caught). adv_steal (the old
 //     ability-only linear term) is retired to 0. All coeffs absent ⇒ 0 (pre-wiring parity).
 export const STEAL_PROD_SCALE = 100;
+/** The card's BsR contribution in wOBA units — the raw baserunning value CENTERED on the pool mean
+ *  (calScales.brCenterHit) so the average card is ~0 and below-average baserunners go negative. Side-
+ *  invariant (baserunning has no platoon split). The ONE place the centering lives; consumed by
+ *  trustedHittingWoba (Offense = batting·sFinal + BsR) and by score-card to split Offense ↔ wOBA ↔ BsR.
+ *  NOT scaled by sFinal — it's already in real wOBA units (fit from league wSB/UBR runs). */
+export function hittingBsr(speed: number, stealRate: number, steal: number, run: number, c: Coeffs, calScales: CalScales | null): number {
+  return baserunningWoba(speed, stealRate, steal, run, c) - (calScales?.brCenterHit ?? 0);
+}
+/** Convert a BsR wOBA-units value to runs per 600 PA (the cwhit wSB600+UBR600 basis). */
+export const bsrToRuns600 = (bsrWoba: number): number => bsrWoba * (600 / WOBA_SCALE_RUNS);
+export const WOBA_SCALE_RUNS = 1.25; // runs per wOBA point (matches coeff-resolve's baserunning fit conversion)
+
 export function baserunningWoba(speed: number, stealRate: number, steal: number, run: number, c: Coeffs): number {
   return (c.adv_speed ?? 0) * speed + (c.adv_run ?? 0) * run + (c.adv_steal ?? 0) * steal
     + (c.adv_stealRate ?? 0) * stealRate + (c.adv_stealInt ?? 0) * ((stealRate * steal) / STEAL_PROD_SCALE);
@@ -148,8 +160,7 @@ export function trustedHittingWoba(
   //    center barely moves by tier — and they're deliberately excluded from the own-gap lift for the same
   //    reason. Also excluded from the anchor (batting-only) ⇒ a non-runner keeps its batting wOBA.
   const battingWoba = ((w.bb * k.BB_fin + w.hbp * adv_hbp + w.b1 * k.oneB_fin + w.xbh * k.GAP_fin + w.hr * k.HR_fin) / 600) * ssp;
-  const brBonus = baserunningWoba(speed, stealRate, steal, run, coeffs) - (calScales.brCenterHit ?? 0);
-  return battingWoba * sFinal + brBonus;
+  return battingWoba * sFinal + hittingBsr(speed, stealRate, steal, run, coeffs, calScales);
 }
 
 export function trustedPitchingSideWoba(

@@ -13,7 +13,7 @@ import {
 } from "./helpers.ts";
 import { basicHittingSide, basicPitchingSide } from "./basic.ts";
 import {
-  assembleRawHittingWoba, assembleRawPitchingWoba, trustedHittingWoba, trustedPitchingSideWoba,
+  assembleRawHittingWoba, assembleRawPitchingWoba, trustedHittingWoba, trustedPitchingSideWoba, hittingBsr, bsrToRuns600,
 } from "./woba.ts";
 
 export interface CardScores {
@@ -21,10 +21,16 @@ export interface CardScores {
   title: unknown;
   bats: number;
   throws: number;
-  // "offense" = the OFFENSE metric (wRAA + BsR) on the wOBA scale — batting event wOBA + the centered
-  // baserunning bonus. This is what valueFor + the optimizer consume. (Batting-only real wOBA + BsR/600
-  // are split out as separate fields in a follow-up; pitch.woba_* below is genuine wOBA-against.)
-  hit: { offense_vL: number; offense_vR: number; offense_ovr: number; basic_vL: number; basic_vR: number; basic_ovr: number };
+  // The offense split: offense = woba (batting-only, real wOBA) + BsR (baserunning). `offense_*` (wRAA+BsR
+  // on the wOBA scale) is what valueFor + the optimizer consume; `woba_*` is batting-only (comparable to
+  // cwhit + real-world wOBA); `bsr600` is baserunning in runs/600 (side-invariant; cwhit wSB600+UBR600
+  // basis). pitch.woba_* below is genuine wOBA-against (no baserunning).
+  hit: {
+    offense_vL: number; offense_vR: number; offense_ovr: number;
+    woba_vL: number; woba_vR: number; woba_ovr: number;
+    bsr600: number;
+    basic_vL: number; basic_vR: number; basic_ovr: number;
+  };
   pitch: {
     woba_vR: number; woba_vL: number; woba_ovr: number;
     basic_vR: number; basic_vL: number; basic_ovr: number;
@@ -87,7 +93,12 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     // SSP (same-side platoon penalty) — REMOVED under #2 (value → 1); log-linear keeps it (parity).
     const sspAdv = sameSidePenaltyHitting(bats, side, eventForm ? 1 : coeffs.ssp_adv_hitting);
     const rawWoba = assembleRawHittingWoba(e, sspAdv, speed, stealRate, steal, run, coeffs);
-    const woba = trustedHittingWoba(e, rawWoba, bats, side, coeffs, derived, calScales, eventForm, speed, stealRate, steal, run);
+    // OFFENSE (wRAA + BsR) = what valueFor/optimizer consume. Split into batting-only wOBA (real wOBA,
+    // comparable to cwhit + the real world) and BsR (centered baserunning, side-invariant): offense =
+    // batting + bsr. bsr is added AFTER calibration scaling, so batting = offense − bsr.
+    const offense = trustedHittingWoba(e, rawWoba, bats, side, coeffs, derived, calScales, eventForm, speed, stealRate, steal, run);
+    const bsr = hittingBsr(speed, stealRate, steal, run, coeffs, calScales);
+    const woba = offense - bsr; // batting-only
 
     // Basic metric: direct basic-hitting score × pool scale × cross-pool multiplier.
     const basicRaw = basicHittingSide({
@@ -104,7 +115,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     const hitScale = side === "vR" ? (calScales?.hitScaleVR ?? 1) : (calScales?.hitScaleVL ?? 1);
     const basic = basicRaw * hitScale * hitCross;
 
-    return { woba, basic };
+    return { offense, woba, bsr, basic };
   };
   const hVL = hit("vL");
   const hVR = hit("vR");
@@ -171,7 +182,9 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     title: card["//Card Title"],
     bats, throws: thr,
     hit: {
-      offense_vL: hVL.woba, offense_vR: hVR.woba, offense_ovr: hitBlend(hVR.woba, hVL.woba),
+      offense_vL: hVL.offense, offense_vR: hVR.offense, offense_ovr: hitBlend(hVR.offense, hVL.offense),
+      woba_vL: hVL.woba, woba_vR: hVR.woba, woba_ovr: hitBlend(hVR.woba, hVL.woba),
+      bsr600: bsrToRuns600(hVR.bsr), // BsR in runs/600 (side-invariant; cwhit wSB600+UBR600 basis)
       basic_vL: hVL.basic, basic_vR: hVR.basic, basic_ovr: hitBlend(hVR.basic, hVL.basic),
     },
     pitch: {
