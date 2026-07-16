@@ -16,6 +16,9 @@ import {
 } from "./shared.ts";
 import { IF, OF, posStr, posCell, star, nameCell, defSummary, ROLE_OV, bsrTag } from "./roster-cells.tsx";
 
+// Tooltip for the Off vL / Off vR value cells: what the number actually is.
+const OFF_TIP = (vs: string) => `Offense vs ${vs} (wOBA scale) = batting wOBA + baserunning (BsR). The all-in-one offense value the optimizer ranks on. Batting-only wOBA and BsR are separate columns on the Cards grid.`;
+
 function Legend({ roles }: { roles: string[] }) {
   return (
     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 12, color: C.sub, margin: "0 0 12px" }}>
@@ -342,8 +345,8 @@ export function RosterPage() {
     { key: "player", label: "Player", width: nameW.h, min: nameW.h, max: nameW.h + 140, shrink: 3, value: (h) => h.last || h.title, render: nameCell },
     { key: "value", label: "Val", align: "r", width: 44, value: (h) => h.cost },
     { key: "b", label: "B", align: "c", width: 26, value: (h) => h.bats },
-    { key: "vL", label: "vL", align: "r", width: 58, value: (h) => h.wobaVL, render: (h) => num(h.wobaVL) },
-    { key: "vR", label: "vR", align: "r", width: 58, value: (h) => h.wobaVR, render: (h) => num(h.wobaVR) },
+    { key: "vL", label: "Off vL", align: "r", width: 58, value: (h) => h.wobaVL, render: (h) => <span title={OFF_TIP("LHP")}>{num(h.wobaVL)}</span> },
+    { key: "vR", label: "Off vR", align: "r", width: 58, value: (h) => h.wobaVR, render: (h) => <span title={OFF_TIP("RHP")}>{num(h.wobaVR)}</span> },
     { key: "bsr", label: "BsR", align: "r", width: 48, value: (h) => h.bsr, render: (h) => bsrTag(h.bsr) },
     { key: "pos", label: "Pos", width: 150, min: 44, shrink: 2, value: (h) => posStr(h.allPositions ?? h.positions), render: (h) => posCell(h.allPositions ?? h.positions, h.positions) },
     { key: "def", label: "Defense", width: 312, min: 90, shrink: 1, value: (h) => h.def.ifR, render: (h) => <span style={{ color: C.sub, fontSize: 12 }}>{defSummary(h)}</span> },
