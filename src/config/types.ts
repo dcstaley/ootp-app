@@ -6,6 +6,7 @@
 import type { EventForm } from "../model/curves.ts";
 import type { PoolTransform, FrameShift } from "../model/pool-transform.ts";
 import type { EventModel } from "../model/types.ts";
+import type { HitTail } from "../scoring-core/hit-tail.ts"; // type-only — no runtime cycle
 
 export type Side = "vR" | "vL";
 
@@ -167,4 +168,9 @@ export interface ScoringConfig {
   // identical coordinate. Absent ⇒ no-op (parity). Bit-identical to `frameShift`+`kSpread` in
   // Phase 0 (tail = 0, aRole = 1). Mutually exclusive with `poolTransform`/`frameShift`.
   matchup?: { model: EventModel; shift: FrameShift };
+  // BUILD-2 gap-conditioned hitter tail correction (HR/BABIP/SO event-space, post-model,
+  // pre-BIP-chain — the kSpread seam, hitter side only). Absent ⇒ no-op (today's scores are
+  // bit-identical). Built per tournament by computeHitTail, gated on Tournament.hitTailCorrection
+  // (no default flip). See src/scoring-core/hit-tail.ts.
+  hitTail?: HitTail;
 }

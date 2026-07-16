@@ -20,6 +20,7 @@ import { makeRawPolyModel } from "../model/raw-poly.ts";
 import { scoreCard } from "./score-card.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba, anchorHittingWoba, anchorPitchingWoba, baserunningWoba } from "./woba.ts";
+import { applyHitTail, type HitTail } from "./hit-tail.ts";
 
 export const TARGET_WOBA = 0.320;
 export const TARGET_BASIC = 100;
@@ -29,14 +30,14 @@ export const ANCHOR_N = 50;
 export const H_SECTION3 = { BB: 48.43, HR: 14.87 };
 export const P_SECTION3 = { BB: 47.80, HR: 14.96 };
 
-export interface CalibrateConfig { coeffs: Coeffs; derived: Derived; eventForm?: EventForm; poolTransform?: PoolTransform; frameShift?: FrameShift; kSpread?: KSpread; matchup?: { model: EventModel; shift: FrameShift } }
+export interface CalibrateConfig { coeffs: Coeffs; derived: Derived; eventForm?: EventForm; poolTransform?: PoolTransform; frameShift?: FrameShift; kSpread?: KSpread; matchup?: { model: EventModel; shift: FrameShift }; hitTail?: HitTail }
 
 interface SideRaw { e: RawHitting | RawPitching; woba: number }
 interface Aug { bats: number; thr: number; speed: number; stealRate: number; steal: number; run: number; hVR: { e: RawHitting; woba: number }; hVL: { e: RawHitting; woba: number }; pVR: SideRaw; pVL: SideRaw }
 
 // Re-basing here MUST mirror score-card exactly (own-gap OR frame-v2 + K scaling), so the
 // 0.320 anchor is computed on the same re-based events the display scores use.
-function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransform, noSsp = false, fs?: FrameShift, ks?: KSpread): Aug {
+function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransform, noSsp = false, fs?: FrameShift, ks?: KSpread, ht?: HitTail): Aug {
   const bats = n(card["Bats"]), thr = n(card["Throws"]);
   const speed = n(card["Speed"]), steal = n(card["Stealing"]), run = n(card["Baserunning"]), stealRate = n(card["Steal Rate"]);
   const hit = (side: "vR" | "vL") => {
@@ -46,6 +47,9 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       coeffs,
     );
     if (ks) e.SO = applyKSpread(e.SO, ks.meanHit, ks.sHit);
+    // BUILD-2 hitter tail correction — mirrors score-card exactly, so the anchor is computed on
+    // the same corrected events the display scores use. Identity when absent.
+    if (ht) applyHitTail(e, ht);
     // BATTING-ONLY for the anchor (pass 0 for baserunning): the anchor selects its top-50 and normalizes
     // to TARGET_WOBA on batting alone, so toggling baserunning can't shift the top-50 or sFinal. Baserunning
     // is added additively (and pool-centered) in trustedHittingWoba; the pool's real BsR still feeds
@@ -72,7 +76,7 @@ const evScale = (vals: number[], tgt: number) => { const m = mean(vals); return 
  * The hitter/pitcher anchors self-select from the whole pool by raw wOBA.
  */
 export function calibrate(pool: any[], config: CalibrateConfig, model?: EventModel): CalScales {
-  const { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup } = config;
+  const { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail } = config;
   // Same model selection as scoreCard: explicit model, then the matchup wrapper (Phase 0 — it
   // binds the frame-v2 shift into the model, so augment passes OWN ratings and the wrapper
   // shifts internally), then #2 raw-poly when a fitted eventForm is present, else the parity
@@ -81,7 +85,7 @@ export function calibrate(pool: any[], config: CalibrateConfig, model?: EventMod
   // OR frame-v2 shift OR matchup + K scaling) is applied here too, so the anchor is computed on
   // the same re-based events the display scores use.
   const evModel = model ?? matchup?.model ?? (eventForm ? makeRawPolyModel(eventForm) : logLinearModel);
-  const aug = pool.map((c) => augment(c, coeffs, evModel, poolTransform, !!eventForm, frameShift, kSpread));
+  const aug = pool.map((c) => augment(c, coeffs, evModel, poolTransform, !!eventForm, frameShift, kSpread, hitTail));
 
   const hAnchVR = [...aug].sort((a, b) => b.hVR.woba - a.hVR.woba).slice(0, ANCHOR_N);
   const hAnchVL = [...aug].sort((a, b) => b.hVL.woba - a.hVL.woba).slice(0, ANCHOR_N);
@@ -146,12 +150,12 @@ export function valueFor(woba: number, role: "hitter" | "pitcher", baseline = TA
  * (score each card with the wOBA scales for wOBA columns and these for basic).
  */
 export function calibrateBasic(pool: any[], config: CalibrateConfig): CalScales {
-  const { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup } = config;
+  const { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail } = config;
   // calScales=null → unscaled basic. Thread eventForm so the card's (discarded) wOBA uses
   // #2, not the log-linear fallback — basic itself is rating-direct, so this is for the
   // "no log-linear in production scoring" guarantee (the wOBA columns here are unused).
-  // Re-basing (poolTransform / frameShift / kSpread / matchup) threaded so basic reads the same ratings.
-  const raw = pool.map((c) => scoreCard(c, { coeffs, derived, calScales: null, eventForm, poolTransform, frameShift, kSpread, matchup }));
+  // Re-basing (poolTransform / frameShift / kSpread / matchup / hitTail) threaded so basic reads the same events.
+  const raw = pool.map((c) => scoreCard(c, { coeffs, derived, calScales: null, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail }));
   const topMean = (vals: number[]) => {
     const t = vals.filter((x) => x > 0).sort((a, b) => b - a).slice(0, ANCHOR_N);
     return t.length ? t.reduce((s, x) => s + x, 0) / t.length : 0;

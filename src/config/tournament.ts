@@ -121,6 +121,9 @@ export interface Tournament {
   softcaps: Softcaps;
   eligibility: EligibilityGroup;
   tournamentAdjustment?: TournamentAdjustment; // second era-modifier set (multiplied onto era)
+  // BUILD-2 gap-conditioned hitter tail correction (HR/BABIP/SO — src/scoring-core/hit-tail.ts).
+  // Absent/false ⇒ scoring is bit-identical to before (dormant; Derek activates per tournament).
+  hitTailCorrection?: boolean;
 
   // Pool sizing / generation settings (used by M4 optimization pool, not calibration)
   topHitters?: number | null;

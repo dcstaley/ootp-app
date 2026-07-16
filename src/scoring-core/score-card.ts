@@ -15,6 +15,7 @@ import { basicHittingSide, basicPitchingSide } from "./basic.ts";
 import {
   assembleRawHittingWoba, assembleRawPitchingWoba, trustedHittingWoba, trustedPitchingSideWoba, hittingBsr, bsrToRuns600,
 } from "./woba.ts";
+import { applyHitTail } from "./hit-tail.ts";
 
 export interface CardScores {
   cardId: unknown;
@@ -38,7 +39,7 @@ export interface CardScores {
 }
 
 export function scoreCard(card: any, config: ScoringConfig, model?: EventModel): CardScores {
-  const { coeffs, derived, calScales, eventForm, poolTransform, frameShift, kSpread, matchup } = config;
+  const { coeffs, derived, calScales, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail } = config;
   // Model selection (D3): an explicit `model` wins (tests/tools); then the matchup wrapper
   // (Phase 0 — it binds the frame-v2 shift into the model, so score-card passes OWN ratings and
   // the wrapper shifts internally); otherwise #2 raw-poly when the config carries a fitted
@@ -79,6 +80,9 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     // chain, so BIP = 600 − BB − K_scaled − HR − adj (woba.ts) recomputes hits consistently.
     // Pre-era by construction (era_k applies later, once) — see §10.8d.
     if (kSpread) e.SO = applyKSpread(e.SO, kSpread.meanHit, kSpread.sHit);
+    // BUILD-2 gap-conditioned hitter tail correction (HR/BABIP/SO) — same seam, same rationale:
+    // post-model, pre-era, pre-BIP-chain; identity when absent or in-frame (lw = 0).
+    if (hitTail) applyHitTail(e, hitTail);
 
     // Matchup: the event model got OWN ratings (it shifts internally), but the rating-DIRECT
     // basic metric must see the SAME effective coordinate → shift here from matchup.shift. Absent

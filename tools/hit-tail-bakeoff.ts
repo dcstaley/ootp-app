@@ -86,6 +86,10 @@ import {
   buildCwhitSample, ourHit, wellSampled, handLetter, isPit, cardName, n_, FIELD_N, MIN_PA, QUICK,
   type Rec, type SampleDeps, type Exposure,
 } from "../src/eval/cwhit/sample.ts";
+import {
+  correctChannel, hitTailW, PINNED_HIT_TAIL, HIT_TAIL_SAT_G0,
+  type HitTailFamily, type HitTailShape, type HitTailChanStat,
+} from "../src/scoring-core/hit-tail.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
 const sgn = (x: number, d = 2) => (Number.isFinite(x) ? `${x >= 0 ? "+" : ""}${x.toFixed(d)}` : "n/a");
@@ -257,7 +261,7 @@ function rowsFromRecs(recs: Rec[]): ERow[] {
 }
 
 // ── per-tier context for candidate A: pool moments + own-gap strength g = k − 1 ───────────────────
-interface ChStat { m: number; s: number; p50: number; p75: number; zLo: number }
+type ChStat = HitTailChanStat;
 interface TierCtx { gPow: number; gBab: number; gK: number; hr: ChStat; bab: ChStat; so: ChStat }
 function chStat(xs: number[]): ChStat {
   const m = mean(xs), s = sd(xs) || 1;
@@ -280,27 +284,12 @@ function buildCtx(d: SampleDeps, pools: { tier: string; role: string; byChannel:
 }
 
 // ── candidate A: the correction — ONE definition, applied per channel ─────────────────────────────
-type Family = "hinge" | "hinge50" | "quad" | "pivot" | "step";
-type WShape = "lin" | "sat";
-const SAT_G0 = 0.10;
-const wOf = (g: number, shape: WShape) => (shape === "lin" ? Math.max(g, 0) : 1 - Math.exp(-Math.max(g, 0) / SAT_G0));
-/** Apply one correction family to a predicted channel value. `lw` = λ·w(g) (the tier's strength).
- *  hinge / hinge50: slope 1+lw above the pool p75 / median — monotone for lw > −1.
- *  quad: convexity restore x + lw·s·(z²−1); the derivative 1+2·lw·z can only go negative on the
- *        pool's LEFT tail, so lw is clamped by |zLo| (the left edge), keeping ordering intact.
- *  pivot: pool-mean-preserving linear stretch (the kSpread class) — monotone for lw > −1.
- *  step: mid-band stretch x + lw·s·tanh(z) — flat at both ends (the inverse-tail instrument);
- *        derivative 1 + lw·sech²(z) ≥ 1 for lw ≥ 0, monotone by construction. */
-function correctCh(x: number, st: ChStat, lw: number, fam: Family): number {
-  if (!(lw > 0)) return x;
-  if (fam === "hinge") return x + lw * Math.max(x - st.p75, 0);
-  if (fam === "hinge50") return x + lw * Math.max(x - st.p50, 0);
-  if (fam === "pivot") return st.m + (1 + lw) * (x - st.m);
-  const z = (x - st.m) / st.s;
-  if (fam === "step") return x + lw * st.s * Math.tanh(z);
-  const lwEff = Math.min(lw, 0.45 / Math.max(-st.zLo, 1e-9));
-  return x + lwEff * st.s * (z * z - 1);
-}
+// The correction math is the PRODUCTION copy (src/scoring-core/hit-tail.ts) — the one-copy rule:
+// this tool fits/judges the exact functions the deployed path applies, never a re-implementation.
+type Family = HitTailFamily;
+type WShape = HitTailShape;
+const wOf = hitTailW;
+const correctCh = correctChannel;
 interface ChCfg { fam: Family; shape: WShape; lam: number }
 interface ACfg { hr: ChCfg; bab: ChCfg; so: ChCfg }
 const OFF: ChCfg = { fam: "hinge", shape: "lin", lam: 0 };
@@ -534,7 +523,7 @@ const ctx0 = buildCtx(deps0, base.pools);
 }
 console.log(`judged hitters: ${rows0.length} well-sampled (PA≥${MIN_PA}) across ${new Set(rows0.map((r) => r.tier)).size} tiers`);
 console.log(`\nown-gap strengths g = k−1 (pool-composition property; the A-candidates' conditioning variable):`);
-console.log(`tier      g(POW)   g(BABIP)   w_sat(gPOW)  [w_sat = 1−e^(−g/${SAT_G0}) — the tier-flat shape]`);
+console.log(`tier      g(POW)   g(BABIP)   w_sat(gPOW)  [w_sat = 1−e^(−g/${HIT_TAIL_SAT_G0}) — the tier-flat shape]`);
 for (const { tier } of QUICK) {
   const c = ctx0.get(tier);
   if (c) console.log(`${tier.padEnd(9)} ${f(c.gPow, 3).padStart(6)}   ${f(c.gBab, 3).padStart(6)}     ${f(wOf(c.gPow, "sat"), 3)}`);
@@ -670,6 +659,13 @@ if (!mixes.some((m) => m.cfg.hr.fam === "hinge" && m.cfg.bab.fam === "hinge" && 
   const b = combos.find((c) => c.ch === "bab" && c.fam === "hinge" && c.shape === "lin")!;
   mixes.push({ key: "A[both-hinge-lin, no-SO]", cfg: { hr: cc(h), bab: cc(b), so: OFF } });
 }
+// THE PINNED OPERATING POINT — the constants production ships (src/scoring-core/hit-tail.ts,
+// PINNED_HIT_TAIL). Fixed across catalog snapshots; evaluated in the same lineup so the gate
+// scoreboard judges the ACTUAL deployable configuration, not just this run's refit.
+mixes.push({
+  key: `A-PINNED[hr:${PINNED_HIT_TAIL.hr.fam}-${PINNED_HIT_TAIL.hr.shape} ${f(PINNED_HIT_TAIL.hr.lam)} + bab:${PINNED_HIT_TAIL.bab.fam}-${PINNED_HIT_TAIL.bab.shape} ${f(PINNED_HIT_TAIL.bab.lam)} + so:${PINNED_HIT_TAIL.so.fam}-${PINNED_HIT_TAIL.so.shape} ${f(PINNED_HIT_TAIL.so.lam)}]`,
+  cfg: { hr: { ...PINNED_HIT_TAIL.hr }, bab: { ...PINNED_HIT_TAIL.bab }, so: { ...PINNED_HIT_TAIL.so } },
+});
 for (const m of mixes) {
   const rows = applyA(rows0, ctx0, m.cfg);
   const s = summarize(`${m.key}  (λHR ${f(m.cfg.hr.lam)}, λBAB ${f(m.cfg.bab.lam)}, λSO ${f(m.cfg.so.lam)})`, rows, rows0);
@@ -681,6 +677,42 @@ for (const { key } of bForms) {
   const s = summarize(key, rows, rows0);
   summaries.push({ key, s, rows });
   printSummary(s);
+}
+
+// ═══ 3b. HR λ SENSITIVITY + GATE-CONSTRAINED OPERATING POINT ═══════════════════════════════════════
+// The λ grid minimizes the point-estimate slope loss, which can trade a pooled-slope overshoot for
+// top-band exactness (the fitted λHR lands pooled ~0.95). Sweep λHR below the fit (bab/so legs at
+// their fitted values) and print the two HR gates WITH bootstrap CIs plus the elite-power
+// acceptance; then admit the smallest-loss GATE-PASSING point into the candidate lineup as A-REC.
+{
+  const refCfg: ACfg = { hr: cc(hrBest), bab: cc(babBest), so: soCC };
+  console.log(`\n\n╔═══ 3b. HR λ SENSITIVITY — pooled-vs-top trade below the fitted λHR (${f(hrBest.lam)}) ═══╗`);
+  console.log(`λHR     pooled slope [CI]     top-band [CI]        tail Δ [CI]           elite-power [CI]        HRloss   gates(HRpool/HRtail/EP)`);
+  const passers: { lam: number; loss: number }[] = [];
+  for (let lam = 1.5; lam <= hrBest.lam + 1e-9; lam += 0.1) {
+    const rows = applyA(rows0, ctx0, { ...refCfg, hr: { ...refCfg.hr, lam } });
+    const hrPO = chanPO(rows, "hr");
+    const { p, o } = demean(hrPO);
+    const bd = bands(p, o);
+    const b = bootSlope(hrPO);
+    const ep = archTable(rows).get("elite-power")!;
+    const gPool = b.slope.lo <= 1 && b.slope.hi >= 1, gTail = b.delta.lo <= 0 && b.delta.hi >= 0, gEp = !ep.sig;
+    const loss = slopeLoss(hrPO);
+    if (gPool && gTail && gEp) passers.push({ lam, loss });
+    console.log(`${f(lam).padStart(5)}   ${f(slopeOf(p, o))} [${f(b.slope.lo)},${f(b.slope.hi)}]     ${f(bd.top)} [${f(b.top.lo)},${f(b.top.hi)}]    ${sgn(bd.delta)} [${sgn(b.delta.lo)},${sgn(b.delta.hi)}]   ${sgn(ep.est, 2)}${ep.sig ? "*" : " "} [${sgn(ep.lo, 2)},${sgn(ep.hi, 2)}]   ${f(loss, 4)}   ${gPool ? "✓" : "✗"}/${gTail ? "✓" : "✗"}/${gEp ? "✓" : "✗"}`);
+  }
+  if (passers.length) {
+    const rec = passers.sort((a, b) => a.loss - b.loss)[0]!;
+    const cfg: ACfg = { ...refCfg, hr: { ...refCfg.hr, lam: rec.lam } };
+    const rows = applyA(rows0, ctx0, cfg);
+    const key = `A-REC[hr:${cfg.hr.fam}-${cfg.hr.shape} λ${f(rec.lam)} + bab + so]`;
+    const s = summarize(`${key}  (gate-constrained operating point; λBAB ${f(cfg.bab.lam)}, λSO ${f(cfg.so.lam)})`, rows, rows0);
+    summaries.push({ key, s, rows, cfg });
+    printSummary(s);
+  } else {
+    console.log(`  NO gate-clean λHR exists in [1.5, ${f(hrBest.lam)}] — the pooled-vs-top trade is real; the`);
+    console.log(`  sub-hinge region's residual over-dispersion is out of this instrument's reach. Operating point = Derek's call.`);
+  }
 }
 
 // ═══ 4. WINNER SELECTION + POW-QUARTILE GRIDS (the hr-reconcile acceptance cut) ════════════════════
@@ -711,6 +743,10 @@ for (const { key, s } of summaries) {
 const ranked = [...summaries].sort((a, b) => {
   const ga = gates(a.s), gb = gates(b.s);
   if (gb.passed !== ga.passed) return gb.passed - ga.passed;
+  // Gate ties break toward the PINNED config (the cross-snapshot-stable constants production
+  // would ship) before slope distance, so the deep-dive sections judge the deployable point.
+  const pa = a.key.startsWith("A-PINNED") ? 1 : 0, pb = b.key.startsWith("A-PINNED") ? 1 : 0;
+  if (pb !== pa) return pb - pa;
   const da = Math.abs(a.s.hrSlope - 1) + Math.abs(a.s.babSlope - 1) + Math.abs(a.s.hrTop - 1) + Math.abs(a.s.babTop - 1);
   const db = Math.abs(b.s.hrSlope - 1) + Math.abs(b.s.babSlope - 1) + Math.abs(b.s.hrTop - 1) + Math.abs(b.s.babTop - 1);
   return da - db;
