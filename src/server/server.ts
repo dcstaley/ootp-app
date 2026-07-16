@@ -186,6 +186,8 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
     stamina: n(c["Stamina"]), pitches: pitchCount(c),
     learn, eligible: ctx.isEligible(c),
     hitVL: round(w.hit.offense_vL), hitVR: round(w.hit.offense_vR), hitOVR: round(w.hit.offense_ovr),
+    hitWobaVL: round(w.hit.woba_vL), hitWobaVR: round(w.hit.woba_vR), hitWobaOVR: round(w.hit.woba_ovr),
+    hitBsr: Math.round(w.hit.bsr600 * 10) / 10,
     basicHit: round(b.hit.basic_ovr), basicHitVL: round(b.hit.basic_vL), basicHitVR: round(b.hit.basic_vR),
     pitchVL: round(w.pitch.woba_vL), pitchVR: round(w.pitch.woba_vR), pitchOVR: round(w.pitch.woba_ovr),
     basicPitch: round(b.pitch.basic_ovr), basicPitchVL: round(b.pitch.basic_vL), basicPitchVR: round(b.pitch.basic_vR),

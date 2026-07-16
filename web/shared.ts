@@ -19,6 +19,9 @@ export interface Card {
   learn: Record<string, number>; eligible: boolean;
   stamina: number; pitches: number;
   hitVL: number; hitVR: number; hitOVR: number; basicHit: number; basicHitVL: number; basicHitVR: number;
+  // Offense split: hit* = Offense (wRAA+BsR, the value metric); hitWoba* = batting-only real wOBA;
+  // hitBsr = baserunning runs/600 (side-invariant). Offense = wOBA + BsR.
+  hitWobaVL: number; hitWobaVR: number; hitWobaOVR: number; hitBsr: number;
   pitchVL: number; pitchVR: number; pitchOVR: number; basicPitch: number; basicPitchVL: number; basicPitchVR: number;
   def: Record<string, number>;
 }

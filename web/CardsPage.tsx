@@ -11,7 +11,7 @@ const BATS: Record<number, string> = { 1: "R", 2: "L", 3: "S" };
 const THROWS: Record<number, string> = { 1: "R", 2: "L" };
 
 type Align = "l" | "r" | "c";
-type Fmt = "woba" | "basic" | "int";
+type Fmt = "woba" | "basic" | "int" | "bsr";
 interface Col { key: string; label: string; align: Align; get: (c: Card) => string | number; sort?: (c: Card) => string | number; fmt?: Fmt }
 
 const def = (k: string) => (c: Card) => c.def?.[k] ?? 0;
@@ -23,7 +23,9 @@ const COLS: Record<string, Col> = {
   throws: { key: "throws", label: "T", align: "c", get: (c) => THROWS[c.throws] ?? "", sort: (c) => c.throws },
   value: { key: "value", label: "Val", align: "r", get: (c) => c.value, fmt: "int" },
   owned: { key: "owned", label: "Own", align: "r", get: (c) => c.owned, fmt: "int" },
-  hitOVR: { key: "hitOVR", label: "Hit wOBA", align: "r", get: (c) => c.hitOVR, fmt: "woba" },
+  hitOVR: { key: "hitOVR", label: "Hit Off", align: "r", get: (c) => c.hitOVR, fmt: "woba" },       // Offense = wOBA + BsR (the value metric)
+  hitWobaOVR: { key: "hitWobaOVR", label: "Hit wOBA", align: "r", get: (c) => c.hitWobaOVR, fmt: "woba" }, // batting-only real wOBA
+  hitBsr: { key: "hitBsr", label: "BsR", align: "r", get: (c) => c.hitBsr, fmt: "bsr" },             // baserunning runs/600 (side-invariant)
   hitVL: { key: "hitVL", label: "Hit vL", align: "r", get: (c) => c.hitVL, fmt: "woba" },
   hitVR: { key: "hitVR", label: "Hit vR", align: "r", get: (c) => c.hitVR, fmt: "woba" },
   basicHit: { key: "basicHit", label: "Basic Hit", align: "r", get: (c) => c.basicHit, fmt: "basic" },
@@ -57,7 +59,7 @@ for (const p of POSNS) {
 
 const DEF = ["ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"];
 const PRESETS: Record<string, { cols: string[]; sort: string; dir: 1 | -1 }> = {
-  Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitVL", "hitVR", "basicHit", "basicHitVL", "basicHitVR", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
+  Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitWobaOVR", "hitBsr", "hitVL", "hitVR", "basicHit", "basicHitVL", "basicHitVR", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
   Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR", "stamina", "pitches"], sort: "pitchOVR", dir: 1 },
 };
 
@@ -67,6 +69,7 @@ const fmtVal = (col: Col, c: Card): string => {
   const v = col.get(c);
   if (col.fmt === "woba") return Number.isFinite(v as number) ? (v as number).toFixed(4) : "";
   if (col.fmt === "basic") return Number.isFinite(v as number) ? (v as number).toFixed(1) : "";
+  if (col.fmt === "bsr") return Number.isFinite(v as number) ? ((v as number) >= 0 ? "+" : "") + (v as number).toFixed(1) : ""; // baserunning runs/600, signed
   return String(v ?? "");
 };
 
