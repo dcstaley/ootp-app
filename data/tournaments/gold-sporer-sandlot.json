@@ -1,9 +1,10 @@
 {
-  "id": "silver-cap",
-  "name": "Silver Cap",
-  "card_value_min": null,
-  "card_value_max": 79,
-  "total_cap": 1475,
+  "id": "gold-sporer-sandlot",
+  "name": "Gold Sporer Sandlot",
+  "kind": "tournament",
+  "card_value_min": 60,
+  "card_value_max": 89,
+  "total_cap": 1858,
   "roster_size": 26,
   "hitters": 14,
   "pitchers": 12,
@@ -12,9 +13,9 @@
   "min_pitch_types": 3,
   "dh": true,
   "variants_allowed": true,
-  "max_variants_on_roster": 10,
-  "eraId": "era-1998",
-  "parkId": "park-1",
+  "max_variants_on_roster": 8,
+  "eraId": "era-1993",
+  "parkId": "park-189",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -51,66 +52,69 @@
   "positionRanks": {
     "RF": {
       "starter": {}
-    },
-    "C": {
-      "backup": {}
     }
   },
-  "platoonVR": 0.58,
-  "platoonVL": 0.42,
+  "platoonVR": 0.6447640697198429,
+  "platoonVL": 0.3552359302801571,
   "budget_mode": "cap",
-  "topHitters": 100,
-  "topPitchers": 100,
-  "minPlayersPerPosition": 2,
   "platoon": {
-    "r_hit_split": 0.54,
-    "l_hit_split": 0.337,
-    "s_hit_split": 0.562,
-    "r_pitch_split": 0.481,
-    "l_pitch_split": 0.294,
-    "r_pitch_split_sp": 0.471,
-    "l_pitch_split_sp": 0.273,
-    "r_pitch_split_rp": 0.499,
-    "l_pitch_split_rp": 0.33
+    "r_hit_split": 0.5926859973718844,
+    "l_hit_split": 0.26672674311606387,
+    "s_hit_split": 0.630786901727887,
+    "r_pitch_split": 0.4612509386211308,
+    "l_pitch_split": 0.24246654763518677,
+    "r_pitch_split_sp": 0.45315847976728235,
+    "l_pitch_split_sp": 0.21836247134531997,
+    "r_pitch_split_rp": 0.47782770356195575,
+    "l_pitch_split_rp": 0.2829193866120746
+  },
+  "topHitters": 50,
+  "topPitchers": 50,
+  "minPlayersPerPosition": 2,
+  "tournamentAdjustment": {
+    "enabled": false,
+    "hr": 1.15,
+    "bb": 0.85,
+    "k": 1,
+    "h": 1,
+    "gap": 1
   },
   "positionMins": {
     "C": {
       "starter": {
-        "frame": 60,
-        "ability": 60
+        "ability": 50,
+        "frame": 50,
+        "arm": 50
       },
       "backup": {
-        "ability": 55,
-        "frame": 0
+        "ability": 45,
+        "frame": 45,
+        "arm": 45
       }
     },
     "1B": {
-      "backup": {
-        "range": 20
+      "starter": {
+        "range": 1
       }
     },
     "2B": {
-      "backup": {
-        "range": 75
-      },
       "starter": {
-        "range": 80
+        "range": 75
       }
     },
     "3B": {
       "starter": {
-        "range": 60
+        "range": 60,
+        "arm": 60
       },
       "backup": {
-        "range": 50
+        "range": 50,
+        "arm": 50
       }
     },
     "SS": {
       "starter": {
-        "range": 85
-      },
-      "backup": {
-        "range": 80
+        "range": 81
       }
     },
     "LF": {
@@ -120,10 +124,7 @@
     },
     "CF": {
       "starter": {
-        "range": 85
-      },
-      "backup": {
-        "range": 80
+        "range": 83
       }
     },
     "RF": {
@@ -136,13 +137,5 @@
         "arm": 50
       }
     }
-  },
-  "tournamentAdjustment": {
-    "enabled": false,
-    "hr": 1.15,
-    "bb": 0.85,
-    "k": 1,
-    "h": 1,
-    "gap": 1
   }
 }

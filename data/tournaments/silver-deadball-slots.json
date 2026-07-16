@@ -1,0 +1,136 @@
+{
+  "id": "silver-deadball-slots",
+  "name": "Silver Deadball Slots",
+  "kind": "tournament",
+  "card_value_min": null,
+  "card_value_max": null,
+  "total_cap": null,
+  "roster_size": 26,
+  "hitters": 16,
+  "pitchers": 10,
+  "min_starters": 4,
+  "min_starter_stamina": 45,
+  "min_pitch_types": 3,
+  "dh": false,
+  "variants_allowed": true,
+  "max_variants_on_roster": 9,
+  "eraId": "era-1919",
+  "parkId": "park-228",
+  "softcaps": {
+    "cap_k_top": 500,
+    "cap_k_bot": 0,
+    "pen_k": 0.25,
+    "cap_babip_top": 500,
+    "cap_babip_bot": 0,
+    "pen_babip": 0.5,
+    "cap_gap_top": 500,
+    "cap_gap_bot": 0,
+    "pen_gap": 0.25,
+    "cap_pow_top": 500,
+    "cap_pow_bot": 0,
+    "pen_pow": 0.5,
+    "cap_eye_top": 500,
+    "cap_eye_bot": 0,
+    "pen_eye": 0.5,
+    "cap_p_con_top": 500,
+    "cap_p_con_bot": 0,
+    "pen_p_con": 0.25,
+    "cap_p_stu_top": 500,
+    "cap_p_stu_bot": 0,
+    "pen_p_stu": 0.25,
+    "cap_p_pbabip_top": 500,
+    "cap_p_pbabip_bot": 0,
+    "pen_p_pbabip": 0.25,
+    "cap_p_hrr_top": 500,
+    "cap_p_hrr_bot": 0,
+    "pen_p_hrr": 0.25
+  },
+  "eligibility": {
+    "mode": "ALL",
+    "rules": [
+      {
+        "id": "r1784046787179-0",
+        "column": "Year",
+        "op": "num_lt",
+        "a": "1920"
+      }
+    ]
+  },
+  "positionRanks": {
+    "RF": {
+      "starter": {}
+    }
+  },
+  "platoonVR": 0.6447640697198429,
+  "platoonVL": 0.3552359302801571,
+  "budget_mode": "slots",
+  "platoon": {
+    "r_hit_split": 0.5926859973718844,
+    "l_hit_split": 0.26672674311606387,
+    "s_hit_split": 0.630786901727887,
+    "r_pitch_split": 0.4612509386211308,
+    "l_pitch_split": 0.24246654763518677,
+    "r_pitch_split_sp": 0.45315847976728235,
+    "l_pitch_split_sp": 0.21836247134531997,
+    "r_pitch_split_rp": 0.47782770356195575,
+    "l_pitch_split_rp": 0.2829193866120746
+  },
+  "topHitters": 100,
+  "topPitchers": 100,
+  "minPlayersPerPosition": 2,
+  "tournamentAdjustment": {
+    "enabled": false,
+    "hr": 1.15,
+    "bb": 0.85,
+    "k": 1,
+    "h": 1,
+    "gap": 1
+  },
+  "slot_counts": {
+    "perfect": 1,
+    "diamond": 1,
+    "gold": 1,
+    "silver": 12,
+    "bronze": 6,
+    "iron": 5
+  },
+  "positionMins": {
+    "2B": {
+      "starter": {
+        "range": 70
+      }
+    },
+    "SS": {
+      "starter": {
+        "range": 80
+      }
+    },
+    "CF": {
+      "starter": {
+        "range": 80
+      }
+    },
+    "RF": {
+      "starter": {
+        "range": 60,
+        "arm": 60
+      }
+    },
+    "3B": {
+      "starter": {
+        "range": 60,
+        "arm": 60
+      }
+    },
+    "C": {
+      "starter": {
+        "ability": 45,
+        "arm": 45
+      },
+      "backup": {
+        "ability": 45,
+        "arm": 45
+      }
+    }
+  }
+}

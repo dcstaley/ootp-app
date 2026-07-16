@@ -10,7 +10,7 @@
   "min_starters": 4,
   "min_starter_stamina": 50,
   "min_pitch_types": 3,
-  "dh": true,
+  "dh": false,
   "variants_allowed": true,
   "max_variants_on_roster": 10,
   "eraId": "era-1955",
@@ -132,6 +132,19 @@
         "range": 50,
         "arm": 50
       }
+    }
+  },
+  "tournamentAdjustment": {
+    "enabled": false,
+    "hr": 1.15,
+    "bb": 0.85,
+    "k": 1,
+    "h": 1,
+    "gap": 1
+  },
+  "tuning": {
+    "dials": {
+      "rotation": 1.05
     }
   }
 }

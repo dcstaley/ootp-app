@@ -2,20 +2,20 @@
   "id": "cwhit-cap",
   "name": "Cwhit cap",
   "kind": "tournament",
-  "card_value_min": 70,
-  "card_value_max": 99,
-  "total_cap": 2074,
+  "card_value_min": 60,
+  "card_value_max": 74,
+  "total_cap": 1700,
   "roster_size": 26,
-  "hitters": 15,
-  "pitchers": 11,
-  "min_starters": 5,
+  "hitters": 18,
+  "pitchers": 8,
+  "min_starters": 4,
   "min_starter_stamina": 45,
   "min_pitch_types": 3,
-  "dh": true,
+  "dh": false,
   "variants_allowed": true,
-  "max_variants_on_roster": 11,
-  "eraId": "era-1961",
-  "parkId": "park-164",
+  "max_variants_on_roster": 10,
+  "eraId": "era-1896",
+  "parkId": "park-1",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -89,17 +89,18 @@
   "positionMins": {
     "2B": {
       "starter": {
-        "range": 75
+        "range": 86
       }
     },
     "C": {
       "starter": {
-        "ability": 59,
-        "frame": 54
+        "frame": 41,
+        "ability": 51,
+        "arm": 40
       },
       "backup": {
-        "ability": 55,
-        "frame": 50
+        "ability": 45,
+        "frame": 35
       }
     },
     "1B": {
@@ -119,7 +120,7 @@
     },
     "SS": {
       "starter": {
-        "range": 85
+        "range": 86
       }
     },
     "LF": {
@@ -129,7 +130,7 @@
     },
     "CF": {
       "starter": {
-        "range": 85
+        "range": 92
       }
     },
     "RF": {
@@ -142,5 +143,19 @@
         "arm": 55
       }
     }
+  },
+  "tuning": {
+    "dials": {
+      "bullpen": 0.5,
+      "lineup": 1.5,
+      "bench": 0.5,
+      "rotation": 1.5
+    },
+    "rotationShare": 0.8,
+    "bullpenLeverage": [
+      1,
+      1
+    ],
+    "fullStrengthShare": 0.3
   }
 }

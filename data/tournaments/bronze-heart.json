@@ -81,12 +81,12 @@
   "positionMins": {
     "C": {
       "starter": {
-        "ability": 65,
-        "frame": 60
+        "ability": 50,
+        "frame": 50
       },
       "backup": {
-        "ability": 60,
-        "frame": 55
+        "ability": 50,
+        "frame": 50
       }
     },
     "1B": {
@@ -96,10 +96,10 @@
     },
     "2B": {
       "starter": {
-        "range": 75
+        "range": 74
       },
       "backup": {
-        "range": 70
+        "range": 65
       }
     },
     "3B": {
@@ -113,7 +113,7 @@
         "range": 85
       },
       "backup": {
-        "range": 80
+        "range": 85
       }
     },
     "LF": {
@@ -126,7 +126,7 @@
         "range": 85
       },
       "backup": {
-        "range": 75
+        "range": 85
       }
     },
     "RF": {
@@ -135,5 +135,13 @@
         "arm": 60
       }
     }
+  },
+  "tournamentAdjustment": {
+    "enabled": false,
+    "hr": 1.15,
+    "bb": 0.85,
+    "k": 1,
+    "h": 1,
+    "gap": 1
   }
 }

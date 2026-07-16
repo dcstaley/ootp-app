@@ -147,8 +147,9 @@
   "tuning": {
     "rotationShare": 0.62,
     "dials": {
-      "bullpen": 1.5,
-      "rotation": 1
+      "bullpen": 0.5,
+      "rotation": 1,
+      "lineup": 1.1
     },
     "bullpenLeverage": [
       2,

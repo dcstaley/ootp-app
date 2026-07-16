@@ -58,6 +58,9 @@
   "positionRanks": {
     "RF": {
       "starter": {}
+    },
+    "3B": {
+      "backup": {}
     }
   },
   "platoonVR": 0.5798834749058775,
@@ -97,6 +100,63 @@
     "dials": {
       "bullpen": 0.9,
       "lineup": 1.05
+    }
+  },
+  "positionMins": {
+    "C": {
+      "starter": {
+        "ability": 50,
+        "frame": 50
+      },
+      "backup": {
+        "ability": 50,
+        "frame": 50
+      }
+    },
+    "1B": {
+      "starter": {
+        "range": 1
+      }
+    },
+    "2B": {
+      "starter": {
+        "range": 73
+      }
+    },
+    "3B": {
+      "starter": {
+        "range": 55,
+        "arm": 55
+      },
+      "backup": {
+        "range": 50,
+        "arm": 50
+      }
+    },
+    "SS": {
+      "starter": {
+        "range": 80
+      }
+    },
+    "LF": {
+      "starter": {
+        "range": 40
+      }
+    },
+    "CF": {
+      "starter": {
+        "range": 80
+      }
+    },
+    "RF": {
+      "starter": {
+        "range": 55,
+        "arm": 55
+      },
+      "backup": {
+        "range": 50,
+        "arm": 50
+      }
     }
   }
 }

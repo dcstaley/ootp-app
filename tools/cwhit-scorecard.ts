@@ -20,32 +20,27 @@
 // DOCTRINE: cwhit's RAW OBSERVED events = ground truth. His PROJECTIONS = a competitor benchmark,
 // weight ZERO as truth, NEVER a fitting target. His pwOBA column is never used as truth.
 
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { Repository } from "../src/persistence/repository.ts";
 import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, applyAffine, applyWobaWeights,
-  type EventForm, type FieldStats, type PoolTransform, type RatingEnvelope, type WobaWeights,
+  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
+  type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights,
 } from "../src/scoring-core/index.ts";
-import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
-import { makeVariant } from "../src/data/variants.ts";
-import { PIT_BIP_ADJ, HIT_BIP_ADJ } from "../src/model/curves.ts";
-import { parseCwhitPit, parseCwhitHit, joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/index.ts";
-import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
+import { parseCatalogCsv } from "../src/data/catalog.ts";
+import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import {
-  parseCwhitProjPit, parseCwhitProjHit, windowOverlap, agreement, duel, pearson, xbhNonHrPerPa,
-  soPctPerAbToPerPa, abPerPa, per9NoiseVar, babipNoiseVar, pctNoiseVar, per600NoiseVar, BF_PER_9,
-  type Agreement, type CwhitProjMeta,
+  agreement, duel, pearson, per9NoiseVar, babipNoiseVar, pctNoiseVar, per600NoiseVar, BF_PER_9,
+  type Agreement,
 } from "../src/eval/cwhit/scorecard.ts";
+import {
+  buildCwhitSample, wellSampled, handLetter, n_, OBS_DIR as OBS, PROJ_DIR as PROJ, FIELD_N,
+  MIN_IP, MIN_PA, QUICK, type Rec, type SampleDeps,
+} from "../src/eval/cwhit/sample.ts";
 
-const OBS = "fixtures/cwhit", PROJ = "fixtures/cwhit-proj", FIELD_N = 50;
-const MIN_IP = 1000, MIN_PA = 1000;   // "well-sampled" thresholds (v1 used IP≥1000; kept for continuity)
-const QUICK = [{ tier: "iron", cap: 59 }, { tier: "bronze", cap: 69 }, { tier: "silver", cap: 79 }, { tier: "gold", cap: 89 }, { tier: "diamond", cap: 99 }];
-const n_ = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
-const handLetter = (c: number) => (c === 2 ? "L" : c === 3 ? "S" : "R");
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
 const sgn = (x: number, d = 2) => (Number.isFinite(x) ? `${x >= 0 ? "+" : ""}${x.toFixed(d)}` : "n/a");
 
@@ -65,149 +60,20 @@ const parks = new Map((await repo.loadAll<Park>("parks")).map((p) => [p.id, p]))
 const bq = (await repo.loadAll<Tournament>("tournaments")).find((t) => t.id === "bronze-quick")!;   // neutral era/park
 const coeffs = resolveCoeffs(model, eras.get(bq.eraId)!, parks.get(bq.parkId)!, bq.softcaps);
 applyWobaWeights(coeffs, trained.wobaWeights);
+const derived = computeDerived(coeffs);
 const pitExp = new Map(trained.platoon.pit.map((p) => [p.hand, { wR: p.vsRHB, wL: p.vsLHB }]));
 const hitExp = new Map(trained.platoon.hit.map((p) => [p.hand, { wR: p.vsRHP, wL: p.vsLHP }]));
 
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
-const isPit = (c: Card) => n_(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1";
-const cardName = (c: Card) => `${(c["FirstName"] ?? "").trim()} ${(c["LastName"] ?? "").trim()}`.trim();
 const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
 
-// ── our predicted lines (deployed own-gap path) ──────────────────────────────
-/** Pitcher: combined own-gap line → per-9 channels + a proxy wOBAA on OUR weights. */
-function ourPit(c: Card, pt: PoolTransform) {
-  const { wR, wL } = pitExp.get(handLetter(n_(c["Throws"]))) ?? { wR: 0.5, wL: 0.5 };
-  const side = (s: "R" | "L") => {
-    const t = pt.pit[s === "R" ? "vR" : "vL"];
-    return rp.predictPitching({ con: applyAffine(n_(c[`Control v${s}`]), t?.con), stu: applyAffine(n_(c[`Stuff v${s}`]), t?.stu), pbabip: applyAffine(n_(c[`pBABIP v${s}`]), t?.pbabip), hrr: applyAffine(n_(c[`pHR v${s}`]), t?.hrr) }, coeffs);
-  };
-  const eR = side("R"), eL = side("L");
-  const BB = wR * eR.BB + wL * eL.BB, K = wR * eR.K + wL * eL.K, HR = wR * eR.HR + wL * eL.HR, nHH = wR * eR.nHH + wL * eL.nHH;
-  const BIP = Math.max(600 - BB - K - HR - PIT_BIP_ADJ, 1);
-  const per9 = BF_PER_9 / 600;
-  const ch = { k9: K * per9, bb9: BB * per9, hr9: HR * per9, babip: nHH / BIP };
-  return { ...ch, woba: pitWobaFromChannels(ch.k9, ch.bb9, ch.hr9, ch.babip, W), stuff: n_(c["Stuff vR"]) };
-}
-/** Hitter: combined own-gap line → per-PA channels + wOBA (BATTING-ONLY, to match cwhit's convention). */
-function ourHit(c: Card, pt: PoolTransform) {
-  const { wR, wL } = hitExp.get(handLetter(n_(c["Bats"]))) ?? { wR: 0.5, wL: 0.5 };
-  const side = (s: "R" | "L") => {
-    const t = pt.hit[s === "R" ? "vR" : "vL"];
-    return rp.predictHitting({ eye: applyAffine(n_(c[`Eye v${s}`]), t?.eye), pow: applyAffine(n_(c[`Power v${s}`]), t?.pow), kRat: applyAffine(n_(c[`Avoid K v${s}`]), t?.kRat), babip: applyAffine(n_(c[`BABIP v${s}`]), t?.babip), gap: applyAffine(n_(c[`Gap v${s}`]), t?.gap), speed: n_(c["Speed"]), steal: n_(c["Steal Rate"]), run: n_(c["Baserunning"]) }, coeffs);
-  };
-  const eR = side("R"), eL = side("L");
-  const BB = wR * eR.BB + wL * eL.BB, SO = wR * eR.SO + wL * eL.SO, HR = wR * eR.HR + wL * eL.HR, oneB = wR * eR.oneB + wL * eL.oneB, GAP = wR * eR.GAP + wL * eL.GAP;
-  const BIP = Math.max(600 - BB - SO - HR - HIT_BIP_ADJ, 1);
-  // Batting-only wOBA (NO baserunning) — cwhit's wOBA is batting-only, so this is the like-for-like metric.
-  const woba = (W.bb * BB + W.hbp * 6 + W.b1 * oneB + W.xbh * GAP + W.hr * HR) / 600;
-  return { bbPct: BB / 6, soPct: SO / 6, hr600: HR, babip: (oneB + GAP) / BIP, woba, pow: n_(c["Power vR"]) };
-}
-
-// ── fixture discovery (glob-driven; nothing hard-coded to bronze) ────────────
-const obsFiles = existsSync(OBS) ? readdirSync(OBS) : [];
-const projFiles = existsSync(PROJ) ? readdirSync(PROJ) : [];
+// The judged sample — built by the ONE shared builder (src/eval/cwhit/sample.ts), so this tool and
+// tools/cwhit-two-ledger.ts necessarily score the identical cards with the identical predicted lines.
+const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp };
+const { recs, windows, notices, projUnjoined, obsFiles, projFiles } = buildCwhitSample(deps);
 const hasObs = (tier: string, role: "pit" | "hit") => obsFiles.includes(`cwhit-${tier}-${role}.tsv`);
 const projFile = (tier: string, role: "pit" | "hit") => (projFiles.includes(`cwhit-${tier}-${role}-proj.tsv`) ? `${PROJ}/cwhit-${tier}-${role}-proj.tsv` : null);
-
-type Chan = Record<string, number>;
-interface Rec { tier: string; role: "pit" | "hit"; title: string; name: string; vlvl: number; sample: number; axis: number; ours: Chan; obs: Chan; proj?: Chan }
-const recs: Rec[] = [];
-const windows: { tier: string; role: string; w: ReturnType<typeof windowOverlap>; meta: CwhitProjMeta; conv: string[] }[] = [];
-const notices: string[] = [];
-const projUnjoined: string[] = [];
-
-for (const { tier, cap } of QUICK) {
-  const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
-  const pt = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), envelope);
-
-  for (const role of ["pit", "hit"] as const) {
-    if (!hasObs(tier, role)) { notices.push(`no observed fixture ${OBS}/cwhit-${tier}-${role}.tsv → tier×role skipped entirely`); continue; }
-
-    // our side: base (VLvl 0) + v5 variant, keyed by (title, vlvl) — the projected join key.
-    const cards: JoinCard[] = [];
-    const byCid = new Map<string, { title: string; vlvl: number; ours: Chan; axis: number }>();
-    for (const bc of baseCards) {
-      for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as const) {
-        if (n_(c["Card Value"]) > cap) continue;
-        if (role === "pit" ? !isPit(c) : isPit(c)) continue;
-        const cid = `${bc["Card ID"]}|${vlvl}`;
-        const p = role === "pit" ? ourPit(c, pt) : ourHit(c, pt);
-        const fp = role === "pit"
-          ? { primary: [Math.max(0, Math.min(1, (n_(c["Stamina"]) - 20) / 40)), (p as ReturnType<typeof ourPit>).babip], validate: [(p as ReturnType<typeof ourPit>).k9, (p as ReturnType<typeof ourPit>).bb9, (p as ReturnType<typeof ourPit>).hr9] }
-          : { primary: [(p as ReturnType<typeof ourHit>).babip], validate: [(p as ReturnType<typeof ourHit>).bbPct, (p as ReturnType<typeof ourHit>).soPct, (p as ReturnType<typeof ourHit>).hr600] };
-        cards.push({ cid, name: cardName(c), val: n_(c["Card Value"]), vlvl, hand: handLetter(n_(c[role === "pit" ? "Throws" : "Bats"])), ...fp });
-        const all = p as Record<string, number>;
-        const axisKey = role === "pit" ? "stuff" : "pow";
-        const ours: Chan = {};
-        for (const [k, v] of Object.entries(all)) if (k !== axisKey) ours[k] = v;
-        byCid.set(cid, { title: String(bc["//Card Title"]), vlvl, ours, axis: all[axisKey]! });
-      }
-    }
-
-    // projected side (optional): (title|vlvl) → his channels, in OUR units.
-    const pf = projFile(tier, role);
-    let projBy: Map<string, Chan> | null = null;
-    if (!pf) { notices.push(`no projected fixture ${PROJ}/cwhit-${tier}-${role}-proj.tsv → ${tier} ${role} runs on the OBSERVED-ONLY axis (ours vs observed)`); }
-    else {
-      projBy = new Map();
-      const conv: string[] = [];
-      let meta: CwhitProjMeta;
-      if (role === "pit") {
-        const p = parseCwhitProjPit(readFileSync(pf, "utf8"), pf); meta = p.meta;
-        conv.push(`K/BB/HR %-columns read as per-BATTER-FACED (per-PA), converted to per-9 with BF/9=${BF_PER_9.toFixed(1)} — the SAME constant our per-600 line uses, so the constant cancels in ours-vs-cwhit and touches only the vs-observed LEVEL`);
-        for (const r of p.rows) projBy.set(`${r.title}|${r.vlvl}`, { k9: r.kPerPa * BF_PER_9, bb9: r.bbPerPa * BF_PER_9, hr9: r.hrPerPa * BF_PER_9, babip: r.babip, woba: pitWobaFromChannels(r.kPerPa * BF_PER_9, r.bbPerPa * BF_PER_9, r.hrPerPa * BF_PER_9, r.babip, W) });
-      } else {
-        const p = parseCwhitProjHit(readFileSync(pf, "utf8"), pf); meta = p.meta;
-        if (p.rows[0]) { conv.push(`SO: ${p.rows[0].soConvention}`); conv.push(`HR: ${p.rows[0].hrConvention}`); conv.push(`XBH: ${p.rows[0].xbhConvention}`); }
-        conv.push(`his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score`);
-        for (const r of p.rows) {
-          const hrPa = r.hrPer600 / 600;
-          const bip = Math.max(1 - r.bbPerPa - 0.008 - r.kPerPa - hrPa, 0.01);
-          const nonHR = r.babip * bip, H = nonHR + hrPa;
-          // Use HIS OWN XBHpct when present (convention measured, see xbhNonHrPerPa) rather than a
-          // fixed share — a fixed share would erase exactly the card-to-card XBH variation that the
-          // wOBA SHAPE verdict is supposed to be judging him on.
-          const xbh = Number.isFinite(r.xbhPct) ? xbhNonHrPerPa(r.xbhPct, H, hrPa) : 0.30 * nonHR;
-          projBy.set(`${r.title}|${r.vlvl}`, {
-            bbPct: r.bbPerPa * 100, soPct: r.kPerPa * 100, hr600: r.hrPer600, babip: r.babip,
-            woba: W.bb * r.bbPerPa + W.hbp * 0.008 + W.b1 * Math.max(nonHR - xbh, 0) + W.xbh * xbh + W.hr * hrPa,
-          });
-        }
-      }
-      const parsed = role === "pit" ? parseCwhitPit(readFileSync(`${OBS}/cwhit-${tier}-${role}.tsv`, "utf8")).meta : parseCwhitHit(readFileSync(`${OBS}/cwhit-${tier}-${role}.tsv`, "utf8")).meta;
-      windows.push({ tier, role, meta, conv, w: windowOverlap(parsed.coverageFrom, parsed.coverageTo, meta.trainFrom, meta.trainTo) });
-    }
-
-    // observed → our cards (the EXISTING fingerprint join; not rebuilt).
-    if (role === "pit") {
-      const { rows } = parseCwhitPit(readFileSync(`${OBS}/cwhit-${tier}-pit.tsv`, "utf8"));
-      const obs: JoinObs<typeof rows[0]>[] = rows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.ip, row: r }));
-      const j = joinCwhit(obs, cards);
-      for (const m of j.matched) {
-        const our = byCid.get(m.card.cid)!, o = m.obs.row;
-        const key = `${our.title}|${our.vlvl}`;
-        recs.push({ tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.ip, axis: our.axis, ours: our.ours,
-          obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) },
-          proj: projBy?.get(key) });
-      }
-      if (projBy) { const seen = new Set(recs.filter((r) => r.tier === tier && r.role === role).map((r) => `${r.title}|${r.vlvl}`)); for (const k of projBy.keys()) if (!seen.has(k)) projUnjoined.push(`${tier} ${role}: ${k}`); }
-    } else {
-      const { rows } = parseCwhitHit(readFileSync(`${OBS}/cwhit-${tier}-hit.tsv`, "utf8"));
-      const obs: JoinObs<typeof rows[0]>[] = rows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.babip], validate: [r.bbPct, r.soPct, r.hr600], sample: r.pa, row: r }));
-      const j = joinCwhit(obs, cards);
-      for (const m of j.matched) {
-        const our = byCid.get(m.card.cid)!, o = m.obs.row;
-        // cwhit's observed SO% is K/AB → convert to our K/PA convention before ANY comparison.
-        const soPa = soPctPerAbToPerPa(o.soPct, o.avg, o.obp, o.bbPct);
-        recs.push({ tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.pa, axis: our.axis, ours: our.ours,
-          obs: { bbPct: o.bbPct, soPct: soPa, hr600: o.hr600, babip: o.babip, woba: hitWobaFromRates({ ...o, soPct: soPa }, W) },
-          proj: projBy?.get(`${our.title}|${our.vlvl}`) });
-      }
-      if (projBy) { const seen = new Set(recs.filter((r) => r.tier === tier && r.role === role).map((r) => `${r.title}|${r.vlvl}`)); for (const k of projBy.keys()) if (!seen.has(k)) projUnjoined.push(`${tier} ${role}: ${k}`); }
-    }
-  }
-}
 
 // ── noise variance of each observed value (for spread deconvolution) ─────────
 function noiseOf(r: Rec, ch: string): number {
@@ -229,7 +95,6 @@ const CH: Record<"pit" | "hit", { key: string; lbl: string; d: number }[]> = {
   pit: [{ key: "k9", lbl: "K9", d: 2 }, { key: "bb9", lbl: "BB9", d: 2 }, { key: "hr9", lbl: "HR9", d: 2 }, { key: "babip", lbl: "BABIP", d: 3 }, { key: "woba", lbl: "wOBAA", d: 3 }],
   hit: [{ key: "bbPct", lbl: "BB%", d: 2 }, { key: "soPct", lbl: "SO%(PA)", d: 2 }, { key: "hr600", lbl: "HR600", d: 2 }, { key: "babip", lbl: "BABIP", d: 3 }, { key: "woba", lbl: "wOBA", d: 3 }],
 };
-const wellSampled = (r: Rec) => (r.role === "pit" ? r.sample >= MIN_IP : r.sample >= MIN_PA);
 
 // ═══════════════════════════════════════════════════════════════════════════
 console.log(`\n╔════════════════════════════════════════════════════════════════════════════════════════════╗`);
