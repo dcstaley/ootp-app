@@ -185,7 +185,7 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
     bats: w.bats, throws: w.throws, value: n(c["Card Value"]), owned: 0,
     stamina: n(c["Stamina"]), pitches: pitchCount(c),
     learn, eligible: ctx.isEligible(c),
-    hitVL: round(w.hit.woba_vL), hitVR: round(w.hit.woba_vR), hitOVR: round(w.hit.woba_ovr),
+    hitVL: round(w.hit.offense_vL), hitVR: round(w.hit.offense_vR), hitOVR: round(w.hit.offense_ovr),
     basicHit: round(b.hit.basic_ovr), basicHitVL: round(b.hit.basic_vL), basicHitVR: round(b.hit.basic_vR),
     pitchVL: round(w.pitch.woba_vL), pitchVR: round(w.pitch.woba_vR), pitchOVR: round(w.pitch.woba_ovr),
     basicPitch: round(b.pitch.basic_ovr), basicPitchVL: round(b.pitch.basic_vL), basicPitchVR: round(b.pitch.basic_vR),
@@ -499,7 +499,7 @@ function positionPoolStats(t: Tournament, s: Scored): Record<string, Record<stri
     cands.push({
       def: defOf(c0),
       positions: LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p),
-      vL: valueFor(sc.hit.woba_vL, "hitter"), vR: valueFor(sc.hit.woba_vR, "hitter"),
+      vL: valueFor(sc.hit.offense_vL, "hitter"), vR: valueFor(sc.hit.offense_vR, "hitter"),
     });
   }
   // Pool = union of top-X by vL and by vR (matches the generation two-way cutoff).
@@ -546,7 +546,7 @@ function rosterCandidates(
   // woba − baseline, pitcher baseline − allowedWoba.
   const cfg = metric === "basic" ? ctx.basicConfig : ctx.config;
   const hitVal = (sc: ReturnType<typeof scoreCard>, side: "vR" | "vL") =>
-    metric === "basic" ? (side === "vR" ? sc.hit.basic_vR : sc.hit.basic_vL) - TARGET_BASIC : valueFor(side === "vR" ? sc.hit.woba_vR : sc.hit.woba_vL, "hitter");
+    metric === "basic" ? (side === "vR" ? sc.hit.basic_vR : sc.hit.basic_vL) - TARGET_BASIC : valueFor(side === "vR" ? sc.hit.offense_vR : sc.hit.offense_vL, "hitter");
   const pitVal = (sc: ReturnType<typeof scoreCard>, side: "vR" | "vL") =>
     metric === "basic" ? (side === "vR" ? sc.pitch.basic_vR : sc.pitch.basic_vL) - TARGET_BASIC : valueFor(side === "vR" ? sc.pitch.woba_vR : sc.pitch.woba_vL, "pitcher");
   const acc = accountId ? accounts.get(accountId) : null;
@@ -1639,8 +1639,8 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const recs = elig.map((c) => {
       const pre = scoreCard(c, preCfg), post = scoreCard(c, s.ctx.config);
       return { title: String(c["//Card Title"] ?? ""), stam: n(c["Stamina"]),
-        pre: { pVR: pre.pitch.woba_vR, pVL: pre.pitch.woba_vL, hVR: pre.hit.woba_vR, hVL: pre.hit.woba_vL },
-        post: { pVR: post.pitch.woba_vR, pVL: post.pitch.woba_vL, hVR: post.hit.woba_vR, hVL: post.hit.woba_vL } };
+        pre: { pVR: pre.pitch.woba_vR, pVL: pre.pitch.woba_vL, hVR: pre.hit.offense_vR, hVL: pre.hit.offense_vL },
+        post: { pVR: post.pitch.woba_vR, pVL: post.pitch.woba_vL, hVR: post.hit.offense_vR, hVL: post.hit.offense_vL } };
     });
     const pit = recs.filter((r) => r.stam >= 20), hit = recs.filter((r) => r.stam < 20);
     // rank map within a pool: title → rank (1 = best); pitchers asc (low allowed), hitters desc
@@ -1735,7 +1735,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       out.push({
         title, cardValue: n(c["Card Value"]), throws: n(c["Throws"]), eligible: s.ctx.isEligible(c),
         pit: { ratings: pt ? ratesFor(PIT, pt.pit) : "(no transform)", wobaPre: { vR: +pre.pitch.woba_vR.toFixed(4), vL: +pre.pitch.woba_vL.toFixed(4) }, wobaPost: { vR: +post.pitch.woba_vR.toFixed(4), vL: +post.pitch.woba_vL.toFixed(4) }, trace: { vR: pitTrace(c, "vR"), vL: pitTrace(c, "vL") } },
-        hit: { ratings: pt ? ratesFor(HIT, pt.hit) : "(no transform)", wobaPre: { vR: +pre.hit.woba_vR.toFixed(4), vL: +pre.hit.woba_vL.toFixed(4) }, wobaPost: { vR: +post.hit.woba_vR.toFixed(4), vL: +post.hit.woba_vL.toFixed(4) }, trace: { vR: hitTrace(c, "vR"), vL: hitTrace(c, "vL") } },
+        hit: { ratings: pt ? ratesFor(HIT, pt.hit) : "(no transform)", wobaPre: { vR: +pre.hit.offense_vR.toFixed(4), vL: +pre.hit.offense_vL.toFixed(4) }, wobaPost: { vR: +post.hit.offense_vR.toFixed(4), vL: +post.hit.offense_vL.toFixed(4) }, trace: { vR: hitTrace(c, "vR"), vL: hitTrace(c, "vL") } },
       });
     }
     return json(res, { tournament: t.name, era: t.eraId, park: t.parkId, transformActive: !!pt, matches: out.length, cards: out });
@@ -1754,7 +1754,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       const pr = (col: string, side: string) => n(c[`${col} ${side}`]);
       return {
         title: String(c["//Card Title"] ?? ""),
-        pitVR: sc.pitch.woba_vR, pitVL: sc.pitch.woba_vL, hitVR: sc.hit.woba_vR, hitVL: sc.hit.woba_vL,
+        pitVR: sc.pitch.woba_vR, pitVL: sc.pitch.woba_vL, hitVR: sc.hit.offense_vR, hitVL: sc.hit.offense_vL,
         pit: { vR: { con: pr("Control", "vR"), stu: pr("Stuff", "vR"), pbabip: pr("pBABIP", "vR"), hrr: pr("pHR", "vR") },
                vL: { con: pr("Control", "vL"), stu: pr("Stuff", "vL"), pbabip: pr("pBABIP", "vL"), hrr: pr("pHR", "vL") } },
         hit: { vR: { babip: pr("BABIP", "vR"), pow: pr("Power", "vR"), eye: pr("Eye", "vR"), k: pr("Avoid K", "vR"), gap: pr("Gap", "vR") },

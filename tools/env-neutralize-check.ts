@@ -67,8 +67,8 @@ const cardFrom = (o: TrainObs) => {
 const diffs: number[] = [];
 for (const o of rawObs) {
   const card = cardFrom(o);
-  const sBake = scoreCard(card, { coeffs: NEUTRAL, derived: dN, calScales: IDENTITY, eventForm: bakeForm }).hit.woba_vR;
-  const sNeut = scoreCard(card, { coeffs: E, derived: dE, calScales: IDENTITY, eventForm: neutForm }).hit.woba_vR;
+  const sBake = scoreCard(card, { coeffs: NEUTRAL, derived: dN, calScales: IDENTITY, eventForm: bakeForm }).hit.offense_vR;
+  const sNeut = scoreCard(card, { coeffs: E, derived: dE, calScales: IDENTITY, eventForm: neutForm }).hit.offense_vR;
   diffs.push(Math.abs(sBake - sNeut));
 }
 diffs.sort((a, b) => a - b);

@@ -21,7 +21,10 @@ export interface CardScores {
   title: unknown;
   bats: number;
   throws: number;
-  hit: { woba_vL: number; woba_vR: number; woba_ovr: number; basic_vL: number; basic_vR: number; basic_ovr: number };
+  // "offense" = the OFFENSE metric (wRAA + BsR) on the wOBA scale — batting event wOBA + the centered
+  // baserunning bonus. This is what valueFor + the optimizer consume. (Batting-only real wOBA + BsR/600
+  // are split out as separate fields in a follow-up; pitch.woba_* below is genuine wOBA-against.)
+  hit: { offense_vL: number; offense_vR: number; offense_ovr: number; basic_vL: number; basic_vR: number; basic_ovr: number };
   pitch: {
     woba_vR: number; woba_vL: number; woba_ovr: number;
     basic_vR: number; basic_vL: number; basic_ovr: number;
@@ -168,7 +171,7 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
     title: card["//Card Title"],
     bats, throws: thr,
     hit: {
-      woba_vL: hVL.woba, woba_vR: hVR.woba, woba_ovr: hitBlend(hVR.woba, hVL.woba),
+      offense_vL: hVL.woba, offense_vR: hVR.woba, offense_ovr: hitBlend(hVR.woba, hVL.woba),
       basic_vL: hVL.basic, basic_vR: hVR.basic, basic_ovr: hitBlend(hVR.basic, hVL.basic),
     },
     pitch: {

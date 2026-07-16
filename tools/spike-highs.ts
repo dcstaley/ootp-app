@@ -108,7 +108,7 @@ async function main() {
     .filter((x) => x.posns.length > 1) // >1 means has a real position beyond DH
     .map(({ card, posns }) => {
       const s = scoreCard(card, cfg);
-      return { id: String(s.cardId), vL: s.hit.woba_vL, vR: s.hit.woba_vR, pos: posns };
+      return { id: String(s.cardId), vL: s.hit.offense_vL, vR: s.hit.offense_vR, pos: posns };
     });
   console.log(`Eligible fielding hitters: ${hitters.length}`);
 

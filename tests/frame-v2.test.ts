@@ -195,6 +195,6 @@ describe("scoreCard: own-gap poolTransform is unaffected by absent frame-v2 fiel
     const noTransform = scoreCard(card, { coeffs, derived, calScales: IDENTITY });
     const withTransform = scoreCard(card, { coeffs, derived, calScales: IDENTITY, poolTransform });
     // At least one metric must move, or the "unchanged by frame-v2" guard above is vacuous.
-    expect(withTransform.hit.woba_vR).not.toBe(noTransform.hit.woba_vR);
+    expect(withTransform.hit.offense_vR).not.toBe(noTransform.hit.offense_vR);
   });
 });

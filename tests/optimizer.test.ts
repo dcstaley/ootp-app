@@ -69,7 +69,7 @@ function candidates(limit = 250): HitterCandidate[] {
     .filter((x) => x.pos.length > 1)
     .map(({ c, pos }) => {
       const s = scoreCard(c, cfg);
-      return { id: String(s.cardId), title: String(s.title), bats: s.bats, valueVR: valueFor(s.hit.woba_vR, "hitter"), valueVL: valueFor(s.hit.woba_vL, "hitter"), positions: pos, cost: n(c["Card Value"]) };
+      return { id: String(s.cardId), title: String(s.title), bats: s.bats, valueVR: valueFor(s.hit.offense_vR, "hitter"), valueVL: valueFor(s.hit.offense_vL, "hitter"), positions: pos, cost: n(c["Card Value"]) };
     })
     .sort((a, b) => Math.max(b.valueVR, b.valueVL) - Math.max(a.valueVR, a.valueVL))
     .slice(0, limit); // decomposed pool (D5) — fast + lossless at this scale

@@ -52,11 +52,11 @@ function impact(label: string, metric: (s: any) => number) {
   console.log(`\n${label}: top26 overlap ${overlap(26).toFixed(1)}%  top50 ${overlap(50).toFixed(1)}%  top100 ${overlap(100).toFixed(1)}%`);
   console.log(`   among top-100: mean |Δrank| ${mean.toFixed(1)}, max ${Math.max(...moves)}; cards moving >5 ranks: ${moves.filter((m) => m > 5).length}/100`);
 }
-impact("HIT ovr (anchored vs sBB=sHR=1)", (s) => s.hit.woba_ovr);
+impact("HIT ovr (anchored vs sBB=sHR=1)", (s) => s.hit.offense_ovr);
 impact("PITCH ovr (anchored vs sBB=sHR=1)", (s) => -s.pitch.woba_ovr); // lower allowed-wOBA = better
 
 // ── Tournament angle: re-anchor on an ELITE-ONLY pool (top-tier cards only) ──────
-const flatScore = cards.map((c) => ({ c, w: scoreCard(c, { coeffs, derived, calScales: flat, eventForm }).hit.woba_ovr }));
+const flatScore = cards.map((c) => ({ c, w: scoreCard(c, { coeffs, derived, calScales: flat, eventForm }).hit.offense_ovr }));
 const elitePool = flatScore.sort((a, b) => b.w - a.w).slice(0, 150).map((x) => x.c);
 const eliteCal = calibrate(elitePool, { coeffs, derived, eventForm });
 console.log(`\n── elite-only pool (top 150 hitters, ~tournament) ──`);

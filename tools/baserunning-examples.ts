@@ -37,7 +37,7 @@ const mkCfg = (coeffs: Coeffs) => {
   return { coeffs, derived, calScales: calibrate(base, { coeffs, derived, eventForm: ef, poolTransform: pt }), eventForm: ef, poolTransform: pt };
 };
 const cfgOn = mkCfg(coeffsOn), cfgOff = mkCfg(coeffsOff);
-const woba = (c: any, cfg: any) => scoreCard(c, cfg).hit.woba_ovr;
+const woba = (c: any, cfg: any) => scoreCard(c, cfg).hit.offense_ovr;
 console.log(`Tournament '${t.id}' (era ${era.id}: sbFreq ${(era.sbFreq ?? 1).toFixed(2)}, runVal ${(era.runVal ?? 1).toFixed(2)})\n`);
 
 // Buckets on ability (Stealing) × aggressiveness (Steal Rate).

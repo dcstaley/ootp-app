@@ -50,7 +50,7 @@ let bestHit: Card | null = null, bestHitV = -Infinity;
 let bestPit: Card | null = null, bestPitV = -Infinity;
 for (const c of eligible) {
   const s = scoreCard(c, cfg);
-  const hv = Math.max(valueFor(s.hit.woba_vR, "hitter"), valueFor(s.hit.woba_vL, "hitter"));
+  const hv = Math.max(valueFor(s.hit.offense_vR, "hitter"), valueFor(s.hit.offense_vL, "hitter"));
   const pv = 0.62 * valueFor(s.pitch.woba_vR, "pitcher") + 0.38 * valueFor(s.pitch.woba_vL, "pitcher");
   if (hv > bestHitV) { bestHitV = hv; bestHit = c; }
   if (pv > bestPitV) { bestPitV = pv; bestPit = c; }

@@ -21,10 +21,10 @@ console.log(`\nCapture: ${captureName}   (hitting wOBA higher = better; pitching
 console.log("TOP 10 HITTERS by wOBA vR");
 console.log("  " + "card".padEnd(52) + "  vL      vR");
 scored
-  .filter((x) => x.s.hit.woba_vR > 0)
-  .sort((a, b) => b.s.hit.woba_vR - a.s.hit.woba_vR)
+  .filter((x) => x.s.hit.offense_vR > 0)
+  .sort((a, b) => b.s.hit.offense_vR - a.s.hit.offense_vR)
   .slice(0, 10)
-  .forEach((x) => console.log("  " + String(x.card["//Card Title"]).padEnd(52) + `  ${f(x.s.hit.woba_vL)}  ${f(x.s.hit.woba_vR)}`));
+  .forEach((x) => console.log("  " + String(x.card["//Card Title"]).padEnd(52) + `  ${f(x.s.hit.offense_vL)}  ${f(x.s.hit.offense_vR)}`));
 
 console.log("\nTOP 10 PITCHERS by wOBA OVR (lowest allowed)");
 console.log("  " + "card".padEnd(52) + "  OVR     vR      vL");

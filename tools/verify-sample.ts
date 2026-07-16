@@ -27,7 +27,7 @@ function check(label: string, capture: string, metric: "woba" | "basic", samples
     const sc = scoreCard(card, config);
     for (const side of ["vL", "vR"] as const) {
       const appVal = side === "vL" ? s.vL : s.vR;
-      const mine = metric === "woba" ? (side === "vL" ? sc.hit.woba_vL : sc.hit.woba_vR)
+      const mine = metric === "woba" ? (side === "vL" ? sc.hit.offense_vL : sc.hit.offense_vR)
                                      : (side === "vL" ? sc.hit.basic_vL : sc.hit.basic_vR);
       const rounded = Number(mine.toFixed(dp));
       const diff = Math.abs(rounded - appVal);
