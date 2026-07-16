@@ -144,7 +144,7 @@ export function LineupTab({
       <div style={{ display: "flex", gap: 22, flexWrap: "wrap", alignItems: "flex-start" }}>
         {/* Lineup */}
         <div style={{ flex: "3 1 640px", minWidth: 0, maxWidth: 1000 }}>
-          <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Batting order ({lineIds.length}) — vs {sideLabel}</h3>
+          <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Batting order ({lineIds.length}) — vs {sideLabel} <span style={{ fontSize: 11, fontWeight: 400, color: C.sub }}>· scores are <b style={{ color: C.text }}>Offense</b> (batting wOBA + baserunning), not batting wOBA</span></h3>
           <div style={{ border: `1px solid ${C.border}` }}>
             <HeaderRow />
             {lineIds.length === 0 && <div style={{ fontSize: 13, color: C.sub, padding: "10px 6px" }}>Empty — add a bench player, or Auto-fill.</div>}

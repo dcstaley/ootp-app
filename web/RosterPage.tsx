@@ -603,7 +603,7 @@ export function RosterPage() {
 
               {/* Center: roster tables (drop target for pool→roster drag) */}
               <RosterDropZone>
-                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length})</h3>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14 }}>Hitters ({hitters.length}) <span style={{ fontSize: 11, fontWeight: 400, color: C.sub }}>· Off vL/vR = <b style={{ color: C.text }}>Offense</b> (batting wOBA + baserunning), the value optimized — not batting wOBA. Full split on the Cards grid.</span></h3>
                 <DataTable rows={hitters} cols={hitterCols} getKey={(h) => h.id} initialSort={{ key: "player", dir: 1 }} rowStyle={(h) => roleBg(h.role)} fit resizable resetKey={roster} />
                 <h3 style={{ margin: "16px 0 6px", fontSize: 14 }}>Pitchers ({pitchers.length})</h3>
                 <DataTable rows={pitchers} cols={pitcherCols} getKey={(p) => p.id} rowStyle={(p) => roleBg(p.role)} fit resizable resetKey={roster} />
