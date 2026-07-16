@@ -1,0 +1,108 @@
+
+╔══════════════════════════════════════════════════════════════════════════════════════════╗
+║  THE ARCHETYPE LEDGER — per-TYPE mwOBA mis-valuation (level-free), vs cwhit observed       ║
+╚══════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-41-42-pareto' | catalog 'oaxaca' | neutral env | own-gap ON | RAW event-model line (Ruling 1: unanchored)
+metric: batting-only wOBA both sides (his pwOBA never used); + = we OVER-value the type, − = UNDER-value (pitcher sign already flipped)
+level-free: role×tier mean bias subtracted ⇒ frame/format/anchor level constants are OUT of every number below
+sample: 492 well-sampled joined cards (IP≥1000 / PA≥1000); 0 dropped for missing ratings lookup
+  hitters: iron 100, bronze 99, silver 78, gold 64, diamond 17
+  pitchers: iron 44, bronze 52, silver 22, gold 15, diamond 1  (diamond pit is a known dead cell)
+
+CAVEAT (pooled rows): the same card recurs across tiers (Quick pools nest), so pooled N overstates
+independent evidence — the bootstrap resamples within tiers and treats tiers as independent. The
+per-tier consistency table is the honest replication test; read pooled + per-tier together.
+
+
+╔═══ A. THE ARCHETYPE TABLE — pooled across tiers, level-free mis-valuation in mwOBA ═══════╗
+
+─── HITTERS (+ = OVER-valued, − = UNDER-valued; mwOBA) ───
+archetype                                        N   cards   mis-val   [95% CI]        driver (centered channel contributions, mwOBA)
+Elite power (POW ≥ pool p75)                    200    150     -0.14   [-1.58, +1.24]   bbPct -0.3  soPct +1.2  hr600 -3.6  babip +2.6  resid +0.0  ⇒ HR600
+Walk machine (EYE ≥ p75)                        153    118     +0.59   [-1.21, +2.41]   bbPct -0.2  soPct -0.2  hr600 -0.2  babip +1.3  resid -0.1  ⇒ BABIP
+Contact (BABIP ≥ p75)                           237    179     -1.84*  [-2.95, -0.68]   bbPct -0.1  soPct -0.1  hr600 +1.1  babip -3.0  resid +0.3  ⇒ BABIP
+Whiff-prone slugger (POW ≥ p75 & AvoidK ≤ p25)   57     41     -2.17   [-5.41, +1.38]   bbPct -0.3  soPct +3.8  hr600 -5.9  babip -0.1  resid +0.4  ⇒ HR600
+Balanced (all 4 axes inside p25–p75)              5      5    +12.90   [-2.84, +24.49]   bbPct +1.2  soPct +0.8  hr600 +5.7  babip +5.3  resid -0.1  ⇒ HR600
+  (* = bootstrap 95% CI excludes 0. resid = hit-mix + assembly interaction — the part the 4 channels can't see.)
+
+─── PITCHERS (+ = OVER-valued, − = UNDER-valued; mwOBA) ───
+archetype                                        N   cards   mis-val   [95% CI]        driver (centered channel contributions, mwOBA)
+Power arm (STU ≥ p75)                            68     55     -1.53*  [-2.70, -0.39]   k9 -3.2  bb9 +0.7  hr9 -0.3  babip +1.4  resid -0.2  ⇒ K9
+Control artist (CON ≥ p75 & STU ≤ p50)           30     27     +1.81   [-0.73, +4.67]   k9 +5.1  bb9 -0.7  hr9 -0.6  babip -2.4  resid +0.3  ⇒ K9
+GB/contact (pBABIP ≥ p75)                        71     58     -0.97   [-2.11, +0.22]   k9 +1.1  bb9 -0.6  hr9 -0.0  babip -1.6  resid +0.1  ⇒ BABIP
+Balanced (all 3 axes inside p25–p75)              4      4     +3.45   [-3.50, +8.56]   k9 +0.4  bb9 -0.6  hr9 +2.8  babip +1.0  resid -0.1  ⇒ HR9
+  (* = bootstrap 95% CI excludes 0. resid = hit-mix + assembly interaction — the part the 4 channels can't see.)
+
+
+╔═══ B. PER-TIER CONSISTENCY — the replication test (within-tier centering + within-tier bootstrap) ═══╗
+
+─── HITTERS — level-free mis-val (mwOBA) per tier ───
+archetype                                              iron        bronze        silver          gold       diamond
+Elite power (POW ≥ pool p75)                      -2.5  n47     +0.5  n52     +0.3  n46     +0.7  n44     +1.6  n11
+Walk machine (EYE ≥ p75)                          -1.7  n39     -1.9  n45     +3.1  n32     +3.1* n31      +8.4* n6
+Contact (BABIP ≥ p75)                             -2.8  n48     -2.4* n66     -1.5  n58     -0.5  n50     -2.2  n15
+Whiff-prone slugger (POW ≥ p75 & AvoidK ≤ p2      -8.6  n11     -4.3  n16     +2.4  n17     -0.1  n13         (N=0)
+Balanced (all 4 axes inside p25–p75)                  (N=3)         (N=1)         (N=1)         (N=0)         (N=0)
+
+─── PITCHERS — level-free mis-val (mwOBA) per tier ───
+archetype                                              iron        bronze        silver          gold       diamond
+Power arm (STU ≥ p75)                             -3.2* n16     -1.7  n22     -1.5* n19     +1.4* n10         (N=1)
+Control artist (CON ≥ p75 & STU ≤ p50)            +3.8  n11     +0.6  n16         (N=2)         (N=1)         (N=0)
+GB/contact (pBABIP ≥ p75)                         +0.6  n26     -2.9* n27     +0.4  n10      -1.2  n8         (N=0)
+Balanced (all 3 axes inside p25–p75)                  (N=2)         (N=2)         (N=0)         (N=0)         (N=0)
+  (cells with N<4 members are not read; * = within-tier bootstrap CI excludes 0)
+
+
+╔═══ C. SANITY GUARDS ═══════════════════════════════════════════════════════════════════════╗
+
+── C1. PA/IP-WEIGHTED recompute (weighted tier centering + weighted archetype mean) ──
+If the weighted number moves materially or flips sign vs Table A, low-sample members drive the read.
+  hit: elite-power -0.1→-0.7   walk-machine +0.6→-0.2   contact -1.8→-1.6   whiff-slugger -2.2→-2.3   balanced-hit +12.9→+15.1
+  pit: power-arm -1.5→-0.9   control-artist +1.8→+1.0   gb-contact -1.0→-1.1   balanced-pit +3.4→+6.3
+
+── C2. SELECTION — could top-100-BY-USAGE capture bias archetype membership? ──
+pool% = archetype share of the tier's eligible VLvl-0 card pool; judged% = share of the judged sample.
+ratio >1 = the type is over-represented among heavily-used cards (usage-selection correlates with the axis).
+axisΔ = judged members' mean defining-axis rating − pool members' mean (in rating points): how much deeper
+        into the tail the judged members sit — a big Δ means the estimate describes the EXTREME of the type.
+
+  HITTERS:
+  archetype                                        pool%   judged%   ratio    axisΔ
+  Elite power (POW ≥ pool p75)                     25.0     55.9    2.23     +6.1  ⚠ selection-skewed
+  Walk machine (EYE ≥ p75)                         25.1     42.7    1.70     +6.0  ⚠ selection-skewed
+  Contact (BABIP ≥ p75)                            25.1     66.2    2.64     +4.7  ⚠ selection-skewed
+  Whiff-prone slugger (POW ≥ p75 & AvoidK ≤ p25)   10.1     15.9    1.58    +11.3  ⚠ selection-skewed
+  Balanced (all 4 axes inside p25–p75)              8.1      1.4    0.17      n/a  ⚠ selection-skewed
+
+  PITCHERS:
+  archetype                                        pool%   judged%   ratio    axisΔ
+  Power arm (STU ≥ p75)                            25.0     50.7    2.03     +5.0  ⚠ selection-skewed
+  Control artist (CON ≥ p75 & STU ≤ p50)           17.9     22.4    1.25     -5.9
+  GB/contact (pBABIP ≥ p75)                        25.0     53.0    2.12     +8.4  ⚠ selection-skewed
+  Balanced (all 3 axes inside p25–p75)             16.3      3.0    0.18      n/a  ⚠ selection-skewed
+
+  NOTE: level-free centering absorbs the OVERALL quality selection; what it cannot absorb is
+  within-type selection (judged members deeper in the tail than pool-typical members — read axisΔ),
+  and any archetype flagged ⚠ describes the usage-selected end of its type, not the whole pool type.
+  Derek: "top 100 is a capture choice, not a rule" — deeper capture is available if a flag binds.
+
+
+╔═══ D. PRIOR-EVIDENCE RECONCILIATION — do the salted session numbers reproduce here? ═══════╗
+
+── D1. The elite-HR "Q4 cliff" (prior: hitter HR600 bias ≈0 Q1–Q3, −5.48 at Q4 @iron; NON-MONOTONE) ──
+hitter (pred−obs) HR600 by quartile of PREDICTED hr600 (raw units, HR per 600 PA; NEVER fit a line to this):
+  iron     Q1 +0.17 (n25)  Q2 +0.77 (n25)  Q3 -0.77 (n25)  Q4 -5.48*(n25)
+  bronze   Q1 -0.51 (n24)  Q2 +1.18*(n25)  Q3 +0.07 (n25)  Q4 -2.20*(n25)
+  silver   Q1 -0.04 (n19)  Q2 +1.15*(n20)  Q3 -1.36*(n19)  Q4 -3.64*(n20)
+  gold     Q1 +0.18 (n16)  Q2 -1.04 (n16)  Q3 -1.39 (n16)  Q4 -4.40*(n16)
+  diamond  Q1 +1.91 (n4)  Q2 +2.33*(n4)  Q3 +0.67 (n4)  Q4 -0.85 (n5)
+
+── D2. Pitcher stuff/control partial slopes (prior, own-gap audit: STU +1.53 mwOBA/+10 sig; CON −0.38 ns) ──
+OLS of within-tier-centered (pred−obs) wOBAA (mwOBA) on within-tier-centered STU + CON, pooled; per +10 rating.
+sign: β>0 ⇒ we predict MORE offense allowed than observed ⇒ we UNDER-value that end of the axis.
+  N=134: STU +0.79 ± 0.77   CON -0.46 ± 0.91   (±=95% CI half-width)
+
+── D3. Hitter axis partial slopes (prior, own-gap-confounded: EYE +0.77 / POW −1.42 / kRat −1.24 / BABIP −1.66; β>0 = over-value) ──
+OLS of within-tier-centered (pred−obs) wOBA (mwOBA) on the four centered axes, pooled; per +10 rating.
+  N=358: pow -1.12 ±0.66   eye +0.10 ±0.58   babip -2.33 ±0.81   kRat -0.59 ±0.63
+
