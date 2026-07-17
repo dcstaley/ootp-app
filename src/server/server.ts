@@ -21,9 +21,10 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, kSpreadPitRamp, K_SPREAD_PIT, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
+import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT } from "../training/forms.ts";
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
+import type { KSpread as KSpreadCfg } from "../config/types.ts"; // K + BUILD-3 pitcher per-channel spread fields
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
 import { HIT_BIP_ADJ, PIT_BIP_ADJ, formVertexOffenders } from "../model/curves.ts";  // BIP convention, for the trace + the deploy-time vertex gate
@@ -57,7 +58,7 @@ const DATA_ROOT = process.env.DATA_ROOT ?? "data";
 const TRAINING_DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"]
   .find((d): d is string => !!d && existsSync(d)) ?? "League Files";
 
-interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null; transformMode?: "own-gap" | "frame-v2" | "matchup"; kSpreadPit?: "on" | "off"; hitTail?: "on" | "off" }
+interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null; transformMode?: "own-gap" | "frame-v2" | "matchup"; kSpreadPit?: "on" | "off"; hitTail?: "on" | "off"; pitSpreadHr?: "on" | "off" }
 
 // ── Boot: config DB + accounts + catalog ──────────────────────────────────────
 console.log("[server] loading catalog + tournaments database…");
@@ -262,6 +263,12 @@ const kSpreadPitEnabled = () => state.kSpreadPit !== "off";
 // Per-tournament `hitTailCorrection === false` survives ONLY as an override-OFF escape hatch.
 // League/in-frame pools are bit-identical by construction (gap 0 ⇒ zero strength ⇒ identity).
 const hitTailEnabled = () => state.hitTail !== "off";
+// BUILD-3 pitcher HR9 spread ramp — STANDARD SCORING since 2026-07-17 (same ruling; constants +
+// fit provenance in src/model/pool-transform.ts PIT_SPREAD_HR / pitSpreadHrRamp, results in
+// docs/CWHIT_PITSPREAD_BUILD3_2026-07-17.md). `state.pitSpreadHr = "off"` is the KILL-SWITCH
+// (POST /api/training/pit-spread?enabled=false). The sibling BABIP scalar was HELD (bronze gate
+// failed CI-clear) — nothing sets sPitBab in production. Requires trainingMeans, like the K ramp.
+const pitSpreadHrEnabled = () => state.pitSpreadHr !== "off";
 // Reference field = top-50 of the FULL (non-variant) catalog by predicted wOBA — the
 // unrestricted "league," dynamic (recomputed when the active model OR catalog changes),
 // tournament-independent (raw wOBA is era/park-free). Cached.
@@ -323,7 +330,7 @@ function scoreTournament(t: Tournament): Scored {
   // distribution. No eventForm (log-linear baseline) ⇒ no transform.
   let poolTransform: PoolTransform | undefined;
   let frameShift: FrameShift | undefined;
-  let kSpread: { sHit: number; sPit: number; meanHit: number; meanPit: number } | undefined;
+  let kSpread: KSpreadCfg | undefined;
   let matchup: { model: EventModel; shift: FrameShift } | undefined;
   let hitTail: HitTail | undefined;
   if (eventForm) {
@@ -345,18 +352,25 @@ function scoreTournament(t: Tournament): Scored {
     } else {
       const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
       poolTransform = buildPoolTransform(ref, poolField, activeEnvelope ?? undefined);
-      // Pitcher K-spread ramp (standard scoring, kill-switch above): rescale the raw model K about
-      // K̄_pool by s(gap), gap = the own-K-channel stu gap vs the artifact's training frame. Pure
-      // pool-property function — no per-tournament constants. sHit is pinned to 1 (the hitter fix
-      // is separate tail-form work); applyKSpread short-circuits s===1, so hitter scores are
-      // BIT-identical and an in-frame pool (gap ≤ 0 ⇒ s = 1) is bit-identical for pitchers too.
-      // K̄_pool comes from poolMeanKOwn — the SAME own-gap frame score-card predicts in — and the
-      // kSpread object threads into calibrate/calibrateBasic below, so the anchor is computed on
-      // the same corrected events the display scores use.
-      if (kSpreadPitEnabled() && activeTrainingMeans) {
-        const gap = buildFrameShift(activeTrainingMeans, poolField).pit.vR.stu ?? 0;
-        const kBar = poolMeanKOwn(basePool, coeffs, evModel, poolTransform, FIELD_N);
-        kSpread = { sHit: 1, sPit: kSpreadPitRamp(gap), meanHit: kBar.hit, meanPit: kBar.pit };
+      // Pitcher spread ramps (standard scoring, kill-switches above): rescale the raw model K
+      // about K̄_pool by s(stu-gap) (BUILD-1) and the raw model HR about HR̄_pool by s(hrr-gap)
+      // (BUILD-3), gaps vs the artifact's training frame. Pure pool-property functions — no
+      // per-tournament constants. sHit is pinned to 1 (the hitter fix is BUILD-2's tail work);
+      // every s=1 leg short-circuits exactly, so hitter scores are BIT-identical and an in-frame
+      // pool (gap ≤ 0 ⇒ s = 1) is bit-identical for pitchers too. Centering means come from
+      // poolMeanKOwn/poolPitMeansOwn — the SAME own-gap frame score-card predicts in (one
+      // collector; pm.k ≡ poolMeanKOwn().pit) — and the kSpread object threads into calibrate/
+      // calibrateBasic below, so the anchor is computed on the same corrected events the display
+      // scores use. Application = applyPitSpread (the one copy, in score-card + calibrate).
+      // The BUILD-3 BABIP scalar is HELD (gate record) — sPitBab is never set here.
+      if ((kSpreadPitEnabled() || pitSpreadHrEnabled()) && activeTrainingMeans) {
+        const shift = buildFrameShift(activeTrainingMeans, poolField);
+        const pm = poolPitMeansOwn(basePool, coeffs, evModel, poolTransform, FIELD_N);
+        kSpread = {
+          sHit: 1, meanHit: 0,
+          sPit: kSpreadPitEnabled() ? kSpreadPitRamp(shift.pit.vR.stu ?? 0) : 1, meanPit: pm.k,
+          ...(pitSpreadHrEnabled() ? { sPitHr: pitSpreadHrRamp(shift.pit.vR.hrr ?? 0), meanPitHr: pm.hr } : {}),
+        };
       }
       // BUILD-2 gap-conditioned HITTER tail correction (HR/BABIP/SO event-space; STANDARD SCORING
       // since 2026-07-17 — Derek's ruling; kill-switch `state.hitTail`, see hitTailEnabled above;
@@ -1548,6 +1562,10 @@ async function refreshActiveModel(): Promise<void> {
   if (kSpreadPitEnabled() && m?.eventForm && !activeTrainingMeans) {
     console.warn(`[server] ⚠ pitcher K-spread ramp is enabled but active model '${m.id}' has NO trainingMeans — the ramp is SILENTLY SKIPPED (pre-ramp scores). Retrain to embed trainingMeans, or set the kill-switch (POST /api/training/kspread-pit?enabled=false).`);
   }
+  // Same coherence check for the BUILD-3 pitcher HR-spread ramp (trainingMeans-gated like K).
+  if (pitSpreadHrEnabled() && m?.eventForm && !activeTrainingMeans) {
+    console.warn(`[server] ⚠ pitcher HR-spread ramp is enabled but active model '${m.id}' has NO trainingMeans — the ramp is SILENTLY SKIPPED (pre-ramp scores). Retrain to embed trainingMeans, or set the kill-switch (POST /api/training/pit-spread?enabled=false).`);
+  }
   // Same coherence check for the hitter tail correction (standard scoring on the own-gap path):
   // it is wired on the own-gap branch only, so a non-own-gap transformMode silently skips it.
   if (hitTailEnabled() && m?.eventForm && (state.transformMode === "frame-v2" || state.transformMode === "matchup")) {
@@ -1931,15 +1949,19 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     // Build each available mode's transform config from the SAME primitives scoreTournament uses.
     const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
     const poolField = computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true);
-    // own-gap mode mirrors STANDARD scoring, which now includes the pitcher K-spread ramp
-    // (kill-switch-aware) — same primitives, same centering, so the scorecard evaluates what
-    // production actually ships.
+    // own-gap mode mirrors STANDARD scoring, which now includes the pitcher K-spread AND the
+    // BUILD-3 HR-spread ramps (kill-switch-aware) — same primitives, same centering, so the
+    // scorecard evaluates what production actually ships.
     const ownGapPt = buildPoolTransform(referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel), poolField, activeEnvelope ?? undefined);
-    let ownGapKs: { sHit: number; sPit: number; meanHit: number; meanPit: number } | undefined;
-    if (kSpreadPitEnabled() && activeTrainingMeans) {
-      const gapPit = buildFrameShift(activeTrainingMeans, poolField).pit.vR.stu ?? 0;
-      const kBarOwn = poolMeanKOwn(basePool, coeffs, evModel, ownGapPt, FIELD_N);
-      ownGapKs = { sHit: 1, sPit: kSpreadPitRamp(gapPit), meanHit: kBarOwn.hit, meanPit: kBarOwn.pit };
+    let ownGapKs: KSpreadCfg | undefined;
+    if ((kSpreadPitEnabled() || pitSpreadHrEnabled()) && activeTrainingMeans) {
+      const shiftOwn = buildFrameShift(activeTrainingMeans, poolField);
+      const pmOwn = poolPitMeansOwn(basePool, coeffs, evModel, ownGapPt, FIELD_N);
+      ownGapKs = {
+        sHit: 1, meanHit: 0,
+        sPit: kSpreadPitEnabled() ? kSpreadPitRamp(shiftOwn.pit.vR.stu ?? 0) : 1, meanPit: pmOwn.k,
+        ...(pitSpreadHrEnabled() ? { sPitHr: pitSpreadHrRamp(shiftOwn.pit.vR.hrr ?? 0), meanPitHr: pmOwn.hr } : {}),
+      };
     }
     const modeCfgs: { mode: string; cfg: TournamentEvalConfig }[] = [
       { mode: "base", cfg: { coeffs, eventForm: ef } },
@@ -2004,6 +2026,18 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     await saveState();
     invalidateDerivedCaches(); // re-score under the new setting
     return json(res, { ok: true, enabled: kSpreadPitEnabled(), hasTrainingMeans: !!activeTrainingMeans });
+  }
+  // BUILD-3 pitcher HR-spread ramp (own-gap standard scoring, 2026-07-17): status + KILL-SWITCH.
+  // GET → { enabled, hasTrainingMeans, A, G, babHeld }. POST ?enabled=false disables (rollback to
+  // pre-ramp scores); anything else re-enables. The BABIP sibling is HELD (gate record) — there
+  // is no BABIP switch because there is no BABIP wiring.
+  if (method === "GET" && url === "/api/training/pit-spread")
+    return json(res, { enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans, A: PIT_SPREAD_HR.A, G: PIT_SPREAD_HR.G, babHeld: true });
+  if (method === "POST" && url === "/api/training/pit-spread") {
+    state.pitSpreadHr = u.searchParams.get("enabled") === "false" ? "off" : "on";
+    await saveState();
+    invalidateDerivedCaches(); // re-score under the new setting
+    return json(res, { ok: true, enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans });
   }
   // BUILD-2 hitter tail correction (own-gap standard scoring, 2026-07-17 Derek ruling): status +
   // KILL-SWITCH. GET → { enabled, cfg } (cfg = the pinned universal λ constants). POST

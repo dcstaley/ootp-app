@@ -13,7 +13,12 @@ export type Side = "vR" | "vL";
 // K spread scaling params (frame-v2): per-role scale `s` + the per-role pool-mean predicted K
 // the scaling centers on. K_corr = mean + s·(K_pred − mean), applied to the raw model K BEFORE
 // the BIP chain. See src/scoring-core/score-card.ts and plan §10.8d.
-export interface KSpread { sHit: number; sPit: number; meanHit: number; meanPit: number }
+// K spread (frame-v2 §10.8d + the own-gap BUILD-1 pitcher ramp) + the BUILD-3 optional pitcher
+// per-channel siblings (HR9; BABIP fields exist structurally but the BABIP leg is HELD — its
+// bronze gate failed CI-clear, so production never sets sPitBab/meanPitBab). Field names match
+// PitSpreadFields (pool-transform.ts applyPitSpread — the ONE application copy). Absent optional
+// fields ⇒ bit-identical to the K-only seam.
+export interface KSpread { sHit: number; sPit: number; meanHit: number; meanPit: number; sPitHr?: number; meanPitHr?: number; sPitBab?: number; meanPitBab?: number }
 
 export interface Coeffs {
   tournament_hr_adjust: boolean;

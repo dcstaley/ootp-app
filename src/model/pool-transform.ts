@@ -191,6 +191,30 @@ export const K_SPREAD_PIT = { A: 9.5394, G: 319 } as const;
 export const kSpreadPitRamp = (gap: number): number =>
   (gap > 0 ? 1 + K_SPREAD_PIT.A * (1 - Math.exp(-gap / K_SPREAD_PIT.G)) : 1);
 
+// ── Pitcher HR9 spread ramp (BUILD-3, own-gap path; PRODUCTION, on by default) ──
+// FIT PROVENANCE (2026-07-17, tools/fit-pitspread-hrbab.ts; snapshot
+// fixtures/pitspread-fit-run-2026-07-17.txt; doc docs/CWHIT_PITSPREAD_BUILD3_2026-07-17.md):
+// per-tier cwhit HR9 calibration slopes on the SHIPPED K-ramp baseline are gap-FLAT
+// (iron 1.30 / bronze 1.23 / silver 1.25 / gold 1.31 at hrr-gaps 47.7/36.3/27.6/17.5 — NOT the
+// K ramp's monotone geometry), so the data identify a constant out-of-frame amplification and
+// G is pinned by the BUILD-3 rule: G = g_min/3 (95% saturation at the lowest observed tier gap
+// ⇒ continuous league anchor, no amplification extrapolated below the first measured point).
+// A = 0.2648 [boot 0.157, 0.355] closed-form at that G; held-out bronze PASS (pred 1.29
+// [1.14,1.42] vs measured 1.23 [1.09,1.34]). HR-only gate record: G1 4/4 quicks PASS (pooled
+// 1.26→1.00), G2 4/4 + pooled PASS (iron +0.027 CI-clear IMPROVE), G3 levels ~0, G4 ratios on
+// optimum. KNOWN FLAG: gold-cap daily overshoots (post 0.78 [0.60,0.83]) — gold-quick (1.31)
+// and gold-cap (0.97) disagree at the SAME gap; era factors are 1.0 there so it is NOT the era
+// class; candidate quick-vs-daily format-structural heterogeneity (plan §15.7 framing). The
+// sibling BABIP scalar was HELD (bronze G1 CI-clear fail) — sPitBab is never set in production.
+export const PIT_SPREAD_HR = { A: 0.2648, G: 5.8 } as const;
+
+/** s(gap) for the pitcher HR9 spread on the own-gap path: 1 + A·(1 − e^(−g/G)), s(g ≤ 0) = 1
+ *  EXACTLY (league anchor). Applied via applyPitSpread to the raw model HR, PRE-BIP PRE-ERA
+ *  (era_effective_hr/park multiply downstream, once — the K precedent's placement). gap = the
+ *  own-HR-channel hrr gap, buildFrameShift(trainingMeans, poolField).pit.vR.hrr. */
+export const pitSpreadHrRamp = (gap: number): number =>
+  (gap > 0 ? 1 + PIT_SPREAD_HR.A * (1 - Math.exp(-gap / PIT_SPREAD_HR.G)) : 1);
+
 // The full transform: a per-rating map for each role × platoon side. Absent entries fall
 // back to identity (applyAffine with undefined → raw r), so a partial transform is safe.
 export interface PoolTransform {

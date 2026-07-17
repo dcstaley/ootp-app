@@ -26,7 +26,7 @@ import { hittingComponents, pitchingComponents } from "../scoring-core/woba.ts";
 import { wobaWeightsFromCoeffs } from "../scoring-core/woba-weights.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
 import { logLinearModel } from "../model/log-linear.ts";
-import { applyAffine, applyFrameShift, applyKSpread, type PoolTransform, type FrameShift } from "../model/pool-transform.ts";
+import { applyAffine, applyFrameShift, applyKSpread, applyPitSpread, type PoolTransform, type FrameShift } from "../model/pool-transform.ts";
 import type { EventForm } from "../model/curves.ts";
 import type { Coeffs, Derived, KSpread } from "../config/types.ts";
 import type { EventModel, HittingRatings, PitchingRatings } from "../model/types.ts";
@@ -228,7 +228,7 @@ function pitComp(o: TournamentObs, side: "vR" | "vL", c: PredictCtx): FinalComp 
     hrr: applyFrameShift(applyAffine(raw.hrr, tp?.hrr), fp?.hrr),
   };
   const e = c.evModel.predictPitching(rat, c.coeffs);
-  if (c.kSpread) e.K = applyKSpread(e.K, c.kSpread.meanPit, c.kSpread.sPit);
+  if (c.kSpread) applyPitSpread(e, c.kSpread); // one copy: K + BUILD-3 HR (+BABIP if ever set)
   const k = pitchingComponents(e, 1, 1, side, c.coeffs, c.derived, c.eventForm);
   return { BB: k.BB_fin, K: e.K * c.coeffs.era_k, HR: k.HR_fin, oneB: k.oneB_fin, xbh: k.XBH_fin };
 }

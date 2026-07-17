@@ -7,7 +7,7 @@ import type { ScoringConfig, Side } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
-import { applyAffine, applyFrameShift, applyKSpread } from "../model/pool-transform.ts";
+import { applyAffine, applyFrameShift, applyKSpread, applyPitSpread } from "../model/pool-transform.ts";
 import {
   n, cp, parkAvgFactor, parkHrFactor, sameSidePenaltyHitting, sameSidePenaltyPitching,
 } from "./helpers.ts";
@@ -135,7 +135,10 @@ export function scoreCard(card: any, config: ScoringConfig, model?: EventModel):
       hrr: applyFrameShift(applyAffine(n(card[`pHR ${side}`]), tp?.hrr), fp?.hrr),
     };
     const e = evModel.predictPitching(ratings, coeffs);
-    if (kSpread) e.K = applyKSpread(e.K, kSpread.meanPit, kSpread.sPit); // §10.8d
+    // §10.8d K spread + BUILD-3 per-channel pitcher spreads (HR; BABIP held) — applyPitSpread is
+    // the ONE copy of the order of operations. K-only kSpread objects are bit-identical to the
+    // old inline applyKSpread call; every s=1/absent leg is an exact identity.
+    if (kSpread) applyPitSpread(e, kSpread);
 
     // Matchup: basic reads the effective coordinate (see the hitting note). Absent ⇒ bRp === ratings.
     const mp = matchup?.shift.pit[side];

@@ -14,7 +14,7 @@
 import type { Coeffs, Derived, CalScales, KSpread } from "../config/types.ts";
 import type { EventModel, RawHitting, RawPitching } from "../model/types.ts";
 import type { EventForm } from "../model/curves.ts";
-import { applyAffine, applyFrameShift, applyKSpread, type PoolTransform, type FrameShift } from "../model/pool-transform.ts";
+import { applyAffine, applyFrameShift, applyKSpread, applyPitSpread, type PoolTransform, type FrameShift } from "../model/pool-transform.ts";
 import { logLinearModel } from "../model/log-linear.ts";
 import { makeRawPolyModel } from "../model/raw-poly.ts";
 import { scoreCard } from "./score-card.ts";
@@ -62,7 +62,7 @@ function augment(card: any, coeffs: Coeffs, model: EventModel, pt?: PoolTransfor
       { con: applyFrameShift(applyAffine(n(card[`Control ${side}`]), tp?.con), fp?.con), stu: applyFrameShift(applyAffine(n(card[`Stuff ${side}`]), tp?.stu), fp?.stu), pbabip: applyFrameShift(applyAffine(n(card[`pBABIP ${side}`]), tp?.pbabip), fp?.pbabip), hrr: applyFrameShift(applyAffine(n(card[`pHR ${side}`]), tp?.hrr), fp?.hrr) },
       coeffs,
     );
-    if (ks) e.K = applyKSpread(e.K, ks.meanPit, ks.sPit);
+    if (ks) applyPitSpread(e, ks); // mirrors score-card: K + BUILD-3 HR (+BABIP if ever set), one copy
     return { e, woba: assembleRawPitchingWoba(e, sameSidePenaltyPitching(thr, side, noSsp ? 1 : coeffs.ssp_basic_pitching), coeffs) };
   };
   return { bats, thr, speed, stealRate, steal, run, hVR: hit("vR"), hVL: hit("vL"), pVR: pit("vR"), pVL: pit("vL") };
