@@ -33,6 +33,11 @@ export interface RawHitting {
 
 export interface RawPitching {
   BB: number; K: number; HR: number; nHH: number; XBH: number; pbabipSC: number;
+  /** Pitcher sibling of RawHitting.hMul: multiplicative correction on the non-HR hit RATE, set by
+   *  the BUILD-3 pitcher BABIP spread scalar. pitchingComponents re-derives nHH from the rating
+   *  (hRate(pbabipSC, BIP_fin)), so a babip-rate correction must ride this carrier to reach the
+   *  deployed composite. PRE-era. Absent ⇒ 1 (exact identity). */
+  hMul?: number;
 }
 
 export interface EventModel {

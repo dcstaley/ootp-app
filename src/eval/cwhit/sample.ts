@@ -30,7 +30,7 @@ import {
 import type { Card } from "../../data/catalog.ts";
 import { makeVariant } from "../../data/variants.ts";
 import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/curves.ts";
-import { applyKSpread } from "../../model/pool-transform.ts";
+import { applyPitSpread } from "../../model/pool-transform.ts";
 import { parseCwhitPit, parseCwhitHit } from "./parse.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "./join.ts";
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "./audit.ts";
@@ -79,10 +79,12 @@ export interface Rec {
 /** The full-pool predicted distribution for one tier×role — the reference the top-100 is selected FROM. */
 export interface PoolDist { tier: string; role: "pit" | "hit"; n: number; byChannel: Record<string, number[]> }
 
-/** Pitcher K-spread correction for the eval line: `s` = the spread scalar (s(gap) from the fitted
- *  ramp), `mean` = K̄_pool per 600 in the RAW pre-era own-gap frame (poolMeanKOwn). Pitcher-ONLY —
- *  the hitter path never sees it (the hitter fix is BUILD-2's separate tail-form workstream). */
-export interface KSpreadPit { s: number; mean: number }
+/** Pitcher spread corrections for the eval line: `s`/`mean` = the K-spread scalar + K̄_pool
+ *  (poolMeanKOwn, RAW pre-era own-gap frame); the optional BUILD-3 per-channel siblings carry the
+ *  HR9 and BABIP spread scalars about their own pool means (poolPitMeansOwn). Pitcher-ONLY — the
+ *  hitter path never sees any of it (the hitter fix is BUILD-2's separate tail workstream).
+ *  Absent optional fields ⇒ bit-identical to the K-only seam. */
+export interface KSpreadPit { s: number; mean: number; sHr?: number; meanHr?: number; sBab?: number; meanBab?: number }
 
 export interface SampleDeps {
   baseCards: Card[];
@@ -152,18 +154,20 @@ export function ourPit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales
     }, d.coeffs);
   };
   const eR = side("R"), eL = side("L");
-  // Pitcher K-spread (eval mirror of score-card.ts line "if (kSpread) e.K = applyKSpread(...)"):
-  // rescale the RAW predicted K about the pool mean per side, BEFORE the BIP chain and BEFORE era —
-  // the production placement verified in the old joint run. The raw line then re-derives non-HR hits
-  // from the corrected BIP via the fitted H-curve — the SAME recompute the deployed pitchingComponents
-  // runs — so the raw babip/woba channels stay physical (more K ⇒ fewer BIP ⇒ fewer hits, BABIP ~flat)
-  // instead of carrying a stale hit count against a shrunken BIP. (Per-side, because hRate is
-  // nonlinear in BIP: correcting the blend instead would be a slightly different number.)
-  if (ks && ks.s !== 1) {
+  // Pitcher spread corrections (eval mirror of the production seam): applyPitSpread is the ONE
+  // copy of the order of operations — K about K̄ (BUILD-1 ramp), then HR about HR̄, then BABIP
+  // pivoted on the ORIGINAL BIP with the rate move riding e.hMul. All pre-BIP-chain, pre-era —
+  // the production placement. The raw line then re-derives non-HR hits from the corrected BIP via
+  // the fitted H-curve × hMul — the SAME recompute the deployed pitchingComponents runs — so the
+  // raw babip/woba channels stay physical (more K/HR ⇒ fewer BIP ⇒ fewer hits) instead of
+  // carrying a stale hit count against a shrunken BIP. (Per-side, because hRate is nonlinear in
+  // BIP: correcting the blend instead would be a slightly different number.) K-only ks objects
+  // are bit-identical to the pre-BUILD-3 behavior (hMul stays unset ⇒ ×1 exact).
+  if (ks && (ks.s !== 1 || (ks.sHr ?? 1) !== 1 || (ks.sBab ?? 1) !== 1)) {
     for (const e of [eR, eL]) {
-      e.K = applyKSpread(e.K, ks.mean, ks.s);
+      applyPitSpread(e, { sPit: ks.s, meanPit: ks.mean, sPitHr: ks.sHr, meanPitHr: ks.meanHr, sPitBab: ks.sBab, meanPitBab: ks.meanBab });
       const bip = Math.max(600 - e.BB - e.K - e.HR - PIT_BIP_ADJ, 1);
-      e.nHH = hRate(d.eventForm.pit.h, e.pbabipSC, bip);
+      e.nHH = hRate(d.eventForm.pit.h, e.pbabipSC, bip) * (e.hMul ?? 1);
       e.XBH = e.nHH * 0.25; // the model's fixed pitcher XBH share (raw-poly.ts)
     }
   }

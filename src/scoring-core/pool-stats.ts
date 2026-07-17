@@ -10,6 +10,7 @@
 
 import type { Coeffs } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
+import { PIT_BIP_ADJ } from "../model/curves.ts";
 import {
   ratingStats, buildAffines, applyFrameShift, applyAffine, HIT_RATINGS, PIT_RATINGS, type RatingStats, type PoolTransform,
   type RatingAffine, type RatingEnvelope, type TrainingMeans, type FrameShift,
@@ -137,7 +138,7 @@ export function buildFrameShift(train: TrainingMeans, pool: FieldStats): FrameSh
 // pooling are identical — only the rating re-basing differs — so the math lives here once.
 type KRatingMapper = (role: "hit" | "pit", side: "vR" | "vL", key: string, raw: number) => number;
 
-function poolMeanKBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, map: KRatingMapper): { hit: number; pit: number } {
+function poolChanBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, map: KRatingMapper): { hit: { k: number }; pit: { k: number; hr: number; bab: number } } {
   const recs = cards.map((c) => {
     const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]), stealRate = n(c["Steal Rate"]);
     const hitK = (side: "vR" | "vL") => {
@@ -148,7 +149,11 @@ function poolMeanKBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: numb
     const pitK = (side: "vR" | "vL") => {
       const g = (key: string, col: string) => map("pit", side, key, n(c[`${col} ${side}`]));
       const e = model.predictPitching({ con: g("con", "Control"), stu: g("stu", "Stuff"), pbabip: g("pbabip", "pBABIP"), hrr: g("hrr", "pHR") }, coeffs);
-      return { woba: assembleRawPitchingWoba(e, 1, coeffs), k: e.K };
+      // hr + bab: the raw pre-era per-600 HR and the raw BABIP (nHH over the model's BIP
+      // convention) — the centering means for the BUILD-3 pitcher HR/BABIP spread scalars,
+      // measured in exactly the frame the per-card predictions live in (like K̄ for the K ramp).
+      const bip = Math.max(600 - e.BB - e.K - e.HR - PIT_BIP_ADJ, 1);
+      return { woba: assembleRawPitchingWoba(e, 1, coeffs), k: e.K, hr: e.HR, bab: e.nHH / bip };
     };
     return { hVR: hitK("vR"), hVL: hitK("vL"), pVR: pitK("vR"), pVL: pitK("vL") };
   });
@@ -156,12 +161,18 @@ function poolMeanKBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: numb
   // Hitters: top-N per-side cohort by raw wOBA, deployment-side K pooled.
   const hVR = recs.map((r) => r.hVR).sort((a, b) => b.woba - a.woba).slice(0, topN);
   const hVL = recs.map((r) => r.hVL).sort((a, b) => b.woba - a.woba).slice(0, topN);
-  // Pitchers: top-N by combined allowed wOBA (lower = better), both sides' K pooled.
+  // Pitchers: top-N by combined allowed wOBA (lower = better), both sides pooled.
   const pTop = [...recs].sort((a, b) => (a.pVR.woba + a.pVL.woba) - (b.pVR.woba + b.pVL.woba)).slice(0, topN);
+  const pSides = [...pTop.map((r) => r.pVR), ...pTop.map((r) => r.pVL)];
   return {
-    hit: mean([...hVR.map((x) => x.k), ...hVL.map((x) => x.k)]),
-    pit: mean([...pTop.map((r) => r.pVR.k), ...pTop.map((r) => r.pVL.k)]),
+    hit: { k: mean([...hVR.map((x) => x.k), ...hVL.map((x) => x.k)]) },
+    pit: { k: mean(pSides.map((x) => x.k)), hr: mean(pSides.map((x) => x.hr)), bab: mean(pSides.map((x) => x.bab)) },
   };
+}
+
+function poolMeanKBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, map: KRatingMapper): { hit: number; pit: number } {
+  const r = poolChanBy(cards, coeffs, model, topN, map);
+  return { hit: r.hit.k, pit: r.pit.k };
 }
 
 /** Per-role mean predicted K over the top-N field, computed on FRAME-V2-SHIFTED ratings —
@@ -181,4 +192,12 @@ export function poolMeanK(cards: any[], coeffs: Coeffs, model: EventModel, fs: F
  *  same own-gap frame score-card predicts in. Pre-era (raw model K per 600), like poolMeanK. */
 export function poolMeanKOwn(cards: any[], coeffs: Coeffs, model: EventModel, pt: PoolTransform, topN: number): { hit: number; pit: number } {
   return poolMeanKBy(cards, coeffs, model, topN, (role, side, key, raw) => applyAffine(raw, (pt[role][side] as Record<string, RatingAffine | undefined>)[key]));
+}
+
+/** BUILD-3 sibling: the pitcher field's own-gap centering means for ALL three spread channels —
+ *  K̄ (identical to poolMeanKOwn(...).pit — same cohorts, same math, one copy), plus the raw
+ *  pre-era HR̄/600 and the raw BABIP̄ (nHH over the model's BIP convention). These are the pivot
+ *  means for the pitcher HR9/BABIP spread scalars (K_corr-style: x̄ + s·(x − x̄)). */
+export function poolPitMeansOwn(cards: any[], coeffs: Coeffs, model: EventModel, pt: PoolTransform, topN: number): { k: number; hr: number; bab: number } {
+  return poolChanBy(cards, coeffs, model, topN, (role, side, key, raw) => applyAffine(raw, (pt[role][side] as Record<string, RatingAffine | undefined>)[key])).pit;
 }

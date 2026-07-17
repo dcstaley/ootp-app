@@ -22,6 +22,9 @@
 // relative spacing is preserved → genuinely-best cards keep their lead. A config without a
 // poolTransform applies nothing → identity (no scaling).
 
+// Shared BIP-chain constant (curves.ts, import-free) for applyPitSpread below.
+import { PIT_BIP_ADJ } from "./curves.ts";
+
 export interface RatingStats { mu: number; sd: number }
 
 /** Mean/sd over positive rating values (0 = "no rating for this card-side", excluded). */
@@ -121,6 +124,50 @@ export const applyKSpread = (k: number, mean: number, s: number): number =>
   (s === 1 ? Math.max(0, k) : Math.max(0, mean + s * (k - mean)));
 // s === 1 short-circuits to the raw K EXACTLY (not `mean + (k − mean)`, which can differ in the
 // last ulp) — the in-frame identity guarantee "s → 1 ⇒ bit-identical scores" is a test invariant.
+
+/** The pitcher per-channel spread fields carried on `KSpread` (config/types.ts imports FROM this
+ *  module, so the structural subset is declared here — same reason applyKSpread is scalar-typed).
+ *  All optional fields absent ⇒ the K-only behavior, bit-identical to the pre-BUILD-3 seam. */
+export interface PitSpreadFields {
+  sPit: number; meanPit: number;
+  sPitHr?: number; meanPitHr?: number;
+  sPitBab?: number; meanPitBab?: number;
+}
+
+/**
+ * BUILD-3 — apply the pitcher spread corrections to one side's raw pitching events, IN PLACE:
+ * the ONE copy of the order of operations (score-card.ts, calibrate.ts and the eval line all call
+ * this; the fit tool judges these exact semantics).
+ *   1. K about K̄_pool (the shipped BUILD-1 ramp) — bit-identical to the old inline applyKSpread;
+ *   2. HR about HR̄_pool (raw pre-era per-600; era_effective_hr/park multiply downstream, once —
+ *      the same pre-era placement as K, whose era_k applies downstream);
+ *   3. BABIP measured on the ORIGINAL BIP, pivoted about BAB̄_pool, clamped to [0, 0.6]; the rate
+ *      move rides `e.hMul` (pitchingComponents re-derives nHH from the rating and would discard a
+ *      count-only change — the RawHitting.hMul lesson), and nHH/XBH are rescaled mix-preserving on
+ *      the NEW BIP so the raw stored-column assembly stays consistent (more K/HR cost hits).
+ * Every leg with s = 1 (or absent) is an EXACT identity (applyKSpread short-circuit).
+ */
+export function applyPitSpread(
+  e: { BB: number; K: number; HR: number; nHH: number; XBH: number; hMul?: number },
+  s: PitSpreadFields,
+): void {
+  const bip0 = Math.max(600 - e.BB - e.K - e.HR - PIT_BIP_ADJ, 1);
+  const bab0 = e.nHH / bip0;
+  e.K = applyKSpread(e.K, s.meanPit, s.sPit);
+  const sHr = s.sPitHr ?? 1;
+  if (sHr !== 1) e.HR = applyKSpread(e.HR, s.meanPitHr ?? 0, sHr);
+  const sBab = s.sPitBab ?? 1;
+  if (sBab !== 1 && bab0 > 1e-9) {
+    const bab2 = Math.min(applyKSpread(bab0, s.meanPitBab ?? 0, sBab), 0.6);
+    if (bab2 !== bab0) {
+      e.hMul = (e.hMul ?? 1) * (bab2 / bab0);
+      const bip2 = Math.max(600 - e.BB - e.K - e.HR - PIT_BIP_ADJ, 1);
+      const scale = e.nHH > 1e-9 ? (bab2 * bip2) / e.nHH : 1;
+      e.nHH *= scale;
+      e.XBH *= scale; // fixed share preserved
+    }
+  }
+}
 
 // ── Pitcher K-spread ramp (own-gap path; PRODUCTION, on by default) ─────────────
 // FIT PROVENANCE (2026-07-16, tools/fit-kspread-pit.ts; results doc

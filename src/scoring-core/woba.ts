@@ -121,10 +121,13 @@ export function pitchingComponents(
   // #2 is fit to ACTUAL rates, so it carries NO league-norm (p_leagueNorm_h was the log
   // model's level-match; #2 needs none — the per-pool pitch scale handles level). Else
   // the parity log formula + league-norm, untouched.
+  // e.hMul = the event-space babip-rate correction carrier (BUILD-3 pitcher BABIP spread leg) —
+  // same rationale as the hitter twin in hittingComponents: nHH is re-derived from the RATING
+  // here, so the correction must ride a rate multiplier. PRE-era; absent ⇒ ×1 exactly.
   const nHH_fin = eventForm
-    ? hRate(eventForm.pit.h, e.pbabipSC, BIP_fin) * derived.era_h * parkAvg
+    ? hRate(eventForm.pit.h, e.pbabipSC, BIP_fin) * (e.hMul ?? 1) * derived.era_h * parkAvg
     : Math.max((coeffs.p_nHH_int ?? 0) + (coeffs.p_nHH_pbabip ?? 0) * Math.log(Math.max(e.pbabipSC, 1)) + (coeffs.p_nHH_bip ?? 0) * Math.log(BIP_fin), 0)
-        * (coeffs.p_leagueNorm_h ?? 1) * derived.era_h * parkAvg;
+        * (e.hMul ?? 1) * (coeffs.p_leagueNorm_h ?? 1) * derived.era_h * parkAvg;
   // park_gap is COMPRESSED here (cp), same as hitting — all park factors are compressed
   // (post-parity reconciliation: pitching previously used raw park_gap, a parity quirk).
   // #2 uses the fixed 0.25 share (matching the bake-off) and drops p_xbh_norm (old norm).
