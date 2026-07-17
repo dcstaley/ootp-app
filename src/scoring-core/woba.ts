@@ -88,7 +88,11 @@ export function hittingComponents(
   const BA_raw = eventForm
     ? hRate(eventForm.hit.h, e.babipSC, BIP_fin)
     : Math.max((coeffs.baInt ?? 0) + (coeffs.ba ?? 0) * Math.log(Math.max(e.babipSC, 1)) + (coeffs.bipba ?? 0) * Math.log(BIP_fin), 0);
-  const BA_fin = BA_raw * derived.era_h * parkAvg;
+  // e.hMul = the event-space babip-rate correction carrier (hit-tail BABIP leg). BA is re-derived
+  // from the RATING here, so a correction living only on e.oneB/e.GAP would be discarded — the
+  // multiplier is how it reaches the trusted composite. PRE-era (era_h/park apply after, once);
+  // absent ⇒ ×1 exactly (bit-identity).
+  const BA_fin = BA_raw * (e.hMul ?? 1) * derived.era_h * parkAvg;
   const GAP_rate = eventForm
     ? rate(eventForm.hit.xbh, e.gapSC)
     : Math.max((coeffs.gapLogA ?? 0) + (coeffs.gapLogB ?? 0) * Math.log(Math.max(e.gapSC, 1)), 0);

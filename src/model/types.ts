@@ -23,6 +23,12 @@ export interface PitchingRatings {
 export interface RawHitting {
   BB: number; SO: number; oneB: number; GAP: number; HR: number;
   AB: number; BIP: number; babipSC: number; gapSC: number;
+  /** Multiplicative correction on the non-HR hit RATE, set by event-space spread/tail corrections
+   *  (applyHitTail's BABIP leg). The trusted recompute (woba.ts hittingComponents) re-derives hits
+   *  from the RATING (hRate(babipSC, BIP_fin)), so a correction expressed only on oneB/GAP would be
+   *  silently discarded there — this carrier is how a babip-rate correction reaches the deployed
+   *  composite. Applied PRE-era (era_h/park multiply after, once). Absent ⇒ 1 (exact identity). */
+  hMul?: number;
 }
 
 export interface RawPitching {

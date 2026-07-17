@@ -122,7 +122,11 @@ export interface Tournament {
   eligibility: EligibilityGroup;
   tournamentAdjustment?: TournamentAdjustment; // second era-modifier set (multiplied onto era)
   // BUILD-2 gap-conditioned hitter tail correction (HR/BABIP/SO — src/scoring-core/hit-tail.ts).
-  // Absent/false ⇒ scoring is bit-identical to before (dormant; Derek activates per tournament).
+  // STANDARD SCORING since 2026-07-17 (Derek's ruling, plan §15.7): ON by default for every
+  // tournament; the activation mechanism is the GLOBAL kill-switch (`state.hitTail`, POST
+  // /api/training/hit-tail), never this field. This field survives ONLY as a per-tournament
+  // override-OFF escape hatch: `false` ⇒ correction skipped for this tournament; `true`/absent ⇒
+  // follows the global switch. (League/in-frame pools are identity by construction either way.)
   hitTailCorrection?: boolean;
 
   // Pool sizing / generation settings (used by M4 optimization pool, not calibration)

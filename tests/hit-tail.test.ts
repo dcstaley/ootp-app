@@ -1,20 +1,30 @@
 // BUILD-2 hitter tail correction — invariant tests (src/scoring-core/hit-tail.ts).
 //
-// The invariants that must never ship broken:
-//   1. DORMANCY — absent config/zero strength ⇒ the correction is the EXACT identity (today's
-//      scores are bit-identical; the wiring is flag-gated with no default flip).
+// ACTIVATION MODEL (since 2026-07-17, Derek's ruling — plan §15.7): the correction is STANDARD
+// SCORING, on by default, with a GLOBAL kill-switch (server `state.hitTail`, POST
+// /api/training/hit-tail?enabled=false). The invariants that must never ship broken:
+//   1. KILL-SWITCH / OFF-PATH IDENTITY — a config without `hitTail` (global kill-switch off,
+//      per-tournament override-off, or non-tournament scoring) ⇒ EXACT bit-identity; likewise
+//      zero strength. Default-ON is a server activation property; it rests on this invariant
+//      bounding the off path.
 //   2. LEAGUE IDENTITY — pool == reference (gap 0) ⇒ every strength is 0 by construction.
 //   3. MONOTONICITY — no family, at any shipped strength, can flip within-pool ordering.
 //   4. BIP CONSISTENCY — after correction, the babip implied by (oneB+GAP)/BIP′ equals the
 //      corrected babip, and the hit MIX (GAP:oneB) is untouched.
 //   5. PINNED CONSTANTS — the deployed operating point can only change deliberately.
+//   6. DEPLOYED-PATH CARRIER — the BABIP leg reaches the TRUSTED composite via e.hMul
+//      (hittingComponents re-derives hits from the rating and discards oneB/GAP moves; the
+//      missing carrier was found in the 2026-07-17 pre-default-flip audit — a bab-only tail was
+//      a silent no-op in shipped scores while HR/SO flowed). Pitcher scores stay bit-identical.
 
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   correctChannel, applyHitTail, computeHitTail, hitTailW, PINNED_HIT_TAIL,
   type HitTail, type HitTailChanStat, type HitTailFamily,
 } from "../src/scoring-core/hit-tail.ts";
-import { HIT_BIP_ADJ } from "../src/model/curves.ts";
+import { HIT_BIP_ADJ, type EventForm, type FittedEvent, type FittedH } from "../src/model/curves.ts";
+import { scoreCard, computeDerived, makeRawPolyModel, type Coeffs, type CalScales } from "../src/scoring-core/index.ts";
 import type { EventModel } from "../src/model/types.ts";
 import type { PoolTransform } from "../src/model/pool-transform.ts";
 
@@ -92,10 +102,11 @@ describe("correctChannel", () => {
 });
 
 describe("applyHitTail (event-layer application)", () => {
-  it("zero strengths ⇒ events unchanged EXACTLY (the dormancy invariant)", () => {
+  it("zero strengths ⇒ events unchanged EXACTLY, no hMul set (the kill-switch/off-path invariant)", () => {
     const e = mkEvents();
     applyHitTail(e, mkTail(0, 0, 0));
     expect(e).toEqual(mkEvents());
+    expect((e as { hMul?: number }).hMul).toBeUndefined();
   });
   it("BIP consistency: implied babip after == corrected babip on the NEW BIP; hit mix untouched", () => {
     const ht = mkTail(1.4, 0.8, 0.4);
@@ -109,6 +120,13 @@ describe("applyHitTail (event-layer application)", () => {
     expect((e.oneB + e.GAP) / bip2).toBeCloseTo(babC, 10);
     expect(e.GAP / e.oneB).toBeCloseTo(mkEvents().GAP / mkEvents().oneB, 12); // XBH share preserved
     expect(e.BB).toBe(e0.BB); // walks never touched
+    // the deployed-path carrier records the babip-RATE move exactly
+    expect((e as { hMul?: number }).hMul).toBeCloseTo(babC / bab0, 12);
+  });
+  it("HR/SO-only correction sets NO hMul (bab rate untouched ⇒ carrier absent, hits still recompute via BIP)", () => {
+    const e = mkEvents();
+    applyHitTail(e, mkTail(2.0, 0, 1.0));
+    expect((e as { hMul?: number }).hMul).toBeUndefined();
   });
   it("more strikeouts and homers consistently COST hits (BIP shrinks, H scales down with it)", () => {
     const ht = mkTail(2.0, 0, 1.0); // HR up (18 > p75 14) + SO mid-stretch, babip leg off
@@ -158,6 +176,72 @@ describe("computeHitTail (pool-property state builder)", () => {
     // pool moments are real numbers from the pool's predicted lines
     expect(Number.isFinite(ht.hr.st.p75)).toBe(true);
     expect(ht.hr.st.s).toBeGreaterThan(0);
+  });
+});
+
+// ── 6) deployed-path coverage: the correction reaches scoreCard's TRUSTED composite ─────────────
+// Synthetic #2 form + committed synthetic coeffs (the kspread-pit.test.ts pattern) — deterministic,
+// no training data. Regression for the 2026-07-17 pre-default-flip audit finding: hittingComponents
+// re-derives hits from the rating, so WITHOUT the e.hMul carrier a bab-only tail was bit-invisible
+// in deployed scores (verified: base == babOnly to the last bit before the fix).
+describe("scoreCard (deployed path): every leg reaches the trusted composite; off path bit-identical", () => {
+  const coeffs = JSON.parse(readFileSync("fixtures/captures/_synthetic.json", "utf8")).coeffs as Coeffs;
+  const derived = computeDerived(coeffs, true);
+  const ev = (b0: number, b1: number): FittedEvent => ({ beta: [b0, b1], mu: 0, sd: 1, curve: { kind: "log" } });
+  const hh = (b0: number, bRat: number, bBip: number): FittedH =>
+    ({ beta: [b0, bRat, bBip], rating: { curve: { kind: "log" }, mu: 0, sd: 1 }, bip: { curve: { kind: "log" }, mu: 0, sd: 1 } });
+  const form: EventForm = {
+    hit: { bb: ev(-20, 15), k: ev(250, -30), hr: ev(-40, 12), h: hh(-120, 15, 35), xbh: ev(-0.5, 0.17) },
+    pit: { bb: ev(160, -25), k: ev(-140, 55), hr: ev(60, -10), h: hh(-120, 10, 38) },
+  };
+  const IDENTITY: CalScales = {
+    hitBBScaleVR: 1, hitBBScaleVL: 1, hitHRScaleVR: 1, hitHRScaleVL: 1, hitScaleVR: 1, hitScaleVL: 1,
+    pBBScaleVR: 1, pBBScaleVL: 1, pHRScaleVR: 1, pHRScaleVL: 1, pitchScaleVR: 1, pitchScaleVL: 1,
+    ssp_adv_hitting: 1, ssp_basic_pitching: 1,
+  } as CalScales;
+  const card: Record<string, unknown> = {
+    "Card ID": "ht-dep", "//Card Title": "hit-tail deployed", Bats: 1, Throws: 1,
+    Speed: 40, Stealing: 30, Baserunning: 45, "Steal Rate": 50, GB: 2,
+  };
+  for (const side of ["vR", "vL"]) {
+    card[`Eye ${side}`] = 110; card[`Power ${side}`] = 130; card[`Avoid K ${side}`] = 95;
+    card[`BABIP ${side}`] = 140; card[`Gap ${side}`] = 120;
+    card[`Control ${side}`] = 100; card[`Stuff ${side}`] = 140; card[`pBABIP ${side}`] = 90; card[`pHR ${side}`] = 110;
+  }
+  // Place each leg's pivot just below this card's predicted channel value so the leg engages.
+  const e0 = makeRawPolyModel(form).predictHitting(
+    { eye: 110, pow: 130, kRat: 95, babip: 140, gap: 120, speed: 40, steal: 30, run: 45 }, coeffs,
+  );
+  const bab0 = (e0.oneB + e0.GAP) / Math.max(600 - e0.BB - e0.SO - e0.HR - HIT_BIP_ADJ, 1);
+  const st = (m: number, s: number, p75: number): HitTailChanStat => ({ m, s, p50: m, p75, zLo: -2 });
+  const legOnly = (leg: "hr" | "bab" | "so"): HitTail => ({
+    hr: { fam: "hinge", lw: leg === "hr" ? 2.2 : 0, st: st(e0.HR - 5, 6, e0.HR - 2) },
+    bab: { fam: "hinge", lw: leg === "bab" ? 1.1 : 0, st: st(bab0 - 0.03, 0.02, bab0 - 0.02) },
+    so: { fam: "step", lw: leg === "so" ? 0.3 : 0, st: st(e0.SO - 20, 25, e0.SO + 15) }, // mean below the card ⇒ z > 0 ⇒ SO stretches UP
+  });
+  const cfg = (hitTail?: HitTail) => ({ coeffs, derived, calScales: IDENTITY, eventForm: form, hitTail });
+  const base = scoreCard(card, cfg());
+
+  it("config without hitTail == config with zero-strength hitTail, BIT-identical (kill-switch/league identity)", () => {
+    const zero: HitTail = { hr: { ...legOnly("hr").hr, lw: 0 }, bab: { ...legOnly("bab").bab, lw: 0 }, so: { ...legOnly("so").so, lw: 0 } };
+    expect(scoreCard(card, cfg(zero))).toEqual(base);
+  });
+  it("BABIP-only tail MOVES the deployed hitter wOBA (the fixed defect: was a silent no-op pre-hMul)", () => {
+    const s = scoreCard(card, cfg(legOnly("bab")));
+    expect(s.hit.woba_vR).toBeGreaterThan(base.hit.woba_vR);
+    expect(s.hit.offense_vR).toBeGreaterThan(base.hit.offense_vR);
+  });
+  it("HR-only and SO-only tails move the deployed hitter wOBA in the physical directions", () => {
+    expect(scoreCard(card, cfg(legOnly("hr"))).hit.woba_vR).toBeGreaterThan(base.hit.woba_vR); // more HR ⇒ up
+    expect(scoreCard(card, cfg(legOnly("so"))).hit.woba_vR).toBeLessThan(base.hit.woba_vR);    // more SO ⇒ down
+  });
+  it("pitcher scores and the rating-direct basic metric are bit-identical under any tail", () => {
+    for (const leg of ["hr", "bab", "so"] as const) {
+      const s = scoreCard(card, cfg(legOnly(leg)));
+      expect(s.pitch).toEqual(base.pitch);
+      expect(s.hit.basic_vR).toBe(base.hit.basic_vR);
+      expect(s.hit.basic_vL).toBe(base.hit.basic_vL);
+    }
   });
 });
 

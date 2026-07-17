@@ -93,7 +93,7 @@ PINNED_HIT_TAIL (src/scoring-core/hit-tail.ts):
 | league identity | — | exact (g=0 ⇒ lw=0, verified numerically + pinned by test) |
 | weird-env (3 dailies, global λ) | — | HR right-way everywhere (goldcap Q4 −6.78*→−5.30*, bronzeheart −1.17→−0.10, earlygold −1.49*→−1.21*); BABIP slopes 1.43/1.65/1.24 → 0.80/1.17/0.87 |
 
-## 3. Implementation (wired, DORMANT — Derek activates)
+## 3. Implementation (as originally wired, DORMANT — superseded by §4's ruling: now ON BY DEFAULT)
 
 - `src/scoring-core/hit-tail.ts` — the ONE copy: `correctChannel` (5 families), `applyHitTail`
   (event-layer: SO′/HR′ then BABIP measured on old BIP, corrected, re-applied on the new BIP;
@@ -115,9 +115,38 @@ PINNED_HIT_TAIL (src/scoring-core/hit-tail.ts):
 To activate: set `"hitTailCorrection": true` on a tournament JSON (start with one Quick tier and
 Regenerate; no retrain needed — the correction is post-model).
 
-## 4. Activation design — per-tournament opt-in as wired; on-by-default is DEREK'S RULING
+## 4. Activation design — RESOLVED 2026-07-17: ON BY DEFAULT (Derek's ruling; plan §15.7)
 
-As wired: `Tournament.hitTailCorrection: true` per tournament (dormant everywhere until set).
+**DEREK'S RULING (2026-07-17, recorded in plan §15.7):** scoring corrections are NEVER
+per-tournament unless an era/park-**property-class** issue is found (a legitimate
+environment-conditioned correction is a function of era/park FACTOR VALUES — e.g. s(era_k),
+zero at 1, continuous across all eras sharing the property — never a special case for a named
+era or park). Universal corrections ship **ON BY DEFAULT with a global kill-switch** (the
+kSpreadPit pattern). As executed:
+
+- Activation = `hitTailEnabled() && t.hitTailCorrection !== false` on the own-gap branch of
+  `scoreTournament`. The per-tournament field is **no longer the activation mechanism**; it
+  survives only as a trivially-cheap per-tournament OVERRIDE-OFF escape hatch (`false` ⇒ skip
+  for that tournament; `true`/absent ⇒ follow the global switch).
+- **KILL-SWITCH:** `state.hitTail = "off"` — `POST /api/training/hit-tail?enabled=false`
+  (re-enable `?enabled=true`); `GET /api/training/hit-tail` reports `{ enabled, cfg }`.
+  Activation-time warning when enabled under a non-own-gap transformMode (silently skipped there).
+- League identity stays by construction (league/unrestricted pool ⇒ g = 0 ⇒ every lw = 0 ⇒
+  exact identity — pinned by test).
+
+**DEPLOYED-PATH DEFECT FOUND + FIXED in the pre-flip audit (2026-07-17):** as shipped at
+02f3811, the BABIP leg was a **silent no-op in the deployed composite**. `applyHitTail` scaled
+`e.oneB/e.GAP`, but `hittingComponents` (woba.ts) re-derives non-HR hits from the RATING
+(`hRate(babipSC, BIP_fin)`) — verified bit-identical base↔bab-only-tail before the fix. The HR
+and SO legs always flowed (`e.HR`/`e.SO` are read directly). Fix: `applyHitTail` now also sets
+`e.hMul` (the babip-RATE move, bab′/bab), an optional `RawHitting` carrier that
+`hittingComponents` multiplies onto the re-derived hit rate PRE-era — one copy, consumed by the
+trusted assembly AND the anchor. The bake-off's gate record is unaffected (it fit and judged the
+raw event line, where the leg was applied correctly); what changed is that production now
+actually ships all three gated legs. Regression tests: `tests/hit-tail.test.ts` §6 (bab-only
+tail must move `hit.woba_*`; pitcher + basic bit-identical; off-path bit-identity).
+
+The original for/against record (kept for the archaeology):
 
 **Case FOR on-by-default** (flag flipped to an opt-out kill-switch, ~3 lines, mirroring BUILD-1's
 `kSpreadPit` pattern): 7/7 pre-registered gates including held-out-tier and directional weird-env;
@@ -134,8 +163,7 @@ the blended-vs-per-side approximation is unmeasured at card grain; and BUILD-1 j
 scores — activating two scoring changes simultaneously muddies attribution of anything Derek sees
 change on 5173. Program doctrine is one defect per cycle.
 
-Not decided here. A staged path exists either way: activate on one Quick-tier tournament, watch a
-few dailies' worth of cwhit data, then broaden.
+(Resolution: Derek ruled for on-by-default, see the top of this section.)
 
 ## 5. Caveats and residuals (carry these, not landmines)
 

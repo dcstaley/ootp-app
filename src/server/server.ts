@@ -23,7 +23,7 @@ import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../
 import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, kSpreadPitRamp, K_SPREAD_PIT, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT } from "../training/forms.ts";
-import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (flag-gated, dormant)
+import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
 import { HIT_BIP_ADJ, PIT_BIP_ADJ, formVertexOffenders } from "../model/curves.ts";  // BIP convention, for the trace + the deploy-time vertex gate
@@ -57,7 +57,7 @@ const DATA_ROOT = process.env.DATA_ROOT ?? "data";
 const TRAINING_DIR = [process.env.TRAINING_DIR, "League Files", "Model 2037 and 2038"]
   .find((d): d is string => !!d && existsSync(d)) ?? "League Files";
 
-interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null; transformMode?: "own-gap" | "frame-v2" | "matchup"; kSpreadPit?: "on" | "off" }
+interface AppState { activeAccountId: string | null; catalogSourceId: string | null; activeTournamentId: string | null; accountOrder?: string[]; activeModelId?: string | null; transformMode?: "own-gap" | "frame-v2" | "matchup"; kSpreadPit?: "on" | "off"; hitTail?: "on" | "off" }
 
 // ── Boot: config DB + accounts + catalog ──────────────────────────────────────
 console.log("[server] loading catalog + tournaments database…");
@@ -255,6 +255,13 @@ const kRamp = (gap: number) => 1 + (S_K - 1) * Math.min(Math.max(gap / G0_K, 0),
 // Requires a trainingMeans-bearing active model (the gap frame); absent ⇒ ramp silently skipped
 // (warned at activation), scores identical to pre-ramp behavior.
 const kSpreadPitEnabled = () => state.kSpreadPit !== "off";
+// BUILD-2 hitter tail correction (HR/BABIP/SO) — PART OF STANDARD SCORING since 2026-07-17
+// (Derek's ruling, plan §15.7: universal corrections ship ON BY DEFAULT with a global
+// kill-switch; per-tournament flags are never the activation mechanism). `state.hitTail = "off"`
+// is the KILL-SWITCH (POST /api/training/hit-tail?enabled=false); anything else = enabled.
+// Per-tournament `hitTailCorrection === false` survives ONLY as an override-OFF escape hatch.
+// League/in-frame pools are bit-identical by construction (gap 0 ⇒ zero strength ⇒ identity).
+const hitTailEnabled = () => state.hitTail !== "off";
 // Reference field = top-50 of the FULL (non-variant) catalog by predicted wOBA — the
 // unrestricted "league," dynamic (recomputed when the active model OR catalog changes),
 // tournament-independent (raw wOBA is era/park-free). Cached.
@@ -351,14 +358,15 @@ function scoreTournament(t: Tournament): Scored {
         const kBar = poolMeanKOwn(basePool, coeffs, evModel, poolTransform, FIELD_N);
         kSpread = { sHit: 1, sPit: kSpreadPitRamp(gap), meanHit: kBar.hit, meanPit: kBar.pit };
       }
-      // BUILD-2 gap-conditioned HITTER tail correction (HR/BABIP/SO event-space; DORMANT — per-
-      // tournament flag, no default flip; Derek activates via `hitTailCorrection: true`). Pool-
+      // BUILD-2 gap-conditioned HITTER tail correction (HR/BABIP/SO event-space; STANDARD SCORING
+      // since 2026-07-17 — Derek's ruling; kill-switch `state.hitTail`, see hitTailEnabled above;
+      // `hitTailCorrection === false` = per-tournament override-OFF escape hatch only). Pool-
       // property parameters only: gaps from the SAME ref/pool field stats the own-gap lift uses,
       // channel moments from the eligible VLvl-0 hitter pool's predicted lines, pinned universal
       // λ constants (PINNED_HIT_TAIL — bake-off 2026-07-16, fixtures/hit-tail-bakeoff-run-*.txt).
       // Threads into calibrate/calibrateBasic below so the anchor sees the same corrected events.
       // Own-gap path only (like the pitcher ramp above); pitcher scores are untouched by design.
-      if (t.hitTailCorrection) {
+      if (hitTailEnabled() && t.hitTailCorrection !== false) {
         const hitPool = basePool.filter((c) => !(n(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1"));
         hitTail = computeHitTail(hitPool, coeffs, evModel, poolTransform, ref, poolField, PINNED_HIT_TAIL);
       }
@@ -1540,6 +1548,11 @@ async function refreshActiveModel(): Promise<void> {
   if (kSpreadPitEnabled() && m?.eventForm && !activeTrainingMeans) {
     console.warn(`[server] ⚠ pitcher K-spread ramp is enabled but active model '${m.id}' has NO trainingMeans — the ramp is SILENTLY SKIPPED (pre-ramp scores). Retrain to embed trainingMeans, or set the kill-switch (POST /api/training/kspread-pit?enabled=false).`);
   }
+  // Same coherence check for the hitter tail correction (standard scoring on the own-gap path):
+  // it is wired on the own-gap branch only, so a non-own-gap transformMode silently skips it.
+  if (hitTailEnabled() && m?.eventForm && (state.transformMode === "frame-v2" || state.transformMode === "matchup")) {
+    console.warn(`[server] ⚠ hitter tail correction is enabled but transformMode='${state.transformMode}' — it is wired on the own-gap path only and is SILENTLY SKIPPED. Switch transformMode to own-gap, or set the kill-switch (POST /api/training/hit-tail?enabled=false).`);
+  }
   if (id && !m?.eventForm) { state.activeModelId = null; await saveState(); }
   invalidateDerivedCaches(); // model change moves the reference field, .500 anchor, and exposure baseline
 }
@@ -1991,6 +2004,18 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     await saveState();
     invalidateDerivedCaches(); // re-score under the new setting
     return json(res, { ok: true, enabled: kSpreadPitEnabled(), hasTrainingMeans: !!activeTrainingMeans });
+  }
+  // BUILD-2 hitter tail correction (own-gap standard scoring, 2026-07-17 Derek ruling): status +
+  // KILL-SWITCH. GET → { enabled, cfg } (cfg = the pinned universal λ constants). POST
+  // ?enabled=false disables GLOBALLY (rollback to pre-correction scores); anything else
+  // re-enables. Per-tournament override-OFF escape hatch: `Tournament.hitTailCorrection = false`.
+  if (method === "GET" && url === "/api/training/hit-tail")
+    return json(res, { enabled: hitTailEnabled(), cfg: PINNED_HIT_TAIL });
+  if (method === "POST" && url === "/api/training/hit-tail") {
+    state.hitTail = u.searchParams.get("enabled") === "false" ? "off" : "on";
+    await saveState();
+    invalidateDerivedCaches(); // re-score under the new setting
+    return json(res, { ok: true, enabled: hitTailEnabled() });
   }
   if (method === "POST" && url === "/api/training/transform-mode") {
     const raw = u.searchParams.get("mode");

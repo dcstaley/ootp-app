@@ -1643,3 +1643,24 @@ ledger (per-type mwOBA mis-valuation, level-free — Derek's Ruling-2 question i
 decision: FLAT under-reaction ⇒ a universal per-channel calibration slope (kSpread resurrected WITH
 evidence, properties-legal); TAIL-concentrated ⇒ curve-tail form work, re-testing "form is maxed" with the
 calibration slope as a bake-off metric.
+
+### 15.7 Ruling 3 — activation of scoring corrections (Derek, 2026-07-17)
+
+**Scoring corrections are NEVER per-tournament unless an era- or park-SPECIFIC issue is found —
+and "era/park-specific" means PROPERTY CLASSES, not identities.** Pinned:
+
+- **Universal corrections ship ON BY DEFAULT with a global kill-switch** — the kSpreadPit
+  pattern: a `state` flag, a GET/POST `/api/training/<name>` endpoint pair, and an
+  activation-time boot warning for any condition under which the correction is silently
+  skipped. Per-tournament flags are never the activation mechanism (at most a trivially-cheap
+  per-tournament override-OFF escape hatch, e.g. `hitTailCorrection === false`).
+- **A legitimate environment-conditioned correction is a function of era/park FACTOR VALUES**
+  (e.g. `s(era_k)` for low-K eras — zero at `era_k = 1`, continuous across all eras sharing the
+  property), **never a special case for a named era or park.** Named-instance exceptions are
+  mission-illegal for the same reason per-tournament constants are (parameters must be functions
+  of tournament PROPERTIES, never identity).
+- Applied 2026-07-17: BUILD-1 pitcher K-spread ramp (already on-by-default, kill-switch
+  `kspread-pit`) and BUILD-2 hitter tail correction (flipped from per-tournament opt-in to
+  on-by-default, kill-switch `hit-tail`; the per-tournament field demoted to override-OFF).
+  Any future era-residual fix (e.g. the pending K era-spread item, or an HR/BABIP analog if the
+  dailies show one) must be framed factor-conditioned in exactly this sense.

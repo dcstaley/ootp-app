@@ -26,8 +26,13 @@
 // The bake-off's fit selected hinge (HR), hinge (BABIP) and step (SO); the full family set stays
 // here as the one evaluation copy — the bake-off tool imports THESE functions.
 //
-// ACTIVATION: dormant by default. Wired behind `Tournament.hitTailCorrection` (no default flip —
-// Derek activates per tournament config). With the flag off, no code path changes any score.
+// ACTIVATION (Derek's ruling, 2026-07-17 — plan §15.7): ON BY DEFAULT for all tournament scoring
+// on the own-gap path, like the BUILD-1 pitcher K-spread ramp. Scoring corrections are UNIVERSAL,
+// never per-tournament (a legitimate environment-conditioned correction may be a function of
+// era/park FACTOR VALUES, never a named-instance exception). Rollback = the global kill-switch
+// `state.hitTail = "off"` (POST /api/training/hit-tail?enabled=false); per-tournament
+// `Tournament.hitTailCorrection === false` remains ONLY as an override-OFF escape hatch.
+// League/in-frame pools are untouched by construction (gap 0 ⇒ every strength 0 ⇒ exact identity).
 
 import { HIT_BIP_ADJ } from "../model/curves.ts";
 import { applyAffine, type PoolTransform } from "../model/pool-transform.ts";
@@ -93,10 +98,14 @@ export function correctChannel(x: number, st: HitTailChanStat, lw: number, fam: 
  *   1. SO′ and HR′ from their own channels;
  *   2. BABIP measured on the ORIGINAL BIP, corrected, then re-applied on the NEW BIP
  *      (600 − BB − SO′ − HR′ − HIT_BIP_ADJ) — so more strikeouts/homers consistently cost hits;
- *   3. oneB/GAP scaled proportionally (the hit MIX — the XBH share — is untouched).
+ *   3. oneB/GAP scaled proportionally (the hit MIX — the XBH share — is untouched);
+ *   4. the BABIP-rate move ALSO rides `e.hMul` — the deployed recompute (woba.ts
+ *      hittingComponents) re-derives hits from the RATING (hRate(babipSC, BIP_fin)) and would
+ *      silently discard a correction expressed only on oneB/GAP (found + fixed 2026-07-17, the
+ *      pre-default-flip audit; the SO/HR legs always flowed because e.SO/e.HR are read directly).
  * Pre-era by construction: era factors and the trusted assembly run after this, once.
  */
-export function applyHitTail(e: { BB: number; SO: number; HR: number; oneB: number; GAP: number }, ht: HitTail): void {
+export function applyHitTail(e: { BB: number; SO: number; HR: number; oneB: number; GAP: number; hMul?: number }, ht: HitTail): void {
   const so2 = Math.max(correctChannel(e.SO, ht.so.st, ht.so.lw, ht.so.fam), 0);
   const hr2 = Math.max(correctChannel(e.HR, ht.hr.st, ht.hr.lw, ht.hr.fam), 0);
   const bip0 = Math.max(600 - e.BB - e.SO - e.HR - HIT_BIP_ADJ, 1);
@@ -109,6 +118,9 @@ export function applyHitTail(e: { BB: number; SO: number; HR: number; oneB: numb
   e.HR = hr2;
   e.oneB *= scale;
   e.GAP *= scale;
+  // Deployed-path carrier: only set when the BABIP leg actually moved the rate, so the
+  // zero-strength/off paths keep EXACT object equality (the kill-switch bit-identity invariant).
+  if (bab0 > 1e-9 && bab2 !== bab0) e.hMul = (e.hMul ?? 1) * (bab2 / bab0);
 }
 
 // ── per-tournament state builder (the server calls this once, flag-gated) ────────────────────────
