@@ -23,6 +23,7 @@ import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../
 import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT } from "../training/forms.ts";
+import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (flag-gated, dormant)
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
 import { HIT_BIP_ADJ, PIT_BIP_ADJ, formVertexOffenders } from "../model/curves.ts";  // BIP convention, for the trace + the deploy-time vertex gate
@@ -309,6 +310,7 @@ function scoreTournament(t: Tournament): Scored {
   let frameShift: FrameShift | undefined;
   let kSpread: { sHit: number; sPit: number; meanHit: number; meanPit: number } | undefined;
   let matchup: { model: EventModel; shift: FrameShift } | undefined;
+  let hitTail: HitTail | undefined;
   if (eventForm) {
     const poolField = computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true);
     const mode = transformMode();
@@ -328,15 +330,26 @@ function scoreTournament(t: Tournament): Scored {
     } else {
       const ref = referenceFieldStats(catalog.cards.filter(isBaseCard), coeffs, evModel);
       poolTransform = buildPoolTransform(ref, poolField, activeEnvelope ?? undefined);
+      // BUILD-2 gap-conditioned HITTER tail correction (HR/BABIP/SO event-space; DORMANT — per-
+      // tournament flag, no default flip; Derek activates via `hitTailCorrection: true`). Pool-
+      // property parameters only: gaps from the SAME ref/pool field stats the own-gap lift uses,
+      // channel moments from the eligible VLvl-0 hitter pool's predicted lines, pinned universal
+      // λ constants (PINNED_HIT_TAIL — bake-off 2026-07-16, fixtures/hit-tail-bakeoff-run-*.txt).
+      // Threads into calibrate/calibrateBasic below so the anchor sees the same corrected events.
+      // Own-gap path only (like the pitcher ramp above); pitcher scores are untouched by design.
+      if (t.hitTailCorrection) {
+        const hitPool = basePool.filter((c) => !(n(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1"));
+        hitTail = computeHitTail(hitPool, coeffs, evModel, poolTransform, ref, poolField, PINNED_HIT_TAIL);
+      }
     }
   }
   // wOBA config uses the active #2 form + whichever re-basing is active. The anchor is computed
   // on NON-VARIANT cards too (same "variants set no averages" principle). Basic metric is
   // rating-direct but still gets the re-basing (it re-bases ratings, which basic reads).
-  const config = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup }) };
+  const config = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail, calScales: calibrate(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail }) };
   // eventForm threaded in so the basic path's (discarded) wOBA uses #2, not the log-linear
   // fallback — basic_* is rating-direct and unchanged; this keeps log-linear out of production.
-  const basicConfig = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, calScales: calibrateBasic(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup }) };
+  const basicConfig = { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail, calScales: calibrateBasic(basePool, { coeffs, derived, eventForm, poolTransform, frameShift, kSpread, matchup, hitTail }) };
 
   const inValueRange = (c: Record<string, unknown>) => {
     const v = n(c["Card Value"]); const lo = t.card_value_min, hi = t.card_value_max;
