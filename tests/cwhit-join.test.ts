@@ -57,6 +57,14 @@ describe("cwhit parse — real snapshot", () => {
     expect(m.instances).toBe(40);
     expect(m.topN).toBe(100);
   });
+
+  it("parseCwhitMeta reads the NEW full-depth (# CAP) header — multi-word label, dates, no top-N", () => {
+    const m = parseCwhitMeta("# CAP key=bronzequick__20260313 role=pit label=Bronze Quick type=Quick env=current variants=all_cards obsval=40-69 minIP=10 minPA=null dates=2026-07-05..2026-07-19 recordsTotal=357 rows=357", "pit");
+    expect(m.format).toBe("Bronze Quick");           // NOT "Bronze" — the space in the label is preserved
+    expect(m.coverageFrom).toBe("2026-07-05");
+    expect(m.coverageTo).toBe("2026-07-19");
+    expect(m.topN).toBeUndefined();                  // full depth — no top-N cap
+  });
 });
 
 describe("cwhit join — keys & normalization", () => {

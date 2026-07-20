@@ -50,6 +50,19 @@ function isoDates(s: string): string[] {
 export function parseCwhitProjMeta(headerLine: string, role: "pit" | "hit"): CwhitProjMeta {
   const meta: CwhitProjMeta = { format: "", role, headerLine };
   const body = headerLine.replace(/^#\s*/, "");
+  // NEW (2026-07-21 full-depth) format: `# CAPPROJ key=... label=<Format> ... dates=A..B recordsTotal=N`.
+  // FULL POOL projections — no top-N cap (topN left undefined). IMPORTANT GAP vs the old fixtures:
+  // the new capture does NOT carry cwhit's MODEL-TRAINING window, so trainFrom/trainTo stay undefined
+  // and the window-overlap semi-in-sample check cannot run for these. (With full-POOL projections the
+  // Section-A double-selection that motivated that check is itself dissolved — see the integration
+  // notes — but the training-window provenance is genuinely absent and must not be faked.)
+  if (/^CAPPROJ\b/.test(body) || /\bkey=/.test(body)) {
+    // `label=<Format>` is the only multi-word value, always followed by ` type=`.
+    meta.format = body.match(/\blabel=(.+?)\s+type=/)?.[1]?.trim() ?? body.match(/\bkey=(\S+)/)?.[1] ?? "";
+    const dm = body.match(/\bdates=\d{4}-\d{2}-\d{2}\.\.(\d{4}-\d{2}-\d{2})/);
+    if (dm) meta.projectedOn = dm[1];   // capture-window end; no separate "projections on" date in this format
+    return meta;
+  }
   const parts = body.split("|").map((s) => s.trim());
   if (parts[0]) meta.format = parts[0].replace(/\bPROJECTED\b/i, "").replace(/\s*\(.*$/, "").replace(/\s+(pitchers|hitters)\s*$/i, "").trim();
   for (const p of parts) {

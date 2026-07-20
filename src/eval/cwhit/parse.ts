@@ -51,10 +51,27 @@ function split(tsv: string): { headerLine: string; cols: string[]; dataRows: str
   return { headerLine, cols, dataRows };
 }
 
-/** Parse the `#`-provenance line: "<Format> <role-word> | coverage A to B | N of M <Format> tournaments | top K by IP". */
+/** Parse the `#`-provenance line. Two formats are recognised:
+ *  OLD (top-100 scrapes): "<Format> <role-word> | coverage A to B | N of M <Format> tournaments | top K by IP".
+ *  NEW (2026-07-21 full-depth captures): "# CAP key=<slug> role=<r> label=<Format> type=<t> ...
+ *     obsval=<lo>-<hi> minIP=<n> minPA=<n> dates=<A>..<B> recordsTotal=<n> rows=<n>".
+ *  The NEW format is FULL DEPTH — no top-N cap — and carries no per-tournament instance count
+ *  ("N of M"), so meta.instances/totalInstances stay undefined for it. It also does NOT carry
+ *  cwhit's MODEL-TRAINING window (the old proj headers did); the window-overlap check must treat
+ *  that as absent for new captures. `topN` is left undefined to mark full depth. */
 export function parseCwhitMeta(headerLine: string, role: CwhitRole): CwhitMeta {
   const meta: CwhitMeta = { role, format: "", headerLine };
   const body = headerLine.replace(/^#\s*/, "");
+  // NEW format: whitespace-separated `key=value` tokens, detected by a leading CAP tag or a key= token.
+  if (/^CAPPROJ?\b/.test(body) || /\bkey=/.test(body)) {
+    // `label=<Format>` is the ONLY multi-word value and is always followed by ` type=`; extract it
+    // whole before tokenising the rest on whitespace.
+    meta.format = body.match(/\blabel=(.+?)\s+type=/)?.[1]?.trim() ?? body.match(/\bkey=(\S+)/)?.[1] ?? "";
+    const dm = body.match(/\bdates=(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})/);
+    if (dm) { meta.coverageFrom = dm[1]; meta.coverageTo = dm[2]; }
+    // topN intentionally undefined = full depth; instances unavailable in this format.
+    return meta;
+  }
   const parts = body.split("|").map((s) => s.trim());
   if (parts[0]) meta.format = parts[0].replace(/\s+(pitchers|hitters)\s*$/i, "").trim();
   for (const p of parts.slice(1)) {
