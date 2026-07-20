@@ -36,6 +36,7 @@ import { parseCatalogCsv } from "../src/data/catalog.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import {
   agreement, duel, pearson, per9NoiseVar, babipNoiseVar, pctNoiseVar, per600NoiseVar, BF_PER_9,
+  wobaNoiseCells, wobaNoiseVar,
   type Agreement,
 } from "../src/eval/cwhit/scorecard.ts";
 import {
@@ -111,18 +112,27 @@ const hasObs = (tier: string, role: "pit" | "hit") => obsFiles.includes(`cwhit-$
 const projFile = (tier: string, role: "pit" | "hit") => (projFiles.includes(`cwhit-${tier}-${role}-proj.tsv`) ? `${PROJ}/cwhit-${tier}-${role}-proj.tsv` : null);
 
 // ── noise variance of each observed value (for spread deconvolution) ─────────
+// COMPOSITES ARE NOW DECONVOLVED (2026-07-20). These two branches used to `return NaN` with the
+// comment "a composite; no clean binomial form". That was wrong — the multinomial weighted-sum
+// variance is exact and now lives beside its single-event siblings in the shared eval module
+// (`wobaNoiseCells` / `wobaNoiseVar`). Because they returned NaN, `agreement()` never deconvolved
+// the composite and only the RAW ratio ever printed; a raw composite ratio then got compared
+// against noise-DECONVOLVED per-channel ratios — unlike quantities — which manufactured two
+// retracted findings in one day. Do not reintroduce the shortcut.
 function noiseOf(r: Rec, ch: string): number {
   if (r.role === "pit") {
     const bf = r.sample * 4.3;
     const bip = Math.max(bf - (r.obs.k9! + r.obs.bb9! + r.obs.hr9!) / BF_PER_9 * bf - 0.009 * bf, 1);
     if (ch === "babip") return babipNoiseVar(r.obs.babip!, bip);
-    if (ch === "woba") return NaN;   // a composite; no clean binomial form
+    // collapseHits=true: cwhit publishes only BABIP for pitchers and the reconstruction splits it
+    // with a FIXED 0.25 XBH share, so 1B/XBH are not independently observed.
+    if (ch === "woba") return wobaNoiseVar(wobaNoiseCells({ role: "pit", k9: r.obs.k9!, bb9: r.obs.bb9!, hr9: r.obs.hr9!, babip: r.obs.babip! }, W, true), bf);
     return per9NoiseVar(r.obs[ch]!, r.sample);
   }
   const bip = Math.max(r.sample * (1 - r.obs.bbPct! / 100 - 0.008 - r.obs.soPct! / 100 - r.obs.hr600! / 600), 1);
   if (ch === "babip") return babipNoiseVar(r.obs.babip!, bip);
   if (ch === "hr600") return per600NoiseVar(r.obs.hr600!, r.sample);
-  if (ch === "woba") return NaN;
+  if (ch === "woba") return wobaNoiseVar(wobaNoiseCells({ role: "hit", bbPct: r.obs.bbPct!, soPct: r.obs.soPct!, hr600: r.obs.hr600!, babip: r.obs.babip!, avg: r.raw.avg!, slg: r.raw.slg!, tripleXbh: r.raw.tripleXbh! }, W, false), r.sample);
   return pctNoiseVar(r.obs[ch]!, r.sample);
 }
 

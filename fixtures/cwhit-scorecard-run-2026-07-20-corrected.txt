@@ -1,3 +1,21 @@
+################################################################################
+# FROZEN — OLD INSTRUMENT, NOT REGENERABLE. (banner added 2026-07-20)
+# This run predates BOTH the 2026-07-20 retrain and the composite-deconvolution
+# fix, so its composite (wOBA / wOBAA) dcv column reads `n/a` throughout. It is NOT
+# comparable like-for-like against the `-retrain-` fixtures on the composite axis.
+# Per-channel dcv reads ARE comparable — those were correctly deconvolved all along.
+#
+# WHY IT CANNOT BE REGENERATED: it was produced by trained-model artifact
+# 'league-41-42-pareto', which a delete-then-retrain cycle destroyed on 2026-07-20.
+# data/trained-models/ was gitignored at the time, so no copy survives anywhere; this
+# file is the ONLY surviving record of that model's measured behaviour. That is why
+# data/trained-models/ is now tracked (commit 76b48fd).
+#
+# CONSEQUENCE FOR TASK 0: the retrain re-validation verdict ("no spread ratio moved
+# >0.05") was computed on the per-channel dcv reads, which were sound. Its composite
+# leg cannot be retro-fitted, because that would require recomputing BOTH sides and the
+# old side no longer exists. The verdict stands on the channels it was measured on.
+################################################################################
 ﻿
 ╔════════════════════════════════════════════════════════════════════════════════════════════╗
 ║  cwhit BENCHMARK SCORECARD — UNIVERSAL (ours) vs NATIVE (cwhit) vs OBSERVED                 ║

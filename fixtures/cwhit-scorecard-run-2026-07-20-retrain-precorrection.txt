@@ -1,3 +1,18 @@
+################################################################################
+# INSTRUMENT: composite deconvolution ENABLED (2026-07-20).
+# The dcv column for the COMPOSITE channels (hitter wOBA / pitcher wOBAA) is
+# POPULATED in this run. In ALL PRIOR RUNS it read `n/a`: scorecard `noiseOf`
+# returned NaN for composites on the false premise that a composite has "no clean
+# binomial form". It does — the multinomial weighted-sum variance, now shared at
+# src/eval/cwhit/scorecard.ts (wobaNoiseCells / wobaNoiseVar).
+# Comparing a RAW composite ratio against noise-DECONVOLVED per-channel ratios
+# produced two retracted findings; do not do it. Read raw against raw, dcv against dcv.
+# NO VERDICT CHANGED vs the pre-fix run: the DUEL verdicts score ours vs cwhit on the
+# SAME observed series, so sampling noise cancels between the two models. What the
+# missing column broke was the ABSOLUTE "are we under-spread" read, not the duel.
+# KNOWN: cells whose noise share exceeds 100% are physically impossible and their dcv
+# is unusable (gold hit wOBA reads 106% here). Reliability markers are a separate unit.
+################################################################################
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════╗
 ║  cwhit BENCHMARK SCORECARD — UNIVERSAL (ours) vs NATIVE (cwhit) vs OBSERVED                 ║
@@ -128,8 +143,8 @@ BABIP     OURS    +0.012*   [+0.010, +0.014]               0.288      0.908  [0.
           cwhit   +0.001    [-0.001, +0.002]               0.288      0.952  [0.89,0.98]   0.95   0.003   0.82    0.86   0.98    23%
           DUEL   Δcorr -0.044 [-0.09,-0.00]*  (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| +0.12*  Δ|level| +0.011*
                  ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): CWHIT    LEVEL: CWHIT
-wOBAA     OURS    +0.022*   [+0.019, +0.025]               0.306      0.168  [-0.27,0.55]  -0.04   0.005   0.11    0.67    n/a    n/a
-          cwhit   -0.004*   [-0.007, -0.002]               0.306      0.398  [-0.03,0.70]   0.19   0.005   0.36    0.91    n/a    n/a
+wOBAA     OURS    +0.022*   [+0.019, +0.025]               0.306      0.168  [-0.27,0.55]  -0.04   0.005   0.11    0.67   1.46    79%
+          cwhit   -0.004*   [-0.007, -0.002]               0.306      0.398  [-0.03,0.70]   0.19   0.005   0.36    0.91   1.98    79%
           DUEL   Δcorr -0.230 [-0.69,+0.10]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| +0.30   Δ|level| +0.018*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -153,8 +168,8 @@ BABIP     OURS    +0.012*   [+0.007, +0.017]               0.284      0.900  [0.
           cwhit   +0.002    [-0.002, +0.006]               0.284      0.912  [0.83,0.95]   0.91   0.008   0.68    0.74   0.79    11%
           DUEL   Δcorr -0.012 [-0.04,+0.01]   (Δshape-MAE +0.003* = shape+spread composite)  Δ|ln spread| +0.25*  Δ|level| +0.010*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: CWHIT
-wOBA      OURS    -0.002    [-0.007, +0.003]               0.327      0.291  [-0.04,0.57]   0.36   0.012   0.19    0.66    n/a    n/a
-          cwhit   +0.001    [-0.003, +0.005]               0.327      0.486  [0.19,0.70]   0.52   0.010   0.28    0.58    n/a    n/a
+wOBA      OURS    -0.002    [-0.007, +0.003]               0.327      0.291  [-0.04,0.57]   0.36   0.012   0.19    0.66   0.82    35%
+          cwhit   +0.001    [-0.003, +0.005]               0.327      0.486  [0.19,0.70]   0.52   0.010   0.28    0.58   0.71    35%
           DUEL   Δcorr -0.195 [-0.46,+0.11]   (Δshape-MAE +0.002* = shape+spread composite)  Δ|ln spread| -0.14   Δ|level| +0.001 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -178,8 +193,8 @@ BABIP     OURS    +0.011*   [+0.008, +0.014]               0.287      0.766  [0.
           cwhit   +0.001    [-0.002, +0.004]               0.287      0.834  [0.64,0.93]   0.72   0.005   0.77    0.92   1.06    25%
           DUEL   Δcorr -0.068 [-0.13,+0.02]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| +0.46*  Δ|level| +0.010*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: CWHIT
-wOBAA     OURS    +0.022*   [+0.018, +0.025]               0.303      0.429  [0.01,0.72]   0.37   0.007   0.24    0.57    n/a    n/a
-          cwhit   -0.001    [-0.004, +0.001]               0.303      0.640  [0.30,0.84]   0.48   0.005   0.37    0.58    n/a    n/a
+wOBAA     OURS    +0.022*   [+0.018, +0.025]               0.303      0.429  [0.01,0.72]   0.37   0.007   0.24    0.57   0.69    33%
+          cwhit   -0.001    [-0.004, +0.001]               0.303      0.640  [0.30,0.84]   0.48   0.005   0.37    0.58   0.71    33%
           DUEL   Δcorr -0.211 [-0.53,+0.06]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| +0.03   Δ|level| +0.020*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -203,8 +218,8 @@ BABIP     OURS    +0.009*   [+0.006, +0.013]               0.290      0.904  [0.
           cwhit   +0.003*   [+0.001, +0.005]               0.290      0.948  [0.90,0.97]   0.93   0.005   0.90    0.95   1.02    13%
           DUEL   Δcorr -0.044 [-0.12,-0.00]*  (Δshape-MAE +0.003* = shape+spread composite)  Δ|ln spread| +0.43*  Δ|level| +0.007*
                  ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): CWHIT    LEVEL: CWHIT
-wOBA      OURS    +0.000    [-0.003, +0.004]               0.322      0.450  [0.14,0.68]   0.44   0.008   0.34    0.76    n/a    n/a
-          cwhit   +0.002    [-0.001, +0.005]               0.322      0.517  [0.22,0.73]   0.45   0.008   0.35    0.67    n/a    n/a
+wOBA      OURS    +0.000    [-0.003, +0.004]               0.322      0.450  [0.14,0.68]   0.44   0.008   0.34    0.76   0.95    36%
+          cwhit   +0.002    [-0.001, +0.005]               0.322      0.517  [0.22,0.73]   0.45   0.008   0.35    0.67   0.84    36%
           DUEL   Δcorr -0.067 [-0.32,+0.17]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.13   Δ|level| -0.001 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -228,8 +243,8 @@ BABIP     OURS    +0.008*   [+0.006, +0.010]               0.290      0.883  [0.
           cwhit   -0.000    [-0.002, +0.002]               0.290      0.923  [0.79,0.97]   0.88   0.004   1.13    1.23   1.64    44%
           DUEL   Δcorr -0.039 [-0.11,+0.01]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| -0.06   Δ|level| +0.008*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
-wOBAA     OURS    +0.018*   [+0.016, +0.020]               0.305      0.706  [0.34,0.89]   0.76   0.003   0.48    0.68    n/a    n/a
-          cwhit   -0.001    [-0.003, +0.001]               0.305      0.728  [0.38,0.90]   0.74   0.003   0.46    0.63    n/a    n/a
+wOBAA     OURS    +0.018*   [+0.016, +0.020]               0.305      0.706  [0.34,0.89]   0.76   0.003   0.48    0.68   1.55    81%
+          cwhit   -0.001    [-0.003, +0.001]               0.305      0.728  [0.38,0.90]   0.74   0.003   0.46    0.63   1.44    81%
           DUEL   Δcorr -0.022 [-0.13,+0.12]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| -0.07   Δ|level| +0.017*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -253,8 +268,8 @@ BABIP     OURS    +0.008*   [+0.004, +0.013]               0.289      0.720  [0.
           cwhit   +0.005*   [+0.001, +0.009]               0.289      0.773  [0.59,0.88]   0.79   0.010   0.63    0.82   0.96    27%
           DUEL   Δcorr -0.053 [-0.14,+0.05]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| +0.47*  Δ|level| +0.003 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: TIE
-wOBA      OURS    -0.002    [-0.007, +0.003]               0.323      0.393  [0.06,0.65]   0.40   0.011   0.19    0.49    n/a    n/a
-          cwhit   +0.004    [-0.001, +0.008]               0.323      0.497  [0.19,0.72]   0.52   0.011   0.28    0.56    n/a    n/a
+wOBA      OURS    -0.002    [-0.007, +0.003]               0.323      0.393  [0.06,0.65]   0.40   0.011   0.19    0.49   0.62    39%
+          cwhit   +0.004    [-0.001, +0.008]               0.323      0.497  [0.19,0.72]   0.52   0.011   0.28    0.56   0.72    39%
           DUEL   Δcorr -0.105 [-0.37,+0.18]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| +0.14   Δ|level| -0.001 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -278,8 +293,8 @@ BABIP     OURS    +0.003*   [+0.000, +0.007]               0.299      0.847  [0.
           cwhit   -0.004*   [-0.008, -0.001]               0.299      0.858  [0.53,0.96]   0.86   0.004   1.04    1.21   1.85    57%
           DUEL   Δcorr -0.011 [-0.04,+0.02]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| -0.13   Δ|level| -0.001 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
-wOBAA     OURS    +0.016*   [+0.013, +0.019]               0.308      0.647  [0.08,0.90]   0.65   0.004   0.38    0.59    n/a    n/a
-          cwhit   -0.007*   [-0.011, -0.004]               0.308      0.511  [-0.13,0.85]   0.46   0.004   0.28    0.54    n/a    n/a
+wOBAA     OURS    +0.016*   [+0.013, +0.019]               0.308      0.647  [0.08,0.90]   0.65   0.004   0.38    0.59    n/a   112%
+          cwhit   -0.007*   [-0.011, -0.004]               0.308      0.511  [-0.13,0.85]   0.46   0.004   0.28    0.54    n/a   112%
           DUEL   Δcorr +0.135 [-0.13,+0.49]   (Δshape-MAE -0.001  = shape+spread composite)  Δ|ln spread| -0.09   Δ|level| +0.009*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -303,8 +318,8 @@ BABIP     OURS    +0.005*   [+0.001, +0.010]               0.292      0.867  [0.
           cwhit   +0.000    [-0.003, +0.004]               0.292      0.891  [0.77,0.95]   0.90   0.007   0.81    0.90   1.14    37%
           DUEL   Δcorr -0.024 [-0.06,+0.00]   (Δshape-MAE +0.003  = shape+spread composite)  Δ|ln spread| +0.44*  Δ|level| +0.005 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: TIE
-wOBA      OURS    +0.001    [-0.004, +0.006]               0.324      0.157  [-0.25,0.51]   0.16   0.011   0.09    0.57    n/a    n/a
-          cwhit   -0.002    [-0.006, +0.003]               0.324      0.395  [0.01,0.68]   0.20   0.010   0.22    0.55    n/a    n/a
+wOBA      OURS    +0.001    [-0.004, +0.006]               0.324      0.157  [-0.25,0.51]   0.16   0.011   0.09    0.57    n/a   106%
+          cwhit   -0.002    [-0.006, +0.003]               0.324      0.395  [0.01,0.68]   0.20   0.010   0.22    0.55    n/a   106%
           DUEL   Δcorr -0.238 [-0.49,+0.10]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.04   Δ|level| -0.001 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -328,8 +343,8 @@ BABIP     OURS    +0.005    [-0.004, +0.013]               0.291      0.948  [0.
           cwhit   +0.002    [-0.004, +0.008]               0.291      0.955  [0.82,0.99]   0.92   0.007   0.63    0.66   0.82    34%
           DUEL   Δcorr -0.007 [-0.11,+0.07]   (Δshape-MAE +0.004  = shape+spread composite)  Δ|ln spread| +0.34   Δ|level| +0.002 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
-wOBA      OURS    +0.006    [-0.005, +0.016]               0.321      0.587  [-0.07,0.89]   0.05   0.013   0.23    0.39    n/a    n/a
-          cwhit   +0.001    [-0.007, +0.009]               0.321      0.908  [0.65,0.98]   0.87   0.009   0.40    0.44    n/a    n/a
+wOBA      OURS    +0.006    [-0.005, +0.016]               0.321      0.587  [-0.07,0.89]   0.05   0.013   0.23    0.39   0.52    44%
+          cwhit   +0.001    [-0.007, +0.009]               0.321      0.908  [0.65,0.98]   0.87   0.009   0.40    0.44   0.60    44%
           DUEL   Δcorr -0.321 [-1.49,-0.07]*  (Δshape-MAE +0.005* = shape+spread composite)  Δ|ln spread| +0.13   Δ|level| +0.005 
                  ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): TIE    LEVEL: TIE
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
@@ -344,22 +359,22 @@ iron      K9         44      +0.61* [+0.37, +0.85]                0.979   0.98  
 iron      BB9        44      +0.71* [+0.66, +0.76]                0.973   0.94      0.15     0.92 / 0.93
 iron      HR9        44      +0.18* [+0.15, +0.21]                0.880   0.83      0.07     0.68 / 0.72
 iron      BABIP      44     +0.012* [+0.010, +0.013]              0.877   0.90     0.004     0.75 / 0.91
-iron      wOBAA      44     +0.019* [+0.017, +0.022]              0.677   0.58     0.007     0.50 / n/a
+iron      wOBAA      44     +0.019* [+0.017, +0.022]              0.677   0.58     0.007     0.50 / 0.58
 bronze    K9         52      +0.76* [+0.55, +0.97]                0.970   0.98      0.59     0.57 / 0.58
 bronze    BB9        52      +0.83* [+0.77, +0.90]                0.948   0.93      0.15     0.97 / 0.98
 bronze    HR9        52      +0.18* [+0.16, +0.21]                0.944   0.93      0.07     0.77 / 0.80
 bronze    BABIP      52     +0.010* [+0.008, +0.013]              0.822   0.81     0.006     0.52 / 0.59
-bronze    wOBAA      52     +0.019* [+0.017, +0.021]              0.766   0.76     0.006     0.61 / n/a
+bronze    wOBAA      52     +0.019* [+0.017, +0.021]              0.766   0.76     0.006     0.61 / 0.68
 silver    K9         22      +0.74* [+0.53, +0.95]                0.955   0.89      0.34     0.63 / 0.64
 silver    BB9        22      +0.87* [+0.80, +0.95]                0.977   0.98      0.14     1.05 / 1.06
 silver    HR9        22      +0.15* [+0.11, +0.19]                0.933   0.96      0.06     0.75 / 0.77
 silver    BABIP      22     +0.008* [+0.006, +0.010]              0.895   0.88     0.004     0.82 / 1.03
-silver    wOBAA      22     +0.016* [+0.013, +0.019]              0.842   0.87     0.005     0.55 / n/a
+silver    wOBAA      22     +0.016* [+0.013, +0.019]              0.842   0.87     0.005     0.55 / 0.64
 gold      K9         15      -0.07  [-0.23, +0.10]                0.944   0.91      0.23     0.66 / 0.68
 gold      BB9        15      +0.58* [+0.48, +0.68]                0.974   0.99      0.14     0.98 / 0.99
 gold      HR9        15      +0.13* [+0.08, +0.17]                0.976   0.95      0.07     0.75 / 0.77
 gold      BABIP      15     +0.005* [+0.002, +0.008]              0.829   0.87     0.005     0.86 / 1.10
-gold      wOBAA      15     +0.016* [+0.014, +0.018]              0.802   0.80     0.003     0.80 / n/a
+gold      wOBAA      15     +0.016* [+0.014, +0.018]              0.802   0.80     0.003     0.80 / 1.61
 diamond   (N=1 well-sampled — too few to report)
 
 ─── HITTERS ───
@@ -368,27 +383,27 @@ iron      BB%       100      +1.01* [+0.84, +1.17]                0.941   0.96  
 iron      SO%(PA)   100      +2.63* [+2.38, +2.89]                0.970   0.97      1.02     0.83 / 0.83
 iron      HR600     100      -1.06* [-1.97, -0.16]                0.863   0.91      3.53     0.71 / 0.72
 iron      BABIP     100     +0.012* [+0.009, +0.014]              0.899   0.92     0.011     0.65 / 0.68
-iron      wOBA      100     +0.002  [-0.001, +0.005]              0.602   0.65     0.014     0.79 / n/a
+iron      wOBA      100     +0.002  [-0.001, +0.005]              0.602   0.65     0.014     0.79 / 0.86
 bronze    BB%        99      +0.73* [+0.59, +0.86]                0.964   0.97      0.54     0.92 / 0.93
 bronze    SO%(PA)    99      +2.92* [+2.67, +3.18]                0.979   0.99      1.02     0.88 / 0.89
 bronze    HR600      99      -0.09  [-0.66, +0.47]                0.917   0.93      2.33     0.89 / 0.90
 bronze    BABIP      99     +0.009* [+0.007, +0.011]              0.858   0.84     0.009     0.71 / 0.75
-bronze    wOBA       99     +0.001  [-0.001, +0.004]              0.664   0.65     0.011     0.82 / n/a
+bronze    wOBA       99     +0.001  [-0.001, +0.004]              0.664   0.65     0.011     0.82 / 0.89
 silver    BB%        78      +1.23* [+1.05, +1.40]                0.956   0.97      0.59     1.12 / 1.14
 silver    SO%(PA)    78      +3.50* [+3.14, +3.87]                0.967   0.96      1.27     0.82 / 0.83
 silver    HR600      78      -0.68* [-1.33, -0.04]                0.913   0.95      2.50     0.78 / 0.80
 silver    BABIP      78     +0.011* [+0.008, +0.014]              0.790   0.77     0.011     0.51 / 0.57
-silver    wOBA       78     +0.000  [-0.003, +0.004]              0.748   0.68     0.012     0.64 / n/a
+silver    wOBA       78     +0.000  [-0.003, +0.004]              0.748   0.68     0.012     0.64 / 0.71
 gold      BB%        64      +1.51* [+1.32, +1.70]                0.950   0.95      0.60     1.19 / 1.25
 gold      SO%(PA)    64      +0.86* [+0.51, +1.21]                0.982   0.97      1.11     0.81 / 0.82
 gold      HR600      64      -1.44* [-2.21, -0.67]                0.916   0.92      2.56     0.70 / 0.75
 gold      BABIP      64     +0.007* [+0.003, +0.010]              0.841   0.83     0.012     0.53 / 0.63
-gold      wOBA       64     +0.005* [+0.002, +0.007]              0.663   0.69     0.010     0.67 / n/a
+gold      wOBA       64     +0.005* [+0.002, +0.007]              0.663   0.69     0.010     0.67 / 1.00
 diamond   BB%        17      +0.91* [+0.51, +1.31]                0.916   0.94      0.67     1.11 / 1.17
 diamond   SO%(PA)    17      +0.78* [+0.29, +1.27]                0.977   0.98      0.86     0.88 / 0.90
 diamond   HR600      17      +0.98  [-0.51, +2.47]                0.857   0.89      2.22     0.68 / 0.74
 diamond   BABIP      17     +0.006* [+0.000, +0.011]              0.862   0.73     0.009     0.50 / 0.72
-diamond   wOBA       17     +0.009* [+0.002, +0.016]              0.699   0.52     0.011     0.50 / n/a
+diamond   wOBA       17     +0.009* [+0.002, +0.016]              0.699   0.52     0.011     0.50 / 0.65
 
 
 ╔═══ C. WHERE UNIVERSAL (ours) BEATS NATIVE (cwhit), AND WHERE IT DOES NOT ═══════════════════╗

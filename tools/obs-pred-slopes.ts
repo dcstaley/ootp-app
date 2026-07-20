@@ -25,12 +25,14 @@
 //     Var(wOBA_hat) = ( Σ_j w_j² p_j − (Σ_j w_j p_j)² ) / n
 // which is the exact multinomial variance of a weighted sum and ALREADY CARRIES THE NEGATIVE
 // COVARIANCES between event cells (that is what the −(Σ w_j p_j)² term is). Assuming the events
-// independent would give Σ w_j² p_j(1−p_j)/n, which OVERSTATES the noise materially. See `wobaNoiseVar`.
+// independent would give Σ w_j² p_j(1−p_j)/n, which OVERSTATES the noise materially. That form now
+// lives in src/eval/cwhit/scorecard.ts (`wobaNoiseCells`/`wobaNoiseVar`) and is IMPORTED here, not
+// re-derived — one-copy applies to eval instruments too.
 //
 // ONE SCORING CORE — NO scoring math is written here. The multinomial cell probabilities are EXTRACTED
 // FROM THE EXISTING RECONSTRUCTION FUNCTIONS rather than re-derived: `hitWobaFromRates` and
 // `pitWobaFromChannels` are both exactly LINEAR in the wOBA weight bag, so evaluating each at a UNIT
-// BASIS weight vector returns that event's proportion verbatim (see `cells`). Zero duplicated algebra,
+// BASIS weight vector returns that event's proportion verbatim (see `wobaNoiseCells`). Zero duplicated algebra,
 // and the p_j are by construction the same ones the judged composite was built from.
 //
 // DOCTRINE: cwhit's RAW OBSERVED events = ground truth. His PROJECTIONS are a benchmark opponent only
@@ -50,9 +52,10 @@ import {
 } from "../src/scoring-core/index.ts";
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../src/scoring-core/hit-tail.ts";
 import { parseCatalogCsv } from "../src/data/catalog.ts";
-import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
+import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import {
   pearson, spearman, per9NoiseVar, babipNoiseVar, pctNoiseVar, per600NoiseVar, BF_PER_9,
+  wobaNoiseCells, wobaNoiseVar, wobaNoiseVarIndep,
 } from "../src/eval/cwhit/scorecard.ts";
 import { IP_TO_BF } from "../src/eval/cwhit/parse.ts";
 import {
@@ -109,50 +112,26 @@ if (CORRECTIONS) {
 const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap };
 const { recs } = buildCwhitSample(deps);
 
-// ═══ COMPOSITE NOISE: multinomial variance of a weighted sum of event proportions ═══════════════
+// ═══ COMPOSITE NOISE ════════════════════════════════════════════════════════════════════════════
 //
-// The wOBA reconstructions are LINEAR in the weight bag, so evaluating one at a unit basis vector
-// returns that event's per-PA (hitters) / per-BF (pitchers) proportion. No algebra is re-derived here.
-const ZERO: WW = { bb: 0, hbp: 0, b1: 0, xbh: 0, hr: 0 };
-const basis = (j: keyof WW): WW => ({ ...ZERO, [j]: 1 });
+// The multinomial weighted-sum variance now lives in src/eval/cwhit/scorecard.ts beside its
+// single-event siblings (per9NoiseVar / babipNoiseVar / pctNoiseVar / per600NoiseVar) and is
+// imported here. It was ORIGINALLY written in this file; it was promoted because ONE-COPY applies
+// to eval instruments too — this session is the proof of why. Do not re-derive it locally.
+// These thin adapters exist only to turn a `Rec` into the shared function's plain-rate input
+// (the shared module cannot import sample.ts, since sample.ts imports it).
 
-/** The random event cells of a card's observed composite, as (proportion, wOBA weight) pairs.
- *  HBP is DELIBERATELY EXCLUDED: both reconstructions insert it as a FIXED constant rate (0.008/PA,
- *  6/600 BF), so its count is deterministic in this frame and contributes a constant offset with ZERO
- *  sampling variance. Everything not listed (outs, strikeouts) falls into an implicit weight-0 cell. */
-function cells(r: Rec, collapseHits: boolean): { p: number; w: number }[] {
-  const ev = (j: keyof WW): number => r.role === "pit"
-    ? pitWobaFromChannels(r.obs.k9!, r.obs.bb9!, r.obs.hr9!, r.obs.babip!, basis(j))
-    : hitWobaFromRates({ bbPct: r.obs.bbPct!, soPct: r.obs.soPct!, hr600: r.obs.hr600!, babip: r.obs.babip!, avg: r.raw.avg!, slg: r.raw.slg!, tripleXbh: r.raw.tripleXbh! }, basis(j));
-  const pBb = ev("bb"), p1 = ev("b1"), pX = ev("xbh"), pHr = ev("hr");
-  if (!collapseHits) return [{ p: pBb, w: W.bb }, { p: p1, w: W.b1 }, { p: pX, w: W.xbh }, { p: pHr, w: W.hr }];
-  // COLLAPSED: 1B and XBH are not separately observed for pitchers — cwhit publishes only BABIP and the
-  // reconstruction splits it with a FIXED 0.25 XBH share. The quantity that actually fluctuates is the
-  // non-HR HIT count, carrying the blended weight. Splitting it into two independently-varying cells
-  // would invent variance the published columns cannot contain.
-  const pH = p1 + pX;
-  return [{ p: pBb, w: W.bb }, { p: pH, w: pH > 0 ? (W.b1 * p1 + W.xbh * pX) / pH : W.b1 }, { p: pHr, w: W.hr }];
-}
+const nOf = (r: Rec): number => (r.role === "pit" ? r.sample * IP_TO_BF : r.sample);
+const cellsOf = (r: Rec, collapseHits: boolean) => wobaNoiseCells(
+  r.role === "pit"
+    ? { role: "pit", k9: r.obs.k9!, bb9: r.obs.bb9!, hr9: r.obs.hr9!, babip: r.obs.babip! }
+    : { role: "hit", bbPct: r.obs.bbPct!, soPct: r.obs.soPct!, hr600: r.obs.hr600!, babip: r.obs.babip!, avg: r.raw.avg!, slg: r.raw.slg!, tripleXbh: r.raw.tripleXbh! },
+  W, collapseHits);
 
-/** Var of the observed composite. Multinomial ⇒ Var(Σ w_j X_j / n) = (Σ w_j² p_j − (Σ w_j p_j)²)/n.
- *  The subtracted square IS the negative-covariance term; it is not an independence approximation. */
-function wobaNoiseVar(r: Rec, collapseHits: boolean): number {
-  const n = r.role === "pit" ? r.sample * IP_TO_BF : r.sample;
-  if (!(n > 0)) return NaN;
-  const cs = cells(r, collapseHits);
-  let s1 = 0, s2 = 0;
-  for (const { p, w } of cs) { const q = Math.min(Math.max(p, 0), 1); s1 += w * q; s2 += w * w * q; }
-  return Math.max(s2 - s1 * s1, 0) / n;
-}
-/** The INDEPENDENCE-ASSUMING version — printed once as a contrast so the size of the covariance term
- *  is visible rather than asserted. NOT used for any reported number. */
-function wobaNoiseVarIndep(r: Rec, collapseHits: boolean): number {
-  const n = r.role === "pit" ? r.sample * IP_TO_BF : r.sample;
-  if (!(n > 0)) return NaN;
-  let s = 0;
-  for (const { p, w } of cells(r, collapseHits)) { const q = Math.min(Math.max(p, 0), 1); s += w * w * q * (1 - q); }
-  return s / n;
-}
+const wobaNoiseVarOf = (r: Rec, collapseHits: boolean): number => wobaNoiseVar(cellsOf(r, collapseHits), nOf(r));
+/** Independence-assuming contrast — printed once so the size of the covariance term is visible
+ *  rather than asserted. NEVER used for a reported number. */
+const wobaNoiseVarIndepOf = (r: Rec, collapseHits: boolean): number => wobaNoiseVarIndep(cellsOf(r, collapseHits), nOf(r));
 
 /** Per-channel observed sampling variance. Single-event channels: the scorecard's own helpers, same
  *  BIP derivations. Composite: the multinomial form above (the cells the scorecard leaves `n/a`). */
@@ -161,13 +140,13 @@ function noiseOf(r: Rec, ch: string): number {
     const bf = r.sample * IP_TO_BF;
     const bip = Math.max(bf - (r.obs.k9! + r.obs.bb9! + r.obs.hr9!) / BF_PER_9 * bf - 0.009 * bf, 1);
     if (ch === "babip") return babipNoiseVar(r.obs.babip!, bip);
-    if (ch === "woba") return wobaNoiseVar(r, true);
+    if (ch === "woba") return wobaNoiseVarOf(r, true);
     return per9NoiseVar(r.obs[ch]!, r.sample);
   }
   const bip = Math.max(r.sample * (1 - r.obs.bbPct! / 100 - 0.008 - r.obs.soPct! / 100 - r.obs.hr600! / 600), 1);
   if (ch === "babip") return babipNoiseVar(r.obs.babip!, bip);
   if (ch === "hr600") return per600NoiseVar(r.obs.hr600!, r.sample);
-  if (ch === "woba") return wobaNoiseVar(r, false);
+  if (ch === "woba") return wobaNoiseVarOf(r, false);
   return pctNoiseVar(r.obs[ch]!, r.sample);
 }
 
@@ -272,8 +251,8 @@ console.log(`  CIs: ${B}-rep CARD-RESAMPLED percentile bootstrap.`);
     const rows = recs.filter((r) => r.tier === tier && r.role === role && wellSampled(r));
     if (rows.length < 5) continue;
     const coll = role === "pit";
-    const a = Math.sqrt(mean(rows.map((r) => wobaNoiseVar(r, coll))));
-    const b = Math.sqrt(mean(rows.map((r) => wobaNoiseVarIndep(r, coll))));
+    const a = Math.sqrt(mean(rows.map((r) => wobaNoiseVarOf(r, coll))));
+    const b = Math.sqrt(mean(rows.map((r) => wobaNoiseVarIndepOf(r, coll))));
     console.log(`${role}   ${tier.padEnd(9)} ${String(rows.length).padStart(3)}      ${f(a, 5)}        ${f(b, 5)}        ×${f(b / a, 2)}`);
   }
   console.log(`   PITCHER cells are COLLAPSED (1B+XBH as one non-HR-hit cell): cwhit publishes only BABIP for pitchers and`);

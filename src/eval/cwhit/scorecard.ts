@@ -17,6 +17,9 @@
 // OUR weights. Nothing in this file feeds the scoring path.
 
 import { IP_TO_BF } from "./parse.ts";
+// audit.ts imports NOTHING, so this cannot cycle. (sample.ts imports THIS file, so this file must
+// never import sample.ts — hence the composite-noise helpers below take plain rates, not a `Rec`.)
+import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights } from "./audit.ts";
 
 // ── provenance ───────────────────────────────────────────────────────────────
 
@@ -272,6 +275,74 @@ export function per600NoiseVar(r600: number, pa: number): number {
   return (600 ** 2) * p * (1 - p) / pa;
 }
 
+// ── COMPOSITE (wOBA / wOBAA) sampling noise ──────────────────────────────────
+//
+// THIS EXISTS BECAUSE ITS ABSENCE CAUSED TWO WRONG FINDINGS (2026-07-20). The scorecard's
+// `noiseOf` used to return NaN for the composite with the comment "a composite; no clean
+// binomial form", so `agreement()` never deconvolved it and only the RAW ratio ever printed.
+// A raw composite ratio then got compared against noise-DECONVOLVED per-channel ratios —
+// unlike quantities — which manufactured both a phantom "hitters are severely under-spread"
+// finding and a phantom cross-channel-covariance mechanism to explain it. The comment was
+// wrong: there IS a clean closed form, below.
+//
+// ONE COPY. `tools/obs-pred-slopes.ts` and `tools/channel-covariance.ts` import these rather
+// than re-deriving them — one-copy applies to eval instruments, not just the scoring core.
+//
+// NOTE ON TYPES: this module must NOT import `sample.ts` (sample.ts imports THIS file), so
+// these take plain rates rather than a `Rec`. Callers destructure.
+
+export interface WobaNoiseCell { p: number; w: number }
+
+export type WobaNoiseInput =
+  | { role: "pit"; k9: number; bb9: number; hr9: number; babip: number }
+  | { role: "hit"; bbPct: number; soPct: number; hr600: number; babip: number; avg: number; slg: number; tripleXbh: number };
+
+/** The RANDOM event cells of a card's observed composite, as (proportion, wOBA weight) pairs.
+ *  The wOBA reconstructions are LINEAR in the weight bag, so evaluating one at a unit basis
+ *  vector returns that event's per-PA (hitters) / per-BF (pitchers) proportion verbatim — no
+ *  algebra is re-derived here, which is what keeps this honest w.r.t. one-copy.
+ *
+ *  HBP is DELIBERATELY EXCLUDED: both reconstructions insert it as a FIXED constant rate, so its
+ *  count is deterministic in this frame — a constant offset with ZERO sampling variance.
+ *  Everything unlisted (outs, strikeouts) falls into an implicit weight-0 cell. In particular
+ *  SO/K is NOT a wOBA channel: it carries zero weight and enters only via the BIP denominator.
+ *
+ *  `collapseHits` MUST be true for pitchers: cwhit publishes only BABIP for them and the
+ *  reconstruction splits it with a FIXED 0.25 XBH share, so 1B and XBH are not independently
+ *  observed. The quantity that actually fluctuates is the non-HR HIT count, carrying the blended
+ *  weight; splitting it would invent variance the published columns cannot contain. */
+export function wobaNoiseCells(inp: WobaNoiseInput, w: WobaWeights, collapseHits: boolean): WobaNoiseCell[] {
+  const ZERO: WobaWeights = { bb: 0, hbp: 0, b1: 0, xbh: 0, hr: 0 };
+  const basis = (j: keyof WobaWeights): WobaWeights => ({ ...ZERO, [j]: 1 });
+  const ev = (j: keyof WobaWeights): number => inp.role === "pit"
+    ? pitWobaFromChannels(inp.k9, inp.bb9, inp.hr9, inp.babip, basis(j))
+    : hitWobaFromRates({ bbPct: inp.bbPct, soPct: inp.soPct, hr600: inp.hr600, babip: inp.babip, avg: inp.avg, slg: inp.slg, tripleXbh: inp.tripleXbh }, basis(j));
+  const pBb = ev("bb"), p1 = ev("b1"), pX = ev("xbh"), pHr = ev("hr");
+  if (!collapseHits) return [{ p: pBb, w: w.bb }, { p: p1, w: w.b1 }, { p: pX, w: w.xbh }, { p: pHr, w: w.hr }];
+  const pH = p1 + pX;
+  return [{ p: pBb, w: w.bb }, { p: pH, w: pH > 0 ? (w.b1 * p1 + w.xbh * pX) / pH : w.b1 }, { p: pHr, w: w.hr }];
+}
+
+/** Var of the observed composite over `n` trials (PA for hitters, BF for pitchers).
+ *  Multinomial ⇒ Var(Σ wⱼXⱼ / n) = (Σ wⱼ²pⱼ − (Σ wⱼpⱼ)²)/n. The SUBTRACTED SQUARE **is** the
+ *  negative-covariance term — this is exact, not an independence approximation. */
+export function wobaNoiseVar(cells: WobaNoiseCell[], n: number): number {
+  if (!(n > 0)) return NaN;
+  let s1 = 0, s2 = 0;
+  for (const { p, w } of cells) { const q = Math.min(Math.max(p, 0), 1); s1 += w * q; s2 += w * w * q; }
+  return Math.max(s2 - s1 * s1, 0) / n;
+}
+
+/** The INDEPENDENCE-ASSUMING version — Σ wⱼ²pⱼ(1−pⱼ)/n. Kept ONLY so the size of the covariance
+ *  term can be printed as a contrast rather than asserted (it overstates noise SD by ~1.08–1.12×).
+ *  NEVER use it for a reported number. */
+export function wobaNoiseVarIndep(cells: WobaNoiseCell[], n: number): number {
+  if (!(n > 0)) return NaN;
+  let s = 0;
+  for (const { p, w } of cells) { const q = Math.min(Math.max(p, 0), 1); s += w * w * q * (1 - q); }
+  return s / n;
+}
+
 // ── the LEVEL / SHAPE / SPREAD decomposition ─────────────────────────────────
 
 export interface LevelStat { bias: number; ciLo: number; ciHi: number; sig: boolean }
@@ -347,8 +418,13 @@ export function agreement(pred: number[], obs: number[], noiseVar?: number[]): A
 
   // SPREAD — raw + noise-deconvolved (Var_true = Var_obs − mean sampling Var).
   const sdP = sdPop(p), sdO = sdPop(o);
-  // No noiseVar supplied (e.g. a composite like wOBA with no clean binomial form) ⇒ deconvolution is
-  // NOT attempted and the fields read NaN, rather than silently reporting the raw ratio as deconvolved.
+  // No noiseVar supplied ⇒ deconvolution is NOT attempted and the fields read NaN, rather than
+  // silently reporting the raw ratio as deconvolved. Refusing to guess is right; what was WRONG was
+  // the old claim that composites have "no clean binomial form" and must therefore go without.
+  // They do have one — `wobaNoiseCells` + `wobaNoiseVar` above — so composites now supply noiseVar
+  // like any other channel. A caller reaching this NaN branch is asserting it genuinely cannot
+  // characterise the sampling noise; it must NOT then compare its raw ratio against a deconvolved
+  // one elsewhere. That exact comparison produced two retracted findings on 2026-07-20.
   const nv = noiseVar ? mean(keep.map((i) => noiseVar[i] ?? 0)) : NaN;
   const sdOd = Number.isFinite(nv) ? Math.sqrt(Math.max(sdO ** 2 - nv, 0)) : NaN;
   const spread: SpreadStat = {

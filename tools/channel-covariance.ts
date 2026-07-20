@@ -206,6 +206,17 @@ function cov(vs: number[][]): number[][] {
 /** MULTINOMIAL sampling-noise covariance of ONE card's observed contribution vector.
  *  Event counts over n trials are multinomial ⇒ Cov(p̂ᵢ,p̂ⱼ) = (δᵢⱼpᵢ − pᵢpⱼ)/n, so for the weighted
  *  contributions cᵢ = wᵢp̂ᵢ:  Nᵢⱼ = wᵢwⱼ(δᵢⱼpᵢ − pᵢpⱼ)/n.
+ *
+ *  RELATIONSHIP TO THE SHARED SCALAR (one-copy note, 2026-07-20). The authority for composite
+ *  sampling noise is `wobaNoiseCells`/`wobaNoiseVar` in src/eval/cwhit/scorecard.ts, which the
+ *  scorecard and tools/obs-pred-slopes.ts both import. This matrix is a strict GENERALISATION of
+ *  it — summing this matrix over all i,j gives exactly that scalar — but it is NOT a duplicate
+ *  convention: this test needs the full MATRIX over UNCOLLAPSED channels for BOTH predicted and
+ *  observed vectors, whereas the shared scalar returns collapsed (p,w) pairs for observed only.
+ *  Forcing this through the shared signature would lose the off-diagonals this test exists to
+ *  measure. It is kept local because it has exactly ONE consumer. IF A SECOND CONSUMER APPEARS,
+ *  PROMOTE IT rather than copying — one-copy applies to eval instruments, and a divergent second
+ *  composite-noise convention is precisely what produced two retracted findings on 2026-07-20.
  *  The OFF-DIAGONALS ARE NEGATIVE and material — assuming independent channels would UNDER-subtract
  *  and leave the observed covariance term spuriously low, biasing this test toward the hypothesis.
  *  The diagonal reduces to wᵢ²pᵢ(1−pᵢ)/n, i.e. exactly the binomial forms already used by
