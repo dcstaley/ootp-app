@@ -14,13 +14,21 @@ fixtures/golden/*.json
 fixtures/eventform-active.json
 
 # File-based app DB (D7). Tournaments + era/park libraries ARE tracked (the user's real,
-# hand-authored config). Card lists (imports), per-account ownership, runtime selection
-# state, and trained-model artifacts are LOCAL — re-uploaded / regenerated per machine.
+# hand-authored config). Card lists (imports), per-account ownership and runtime selection
+# state are LOCAL — re-uploaded / regenerated per machine.
 data/imports/
 data/accounts/
 data/state/
 data/models/
-data/trained-models/
+
+# data/trained-models/ IS TRACKED (2026-07-20 ruling). These are fit artifacts —
+# coefficients, eventForm, platoon, wobaWeights, ratingEnvelope, trainingMeans, diag — and
+# carry NO ownership, price or account/economy data, so the privacy reason below does not
+# apply to them. They are tracked for PROVENANCE: a retrain that replaces the deployed model
+# used to be unrecoverable, and 'league-41-42-pareto' was in fact lost that way on
+# 2026-07-20 (only its scorecard output survived, in fixtures/). Every artifact a result was
+# measured against must remain reconstructible. They are ~8KB each; if one ever exceeds
+# ~1MB, commit a manifest + hash instead of the blob.
 
 # Real captures embed the user's trained model coefficients + account/economy
 # data — NEVER commit these. Only the safe invented smoke-test fixture is kept.
