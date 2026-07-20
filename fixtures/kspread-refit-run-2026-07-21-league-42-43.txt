@@ -1,0 +1,112 @@
+
+╔════════════════════════════════════════════════════════════════════════════════════════╗
+║  PITCHER K-SPREAD SPACING CORRECTION — fit · held-out · weird-env battery · two-axis gate ║
+╚════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-42-43' | catalog 'cdmx' | eval frame = RAW event line, own-gap ON, no anchor
+gap convention: buildFrameShift(trainingMeans, poolField).pit.vR.stu (own-channel stu gap, §10.2 crossing)
+K̄_pool convention: poolMeanKOwn (top-50 field, OWN-GAP ratings, pre-era K/600)
+
+[diamond] N=1 < 5 — excluded from the fit entirely (diamond pit is the known dead cell)
+
+╔═══ 1. PER-TIER MEASUREMENT — K9 calibration slope (obs~pred), gap, K̄_pool ═══╗
+tier      N    gap(stu)   K̄_pool/600   slope   [boot 95% CI]   se(t)    corr   ratioRaw/Dcv  optRatio
+iron      44      23.6       120.6     1.86   [1.72,2.00]     0.062   0.977   0.53/0.53      0.98
+bronze    52      22.8       119.9     1.65   [1.56,1.76]     0.059   0.970   0.59/0.59      0.97
+silver    22      20.5       119.6     1.46   [1.02,1.64]     0.103   0.953   0.65/0.66      0.96
+gold      15      15.9       120.5     1.39   [1.10,1.69]     0.136   0.943   0.68/0.70      0.97
+
+╔═══ 2. FITTED RAMP (all tiers, precision-weighted; s(0)=1 hard — the league anchor) ═══╗
+  s(g) = 1 + A·(1 − e^(−g/G))
+  wide-grid optimum: A=12.760 G=400.0 (weighted SSE 8.38);  LINEAR LIMIT (G→∞): s = 1 + 0.0310·g (SSE 8.22)
+  G IDENTIFIABILITY: SSE within 5% of the linear limit over G ∈ [152.5, 400.0+] — G is only LOWER-BOUNDED (profile flat upward; the tiers span g≈19–28, so only s at those gaps — effectively A/G ≈ β — is measured)
+  SHIPPING PIN (most-saturating member within 5% of the linear limit — least extrapolation beyond observed gaps):
+  A = 5.087  [boot 95% CI 0.947, 9.666]   (plateau s(∞) = 6.09)
+  G = 152.5  [boot 95% CI 18.5, 292.5]
+  s at the tier gaps vs the measured slopes (the fit's own residuals):
+    iron     g= 23.6  s(g)=1.73 [1.63,1.81]   measured 1.86   resid -0.13
+    bronze   g= 22.8  s(g)=1.71 [1.62,1.79]   measured 1.65   resid +0.05
+    silver   g= 20.5  s(g)=1.64 [1.56,1.72]   measured 1.46   resid +0.18
+    gold     g= 15.9  s(g)=1.51 [1.45,1.59]   measured 1.39   resid +0.11
+
+╔═══ 3. HELD-OUT VALIDATION — fit WITHOUT bronze (the deepest tier), predict bronze's slope ═══╗
+  held-out fit (same pin rule): A=6.967 G=201.5
+  PREDICTED bronze slope s(g=22.8) = 1.74  [1.60, 1.86]
+  MEASURED  bronze slope            = 1.65  [1.56, 1.76]
+  VERDICT: PASS — the held-out prediction and the measurement are statistically one number
+
+  HITTER IDENTITY CHECK: 499 hitter recs compared pre↔post, max |Δ| across all channels = 0 (bit-identical ✓)
+
+╔═══ 4. TWO-AXIS GATE — Quick tiers, post-fix (shipping candidate = the all-tier fit) ═══╗
+
+  ── iron (quick)  (N=44, s=1.73) ──
+  G1 K9 slope:    pre 1.86 → post 1.07 [0.99,1.15]   PASS (CI covers 1)
+  G2 wOBAA corr:  pre 0.6213 → post 0.7333  (Δ +0.1120 [+0.0185,+0.2248])  rank ρ 0.5309 → 0.6417   PASS (no drop / CI-compatible with 0)
+  G3 K9 level:    pre +0.55 [+0.31,+0.79] → post +0.22 [+0.11,+0.33]   (algebraic expectation of the move: -0.33 — the judged sample sits off K̄_pool)
+  G4 spread:      ratioRaw 0.53 → 0.91   ratioDcv 0.53 → 0.91   (optimum = optRatio 0.98)
+  K9 ordering:    unchanged (0 rank moves ✓)
+
+  ── bronze (quick)  (N=52, s=1.71) ──
+  G1 K9 slope:    pre 1.65 → post 0.97 [0.91,1.03]   PASS (CI covers 1)
+  G2 wOBAA corr:  pre 0.7807 → post 0.7577  (Δ -0.0229 [-0.1330,+0.0849])  rank ρ 0.7595 → 0.7200   PASS (no drop / CI-compatible with 0)
+  G3 K9 level:    pre +0.77 [+0.56,+0.99] → post +0.63 [+0.51,+0.74]   (algebraic expectation of the move: -0.15 — the judged sample sits off K̄_pool)
+  G4 spread:      ratioRaw 0.59 → 1.00   ratioDcv 0.59 → 1.00   (optimum = optRatio 0.97)
+  K9 ordering:    unchanged (0 rank moves ✓)
+
+  ── silver (quick)  (N=22, s=1.64) ──
+  G1 K9 slope:    pre 1.46 → post 0.89 [0.62,1.00]   FAIL (CI excludes 1)
+  G2 wOBAA corr:  pre 0.7895 → post 0.8377  (Δ +0.0481 [-0.0706,+0.1500])  rank ρ 0.8250 → 0.8713   PASS (no drop / CI-compatible with 0)
+  G3 K9 level:    pre +0.72 [+0.50,+0.93] → post +0.92 [+0.75,+1.08]   (algebraic expectation of the move: +0.20 — the judged sample sits off K̄_pool)
+  G4 spread:      ratioRaw 0.65 → 1.07   ratioDcv 0.66 → 1.08   (optimum = optRatio 0.96)
+  K9 ordering:    unchanged (0 rank moves ✓)
+
+  ── gold (quick)  (N=15, s=1.51) ──
+  G1 K9 slope:    pre 1.39 → post 0.92 [0.72,1.13]   PASS (CI covers 1)
+  G2 wOBAA corr:  pre 0.8275 → post 0.6934  (Δ -0.1340 [-0.3158,-0.0214])  rank ρ 0.8143 → 0.7036   FAIL (CI-clear ordering drop)
+  G3 K9 level:    pre -0.09 [-0.27,+0.08] → post -0.16 [-0.30,-0.01]   (algebraic expectation of the move: -0.06 — the judged sample sits off K̄_pool)
+  G4 spread:      ratioRaw 0.68 → 1.02   ratioDcv 0.70 → 1.05   (optimum = optRatio 0.97)
+  K9 ordering:    unchanged (0 rank moves ✓)
+  LOO influence:  Δcorr leave-one-out range [-0.1873, -0.0954]; 0/15 single-card drops flip Δ to ≥0
+
+  POOLED (tier fixed effects): K9 slope pre 1.68 → post 0.99   (battery baseline was 1.73 [1.65,1.80])
+  POOLED G2 (tier-de-meaned wOBAA ordering): pre 0.7322 → post 0.7560  (Δ +0.0238 [-0.0356,+0.0861])   PASS
+
+  ORACLE-s DIAGNOSTIC (s = each tier's measured slope; characterization only, per-tier constants are not shippable):
+    iron     s=1.86: K9 slope → 1.00 [0.93,1.07]; wOBAA corr 0.6213 → 0.7310 (Δ +0.1098 [+0.0136,+0.2374])
+    bronze   s=1.65: K9 slope → 1.00 [0.94,1.07]; wOBAA corr 0.7807 → 0.7645 (Δ -0.0162 [-0.1192,+0.0841])
+    silver   s=1.46: K9 slope → 1.00 [0.69,1.12]; wOBAA corr 0.7895 → 0.8467 (Δ +0.0572 [-0.0418,+0.1457])
+    gold     s=1.39: K9 slope → 1.00 [0.79,1.21]; wOBAA corr 0.8275 → 0.7304 (Δ -0.0971 [-0.2178,-0.0116])
+
+╔═══ 5. WEIRD-ENV BATTERY — daily/cap formats, DEPLOYED per-channel line (era/park applied) ═══╗
+  diamondcapdaily EXCLUDED (Derek 2026-07-16: no config for it; do not infer one).
+  Each format's gap + K̄_pool are computed from ITS OWN eligible pool (config value cap + eligibility rules)
+  — property-derived at scoring time, exactly as production would. Observed lines live in the format's env,
+  so the judged line is the DEPLOYED per-channel line (raw K ×era_k etc.), not the neutral raw line.
+
+  ── Early Gold Daily — era-1920 / park-169, VAL≤89 ──
+  pool 3192 cards | joined 100/100 (unique 100 + fp 0), well-sampled (IP≥1000) 24 | gap 15.9  K̄_pool 120.5/600  s(gap) = 1.51  era_k 0.352
+  K9 slope:   pre 2.27 [2.09,2.45]  →  post 1.51 [1.39,1.63]   FAIL (CI excludes 1)
+  wOBAA corr: pre 0.7472 → post 0.7657  (Δ +0.0185 [-0.0020,+0.0532])   PASS   rank ρ 0.7009 → 0.6870
+  K9 level:   pre -0.49 [-0.66,-0.33]  →  post -0.59 [-0.70,-0.48]
+  spread:     ratioRaw 0.43 → 0.65   ratioDcv 0.44 → 0.66   optRatio 0.99   corr(K9) 0.980
+
+  ── Bronze Heart Daily — era-1939 / park-191, VAL≤69, years 1930–89 ──
+  pool 570 cards | joined 95/100 (unique 95 + fp 0), well-sampled (IP≥1000) 12 | gap 18.9  K̄_pool 115.6/600  s(gap) = 1.59  era_k 0.411
+  K9 slope:   pre 2.32 [1.95,2.89]  →  post 1.46 [1.23,1.81]   FAIL (CI excludes 1)
+  wOBAA corr: pre 0.4875 → post 0.4642  (Δ -0.0233 [-0.1166,+0.1171])   PASS   rank ρ 0.4755 → 0.4126
+  K9 level:   pre -0.76 [-1.11,-0.41]  →  post -0.78 [-1.01,-0.55]
+  spread:     ratioRaw 0.42 → 0.66   ratioDcv 0.42 → 0.67   optRatio 0.98   corr(K9) 0.964
+
+  ── Gold Cap Daily — era-2010 / park-156, VAL≤89, cap 1580 ──
+  pool 3192 cards | joined 95/100 (unique 95 + fp 0), well-sampled (IP≥1000) 14 | gap 15.9  K̄_pool 120.5/600  s(gap) = 1.51  era_k 1.000
+  K9 slope:   pre 1.62 [1.46,1.81]  →  post 1.08 [0.97,1.20]   PASS (post CI covers 1)
+  wOBAA corr: pre 0.9564 → post 0.9506  (Δ -0.0057 [-0.0585,+0.0188])   PASS   rank ρ 0.8549 → 0.7846
+  K9 level:   pre -0.26 [-0.60,+0.07]  →  post -0.48 [-0.63,-0.33]
+  spread:     ratioRaw 0.61 → 0.91   ratioDcv 0.61 → 0.92   optRatio 0.99   corr(K9) 0.985
+
+╔═══ 6. SHIPPING CANDIDATE (refit-with-all, pinned) — the constants production wiring would embed ═══╗
+  K_SPREAD_PIT = { A: 5.0871, G: 152.5 }
+  s(g) = 1 + 5.0871·(1 − e^(−g/152.5));  s(g≤0) = 1 (league-anchored; never compress a stronger-than-training pool)
+  s at reference gaps: s(10)=1.32  s(20)=1.63  s(28)=1.85  s(35)=2.04  (observed tier gaps span ~19–28)
+  gap = buildFrameShift(trainingMeans, poolField).pit.vR.stu — computed from pool composition at scoring time; NO per-tournament constants.
+  K̄_pool = poolMeanKOwn(basePool, coeffs, model, poolTransform, 50).pit — pre-era, own-gap frame.
+
