@@ -1592,6 +1592,18 @@ Derek's focus (handoff #3 §5): does the event model systematically mis-value pa
 level, not levels and not composites. **Two-axis doctrine: ORDER and SPACING are co-equal.** "Relative"
 never means Pearson alone — spacing is where the model currently loses (0 spread wins / 17 losses).
 
+> **⚠ AMENDMENT (2026-07-20) — 0-for-17 REVIEWED vs the composite-deconvolution defect: SURVIVES; and
+> SUPERSEDED BY COUNT, 17 → 5.**
+> **(a) Not invalidated.** The 0/17 record is a **DUEL** scoreboard — ours and cwhit are scored against the
+> SAME observed series, so the sampling-noise term is **shared and cancels in the difference**. §15.8's
+> `noiseOf`-returns-NaN defect biases ABSOLUTE spread reads only; duel verdicts carry no exposure to it.
+> The two-axis doctrine and the "spacing is where we lose" framing stand as written at pin date.
+> **(b) Post-BUILD count.** On the current committed scorecard fixture
+> `fixtures/cwhit-scorecard-run-2026-07-20-retrain-corrected.txt` (corrected instrument, BUILD-1/2/3 on),
+> the `SPREAD(scale):` verdict lines are **45 total: 5 CWHIT, 40 TIE, 0 OURS**. The deficit is **17 → 5**,
+> and 40 of 45 cells are now indistinguishable. **Quote 5, not 17.** 0 OURS persists — the residual is
+> one-sided, never reversed.
+
 ### 15.4 The dead-code trap
 
 This repo carries **live-looking log-linear/parity remnants** (full removal deferred — memory
@@ -1620,6 +1632,30 @@ From the 2026-07-16 session. Each is a marker, not a decision; do not treat any 
   problem suggests the ceiling was the form's limit, not information-theoretic (caveat: his semi-in-sample
   status could inflate his ratio honestly; MMSE on OUR model decides, his number is directional only).
 
+> **⚠ AMENDMENT (2026-07-20) — PROVENANCE AUDITED. The ~0.76–0.78 ceiling is NOT exposed to the §15.8
+> defect. NO re-derivation needed.** This figure is an ABSOLUTE spread read, so it carries none of the
+> duel noise-cancellation protection and was audited first.
+> - **Where it came from.** §11.24 (`tools/family-twoaxis.ts`, rawquad_pit in-frame **0.76**) → §11.26
+>   (`tools/ceiling-test.ts`, within-role SP 0.77 / RP **0.79 [.66,.92]**, "MEASURED CEILING ≈ 0.78") →
+>   §11.27 (`tools/pit-channel-locator.ts`, all-rawquad2+aux **0.780**). Sibling: `tools/hitter-tails.ts`.
+> - **It DOES use noise arithmetic** — the metric is σ_pred/σ_true with
+>   σ_true = sqrt(var(obs) − mean(se²)), i.e. a deconvolved composite spread ratio. So the question was live.
+> - **But it uses the CORRECT arithmetic.** All four tools carry an independent `seW` implementing the
+>   **multinomial weighted-sum variance** on the wOBA composite (`ceiling-test.ts:65`,
+>   `family-twoaxis.ts:54`, `pit-channel-locator.ts:43`, `hitter-tails.ts:44`) — the exact closed form
+>   `tools/cwhit-scorecard.ts:119` wrongly declared not to exist. **The defect was confined to the
+>   scorecard instrument and never touched this line of tools.** The ceiling stands as measured;
+>   FORM decisions may continue to lean on ~0.78 as the in-frame yardstick.
+> - **Comparability, newly true.** With the scorecard corrected, both instruments now compute composite
+>   spread on the SAME variance convention (cf. `wobaNoiseCells`/`wobaNoiseVar`,
+>   `src/eval/cwhit/scorecard.ts:314/329`). Scorecard composite DCVs and the ~0.78 ceiling were **not**
+>   like-for-like before (raw vs deconvolved); they are now. Note the populations still differ — ceiling =
+>   league in-frame, scorecard = cwhit tournament cells — so the yardstick transfers in convention, not sample.
+> - **Standing caveat, unchanged and NOT resolved here:** the companion "cwhit's K9 spread ratio ~1.15" is
+>   an ABSOLUTE read off the SCORECARD. Per-channel, so the composite-NaN limb never touched it — but
+>   §15.8's **wrong-sample** limb (Section A, N=26–36, three-way + range-restricted) does apply to any
+>   cwhit-side figure quoted at pin date. Treat 1.15 as directional only, as the original bullet already says.
+
 ### 15.6 Solid results the next session may build on
 
 - **The benchmark scorecard exists** (`tools/cwhit-scorecard.ts` + `src/eval/cwhit/scorecard.ts`, fixtures
@@ -1627,6 +1663,17 @@ From the 2026-07-16 session. Each is a marker, not a decision; do not treat any 
   shape wins in either direction, all differences noise-scale (corr .96 vs .97). Ordering is already
   competitive. This **supersedes** the v1 triangulation's "his model wins BB9/HR9/BABIP" (a LEVEL result
   misreported as model quality).
+
+  > **⚠ AMENDMENT (2026-07-20) — PAST TENSE. Read "cwhit's edge WAS level + spacing" (true at pin date,
+  > 2026-07-16); the SPACING half has since been substantially closed.** Closed by **BUILD-1** (pitcher
+  > K-spread ramp), **BUILD-2** (hitter tail correction) and **BUILD-3** (pitcher HR9 spread) — all three
+  > now on-by-default per §15.7. Post-BUILD scoreboard: **5 SPREAD:CWHIT / 40 TIE / 0 OURS** across 45
+  > cells (`fixtures/cwhit-scorecard-run-2026-07-20-retrain-corrected.txt`), down from 17 losses — see the
+  > §15.3 amendment. Part of the apparent "spacing gap" was also instrument: §15.8's uncorrected composite
+  > printed the RAW ratio, biasing absolute spread reads low (composite 0.78→1.15 gold hit, deconvolved).
+  > **The LEVEL half REMAINS and is accepted convention** — uniform-within-role level is absorbed by the
+  > production anchor (§15.2); it is not a fix target. **The ordering finding is unchanged** (duel-scored,
+  > noise-cancelling). Net: the sentence's residual live content is LEVEL only, and level is convention.
 - **IRON GATE PASSED** — corr .88–.98 at k≈1.6–2.2 (N=44, best pitcher depth); no frame breakdown at the
   bottom tier.
 - **Window confound FALSIFIED** — his edge is largest where he is LEAST in-sample (bronze, 60% overlap) ⇒
