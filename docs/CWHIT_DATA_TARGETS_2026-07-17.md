@@ -55,3 +55,24 @@ formats — not applicable to cwhit capture at all.
 3. **No new formats needed for the other two open items** — Diamond pit (dead, N=1) and elite
    top-decile spread just need MORE PAGES of Diamond Quick and Gold Quick, the ladder tiers we
    already capture.
+
+## 2026-07-20 REVISION — cap-composition ruling reshuffle
+
+Derek ruling: quick/daily/weekly have NO functional difference; the live anomaly hypothesis is
+CAP-MODE POOL COMPOSITION (salary caps force bad/cheap cards into play → wider realized pool).
+Consequence: Nightmare Cap + Cwhit Cap are era×cap CONFOUNDED — still wanted, but they can't
+identify the era effect alone. Config re-scan (budget_mode lens) adds:
+
+| Priority | Format | Config | Why |
+|---|---|---|---|
+| P1 NEW | Bronze Cap | `bronze-cap` — era-1955, cap 1275, ≤69 | Same era as Nightmare Cap (1559) ⇒ within-era cap-TIGHTNESS contrast, era held constant. |
+| P1 UPGRADED (was P3) | Late Silver | `late-silver` — era-1929, uncapped, ≤79 | Clean extreme-era point (k=0.288), no budget confound ⇒ identifies s(era_k) with EG/BH. |
+| P2 NEW | Silver Slots / Gold Slots | `silver-slots`, `gold-slots` — era-2010 | Slots force weak cards too; matched vs captured quicks (same era+window) ⇒ tests budget-general vs cap-specific. |
+| P2/P3 NEW | Low Gold Retrospective (1962), Golden Heart (1977), Golden Childhood (1984), Gold Rush (1989) | all uncapped | Confound-free mid-era points tracing the s(era_k) curve. Any 2–3 with depth. |
+
+Matched pairs now available: bronze-cap-weekly vs bronze-quick (era-2010, ≤69, cap on/off);
+gold-cap vs gold-quick (era-2010, ≤89, captured); nightmare-cap vs bronze-cap (era-1955,
+tightness); silver/gold-slots vs silver/gold-quick (slots on/off).
+Wonky Slots + Silver Deadball Slots DEMOTED to last (double-confounded: extreme era AND slots).
+Minimum identifying set if depth is scarce: Bronze Cap, Nightmare Cap, Late Silver,
+Bronze Cap Weekly, one 2010 slots format.
