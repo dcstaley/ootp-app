@@ -1,0 +1,1426 @@
+# CAPPROJ key=bronzequick__20260313 role=pit label=Bronze Quick type=Quick variantMode=all_cards projval=40-69 vlvl0=963 vlvl5=461 recordsTotal=1424 rows=1424
+CID	Name	Role	VAL	VLvl	Hand	Cap Value	Slots Value	pwOBA	pwOBA_vL	pwOBA_vR	Kpct	BBpct	HRpct	BABIP	ProjectedNewCard
+84839	Celebrating 42 - Veteran Presence RP Satchel Paige SLA 1952	Reliever	68	5	R			0.287	0.298	0.274	26.0	6.9	2.1	0.295	false
+86106	Obscure All-Stars - Baseball Reference 5 CL Bill Henry CIN 1960	Reliever	69	5	L			0.287	0.297	0.282	29.1	5.1	3.1	0.295	true
+84854	Limited Edition/42 RP Jack Meyer PHI 1958	Reliever	69	0	R			0.289	0.286	0.292	27.9	7.1	2.2	0.302	false
+85031	FLF 9 - Future Legend RP Winston Santos TEX 2026	Reliever	65	5	R			0.289	0.295	0.282	24.9	7.2	2.6	0.280	false
+83196	Snapshot RP Eric Plunk CLE 1995	Reliever	69	5	R			0.290	0.295	0.285	25.9	7.2	2.6	0.286	false
+85827	T4 Ep. 3 - Negro League Star SP Bob Romby BEG 1948	Starter	58	5	L			0.291	0.285	0.295	21.5	8.2	2.5	0.268	false
+85032	FLF 14 &amp; Co. - Future Legend SP Tanner McDougal CWS 2026	Starter	66	5	R			0.291	0.296	0.286	26.7	8.2	2.4	0.289	false
+84272	Rookie Sensation RP Dick Lines WS2 1966	Reliever	69	5	L			0.291	0.29	0.292	18.5	5.5	2.4	0.276	false
+85877	T4 Ep. 3 - Snapshot SP Jim Deshaies HOU 1989	Starter	67	5	L			0.291	0.302	0.285	20.3	7.5	2.1	0.276	false
+84696	Clubhouse - April Fools&#39; Day RP Bob Miller DET 1954	Reliever	69	0	L			0.293	0.262	0.311	16.6	6.2	1.6	0.283	false
+84271	Rookie Sensation RP Adam Cimber SD 2018	Reliever	69	5	R			0.293	0.315	0.265	21.4	8.0	1.5	0.296	false
+83869	Historical All-Star SP Dave Stieb TOR 1981	Starter	65	5	R			0.294	0.286	0.305	20.4	6.3	2.7	0.274	false
+82672	Hardware Heroes CL Roy Face PIT 1958	Reliever	66	5	R			0.294	0.289	0.3	19.6	4.3	2.5	0.288	false
+82670	Hardware Heroes CL Bill Campbell MIN 1976	Reliever	64	5	R			0.294	0.292	0.295	23.6	6.2	2.7	0.287	false
+83181	Snapshot CL Marshall Bridges NYY 1962	Reliever	65	5	L			0.294	0.293	0.295	26.1	10.6	2.4	0.275	false
+85869	T4 Ep. 3 - Historical All-Star SP Johnny Antonelli NY1 1954	Starter	67	5	L			0.294	0.321	0.279	24.8	6.7	3.5	0.269	false
+85608	MLB 2026 Live RP Kirby Yates LAA	Reliever	69	0	R			0.295	0.296	0.293	25.1	7.4	2.6	0.288	false
+85698	T4 Ep. 2 - Rookie Sensation SP Jim Bouton NYY 1963	Starter	64	5	R			0.295	0.301	0.287	18.6	7.3	2.6	0.266	false
+81910	MLB 2026 Live RP Yohan Ramirez PIT	Reliever	65	0	R			0.296	0.298	0.293	24.8	7.7	2.5	0.290	false
+85669	June Gems - Baseball Reference 3 CL Dan Spillner CLE 1982	Reliever	64	5	R			0.296	0.305	0.285	21.4	5.9	2.5	0.289	false
+86135	Obscure All-Stars - Baseball Reference 5 SP Gil Meche KC 2007	Starter	60	5	R			0.296	0.292	0.301	20.6	5.4	2.5	0.289	true
+85279	May Names 2 - Historical All-Star SP Joe Mays MIN 2001	Starter	64	5	R			0.296	0.293	0.3	14.4	5.6	2.5	0.265	false
+83119	Snapshot RP Mike Armstrong KC 1982	Reliever	60	5	R			0.296	0.302	0.289	22.3	8.1	2.8	0.271	false
+86229	Clubhouse - Baseball Reference 5 CL Alex Reyes STL 2021	Reliever	53	0	R			0.297	0.306	0.287	25.8	12.1	2.5	0.266	true
+84716	Clubhouse - April Fools&#39; Day RP Bob Miller SD 1971	Reliever	69	0	R			0.297	0.306	0.286	16.2	6.9	1.5	0.288	false
+81769	MLB 2026 Live RP Edgardo Henriquez LAD	Reliever	67	0	R			0.297	0.299	0.293	23.7	7.4	2.5	0.288	false
+84883	Celebrating 42 - Negro League Star SP Johnny Wright HoGr 1941	Starter	68	5	R			0.297	0.301	0.291	17.7	5.4	3.0	0.267	false
+83153	Snapshot SP Frank Smith CWS 1905	Starter	64	5	R			0.297	0.285	0.313	24.3	8.2	2.6	0.286	false
+83122	Snapshot CL Dave LaRoche CLE 1975	Reliever	61	5	L			0.297	0.286	0.303	30.7	10.4	2.8	0.290	false
+85124	FLF 8 - Future Legend SP Trey Gibson BAL 2026	Starter	67	5	R			0.297	0.292	0.303	23.4	6.9	2.5	0.291	false
+84265	Rookie Sensation RP Clay Bryant CHC 1936	Reliever	66	5	R			0.297	0.303	0.291	25.7	7.3	2.3	0.303	false
+84964	MLB 2026 Live RP Bryan Hudson CWS	Reliever	68	0	L			0.298	0.289	0.303	23.0	7.1	2.4	0.292	false
+85344	Played Where? - Snapshot SP Frank Viola BOS 1992	Starter	69	5	L			0.298	0.292	0.302	15.6	6.2	2.2	0.276	false
+83050	Snapshot RP Salomon Torres PIT 2005	Reliever	56	5	R			0.298	0.292	0.305	16.7	6.6	2.4	0.271	false
+83180	Snapshot RP Ken Sanders NYM 1975	Reliever	68	5	R			0.298	0.299	0.297	10.0	3.9	2.5	0.263	false
+85156	Dock&#39;s Counterpart SP Dave Roberts SD 1970	Starter	68	5	L			0.298	0.312	0.29	20.6	3.2	2.8	0.294	false
+83136	Snapshot RP Fred Green PIT 1960	Reliever	62	5	L			0.298	0.294	0.3	22.3	7.2	2.4	0.288	false
+85139	National Pretzel Day SP Pretzels Getzien DTN 1888	Starter	64	5	R			0.298	0.297	0.3	22.0	3.7	2.6	0.304	false
+83179	Snapshot RP Jerry Garvin TOR 1980	Reliever	67	5	L			0.298	0.281	0.307	22.9	5.6	3.0	0.285	false
+84044	Clubhouse - Snapshot CL Mitch Williams PHI 1991	Reliever	64	0	L			0.299	0.291	0.304	26.5	14.2	2.1	0.267	false
+85245	MLB 2026 Live RP Evan Sisk PIT	Reliever	68	0	L			0.299	0.292	0.304	23.6	7.0	2.4	0.297	false
+81998	MLB 2026 Live RP Daniel Palencia CHC	Reliever	67	0	R			0.299	0.298	0.302	23.8	7.0	2.6	0.292	false
+82088	MLB 2026 Live RP Huascar Brazoban NYM	Reliever	69	0	R			0.299	0.301	0.297	21.3	7.1	2.4	0.285	false
+82805	Unsung Heroes SP Wayne Twitchell PHI 1972	Starter	60	5	R			0.299	0.287	0.314	21.4	7.3	2.2	0.290	false
+83112	Snapshot SP Chris Short PHI 1963	Starter	65	5	L			0.299	0.27	0.316	22.6	7.0	2.3	0.294	false
+84430	Negro League Star SP Dick Redding BRG 1924	Starter	68	5	R			0.299	0.298	0.301	19.3	5.3	2.5	0.288	false
+84270	Rookie Sensation SP Toad Ramsey LS2 1885	Starter	67	5	L			0.299	0.299	0.299	25.6	7.8	2.7	0.293	false
+84041	All-Time Legend SP Willie McGill SL4 Peak	Starter	69	5	L			0.299	0.302	0.297	24.2	7.8	2.5	0.292	false
+84269	Rookie Sensation SP Larry Corcoran CHC 1880	Starter	68	5	R			0.299	0.297	0.301	25.3	9.3	2.5	0.286	false
+84779	FLF 11 - Future Legend SP Jake Bloss TOR 2026	Starter	67	5	R			0.299	0.305	0.291	22.6	5.4	2.5	0.299	false
+84839	Celebrating 42 - Veteran Presence RP Satchel Paige SLA 1952	Reliever	68	0	R			0.300	0.311	0.287	24.8	7.6	2.3	0.301	false
+84715	Clubhouse - April Fools&#39; Day SP Bob Miller LAD 1963	Starter	69	0	R			0.300	0.302	0.297	18.8	6.7	1.8	0.295	false
+82213	MLB 2026 Live RP Alexis Diaz TEX	Reliever	61	0	R			0.300	0.306	0.293	21.3	8.5	2.5	0.278	false
+83116	Snapshot RP Brian Tallet TOR 2008	Reliever	60	5	L			0.300	0.301	0.299	20.5	6.8	2.3	0.289	false
+84035	All-Time Legend SP Eddie Smith CWS Peak	Starter	67	5	L			0.300	0.318	0.29	22.2	7.1	2.6	0.287	false
+82918	Veteran Presence CL Fernando Rodney TB 2013	Reliever	63	5	R			0.300	0.303	0.297	25.5	10.2	2.0	0.296	false
+84036	All-Time Legend SP Hugh McQuillan BSN Peak	Starter	68	5	R			0.300	0.295	0.305	19.0	5.3	2.7	0.283	false
+83150	Snapshot SP Bob Kuzava NYY 1951	Starter	68	5	L			0.300	0.322	0.287	22.4	6.4	2.5	0.292	false
+83192	Snapshot SP Jack Harshman CWS 1954	Starter	69	5	L			0.300	0.289	0.306	25.6	9.4	2.1	0.298	false
+83143	Snapshot SP Carl Fischer DET 1933	Starter	64	5	L			0.300	0.312	0.293	25.1	8.4	2.5	0.292	false
+84957	MLB 2026 Live RP Tim Mayza PHI	Reliever	67	0	L			0.301	0.297	0.303	20.6	5.5	2.7	0.290	false
+84445	Negro League Star SP Laymon Yokely BBS 1928	Starter	67	5	R			0.301	0.302	0.3	20.1	6.0	2.5	0.290	false
+83874	Historical All-Star SP Whit Wyatt BRO 1939	Starter	68	5	R			0.301	0.301	0.302	22.2	6.4	2.5	0.296	false
+84425	Negro League Star SP Roy Welmaker HoSt 1953	Starter	68	5	L			0.301	0.298	0.302	20.1	6.2	2.5	0.288	false
+83193	Snapshot SP Jim Weaver CHC 1934	Starter	69	5	R			0.301	0.299	0.303	25.1	7.5	3.0	0.287	false
+84429	Negro League Star SP Ted Trent CAG 1936	Starter	69	5	R			0.301	0.301	0.3	18.7	5.2	2.5	0.288	false
+83876	Historical All-Star SP Jose Rijo CIN 1994	Starter	69	5	R			0.301	0.297	0.305	23.4	6.4	2.5	0.298	false
+83174	Snapshot SP Ben McDonald BAL 1993	Starter	68	5	R			0.301	0.294	0.31	22.3	7.3	2.8	0.282	false
+84664	Opening Day Heroes - Snapshot SP Rick Mahler ATL 1982	Starter	69	5	R			0.301	0.287	0.317	20.1	5.8	2.3	0.294	false
+83158	Snapshot SP Whitey Ford NYY 1962	Starter	67	5	L			0.301	0.299	0.303	19.4	5.6	2.6	0.288	false
+83145	Snapshot SP Jesse Duryea WAS 1892	Starter	64	5	R			0.301	0.303	0.298	18.3	6.7	3.0	0.267	false
+85794	Limited Edition/107 SP Steve Trout CHC 1985	Starter	68	0	L			0.302	0.299	0.303	18.3	5.9	1.7	0.302	false
+81886	MLB 2026 Live RP JoJo Romero STL	Reliever	69	0	L			0.302	0.293	0.307	22.5	6.4	2.7	0.292	false
+83196	Snapshot RP Eric Plunk CLE 1995	Reliever	69	0	R			0.302	0.303	0.301	24.7	7.8	2.9	0.288	false
+81757	MLB 2026 Live RP Wandy Peralta SD	Reliever	62	0	L			0.302	0.297	0.305	20.0	7.1	2.4	0.286	false
+84924	MLB 2026 Live RP Jovani Moran BOS	Reliever	64	0	L			0.302	0.294	0.307	23.5	7.6	2.8	0.288	false
+85032	FLF 14 &amp; Co. - Future Legend SP Tanner McDougal CWS 2026	Starter	66	0	R			0.302	0.307	0.295	25.5	9.0	2.5	0.294	false
+84720	Clubhouse - April Fools&#39; Day CL Mike Marshall MON 1973	Reliever	57	0	R			0.302	0.294	0.313	22.2	7.6	2.1	0.299	false
+82100	MLB 2026 Live RP John King MIA	Reliever	66	0	L			0.302	0.298	0.304	17.5	4.8	2.5	0.289	false
+83189	Snapshot RP Jim Todd ATH 1975	Reliever	68	5	R			0.302	0.308	0.294	14.8	5.5	2.3	0.279	false
+83182	Veteran Presence RP Elmer Singleton CHC 1959	Reliever	67	5	R			0.302	0.31	0.292	18.6	5.3	2.2	0.296	false
+83104	Snapshot SP Dupee Shaw PRO 1885	Starter	62	5	L			0.302	0.306	0.3	20.9	7.0	2.5	0.287	false
+83162	Snapshot RP Joel Payamps MIL 2023	Reliever	65	5	R			0.302	0.307	0.296	20.8	4.9	3.0	0.289	false
+84247	Rookie Sensation RP Al Osuna HOU 1991	Reliever	60	5	L			0.302	0.308	0.298	22.1	9.3	2.9	0.269	false
+83138	Snapshot RP Cal McLish CLE 1957	Reliever	63	5	R			0.302	0.291	0.315	21.1	7.6	2.6	0.282	false
+84266	Rookie Sensation RP Aaron Loup TOR 2013	Reliever	68	5	L			0.302	0.307	0.299	16.8	3.1	2.4	0.296	false
+84420	Negro League Star SP Connie Johnson KCM 1946	Starter	65	5	R			0.302	0.295	0.31	24.0	7.7	2.5	0.296	false
+83169	Snapshot SP Al Hollingsworth CIN 1936	Starter	69	5	L			0.302	0.299	0.303	21.2	6.4	2.3	0.297	false
+84434	Negro League Star SP Darltie Cooper HaGi 1926	Starter	68	5	R			0.302	0.302	0.302	17.8	4.6	2.5	0.290	false
+83171	Snapshot RP Vinnie Chulk SF 2007	Reliever	66	5	R			0.302	0.309	0.293	19.0	5.2	2.3	0.296	false
+85646	June Gems - Baseball Reference 3 SP Milo Candini WS1 1943	Starter	67	5	R			0.302	0.314	0.288	17.0	7.2	1.9	0.287	false
+81790	MLB 2026 Live RP Blake Treinen LAD	Reliever	69	0	R			0.303	0.307	0.299	23.2	6.5	2.7	0.296	false
+82412	MLB 2026 Live RP Dylan Smith SF	Reliever	65	0	R			0.303	0.305	0.301	21.7	6.8	2.6	0.292	false
+81915	MLB 2026 Live RP Dennis Santana PIT	Reliever	67	0	R			0.303	0.303	0.303	20.6	6.7	2.6	0.286	false
+85827	T4 Ep. 3 - Negro League Star SP Bob Romby BEG 1948	Starter	58	0	L			0.303	0.294	0.308	20.1	9.0	2.6	0.272	false
+84946	MLB 2026 Live RP Hoby Milner CHC	Reliever	66	0	L			0.303	0.303	0.303	18.3	5.4	2.5	0.290	false
+85829	Clubhouse - Rookie Sensation SP Joe Krakauskas WS1 1938	Starter	57	0	L			0.303	0.307	0.3	27.7	13.1	2.1	0.283	false
+82447	MLB 2026 Live RP Tim Herrin CLE	Reliever	59	0	L			0.303	0.298	0.306	22.6	8.2	2.5	0.288	false
+81939	MLB 2026 Live RP DL Hall MIL	Reliever	69	0	L			0.303	0.302	0.304	22.6	8.9	2.5	0.286	false
+84945	MLB 2026 Live RP Danny Coulombe BOS	Reliever	67	0	L			0.303	0.302	0.303	20.3	7.1	2.4	0.288	false
+83148	Snapshot SP Hal Woodeshick HOU 1962	Starter	66	5	L			0.303	0.277	0.318	19.9	6.8	1.2	0.315	false
+85308	Baseball Reference 2 CL Heathcliff Slocumb PHI 1995	Reliever	64	5	R			0.303	0.302	0.305	25.7	11.2	1.6	0.303	false
+85875	Heart Attack - Snapshot SP Greg Maddux CHC 1989	Starter	62	5	R			0.303	0.317	0.285	19.1	6.4	2.3	0.290	false
+85717	SwitchKnucklers - Snapshot SP Mickey Haefner WS1 1944	Starter	64	5	L			0.303	0.298	0.305	18.6	6.4	2.1	0.293	false
+84821	Baseball Reference 1 RP John Gant STL 2019	Reliever	62	5	R			0.303	0.321	0.28	16.9	9.8	2.2	0.267	false
+84040	All-Time Legend SP Steve Barber BAL Peak	Starter	69	5	L			0.303	0.311	0.299	19.7	6.7	2.4	0.289	false
+84031	All-Time Legend SP Tyler Anderson COL Peak	Starter	66	5	L			0.303	0.29	0.311	17.1	4.6	2.5	0.289	false
+86092	Limited Edition/73 SP Travis Wood CHC 2013	Starter	63	0	L			0.304	0.29	0.313	17.3	7.3	2.9	0.268	true
+82212	MLB 2026 Live RP Josh Sborz TEX	Reliever	65	0	R			0.304	0.306	0.302	21.6	6.8	2.6	0.293	false
+82381	MLB 2026 Live RP Daniel Lynch IV KC	Reliever	68	0	L			0.304	0.303	0.305	18.5	5.9	2.6	0.287	false
+86106	Obscure All-Stars - Baseball Reference 5 CL Bill Henry CIN 1960	Reliever	69	0	L			0.304	0.315	0.298	27.8	5.5	3.6	0.299	true
+86193	Limited Edition/73 CL Shigetoshi Hasegawa SEA 2003	Reliever	65	0	R			0.304	0.31	0.297	9.9	4.6	2.0	0.277	true
+81971	MLB 2026 Live RP Caleb Ferguson CIN	Reliever	65	0	L			0.304	0.305	0.304	20.3	6.6	2.5	0.292	false
+82672	Hardware Heroes CL Roy Face PIT 1958	Reliever	66	0	R			0.304	0.298	0.312	18.3	4.8	2.6	0.291	false
+82386	MLB 2026 Live CL Carlos Estevez KC	Reliever	67	0	R			0.304	0.308	0.299	18.7	6.1	2.5	0.286	false
+85877	T4 Ep. 3 - Snapshot SP Jim Deshaies HOU 1989	Starter	67	0	L			0.304	0.315	0.297	19.0	8.1	2.3	0.282	false
+84971	MLB 2026 Live RP Justin Bruihl STL	Reliever	62	0	L			0.304	0.298	0.307	21.5	6.6	2.5	0.296	false
+82036	MLB 2026 Live RP Clayton Beeter WSH	Reliever	69	0	R			0.304	0.307	0.301	24.3	9.3	2.6	0.287	false
+84033	All-Time Legend SP Tanner Roark WAS Peak	Starter	68	5	R			0.304	0.297	0.313	17.8	5.9	2.5	0.285	false
+83871	Historical All-Star CL Jose Mesa CLE 1996	Reliever	63	5	R			0.304	0.307	0.301	22.4	6.7	2.4	0.300	false
+82658	Hardware Heroes SP Carl Lundgren CHC 1903	Starter	64	5	R			0.304	0.304	0.303	18.3	6.1	2.4	0.289	false
+83154	Snapshot CL Danny Graves CIN 2002	Reliever	63	5	R			0.304	0.302	0.306	15.8	3.7	2.4	0.292	false
+84032	All-Time Legend SP Jon Garland CWS Peak	Starter	68	5	R			0.304	0.298	0.312	16.3	4.5	2.7	0.284	false
+82817	Unsung Heroes SP Ed Doheny PIT 1901	Starter	67	5	L			0.304	0.29	0.312	22.2	6.3	2.9	0.291	false
+83157	Snapshot RP Clay Carroll CIN 1975	Reliever	65	5	R			0.304	0.309	0.299	15.1	5.3	1.9	0.294	false
+83165	Snapshot SP Britt Burns CWS 1983	Starter	67	5	L			0.304	0.307	0.301	21.2	6.5	2.8	0.288	false
+83166	Snapshot SP Chris Bosio SEA 1993	Starter	68	5	R			0.304	0.32	0.285	20.9	7.0	2.9	0.281	false
+82380	MLB 2026 Live RP Alex Lange KC	Reliever	62	0	R			0.305	0.307	0.304	23.5	9.2	2.4	0.293	false
+82259	MLB 2026 Live RP Tyler Ferguson CHC	Reliever	59	0	R			0.305	0.307	0.302	21.4	7.3	2.6	0.289	false
+82119	MLB 2026 Live RP Calvin Faucher MIA	Reliever	64	0	R			0.305	0.303	0.308	22.4	8.2	2.4	0.294	false
+84271	Rookie Sensation RP Adam Cimber SD 2018	Reliever	69	0	R			0.305	0.328	0.277	20.0	8.7	1.6	0.300	false
+81969	MLB 2026 Live RP Brock Burke CIN	Reliever	61	0	L			0.305	0.304	0.305	21.0	7.1	2.6	0.288	false
+82217	MLB 2026 Live RP Ryan Brasier TEX	Reliever	68	0	R			0.305	0.311	0.297	18.5	5.5	2.6	0.288	false
+85895	FLF 14 &amp; Co. - Unsung Heroes SP Earl Wilson BOS 1962	Starter	55	5	R			0.305	0.319	0.289	21.8	9.9	2.9	0.269	false
+84436	Negro League Star SP Tom Williams CAG 1920	Starter	68	5	R			0.305	0.304	0.307	14.8	4.4	2.5	0.285	false
+85767	Family Connections - Hall of Fame RP Billy Wagner HOU 1996	Reliever	58	5	L			0.305	0.288	0.314	28.7	11.5	3.6	0.264	false
+84028	All-Time Legend SP Edinson Volquez CIN Peak	Starter	64	5	R			0.305	0.306	0.303	21.7	7.7	2.5	0.291	false
+83161	Snapshot SP Tully Sparks PHI 1907	Starter	68	5	R			0.305	0.313	0.296	16.3	5.0	2.7	0.281	false
+85331	T4 Ep. 1 - Rookie Sensation RP Curt Schilling BAL 1990	Reliever	65	5	R			0.305	0.337	0.266	17.5	8.4	1.5	0.295	false
+82661	Veteran Presence CL Mark Melancon SD 2021	Reliever	59	5	R			0.305	0.302	0.31	17.9	7.0	2.1	0.290	false
+84428	Negro League Star SP Henry McHenry NeBr 1932	Starter	66	5	R			0.305	0.304	0.305	17.9	5.5	2.5	0.289	false
+84819	Baseball Reference 1 SP Carlos Martinez STL 2016	Starter	64	5	R			0.305	0.309	0.3	18.7	6.7	2.4	0.287	false
+83200	Snapshot SP Dutch Leonard WS1 1938	Starter	69	5	R			0.305	0.288	0.325	15.1	4.5	2.5	0.284	false
+83074	Snapshot RP Ken Lehman BAL 1958	Reliever	57	5	L			0.305	0.3	0.307	19.8	4.9	2.5	0.299	false
+84240	Rookie Sensation SP Tim Keefe TRN 1880	Starter	58	5	R			0.305	0.303	0.308	22.6	7.7	2.7	0.289	false
+83127	Snapshot SP Pink Hawley STL 1893	Starter	65	5	R			0.305	0.312	0.295	23.9	6.8	2.7	0.298	false
+85057	HOF 1 - Baseball Reference SP Rich Gossage CWS 1976	Starter	65	5	R			0.305	0.319	0.288	21.3	7.3	2.6	0.289	false
+83129	Snapshot SP Anthony DeSclafani SF 2021	Starter	66	5	R			0.305	0.308	0.301	17.3	5.3	2.7	0.284	false
+83095	Snapshot RP Danny Coulombe ATH 2016	Reliever	60	5	L			0.305	0.301	0.308	23.0	6.7	3.2	0.286	false
+83133	Snapshot RP Cris Carpenter FLO 1993	Reliever	64	5	R			0.305	0.32	0.288	21.1	6.5	2.8	0.290	false
+83146	Snapshot RP Juan Berenguer MIN 1987	Reliever	64	5	R			0.305	0.32	0.286	25.0	7.0	3.0	0.296	false
+81789	MLB 2026 Live RP Brock Stewart LAD	Reliever	69	0	R			0.306	0.31	0.301	23.1	7.0	3.0	0.290	false
+85031	FLF 9 - Future Legend RP Winston Santos TEX 2026	Reliever	65	0	R			0.306	0.313	0.297	23.7	7.9	3.1	0.284	false
+83180	Snapshot RP Ken Sanders NYM 1975	Reliever	68	0	R			0.306	0.307	0.304	8.9	4.4	2.6	0.265	false
+81786	MLB 2026 Live RP Keynan Middleton LAD	Reliever	66	0	R			0.306	0.308	0.303	21.2	6.6	2.7	0.291	false
+86135	Obscure All-Stars - Baseball Reference 5 SP Gil Meche KC 2007	Starter	60	0	R			0.306	0.301	0.311	19.4	6.0	2.5	0.292	true
+81894	MLB 2026 Live RP Isaac Mattson PIT	Reliever	58	0	R			0.306	0.306	0.305	20.7	7.7	2.5	0.288	false
+84272	Rookie Sensation RP Dick Lines WS2 1966	Reliever	69	0	L			0.306	0.307	0.305	17.2	6.1	2.6	0.282	false
+82282	MLB 2026 Live RP Mark Leiter Jr. ATH	Reliever	67	0	R			0.306	0.305	0.307	23.4	6.7	2.6	0.304	false
+82551	MLB 2026 Live RP Tim Hill NYY	Reliever	64	0	L			0.306	0.301	0.308	15.8	4.9	2.5	0.287	false
+81866	MLB 2026 Live RP Ryan Fernandez STL	Reliever	61	0	R			0.306	0.306	0.306	23.2	7.4	2.7	0.295	false
+82662	Hardware Heroes RP Tom Vickery ML3 1891	Reliever	65	5	R			0.306	0.309	0.303	22.0	6.6	3.0	0.288	false
+83081	Snapshot RP Paul Shuey CLE 1998	Reliever	57	5	R			0.306	0.311	0.3	26.2	7.3	3.3	0.292	false
+84261	Rookie Sensation RP Ed Olwine ATL 1986	Reliever	63	5	L			0.306	0.297	0.311	23.0	5.1	3.7	0.283	false
+83172	Snapshot RP Dale Murray TOR 1982	Reliever	66	5	R			0.306	0.328	0.28	16.6	5.9	1.8	0.300	false
+84257	Rookie Sensation SP Bobby Miller LAD 2023	Starter	67	5	R			0.306	0.305	0.307	18.7	5.9	2.6	0.289	false
+84209	Rookie Sensation SP Kenta Maeda LAD 2016	Starter	69	5	R			0.306	0.322	0.288	20.4	6.2	2.9	0.288	false
+85509	60s Theme Week - Unsung Heroes SP Jack Kralick MIN 1961	Starter	64	5	L			0.306	0.282	0.319	20.7	4.5	2.5	0.306	false
+84421	Negro League Star SP Jesse Houston CAG 1938	Starter	67	5	R			0.306	0.307	0.305	17.4	5.2	2.5	0.291	false
+84268	Rookie Sensation SP Ed Heusser STL 1935	Starter	68	5	R			0.306	0.299	0.315	15.4	4.8	2.5	0.285	false
+83106	Snapshot SP Claude Hendrix PIT 1913	Starter	62	5	R			0.306	0.313	0.299	23.6	7.0	2.7	0.301	false
+85347	Played Where? - Snapshot RP Aroldis Chapman PIT 2024	Reliever	68	5	L			0.306	0.317	0.3	30.9	12.4	2.2	0.307	false
+85344	Played Where? - Snapshot SP Frank Viola BOS 1992	Starter	69	0	L			0.307	0.302	0.31	14.4	6.8	2.3	0.279	false
+82330	MLB 2026 Live RP Eric Orze MIN	Reliever	62	0	R			0.307	0.307	0.306	21.7	7.3	2.4	0.299	false
+82347	MLB 2026 Live RP Julian Merryweather MIN	Reliever	59	0	R			0.307	0.308	0.306	23.2	7.5	2.8	0.293	false
+82448	MLB 2026 Live RP Hunter Gaddis CLE	Reliever	67	0	R			0.307	0.311	0.304	21.2	5.9	2.9	0.293	false
+82494	MLB 2026 Live RP Braydon Fisher TOR	Reliever	63	0	R			0.307	0.309	0.304	23.9	8.0	3.1	0.285	false
+81909	MLB 2026 Live SP Bubba Chandler PIT	Starter	67	0	R			0.307	0.306	0.307	21.2	7.7	2.7	0.287	false
+81726	MLB 2026 Live RP Jose Butto SF	Reliever	67	0	R			0.307	0.307	0.306	20.1	7.1	2.5	0.291	false
+81725	MLB 2026 Live RP Tristan Beck SF	Reliever	67	0	R			0.307	0.306	0.309	17.5	5.5	2.5	0.290	false
+85869	T4 Ep. 3 - Historical All-Star SP Johnny Antonelli NY1 1954	Starter	67	0	L			0.307	0.338	0.289	23.6	7.5	3.7	0.272	false
+83093	Snapshot SP Lefty Tyler BSN 1913	Starter	61	5	L			0.307	0.315	0.302	21.4	7.2	2.6	0.294	false
+84250	Rookie Sensation SP George McConnell NYY 1912	Starter	63	5	R			0.307	0.295	0.321	21.7	5.8	3.0	0.293	false
+85277	May Names 1 - Rookie Sensation SP Trevor May MIN 2015	Starter	69	5	R			0.307	0.306	0.308	24.3	6.1	2.5	0.314	false
+83092	Veteran Presence SP Sam Jones WS1 1928	Starter	62	5	R			0.307	0.305	0.309	15.9	6.8	2.5	0.279	false
+84825	Baseball Reference 1 RP Reed Garrett NYM 2024	Reliever	49	5	R			0.307	0.305	0.31	26.6	9.4	2.3	0.309	false
+84431	Negro League Star SP Rube Foster CLG 1910	Starter	67	5	R			0.307	0.308	0.305	16.6	5.3	2.5	0.288	false
+83139	Snapshot SP Jesse Flores PHA 1944	Starter	66	5	R			0.307	0.294	0.322	17.4	5.6	3.0	0.279	false
+85338	T4 Ep. 1 - Historical All-Star SP Chuck Finley CLE 2000	Starter	60	5	L			0.307	0.292	0.316	23.6	9.1	2.4	0.297	false
+83121	Snapshot RP Adrian Devine ATL 1976	Reliever	62	5	R			0.307	0.307	0.307	21.7	5.8	2.7	0.301	false
+83049	Snapshot SP Ice Box Chamberlain CIN 1893	Starter	58	5	R			0.307	0.311	0.303	19.4	7.0	2.7	0.285	false
+83082	Snapshot RP Hector Carrasco MIN 1999	Reliever	59	5	R			0.307	0.307	0.306	19.4	6.5	2.2	0.298	false
+83868	Historical All-Star SP Wilson Alvarez CWS 1994	Starter	59	5	L			0.307	0.299	0.312	18.7	7.0	2.7	0.282	false
+82445	MLB 2026 Live RP Andrew Walters CLE	Reliever	60	0	R			0.308	0.313	0.301	24.0	8.2	3.0	0.289	false
+85669	June Gems - Baseball Reference 3 CL Dan Spillner CLE 1982	Reliever	64	0	R			0.308	0.32	0.294	20.0	6.5	2.6	0.294	false
+81756	MLB 2026 Live RP Yuki Matsui SD	Reliever	67	0	L			0.308	0.304	0.31	23.8	7.6	3.3	0.285	false
+84986	MLB 2026 Live RP Will Klein LAD	Reliever	64	0	R			0.308	0.312	0.302	23.9	8.6	2.5	0.299	false
+82452	MLB 2026 Live RP Carlos Hernandez CLE	Reliever	68	0	R			0.308	0.31	0.304	21.1	7.0	2.7	0.293	false
+83136	Snapshot RP Fred Green PIT 1960	Reliever	62	0	L			0.308	0.304	0.309	21.0	7.9	2.5	0.292	false
+84955	MLB 2026 Live RP Enmanuel De Jesus DET	Reliever	67	0	L			0.308	0.308	0.309	19.5	6.6	2.5	0.295	false
+82345	MLB 2026 Live RP Andrew Chafin CIN	Reliever	59	0	L			0.308	0.301	0.312	23.4	7.9	2.6	0.298	false
+82153	MLB 2026 Live RP Aaron Bummer CHC	Reliever	58	0	L			0.308	0.307	0.308	21.3	7.1	2.5	0.296	false
+84265	Rookie Sensation RP Clay Bryant CHC 1936	Reliever	66	0	R			0.308	0.312	0.303	24.5	7.9	2.4	0.308	false
+85698	T4 Ep. 2 - Rookie Sensation SP Jim Bouton NYY 1963	Starter	64	0	R			0.308	0.316	0.298	17.1	7.9	2.9	0.270	false
+81821	MLB 2026 Live RP Brennan Bernardino COL	Reliever	58	0	L			0.308	0.305	0.31	19.9	7.0	2.5	0.293	false
+83115	Snapshot RP Alex Wilson DET 2016	Reliever	62	5	R			0.308	0.315	0.299	15.6	5.5	2.4	0.288	false
+84251	Rookie Sensation SP Happy Townsend PHI 1901	Starter	63	5	R			0.308	0.321	0.292	24.8	10.1	2.6	0.291	false
+83156	Snapshot CL Lee Smith CHC 1986	Reliever	64	5	R			0.308	0.323	0.29	25.9	7.9	3.3	0.293	false
+83134	Veteran Presence SP Joe Niekro HOU 1981	Starter	66	5	R			0.308	0.315	0.3	15.7	6.3	2.5	0.283	false
+83120	Snapshot SP Mike Moore ATH 1991	Starter	64	5	R			0.308	0.317	0.297	20.5	9.0	2.4	0.285	false
+83159	Snapshot SP Burleigh Grimes NY1 1927	Starter	69	5	R			0.308	0.322	0.291	22.7	6.4	3.1	0.293	false
+84016	All-Time Legend RP Jerry Don Gleaton DET Peak	Reliever	50	5	L			0.308	0.298	0.313	21.5	7.5	2.8	0.290	false
+82669	Hardware Heroes SP General Crowder WS1 1933	Starter	66	5	R			0.308	0.315	0.299	20.3	5.6	2.9	0.292	false
+83125	Snapshot RP Don Brennan CIN 1935	Reliever	60	5	R			0.308	0.327	0.285	21.5	8.0	3.0	0.282	false
+84248	Rookie Sensation RP Neil Allen NYM 1979	Reliever	60	5	R			0.308	0.307	0.31	22.4	7.8	2.2	0.306	false
+82628	MLB 2026 Live RP Grant Wolfram BAL	Reliever	65	0	L			0.309	0.302	0.312	21.1	6.4	2.4	0.305	false
+86217	Limited Edition/73 SP Alexi Ogando TEX 2011	Starter	66	0	R			0.309	0.333	0.28	19.3	5.8	3.3	0.278	false
+82122	MLB 2026 Live RP Andrew Nardi MIA	Reliever	63	0	L			0.309	0.298	0.315	25.2	7.3	3.3	0.293	false
+82488	MLB 2026 Live RP Tommy Nance TOR	Reliever	66	0	R			0.309	0.309	0.309	21.7	6.1	2.9	0.297	false
+81968	MLB 2026 Live RP Sam Moll CIN	Reliever	57	0	L			0.309	0.298	0.316	23.0	7.9	3.0	0.289	false
+81936	MLB 2026 Live RP Easton McGee MIL	Reliever	67	0	R			0.309	0.313	0.305	17.7	5.4	2.7	0.292	false
+85279	May Names 2 - Historical All-Star SP Joe Mays MIN 2001	Starter	64	0	R			0.309	0.31	0.308	13.1	6.1	2.9	0.267	false
+85293	PTCS 3 - Unsung Heroes SP Darrell May KC 2003	Starter	60	0	L			0.309	0.292	0.319	18.3	4.8	3.9	0.267	false
+84852	Limited Edition/42 SP Jose Lima HOU 1999	Starter	69	0	R			0.309	0.323	0.292	19.6	3.8	3.1	0.297	false
+82155	MLB 2026 Live RP Tyler Kinley ATL	Reliever	67	0	R			0.309	0.31	0.307	23.6	6.8	3.4	0.287	false
+82348	MLB 2026 Live RP Liam Hendriks CHC	Reliever	65	0	R			0.309	0.309	0.309	23.0	6.6	3.0	0.297	false
+82281	MLB 2026 Live RP Hogan Harris ATH	Reliever	60	0	L			0.309	0.297	0.317	24.2	8.2	2.8	0.297	false
+82670	Hardware Heroes CL Bill Campbell MIN 1976	Reliever	64	0	R			0.309	0.306	0.312	22.3	6.9	3.1	0.290	false
+81722	MLB 2026 Live RP JT Brubaker SF	Reliever	59	0	R			0.309	0.309	0.31	18.3	7.0	2.5	0.289	false
+83181	Snapshot CL Marshall Bridges NYY 1962	Reliever	65	0	L			0.309	0.313	0.307	24.9	11.4	2.7	0.281	false
+85003	MLB 2026 Live RP AJ Blubaugh HOU	Reliever	62	0	R			0.309	0.306	0.311	22.0	7.7	3.0	0.285	false
+82449	MLB 2026 Live RP Shawn Armstrong CLE	Reliever	69	0	R			0.309	0.313	0.303	22.4	6.1	3.3	0.288	false
+86153	Limited Edition/111 SP Henderson Alvarez III MIA 2014	Starter	60	0	R			0.309	0.305	0.314	12.2	2.8	2.1	0.298	true
+83098	Veteran Presence CL Tim Worrell PHI 2004	Reliever	58	5	R			0.309	0.31	0.309	20.0	5.0	3.2	0.289	false
+83151	Snapshot SP Chuck Stobbs WS1 1954	Starter	67	5	L			0.309	0.317	0.305	15.5	6.3	1.9	0.295	false
+83091	Snapshot RP Jack Russell CHC 1939	Reliever	58	5	R			0.309	0.316	0.3	20.9	6.1	2.7	0.297	false
+83137	Snapshot SP Claude Osteen LAD 1965	Starter	64	5	L			0.309	0.319	0.303	16.4	5.7	2.5	0.288	false
+82816	Unsung Heroes SP Doc Newton NYY 1907	Starter	66	5	L			0.309	0.319	0.304	22.9	5.7	3.1	0.300	false
+83173	Snapshot SP Eric Milton MIN 1999	Starter	69	5	L			0.309	0.313	0.306	21.2	5.6	3.5	0.282	false
+82812	Unsung Heroes SP Whitey Glazner PIT 1922	Starter	64	5	R			0.309	0.3	0.32	21.6	5.5	3.0	0.298	false
+83168	Snapshot SP Mike Fornieles BOS 1957	Starter	67	5	R			0.309	0.311	0.307	19.1	6.0	2.4	0.300	false
+83187	Snapshot RP Tim Crews LAD 1991	Reliever	66	5	R			0.309	0.326	0.288	22.2	4.8	2.8	0.308	false
+83140	Snapshot SP Harry Brecheen STL 1949	Starter	67	5	L			0.309	0.316	0.305	18.6	4.9	3.1	0.286	false
+82809	Veteran Presence SP Dick Barrett PHI 1943	Starter	62	5	R			0.309	0.293	0.329	18.9	6.7	2.8	0.285	false
+83128	Snapshot SP Red Ames NY1 1909	Starter	64	5	R			0.309	0.316	0.302	24.7	7.0	3.1	0.299	false
+84425	Negro League Star SP Roy Welmaker HoSt 1953	Starter	68	0	L			0.310	0.307	0.312	18.7	6.8	2.6	0.291	false
+82482	MLB 2026 Live RP Mike Vasil CWS	Reliever	62	0	R			0.310	0.314	0.306	17.7	6.6	2.6	0.288	false
+83869	Historical All-Star SP Dave Stieb TOR 1981	Starter	65	0	R			0.310	0.299	0.324	19.2	6.9	3.0	0.280	false
+83112	Snapshot SP Chris Short PHI 1963	Starter	65	0	L			0.310	0.279	0.328	21.2	7.6	2.6	0.296	false
+84991	MLB 2026 Live RP Peyton Pallette CWS	Reliever	57	0	R			0.310	0.306	0.315	22.6	7.8	3.0	0.290	false
+81888	MLB 2026 Live SP Andre Pallante STL	Starter	69	0	R			0.310	0.315	0.303	17.7	6.1	2.6	0.290	false
+81709	MLB 2026 Live RP Erik Miller SF	Reliever	60	0	L			0.310	0.306	0.313	23.9	10.0	2.5	0.295	false
+82383	MLB 2026 Live RP Nick Mears KC	Reliever	57	0	R			0.310	0.313	0.306	19.6	7.3	2.6	0.290	false
+85581	MLB 2026 Live SP Trevor McDonald SF	Starter	63	0	R			0.310	0.312	0.309	18.2	6.4	2.5	0.293	false
+85515	Clubhouse - 60s Week - Hardware Heroes SP Frank Lary DET 1961	Starter	67	0	R			0.310	0.318	0.299	16.4	4.6	2.6	0.292	false
+85624	MLB 2026 Live SP Stephen Kolek KC	Starter	69	0	R			0.310	0.314	0.306	16.9	5.6	2.6	0.291	false
+82091	MLB 2026 Live RP Craig Kimbrel TB	Reliever	63	0	R			0.310	0.312	0.308	26.5	8.3	3.6	0.287	false
+84935	MLB 2026 Live RP Caleb Kilian SF	Reliever	68	0	R			0.310	0.315	0.303	21.8	6.8	3.0	0.290	false
+82415	MLB 2026 Live RP Tyler Holton DET	Reliever	66	0	L			0.310	0.314	0.309	18.5	4.9	3.1	0.287	false
+85124	FLF 8 - Future Legend SP Trey Gibson BAL 2026	Starter	67	0	R			0.310	0.3	0.322	22.2	7.5	2.8	0.295	false
+81710	MLB 2026 Live SP Hayden Birdsong SF	Starter	66	0	R			0.310	0.313	0.306	20.4	7.1	2.8	0.290	false
+82579	MLB 2026 Live RP Jake Bird NYY	Reliever	66	0	R			0.310	0.314	0.305	23.4	6.6	2.9	0.300	false
+85633	MLB 2026 Live SP Jake Bennett BOS	Starter	66	0	L			0.310	0.306	0.313	18.3	5.7	2.6	0.294	false
+83066	Snapshot SP Earl Whitehill DET 1929	Starter	62	5	L			0.310	0.325	0.302	23.6	6.9	3.0	0.298	false
+85081	Happy Birthday Nico - Rookie Sensation SP Justin Nicolino MIA 2015	Starter	55	5	L			0.310	0.304	0.313	10.7	5.6	2.3	0.276	false
+83170	Snapshot SP Jumbo McGinnis SL4 1884	Starter	65	5	R			0.310	0.312	0.308	14.8	3.7	2.5	0.294	false
+83149	Snapshot SP Dennis Leonard KC 1976	Starter	67	5	R			0.310	0.315	0.304	20.3	5.9	3.0	0.291	false
+86073	Obscure All-Stars - Baseball Reference 5 SP Harry Kincannon PiCr 1934	Starter	45	5	R			0.310	0.311	0.308	24.1	6.2	2.5	0.317	true
+83131	Snapshot SP Roberto H. Hernandez CLE 2007	Starter	67	5	R			0.310	0.319	0.299	15.5	6.2	2.4	0.287	false
+84275	Rookie Sensation SP Atlee Hammaker SF 1982	Starter	62	5	L			0.310	0.321	0.304	19.0	1.8	3.4	0.298	false
+84277	Rookie Sensation SP Al Grabowski STL 1929	Starter	69	5	L			0.310	0.306	0.312	20.8	5.4	2.7	0.301	false
+84426	Negro League Star SP Bill Gatewood CAG 1912	Starter	62	5	R			0.310	0.309	0.311	14.5	5.3	2.5	0.284	false
+83124	Snapshot SP Joe Dobson BOS 1946	Starter	65	5	R			0.310	0.318	0.301	22.7	7.0	3.2	0.289	false
+84243	Rookie Sensation SP Raleigh Aitchison BRO 1914	Starter	63	5	L			0.310	0.311	0.309	20.7	6.4	3.1	0.287	false
+81856	MLB 2026 Live RP Ryan Thompson AZ	Reliever	64	0	R			0.311	0.321	0.297	17.2	5.4	2.7	0.291	false
+83116	Snapshot RP Brian Tallet TOR 2008	Reliever	60	0	L			0.311	0.311	0.311	19.2	7.4	2.4	0.293	false
+85970	MLB 2026 Live RP Drew Sommers DET	Reliever	58	0	L			0.311	0.297	0.319	18.9	6.4	2.6	0.295	false
+82120	MLB 2026 Live RP Tyler Phillips MIA	Reliever	60	0	R			0.311	0.309	0.314	18.5	6.4	2.8	0.288	false
+82151	MLB 2026 Live RP Joel Payamps ATL	Reliever	63	0	R			0.311	0.314	0.307	19.6	5.7	2.9	0.293	false
+81912	MLB 2026 Live RP Kyle Nicolas WSH	Reliever	58	0	R			0.311	0.311	0.31	21.1	7.9	2.6	0.294	false
+81833	MLB 2026 Live RP Juan Morillo AZ	Reliever	53	0	R			0.311	0.312	0.309	21.9	8.8	2.5	0.294	false
+84041	All-Time Legend SP Willie McGill SL4 Peak	Starter	69	0	L			0.311	0.314	0.309	22.8	8.7	2.5	0.297	false
+84664	Opening Day Heroes - Snapshot SP Rick Mahler ATL 1982	Starter	69	0	R			0.311	0.297	0.327	18.9	6.4	2.4	0.297	false
+82229	MLB 2026 Live RP Casey Legumina TB	Reliever	60	0	R			0.311	0.314	0.308	20.4	6.3	2.6	0.300	false
+83192	Snapshot SP Jack Harshman CWS 1954	Starter	69	0	L			0.311	0.299	0.317	24.4	10.1	2.2	0.301	false
+83179	Snapshot RP Jerry Garvin TOR 1980	Reliever	67	0	L			0.311	0.289	0.324	21.7	6.3	3.3	0.287	false
+82417	MLB 2026 Live RP Kyle Finnegan DET	Reliever	54	0	R			0.311	0.31	0.313	20.0	7.6	2.7	0.289	false
+82480	MLB 2026 Live SP Sean Burke CWS	Starter	69	0	R			0.311	0.312	0.311	22.8	6.6	3.4	0.289	false
+83055	Snapshot RP Jordan Walden LAA 2012	Reliever	54	5	R			0.311	0.313	0.307	24.4	8.3	2.5	0.307	false
+83073	Snapshot SP Steve Stone CWS 1973	Starter	61	5	R			0.311	0.323	0.296	22.8	9.3	2.5	0.295	false
+84034	All-Time Legend SP Jerry Staley STL Peak	Starter	66	5	R			0.311	0.333	0.283	14.9	4.1	2.5	0.294	false
+82815	Unsung Heroes RP Pete Redfern MIN 1979	Reliever	66	5	R			0.311	0.338	0.278	24.1	6.9	3.2	0.297	false
+83155	Snapshot RP Paul Quantrill TOR 1998	Reliever	64	5	R			0.311	0.309	0.314	19.1	4.4	2.3	0.312	false
+83021	Snapshot RP Jesse Orosco LAD 1988	Reliever	52	5	L			0.311	0.31	0.312	23.8	10.8	2.9	0.279	false
+82807	Unsung Heroes RP Hal McKain CWS 1930	Reliever	57	5	R			0.311	0.315	0.305	24.9	8.4	2.3	0.313	false
+83163	Snapshot RP Tommy Hunter CLE 2016	Reliever	64	5	R			0.311	0.303	0.321	15.2	4.3	1.7	0.312	false
+83117	Snapshot SP Elmer Dessens CIN 2000	Starter	65	5	R			0.311	0.307	0.316	14.2	5.0	2.3	0.291	false
+83059	Snapshot SP Harry Coveleski DET 1914	Starter	59	5	L			0.311	0.298	0.318	17.5	6.4	2.9	0.281	false
+84037	All-Time Legend SP Mark Clark NYM Peak	Starter	68	5	R			0.311	0.32	0.299	18.2	3.6	2.8	0.302	false
+83052	Snapshot RP Tim Birtsas CIN 1989	Reliever	54	5	L			0.311	0.306	0.313	22.7	6.0	3.0	0.301	false
+85973	MLB 2026 Live RP Craig Yoho MIL	Reliever	54	0	R			0.312	0.315	0.309	21.1	7.6	2.9	0.291	false
+83874	Historical All-Star SP Whit Wyatt BRO 1939	Starter	68	0	R			0.312	0.311	0.314	20.9	7.1	2.6	0.301	false
+84883	Celebrating 42 - Negro League Star SP Johnny Wright HoGr 1941	Starter	68	0	R			0.312	0.316	0.306	16.4	5.8	3.5	0.268	false
+82805	Unsung Heroes SP Wayne Twitchell PHI 1972	Starter	60	0	R			0.312	0.301	0.326	20.0	8.0	2.4	0.295	false
+83050	Snapshot RP Salomon Torres PIT 2005	Reliever	56	0	R			0.312	0.304	0.322	15.4	7.3	2.7	0.278	false
+82121	MLB 2026 Live RP Jesus Tinoco MIA	Reliever	62	0	R			0.312	0.32	0.302	19.0	6.5	2.7	0.293	false
+82000	MLB 2026 Live RP Caleb Thielbar CHC	Reliever	67	0	L			0.312	0.306	0.316	23.4	6.4	3.8	0.284	false
+84932	MLB 2026 Live RP Ian Seymour TB	Reliever	69	0	L			0.312	0.295	0.322	22.9	6.3	3.6	0.286	false
+82615	MLB 2026 Live RP Patrick Sandoval BOS	Reliever	69	0	L			0.312	0.311	0.313	19.3	7.0	2.4	0.298	false
+85002	MLB 2026 Live RP Tyler Samaniego BOS	Reliever	59	0	L			0.312	0.306	0.315	19.3	6.3	2.5	0.299	false
+85570	MLB 2026 Live RP Matt Pushard MIA	Reliever	61	0	R			0.312	0.314	0.309	20.9	6.6	2.9	0.295	false
+84959	MLB 2026 Live RP Cionel Perez NYM	Reliever	55	0	L			0.312	0.306	0.315	20.9	7.8	2.7	0.292	false
+86207	Limited Edition/89 SP Vinegar Bend Mizell STL 1959	Starter	57	0	L			0.312	0.312	0.312	17.9	7.3	2.3	0.294	true
+82280	MLB 2026 Live RP Luis Medina ATH	Reliever	57	0	R			0.312	0.313	0.311	20.8	7.5	2.5	0.299	false
+86060	MLB 2026 Live RP Zach McCambley CIN	Reliever	55	0	R			0.312	0.318	0.304	21.1	7.9	2.6	0.296	false
+82033	MLB 2026 Live RP Dicky Lovelady WSH	Reliever	58	0	L			0.312	0.305	0.315	20.4	6.6	2.7	0.297	false
+83122	Snapshot CL Dave LaRoche CLE 1975	Reliever	61	0	L			0.312	0.296	0.321	29.3	11.1	3.1	0.295	false
+84420	Negro League Star SP Connie Johnson KCM 1946	Starter	65	0	R			0.312	0.307	0.319	22.6	8.5	2.6	0.299	false
+85998	MLB 2026 Live RP Drey Jameson AZ	Reliever	57	0	R			0.312	0.319	0.302	21.6	7.8	2.8	0.293	false
+84589	Limited Edition/93 SP Edwin Jackson DET 2009	Starter	58	0	R			0.312	0.303	0.323	18.9	6.1	3.0	0.289	true
+83169	Snapshot SP Al Hollingsworth CIN 1936	Starter	69	0	L			0.312	0.31	0.313	19.8	7.0	2.5	0.299	false
+85957	MLB 2026 Live CL Welinton Herrera COL	Reliever	59	0	L			0.312	0.291	0.324	21.2	6.9	2.9	0.295	false
+82453	MLB 2026 Live SP Joey Cantillo CLE	Starter	69	0	L			0.312	0.309	0.314	24.0	7.7	3.4	0.290	false
+82479	MLB 2026 Live RP Ryan Borucki SF	Reliever	55	0	L			0.312	0.302	0.318	20.8	7.3	2.8	0.293	false
+84779	FLF 11 - Future Legend SP Jake Bloss TOR 2026	Starter	67	0	R			0.312	0.321	0.301	21.3	5.9	2.7	0.305	false
+83183	Snapshot SP Lon Warneke STL 1940	Starter	69	5	R			0.312	0.323	0.298	16.2	3.9	3.3	0.283	false
+83099	Snapshot SP Todd Stottlemyre STL 1998	Starter	65	5	R			0.312	0.324	0.297	21.8	7.2	3.1	0.291	false
+83114	Snapshot SP Pat Ragan BSN 1917	Starter	62	5	R			0.312	0.298	0.328	18.8	5.2	3.3	0.285	false
+83105	Snapshot SP Jack Powell SLA 1908	Starter	62	5	R			0.312	0.297	0.33	15.7	5.0	2.9	0.285	false
+83108	Snapshot SP Joel Pineiro LAA 2010	Starter	62	5	R			0.312	0.309	0.316	15.3	4.1	2.8	0.290	false
+83077	Snapshot RP Luis Perdomo SD 2019	Reliever	59	5	R			0.312	0.321	0.301	14.7	5.2	2.3	0.293	false
+84242	Rookie Sensation RP Steve Olin CLE 1989	Reliever	58	5	R			0.312	0.318	0.306	20.0	6.8	2.1	0.311	false
+85332	T4 Ep. 1 - Rookie Sensation RP Darren O&#39;Day LAA 2008	Reliever	62	5	R			0.312	0.323	0.298	16.8	5.7	1.9	0.308	false
+83152	Snapshot SP Art Nehf BSN 1919	Starter	64	5	L			0.312	0.309	0.313	15.1	5.3	2.9	0.281	false
+83051	Snapshot SP Matt Harrison TEX 2011	Starter	68	5	L			0.312	0.307	0.315	16.4	6.2	2.5	0.289	false
+83144	Snapshot SP Ray Fisher NYY 1911	Starter	65	5	R			0.312	0.317	0.307	22.6	5.9	3.0	0.302	false
+83057	Snapshot SP Cliff Fannin SLA 1947	Starter	60	5	R			0.312	0.322	0.298	22.5	8.0	3.1	0.286	false
+83126	Snapshot SP Howard Ehmke BOS 1923	Starter	64	5	R			0.312	0.325	0.297	22.4	7.6	3.1	0.291	false
+84262	Rookie Sensation SP Bo Belinsky LAA 1962	Starter	66	5	L			0.312	0.334	0.3	23.0	11.9	2.3	0.285	false
+84025	All-Time Legend SP Fred Beebe STL Peak	Starter	62	5	R			0.312	0.331	0.287	23.3	7.8	3.1	0.291	false
+83071	Snapshot CL Antonio Alfonseca FLO 1999	Reliever	59	5	R			0.312	0.312	0.312	15.9	5.8	2.0	0.302	false
+84445	Negro League Star SP Laymon Yokely BBS 1928	Starter	67	0	R			0.313	0.314	0.311	18.8	6.7	2.6	0.295	false
+82159	MLB 2026 Live SP Joey Wentz ATL	Starter	69	0	L			0.313	0.314	0.312	20.6	6.7	2.6	0.302	false
+84429	Negro League Star SP Ted Trent CAG 1936	Starter	69	0	R			0.313	0.314	0.311	17.4	5.6	2.8	0.290	false
+83189	Snapshot RP Jim Todd ATH 1975	Reliever	68	0	R			0.313	0.319	0.306	13.4	6.1	2.4	0.284	false
+85142	PTCS 2 - Veteran Presence SP Tom Seaver CIN 1981	Starter	56	0	R			0.313	0.316	0.308	18.8	8.4	2.9	0.278	false
+82918	Veteran Presence CL Fernando Rodney TB 2013	Reliever	63	0	R			0.313	0.316	0.31	24.2	11.0	2.1	0.302	false
+82396	MLB 2026 Live RP Konnor Pilkington DET	Reliever	60	0	L			0.313	0.313	0.313	21.4	7.9	2.9	0.292	false
+82130	MLB 2026 Live SP Martin Perez ATL	Starter	65	0	L			0.313	0.3	0.32	18.9	6.8	3.0	0.287	false
+81737	MLB 2026 Live RP David Morgan SD	Reliever	56	0	R			0.313	0.32	0.305	22.7	7.5	2.9	0.299	false
+83174	Snapshot SP Ben McDonald BAL 1993	Starter	68	0	R			0.313	0.303	0.325	21.1	7.9	3.1	0.286	false
+82658	Hardware Heroes SP Carl Lundgren CHC 1903	Starter	64	0	R			0.313	0.313	0.312	17.0	6.7	2.4	0.292	false
+82029	MLB 2026 Live RP Brad Lord WSH	Reliever	65	0	R			0.313	0.318	0.307	19.2	6.3	3.1	0.287	false
+81882	MLB 2026 Live RP Gordon Graceffo STL	Reliever	63	0	R			0.313	0.318	0.307	17.6	6.7	2.9	0.285	false
+84821	Baseball Reference 1 RP John Gant STL 2019	Reliever	62	0	R			0.313	0.33	0.293	15.6	10.5	2.3	0.271	false
+84961	MLB 2026 Live RP Matt Gage SF	Reliever	58	0	L			0.313	0.299	0.321	20.3	6.9	3.0	0.291	false
+82329	MLB 2026 Live RP Kody Funderburk MIN	Reliever	53	0	L			0.313	0.309	0.315	19.8	8.1	2.5	0.294	false
+81724	MLB 2026 Live RP Michael Fulmer SF	Reliever	62	0	R			0.313	0.318	0.308	22.5	7.0	3.1	0.294	false
+82296	MLB 2026 Live RP Jose Fermin LAA	Reliever	55	0	R			0.313	0.32	0.304	22.1	7.9	3.1	0.288	false
+82384	MLB 2026 Live CL Lucas Erceg KC	Reliever	58	0	R			0.313	0.313	0.312	20.2	7.5	2.4	0.299	false
+82646	MLB 2026 Live RP Dietrich Enns BAL	Reliever	68	0	L			0.313	0.311	0.313	19.7	6.4	2.5	0.302	false
+82483	MLB 2026 Live CL Seranthony Dominguez CWS	Reliever	62	0	R			0.313	0.32	0.305	24.4	7.9	3.6	0.287	false
+82183	MLB 2026 Live RP Enyel De Los Santos HOU	Reliever	64	0	R			0.313	0.316	0.309	22.0	5.6	3.6	0.289	false
+84269	Rookie Sensation SP Larry Corcoran CHC 1880	Starter	68	0	R			0.313	0.311	0.316	24.2	10.2	2.9	0.289	false
+85646	June Gems - Baseball Reference 3 SP Milo Candini WS1 1943	Starter	67	0	R			0.313	0.324	0.299	15.8	7.8	2.1	0.290	false
+86293	PTCS 4 - Unsung Heroes SP Dallas Braden ATH 2010	Starter	57	0	L			0.313	0.325	0.307	13.4	4.4	2.5	0.291	true
+84040	All-Time Legend SP Steve Barber BAL Peak	Starter	69	0	L			0.313	0.322	0.308	18.4	7.3	2.4	0.294	false
+82060	MLB 2026 Live RP Tanner Banks PHI	Reliever	62	0	L			0.313	0.301	0.32	20.3	5.6	2.9	0.299	false
+84944	MLB 2026 Live RP Anthony Banda MIN	Reliever	54	0	L			0.313	0.314	0.312	20.3	7.4	2.8	0.292	false
+84020	All-Time Legend SP John Thomson COL Peak	Starter	57	5	R			0.313	0.326	0.297	17.5	5.4	2.5	0.299	false
+84239	Rookie Sensation SP Curt Simmons PHI 1948	Starter	56	5	L			0.313	0.325	0.306	22.8	9.2	2.6	0.296	false
+84245	Rookie Sensation RP Will McEnaney CIN 1975	Reliever	56	5	L			0.313	0.308	0.315	16.6	3.9	2.9	0.295	false
+83061	Snapshot RP Roy Lee Jackson SD 1985	Reliever	58	5	R			0.313	0.32	0.304	21.3	6.4	3.5	0.283	false
+84685	Happy Easter SP Bunny Hearn BSN 1918	Starter	55	5	L			0.313	0.331	0.303	16.2	4.8	2.8	0.291	false
+83085	Snapshot SP Tom Glavine ATL 1999	Starter	63	5	L			0.313	0.296	0.322	15.2	5.6	2.2	0.297	false
+83870	Historical All-Star SP Mort Cooper BSN 1945	Starter	63	5	R			0.313	0.324	0.3	23.5	6.5	3.4	0.295	false
+82810	Unsung Heroes SP Bill Bayne SLA 1921	Starter	60	5	L			0.313	0.309	0.316	24.6	9.1	3.1	0.292	false
+81999	MLB 2026 Live RP Jacob Webb CHC	Reliever	63	0	R			0.314	0.316	0.312	22.9	6.5	3.7	0.288	false
+85368	Clubhouse - Played Where? - Unsung Heroes RP Greg Swindell MIN 1997	Reliever	63	0	L			0.314	0.277	0.335	20.1	5.1	3.8	0.280	false
+82150	MLB 2026 Live RP Jose Suarez ATH	Reliever	63	0	L			0.314	0.312	0.315	21.8	6.7	2.5	0.309	false
+83182	Veteran Presence RP Elmer Singleton CHC 1959	Reliever	67	0	R			0.314	0.321	0.304	17.3	5.7	2.3	0.302	false
+83876	Historical All-Star SP Jose Rijo CIN 1994	Starter	69	0	R			0.314	0.308	0.321	22.1	6.9	2.9	0.300	false
+85552	MLB 2026 Live RP Jonathan Pintaro NYM	Reliever	66	0	R			0.314	0.318	0.31	21.5	6.8	3.2	0.291	false
+85236	MLB 2026 Live RP Andrew Morris MIN	Reliever	65	0	R			0.314	0.316	0.312	18.7	6.0	2.5	0.303	false
+84428	Negro League Star SP Henry McHenry NeBr 1932	Starter	66	0	R			0.314	0.312	0.317	16.6	6.0	2.6	0.294	false
+84819	Baseball Reference 1 SP Carlos Martinez STL 2016	Starter	64	0	R			0.314	0.318	0.308	17.4	7.3	2.5	0.289	false
+84952	MLB 2026 Live RP Joe Mantiply TOR	Reliever	63	0	L			0.314	0.295	0.325	18.6	4.8	2.9	0.297	false
+82318	MLB 2026 Live SP Alek Manoah LAA	Starter	69	0	R			0.314	0.319	0.308	18.0	7.2	2.8	0.287	false
+84918	MLB 2026 Live RP Cody Laweryson MIN	Reliever	61	0	R			0.314	0.312	0.317	21.4	6.3	3.3	0.291	false
+85904	Limited Edition/80 SP TJ House CLE 2014	Starter	50	0	L			0.314	0.294	0.326	18.8	4.3	2.8	0.305	false
+81804	MLB 2026 Live RP Jaden Hill COL	Reliever	58	0	R			0.314	0.322	0.305	21.9	7.4	2.8	0.299	false
+85588	MLB 2026 Live RP Codi Heuer CLE	Reliever	60	0	R			0.314	0.318	0.309	21.5	6.9	2.7	0.302	false
+85717	SwitchKnucklers - Snapshot SP Mickey Haefner WS1 1944	Starter	64	0	L			0.314	0.309	0.318	17.3	7.1	2.3	0.297	false
+83154	Snapshot CL Danny Graves CIN 2002	Reliever	63	0	R			0.314	0.313	0.316	14.5	4.2	2.5	0.297	false
+82493	MLB 2026 Live RP Mason Fluharty TOR	Reliever	63	0	L			0.314	0.306	0.319	23.9	7.0	3.3	0.296	false
+82463	MLB 2026 Live RP Brandon Eisert CWS	Reliever	61	0	L			0.314	0.304	0.319	22.4	6.0	3.2	0.299	false
+82560	MLB 2026 Live RP Yerry De Los Santos NYY	Reliever	56	0	R			0.314	0.317	0.31	17.5	6.7	2.5	0.294	false
+83171	Snapshot RP Vinnie Chulk SF 2007	Reliever	66	0	R			0.314	0.322	0.305	17.6	5.8	2.4	0.302	false
+82275	MLB 2026 Live RP Mason Barnett ATH	Reliever	60	0	R			0.314	0.319	0.309	19.0	7.3	2.8	0.289	false
+82043	MLB 2026 Live RP Kyle Backhus PHI	Reliever	59	0	L			0.314	0.304	0.319	21.4	6.5	3.0	0.297	false
+82649	MLB 2026 Live RP Keegan Akin BAL	Reliever	61	0	L			0.314	0.31	0.316	20.8	5.8	3.4	0.290	false
+84023	All-Time Legend SP Bill Wight CWS Peak	Starter	61	5	L			0.314	0.294	0.325	15.6	6.0	2.1	0.299	false
+83039	Snapshot SP Vic Sorrell DET 1930	Starter	56	5	R			0.314	0.337	0.287	21.0	8.2	2.8	0.291	false
+84255	Rookie Sensation SP Hal Smith PIT 1933	Starter	63	5	R			0.314	0.329	0.296	14.1	4.6	2.7	0.288	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	Starter	56	5	L			0.314	0.31	0.316	20.3	7.2	2.0	0.313	false
+83078	Snapshot CL Hector Rondon HOU 2018	Reliever	59	5	R			0.314	0.318	0.308	21.8	6.3	2.3	0.317	false
+83025	Snapshot SP Roger Moret BOS 1975	Starter	53	5	L			0.314	0.307	0.318	19.2	8.8	2.6	0.286	false
+83102	Snapshot SP Russ Meyer PHI 1949	Starter	62	5	R			0.314	0.314	0.315	16.8	5.6	3.1	0.284	false
+85840	T4 Ep. 3 - Snapshot SP Mark Langston SEA 1986	Starter	48	5	L			0.314	0.292	0.326	26.6	8.1	3.3	0.302	false
+82660	Hardware Heroes CL Brian Fuentes LAA 2009	Reliever	51	5	L			0.314	0.311	0.316	19.9	7.3	2.9	0.290	false
+83142	Snapshot SP Wes Ferrell BOS 1934	Starter	65	5	R			0.314	0.331	0.293	15.7	5.3	2.5	0.296	false
+82668	Hardware Heroes SP Jack Coombs PHA 1911	Starter	65	5	R			0.314	0.312	0.317	23.6	7.2	2.5	0.315	false
+82801	Unsung Heroes RP Rocky Childress HOU 1987	Reliever	51	5	R			0.314	0.314	0.313	16.0	5.6	2.5	0.294	false
+82806	Unsung Heroes SP Johnny Babich PHA 1940	Starter	60	5	R			0.314	0.321	0.307	18.2	6.7	3.2	0.280	false
+81938	MLB 2026 Live RP Angel Zerpa MIL	Reliever	67	0	L			0.315	0.31	0.318	19.7	6.0	3.0	0.296	false
+82295	MLB 2026 Live RP Ryan Zeferjahn LAA	Reliever	56	0	R			0.315	0.318	0.311	25.8	10.3	3.3	0.285	false
+83148	Snapshot SP Hal Woodeshick HOU 1962	Starter	66	0	L			0.315	0.289	0.329	18.5	7.5	1.5	0.317	false
+83193	Snapshot SP Jim Weaver CHC 1934	Starter	69	0	R			0.315	0.318	0.31	23.8	8.2	3.3	0.292	false
+82421	MLB 2026 Live SP Justin Verlander DET	Starter	65	0	R			0.315	0.31	0.322	17.3	5.7	3.0	0.289	false
+84973	MLB 2026 Live RP Kai-Wei Teng HOU	Reliever	60	0	R			0.315	0.315	0.315	22.0	7.1	3.3	0.291	false
+85308	Baseball Reference 2 CL Heathcliff Slocumb PHI 1995	Reliever	64	0	R			0.315	0.314	0.316	24.6	12.0	1.8	0.307	false
+85232	MLB 2026 Live SP Noah Schultz CWS	Starter	58	0	L			0.315	0.307	0.319	20.2	7.9	2.9	0.290	false
+85561	MLB 2026 Live RP Kendry Rojas MIN	Reliever	59	0	L			0.315	0.307	0.319	19.5	7.2	2.7	0.295	false
+85987	MLB 2026 Live RP Joe Rock CWS	Reliever	58	0	L			0.315	0.311	0.317	18.2	6.9	2.5	0.297	false
+84430	Negro League Star SP Dick Redding BRG 1924	Starter	68	0	R			0.315	0.313	0.318	18.0	5.7	3.0	0.291	false
+85621	MLB 2026 Live RP Nate Pearson HOU	Reliever	56	0	R			0.315	0.317	0.312	22.0	7.5	3.0	0.294	false
+85619	MLB 2026 Live RP Ty Madden DET	Reliever	68	0	R			0.315	0.321	0.309	20.8	6.4	3.2	0.292	false
+81883	MLB 2026 Live SP Kyle Leahy STL	Starter	63	0	R			0.315	0.313	0.318	19.2	6.5	2.7	0.298	false
+82595	MLB 2026 Live RP Zack Kelly BOS	Reliever	54	0	R			0.315	0.314	0.317	20.6	7.8	3.0	0.290	false
+85249	MLB 2026 Live RP Kyle Hurt LAD	Reliever	61	0	R			0.315	0.316	0.313	23.3	8.5	3.0	0.294	false
+81763	MLB 2026 Live RP Bryan Hoeing SD	Reliever	64	0	R			0.315	0.323	0.305	16.8	5.6	2.7	0.294	false
+82134	MLB 2026 Live RP Daysbel Hernandez ATL	Reliever	52	0	R			0.315	0.318	0.312	22.3	9.1	2.8	0.294	false
+85548	MLB 2026 Live RP Josh Ekness MIA	Reliever	52	0	R			0.315	0.317	0.313	19.4	7.7	2.6	0.294	false
+83119	Snapshot RP Mike Armstrong KC 1982	Reliever	60	0	R			0.315	0.323	0.305	20.9	8.9	3.3	0.275	false
+84802	Baseball Reference 1 SP Joe Ryan MIN 2023	Starter	60	5	R			0.315	0.305	0.327	24.8	3.9	4.4	0.291	false
+84022	May Birthdays - Snapshot CL Trevor Rosenthal STL 2014	Reliever	53	5	R			0.315	0.31	0.322	24.6	13.6	1.7	0.299	false
+83063	Snapshot RP Don Nottebart CIN 1967	Reliever	57	5	R			0.315	0.33	0.297	16.2	5.0	2.6	0.297	false
+83864	Historical All-Star SP Hugh Mulcahy PHI 1940	Starter	54	5	R			0.315	0.307	0.325	13.7	6.1	2.5	0.285	false
+82997	Veteran Presence SP Kevin Millwood SEA 2012	Starter	52	5	R			0.315	0.301	0.333	15.8	7.1	2.5	0.287	false
+83065	Snapshot SP Bob Klinger PIT 1942	Starter	59	5	R			0.315	0.314	0.315	16.9	5.7	3.0	0.287	false
+83873	Veteran Presence SP Tommy John NYY 1980	Starter	66	5	L			0.315	0.309	0.318	12.7	4.9	2.6	0.285	false
+84246	Rookie Sensation SP Larry Dierker HOU 1965	Starter	62	5	R			0.315	0.291	0.345	20.4	5.3	3.7	0.285	false
+83861	Historical All-Star SP Bob Buhl ML1 1960	Starter	50	5	R			0.315	0.302	0.332	17.0	8.0	3.1	0.273	false
+83086	Snapshot RP Tom Bruno STL 1979	Reliever	58	5	R			0.315	0.332	0.295	21.1	11.8	1.8	0.295	false
+83167	Snapshot SP Dave Boswell MIN 1966	Starter	67	5	R			0.315	0.326	0.3	25.3	8.3	3.9	0.279	false
+82578	MLB 2026 Live RP Ryan Yarbrough NYY	Reliever	60	0	L			0.316	0.294	0.329	18.6	6.3	3.3	0.284	false
+82765	Clubhouse - World Baseball Classic SP Chien-Ming Wang TPE 2013	Starter	68	0	R			0.316	0.323	0.307	7.2	2.9	1.6	0.298	false
+84718	Clubhouse - April Fools&#39; Day RP Mike Stanton SEA 1983	Reliever	56	0	R			0.316	0.333	0.295	19.7	7.7	2.3	0.304	false
+82227	MLB 2026 Live RP Josh Simpson SEA	Reliever	52	0	L			0.316	0.312	0.318	21.1	8.6	2.7	0.295	false
+82385	MLB 2026 Live RP John Schreiber KC	Reliever	63	0	R			0.316	0.322	0.308	20.5	6.4	3.4	0.289	false
+85331	T4 Ep. 1 - Rookie Sensation RP Curt Schilling BAL 1990	Reliever	65	0	R			0.316	0.348	0.276	16.3	9.1	1.6	0.297	false
+85977	MLB 2026 Live RP Alimber Santa HOU	Reliever	57	0	R			0.316	0.319	0.313	20.6	9.2	2.7	0.290	false
+86050	MLB 2026 Live SP Reiver Sanmartin SF	Starter	63	0	L			0.316	0.305	0.322	16.5	5.8	2.5	0.297	false
+82015	MLB 2026 Live RP PJ Poulin WSH	Reliever	55	0	L			0.316	0.302	0.325	20.5	7.5	3.1	0.290	false
+84247	Rookie Sensation RP Al Osuna HOU 1991	Reliever	60	0	L			0.316	0.327	0.31	20.8	10.0	3.1	0.276	false
+85004	MLB 2026 Live RP Riley Martin CHC	Reliever	52	0	L			0.316	0.308	0.32	21.3	8.1	2.9	0.292	false
+82218	MLB 2026 Live RP Chris Martin TEX	Reliever	69	0	R			0.316	0.315	0.318	20.1	3.8	3.4	0.301	false
+85875	Heart Attack - Snapshot SP Greg Maddux CHC 1989	Starter	62	0	R			0.316	0.328	0.301	17.8	7.0	2.6	0.292	false
+85367	Clubhouse - Played Where? - Unsung Heroes RP Sparky Lyle TEX 1979	Reliever	51	0	L			0.316	0.288	0.332	17.8	6.4	3.8	0.269	false
+82491	MLB 2026 Live RP Brendon Little TOR	Reliever	55	0	L			0.316	0.307	0.32	23.3	9.6	2.7	0.297	false
+85994	MLB 2026 Live RP William Kempner MIA	Reliever	55	0	R			0.316	0.326	0.304	19.9	7.8	2.8	0.292	false
+82230	MLB 2026 Live SP Emerson Hancock SEA	Starter	69	0	R			0.316	0.319	0.313	19.6	5.6	3.5	0.286	false
+83158	Snapshot SP Whitey Ford NYY 1962	Starter	67	0	L			0.316	0.309	0.319	18.2	6.1	2.9	0.292	false
+82613	MLB 2026 Live SP Connelly Early BOS	Starter	69	0	L			0.316	0.318	0.316	21.8	6.6	3.5	0.290	false
+83145	Snapshot SP Jesse Duryea WAS 1892	Starter	64	0	R			0.316	0.318	0.313	17.0	7.3	3.5	0.269	false
+86134	Limited Edition/65 RP Aaron Crow KC 2011	Reliever	51	0	R			0.316	0.346	0.28	23.9	8.1	3.3	0.293	true
+82243	MLB 2026 Live RP Cooper Criswell SEA	Reliever	64	0	R			0.316	0.326	0.302	18.3	5.8	3.0	0.293	false
+85347	Played Where? - Snapshot RP Aroldis Chapman PIT 2024	Reliever	68	0	L			0.316	0.328	0.31	29.5	13.1	2.3	0.311	false
+83157	Snapshot RP Clay Carroll CIN 1975	Reliever	65	0	R			0.316	0.322	0.309	13.7	5.9	2.0	0.298	false
+84897	MLB 2026 Live RP Hunter Bigge TB	Reliever	57	0	R			0.316	0.311	0.322	22.6	8.6	3.2	0.288	false
+84960	MLB 2026 Live RP Jalen Beeks TEX	Reliever	57	0	L			0.316	0.305	0.322	19.8	6.4	3.1	0.293	false
+84232	Rookie Sensation RP Carl Scheib PHA 1944	Reliever	50	5	R			0.316	0.328	0.301	17.8	6.1	2.5	0.301	false
+82813	Unsung Heroes SP Hank Robinson PIT 1913	Starter	65	5	L			0.316	0.293	0.329	12.2	4.5	2.6	0.287	false
+83089	Snapshot RP Johnny Murphy NYY 1940	Reliever	58	5	R			0.316	0.332	0.296	16.3	4.9	3.1	0.286	false
+83147	Snapshot SP Jamie Moyer BAL 1993	Starter	66	5	L			0.316	0.348	0.298	16.9	5.5	2.8	0.295	false
+83111	Snapshot CL Skip Lockwood NYM 1978	Reliever	58	5	R			0.316	0.314	0.32	24.7	6.2	4.4	0.281	false
+83014	Snapshot SP Mike Krukow CHC 1978	Starter	54	5	R			0.316	0.312	0.322	20.1	8.0	3.2	0.283	false
+85689	Baseball Reference 3 SP Lou Kretlow KC1 1956	Starter	48	5	R			0.316	0.322	0.309	20.0	9.7	3.4	0.266	false
+83067	Snapshot SP Fred Goldsmith CHC 1882	Starter	59	5	R			0.316	0.312	0.32	15.5	4.6	2.7	0.295	false
+84241	Rookie Sensation SP Don Drysdale BRO 1956	Starter	59	5	R			0.316	0.33	0.299	18.9	6.0	3.0	0.293	false
+84666	Opening Day Heroes - Unsung Heroes 1B Matt Davidson CWS 2018	Reliever	56	5	R			0.316	0.311	0.322	18.7	6.6	3.0	0.289	false
+84254	Rookie Sensation SP Arnold Carter CIN 1944	Starter	63	5	L			0.316	0.312	0.318	12.4	5.9	2.4	0.286	false
+84409	Negro League Star SP Ches Buchanan PhSt 1941	Starter	57	5	R			0.316	0.317	0.315	12.6	4.9	2.5	0.288	false
+83043	Snapshot SP Bob Bruce HOU 1962	Starter	57	5	R			0.316	0.344	0.281	22.5	8.9	3.0	0.293	false
+83029	Snapshot SP Ed Brandt BSN 1930	Starter	54	5	L			0.316	0.302	0.324	21.7	7.1	3.4	0.288	false
+83080	Snapshot SP Chris Bassitt ATH 2019	Starter	64	5	R			0.316	0.329	0.3	19.2	6.6	3.4	0.281	false
+82228	MLB 2026 Live RP Carlos Vargas SEA	Reliever	55	0	R			0.317	0.321	0.312	16.7	6.4	2.6	0.295	false
+85015	MLB 2026 Live SP Walbert Urena LAA	Starter	60	0	R			0.317	0.326	0.306	20.2	8.3	2.8	0.290	false
+81835	MLB 2026 Live RP Kade Strowd AZ	Reliever	55	0	R			0.317	0.321	0.313	19.9	7.1	3.0	0.294	false
+83153	Snapshot SP Frank Smith CWS 1905	Starter	64	0	R			0.317	0.305	0.332	22.9	9.1	3.1	0.290	false
+82314	MLB 2026 Live RP Jordan Romano COL	Reliever	58	0	R			0.317	0.317	0.316	22.9	6.7	3.5	0.295	false
+85156	Dock&#39;s Counterpart SP Dave Roberts SD 1970	Starter	68	0	L			0.317	0.33	0.309	19.2	3.7	3.3	0.300	false
+84896	MLB 2026 Live RP Michael Petersen MIA	Reliever	57	0	R			0.317	0.32	0.314	22.9	6.7	3.8	0.289	false
+83162	Snapshot RP Joel Payamps MIL 2023	Reliever	65	0	R			0.317	0.326	0.307	19.3	5.4	3.3	0.293	false
+81945	MLB 2026 Live RP Chad Patrick MIL	Reliever	65	0	R			0.317	0.322	0.31	21.6	6.2	3.6	0.289	false
+81771	MLB 2026 Live SP Bobby Miller LAD	Starter	65	0	R			0.317	0.316	0.319	19.7	6.9	3.1	0.292	false
+82188	MLB 2026 Live SP Lance McCullers Jr. HOU	Starter	62	0	R			0.317	0.314	0.321	22.3	7.9	3.2	0.293	false
+84266	Rookie Sensation RP Aaron Loup TOR 2013	Reliever	68	0	L			0.317	0.318	0.316	15.5	3.7	2.7	0.301	false
+85562	MLB 2026 Live SP Ryan Johnson LAA	Starter	68	0	R			0.317	0.322	0.312	19.4	6.0	3.1	0.294	false
+82395	MLB 2026 Live RP Brenan Hanifee DET	Reliever	58	0	R			0.317	0.321	0.311	16.0	5.3	2.7	0.296	false
+85139	National Pretzel Day SP Pretzels Getzien DTN 1888	Starter	64	0	R			0.317	0.316	0.319	20.8	4.3	3.1	0.309	false
+83143	Snapshot SP Carl Fischer DET 1933	Starter	64	0	L			0.317	0.326	0.311	23.8	9.3	2.9	0.296	false
+82364	MLB 2026 Live RP Steven Cruz KC	Reliever	56	0	R			0.317	0.315	0.318	21.3	7.5	3.3	0.289	false
+81852	MLB 2026 Live RP Taylor Clarke AZ	Reliever	66	0	R			0.317	0.326	0.306	17.1	5.3	3.5	0.279	false
+81704	MLB 2026 Live RP Spencer Bivens SF	Reliever	56	0	R			0.317	0.319	0.315	16.9	5.8	2.6	0.297	false
+84031	All-Time Legend SP Tyler Anderson COL Peak	Starter	66	0	L			0.317	0.303	0.326	15.6	5.1	2.7	0.295	false
+85566	MLB 2026 Live RP Andrew Alvarez WSH	Reliever	56	0	L			0.317	0.309	0.321	18.6	6.8	2.5	0.302	false
+82216	MLB 2026 Live RP Tyler Alexander TEX	Reliever	64	0	L			0.317	0.306	0.323	18.5	5.0	3.2	0.294	false
+85990	MLB 2026 Live CL Philip Abner AZ	Reliever	57	0	L			0.317	0.314	0.319	19.4	6.9	2.9	0.296	false
+83079	Snapshot SP Michael Pineda NYY 2014	Starter	60	5	R			0.317	0.31	0.325	18.7	5.3	3.0	0.298	false
+83056	Snapshot SP Vicente Padilla PHI 2003	Starter	59	5	R			0.317	0.315	0.319	16.0	6.1	3.0	0.285	false
+83141	Snapshot SP Lee Meadows PIT 1927	Starter	65	5	R			0.317	0.339	0.289	15.5	4.5	3.0	0.290	false
+84019	All-Time Legend RP Max Leon ATL Peak	Reliever	52	5	R			0.317	0.329	0.302	17.5	5.3	2.5	0.304	false
+84263	Rookie Sensation SP Ed Holley PHI 1932	Starter	69	5	R			0.317	0.331	0.299	19.5	5.1	3.4	0.291	false
+82998	Snapshot RP Mike Fetters ATH 1998	Reliever	51	5	R			0.317	0.326	0.307	17.2	6.9	2.5	0.297	false
+83032	Snapshot SP Eddie Cicotte BOS 1910	Starter	54	5	R			0.317	0.321	0.313	18.0	6.7	3.1	0.286	false
+83115	Snapshot RP Alex Wilson DET 2016	Reliever	62	0	R			0.318	0.325	0.308	14.2	6.1	2.4	0.292	false
+85995	MLB 2026 Live SP Jordan Wicks CHC	Starter	66	0	L			0.318	0.319	0.317	18.4	5.8	3.0	0.296	false
+82596	MLB 2026 Live RP Greg Weissert BOS	Reliever	56	0	R			0.318	0.321	0.315	20.4	6.4	3.4	0.291	false
+85767	Family Connections - Hall of Fame RP Billy Wagner HOU 1996	Reliever	58	0	L			0.318	0.298	0.329	27.4	12.3	3.9	0.266	false
+81867	MLB 2026 Live RP Matt Svanson STL	Reliever	56	0	R			0.318	0.325	0.309	20.6	7.1	3.0	0.296	false
+82311	MLB 2026 Live RP Brent Suter LAA	Reliever	55	0	L			0.318	0.321	0.316	18.7	5.5	3.1	0.295	false
+81885	MLB 2026 Live RP Ryne Stanek STL	Reliever	55	0	R			0.318	0.319	0.317	22.8	7.9	3.4	0.292	false
+81865	MLB 2026 Live RP George Soriano STL	Reliever	54	0	R			0.318	0.323	0.312	20.6	7.0	3.5	0.286	false
+84035	All-Time Legend SP Eddie Smith CWS Peak	Starter	67	0	L			0.318	0.333	0.31	20.9	7.7	3.1	0.292	false
+82429	MLB 2026 Live RP Erik Sabrowski CLE	Reliever	58	0	L			0.318	0.316	0.318	26.9	10.4	3.3	0.294	false
+82349	MLB 2026 Live RP Taylor Rogers MIN	Reliever	56	0	L			0.318	0.306	0.325	22.1	7.1	2.9	0.304	false
+84909	MLB 2026 Live RP Nick Raquet BAL	Reliever	54	0	L			0.318	0.314	0.32	17.3	6.1	2.8	0.295	false
+84270	Rookie Sensation SP Toad Ramsey LS2 1885	Starter	67	0	L			0.318	0.317	0.319	24.5	8.7	3.2	0.298	false
+82316	MLB 2026 Live RP Drew Pomeranz CHC	Reliever	55	0	L			0.318	0.302	0.327	20.7	6.3	3.5	0.290	false
+82661	Veteran Presence CL Mark Melancon SD 2021	Reliever	59	0	R			0.318	0.314	0.322	16.6	7.7	2.3	0.296	false
+84036	All-Time Legend SP Hugh McQuillan BSN Peak	Starter	68	0	R			0.318	0.314	0.324	17.6	5.8	3.2	0.289	false
+85630	MLB 2026 Live RP Adam Macko TOR	Reliever	57	0	L			0.318	0.311	0.322	19.3	7.1	3.0	0.293	false
+84998	MLB 2026 Live SP Rhett Lowder CIN	Starter	67	0	R			0.318	0.325	0.311	20.1	6.4	3.2	0.294	false
+83200	Snapshot SP Dutch Leonard WS1 1938	Starter	69	0	R			0.318	0.297	0.344	13.8	5.0	2.9	0.287	false
+83150	Snapshot SP Bob Kuzava NYY 1951	Starter	68	0	L			0.318	0.339	0.307	21.0	7.0	3.1	0.297	false
+84987	MLB 2026 Live SP George Klassen LAA	Starter	61	0	R			0.318	0.318	0.319	19.6	7.1	3.0	0.294	false
+82651	MLB 2026 Live RP Andrew Kittredge BAL	Reliever	65	0	R			0.318	0.319	0.316	21.4	4.8	3.8	0.294	false
+84421	Negro League Star SP Jesse Houston CAG 1938	Starter	67	0	R			0.318	0.32	0.316	16.0	5.7	2.6	0.297	false
+84825	Baseball Reference 1 RP Reed Garrett NYM 2024	Reliever	49	0	R			0.318	0.315	0.321	25.4	10.3	2.4	0.312	false
+82211	MLB 2026 Live RP Cody Bradford TEX	Reliever	68	0	L			0.318	0.326	0.314	17.4	4.4	3.4	0.290	false
+82577	MLB 2026 Live RP Paul Blackburn NYY	Reliever	55	0	R			0.318	0.315	0.321	18.0	6.3	3.0	0.292	false
+82366	MLB 2026 Live SP Ryan Bergert KC	Starter	60	0	R			0.318	0.32	0.315	17.6	6.9	2.8	0.290	false
+82656	MLB 2026 Live SP Chris Bassitt BAL	Starter	65	0	R			0.318	0.316	0.32	19.1	6.3	2.9	0.299	false
+82294	MLB 2026 Live RP Sam Bachman LAA	Reliever	56	0	R			0.318	0.319	0.316	20.0	7.7	3.1	0.289	false
+82101	MLB 2026 Live RP Lake Bachar MIA	Reliever	57	0	R			0.318	0.32	0.315	22.5	7.1	3.7	0.286	false
+82261	MLB 2026 Live RP Elvis Alvarado ATH	Reliever	56	0	R			0.318	0.314	0.323	23.2	7.1	3.8	0.289	false
+83037	Snapshot RP Charlie Williams SF 1974	Reliever	54	5	R			0.318	0.333	0.3	15.0	5.7	2.9	0.286	false
+83090	Snapshot CL Tom Morgan NYY 1955	Reliever	58	5	R			0.318	0.34	0.291	11.2	5.8	2.1	0.292	false
+84404	Negro League Star SP George Mitchell InAB 1926	Starter	52	5	R			0.318	0.319	0.318	13.9	6.1	2.5	0.290	false
+83123	Snapshot SP Al Fitzmorris KC 1976	Starter	63	5	R			0.318	0.324	0.311	12.9	5.1	2.3	0.295	false
+83048	Snapshot SP Ed Figueroa NYY 1977	Starter	58	5	R			0.318	0.32	0.316	15.2	6.3	3.0	0.283	false
+86065	4th of July On-Stream - Snapshot SP John Danks CWS 2010	Starter	49	5	L			0.318	0.322	0.316	18.7	6.7	2.7	0.298	false
+84436	Negro League Star SP Tom Williams CAG 1920	Starter	68	0	R			0.319	0.318	0.32	13.5	4.9	2.8	0.288	false
+84028	All-Time Legend SP Edinson Volquez CIN Peak	Starter	64	0	R			0.319	0.318	0.32	20.4	8.4	2.7	0.298	false
+84994	MLB 2026 Live RP Blade Tidwell SF	Reliever	61	0	R			0.319	0.323	0.314	18.5	6.6	3.0	0.293	false
+83151	Snapshot SP Chuck Stobbs WS1 1954	Starter	67	0	L			0.319	0.327	0.315	14.1	6.9	2.1	0.297	false
+84923	MLB 2026 Live SP Brandon Sproat MIL	Starter	67	0	R			0.319	0.325	0.311	22.0	7.0	3.6	0.290	false
+81829	MLB 2026 Live RP Antonio Senzatela COL	Reliever	58	0	R			0.319	0.326	0.312	17.8	6.2	2.7	0.299	false
+84976	MLB 2026 Live RP Ethan Roberts CHC	Reliever	53	0	R			0.319	0.327	0.31	20.6	7.5	3.2	0.290	false
+84033	All-Time Legend SP Tanner Roark WAS Peak	Starter	68	0	R			0.319	0.315	0.324	16.4	6.5	2.9	0.288	false
+82014	MLB 2026 Live RP Orlando Ribalta WSH	Reliever	51	0	R			0.319	0.322	0.316	19.8	8.0	3.1	0.290	false
+82356	MLB 2026 Live RP Hector Neris KC	Reliever	57	0	R			0.319	0.323	0.315	22.7	7.4	3.7	0.289	false
+83172	Snapshot RP Dale Murray TOR 1982	Reliever	66	0	R			0.319	0.34	0.293	15.3	6.4	2.0	0.306	false
+82464	MLB 2026 Live RP Chris Murphy CWS	Reliever	50	0	L			0.319	0.312	0.323	19.2	8.1	2.7	0.295	false
+82552	MLB 2026 Live RP Rafael Montero NYY	Reliever	55	0	R			0.319	0.332	0.303	20.2	8.0	2.9	0.295	false
+84257	Rookie Sensation SP Bobby Miller LAD 2023	Starter	67	0	R			0.319	0.316	0.323	17.5	6.4	2.9	0.294	false
+83871	Historical All-Star CL Jose Mesa CLE 1996	Reliever	63	0	R			0.319	0.318	0.321	21.2	7.4	2.7	0.305	false
+81806	MLB 2026 Live RP Juan Mejia COL	Reliever	53	0	R			0.319	0.324	0.313	22.7	7.7	3.0	0.304	false
+83138	Snapshot RP Cal McLish CLE 1957	Reliever	63	0	R			0.319	0.308	0.333	19.7	8.4	3.1	0.285	false
+85277	May Names 1 - Rookie Sensation SP Trevor May MIN 2015	Starter	69	0	R			0.319	0.316	0.323	23.0	6.6	2.8	0.316	false
+84699	Clubhouse - April Fools&#39; Day RP Pedro Martinez SD 1993	Reliever	51	0	L			0.319	0.348	0.302	21.5	9.2	3.9	0.267	false
+82645	MLB 2026 Live RP Jackson Kowar BAL	Reliever	57	0	R			0.319	0.317	0.322	20.2	7.3	3.1	0.293	false
+82061	MLB 2026 Live RP Brad Keller PHI	Reliever	59	0	R			0.319	0.317	0.321	21.0	6.8	3.4	0.292	false
+81755	MLB 2026 Live RP Kyle Hart SD	Reliever	64	0	L			0.319	0.311	0.323	19.9	6.3	3.5	0.287	false
+85992	MLB 2026 Live SP Dax Fulton MIA	Starter	55	0	L			0.319	0.317	0.32	17.6	7.7	2.5	0.296	false
+85338	T4 Ep. 1 - Historical All-Star SP Chuck Finley CLE 2000	Starter	60	0	L			0.319	0.304	0.328	22.3	9.9	2.4	0.302	false
+82136	MLB 2026 Live RP Dylan Dodd ATL	Reliever	67	0	L			0.319	0.306	0.327	19.3	5.4	3.6	0.289	false
+83129	Snapshot SP Anthony DeSclafani SF 2021	Starter	66	0	R			0.319	0.324	0.313	15.9	5.8	3.1	0.287	false
+82614	MLB 2026 Live RP Kutter Crawford BOS	Reliever	64	0	R			0.319	0.318	0.321	18.6	5.5	3.5	0.287	false
+83082	Snapshot RP Hector Carrasco MIN 1999	Reliever	59	0	R			0.319	0.319	0.319	18.2	7.1	2.4	0.304	false
+82279	MLB 2026 Live RP Scott Barlow ATH	Reliever	55	0	R			0.319	0.32	0.318	22.8	8.3	3.8	0.281	false
+84248	Rookie Sensation RP Neil Allen NYM 1979	Reliever	60	0	R			0.319	0.32	0.319	21.1	8.6	2.3	0.310	false
+84021	All-Time Legend SP Hank Wyse CHC Peak	Starter	58	5	R			0.319	0.319	0.32	14.2	4.4	3.0	0.290	false
+83020	Snapshot SP Kerry Wood CHC 2000	Starter	55	5	R			0.319	0.303	0.339	23.7	10.9	3.2	0.283	false
+84017	All-Time Legend SP Jack Wilson BOS Peak	Starter	53	5	R			0.319	0.328	0.309	21.9	8.6	2.8	0.300	false
+84252	Rookie Sensation SP Dave Rozema DET 1977	Starter	63	5	R			0.319	0.324	0.314	14.8	2.8	3.6	0.286	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	Starter	57	5	R			0.319	0.321	0.317	15.5	6.5	2.4	0.296	false
+82665	Hardware Heroes SP Claude Passeau PHI 1937	Starter	62	5	R			0.319	0.325	0.311	19.8	5.1	2.9	0.308	false
+85806	Family Connections - Unsung Heroes SP Chris Haney KC 1996	Starter	53	5	L			0.319	0.299	0.33	14.0	3.3	3.0	0.293	false
+83045	Snapshot SP Larry French PIT 1931	Starter	55	5	L			0.319	0.305	0.327	14.2	5.2	2.9	0.288	false
+84259	Rookie Sensation SP Josh Collmenter ARI 2011	Starter	66	5	R			0.319	0.338	0.297	14.8	4.1	3.8	0.275	false
+82992	Snapshot SP Rip Collins BOS 1922	Starter	51	5	R			0.319	0.339	0.295	18.9	9.3	2.5	0.291	false
+83113	Snapshot SP Larry Benton CIN 1932	Starter	64	5	R			0.319	0.332	0.303	11.6	2.6	2.8	0.292	false
+83004	Snapshot SP Gerry Arrigo CIN 1968	Starter	52	5	L			0.319	0.306	0.326	19.6	7.8	3.0	0.290	false
+83060	Snapshot SP Chris Archer TB 2016	Starter	54	5	R			0.319	0.323	0.315	22.7	6.8	3.7	0.292	false
+82312	MLB 2026 Live RP Huascar Ynoa LAA	Reliever	64	0	R			0.320	0.324	0.315	19.1	6.5	3.2	0.292	false
+84899	MLB 2026 Live RP Ken Waldichuk WSH	Reliever	57	0	L			0.320	0.314	0.323	20.6	7.8	3.3	0.290	false
+82287	MLB 2026 Live SP Luis Severino ATH	Starter	66	0	R			0.320	0.326	0.313	19.2	6.5	3.2	0.293	false
+82510	MLB 2026 Live RP Yariel Rodriguez TOR	Reliever	67	0	R			0.320	0.321	0.319	21.2	7.7	3.5	0.288	false
+85563	MLB 2026 Live SP Elmer Rodriguez NYY	Starter	59	0	R			0.320	0.323	0.316	18.6	7.3	2.9	0.293	false
+84904	MLB 2026 Live RP Taylor Rashi MIN	Reliever	56	0	R			0.320	0.327	0.311	21.2	7.3	3.2	0.295	false
+83155	Snapshot RP Paul Quantrill TOR 1998	Reliever	64	0	R			0.320	0.318	0.322	17.8	4.9	2.4	0.314	false
+81967	MLB 2026 Live RP Connor Phillips CIN	Reliever	56	0	R			0.320	0.32	0.32	22.8	10.0	3.2	0.288	false
+83134	Veteran Presence SP Joe Niekro HOU 1981	Starter	66	0	R			0.320	0.325	0.314	14.4	6.8	2.7	0.286	false
+85081	Happy Birthday Nico - Rookie Sensation SP Justin Nicolino MIA 2015	Starter	55	0	L			0.320	0.315	0.323	9.6	6.1	2.4	0.282	false
+83120	Snapshot SP Mike Moore ATH 1991	Starter	64	0	R			0.320	0.327	0.313	19.2	9.9	2.6	0.288	false
+82807	Unsung Heroes RP Hal McKain CWS 1930	Reliever	57	0	R			0.320	0.326	0.313	23.7	9.1	2.4	0.315	false
+85509	60s Theme Week - Unsung Heroes SP Jack Kralick MIN 1961	Starter	64	0	L			0.320	0.294	0.335	19.4	5.1	2.8	0.310	false
+83092	Veteran Presence SP Sam Jones WS1 1928	Starter	62	0	R			0.320	0.319	0.322	14.6	7.4	2.7	0.285	false
+82419	MLB 2026 Live CL Kenley Jansen DET	Reliever	60	0	R			0.320	0.329	0.31	21.5	6.7	4.3	0.274	false
+85226	Clubhouse - Y&amp;O 1 - Rookie Sensation RP Charlie Hough LAD 1973	Reliever	65	0	R			0.320	0.339	0.297	21.7	11.1	2.4	0.296	false
+85057	HOF 1 - Baseball Reference SP Rich Gossage CWS 1976	Starter	65	0	R			0.320	0.338	0.298	20.0	8.0	3.0	0.293	false
+82087	MLB 2026 Live RP Luis Garcia MIN	Reliever	56	0	R			0.320	0.323	0.316	18.8	6.8	2.5	0.307	false
+83168	Snapshot SP Mike Fornieles BOS 1957	Starter	67	0	R			0.320	0.323	0.317	17.8	6.5	2.4	0.306	false
+81881	MLB 2026 Live SP Richard Fitts STL	Starter	65	0	R			0.320	0.325	0.314	17.0	5.5	3.2	0.291	false
+82655	MLB 2026 Live SP Zach Eflin BAL	Starter	68	0	R			0.320	0.322	0.319	16.8	4.2	3.5	0.291	false
+82764	Clubhouse - World Baseball Classic SP Samuel Deduno DR 2013	Starter	58	0	R			0.320	0.32	0.321	21.5	8.6	2.4	0.308	false
+84434	Negro League Star SP Darltie Cooper HaGi 1926	Starter	68	0	R			0.320	0.321	0.319	16.5	5.1	3.0	0.294	false
+83133	Snapshot RP Cris Carpenter FLO 1993	Reliever	64	0	R			0.320	0.339	0.296	19.7	7.1	3.1	0.294	false
+83165	Snapshot SP Britt Burns CWS 1983	Starter	67	0	L			0.320	0.323	0.318	19.8	7.2	3.2	0.290	false
+83146	Snapshot RP Juan Berenguer MIN 1987	Reliever	64	0	R			0.320	0.338	0.297	23.7	7.6	3.3	0.302	false
+84917	MLB 2026 Live RP Javier Assad CHC	Reliever	57	0	R			0.320	0.308	0.334	17.8	5.9	3.4	0.287	false
+85243	MLB 2026 Live SP Spencer Arrighetti HOU	Starter	63	0	R			0.320	0.32	0.321	22.7	7.8	3.7	0.288	false
+82981	Snapshot SP Phenomenal Smith BL2 1888	Starter	50	5	L			0.320	0.322	0.318	22.9	11.2	2.5	0.296	false
+83034	Veteran Presence SP Andy Pettitte NYY 2013	Starter	55	5	L			0.320	0.312	0.324	15.8	5.6	2.7	0.295	false
+82971	Veteran Presence CL Randy Myers TOR 1998	Reliever	48	5	L			0.320	0.31	0.326	18.3	7.0	2.9	0.294	false
+82803	Unsung Heroes SP Roy Mahaffey PHA 1932	Starter	55	5	R			0.320	0.326	0.313	23.1	7.7	3.9	0.286	false
+86232	Baseball Reference 5 CL Al Holland PHI 1984	Reliever	47	5	L			0.320	0.283	0.342	21.8	6.0	4.8	0.267	true
+83027	Snapshot SP Joe Hatten BRO 1947	Starter	53	5	L			0.320	0.296	0.333	15.7	8.5	2.4	0.286	false
+84236	Rookie Sensation SP Wayne Garland BAL 1974	Starter	53	5	R			0.320	0.324	0.315	17.0	6.2	2.8	0.294	false
+83160	Snapshot SP Pud Galvin BFN 1882	Starter	66	5	R			0.320	0.324	0.316	20.2	4.2	3.0	0.315	false
+83044	Snapshot SP Gene Conley ML1 1956	Starter	57	5	R			0.320	0.321	0.319	15.0	5.3	2.7	0.296	false
+84024	Veteran Presence SP Huck Betts BSN Peak	Starter	62	5	R			0.320	0.339	0.297	13.5	3.9	2.9	0.293	false
+82804	Unsung Heroes SP Jack Bentley NY1 1924	Starter	58	5	L			0.320	0.335	0.312	20.2	6.1	3.4	0.296	false
+85895	FLF 14 &amp; Co. - Unsung Heroes SP Earl Wilson BOS 1962	Starter	55	0	R			0.321	0.334	0.304	20.6	10.8	3.3	0.273	false
+83055	Snapshot RP Jordan Walden LAA 2012	Reliever	54	0	R			0.321	0.324	0.319	23.0	9.2	2.5	0.311	false
+82662	Hardware Heroes RP Tom Vickery ML3 1891	Reliever	65	0	R			0.321	0.324	0.318	20.7	7.2	3.5	0.290	false
+82346	MLB 2026 Live RP Justin Topa TOR	Reliever	54	0	R			0.321	0.322	0.319	17.6	6.1	2.6	0.305	false
+84034	All-Time Legend SP Jerry Staley STL Peak	Starter	66	0	R			0.321	0.342	0.296	13.5	4.6	2.7	0.295	false
+84922	MLB 2026 Live SP Jared Shuster STL	Starter	57	0	L			0.321	0.313	0.325	16.2	6.6	2.7	0.296	false
+83104	Snapshot SP Dupee Shaw PRO 1885	Starter	62	0	L			0.321	0.326	0.318	19.5	7.6	3.1	0.291	false
+85260	MLB 2026 Live RP Cam Sanders PIT	Reliever	51	0	R			0.321	0.325	0.316	21.1	10.1	2.6	0.297	false
+84982	MLB 2026 Live RP Christian Roa HOU	Reliever	51	0	R			0.321	0.327	0.313	21.2	7.9	3.1	0.297	false
+82192	MLB 2026 Live RP Cal Quantrill TEX	Reliever	59	0	R			0.321	0.312	0.331	18.0	5.9	3.4	0.289	false
+82001	MLB 2026 Live RP Phil Maton CHC	Reliever	56	0	R			0.321	0.329	0.312	22.8	7.5	3.4	0.298	false
+82390	MLB 2026 Live SP Seth Lugo KC	Starter	65	0	R			0.321	0.323	0.319	19.0	5.8	3.5	0.292	false
+84902	MLB 2026 Live RP Joey Lucchesi LAA	Reliever	62	0	L			0.321	0.308	0.328	17.5	6.6	2.9	0.295	false
+83074	Snapshot RP Ken Lehman BAL 1958	Reliever	57	0	L			0.321	0.318	0.322	18.4	5.4	2.9	0.304	false
+82653	MLB 2026 Live SP Dean Kremer BAL	Starter	66	0	R			0.321	0.314	0.33	18.4	5.6	3.6	0.287	false
+83163	Snapshot RP Tommy Hunter CLE 2016	Reliever	64	0	R			0.321	0.314	0.331	13.9	4.9	1.9	0.314	false
+82102	MLB 2026 Live RP Cade Gibson MIA	Reliever	50	0	L			0.321	0.315	0.324	18.0	6.8	2.8	0.298	false
+84912	MLB 2026 Live RP Rico Garcia BAL	Reliever	59	0	R			0.321	0.318	0.325	23.5	7.3	4.0	0.286	false
+85255	MLB 2026 Live RP Jake Eder LAD	Reliever	52	0	L			0.321	0.313	0.326	17.1	6.8	2.9	0.294	false
+82817	Unsung Heroes SP Ed Doheny PIT 1901	Starter	67	0	L			0.321	0.306	0.33	21.0	6.9	3.4	0.296	false
+81880	MLB 2026 Live SP Hunter Dobbins STL	Starter	61	0	R			0.321	0.323	0.318	17.0	5.9	3.1	0.293	false
+83117	Snapshot SP Elmer Dessens CIN 2000	Starter	65	0	R			0.321	0.317	0.326	13.0	5.4	2.4	0.296	false
+83187	Snapshot RP Tim Crews LAD 1991	Reliever	66	0	R			0.321	0.334	0.306	20.8	5.3	3.0	0.311	false
+83095	Snapshot RP Danny Coulombe ATH 2016	Reliever	60	0	L			0.321	0.316	0.323	21.7	7.3	3.6	0.288	false
+82044	MLB 2026 Live RP Jonathan Bowlan PHI	Reliever	62	0	R			0.321	0.324	0.317	21.6	6.0	3.6	0.297	false
+83166	Snapshot SP Chris Bosio SEA 1993	Starter	68	0	R			0.321	0.337	0.303	19.7	7.8	3.4	0.286	false
+84966	MLB 2026 Live RP Hunter Barco PIT	Reliever	59	0	L			0.321	0.302	0.332	19.4	6.9	3.2	0.293	false
+83868	Historical All-Star SP Wilson Alvarez CWS 1994	Starter	59	0	L			0.321	0.31	0.328	17.4	7.6	3.1	0.286	false
+85616	MLB 2026 Live RP Franco Aleman CLE	Reliever	51	0	R			0.321	0.329	0.311	21.0	7.7	3.2	0.295	false
+86197	Clubhouse - Baseball Reference 5 RP Ace Adams NY1 1943	Reliever	46	0	R			0.321	0.35	0.286	15.7	8.2	3.4	0.269	true
+83028	Snapshot SP Dizzy Trout DET 1942	Starter	55	5	R			0.321	0.318	0.324	19.3	6.9	3.6	0.283	false
+83035	Snapshot SP Armando Reynoso NYM 1997	Starter	54	5	R			0.321	0.334	0.306	15.5	6.4	2.7	0.292	false
+85700	SwitchKnucklers - Rookie Sensation SP Kirt Ojala FLO 1998	Starter	46	5	L			0.321	0.322	0.321	17.7	7.8	2.5	0.298	false
+82802	Unsung Heroes SP Slim Love NYY 1918	Starter	52	5	L			0.321	0.314	0.324	23.5	9.5	3.3	0.292	false
+84233	Rookie Sensation SP Mudcat Grant CLE 1958	Starter	51	5	R			0.321	0.331	0.309	16.7	8.9	2.9	0.278	false
+85058	HOF 1 - Veteran Presence RP Rich Gossage ATH 1992	Reliever	48	5	R			0.321	0.322	0.321	22.0	7.9	3.4	0.292	false
+85067	HOF 1 - Veteran Presence SP Lefty Gomez NYY 1941	Starter	54	5	L			0.321	0.309	0.328	22.9	12.9	2.4	0.290	false
+84018	All-Time Legend SP Josh Fogg PIT Peak	Starter	54	5	R			0.321	0.313	0.331	15.3	5.7	3.1	0.287	false
+84405	Negro League Star SP Cliff Carter HiCl 1930	Starter	53	5	R			0.321	0.323	0.319	16.0	6.2	3.0	0.290	false
+83047	Snapshot RP Ken Brett LAD 1979	Reliever	55	5	L			0.321	0.331	0.316	11.3	5.8	2.0	0.296	false
+85486	Clubhouse - 60s Week - Historical All-Star SP Stan Williams LAD 1960	Starter	69	0	R			0.322	0.339	0.301	27.8	8.3	5.4	0.263	false
+84913	MLB 2026 Live RP Ryan Watson BOS	Reliever	57	0	R			0.322	0.336	0.305	19.9	6.6	3.6	0.290	false
+85244	MLB 2026 Live RP Austin Warren NYM	Reliever	55	0	R			0.322	0.327	0.314	21.1	7.0	3.6	0.290	false
+81824	MLB 2026 Live RP Victor Vodnik COL	Reliever	52	0	R			0.322	0.33	0.312	20.0	8.4	2.8	0.299	false
+82038	MLB 2026 Live RP Lou Trivino PHI	Reliever	56	0	R			0.322	0.331	0.312	19.5	7.0	3.1	0.297	false
+82260	MLB 2026 Live RP Justin Sterner ATH	Reliever	58	0	R			0.322	0.327	0.317	22.4	5.9	4.2	0.288	false
+84910	MLB 2026 Live RP Chase Silseth LAA	Reliever	58	0	R			0.322	0.329	0.314	22.6	8.3	3.4	0.294	false
+83078	Snapshot CL Hector Rondon HOU 2018	Reliever	59	0	R			0.322	0.327	0.317	20.5	6.8	2.4	0.318	false
+83077	Snapshot RP Luis Perdomo SD 2019	Reliever	59	0	R			0.322	0.331	0.312	13.4	5.6	2.4	0.298	false
+84261	Rookie Sensation RP Ed Olwine ATL 1986	Reliever	63	0	L			0.322	0.315	0.326	21.7	5.6	4.2	0.287	false
+82547	MLB 2026 Live SP Steven Matz TB	Starter	68	0	L			0.322	0.321	0.322	19.8	5.4	3.6	0.295	false
+85542	MLB 2026 Live SP John Klein MIN	Starter	66	0	R			0.322	0.326	0.316	19.4	6.3	3.4	0.292	false
+86073	Obscure All-Stars - Baseball Reference 5 SP Harry Kincannon PiCr 1934	Starter	45	0	R			0.322	0.327	0.316	22.7	6.9	2.8	0.319	true
+84929	MLB 2026 Live RP Zak Kent WSH	Reliever	52	0	R			0.322	0.331	0.311	20.2	7.7	3.3	0.290	false
+85559	MLB 2026 Live RP Alex Hoppe SEA	Reliever	51	0	R			0.322	0.331	0.311	19.9	7.7	2.8	0.301	false
+82486	MLB 2026 Live RP Jordan Hicks CWS	Reliever	55	0	R			0.322	0.328	0.315	19.8	8.5	2.4	0.305	false
+84268	Rookie Sensation SP Ed Heusser STL 1935	Starter	68	0	R			0.322	0.313	0.333	14.1	5.3	3.0	0.289	false
+83131	Snapshot SP Roberto H. Hernandez CLE 2007	Starter	67	0	R			0.322	0.329	0.314	14.2	6.7	2.6	0.289	false
+82118	MLB 2026 Live RP Ryan Gusto MIA	Reliever	57	0	R			0.322	0.323	0.321	18.2	6.5	2.9	0.299	false
+85263	MLB 2026 Live SP Luis Gil NYY	Starter	60	0	R			0.322	0.328	0.315	20.5	7.9	3.5	0.286	false
+84032	All-Time Legend SP Jon Garland CWS Peak	Starter	68	0	R			0.322	0.314	0.332	14.9	5.0	3.2	0.288	false
+83121	Snapshot RP Adrian Devine ATL 1976	Reliever	62	0	R			0.322	0.325	0.319	20.3	6.3	3.0	0.306	false
+83125	Snapshot RP Don Brennan CIN 1935	Reliever	60	0	R			0.322	0.343	0.296	20.1	8.7	3.3	0.286	false
+82431	MLB 2026 Live SP Logan Allen CLE	Starter	59	0	L			0.322	0.312	0.328	18.0	6.8	2.9	0.296	false
+81973	MLB 2026 Live SP Andrew Abbott CIN	Starter	63	0	L			0.322	0.322	0.322	19.4	6.8	3.6	0.287	false
+84029	Veteran Presence SP Rip Sewell PIT Peak	Starter	63	5	R			0.322	0.349	0.289	15.2	6.1	2.9	0.291	false
+82996	Snapshot SP Dennys Reyes KC 2004	Starter	51	5	L			0.322	0.302	0.334	20.3	7.7	2.9	0.301	false
+82979	Veteran Presence RP Don Larsen BAL 1965	Reliever	49	5	R			0.322	0.342	0.298	18.3	7.3	2.7	0.300	false
+84030	All-Time Legend SP Ron Kline PIT Peak	Starter	62	5	R			0.322	0.349	0.29	15.1	5.4	2.9	0.292	false
+84235	Rookie Sensation RP Wayne Granger STL 1968	Reliever	49	5	R			0.322	0.323	0.32	17.2	5.5	2.5	0.310	false
+83019	Snapshot RP Bryce Florie BOS 2000	Reliever	52	5	R			0.322	0.325	0.318	17.3	4.9	2.5	0.313	false
+83084	Snapshot SP Ron Darling NYM 1988	Starter	62	5	R			0.322	0.32	0.324	19.9	6.0	3.9	0.285	false
+83110	Snapshot CL Rod Beck CHC 1998	Reliever	59	5	R			0.322	0.338	0.302	22.9	4.2	3.9	0.306	false
+84408	Negro League Star SP Ramon Arano MCDR 1964	Starter	55	5	R			0.322	0.325	0.318	12.8	5.9	2.4	0.293	false
+82629	MLB 2026 Live SP Brandon Young BAL	Starter	61	0	R			0.323	0.324	0.322	18.8	6.1	3.5	0.292	false
+82350	MLB 2026 Live SP Simeon Woods Richardson TOR	Starter	58	0	R			0.323	0.323	0.324	18.9	7.1	3.3	0.290	false
+83161	Snapshot SP Tully Sparks PHI 1907	Starter	68	0	R			0.323	0.329	0.316	14.9	5.4	3.3	0.286	false
+83156	Snapshot CL Lee Smith CHC 1986	Reliever	64	0	R			0.323	0.341	0.302	24.7	8.7	3.6	0.298	false
+82597	MLB 2026 Live RP Justin Slaten BOS	Reliever	60	0	R			0.323	0.324	0.322	20.7	6.2	3.4	0.301	false
+83081	Snapshot RP Paul Shuey CLE 1998	Reliever	57	0	R			0.323	0.328	0.317	25.0	8.0	3.8	0.297	false
+85636	MLB 2026 Live RP Tayler Saucedo LAA	Reliever	50	0	L			0.323	0.318	0.325	19.3	7.9	2.8	0.300	false
+83091	Snapshot RP Jack Russell CHC 1939	Reliever	58	0	R			0.323	0.334	0.31	19.6	6.7	3.0	0.303	false
+84898	MLB 2026 Live RP Zach Pop MIA	Reliever	57	0	R			0.323	0.336	0.307	16.8	6.2	2.8	0.299	false
+83137	Snapshot SP Claude Osteen LAD 1965	Starter	64	0	L			0.323	0.334	0.317	15.1	6.3	2.8	0.293	false
+84242	Rookie Sensation RP Steve Olin CLE 1989	Reliever	58	0	R			0.323	0.328	0.316	18.7	7.5	2.2	0.313	false
+85332	T4 Ep. 1 - Rookie Sensation RP Darren O&#39;Day LAA 2008	Reliever	62	0	R			0.323	0.335	0.309	15.5	6.3	2.0	0.312	false
+84695	Clubhouse - April Fools&#39; Day SP Bob Miller PHI 1950	Starter	69	0	R			0.323	0.342	0.298	9.4	4.6	2.1	0.296	false
+84862	Clubhouse - Negro League Star SP Jack Matchett KCM 1944	Starter	53	0	R			0.323	0.319	0.327	16.2	5.9	2.7	0.301	false
+84209	Rookie Sensation SP Kenta Maeda LAD 2016	Starter	69	0	R			0.323	0.338	0.304	19.1	6.7	3.4	0.291	false
+82219	MLB 2026 Live SP Jack Leiter TEX	Starter	64	0	R			0.323	0.327	0.318	21.1	7.0	3.8	0.289	false
+82492	MLB 2026 Live RP Chase Lee TOR	Reliever	63	0	R			0.323	0.333	0.309	20.0	6.0	3.6	0.294	false
+85254	MLB 2026 Live SP Peter Lambert HOU	Starter	64	0	R			0.323	0.322	0.323	20.2	6.9	3.7	0.287	false
+84240	Rookie Sensation SP Tim Keefe TRN 1880	Starter	58	0	R			0.323	0.321	0.326	21.3	8.6	3.2	0.293	false
+83106	Snapshot SP Claude Hendrix PIT 1913	Starter	62	0	R			0.323	0.33	0.314	22.2	7.6	3.2	0.303	false
+83127	Snapshot SP Pink Hawley STL 1893	Starter	65	0	R			0.323	0.33	0.314	22.4	7.4	3.2	0.304	false
+84016	All-Time Legend RP Jerry Don Gleaton DET Peak	Reliever	50	0	L			0.323	0.31	0.331	20.2	8.3	3.1	0.294	false
+85404	Limited Edition/98 SP Bartolo Colon CLE 2000	Starter	59	0	R			0.323	0.333	0.311	22.8	10.7	2.6	0.301	false
+84262	Rookie Sensation SP Bo Belinsky LAA 1962	Starter	66	0	L			0.323	0.344	0.311	21.6	12.6	2.4	0.290	false
+83015	Snapshot SP Early Wynn WS1 1943	Starter	53	5	R			0.323	0.313	0.335	15.7	6.0	3.5	0.280	false
+83072	Snapshot RP Ed Roebuck LAD 1960	Reliever	56	5	R			0.323	0.328	0.318	20.8	5.3	3.8	0.296	false
+83031	Snapshot SP Harry McIntire CHC 1910	Starter	54	5	R			0.323	0.322	0.324	16.0	5.9	3.4	0.285	false
+84681	Happy Easter SP Bunny Hearn BSN 1926	Starter	45	5	L			0.323	0.325	0.322	20.5	7.7	2.8	0.305	false
+83103	Snapshot SP Freddie Fitzsimmons NY1 1930	Starter	62	5	R			0.323	0.338	0.304	16.5	5.3	3.5	0.287	false
+82995	Veteran Presence RP Cal Eldred STL 2003	Reliever	50	5	R			0.323	0.31	0.339	23.9	8.0	3.7	0.295	false
+84402	Negro League Star SP Dizzy Dismukes WBS 1911	Starter	52	5	R			0.323	0.336	0.308	12.7	5.9	2.9	0.285	false
+83038	Snapshot SP Roger Craig STL 1964	Starter	56	5	R			0.323	0.31	0.34	13.6	4.4	3.0	0.293	false
+84230	Rookie Sensation RP Jon Coutlangus CIN 2007	Reliever	49	5	L			0.323	0.321	0.324	22.0	11.5	2.5	0.298	false
+83036	Snapshot SP Ray Burris MON 1983	Starter	56	5	R			0.323	0.332	0.311	20.1	7.8	3.6	0.284	false
+84026	All-Time Legend SP Jim Bagby CLE Peak	Starter	60	5	R			0.323	0.334	0.309	13.6	4.6	2.9	0.294	false
+82648	MLB 2026 Live RP Tyler Wells BAL	Reliever	67	0	R			0.324	0.322	0.325	20.3	5.0	4.3	0.285	false
+84928	MLB 2026 Live RP Ryan Weiss HOU	Reliever	60	0	R			0.324	0.326	0.32	21.4	6.8	3.5	0.299	false
+85699	Clubhouse - SwitchKnucklers - Rookie Sensation SP Tim Wakefield PIT 1992	Starter	58	0	R			0.324	0.318	0.332	16.9	8.4	2.7	0.292	false
+84900	MLB 2026 Live RP Jose Urquidy PIT	Reliever	60	0	R			0.324	0.324	0.324	17.5	5.4	3.3	0.295	false
+83093	Snapshot SP Lefty Tyler BSN 1913	Starter	61	0	L			0.324	0.331	0.32	20.1	7.8	3.1	0.296	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	Starter	56	0	L			0.324	0.32	0.326	19.0	7.9	2.1	0.315	false
+81970	MLB 2026 Live RP Tony Santillan CIN	Reliever	56	0	R			0.324	0.329	0.317	22.1	7.3	4.0	0.286	false
+84848	Limited Edition/42 SP Kirk Rueter MON 1993	Starter	59	0	L			0.324	0.311	0.331	10.4	4.8	2.5	0.292	false
+83173	Snapshot SP Eric Milton MIN 1999	Starter	69	0	L			0.324	0.329	0.322	19.9	6.1	4.0	0.286	false
+84250	Rookie Sensation SP George McConnell NYY 1912	Starter	63	0	R			0.324	0.313	0.336	20.4	6.5	3.4	0.297	false
+82322	MLB 2026 Live SP Yusei Kikuchi LAA	Starter	66	0	L			0.324	0.32	0.325	21.7	6.7	3.4	0.303	false
+86032	MLB 2026 Live RP Hayden Juenger ATH	Reliever	50	0	R			0.324	0.33	0.316	18.3	7.3	3.1	0.293	false
+85268	MLB 2026 Live RP Seth Johnson PHI	Reliever	55	0	R			0.324	0.324	0.323	20.4	7.5	3.3	0.294	false
+81729	MLB 2026 Live SP Adrian Houser SF	Starter	59	0	R			0.324	0.327	0.32	17.4	6.0	3.3	0.292	false
+85228	Clubhouse - Y&amp;O 1 - Veteran Presence SP Charlie Hough FLO 1993	Starter	54	0	R			0.324	0.334	0.312	18.1	6.4	3.5	0.288	false
+81825	MLB 2026 Live RP Jimmy Herget COL	Reliever	57	0	R			0.324	0.334	0.312	20.0	5.8	3.5	0.298	false
+83051	Snapshot SP Matt Harrison TEX 2011	Starter	68	0	L			0.324	0.323	0.325	15.1	6.8	2.7	0.293	false
+84277	Rookie Sensation SP Al Grabowski STL 1929	Starter	69	0	L			0.324	0.316	0.33	19.5	5.8	3.1	0.307	false
+83085	Snapshot SP Tom Glavine ATL 1999	Starter	63	0	L			0.324	0.307	0.334	13.9	6.2	2.3	0.301	false
+81908	MLB 2026 Live RP Carson Fulmer SEA	Reliever	58	0	R			0.324	0.331	0.316	18.3	6.6	3.4	0.290	false
+84431	Negro League Star SP Rube Foster CLG 1910	Starter	67	0	R			0.324	0.326	0.321	15.2	5.7	3.0	0.291	false
+83139	Snapshot SP Jesse Flores PHA 1944	Starter	66	0	R			0.324	0.311	0.34	16.1	6.1	3.4	0.285	false
+82388	MLB 2026 Live RP Bailey Falter KC	Reliever	56	0	L			0.324	0.32	0.327	16.2	6.2	3.2	0.290	false
+83049	Snapshot SP Ice Box Chamberlain CIN 1893	Starter	58	0	R			0.324	0.327	0.32	18.1	7.6	3.2	0.288	false
+86121	Limited Edition/93 SP Shawn Chacon COL 2003	Starter	45	0	R			0.324	0.333	0.313	15.7	8.9	2.5	0.290	true
+84254	Rookie Sensation SP Arnold Carter CIN 1944	Starter	63	0	L			0.324	0.322	0.325	11.2	6.4	2.4	0.288	false
+81754	MLB 2026 Live SP Walker Buehler SD	Starter	60	0	R			0.324	0.325	0.323	19.5	6.3	3.5	0.293	false
+82619	MLB 2026 Live SP Brayan Bello BOS	Starter	60	0	R			0.324	0.334	0.311	18.0	6.6	3.0	0.298	false
+82278	MLB 2026 Live RP Brady Basso ATH	Reliever	60	0	L			0.324	0.325	0.323	17.6	5.7	3.3	0.295	false
+82809	Veteran Presence SP Dick Barrett PHI 1943	Starter	62	0	R			0.324	0.307	0.344	17.5	7.3	3.2	0.287	false
+83071	Snapshot CL Antonio Alfonseca FLO 1999	Reliever	59	0	R			0.324	0.325	0.324	14.6	6.3	2.1	0.308	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	Starter	58	5	R			0.324	0.319	0.33	14.5	5.7	3.3	0.282	false
+83062	Snapshot SP Ed Lynch NYM 1982	Starter	60	5	R			0.324	0.331	0.314	12.4	6.3	2.3	0.295	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	Starter	51	5	R			0.324	0.33	0.317	13.1	5.4	2.7	0.293	false
+82974	Veteran Presence SP Dave Burba TEX 2002	Starter	50	5	R			0.324	0.321	0.327	16.6	6.9	2.9	0.293	false
+83053	Snapshot SP Floyd Bannister CWS 1987	Starter	57	5	L			0.324	0.317	0.328	15.9	4.7	4.3	0.270	false
+84231	Rookie Sensation SP Tejay Antone CIN 2020	Starter	50	5	R			0.324	0.332	0.315	20.6	7.5	3.1	0.301	false
+81823	MLB 2026 Live RP Keegan Thompson COL	Reliever	55	0	R			0.325	0.328	0.322	19.9	6.7	3.5	0.296	false
+82539	MLB 2026 Live RP Cole Sulser TB	Reliever	58	0	R			0.325	0.332	0.316	20.0	6.0	3.4	0.301	false
+83073	Snapshot SP Steve Stone CWS 1973	Starter	61	0	R			0.325	0.34	0.305	21.5	10.0	2.7	0.301	false
+84239	Rookie Sensation SP Curt Simmons PHI 1948	Starter	56	0	L			0.325	0.342	0.316	21.5	10.1	2.8	0.298	false
+85996	MLB 2026 Live RP Carson Seymour SF	Reliever	53	0	R			0.325	0.323	0.327	17.1	6.5	2.9	0.299	false
+82131	MLB 2026 Live RP Tayler Scott ATL	Reliever	52	0	R			0.325	0.336	0.312	20.0	7.5	3.2	0.298	false
+84022	May Birthdays - Snapshot CL Trevor Rosenthal STL 2014	Reliever	53	0	R			0.325	0.32	0.331	23.3	14.2	1.9	0.302	false
+85569	MLB 2026 Live SP JR Ritchie ATL	Starter	59	0	R			0.325	0.329	0.321	19.9	7.2	3.6	0.289	false
+86033	MLB 2026 Live CL Marco Raya MIN	Reliever	61	0	R			0.325	0.335	0.313	19.9	7.0	3.5	0.295	false
+86006	MLB 2026 Live RP Wilkin Ramos SF	Reliever	48	0	R			0.325	0.327	0.322	17.4	8.3	2.5	0.300	false
+85508	Clubhouse - 60s Week - Unsung Heroes SP Joe Nuxhall KC1 1961	Starter	55	0	L			0.325	0.29	0.346	19.5	9.0	2.9	0.296	false
+81913	MLB 2026 Live RP Justin Lawrence WSH	Reliever	51	0	R			0.325	0.337	0.311	23.2	8.7	3.4	0.298	false
+86003	MLB 2026 Live RP Gavin Hollowell CHC	Reliever	49	0	R			0.325	0.334	0.314	20.3	8.6	3.2	0.292	false
+84995	MLB 2026 Live RP Andrew Hoffmann AZ	Reliever	56	0	R			0.325	0.336	0.311	22.1	7.1	3.5	0.300	false
+83159	Snapshot SP Burleigh Grimes NY1 1927	Starter	69	0	R			0.325	0.34	0.307	21.3	7.0	3.5	0.297	false
+82812	Unsung Heroes SP Whitey Glazner PIT 1922	Starter	64	0	R			0.325	0.316	0.336	20.3	6.0	3.5	0.301	false
+84426	Negro League Star SP Bill Gatewood CAG 1912	Starter	62	0	R			0.325	0.323	0.326	13.1	5.8	3.0	0.287	false
+83142	Snapshot SP Wes Ferrell BOS 1934	Starter	65	0	R			0.325	0.339	0.308	14.4	5.8	2.6	0.299	false
+86029	MLB 2026 Live SP Daniel Espino CLE	Starter	60	0	R			0.325	0.327	0.324	21.4	7.6	3.5	0.295	false
+82669	Hardware Heroes SP General Crowder WS1 1933	Starter	66	0	R			0.325	0.33	0.318	19.0	6.2	3.4	0.296	false
+85577	MLB 2026 Live SP Coleman Crow MIL	Starter	60	0	R			0.325	0.332	0.316	18.2	6.3	3.2	0.297	false
+86038	MLB 2026 Live SP Riley Cornelio WSH	Starter	61	0	R			0.325	0.33	0.318	19.5	7.4	3.2	0.295	false
+82323	MLB 2026 Live RP Matt Bowman TOR	Reliever	56	0	R			0.325	0.333	0.316	17.9	6.1	3.4	0.293	false
+84974	MLB 2026 Live RP Luinder Avila KC	Reliever	55	0	R			0.325	0.336	0.312	19.0	8.0	2.9	0.298	false
+81920	MLB 2026 Live RP Grant Anderson MIL	Reliever	56	0	R			0.325	0.331	0.317	21.6	7.3	3.9	0.287	false
+83128	Snapshot SP Red Ames NY1 1909	Starter	64	0	R			0.325	0.331	0.318	23.4	7.6	3.6	0.301	false
+84243	Rookie Sensation SP Raleigh Aitchison BRO 1914	Starter	63	0	L			0.325	0.326	0.325	19.5	7.0	3.6	0.290	false
+82808	Unsung Heroes SP Jimmy Zinn PIT 1921	Starter	60	5	R			0.325	0.329	0.321	20.0	5.2	2.8	0.321	false
+85480	60s Theme Week - Rookie Sensation SP Don Schwall BOS 1961	Starter	52	5	R			0.325	0.335	0.311	15.3	11.0	2.0	0.288	false
+83058	Snapshot SP Ray Kolp CIN 1928	Starter	58	5	R			0.325	0.346	0.299	15.4	5.4	3.2	0.291	false
+82987	Snapshot SP Jason Grimsley CLE 1994	Starter	50	5	R			0.325	0.329	0.321	18.7	7.0	2.7	0.307	false
+85025	The Other Emerson - Unsung Heroes RP Emerson Dickman BOS 1939	Reliever	60	5	R			0.325	0.316	0.336	17.5	5.8	3.5	0.290	false
+84223	Rookie Sensation SP Daniel Castano MIA 2020	Starter	47	5	L			0.325	0.314	0.332	15.2	6.7	2.8	0.294	false
+83098	Veteran Presence CL Tim Worrell PHI 2004	Reliever	58	0	R			0.326	0.327	0.324	18.7	5.5	3.7	0.293	false
+82199	MLB 2026 Live RP Cole Winn TEX	Reliever	52	0	R			0.326	0.325	0.328	19.1	7.5	3.4	0.290	false
+84023	All-Time Legend SP Bill Wight CWS Peak	Starter	61	0	L			0.326	0.306	0.337	14.3	6.7	2.2	0.304	false
+83066	Snapshot SP Earl Whitehill DET 1929	Starter	62	0	L			0.326	0.34	0.318	22.3	7.5	3.5	0.300	false
+84251	Rookie Sensation SP Happy Townsend PHI 1901	Starter	63	0	R			0.326	0.338	0.311	23.5	11.0	3.1	0.294	false
+82815	Unsung Heroes RP Pete Redfern MIN 1979	Reliever	66	0	R			0.326	0.357	0.287	22.7	7.7	3.5	0.302	false
+81996	MLB 2026 Live SP Colin Rea CHC	Starter	59	0	R			0.326	0.329	0.323	18.2	6.2	3.6	0.290	false
+81802	MLB 2026 Live RP Luis Peralta CHC	Reliever	49	0	L			0.326	0.319	0.33	20.6	8.1	3.2	0.297	false
+86051	MLB 2026 Live RP Carson Palmquist WSH	Reliever	54	0	L			0.326	0.321	0.328	20.1	7.2	3.5	0.293	false
+82816	Unsung Heroes SP Doc Newton NYY 1907	Starter	66	0	L			0.326	0.334	0.322	21.7	6.2	3.5	0.305	false
+83025	Snapshot SP Roger Moret BOS 1975	Starter	53	0	L			0.326	0.323	0.328	17.9	9.6	2.8	0.289	false
+82997	Veteran Presence SP Kevin Millwood SEA 2012	Starter	52	0	R			0.326	0.313	0.341	14.5	7.9	2.5	0.292	false
+81731	MLB 2026 Live SP Tyler Mahle SF	Starter	62	0	R			0.326	0.326	0.325	19.1	6.4	3.6	0.291	false
+84906	MLB 2026 Live RP Joel Kuhnel MIL	Reliever	56	0	R			0.326	0.338	0.311	17.1	5.6	3.1	0.299	false
+81972	MLB 2026 Live RP Pierce Johnson CIN	Reliever	59	0	R			0.326	0.325	0.328	23.1	6.8	4.0	0.296	false
+82158	MLB 2026 Live SP Grant Holmes ATL	Starter	59	0	R			0.326	0.329	0.322	20.3	7.2	3.8	0.287	false
+85622	MLB 2026 Live RP Nolan Hoffman PHI	Reliever	53	0	R			0.326	0.333	0.318	19.9	7.4	3.2	0.299	false
+85604	MLB 2026 Live SP Lucas Giolito SD	Starter	59	0	R			0.326	0.327	0.326	19.6	7.0	3.6	0.292	false
+82561	MLB 2026 Live RP Angel Chivilli NYY	Reliever	53	0	R			0.326	0.328	0.324	19.0	6.1	3.3	0.301	false
+81787	MLB 2026 Live RP Ben Casparius LAD	Reliever	62	0	R			0.326	0.332	0.319	19.7	6.7	3.6	0.293	false
+82794	Unsung Heroes SP Victor Zambrano NYM 2005	Starter	51	5	R			0.326	0.338	0.311	16.3	9.4	2.4	0.294	false
+85366	T4 Ep. 1 - Unsung Heroes SP Fernando Valenzuela BAL 1993	Starter	50	5	L			0.326	0.351	0.312	15.0	9.1	2.9	0.280	false
+83087	Snapshot CL Cecil Upshaw ATL 1971	Reliever	59	5	R			0.326	0.344	0.303	19.3	4.6	2.9	0.319	false
+82963	Snapshot SP Bob Shaw CWS 1960	Starter	48	5	R			0.326	0.311	0.344	10.4	5.8	2.6	0.288	false
+85307	Baseball Reference 2 CL Glen Perkins MIN 2015	Reliever	56	5	L			0.326	0.311	0.334	20.2	3.7	4.3	0.291	false
+82787	Unsung Heroes CL Byron McLaughlin SEA 1979	Reliever	49	5	R			0.326	0.327	0.325	21.6	8.3	3.8	0.286	false
+83026	Snapshot SP Jim Kaat MIN 1965	Starter	55	5	L			0.326	0.314	0.332	16.1	4.8	3.3	0.295	false
+82960	Snapshot RP Jeff Innis NYM 1992	Reliever	48	5	R			0.326	0.337	0.314	13.9	8.6	2.4	0.289	false
+82659	Hardware Heroes SP Livan Hernandez WAS 2005	Starter	51	5	R			0.326	0.328	0.325	15.8	6.3	3.2	0.291	false
+83083	Snapshot SP John Burkett SF 1992	Starter	62	5	R			0.326	0.345	0.303	14.8	4.6	3.2	0.295	false
+84965	MLB 2026 Live RP Cole Wilcox SEA	Reliever	53	0	R			0.327	0.338	0.314	17.7	7.3	2.9	0.299	false
+82028	MLB 2026 Live RP Paxton Schultz WSH	Reliever	59	0	R			0.327	0.329	0.324	19.7	6.3	3.3	0.302	false
+82313	MLB 2026 Live RP Nick Sandlin DET	Reliever	55	0	R			0.327	0.336	0.316	22.4	7.5	4.1	0.287	false
+85259	MLB 2026 Live SP Carlos Rodriguez MIL	Starter	62	0	R			0.327	0.334	0.319	19.1	6.9	3.5	0.293	false
+81952	MLB 2026 Live RP Lyon Richardson MIL	Reliever	50	0	R			0.327	0.335	0.317	18.3	7.9	3.0	0.296	false
+82058	MLB 2026 Live RP Trevor Richards CWS	Reliever	57	0	R			0.327	0.331	0.322	22.2	6.8	4.4	0.284	false
+83114	Snapshot SP Pat Ragan BSN 1917	Starter	62	0	R			0.327	0.313	0.344	17.5	5.6	3.8	0.288	false
+82630	MLB 2026 Live SP Cade Povich BAL	Starter	59	0	L			0.327	0.327	0.327	20.2	6.6	3.4	0.301	false
+82354	MLB 2026 Live SP Bailey Ober MIN	Starter	68	0	R			0.327	0.329	0.324	19.0	5.0	4.2	0.286	false
+83147	Snapshot SP Jamie Moyer BAL 1993	Starter	66	0	L			0.327	0.364	0.306	15.6	6.0	3.0	0.297	false
+83149	Snapshot SP Dennis Leonard KC 1976	Starter	67	0	R			0.327	0.334	0.32	18.9	6.5	3.5	0.295	false
+83873	Veteran Presence SP Tommy John NYY 1980	Starter	66	0	L			0.327	0.327	0.327	11.6	5.4	2.8	0.289	false
+81836	MLB 2026 Live RP Grant Holman PHI	Reliever	52	0	R			0.327	0.328	0.324	18.3	6.2	3.4	0.295	false
+81862	MLB 2026 Live SP Zac Gallen AZ	Starter	63	0	R			0.327	0.328	0.325	18.9	5.5	3.9	0.291	false
+83124	Snapshot SP Joe Dobson BOS 1946	Starter	65	0	R			0.327	0.334	0.318	21.4	7.6	3.7	0.293	false
+84037	All-Time Legend SP Mark Clark NYM Peak	Starter	68	0	R			0.327	0.338	0.313	16.9	4.2	3.1	0.307	false
+82413	MLB 2026 Live RP Beau Brieske DET	Reliever	57	0	R			0.327	0.328	0.325	17.8	7.3	3.3	0.290	false
+83140	Snapshot SP Harry Brecheen STL 1949	Starter	67	0	L			0.327	0.334	0.323	17.3	5.4	3.6	0.292	false
+83052	Snapshot RP Tim Birtsas CIN 1989	Reliever	54	0	L			0.327	0.323	0.329	21.5	6.5	3.5	0.305	false
+82562	MLB 2026 Live RP Osvaldo Bido CWS	Reliever	53	0	R			0.327	0.33	0.323	18.9	7.3	3.5	0.289	false
+84025	All-Time Legend SP Fred Beebe STL Peak	Starter	62	0	R			0.327	0.347	0.303	22.0	8.6	3.6	0.293	false
+82969	Snapshot RP Joe Smith CLE 2010	Reliever	48	5	R			0.327	0.346	0.305	20.0	10.6	3.4	0.280	false
+84220	Rookie Sensation RP Garry Roggenburk MIN 1963	Reliever	47	5	L			0.327	0.319	0.331	14.6	8.1	2.4	0.294	false
+85459	May Birthdays - Unsung Heroes RP Mark Huismann KC 1985	Reliever	50	5	R			0.327	0.339	0.311	12.6	4.8	3.3	0.286	false
+83009	Snapshot SP Willis Hudlin CLE 1928	Starter	51	5	R			0.327	0.336	0.317	15.3	8.1	3.0	0.284	false
+83010	Snapshot SP Harry Gumbert NY1 1939	Starter	51	5	R			0.327	0.326	0.329	15.1	5.9	3.6	0.282	false
+85261	MLB 2026 Live RP Jesse Scholtens TB	Reliever	58	0	R			0.328	0.332	0.323	18.2	5.6	3.8	0.291	false
+81853	MLB 2026 Live RP Joe Ross TEX	Reliever	53	0	R			0.328	0.333	0.323	17.1	6.6	3.3	0.294	false
+83105	Snapshot SP Jack Powell SLA 1908	Starter	62	0	R			0.328	0.312	0.347	14.3	5.5	3.4	0.287	false
+84988	MLB 2026 Live SP Andrew Painter PHI	Starter	67	0	R			0.328	0.339	0.316	20.4	6.5	3.5	0.301	false
+83056	Snapshot SP Vicente Padilla PHI 2003	Starter	59	0	R			0.328	0.323	0.335	14.7	6.7	3.2	0.287	false
+81859	MLB 2026 Live SP Ryne Nelson AZ	Starter	67	0	R			0.328	0.333	0.322	18.3	5.3	4.2	0.284	false
+84921	MLB 2026 Live RP Ron Marinaccio SD	Reliever	51	0	R			0.328	0.34	0.313	21.1	7.3	3.9	0.290	false
+82478	MLB 2026 Live RP Jordan Leasure CWS	Reliever	56	0	R			0.328	0.328	0.33	23.6	7.5	4.4	0.286	false
+82297	MLB 2026 Live SP Jack Kochanowicz LAA	Starter	52	0	R			0.328	0.336	0.319	17.1	7.4	3.1	0.294	false
+81803	MLB 2026 Live RP Seth Halvorsen COL	Reliever	50	0	R			0.328	0.332	0.324	20.3	7.7	3.5	0.296	false
+82523	MLB 2026 Live CL Yoendrys Gomez MIN	Reliever	55	0	R			0.328	0.331	0.325	21.3	7.2	4.2	0.284	false
+85601	MLB 2026 Live RP Carl Edwards Jr. DET	Reliever	54	0	R			0.328	0.331	0.324	18.8	7.5	3.4	0.293	false
+83059	Snapshot SP Harry Coveleski DET 1914	Starter	59	0	L			0.328	0.313	0.337	16.2	7.0	3.4	0.286	false
+82801	Unsung Heroes RP Rocky Childress HOU 1987	Reliever	51	0	R			0.328	0.329	0.326	14.7	6.0	2.8	0.299	false
+82432	MLB 2026 Live SP Slade Cecconi CLE	Starter	60	0	R			0.328	0.331	0.324	19.0	5.6	3.9	0.291	false
+83086	Snapshot RP Tom Bruno STL 1979	Reliever	58	0	R			0.328	0.343	0.308	19.9	12.5	2.0	0.301	false
+82938	Snapshot RP Rich Rodriguez SD 1991	Reliever	45	5	L			0.328	0.338	0.323	15.9	8.9	3.7	0.269	false
+82949	Snapshot SP Togie Pittinger BSN 1904	Starter	45	5	R			0.328	0.316	0.343	19.9	10.1	3.2	0.286	false
+82972	Snapshot SP Sam McDowell SF 1972	Starter	49	5	L			0.328	0.34	0.322	21.1	9.3	3.1	0.298	false
+82999	Snapshot SP Kirk McCaskill CAL 1988	Starter	51	5	R			0.328	0.331	0.323	18.6	7.9	2.6	0.308	false
+84229	Rookie Sensation SP Glen Hobbie CHC 1958	Starter	48	5	R			0.328	0.33	0.325	16.1	9.5	2.8	0.285	false
+84238	Rookie Sensation SP Johnny Enzmann CLE 1918	Starter	53	5	R			0.328	0.327	0.329	15.1	4.9	3.3	0.297	false
+82953	Snapshot SP Andy Benes STL 2002	Starter	45	5	R			0.328	0.337	0.317	18.1	8.4	3.0	0.294	false
+84915	MLB 2026 Live RP Jake Woodford MIL	Reliever	55	0	R			0.329	0.335	0.321	17.6	5.9	3.2	0.303	false
+83099	Snapshot SP Todd Stottlemyre STL 1998	Starter	65	0	R			0.329	0.34	0.315	20.6	8.0	3.6	0.295	false
+82365	MLB 2026 Live SP Mitch Spence KC	Starter	56	0	R			0.329	0.327	0.33	17.2	5.9	3.3	0.298	false
+83063	Snapshot RP Don Nottebart CIN 1967	Reliever	57	0	R			0.329	0.348	0.305	14.9	5.6	2.9	0.301	false
+83152	Snapshot SP Art Nehf BSN 1919	Starter	64	0	L			0.329	0.325	0.331	13.8	5.7	3.4	0.286	false
+83090	Snapshot CL Tom Morgan NYY 1955	Reliever	58	0	R			0.329	0.349	0.305	10.1	6.3	2.2	0.296	false
+82277	MLB 2026 Live SP Luis Morales ATH	Starter	55	0	R			0.329	0.333	0.323	19.0	7.2	3.5	0.293	false
+83170	Snapshot SP Jumbo McGinnis SL4 1884	Starter	65	0	R			0.329	0.332	0.326	13.5	4.2	3.0	0.300	false
+82041	MLB 2026 Live RP Max Lazar PHI	Reliever	53	0	R			0.329	0.331	0.327	16.9	5.5	3.6	0.293	false
+83065	Snapshot SP Bob Klinger PIT 1942	Starter	59	0	R			0.329	0.332	0.326	15.6	6.2	3.4	0.290	false
+81736	MLB 2026 Live RP Alek Jacob SD	Reliever	50	0	R			0.329	0.335	0.322	19.0	7.0	3.5	0.294	false
+83061	Snapshot RP Roy Lee Jackson SD 1985	Reliever	58	0	R			0.329	0.336	0.321	19.9	7.0	4.0	0.287	false
+84275	Rookie Sensation SP Atlee Hammaker SF 1982	Starter	62	0	L			0.329	0.338	0.323	17.7	2.4	3.9	0.304	false
+82462	MLB 2026 Live RP Tyler Gilbert CWS	Reliever	56	0	L			0.329	0.322	0.334	18.3	7.0	3.5	0.292	false
+85567	MLB 2026 Live SP Trey Gibson BAL	Starter	56	0	R			0.329	0.332	0.325	20.0	7.5	3.5	0.296	false
+83123	Snapshot SP Al Fitzmorris KC 1976	Starter	63	0	R			0.329	0.336	0.322	11.7	5.7	2.4	0.301	false
+83144	Snapshot SP Ray Fisher NYY 1911	Starter	65	0	R			0.329	0.333	0.325	21.3	6.6	3.5	0.306	false
+82998	Snapshot RP Mike Fetters ATH 1998	Reliever	51	0	R			0.329	0.337	0.319	15.9	7.6	2.6	0.301	false
+81827	MLB 2026 Live SP Ryan Feltner COL	Starter	54	0	R			0.329	0.334	0.323	17.8	7.0	3.6	0.289	false
+83057	Snapshot SP Cliff Fannin SLA 1947	Starter	60	0	R			0.329	0.338	0.317	21.1	8.8	3.7	0.289	false
+83126	Snapshot SP Howard Ehmke BOS 1923	Starter	64	0	R			0.329	0.341	0.313	20.9	8.4	3.5	0.294	false
+85251	MLB 2026 Live SP Patrick Corbin TOR	Starter	57	0	L			0.329	0.31	0.339	18.6	6.0	3.4	0.300	false
+82810	Unsung Heroes SP Bill Bayne SLA 1921	Starter	60	0	L			0.329	0.324	0.332	23.3	9.9	3.5	0.296	false
+86211	Limited Edition/88 SP Rolando Arrojo TB 1998	Starter	47	0	R			0.329	0.346	0.308	18.2	6.9	3.3	0.299	true
+82943	Snapshot SP Rick Waits CLE 1976	Starter	45	5	L			0.329	0.324	0.332	18.2	7.9	2.5	0.310	false
+83007	Snapshot SP Jack Sanford PHI 1958	Starter	51	5	R			0.329	0.337	0.318	17.8	8.7	3.0	0.292	false
+83030	Snapshot SP Flint Rhem STL 1927	Starter	53	5	R			0.329	0.361	0.29	15.9	6.2	3.3	0.292	false
+84622	World Baseball Classic RP Erasmo Ramirez NIC 2023	Reliever	61	5	R			0.329	0.327	0.331	10.8	4.8	2.4	0.302	false
+82789	Unsung Heroes SP Marino Pieretti CWS 1948	Starter	50	5	R			0.329	0.322	0.336	12.3	6.8	2.9	0.286	false
+84237	Rookie Sensation SP Dixie Leverett CWS 1922	Starter	53	5	R			0.329	0.353	0.3	14.5	6.8	3.0	0.290	false
+85731	T4 Ep. 2 - Unsung Heroes RP Eddie Gamboa TB 2016	Reliever	43	5	R			0.329	0.317	0.344	19.1	10.0	2.7	0.298	false
+83101	Snapshot SP Nino Espinosa NYM 1977	Starter	63	5	R			0.329	0.358	0.292	15.9	5.6	3.4	0.291	false
+82663	Hardware Heroes SP Lew Burdette ML1 1959	Starter	60	5	R			0.329	0.307	0.355	13.0	1.8	4.1	0.286	false
+85628	MLB 2026 Live RP Trent Thornton CHC	Reliever	55	0	R			0.330	0.329	0.332	17.7	6.2	3.9	0.286	false
+84020	All-Time Legend SP John Thomson COL Peak	Starter	57	0	R			0.330	0.342	0.315	16.1	6.0	3.0	0.302	false
+83039	Snapshot SP Vic Sorrell DET 1930	Starter	56	0	R			0.330	0.354	0.301	19.8	9.0	3.2	0.296	false
+84255	Rookie Sensation SP Hal Smith PIT 1933	Starter	63	0	R			0.330	0.345	0.311	12.9	5.1	3.2	0.291	false
+81854	MLB 2026 Live CL Paul Sewald AZ	Reliever	60	0	R			0.330	0.335	0.323	22.4	5.7	5.0	0.279	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	Starter	57	0	R			0.330	0.331	0.328	14.2	7.1	2.5	0.301	false
+83108	Snapshot SP Joel Pineiro LAA 2010	Starter	62	0	R			0.330	0.329	0.332	14.0	4.7	3.3	0.294	false
+85573	MLB 2026 Live RP Chase Petty CIN	Reliever	51	0	R			0.330	0.335	0.323	17.7	6.8	3.6	0.290	false
+82289	MLB 2026 Live RP Kaleb Ort LAA	Reliever	51	0	R			0.330	0.337	0.321	21.4	7.9	4.0	0.288	false
+83021	Snapshot RP Jesse Orosco LAD 1988	Reliever	52	0	L			0.330	0.328	0.33	22.4	11.6	3.4	0.284	false
+83864	Historical All-Star SP Hugh Mulcahy PHI 1940	Starter	54	0	R			0.330	0.319	0.345	12.3	6.7	2.8	0.291	false
+85981	MLB 2026 Live SP Kade Morris ATH	Starter	53	0	R			0.330	0.337	0.322	16.6	6.4	3.4	0.295	false
+83102	Snapshot SP Russ Meyer PHI 1949	Starter	62	0	R			0.330	0.33	0.331	15.5	6.2	3.5	0.287	false
+84245	Rookie Sensation RP Will McEnaney CIN 1975	Reliever	56	0	L			0.330	0.324	0.334	15.3	4.4	3.4	0.299	false
+85585	MLB 2026 Live RP Domingo Gonzalez SEA	Reliever	47	0	R			0.330	0.336	0.322	18.4	7.7	3.4	0.293	false
+86045	MLB 2026 Live SP Alec Gamboa BOS	Starter	49	0	L			0.330	0.323	0.335	15.9	8.5	2.7	0.297	false
+82660	Hardware Heroes CL Brian Fuentes LAA 2009	Reliever	51	0	L			0.330	0.321	0.335	18.5	7.9	3.2	0.296	false
+82425	MLB 2026 Live RP Matt Festa CLE	Reliever	54	0	R			0.330	0.336	0.323	21.9	6.3	4.4	0.291	false
+81822	MLB 2026 Live RP Chase Dollander COL	Reliever	53	0	R			0.330	0.333	0.326	19.6	7.0	3.7	0.294	false
+85574	MLB 2026 Live RP Nick Davila SEA	Reliever	49	0	R			0.330	0.336	0.324	16.7	7.3	3.2	0.293	false
+82668	Hardware Heroes SP Jack Coombs PHA 1911	Starter	65	0	R			0.330	0.327	0.334	22.2	7.9	3.0	0.317	false
+85589	MLB 2026 Live RP Blas Castano COL	Reliever	51	0	R			0.330	0.335	0.324	17.4	6.5	3.4	0.296	false
+86059	MLB 2026 Live RP Tanner Andrews TOR	Reliever	49	0	R			0.330	0.344	0.313	18.7	7.3	3.5	0.295	false
+84015	All-Time Legend RP Dave Rucker STL Peak	Reliever	48	5	L			0.330	0.318	0.336	17.1	8.2	2.2	0.313	false
+82786	Unsung Heroes SP Tiny Osborne BRO 1925	Starter	49	5	R			0.330	0.337	0.322	19.5	8.4	3.4	0.294	false
+83000	Veteran Presence CL Doug Jones BAL 1995	Reliever	50	5	R			0.330	0.332	0.328	21.9	5.6	3.4	0.319	false
+82795	Unsung Heroes RP Willard Hunter NYM 1964	Reliever	50	5	L			0.330	0.327	0.332	13.4	4.2	2.6	0.311	false
+82989	Snapshot SP Johnny Humphries CWS 1943	Starter	51	5	R			0.330	0.342	0.316	12.9	5.5	3.2	0.290	false
+83016	Snapshot SP Ruben Gomez NY1 1954	Starter	52	5	R			0.330	0.351	0.305	19.6	7.7	3.8	0.289	false
+84892	MLB 2026 Live SP Brandon Williamson CIN	Starter	52	0	L			0.331	0.322	0.336	17.9	7.0	3.6	0.292	false
+83037	Snapshot RP Charlie Williams SF 1974	Reliever	54	0	R			0.331	0.349	0.308	13.7	6.2	3.2	0.288	false
+83183	Snapshot SP Lon Warneke STL 1940	Starter	69	0	R			0.331	0.341	0.318	14.9	4.5	3.8	0.289	false
+81739	MLB 2026 Live SP Randy Vasquez SD	Starter	54	0	R			0.331	0.34	0.32	17.4	6.2	3.7	0.292	false
+84908	MLB 2026 Live RP Connor Seabold KC	Reliever	51	0	R			0.331	0.335	0.326	18.1	6.5	3.3	0.301	false
+84232	Rookie Sensation RP Carl Scheib PHA 1944	Reliever	50	0	R			0.331	0.341	0.319	16.5	6.6	3.0	0.303	false
+84802	Baseball Reference 1 SP Joe Ryan MIN 2023	Starter	60	0	R			0.331	0.322	0.341	23.6	4.4	4.9	0.296	false
+81982	MLB 2026 Live RP Ryan Rolison CHC	Reliever	51	0	L			0.331	0.335	0.329	18.5	6.9	3.8	0.290	false
+84977	MLB 2026 Live RP Yaramil Hiraldo BAL	Reliever	54	0	R			0.331	0.344	0.316	21.5	6.3	4.2	0.294	false
+82032	MLB 2026 Live RP Cole Henry WSH	Reliever	49	0	R			0.331	0.33	0.333	21.0	8.2	3.9	0.289	false
+84685	Happy Easter SP Bunny Hearn BSN 1918	Starter	55	0	L			0.331	0.349	0.32	14.9	5.2	3.4	0.294	false
+85242	MLB 2026 Live RP Peyton Gray TEX	Reliever	52	0	R			0.331	0.335	0.325	21.9	6.6	4.3	0.292	false
+85546	MLB 2026 Live RP Paul Gervase LAD	Reliever	49	0	R			0.331	0.335	0.326	21.2	8.1	3.8	0.293	false
+83048	Snapshot SP Ed Figueroa NYY 1977	Starter	58	0	R			0.331	0.337	0.324	13.9	6.8	3.3	0.286	false
+85233	MLB 2026 Live RP Wilber Dotel PIT	Reliever	51	0	R			0.331	0.337	0.322	17.8	7.2	3.4	0.293	false
+83870	Historical All-Star SP Mort Cooper BSN 1945	Starter	63	0	R			0.331	0.342	0.317	22.1	7.2	3.9	0.300	false
+83861	Historical All-Star SP Bob Buhl ML1 1960	Starter	50	0	R			0.331	0.317	0.349	15.7	8.8	3.5	0.276	false
+83043	Snapshot SP Bob Bruce HOU 1962	Starter	57	0	R			0.331	0.36	0.296	21.1	9.6	3.4	0.296	false
+84958	MLB 2026 Live RP Connor Brogdon CLE	Reliever	54	0	R			0.331	0.342	0.318	21.3	6.5	4.3	0.291	false
+82519	MLB 2026 Live RP Cam Booser TB	Reliever	51	0	L			0.331	0.323	0.335	22.7	7.3	4.2	0.292	false
+85884	Clubhouse - Veteran Presence SP Vida Blue SF 1986	Starter	47	0	L			0.331	0.325	0.334	19.5	7.7	4.4	0.274	false
+85239	MLB 2026 Live RP Mason Black KC	Reliever	50	0	R			0.331	0.33	0.333	19.9	7.4	3.7	0.294	false
+82515	MLB 2026 Live SP Jose Berrios TOR	Starter	58	0	R			0.331	0.333	0.328	17.1	5.7	3.8	0.291	false
+83080	Snapshot SP Chris Bassitt ATH 2019	Starter	64	0	R			0.331	0.344	0.315	17.7	7.1	3.8	0.286	false
+85641	MLB 2026 Live RP Tejay Antone CIN	Reliever	46	0	R			0.331	0.336	0.326	18.0	7.2	3.5	0.292	false
+82978	Snapshot SP Freddie Toliver MIN 1988	Starter	49	5	R			0.331	0.339	0.32	18.9	8.0	3.3	0.297	false
+84217	Rookie Sensation SP Bob Harris SLA 1939	Starter	44	5	R			0.331	0.316	0.349	17.3	8.3	3.1	0.295	false
+84827	Baseball Reference 1 SP Brian Fisher PIT 1988	Starter	43	5	R			0.331	0.352	0.305	14.9	6.6	2.8	0.300	false
+84876	Celebrating 42 - Negro League Star SP Satchel Davis ClBu 1947	Starter	48	5	R			0.331	0.328	0.335	18.5	5.2	3.7	0.301	false
+83088	Snapshot SP John Candelaria PIT 1979	Starter	60	5	L			0.331	0.337	0.327	16.3	4.1	4.2	0.286	false
+82799	Unsung Heroes SP Billy Campbell CIN 1908	Starter	51	5	L			0.331	0.326	0.333	15.3	5.3	3.4	0.294	false
+84931	MLB 2026 Live RP Gus Varland WSH	Reliever	50	0	R			0.332	0.323	0.342	21.4	7.3	3.5	0.307	false
+81864	MLB 2026 Live RP Chris Roycroft TB	Reliever	48	0	R			0.332	0.344	0.318	16.6	8.3	2.8	0.301	false
+82813	Unsung Heroes SP Hank Robinson PIT 1913	Starter	65	0	L			0.332	0.304	0.348	11.0	5.0	3.0	0.291	false
+82031	MLB 2026 Live RP Mitchell Parker WSH	Reliever	51	0	L			0.332	0.317	0.34	18.6	6.1	3.8	0.294	false
+82073	MLB 2026 Live RP Tobias Myers NYM	Reliever	56	0	R			0.332	0.336	0.326	18.3	5.8	3.9	0.293	false
+83089	Snapshot RP Johnny Murphy NYY 1940	Reliever	58	0	R			0.332	0.35	0.311	15.0	5.4	3.6	0.290	false
+85269	MLB 2026 Live RP Corbin Martin CHC	Reliever	53	0	R			0.332	0.339	0.323	19.3	8.8	3.4	0.292	false
+85840	T4 Ep. 3 - Snapshot SP Mark Langston SEA 1986	Starter	48	0	L			0.332	0.312	0.343	25.5	8.9	3.8	0.308	false
+84263	Rookie Sensation SP Ed Holley PHI 1932	Starter	69	0	R			0.332	0.345	0.316	18.2	5.6	3.9	0.295	false
+84246	Rookie Sensation SP Larry Dierker HOU 1965	Starter	62	0	R			0.332	0.308	0.36	19.2	5.8	4.1	0.290	false
+86065	4th of July On-Stream - Snapshot SP John Danks CWS 2010	Starter	49	0	L			0.332	0.332	0.332	17.4	7.4	3.1	0.301	false
+81832	MLB 2026 Live RP John Curtiss AZ	Reliever	52	0	R			0.332	0.332	0.333	17.2	5.4	3.9	0.293	false
+81741	MLB 2026 Live SP Griffin Canning SD	Starter	57	0	R			0.332	0.335	0.327	20.4	7.2	3.9	0.293	false
+84409	Negro League Star SP Ches Buchanan PhSt 1941	Starter	57	0	R			0.332	0.334	0.329	11.3	5.4	3.0	0.291	false
+83167	Snapshot SP Dave Boswell MIN 1966	Starter	67	0	R			0.332	0.345	0.316	24.0	9.2	4.4	0.283	false
+84408	Negro League Star SP Ramon Arano MCDR 1964	Starter	55	0	R			0.332	0.337	0.328	11.5	6.6	2.5	0.297	false
+82446	MLB 2026 Live RP Kolby Allard PHI	Reliever	53	0	L			0.332	0.324	0.337	17.7	5.7	3.7	0.297	false
+82785	Unsung Heroes SP Ed Wells NYY 1930	Starter	49	5	L			0.332	0.339	0.327	15.3	6.0	3.2	0.296	false
+82797	Unsung Heroes SP Herm Wehmeier PHI 1954	Starter	52	5	R			0.332	0.332	0.331	14.7	6.9	3.6	0.281	false
+83118	Snapshot SP Josh Tomlin CLE 2011	Starter	63	5	R			0.332	0.333	0.33	13.9	2.0	4.7	0.277	false
+84227	Rookie Sensation SP Brian Duensing MIN 2009	Starter	48	5	L			0.332	0.314	0.343	16.7	6.6	3.0	0.306	false
+83017	Snapshot SP Jack Chesbro NYY 1906	Starter	52	5	R			0.332	0.333	0.332	20.6	5.6	3.3	0.319	false
+84624	MLB 2026 Live SP Bryse Wilson CHC	Starter	56	0	R			0.333	0.338	0.326	16.9	5.5	3.8	0.292	false
+82981	Snapshot SP Phenomenal Smith BL2 1888	Starter	50	0	L			0.333	0.336	0.331	21.7	11.9	2.7	0.302	false
+83141	Snapshot SP Lee Meadows PIT 1927	Starter	65	0	R			0.333	0.356	0.304	14.2	5.0	3.3	0.296	false
+83111	Snapshot CL Skip Lockwood NYM 1978	Reliever	58	0	R			0.333	0.331	0.336	23.4	6.8	4.8	0.288	false
+81889	MLB 2026 Live SP Matthew Liberatore STL	Starter	58	0	L			0.333	0.33	0.335	19.8	6.3	4.0	0.296	false
+84019	All-Time Legend RP Max Leon ATL Peak	Reliever	52	0	R			0.333	0.343	0.321	16.1	5.7	3.0	0.308	false
+85689	Baseball Reference 3 SP Lou Kretlow KC1 1956	Starter	48	0	R			0.333	0.34	0.325	18.7	10.6	3.9	0.270	false
+82255	MLB 2026 Live RP Michael Kelly ATH	Reliever	47	0	R			0.333	0.334	0.331	17.7	7.8	3.2	0.298	false
+82030	MLB 2026 Live SP Jake Irvin WSH	Starter	57	0	R			0.333	0.335	0.33	18.7	6.3	4.1	0.289	false
+84235	Rookie Sensation RP Wayne Granger STL 1968	Reliever	49	0	R			0.333	0.334	0.332	15.8	6.0	2.7	0.312	false
+85058	HOF 1 - Veteran Presence RP Rich Gossage ATH 1992	Reliever	48	0	R			0.333	0.33	0.336	20.8	8.6	3.6	0.294	false
+85067	HOF 1 - Veteran Presence SP Lefty Gomez NYY 1941	Starter	54	0	L			0.333	0.321	0.34	21.7	13.6	2.7	0.293	false
+82191	MLB 2026 Live SP Austin Gomber ATL	Starter	59	0	L			0.333	0.333	0.333	17.3	5.3	4.1	0.291	false
+83019	Snapshot RP Bryce Florie BOS 2000	Reliever	52	0	R			0.333	0.337	0.327	15.9	5.4	2.7	0.315	false
+84241	Rookie Sensation SP Don Drysdale BRO 1956	Starter	59	0	R			0.333	0.345	0.318	17.5	6.5	3.5	0.297	false
+84666	Opening Day Heroes - Unsung Heroes 1B Matt Davidson CWS 2018	Reliever	56	0	R			0.333	0.327	0.34	17.4	7.2	3.5	0.293	false
+84979	MLB 2026 Live RP Luis Curvelo TEX	Reliever	48	0	R			0.333	0.326	0.34	18.5	6.8	3.8	0.293	false
+83044	Snapshot SP Gene Conley ML1 1956	Starter	57	0	R			0.333	0.336	0.329	13.7	5.8	3.0	0.299	false
+83029	Snapshot SP Ed Brandt BSN 1930	Starter	54	0	L			0.333	0.317	0.342	20.3	7.7	3.9	0.293	false
+82806	Unsung Heroes SP Johnny Babich PHA 1940	Starter	60	0	R			0.333	0.339	0.326	16.9	7.4	3.7	0.285	false
+82790	Unsung Heroes SP Dick Starr SLA 1949	Starter	48	5	R			0.333	0.338	0.327	20.6	7.4	3.3	0.310	false
+83008	Snapshot SP Bill Sherdel STL 1922	Starter	53	5	L			0.333	0.34	0.329	17.4	5.1	3.3	0.309	false
+82937	Snapshot SP Al Mays NY4 1886	Starter	44	5	R			0.333	0.34	0.325	18.2	8.0	3.3	0.297	false
+82962	Snapshot RP Bart Johnson CWS 1977	Reliever	48	5	R			0.333	0.34	0.325	15.8	7.8	2.3	0.311	false
+84017	All-Time Legend SP Jack Wilson BOS Peak	Starter	53	0	R			0.334	0.34	0.326	20.6	9.5	3.2	0.303	false
+84029	Veteran Presence SP Rip Sewell PIT Peak	Starter	63	0	R			0.334	0.364	0.298	13.8	6.6	3.1	0.294	false
+83035	Snapshot SP Armando Reynoso NYM 1997	Starter	54	0	R			0.334	0.342	0.323	14.2	7.0	3.0	0.296	false
+83079	Snapshot SP Michael Pineda NYY 2014	Starter	60	0	R			0.334	0.327	0.343	17.4	5.7	3.4	0.304	false
+84404	Negro League Star SP George Mitchell InAB 1926	Starter	52	0	R			0.334	0.335	0.333	12.6	6.8	2.8	0.296	false
+86232	Baseball Reference 5 CL Al Holland PHI 1984	Reliever	47	0	L			0.334	0.298	0.354	20.5	6.7	5.2	0.269	true
+85596	MLB 2026 Live RP Jonathan Hernandez LAD	Reliever	49	0	R			0.334	0.336	0.331	19.8	8.6	3.4	0.299	false
+85806	Family Connections - Unsung Heroes SP Chris Haney KC 1996	Starter	53	0	L			0.334	0.309	0.348	12.7	3.8	3.4	0.298	false
+84907	MLB 2026 Live RP Andre Granillo WSH	Reliever	49	0	R			0.334	0.349	0.317	20.2	7.6	4.0	0.293	false
+84981	MLB 2026 Live RP Jose Franco CIN	Reliever	48	0	R			0.334	0.341	0.324	20.2	7.9	3.9	0.293	false
+84230	Rookie Sensation RP Jon Coutlangus CIN 2007	Reliever	49	0	L			0.334	0.332	0.335	20.8	12.2	2.5	0.303	false
+83032	Snapshot SP Eddie Cicotte BOS 1910	Starter	54	0	R			0.334	0.337	0.33	16.7	7.3	3.6	0.289	false
+83047	Snapshot RP Ken Brett LAD 1979	Reliever	55	0	L			0.334	0.341	0.329	10.2	6.4	2.2	0.302	false
+83004	Snapshot SP Gerry Arrigo CIN 1968	Starter	52	0	L			0.334	0.316	0.345	18.3	8.7	3.3	0.295	false
+85558	MLB 2026 Live RP Travis Adams MIN	Reliever	54	0	R			0.334	0.344	0.322	18.2	6.8	3.6	0.298	false
+82985	Snapshot SP Jarrod Washburn SEA 2008	Starter	50	5	L			0.334	0.306	0.35	15.0	6.0	3.4	0.294	false
+82975	Snapshot SP Paul Maholm PIT 2010	Starter	50	5	L			0.334	0.331	0.336	13.7	6.2	2.5	0.309	false
+82811	Unsung Heroes SP Bill Lohrman NY1 1940	Starter	63	5	R			0.334	0.365	0.296	15.4	4.5	3.9	0.291	false
+82946	Veteran Presence SP Ken Heintzelman PHI 1951	Starter	46	5	L			0.334	0.299	0.353	19.8	7.0	3.9	0.296	false
+82783	Unsung Heroes SP Bert Gallia WS1 1917	Starter	46	5	R			0.334	0.328	0.341	19.7	9.2	3.5	0.293	false
+82945	Snapshot SP Max Butcher PHI 1939	Starter	45	5	R			0.334	0.347	0.318	12.5	6.5	2.9	0.294	false
+84234	Rookie Sensation SP Bert Abbey WAS 1892	Starter	50	5	R			0.334	0.34	0.327	19.3	6.6	3.7	0.301	false
+84021	All-Time Legend SP Hank Wyse CHC Peak	Starter	58	0	R			0.335	0.337	0.331	12.9	4.9	3.3	0.295	false
+81740	MLB 2026 Live RP Matt Waldron SD	Reliever	56	0	R			0.335	0.336	0.334	19.0	5.9	4.1	0.296	false
+81976	MLB 2026 Live SP Brady Singer CIN	Starter	62	0	R			0.335	0.333	0.336	20.5	5.6	4.4	0.294	false
+85480	60s Theme Week - Rookie Sensation SP Don Schwall BOS 1961	Starter	52	0	R			0.335	0.346	0.323	14.0	11.8	2.2	0.290	false
+86061	MLB 2026 Live SP Alan Rangel PHI	Starter	56	0	R			0.335	0.34	0.33	17.8	6.1	3.8	0.296	false
+82665	Hardware Heroes SP Claude Passeau PHI 1937	Starter	62	0	R			0.335	0.34	0.328	18.6	5.6	3.4	0.311	false
+82034	MLB 2026 Live RP Miles Mikolas WSH	Reliever	57	0	R			0.335	0.335	0.335	16.8	4.0	4.5	0.286	false
+83062	Snapshot SP Ed Lynch NYM 1982	Starter	60	0	R			0.335	0.342	0.326	11.2	6.8	2.4	0.301	false
+82979	Veteran Presence RP Don Larsen BAL 1965	Reliever	49	0	R			0.335	0.358	0.307	16.9	8.0	3.0	0.302	false
+83014	Snapshot SP Mike Krukow CHC 1978	Starter	54	0	R			0.335	0.331	0.34	18.8	8.8	3.7	0.289	false
+83067	Snapshot SP Fred Goldsmith CHC 1882	Starter	59	0	R			0.335	0.332	0.338	14.2	5.1	3.2	0.301	false
+85241	MLB 2026 Live RP Gavin Collyer TEX	Reliever	47	0	R			0.335	0.34	0.327	22.1	11.1	3.6	0.289	false
+82992	Snapshot SP Rip Collins BOS 1922	Starter	51	0	R			0.335	0.354	0.312	17.6	10.2	2.9	0.296	false
+82466	MLB 2026 Live SP Jonathan Cannon CWS	Starter	52	0	R			0.335	0.347	0.32	16.1	6.3	3.6	0.295	false
+82804	Unsung Heroes SP Jack Bentley NY1 1924	Starter	58	0	L			0.335	0.35	0.327	18.9	6.7	3.8	0.298	false
+85346	Clubhouse - Played Where? - Snapshot SP Kevin Appier ATH 2000	Starter	48	0	R			0.335	0.349	0.318	15.7	9.0	3.0	0.292	false
+84901	MLB 2026 Live RP Garrett Acton MIN	Reliever	47	0	R			0.335	0.345	0.323	19.5	7.7	3.8	0.295	false
+83001	Snapshot SP Chris Welsh CIN 1986	Starter	52	5	L			0.335	0.332	0.337	10.9	5.6	2.5	0.303	false
+82935	Snapshot SP Dutch Ruether WS1 1926	Starter	46	5	L			0.335	0.367	0.316	15.5	6.9	3.2	0.298	false
+82781	Unsung Heroes SP Ed Rakow KC1 1963	Starter	47	5	R			0.335	0.339	0.33	15.8	7.0	3.7	0.287	false
+82793	Unsung Heroes SP Jing Johnson PHA 1917	Starter	49	5	R			0.335	0.351	0.315	13.4	6.2	3.3	0.291	false
+82973	Snapshot SP Art Houtteman CLE 1955	Starter	48	5	R			0.335	0.326	0.345	15.1	6.6	3.7	0.286	false
+83020	Snapshot SP Kerry Wood CHC 2000	Starter	55	0	R			0.336	0.318	0.357	22.3	11.7	3.7	0.286	false
+83034	Veteran Presence SP Andy Pettitte NYY 2013	Starter	55	0	L			0.336	0.33	0.339	14.5	6.2	3.1	0.301	false
+85262	MLB 2026 Live RP Jayden Murray CHC	Reliever	49	0	R			0.336	0.335	0.338	18.0	7.1	3.6	0.298	false
+84030	All-Time Legend SP Ron Kline PIT Peak	Starter	62	0	R			0.336	0.364	0.3	13.8	5.8	3.2	0.297	false
+83027	Snapshot SP Joe Hatten BRO 1947	Starter	53	0	L			0.336	0.307	0.353	14.4	9.2	2.8	0.291	false
+83160	Snapshot SP Pud Galvin BFN 1882	Starter	66	0	R			0.336	0.339	0.332	18.9	4.7	3.5	0.317	false
+85607	MLB 2026 Live RP Chris Devenski PIT	Reliever	52	0	R			0.336	0.335	0.336	17.6	5.5	4.0	0.295	false
+82285	MLB 2026 Live SP Aaron Civale ATH	Starter	58	0	R			0.336	0.33	0.344	19.0	5.6	4.3	0.293	false
+84968	MLB 2026 Live RP Cody Bolton HOU	Reliever	50	0	R			0.336	0.352	0.316	18.8	7.8	3.6	0.298	false
+83113	Snapshot SP Larry Benton CIN 1932	Starter	64	0	R			0.336	0.35	0.32	10.4	3.2	3.3	0.296	false
+83060	Snapshot SP Chris Archer TB 2016	Starter	54	0	R			0.336	0.341	0.331	21.4	7.4	4.2	0.297	false
+84219	Rookie Sensation RP Neil Wagner TOR 2013	Reliever	45	5	R			0.336	0.336	0.335	19.5	6.4	3.7	0.306	false
+83064	Snapshot SP Milt Pappas ATL 1968	Starter	61	5	R			0.336	0.342	0.328	15.8	3.3	4.2	0.294	false
+82958	Snapshot SP Jason Johnson BAL 2001	Starter	48	5	R			0.336	0.35	0.319	15.0	7.6	3.7	0.283	false
+84295	Rookie Sensation RF George Hunter BRO 1909	Starter	40	5	L			0.336	0.331	0.339	17.7	6.8	3.7	0.297	false
+82934	Veteran Presence RP Fred Frankhouse BSN 1939	Reliever	41	5	R			0.336	0.326	0.349	15.7	7.8	3.3	0.294	false
+82794	Unsung Heroes SP Victor Zambrano NYM 2005	Starter	51	0	R			0.337	0.35	0.322	15.0	10.1	2.5	0.298	false
+82514	MLB 2026 Live SP Max Scherzer TOR	Starter	64	0	R			0.337	0.343	0.331	20.0	5.8	4.7	0.288	false
+84220	Rookie Sensation RP Garry Roggenburk MIN 1963	Reliever	47	0	L			0.337	0.328	0.343	13.2	9.0	2.5	0.298	false
+85700	SwitchKnucklers - Rookie Sensation SP Kirt Ojala FLO 1998	Starter	46	0	L			0.337	0.333	0.34	16.4	8.6	2.9	0.301	false
+82971	Veteran Presence CL Randy Myers TOR 1998	Reliever	48	0	L			0.337	0.325	0.344	17.0	7.6	3.4	0.299	false
+81953	MLB 2026 Live CL Luis Mey CIN	Reliever	47	0	R			0.337	0.347	0.324	21.4	10.7	3.4	0.297	false
+82960	Snapshot RP Jeff Innis NYM 1992	Reliever	48	0	R			0.337	0.349	0.322	12.6	9.3	2.5	0.294	false
+83045	Snapshot SP Larry French PIT 1931	Starter	55	0	L			0.337	0.321	0.347	12.9	5.6	3.4	0.293	false
+84259	Rookie Sensation SP Josh Collmenter ARI 2011	Starter	66	0	R			0.337	0.355	0.315	13.5	4.6	4.3	0.281	false
+85610	MLB 2026 Live RP Eric Cerantola KC	Reliever	49	0	R			0.337	0.345	0.327	20.6	9.4	3.8	0.293	false
+84024	Veteran Presence SP Huck Betts BSN Peak	Starter	62	0	R			0.337	0.354	0.317	12.3	4.4	3.4	0.297	false
+85256	MLB 2026 Live RP Jack Anderson BOS	Reliever	50	0	R			0.337	0.336	0.339	17.4	6.1	3.8	0.299	false
+83024	Snapshot SP Lee Stange MIN 1963	Starter	53	5	R			0.337	0.321	0.355	15.6	5.9	4.2	0.285	false
+82800	Unsung Heroes SP Ryan Rupe TB 2002	Starter	52	5	R			0.337	0.353	0.317	19.1	6.2	3.8	0.303	false
+83006	Snapshot SP Joe Presko STL 1952	Starter	51	5	R			0.337	0.348	0.323	15.6	6.6	4.0	0.283	false
+83003	Snapshot SP Joe Moeller LAD 1970	Starter	51	5	R			0.337	0.32	0.358	12.8	5.9	3.9	0.281	false
+84221	Rookie Sensation SP Bill Macdonald PIT 1950	Starter	46	5	R			0.337	0.335	0.339	15.9	8.6	4.0	0.274	false
+82936	Snapshot SP Bill Hoffer BLN 1897	Starter	49	5	R			0.337	0.334	0.34	14.3	6.5	3.3	0.296	false
+83002	Veteran Presence SP Mark Gardner SF 1997	Starter	51	5	R			0.337	0.325	0.351	18.7	6.3	4.4	0.286	false
+85916	5th of July HR RP Rick Camp ATL 1985	Reliever	44	5	R			0.337	0.344	0.328	12.8	9.0	2.6	0.294	false
+82791	Unsung Heroes SP Walter Beall NYY 1926	Starter	49	5	R			0.337	0.35	0.321	24.4	10.7	3.4	0.308	false
+82980	Snapshot SP Lady Baldwin DTN 1887	Starter	48	5	L			0.337	0.34	0.335	17.3	6.4	3.5	0.302	false
+82808	Unsung Heroes SP Jimmy Zinn PIT 1921	Starter	60	0	R			0.338	0.34	0.336	18.7	5.7	3.1	0.322	false
+82524	MLB 2026 Live RP Steven Wilson TB	Reliever	50	0	R			0.338	0.341	0.333	20.5	7.2	4.5	0.287	false
+83087	Snapshot CL Cecil Upshaw ATL 1971	Reliever	59	0	R			0.338	0.359	0.311	18.0	5.1	3.2	0.320	false
+82013	MLB 2026 Live RP Jackson Rutledge PHI	Reliever	50	0	R			0.338	0.345	0.329	17.0	6.7	3.6	0.298	false
+84252	Rookie Sensation SP Dave Rozema DET 1977	Starter	63	0	R			0.338	0.343	0.332	13.5	3.4	4.1	0.292	false
+82803	Unsung Heroes SP Roy Mahaffey PHA 1932	Starter	55	0	R			0.338	0.344	0.33	21.8	8.5	4.3	0.291	false
+83026	Snapshot SP Jim Kaat MIN 1965	Starter	55	0	L			0.338	0.323	0.347	14.7	5.3	3.6	0.297	false
+85459	May Birthdays - Unsung Heroes RP Mark Huismann KC 1985	Reliever	50	0	R			0.338	0.352	0.32	11.6	5.3	3.6	0.288	false
+84233	Rookie Sensation SP Mudcat Grant CLE 1958	Starter	51	0	R			0.338	0.349	0.325	15.4	9.8	3.5	0.280	false
+82167	MLB 2026 Live SP Colton Gordon HOU	Starter	56	0	L			0.338	0.336	0.339	18.0	5.7	4.1	0.297	false
+84236	Rookie Sensation SP Wayne Garland BAL 1974	Starter	53	0	R			0.338	0.342	0.333	15.7	6.8	3.3	0.300	false
+85237	MLB 2026 Live RP Cameron Foster BAL	Reliever	54	0	R			0.338	0.336	0.34	18.8	7.4	3.7	0.300	false
+84018	All-Time Legend SP Josh Fogg PIT Peak	Starter	54	0	R			0.338	0.33	0.346	13.9	6.2	3.6	0.290	false
+83084	Snapshot SP Ron Darling NYM 1988	Starter	62	0	R			0.338	0.336	0.339	18.5	6.6	4.3	0.288	false
+82181	MLB 2026 Live SP Mike Burrows HOU	Starter	59	0	R			0.338	0.337	0.339	20.7	6.3	4.6	0.292	false
+85579	MLB 2026 Live RP Brandan Bidois PIT	Reliever	48	0	R			0.338	0.343	0.332	20.6	8.3	4.0	0.297	false
+81826	MLB 2026 Live RP Valente Bellozo COL	Reliever	50	0	R			0.338	0.339	0.337	17.3	6.1	4.3	0.288	false
+83110	Snapshot CL Rod Beck CHC 1998	Reliever	59	0	R			0.338	0.352	0.321	21.6	4.7	4.3	0.310	false
+85580	MLB 2026 Live SP Sam Aldegheri LAA	Starter	47	0	L			0.338	0.33	0.342	17.1	7.1	3.8	0.293	false
+82942	Snapshot SP Kyle Gibson MIN 2016	Starter	44	5	R			0.338	0.34	0.335	15.1	6.6	2.9	0.309	false
+84619	World Baseball Classic SP Jung-keun Bong KOR 2009	Starter	46	5	L			0.338	0.334	0.339	7.8	7.0	2.3	0.293	false
+82967	Snapshot SP Al Benton DET 1938	Starter	46	5	R			0.338	0.327	0.35	17.8	7.0	3.8	0.296	false
+82986	Snapshot RP Rigo Beltran NYM 1999	Reliever	49	5	L			0.338	0.331	0.342	25.2	6.5	4.1	0.321	false
+83028	Snapshot SP Dizzy Trout DET 1942	Starter	55	0	R			0.339	0.336	0.342	18.0	7.5	4.1	0.289	false
+82996	Snapshot SP Dennys Reyes KC 2004	Starter	51	0	L			0.339	0.318	0.352	19.1	8.5	3.4	0.306	false
+84622	World Baseball Classic RP Erasmo Ramirez NIC 2023	Reliever	61	0	R			0.339	0.338	0.341	9.7	5.3	2.4	0.307	false
+83031	Snapshot SP Harry McIntire CHC 1910	Starter	54	0	R			0.339	0.338	0.341	14.7	6.6	3.9	0.287	false
+82802	Unsung Heroes SP Slim Love NYY 1918	Starter	52	0	L			0.339	0.332	0.342	22.3	10.4	3.7	0.298	false
+83103	Snapshot SP Freddie Fitzsimmons NY1 1930	Starter	62	0	R			0.339	0.356	0.319	15.2	5.8	3.9	0.291	false
+85555	MLB 2026 Live RP Brian Fitzpatrick MIL	Reliever	49	0	L			0.339	0.339	0.339	19.1	7.7	4.0	0.295	false
+85025	The Other Emerson - Unsung Heroes RP Emerson Dickman BOS 1939	Reliever	60	0	R			0.339	0.329	0.351	16.3	6.4	3.8	0.294	false
+85593	MLB 2026 Live RP Yovanny Cruz NYY	Reliever	46	0	R			0.339	0.337	0.34	20.3	8.4	4.1	0.292	false
+83038	Snapshot SP Roger Craig STL 1964	Starter	56	0	R			0.339	0.325	0.356	12.4	4.9	3.4	0.297	false
+84405	Negro League Star SP Cliff Carter HiCl 1930	Starter	53	0	R			0.339	0.341	0.337	14.7	6.8	3.5	0.295	false
+83100	Snapshot RP Buddy Schultz STL 1979	Reliever	58	5	L			0.339	0.361	0.326	25.6	5.0	5.6	0.295	false
+82970	Snapshot SP Robert Person TOR 1997	Starter	49	5	R			0.339	0.348	0.329	20.0	8.3	4.4	0.285	false
+83022	Snapshot SP Randy O&#39;Neal DET 1986	Starter	53	5	R			0.339	0.366	0.306	14.6	6.3	3.9	0.288	false
+85718	T4 Ep. 2 - Snapshot SP Ted Lyons CWS 1936	Starter	55	5	R			0.339	0.347	0.331	15.4	3.4	4.6	0.289	false
+82941	Snapshot SP Oral Hildebrand SLA 1937	Starter	45	5	R			0.339	0.366	0.306	15.7	7.0	3.7	0.291	false
+83863	Historical All-Star SP Mike Cuellar BAL 1971	Starter	52	5	L			0.339	0.371	0.321	14.7	6.0	4.4	0.279	false
+83011	Snapshot SP Luis Castillo CIN 2018	Starter	53	5	R			0.339	0.345	0.332	18.6	6.3	4.6	0.286	false
+82788	Unsung Heroes SP Gene Brabender BAL 1968	Starter	49	5	R			0.339	0.342	0.334	18.9	9.3	3.6	0.293	false
+83013	Veteran Presence SP Bert Blyleven MIN 1987	Starter	54	5	R			0.339	0.363	0.31	21.0	7.0	4.7	0.288	false
+83015	Snapshot SP Early Wynn WS1 1943	Starter	53	0	R			0.340	0.329	0.353	14.4	6.5	4.0	0.284	false
+82006	MLB 2026 Live SP Jameson Taillon CHC	Starter	63	0	R			0.340	0.346	0.331	18.4	5.3	4.9	0.283	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	Starter	58	0	R			0.340	0.333	0.347	13.3	6.3	3.8	0.286	false
+84015	All-Time Legend RP Dave Rucker STL Peak	Reliever	48	0	L			0.340	0.328	0.347	15.8	9.0	2.3	0.315	false
+83072	Snapshot RP Ed Roebuck LAD 1960	Reliever	56	0	R			0.340	0.346	0.334	19.5	5.9	4.2	0.301	false
+85307	Baseball Reference 2 CL Glen Perkins MIN 2015	Reliever	56	0	L			0.340	0.32	0.351	18.8	4.2	4.6	0.296	false
+85968	MLB 2026 Live RP Samy Natera Jr. LAA	Reliever	47	0	L			0.340	0.335	0.343	21.4	10.2	4.1	0.290	false
+84963	MLB 2026 Live RP Eli Morgan KC	Reliever	50	0	R			0.340	0.357	0.319	18.9	6.4	4.3	0.294	false
+81831	MLB 2026 Live SP Kyle Freeland COL	Starter	54	0	L			0.340	0.322	0.351	18.7	4.5	4.1	0.309	false
+84402	Negro League Star SP Dizzy Dismukes WBS 1911	Starter	52	0	R			0.340	0.354	0.323	11.6	6.6	3.3	0.291	false
+83036	Snapshot SP Ray Burris MON 1983	Starter	56	0	R			0.340	0.348	0.33	18.8	8.6	4.0	0.289	false
+84026	All-Time Legend SP Jim Bagby CLE Peak	Starter	60	0	R			0.340	0.352	0.326	12.3	5.1	3.4	0.298	false
+82954	Snapshot SP Pat Zachry NYM 1982	Starter	46	5	R			0.340	0.366	0.308	15.6	7.9	3.3	0.299	false
+82798	Unsung Heroes SP Highball Wilson WS1 1903	Starter	50	5	R			0.340	0.348	0.329	12.2	4.7	3.5	0.297	false
+83109	Snapshot SP Ed Whitson SD 1989	Starter	64	5	R			0.340	0.378	0.294	14.6	4.5	4.3	0.288	false
+82952	Snapshot SP Daniel Norris DET 2017	Starter	40	5	L			0.340	0.353	0.332	17.6	7.2	3.0	0.315	false
+84225	Rookie Sensation SP Stoney McGlynn STL 1907	Starter	46	5	R			0.340	0.331	0.35	14.7	7.2	3.8	0.286	false
+82792	Unsung Heroes SP Cowboy Jones STL 1900	Starter	48	5	L			0.340	0.335	0.344	15.1	6.4	3.6	0.296	false
+85988	MLB 2026 Live RP Beck Way KC	Reliever	45	0	R			0.341	0.353	0.326	16.9	9.0	3.5	0.294	false
+85366	T4 Ep. 1 - Unsung Heroes SP Fernando Valenzuela BAL 1993	Starter	50	0	L			0.341	0.368	0.326	13.8	9.8	3.4	0.283	false
+85962	MLB 2026 Live SP Sean Sullivan COL	Starter	51	0	L			0.341	0.337	0.344	17.1	6.1	4.2	0.294	false
+81762	MLB 2026 Live SP JP Sears SD	Starter	59	0	L			0.341	0.33	0.347	19.1	5.6	4.9	0.287	false
+85556	MLB 2026 Live RP Tyler Schweitzer CWS	Reliever	49	0	L			0.341	0.337	0.344	16.1	7.0	3.7	0.296	false
+82999	Snapshot SP Kirk McCaskill CAL 1988	Starter	51	0	R			0.341	0.341	0.341	17.3	8.8	2.9	0.311	false
+81830	MLB 2026 Live SP Michael Lorenzen COL	Starter	52	0	R			0.341	0.341	0.34	18.0	5.7	3.9	0.306	false
+82509	MLB 2026 Live SP Eric Lauer LAD	Starter	60	0	L			0.341	0.346	0.338	18.7	6.2	4.9	0.282	false
+83058	Snapshot SP Ray Kolp CIN 1928	Starter	58	0	R			0.341	0.364	0.312	14.1	5.8	3.6	0.296	false
+82659	Hardware Heroes SP Livan Hernandez WAS 2005	Starter	51	0	R			0.341	0.346	0.335	14.5	6.8	3.5	0.295	false
+84681	Happy Easter SP Bunny Hearn BSN 1926	Starter	45	0	L			0.341	0.344	0.339	19.1	8.4	3.3	0.309	false
+85731	T4 Ep. 2 - Unsung Heroes RP Eddie Gamboa TB 2016	Reliever	43	0	R			0.341	0.327	0.359	17.8	10.6	3.0	0.301	false
+82481	MLB 2026 Live SP Erick Fedde CWS	Starter	51	0	R			0.341	0.346	0.335	17.8	6.6	4.4	0.287	false
+82995	Veteran Presence RP Cal Eldred STL 2003	Reliever	50	0	R			0.341	0.328	0.355	22.7	8.8	4.2	0.300	false
+83083	Snapshot SP John Burkett SF 1992	Starter	62	0	R			0.341	0.362	0.314	13.7	5.0	3.5	0.301	false
+82974	Veteran Presence SP Dave Burba TEX 2002	Starter	50	0	R			0.341	0.337	0.345	15.3	7.5	3.3	0.299	false
+81799	MLB 2026 Live RP John Brebbia COL	Reliever	51	0	R			0.341	0.345	0.335	20.2	6.0	4.5	0.298	false
+86062	MLB 2026 Live RP Robby Ahlstrom TEX	Reliever	46	0	L			0.341	0.343	0.34	18.7	8.6	3.9	0.294	false
+82947	Veteran Presence SP Charlie Root CHC 1934	Starter	44	5	R			0.341	0.355	0.325	17.2	7.5	3.7	0.299	false
+82780	Unsung Heroes SP Joe Boehling WS1 1916	Starter	42	5	L			0.341	0.353	0.334	15.7	7.1	3.4	0.300	false
+82963	Snapshot SP Bob Shaw CWS 1960	Starter	48	0	R			0.342	0.331	0.355	9.4	6.5	3.0	0.292	false
+82789	Unsung Heroes SP Marino Pieretti CWS 1948	Starter	50	0	R			0.342	0.337	0.348	11.1	7.4	3.3	0.288	false
+85971	MLB 2026 Live SP Mike Paredes MIN	Starter	50	0	R			0.342	0.348	0.334	14.9	6.3	3.9	0.293	false
+82787	Unsung Heroes CL Byron McLaughlin SEA 1979	Reliever	49	0	R			0.342	0.342	0.342	20.2	9.2	4.3	0.289	false
+82962	Snapshot RP Bart Johnson CWS 1977	Reliever	48	0	R			0.342	0.349	0.334	14.5	8.5	2.4	0.313	false
+84229	Rookie Sensation SP Glen Hobbie CHC 1958	Starter	48	0	R			0.342	0.347	0.335	14.8	10.4	3.1	0.289	false
+82987	Snapshot SP Jason Grimsley CLE 1994	Starter	50	0	R			0.342	0.345	0.338	17.2	7.7	3.1	0.311	false
+85507	Clubhouse - 60s Week - Unsung Heroes SP Earl Francis PIT 1961	Starter	53	0	R			0.342	0.363	0.317	13.7	9.8	2.2	0.309	false
+86005	MLB 2026 Live SP Lazaro Estrada TOR	Starter	52	0	R			0.342	0.345	0.337	17.7	6.3	4.3	0.293	false
+83101	Snapshot SP Nino Espinosa NYM 1977	Starter	63	0	R			0.342	0.372	0.304	14.6	6.2	3.8	0.294	false
+85560	MLB 2026 Live RP Tyler Davis CWS	Reliever	46	0	R			0.342	0.352	0.33	19.9	9.9	3.9	0.293	false
+85629	MLB 2026 Live RP Carlos Carrasco ATL	Reliever	50	0	R			0.342	0.346	0.338	16.6	5.5	3.9	0.303	false
+83053	Snapshot SP Floyd Bannister CWS 1987	Starter	57	0	L			0.342	0.336	0.345	14.6	5.3	4.7	0.277	false
+84231	Rookie Sensation SP Tejay Antone CIN 2020	Starter	50	0	R			0.342	0.35	0.333	19.2	8.2	3.6	0.306	false
+82163	MLB 2026 Live SP Jason Alexander HOU	Starter	50	0	R			0.342	0.35	0.332	16.3	6.6	4.0	0.295	false
+81805	MLB 2026 Live RP Zach Agnos COL	Reliever	46	0	R			0.342	0.345	0.338	17.9	6.7	4.2	0.294	false
+82951	Snapshot RP Jose Santiago CLE 2003	Reliever	47	5	R			0.342	0.35	0.333	13.4	7.5	2.3	0.316	false
+84224	Rookie Sensation SP Urbano Lugo CAL 1985	Starter	46	5	R			0.342	0.339	0.345	17.0	7.1	3.8	0.298	false
+82976	Snapshot RP Steve Crawford BOS 1986	Reliever	49	5	R			0.342	0.362	0.318	15.3	4.7	3.2	0.318	false
+85623	MLB 2026 Live RP Ricky Vanasco DET	Reliever	46	0	R			0.343	0.339	0.348	20.3	8.7	4.0	0.299	false
+82286	MLB 2026 Live SP Jeffrey Springs ATH	Starter	60	0	L			0.343	0.347	0.342	19.4	6.0	5.0	0.286	false
+83007	Snapshot SP Jack Sanford PHI 1958	Starter	51	0	R			0.343	0.356	0.327	16.5	9.4	3.3	0.296	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	Starter	51	0	R			0.343	0.348	0.337	11.8	5.8	3.3	0.299	false
+82103	MLB 2026 Live SP Bradley Blalock MIA	Starter	50	0	R			0.343	0.351	0.334	15.4	6.7	3.8	0.296	false
+82953	Snapshot SP Andy Benes STL 2002	Starter	45	0	R			0.343	0.349	0.336	16.8	9.1	3.4	0.299	false
+82782	Unsung Heroes SP Mule Watson BSN 1922	Starter	47	5	R			0.343	0.365	0.316	13.8	5.6	3.5	0.301	false
+85302	May Names 1 - Rookie Sensation RP Tim Mayza TOR 2017	Reliever	44	5	L			0.343	0.279	0.38	27.8	5.7	5.3	0.316	false
+82940	Snapshot SP Joe Haynes CWS 1946	Starter	45	5	R			0.343	0.366	0.315	13.9	6.1	3.7	0.295	false
+82950	Snapshot SP Earl Hamilton SLA 1915	Starter	44	5	L			0.343	0.341	0.345	14.3	6.4	3.7	0.297	false
+82966	Snapshot SP Benny Frey CIN 1931	Starter	47	5	R			0.343	0.363	0.317	9.9	5.7	2.8	0.302	false
+82972	Snapshot SP Sam McDowell SF 1972	Starter	49	0	L			0.344	0.355	0.338	19.9	10.1	3.6	0.301	false
+84237	Rookie Sensation SP Dixie Leverett CWS 1922	Starter	53	0	R			0.344	0.368	0.315	13.4	7.5	3.5	0.292	false
+82262	MLB 2026 Live SP Gunnar Hoglund ATH	Starter	52	0	R			0.344	0.345	0.343	16.2	5.6	4.4	0.292	false
+85005	MLB 2026 Live RP Mitch Farris LAA	Reliever	49	0	L			0.344	0.348	0.342	20.4	7.4	4.6	0.295	false
+84238	Rookie Sensation SP Johnny Enzmann CLE 1918	Starter	53	0	R			0.344	0.343	0.344	13.8	5.3	3.7	0.299	false
+84223	Rookie Sensation SP Daniel Castano MIA 2020	Starter	47	0	L			0.344	0.333	0.35	13.8	7.3	3.3	0.299	false
+82991	Snapshot SP Sloppy Thurston BRO 1932	Starter	50	5	R			0.344	0.355	0.33	12.1	5.3	4.0	0.288	false
+85422	May Birthdays - Rookie Sensation RP Andrew Miller DET 2006	Reliever	40	5	L			0.344	0.404	0.309	14.8	11.7	3.1	0.286	false
+82961	Snapshot SP Shawn Hillegas LAD 1988	Starter	47	5	R			0.344	0.369	0.312	17.8	7.8	3.8	0.300	false
+81828	MLB 2026 Live SP Tomoyuki Sugano COL	Starter	57	0	R			0.345	0.347	0.342	17.0	5.0	4.8	0.288	false
+82969	Snapshot RP Joe Smith CLE 2010	Reliever	48	0	R			0.345	0.363	0.322	18.8	11.4	3.8	0.285	false
+85997	MLB 2026 Live RP TJ Shook COL	Reliever	45	0	R			0.345	0.348	0.342	17.0	7.3	3.9	0.299	false
+83030	Snapshot SP Flint Rhem STL 1927	Starter	53	0	R			0.345	0.376	0.307	14.6	6.8	3.8	0.296	false
+82949	Snapshot SP Togie Pittinger BSN 1904	Starter	45	0	R			0.345	0.333	0.36	18.6	11.0	3.7	0.289	false
+81738	MLB 2026 Live SP German Marquez SD	Starter	51	0	R			0.345	0.355	0.334	15.8	6.5	4.0	0.298	false
+83000	Veteran Presence CL Doug Jones BAL 1995	Reliever	50	0	R			0.345	0.348	0.343	20.7	6.2	3.9	0.321	false
+83009	Snapshot SP Willis Hudlin CLE 1928	Starter	51	0	R			0.345	0.354	0.334	14.0	8.9	3.5	0.290	false
+84827	Baseball Reference 1 SP Brian Fisher PIT 1988	Starter	43	0	R			0.345	0.368	0.317	13.5	7.3	3.2	0.302	false
+82988	Snapshot SP Rollie Sheldon KC1 1965	Starter	50	5	R			0.345	0.35	0.339	15.2	6.3	4.4	0.286	false
+82943	Snapshot SP Rick Waits CLE 1976	Starter	45	0	L			0.346	0.341	0.348	16.9	8.7	3.0	0.312	false
+84937	MLB 2026 Live RP Albert Suarez BAL	Reliever	49	0	R			0.346	0.358	0.332	18.1	6.4	4.7	0.291	false
+82042	MLB 2026 Live RP Chase Shugart PHI	Reliever	52	0	R			0.346	0.355	0.335	19.0	6.8	4.7	0.292	false
+82975	Snapshot SP Paul Maholm PIT 2010	Starter	50	0	L			0.346	0.349	0.345	12.5	6.8	2.7	0.312	false
+84956	MLB 2026 Live SP Zack Littell WSH	Starter	59	0	R			0.346	0.356	0.335	17.6	5.1	5.1	0.285	false
+82795	Unsung Heroes RP Willard Hunter NYM 1964	Reliever	50	0	L			0.346	0.342	0.349	12.1	4.7	3.1	0.313	false
+83010	Snapshot SP Harry Gumbert NY1 1939	Starter	51	0	R			0.346	0.344	0.347	13.8	6.4	4.1	0.288	false
+82944	Snapshot RP Sarge Connally CLE 1932	Reliever	47	5	R			0.346	0.383	0.301	12.7	7.8	3.5	0.291	false
+84216	Rookie Sensation RP Dwight Bernard NYM 1978	Reliever	40	5	R			0.346	0.35	0.341	18.7	9.1	3.1	0.315	false
+82785	Unsung Heroes SP Ed Wells NYY 1930	Starter	49	0	L			0.347	0.355	0.343	14.0	6.7	3.7	0.298	false
+82797	Unsung Heroes SP Herm Wehmeier PHI 1954	Starter	52	0	R			0.347	0.345	0.35	13.4	7.5	4.1	0.284	false
+82978	Snapshot SP Freddie Toliver MIN 1988	Starter	49	0	R			0.347	0.358	0.334	17.5	8.8	3.6	0.303	false
+82938	Snapshot RP Rich Rodriguez SD 1991	Reliever	45	0	L			0.347	0.354	0.343	14.6	9.8	4.2	0.274	false
+82125	MLB 2026 Live SP Chris Paddack TEX	Starter	54	0	R			0.347	0.353	0.339	17.1	5.3	4.5	0.298	false
+82786	Unsung Heroes SP Tiny Osborne BRO 1925	Starter	49	0	R			0.347	0.355	0.338	18.2	9.1	3.9	0.297	false
+83016	Snapshot SP Ruben Gomez NY1 1954	Starter	52	0	R			0.347	0.366	0.323	18.2	8.5	4.2	0.293	false
+84227	Rookie Sensation SP Brian Duensing MIN 2009	Starter	48	0	L			0.347	0.325	0.36	15.4	7.2	3.3	0.310	false
+84228	Rookie Sensation RP Stan Wall LAD 1976	Reliever	47	5	L			0.347	0.348	0.345	18.1	5.9	4.5	0.299	false
+82964	Snapshot SP Ray Herbert CWS 1964	Starter	47	5	R			0.347	0.35	0.344	13.5	4.7	4.3	0.292	false
+82955	Snapshot SP Joaquin Andujar ATH 1986	Starter	47	5	R			0.347	0.368	0.321	14.1	6.8	5.0	0.268	false
+83001	Snapshot SP Chris Welsh CIN 1986	Starter	52	0	L			0.348	0.352	0.346	9.8	6.2	2.7	0.309	false
+82180	MLB 2026 Live RP Roddery Munoz HOU	Reliever	50	0	R			0.348	0.358	0.337	21.4	8.2	4.9	0.293	false
+82989	Snapshot SP Johnny Humphries CWS 1943	Starter	51	0	R			0.348	0.358	0.335	11.7	6.0	3.7	0.295	false
+84217	Rookie Sensation SP Bob Harris SLA 1939	Starter	44	0	R			0.348	0.334	0.365	16.0	9.1	3.6	0.299	false
+83017	Snapshot SP Jack Chesbro NYY 1906	Starter	52	0	R			0.348	0.348	0.347	19.1	6.1	3.8	0.320	false
+83088	Snapshot SP John Candelaria PIT 1979	Starter	60	0	L			0.348	0.354	0.345	15.0	4.6	4.7	0.292	false
+82799	Unsung Heroes SP Billy Campbell CIN 1908	Starter	51	0	L			0.348	0.344	0.351	14.0	5.7	3.9	0.300	false
+82663	Hardware Heroes SP Lew Burdette ML1 1959	Starter	60	0	R			0.348	0.327	0.373	11.7	2.4	4.5	0.292	false
+84619	World Baseball Classic SP Jung-keun Bong KOR 2009	Starter	46	0	L			0.348	0.345	0.35	6.9	7.6	2.4	0.298	false
+82993	Snapshot SP Sam Weaver LS2 1883	Starter	46	5	R			0.348	0.351	0.345	14.2	4.0	3.4	0.320	false
+83118	Snapshot SP Josh Tomlin CLE 2011	Starter	63	0	R			0.349	0.35	0.349	12.6	2.6	5.1	0.283	false
+84872	Clubhouse - Negro League Star RF Walter Thomas KCM 1945	Starter	63	0	R			0.349	0.354	0.343	17.7	7.7	3.3	0.319	false
+82790	Unsung Heroes SP Dick Starr SLA 1949	Starter	48	0	R			0.349	0.353	0.344	19.3	8.1	3.8	0.313	false
+83008	Snapshot SP Bill Sherdel STL 1922	Starter	53	0	L			0.349	0.355	0.345	16.1	5.6	3.8	0.312	false
+82946	Veteran Presence SP Ken Heintzelman PHI 1951	Starter	46	0	L			0.349	0.318	0.367	18.5	7.6	4.3	0.300	false
+84876	Celebrating 42 - Negro League Star SP Satchel Davis ClBu 1947	Starter	48	0	R			0.349	0.346	0.353	17.2	5.6	4.2	0.306	false
+82956	Snapshot SP John Whitehead CWS 1937	Starter	47	5	R			0.349	0.368	0.326	12.8	6.3	3.9	0.295	false
+82064	MLB 2026 Live SP Taijuan Walker PHI	Starter	49	0	R			0.350	0.349	0.352	16.8	6.5	4.6	0.293	false
+82935	Snapshot SP Dutch Ruether WS1 1926	Starter	46	0	L			0.350	0.381	0.333	14.2	7.5	3.7	0.300	false
+82811	Unsung Heroes SP Bill Lohrman NY1 1940	Starter	63	0	R			0.350	0.379	0.313	14.1	5.0	4.4	0.295	false
+85916	5th of July HR RP Rick Camp ATL 1985	Reliever	44	0	R			0.350	0.356	0.344	11.7	9.6	2.9	0.298	false
+82779	Unsung Heroes SP Roy Wilkinson CWS 1920	Starter	40	5	R			0.350	0.359	0.339	12.5	6.6	3.7	0.298	false
+82777	Unsung Heroes SP Roric Harrison ATL 1974	Starter	40	5	R			0.350	0.357	0.342	12.5	7.5	3.4	0.300	false
+82948	Snapshot SP Frank Dwyer CIN 1891	Starter	47	5	R			0.350	0.349	0.352	16.0	5.9	3.5	0.317	false
+82968	Snapshot SP Bob Barr WS8 1886	Starter	41	5	R			0.350	0.357	0.341	15.7	6.2	4.0	0.304	false
+82985	Snapshot SP Jarrod Washburn SEA 2008	Starter	50	0	L			0.351	0.32	0.368	13.7	6.5	3.8	0.300	false
+83024	Snapshot SP Lee Stange MIN 1963	Starter	53	0	R			0.351	0.336	0.369	14.3	6.4	4.6	0.287	false
+82951	Snapshot RP Jose Santiago CLE 2003	Reliever	47	0	R			0.351	0.359	0.341	12.2	8.3	2.4	0.317	false
+82781	Unsung Heroes SP Ed Rakow KC1 1963	Starter	47	0	R			0.351	0.355	0.345	14.5	7.6	4.1	0.291	false
+83064	Snapshot SP Milt Pappas ATL 1968	Starter	61	0	R			0.351	0.358	0.343	14.5	3.8	4.7	0.297	false
+85632	MLB 2026 Live RP Wyatt Mills LAD	Reliever	41	0	R			0.351	0.368	0.329	15.2	8.7	3.5	0.301	false
+81807	MLB 2026 Live RP Tanner Gordon COL	Reliever	50	0	R			0.351	0.351	0.351	17.4	4.7	4.5	0.309	false
+82783	Unsung Heroes SP Bert Gallia WS1 1917	Starter	46	0	R			0.351	0.346	0.358	18.3	10.1	4.0	0.297	false
+82945	Snapshot SP Max Butcher PHI 1939	Starter	45	0	R			0.351	0.363	0.337	11.4	7.0	3.5	0.298	false
+82784	Unsung Heroes SP Bill Stoneman MON 1970	Starter	48	5	R			0.351	0.384	0.309	21.9	8.7	4.7	0.301	false
+82977	Veteran Presence SP Gaylord Perry SEA 1983	Starter	49	5	R			0.351	0.357	0.343	13.7	5.2	4.3	0.295	false
+82959	Snapshot SP Reid Cornelius FLO 2000	Starter	47	5	R			0.351	0.358	0.343	12.2	6.5	4.3	0.285	false
+84219	Rookie Sensation RP Neil Wagner TOR 2013	Reliever	45	0	R			0.352	0.352	0.352	18.3	7.0	4.1	0.310	false
+82937	Snapshot SP Al Mays NY4 1886	Starter	44	0	R			0.352	0.359	0.344	16.9	8.8	3.8	0.303	false
+85234	MLB 2026 Live RP Trevor Martin TB	Reliever	47	0	R			0.352	0.356	0.347	17.4	6.3	4.8	0.293	false
+82793	Unsung Heroes SP Jing Johnson PHA 1917	Starter	49	0	R			0.352	0.367	0.333	12.1	6.7	3.8	0.295	false
+82958	Snapshot SP Jason Johnson BAL 2001	Starter	48	0	R			0.352	0.365	0.337	13.7	8.4	4.2	0.287	false
+82973	Snapshot SP Art Houtteman CLE 1955	Starter	48	0	R			0.352	0.345	0.361	13.8	7.2	4.2	0.292	false
+83011	Snapshot SP Luis Castillo CIN 2018	Starter	53	0	R			0.352	0.357	0.347	17.3	6.8	5.0	0.288	false
+82986	Snapshot RP Rigo Beltran NYM 1999	Reliever	49	0	L			0.352	0.346	0.355	24.0	7.1	4.6	0.322	false
+84234	Rookie Sensation SP Bert Abbey WAS 1892	Starter	50	0	R			0.352	0.358	0.345	18.0	7.2	4.2	0.306	false
+82965	Snapshot SP Jim Tobin BSN 1945	Starter	52	5	R			0.352	0.342	0.365	11.5	6.5	3.7	0.297	false
+82954	Snapshot SP Pat Zachry NYM 1982	Starter	46	0	R			0.353	0.383	0.317	14.3	8.7	3.5	0.302	false
+83006	Snapshot SP Joe Presko STL 1952	Starter	51	0	R			0.353	0.362	0.341	14.3	7.2	4.5	0.287	false
+83003	Snapshot SP Joe Moeller LAD 1970	Starter	51	0	R			0.353	0.335	0.374	11.7	6.5	4.4	0.285	false
+84295	Rookie Sensation RF George Hunter BRO 1909	Starter	40	0	L			0.353	0.347	0.357	16.4	7.4	4.2	0.302	false
+83002	Veteran Presence SP Mark Gardner SF 1997	Starter	51	0	R			0.353	0.342	0.366	17.4	6.8	4.9	0.292	false
+82934	Veteran Presence RP Fred Frankhouse BSN 1939	Reliever	41	0	R			0.353	0.344	0.365	14.4	8.5	3.8	0.297	false
+82967	Snapshot SP Al Benton DET 1938	Starter	46	0	R			0.353	0.343	0.366	16.5	7.6	4.3	0.298	false
+82791	Unsung Heroes SP Walter Beall NYY 1926	Starter	49	0	R			0.353	0.364	0.34	23.0	11.5	3.9	0.311	false
+82933	Snapshot SP Gene Bearden CLE 1949	Starter	40	5	L			0.353	0.355	0.352	15.2	10.0	2.6	0.319	false
+83100	Snapshot RP Buddy Schultz STL 1979	Reliever	58	0	L			0.354	0.375	0.342	24.4	5.5	6.0	0.301	false
+82800	Unsung Heroes SP Ryan Rupe TB 2002	Starter	52	0	R			0.354	0.37	0.335	17.7	6.8	4.3	0.308	false
+82970	Snapshot SP Robert Person TOR 1997	Starter	49	0	R			0.354	0.363	0.344	18.7	9.1	4.8	0.288	false
+83022	Snapshot SP Randy O&#39;Neal DET 1986	Starter	53	0	R			0.354	0.381	0.321	13.4	6.9	4.3	0.292	false
+85302	May Names 1 - Rookie Sensation RP Tim Mayza TOR 2017	Reliever	44	0	L			0.354	0.291	0.391	26.5	6.2	5.5	0.318	false
+82942	Snapshot SP Kyle Gibson MIN 2016	Starter	44	0	R			0.354	0.356	0.351	13.8	7.2	3.4	0.311	false
+82966	Snapshot SP Benny Frey CIN 1931	Starter	47	0	R			0.354	0.378	0.325	8.8	6.3	3.1	0.304	false
+83013	Veteran Presence SP Bert Blyleven MIN 1987	Starter	54	0	R			0.354	0.377	0.327	19.7	7.6	5.1	0.293	false
+85638	MLB 2026 Live RP Charlie Barnes LAD	Reliever	47	0	L			0.354	0.347	0.357	17.1	6.2	4.7	0.299	false
+82980	Snapshot SP Lady Baldwin DTN 1887	Starter	48	0	L			0.354	0.357	0.353	15.9	7.0	4.0	0.307	false
+84215	Rookie Sensation RP Jake Newberry KC 2019	Reliever	43	5	R			0.354	0.364	0.342	17.8	7.7	4.5	0.299	false
+82932	Snapshot RP Harry Eisenstat CLE 1941	Reliever	40	5	L			0.354	0.357	0.352	15.1	7.2	3.3	0.319	false
+82930	Veteran Presence RP Jim Corsi BOS 1999	Reliever	41	5	R			0.354	0.37	0.336	16.1	7.5	4.0	0.305	false
+83109	Snapshot SP Ed Whitson SD 1989	Starter	64	0	R			0.355	0.392	0.309	13.5	5.0	4.7	0.291	false
+82952	Snapshot SP Daniel Norris DET 2017	Starter	40	0	L			0.355	0.369	0.347	16.3	7.9	3.5	0.317	false
+84221	Rookie Sensation SP Bill Macdonald PIT 1950	Starter	46	0	R			0.355	0.354	0.356	14.6	9.5	4.5	0.281	false
+82936	Snapshot SP Bill Hoffer BLN 1897	Starter	49	0	R			0.355	0.352	0.358	13.0	7.1	3.8	0.302	false
+83863	Historical All-Star SP Mike Cuellar BAL 1971	Starter	52	0	L			0.355	0.387	0.336	13.4	6.7	4.8	0.282	false
+82976	Snapshot RP Steve Crawford BOS 1986	Reliever	49	0	R			0.355	0.377	0.328	14.0	5.2	3.5	0.319	false
+82788	Unsung Heroes SP Gene Brabender BAL 1968	Starter	49	0	R			0.355	0.36	0.349	17.6	10.0	4.1	0.298	false
+84951	MLB 2026 Live RP Shaun Anderson LAA	Reliever	48	0	R			0.355	0.369	0.337	16.5	6.3	4.6	0.299	false
+85718	T4 Ep. 2 - Snapshot SP Ted Lyons CWS 1936	Starter	55	0	R			0.356	0.361	0.35	14.1	4.0	5.0	0.293	false
+82941	Snapshot SP Oral Hildebrand SLA 1937	Starter	45	0	R			0.356	0.382	0.326	14.4	7.7	4.2	0.296	false
+82370	MLB 2026 Live RF Jac Caglianone KC	Starter	66	0	L			0.356	0.354	0.357	17.4	11.4	4.1	0.289	false
+83862	Historical All-Star SP Rick Rhoden LAD 1976	Starter	52	5	R			0.356	0.39	0.316	14.7	6.4	4.9	0.288	false
+82798	Unsung Heroes SP Highball Wilson WS1 1903	Starter	50	0	R			0.357	0.366	0.345	11.0	5.2	3.9	0.301	false
+83012	Snapshot SP LaMarr Hoyt CWS 1984	Starter	53	5	R			0.357	0.383	0.324	15.8	3.9	5.1	0.299	false
+84218	Rookie Sensation RP Bill Burwell SLA 1920	Reliever	41	5	R			0.357	0.371	0.34	13.2	6.9	4.0	0.301	false
+82782	Unsung Heroes SP Mule Watson BSN 1922	Starter	47	0	R			0.358	0.379	0.332	12.7	6.2	4.0	0.303	false
+84225	Rookie Sensation SP Stoney McGlynn STL 1907	Starter	46	0	R			0.358	0.35	0.367	13.4	7.9	4.3	0.292	false
+82792	Unsung Heroes SP Cowboy Jones STL 1900	Starter	48	0	L			0.358	0.353	0.362	13.7	7.0	4.1	0.301	false
+82780	Unsung Heroes SP Joe Boehling WS1 1916	Starter	42	0	L			0.358	0.369	0.352	14.4	7.8	3.9	0.305	false
+82947	Veteran Presence SP Charlie Root CHC 1934	Starter	44	0	R			0.359	0.372	0.342	15.9	8.3	4.1	0.304	false
+85422	May Birthdays - Rookie Sensation RP Andrew Miller DET 2006	Reliever	40	0	L			0.359	0.417	0.325	13.6	12.4	3.6	0.288	false
+84224	Rookie Sensation SP Urbano Lugo CAL 1985	Starter	46	0	R			0.359	0.357	0.362	15.7	7.8	4.3	0.303	false
+85565	MLB 2026 Live 1B Bryce Eldridge SF	Starter	63	0	R			0.359	0.364	0.353	14.6	12.3	3.7	0.289	false
+85085	Young &amp; Old 1 - Veteran Presence RF Ichiro Suzuki MIA 2015	Reliever	61	5	R			0.359	0.35	0.369	16.4	5.0	4.4	0.315	false
+82988	Snapshot SP Rollie Sheldon KC1 1965	Starter	50	0	R			0.360	0.364	0.355	13.9	7.0	4.9	0.288	false
+82940	Snapshot SP Joe Haynes CWS 1946	Starter	45	0	R			0.360	0.381	0.334	12.6	6.6	4.2	0.300	false
+82939	Veteran Presence SP Bob Welch ATH 1993	Starter	42	5	R			0.360	0.353	0.368	12.6	5.7	4.4	0.298	false
+82991	Snapshot SP Sloppy Thurston BRO 1932	Starter	50	0	R			0.361	0.371	0.349	11.0	5.9	4.4	0.294	false
+82961	Snapshot SP Shawn Hillegas LAD 1988	Starter	47	0	R			0.361	0.386	0.33	16.5	8.6	4.3	0.305	false
+82950	Snapshot SP Earl Hamilton SLA 1915	Starter	44	0	L			0.361	0.357	0.363	13.0	7.0	4.1	0.302	false
+82944	Snapshot RP Sarge Connally CLE 1932	Reliever	47	0	R			0.361	0.397	0.318	11.5	8.5	4.0	0.295	false
+84216	Rookie Sensation RP Dwight Bernard NYM 1978	Reliever	40	0	R			0.361	0.365	0.357	17.4	10.0	3.6	0.316	false
+82955	Snapshot SP Joaquin Andujar ATH 1986	Starter	47	0	R			0.362	0.38	0.34	12.9	7.4	5.4	0.272	false
+83566	Snapshot 3B Levi Meyerle PHN 1876	Starter	67	5	R			0.362	0.366	0.357	13.9	5.9	4.1	0.312	false
+83567	Snapshot 1B Cal McVey CN1 1879	Starter	47	5	R			0.362	0.37	0.351	18.2	7.2	4.4	0.316	false
+82931	Snapshot SP Pat Mahomes MIN 1994	Starter	43	5	R			0.362	0.378	0.344	13.4	9.4	5.1	0.273	false
+82834	Unsung Heroes LF Charlie Eden PT1 1885	Starter	40	5	L			0.362	0.359	0.363	14.9	5.9	3.6	0.327	false
+82993	Snapshot SP Sam Weaver LS2 1883	Starter	46	0	R			0.363	0.366	0.36	12.9	4.5	3.9	0.321	false
+84228	Rookie Sensation RP Stan Wall LAD 1976	Reliever	47	0	L			0.363	0.365	0.362	16.8	6.5	4.9	0.304	false
+82964	Snapshot SP Ray Herbert CWS 1964	Starter	47	0	R			0.364	0.367	0.36	12.2	5.2	4.8	0.296	false
+82933	Snapshot SP Gene Bearden CLE 1949	Starter	40	0	L			0.364	0.369	0.36	13.9	10.8	2.8	0.321	false
+84419	Negro League Star C Frank Duncan ChGi 1920	Starter	61	5	R			0.364	0.363	0.366	14.2	7.3	4.7	0.298	false
+82956	Snapshot SP John Whitehead CWS 1937	Starter	47	0	R			0.365	0.384	0.342	11.6	6.9	4.3	0.299	false
+82784	Unsung Heroes SP Bill Stoneman MON 1970	Starter	48	0	R			0.365	0.397	0.325	20.7	9.6	5.1	0.303	false
+82948	Snapshot SP Frank Dwyer CIN 1891	Starter	47	0	R			0.365	0.364	0.367	14.7	6.6	4.0	0.319	false
+82959	Snapshot SP Reid Cornelius FLO 2000	Starter	47	0	R			0.365	0.372	0.358	11.0	7.1	4.7	0.288	false
+82778	Unsung Heroes SP Jim Hughey CL4 1899	Starter	40	5	R			0.365	0.369	0.359	13.6	5.9	4.0	0.318	false
+82977	Veteran Presence SP Gaylord Perry SEA 1983	Starter	49	0	R			0.366	0.37	0.36	12.5	5.7	4.8	0.299	false
+82965	Snapshot SP Jim Tobin BSN 1945	Starter	52	0	R			0.367	0.357	0.378	10.3	7.1	4.2	0.299	false
+82968	Snapshot SP Bob Barr WS8 1886	Starter	41	0	R			0.367	0.373	0.36	14.4	6.8	4.4	0.309	false
+84438	Negro League Star LF Pablo Mesa CSE 1923	Reliever	65	5	L			0.367	0.37	0.365	14.5	7.3	4.7	0.300	false
+82779	Unsung Heroes SP Roy Wilkinson CWS 1920	Starter	40	0	R			0.368	0.377	0.357	11.3	7.3	4.2	0.303	false
+85894	Clubhouse - Unsung Heroes SP Jerry Ujdur DET 1982	Starter	49	0	R			0.368	0.393	0.337	16.3	7.0	6.7	0.265	false
+84440	Negro League Star 2B Matt Carlisle HoGr 1943	Starter	64	5	R			0.368	0.366	0.369	13.4	7.5	3.9	0.316	false
+86198	Limited Edition/96 SP Bill Voiselle NY1 1944	Starter	46	0	R			0.369	0.403	0.327	20.4	8.4	6.5	0.277	true
+82443	MLB 2026 Live C Austin Hedges CLE	Reliever	56	0	R			0.369	0.35	0.393	0.9	5.8	3.7	0.287	false
+82777	Unsung Heroes SP Roric Harrison ATL 1974	Starter	40	0	R			0.369	0.375	0.361	11.4	8.2	3.9	0.305	false
+82932	Snapshot RP Harry Eisenstat CLE 1941	Reliever	40	0	L			0.369	0.372	0.367	13.8	7.8	3.7	0.321	false
+84677	Happy Easter SS Jelly Jackson HoGr 1938	Starter	47	5	R			0.370	0.369	0.372	12.6	7.5	3.9	0.315	false
+83862	Historical All-Star SP Rick Rhoden LAD 1976	Starter	52	0	R			0.371	0.404	0.331	13.4	7.0	5.3	0.291	false
+84215	Rookie Sensation RP Jake Newberry KC 2019	Reliever	43	0	R			0.371	0.38	0.359	16.5	8.5	4.9	0.304	false
+82930	Veteran Presence RP Jim Corsi BOS 1999	Reliever	41	0	R			0.371	0.384	0.354	14.8	8.3	4.5	0.308	false
+84354	Super Utility RF Oyster Burns SL4 1884	Reliever	67	5	R			0.371	0.376	0.364	16.6	7.7	4.7	0.313	false
+85085	Young &amp; Old 1 - Veteran Presence RF Ichiro Suzuki MIA 2015	Reliever	61	0	R			0.372	0.364	0.382	15.1	5.5	4.8	0.316	false
+85101	Clubhouse - Y&amp;O 1 - Veteran Presence 3B Wade Boggs TB 1999	Reliever	57	0	R			0.372	0.37	0.375	16.8	7.2	4.6	0.320	false
+83012	Snapshot SP LaMarr Hoyt CWS 1984	Starter	53	0	R			0.373	0.398	0.343	14.5	4.4	5.5	0.304	false
+84942	MLB 2026 Live RP Lucas Sims CWS	Reliever	44	0	R			0.374	0.38	0.368	19.4	13.6	4.9	0.296	false
+84218	Rookie Sensation RP Bill Burwell SLA 1920	Reliever	41	0	R			0.374	0.387	0.358	11.9	7.5	4.4	0.306	false
+84414	Negro League Star C Pepper Bassett PiCr 1938	Starter	57	5	R			0.374	0.374	0.373	12.7	7.5	4.2	0.314	false
+82939	Veteran Presence SP Bob Welch ATH 1993	Starter	42	0	R			0.375	0.369	0.382	11.3	6.3	4.9	0.301	false
+81949	MLB 2026 Live CF Dane Myers CIN	Starter	52	0	R			0.375	0.38	0.369	15.9	10.3	5.3	0.290	false
+85498	Clubhouse - 60s Week - Snapshot SP Jim Maloney CIN 1961	Starter	41	0	R			0.375	0.405	0.338	19.2	12.9	5.2	0.290	false
+84127	All-Time Legend SS Isiah Kiner-Falefa TEX Peak	Reliever	64	5	R			0.375	0.378	0.371	12.0	7.5	4.4	0.309	false
+84396	Negro League Star 1B Toussaint Allen WiPo 1925	Starter	45	5	L			0.375	0.376	0.375	13.5	7.6	5.0	0.300	false
+83567	Snapshot 1B Cal McVey CN1 1879	Starter	47	0	R			0.376	0.384	0.366	16.9	7.8	4.8	0.318	false
+84121	All-Time Legend 3B Bernie Friberg PHI Peak	Reliever	60	5	R			0.376	0.396	0.352	13.1	9.7	4.3	0.306	false
+83566	Snapshot 3B Levi Meyerle PHN 1876	Starter	67	0	R			0.377	0.38	0.373	12.6	6.6	4.5	0.314	false
+82332	MLB 2026 Live 1B Kody Clemens MIN	Reliever	63	0	R			0.377	0.376	0.378	1.0	9.7	2.9	0.295	false
+82931	Snapshot SP Pat Mahomes MIN 1994	Starter	43	0	R			0.379	0.394	0.361	12.2	10.1	5.5	0.280	false
+82778	Unsung Heroes SP Jim Hughey CL4 1899	Starter	40	0	R			0.379	0.383	0.374	12.3	6.6	4.4	0.319	false
+82522	MLB 2026 Live SS Carson Williams TB	Reliever	65	0	R			0.380	0.388	0.371	11.5	10.5	4.9	0.290	false
+81711	MLB 2026 Live RF Will Brennan SF	Starter	59	0	L			0.380	0.378	0.38	16.1	10.1	5.6	0.291	false
+84419	Negro League Star C Frank Duncan ChGi 1920	Starter	61	0	R			0.381	0.38	0.382	12.9	8.0	5.1	0.303	false
+81750	MLB 2026 Live 2B Jake Cronenworth SD	Reliever	66	0	R			0.382	0.381	0.383	10.1	10.1	4.7	0.292	false
+84438	Negro League Star LF Pablo Mesa CSE 1923	Reliever	65	0	L			0.383	0.386	0.381	13.2	7.9	5.1	0.306	false
+84354	Super Utility RF Oyster Burns SL4 1884	Reliever	67	0	R			0.385	0.391	0.378	15.3	8.6	5.1	0.315	false
+82627	MLB 2026 Live 3B Blaze Alexander BAL	Reliever	60	0	R			0.389	0.389	0.388	15.0	10.8	5.9	0.290	false
+84127	All-Time Legend SS Isiah Kiner-Falefa TEX Peak	Reliever	64	0	R			0.390	0.392	0.387	10.9	8.2	4.8	0.312	false
+85365	Clubhouse - Played Where? - Veteran Presence SP Jamie Moyer COL 2012	Starter	40	0	L			0.391	0.398	0.387	13.8	6.2	5.5	0.318	false
+84396	Negro League Star 1B Toussaint Allen WiPo 1925	Starter	45	0	L			0.392	0.392	0.392	12.2	8.4	5.4	0.306	false
+82010	MLB 2026 Live 3B Brady House WSH	Reliever	48	0	R			0.401	0.407	0.395	11.6	11.7	6.0	0.289	false

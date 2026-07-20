@@ -1,0 +1,815 @@
+# CAPPROJ key=diamondheart__20260331 role=pit label=Diamond Heart type=Daily variantMode=all_cards projval=40-99 vlvl0=426 vlvl5=387 recordsTotal=813 rows=813
+CID	Name	Role	VAL	VLvl	Hand	Cap Value	Slots Value	pwOBA	pwOBA_vL	pwOBA_vR	Kpct	BBpct	HRpct	BABIP	ProjectedNewCard
+84075	Heart Attack - Snapshot RP Joe Sambito HOU 1980	Reliever	98	5	L			0.283	0.284	0.283	19.4	6.3	2.3	0.275	false
+84083	Rookie Sensation RP Mark Eichhorn TOR 1986	Reliever	98	5	R			0.285	0.317	0.265	18.3	6.2	2.2	0.277	false
+85948	July Jewels - Baseball Reference 4 CL Al Worthington MIN 1964	Reliever	86	5	R			0.287	0.28	0.291	17.7	6.8	2.5	0.268	false
+84267	July Jewels - Baseball Reference 4 SP Mark Fidrych DET 1976	Starter	84	5	R			0.287	0.297	0.281	11.6	4.7	2.1	0.267	false
+84075	Heart Attack - Snapshot RP Joe Sambito HOU 1980	Reliever	98	0	L			0.290	0.291	0.29	18.9	6.7	2.5	0.276	false
+83279	T4 Ep. 3 - Snapshot CL Dan Quisenberry KC 1981	Reliever	84	5	R			0.290	0.31	0.277	7.7	5.2	1.1	0.278	false
+85704	SwitchKnucklers - Veteran Presence SP Dutch Leonard WS1 1945	Starter	97	5	R			0.290	0.289	0.291	16.6	4.5	2.3	0.284	false
+84292	Rookie Sensation RP Barry Latman CWS 1958	Reliever	95	5	R			0.290	0.318	0.272	14.2	9.6	1.5	0.266	false
+85870	Clubhouse - Historical All-Star CL Dave Righetti NYY 1986	Reliever	85	0	L			0.291	0.303	0.287	16.7	6.9	2.2	0.276	false
+85781	Family Connections - Historical All-Star SP Dizzy Trout DET 1944	Starter	97	5	R			0.291	0.297	0.287	16.9	6.8	2.2	0.278	false
+84879	Celebrating 42 - Negro League Star SP Don Newcombe NeEa 1945	Starter	95	5	R			0.291	0.285	0.295	16.5	6.7	2.6	0.269	false
+85489	60s Theme Week - Veteran Presence CL Luis Arroyo NYY 1961	Reliever	84	5	L			0.291	0.282	0.294	17.9	8.5	2.3	0.268	false
+84070	Veteran Presence SP Roger Wolff WS1 1945	Starter	96	5	R			0.292	0.318	0.277	15.2	5.3	2.4	0.275	false
+85109	HOF 1 - Historical All-Star SP Steve Carlton STL 1969	Starter	96	5	L			0.293	0.283	0.296	19.9	7.1	2.5	0.280	false
+85847	T4 Ep. 3 - Snapshot RP Gary Lucas CAL 1986	Reliever	86	5	L			0.294	0.304	0.29	14.5	4.2	2.0	0.291	false
+84659	Opening Day Heroes - Historical All-Star SP Mel Harder CLE 1935	Starter	99	5	R			0.294	0.315	0.281	13.5	4.8	1.9	0.286	false
+85145	Electric No-Hitter SP Dock Ellis PIT 1970	Starter	85	0	R			0.295	0.287	0.301	13.7	8.0	2.1	0.268	false
+84083	Rookie Sensation RP Mark Eichhorn TOR 1986	Reliever	98	0	R			0.295	0.326	0.276	17.6	6.6	2.5	0.281	false
+84285	Rookie Sensation RP Seth Morehead PHI 1957	Reliever	78	5	L			0.295	0.286	0.297	15.7	7.5	1.5	0.289	false
+84267	July Jewels - Baseball Reference 4 SP Mark Fidrych DET 1976	Starter	84	0	R			0.296	0.304	0.292	10.7	5.1	2.4	0.268	false
+84841	Celebrating 42 - Snapshot SP Satchel Paige CLE 1948	Starter	94	5	R			0.296	0.282	0.305	17.0	6.8	2.4	0.281	false
+83282	Veteran Presence RP Tug McGraw PHI 1984	Reliever	85	5	L			0.296	0.289	0.298	15.9	6.6	1.9	0.288	false
+85948	July Jewels - Baseball Reference 4 CL Al Worthington MIN 1964	Reliever	86	0	R			0.297	0.293	0.299	16.9	7.4	2.7	0.270	false
+84054	Hall of Fame RP Hoyt Wilhelm CAL 1969	Reliever	92	5	R			0.297	0.316	0.285	17.6	7.0	3.0	0.267	false
+83316	Snapshot SP Sonny Siebert CLE 1965	Starter	97	5	R			0.297	0.303	0.293	18.4	6.9	2.7	0.278	false
+83319	Snapshot CL Jeff Montgomery KC 1989	Reliever	94	5	R			0.297	0.304	0.293	18.5	6.9	2.5	0.282	false
+85838	T4 Ep. 3 - Historical All-Star CL Gary Lavelle SF 1977	Reliever	82	5	L			0.297	0.287	0.3	17.0	6.4	2.2	0.287	false
+84879	Celebrating 42 - Negro League Star SP Don Newcombe NeEa 1945	Starter	95	0	R			0.298	0.293	0.301	15.5	6.8	2.7	0.270	false
+85704	SwitchKnucklers - Veteran Presence SP Dutch Leonard WS1 1945	Starter	97	0	R			0.298	0.296	0.299	15.6	4.7	2.5	0.286	false
+86280	T4 Ep. 4 - Historical All-Star SP Randy Jones SD 1976	Starter	83	5	L			0.298	0.304	0.296	8.2	4.3	2.5	0.266	true
+85781	Family Connections - Historical All-Star SP Dizzy Trout DET 1944	Starter	97	0	R			0.299	0.307	0.294	16.0	7.0	2.4	0.279	false
+84292	Rookie Sensation RP Barry Latman CWS 1958	Reliever	95	0	R			0.299	0.327	0.281	13.2	9.9	1.8	0.267	false
+84086	Live Collection Reward - Historical All-Star SP Bob Friend PIT 1960	Starter	99	0	R			0.299	0.291	0.304	15.1	4.5	2.5	0.288	false
+83323	Live Collection Reward - Snapshot RP Joe Grzenda WS2 1971	Reliever	98	0	L			0.300	0.266	0.312	16.3	7.8	2.2	0.282	false
+85489	60s Theme Week - Veteran Presence CL Luis Arroyo NYY 1961	Reliever	84	0	L			0.300	0.291	0.303	17.1	9.3	2.5	0.269	false
+84085	Unsung Heroes RP Kent Tekulve PIT 1979	Reliever	99	5	R			0.300	0.342	0.274	14.3	8.4	1.9	0.279	false
+83900	Historical All-Star SP Howie Pollet STL 1949	Starter	91	5	L			0.300	0.298	0.301	16.8	5.8	2.7	0.284	false
+85502	60s Theme Week - Snapshot SP Jim O&#39;Toole CIN 1961	Starter	87	5	L			0.300	0.286	0.305	15.9	7.0	2.1	0.286	false
+83263	Snapshot RP Mark Littell STL 1979	Reliever	77	5	R			0.300	0.298	0.301	17.6	9.8	2.1	0.277	false
+85114	HOF 1 - Hall of Fame SP Jim Kaat MIN 1967	Starter	87	5	L			0.300	0.287	0.305	17.8	4.6	2.8	0.292	false
+83907	Veteran Presence SP Spud Chandler NYY 1947	Starter	95	5	R			0.300	0.291	0.306	16.6	7.4	2.9	0.269	false
+84799	Baseball Reference 1 CL Jim Brewer LAD 1970	Reliever	78	5	L			0.300	0.297	0.3	18.6	6.4	3.4	0.268	false
+83279	T4 Ep. 3 - Snapshot CL Dan Quisenberry KC 1981	Reliever	84	0	R			0.301	0.319	0.29	6.9	5.4	1.4	0.282	false
+86199	Limited Edition/106 RP Scott Garrelts SF 1985	Reliever	87	0	R			0.301	0.301	0.302	18.9	11.2	1.8	0.280	true
+85109	HOF 1 - Historical All-Star SP Steve Carlton STL 1969	Starter	96	0	L			0.301	0.292	0.304	19.5	7.9	2.7	0.283	false
+86276	Clubhouse - Historical All-Star SP Don Drysdale LAD 1965	Starter	96	0	R			0.302	0.312	0.296	16.0	5.1	2.9	0.283	true
+85890	Clubhouse - Negro League Star SP Dave Barnhill NYC 1941	Starter	99	0	R			0.302	0.302	0.303	19.1	5.0	3.9	0.271	false
+85426	May Birthdays - Historical All-Star CL Dave LaRoche CLE 1976	Reliever	94	5	L			0.302	0.274	0.311	20.0	12.6	2.3	0.267	false
+85488	60s Theme Week - Historical All-Star SP Sandy Koufax LAD 1961	Starter	93	5	L			0.302	0.299	0.303	20.2	7.3	3.1	0.280	false
+83295	Snapshot RP Al Hrabosky STL 1973	Reliever	88	5	L			0.302	0.304	0.302	18.8	7.3	2.6	0.286	false
+85847	T4 Ep. 3 - Snapshot RP Gary Lucas CAL 1986	Reliever	86	0	L			0.303	0.312	0.3	13.5	4.4	2.2	0.293	false
+85730	SwitchKnucklers - Veteran Presence SP Johnny Niggeling WS1 1944	Starter	78	5	R			0.303	0.299	0.305	18.5	10.0	2.7	0.269	false
+84547	Negro League Star SP Barney Morris PiCr 1937	Starter	97	5	R			0.303	0.298	0.307	17.6	6.8	2.8	0.284	false
+83306	Snapshot RP Steve Hamilton NYY 1965	Reliever	89	5	L			0.303	0.299	0.304	16.3	6.7	2.5	0.284	false
+85652	June Gems - Baseball Reference 3 CL Ryne Duren NYY 1959	Reliever	94	5	R			0.303	0.289	0.312	20.8	13.4	2.2	0.267	false
+84070	Veteran Presence SP Roger Wolff WS1 1945	Starter	96	0	R			0.304	0.332	0.286	14.2	5.9	2.8	0.277	false
+83319	Snapshot CL Jeff Montgomery KC 1989	Reliever	94	0	R			0.304	0.311	0.3	17.9	7.3	2.7	0.284	false
+84659	Opening Day Heroes - Historical All-Star SP Mel Harder CLE 1935	Starter	99	0	R			0.304	0.323	0.293	12.6	5.3	2.2	0.288	false
+85288	May Names 1 - Snapshot RP Rudy May MON 1979	Reliever	74	5	L			0.304	0.285	0.31	17.5	7.1	2.6	0.287	false
+84054	Hall of Fame RP Hoyt Wilhelm CAL 1969	Reliever	92	0	R			0.305	0.326	0.292	16.9	7.4	3.3	0.268	false
+84841	Celebrating 42 - Snapshot SP Satchel Paige CLE 1948	Starter	94	0	R			0.305	0.292	0.313	16.0	7.2	2.5	0.283	false
+86113	Limited Edition/49 CL Sid Monge CLE 1979	Reliever	80	0	L			0.305	0.309	0.304	19.3	9.3	3.0	0.272	true
+84716	Clubhouse - April Fools&#39; Day RP Bob Miller SD 1971	Reliever	69	0	R			0.305	0.311	0.301	11.8	8.3	1.6	0.283	false
+83282	Veteran Presence RP Tug McGraw PHI 1984	Reliever	85	0	L			0.305	0.301	0.307	14.9	6.9	2.1	0.290	false
+84523	Negro League Star SP Luis Tiant NYC 1939	Starter	93	5	L			0.305	0.286	0.311	17.8	6.7	3.0	0.281	false
+84074	All-Time Legend SP Gary Peters CWS Peak	Starter	92	5	L			0.305	0.294	0.308	15.1	6.9	2.5	0.283	false
+84839	Celebrating 42 - Veteran Presence RP Satchel Paige SLA 1952	Reliever	68	5	R			0.305	0.309	0.303	18.4	8.0	2.6	0.286	false
+85888	Heart Attack - Negro League Star SP Leroy Matlock PiCr 1935	Starter	86	5	L			0.305	0.29	0.311	13.5	4.9	2.7	0.284	false
+83310	Snapshot SP Jack Kramer SLA 1944	Starter	89	5	R			0.305	0.311	0.302	16.7	7.4	2.8	0.278	false
+83235	Snapshot RP Greg Harris TEX 1985	Reliever	76	5	R			0.305	0.3	0.308	19.2	9.1	3.1	0.271	false
+84071	All-Time Legend SP Bill Hallahan STL Peak	Starter	92	5	L			0.305	0.288	0.311	19.2	9.5	2.6	0.280	false
+83240	Snapshot RP Terry Forster ATL 1983	Reliever	76	5	L			0.305	0.305	0.306	15.9	7.7	2.8	0.276	false
+84884	Celebrating 42 - Negro League Star SP Dan Bankhead MRS 1946	Starter	74	5	R			0.305	0.303	0.306	19.2	9.0	2.5	0.285	false
+83316	Snapshot SP Sonny Siebert CLE 1965	Starter	97	0	R			0.306	0.309	0.303	17.5	7.5	2.8	0.281	false
+84285	Rookie Sensation RP Seth Morehead PHI 1957	Reliever	78	0	L			0.306	0.297	0.309	14.7	8.2	1.8	0.291	false
+85838	T4 Ep. 3 - Historical All-Star CL Gary Lavelle SF 1977	Reliever	82	0	L			0.306	0.292	0.311	16.2	6.9	2.5	0.289	false
+83269	Snapshot SP Pete Vuckovich STL 1978	Starter	81	5	R			0.306	0.319	0.297	17.9	7.4	2.6	0.289	false
+83172	Snapshot RP Dale Murray TOR 1982	Reliever	66	5	R			0.306	0.326	0.294	12.2	7.1	1.8	0.288	false
+83302	Snapshot SP Lefty Gomez NYY 1931	Starter	96	5	L			0.306	0.294	0.31	19.0	9.7	2.5	0.282	false
+84528	Negro League Star SP Barney Brown NYBY 1937	Starter	93	5	L			0.306	0.304	0.306	16.0	6.7	2.7	0.282	false
+85114	HOF 1 - Hall of Fame SP Jim Kaat MIN 1967	Starter	87	0	L			0.307	0.293	0.312	17.0	4.8	2.9	0.294	false
+86280	T4 Ep. 4 - Historical All-Star SP Randy Jones SD 1976	Starter	83	0	L			0.307	0.316	0.304	7.4	4.5	2.8	0.267	true
+85208	Clubhouse - Y&amp;O 1 - Veteran Presence CL Tom Burgmeier BOS 1980	Reliever	83	0	L			0.307	0.272	0.318	12.9	6.2	2.4	0.283	false
+83237	Snapshot RP Eddie Watt BAL 1967	Reliever	72	5	R			0.307	0.311	0.304	17.2	8.5	3.2	0.269	false
+85892	Heart Attack - Negro League Star SP Roy Partlow HoGr 1939	Starter	78	5	L			0.307	0.293	0.311	13.7	7.9	2.8	0.268	false
+85499	60s Theme Week - Snapshot SP Bob Gibson STL 1961	Starter	70	5	R			0.307	0.315	0.301	17.0	9.8	2.1	0.285	false
+84085	Unsung Heroes RP Kent Tekulve PIT 1979	Reliever	99	0	R			0.308	0.351	0.282	13.5	8.7	2.1	0.280	false
+85151	Clubhouse - Y&amp;O 1 - Veteran Presence RP Don McMahon CWS 1967	Reliever	75	0	R			0.308	0.33	0.295	15.7	7.8	3.2	0.267	false
+83236	Snapshot RP Dave Tomlin SD 1977	Reliever	74	5	L			0.308	0.275	0.318	11.8	7.1	1.9	0.287	false
+83296	Snapshot SP Steve Rogers MON 1977	Starter	85	5	R			0.308	0.326	0.296	15.0	7.3	2.7	0.278	false
+83226	Veteran Presence RP Johnny Klippstein PHI 1963	Reliever	72	5	R			0.308	0.293	0.317	15.9	9.1	2.3	0.282	false
+84264	Rookie Sensation RP Bill Dailey CLE 1962	Reliever	76	5	R			0.308	0.348	0.283	11.9	9.0	1.5	0.288	false
+83900	Historical All-Star SP Howie Pollet STL 1949	Starter	91	0	L			0.309	0.306	0.31	15.9	6.4	2.8	0.287	false
+85848	Clubhouse - Snapshot RP Tom Niedenfuer LAD 1983	Reliever	88	0	R			0.309	0.297	0.318	16.9	7.7	3.6	0.265	false
+85426	May Birthdays - Historical All-Star CL Dave LaRoche CLE 1976	Reliever	94	0	L			0.309	0.283	0.318	19.6	13.3	2.5	0.268	false
+83907	Veteran Presence SP Spud Chandler NYY 1947	Starter	95	0	R			0.309	0.301	0.314	15.7	7.8	3.1	0.273	false
+85871	T4 Ep. 3 - Historical All-Star SP Mario Soto CIN 1983	Starter	83	5	R			0.309	0.312	0.308	19.8	6.8	4.1	0.267	false
+83291	Veteran Presence CL Ron Reed PHI 1978	Reliever	85	5	R			0.309	0.297	0.317	17.3	5.9	3.3	0.282	false
+84490	Negro League Star SP Max Manning NeEa 1939	Starter	87	5	R			0.309	0.309	0.309	16.2	7.0	2.9	0.283	false
+83309	Snapshot SP Teddy Higuera ML4 1988	Starter	89	5	L			0.309	0.294	0.314	17.3	7.0	3.4	0.275	false
+84069	All-Time Legend SP Ken Forsch HOU Peak	Starter	87	5	R			0.309	0.305	0.312	13.4	6.0	2.8	0.281	false
+83295	Snapshot RP Al Hrabosky STL 1973	Reliever	88	0	L			0.310	0.314	0.309	18.1	7.8	2.8	0.288	false
+83306	Snapshot RP Steve Hamilton NYY 1965	Reliever	89	0	L			0.310	0.306	0.311	15.4	6.8	2.7	0.285	false
+84799	Baseball Reference 1 CL Jim Brewer LAD 1970	Reliever	78	0	L			0.310	0.311	0.309	18.1	6.7	3.9	0.269	false
+83228	Veteran Presence RP Dixie Howell CWS 1955	Reliever	72	5	R			0.310	0.304	0.313	8.9	7.2	1.6	0.286	false
+85456	May Birthdays - Veteran Presence RP Billy Hoeft CHC 1965	Reliever	75	5	L			0.310	0.299	0.313	15.6	7.8	3.0	0.276	false
+82823	Unsung Heroes RP John D&#39;Acquisto SD 1978	Reliever	76	5	R			0.310	0.311	0.309	19.8	12.1	2.3	0.279	false
+86164	Clubhouse - Baseball Reference 5 SP Dean Stone WS1 1954	Starter	77	0	L			0.311	0.299	0.314	13.0	7.7	2.3	0.283	true
+85502	60s Theme Week - Snapshot SP Jim O&#39;Toole CIN 1961	Starter	87	0	L			0.311	0.294	0.317	14.8	7.7	2.4	0.288	false
+84547	Negro League Star SP Barney Morris PiCr 1937	Starter	97	0	R			0.311	0.305	0.315	16.8	6.9	3.0	0.285	false
+83263	Snapshot RP Mark Littell STL 1979	Reliever	77	0	R			0.311	0.308	0.313	16.7	10.5	2.3	0.281	false
+85488	60s Theme Week - Historical All-Star SP Sandy Koufax LAD 1961	Starter	93	0	L			0.311	0.307	0.312	19.8	7.8	3.3	0.284	false
+85652	June Gems - Baseball Reference 3 CL Ryne Duren NYY 1959	Reliever	94	0	R			0.311	0.298	0.32	20.4	14.0	2.4	0.268	false
+83197	Snapshot RP Mike Stanton SEA 1984	Reliever	72	5	R			0.311	0.309	0.312	17.7	7.4	2.9	0.288	false
+83890	Historical All-Star SP Rick Reuschel CHC 1977	Starter	83	5	R			0.311	0.331	0.298	14.8	7.3	2.8	0.279	false
+83272	Snapshot RP Alejandro Pena LAD 1988	Reliever	81	5	R			0.311	0.302	0.316	16.9	7.2	3.0	0.284	false
+85285	May Names 1 - Veteran Presence SP Rudy May NYY 1980	Starter	82	5	L			0.311	0.333	0.303	17.5	6.8	3.7	0.273	false
+83885	Historical All-Star SP Walt Masterson WS1 1947	Starter	82	5	R			0.311	0.323	0.304	16.8	7.8	3.1	0.278	false
+84265	Rookie Sensation RP Clay Bryant CHC 1936	Reliever	66	5	R			0.311	0.311	0.312	18.3	8.6	2.7	0.290	false
+84494	Negro League Star SP Ray Brown HoGr 1939	Starter	85	5	R			0.311	0.308	0.312	12.0	5.6	2.6	0.284	false
+85428	Baseball Reference 2 SP Tiny Bonham NYY 1942	Starter	82	5	R			0.311	0.312	0.31	12.1	3.8	3.7	0.269	false
+83227	Snapshot CL Jack Aker NYY 1970	Reliever	73	5	R			0.311	0.31	0.311	10.5	6.4	2.6	0.276	false
+84715	Clubhouse - April Fools&#39; Day SP Bob Miller LAD 1963	Starter	69	0	R			0.312	0.309	0.314	13.2	7.8	2.2	0.287	false
+84696	Clubhouse - April Fools&#39; Day RP Bob Miller DET 1954	Reliever	69	0	L			0.312	0.281	0.323	10.4	7.5	2.1	0.282	false
+83148	Snapshot SP Hal Woodeshick HOU 1962	Starter	66	5	L			0.312	0.294	0.318	11.8	7.8	1.4	0.299	false
+85500	60s Theme Week - Snapshot SP Curt Simmons STL 1961	Starter	74	5	L			0.312	0.292	0.319	13.1	6.5	2.5	0.287	false
+83300	Snapshot RP Barney Schultz CHC 1961	Reliever	85	5	R			0.312	0.348	0.289	17.6	8.3	3.1	0.280	false
+84272	Rookie Sensation RP Dick Lines WS2 1966	Reliever	69	5	L			0.312	0.31	0.312	12.7	6.9	2.9	0.275	false
+83283	Snapshot RP Tom House ATL 1974	Reliever	81	5	L			0.312	0.301	0.316	14.9	6.5	3.4	0.273	false
+85309	Baseball Reference 2 SP Ken Holtzman ATH 1973	Starter	76	5	L			0.312	0.285	0.32	13.3	6.7	3.0	0.276	false
+83301	Snapshot RP Sandy Consuegra CWS 1955	Reliever	85	5	R			0.312	0.302	0.318	7.5	4.4	2.3	0.283	false
+84523	Negro League Star SP Luis Tiant NYC 1939	Starter	93	0	L			0.313	0.295	0.319	16.8	6.9	3.2	0.283	false
+84890	Clubhouse - Negro League Star SP Hilton Smith KCM 1946	Starter	88	0	R			0.313	0.312	0.314	6.9	5.7	2.7	0.270	false
+84839	Celebrating 42 - Veteran Presence RP Satchel Paige SLA 1952	Reliever	68	0	R			0.313	0.318	0.311	17.8	8.8	2.7	0.289	false
+85288	May Names 1 - Snapshot RP Rudy May MON 1979	Reliever	74	0	L			0.313	0.292	0.32	16.7	7.9	2.7	0.289	false
+84071	All-Time Legend SP Bill Hallahan STL Peak	Starter	92	0	L			0.313	0.295	0.319	18.7	10.3	2.7	0.282	false
+84884	Celebrating 42 - Negro League Star SP Dan Bankhead MRS 1946	Starter	74	0	R			0.313	0.312	0.314	18.6	9.8	2.6	0.288	false
+85669	June Gems - Baseball Reference 3 CL Dan Spillner CLE 1982	Reliever	64	5	R			0.313	0.318	0.31	15.5	7.0	3.0	0.284	false
+84489	Negro League Star SP Andy Porter CEG 1935	Starter	84	5	R			0.313	0.309	0.316	16.4	6.9	3.1	0.286	false
+83275	Snapshot SP Bob Knepper SF 1978	Starter	83	5	L			0.313	0.293	0.319	13.7	7.0	2.9	0.278	false
+83274	Snapshot RP Ramon Hernandez PIT 1973	Reliever	81	5	L			0.313	0.305	0.315	15.5	6.6	3.2	0.280	false
+85877	T4 Ep. 3 - Snapshot SP Jim Deshaies HOU 1989	Starter	67	5	L			0.313	0.312	0.314	14.4	8.2	2.9	0.274	false
+84466	Negro League Star SP William Bell NeEa 1937	Starter	78	5	R			0.313	0.313	0.314	11.6	5.0	2.8	0.285	false
+85794	Limited Edition/107 SP Steve Trout CHC 1985	Starter	68	0	L			0.314	0.305	0.317	12.3	7.2	2.2	0.290	false
+85510	Clubhouse - 60s Week - Veteran Presence SP Warren Spahn ML1 1961	Starter	84	0	L			0.314	0.307	0.316	10.0	6.1	3.1	0.268	false
+84074	All-Time Legend SP Gary Peters CWS Peak	Starter	92	0	L			0.314	0.3	0.319	14.2	7.5	2.6	0.286	false
+85730	SwitchKnucklers - Veteran Presence SP Johnny Niggeling WS1 1944	Starter	78	0	R			0.314	0.308	0.318	17.6	10.7	2.9	0.273	false
+84528	Negro League Star SP Barney Brown NYBY 1937	Starter	93	0	L			0.314	0.311	0.315	15.1	6.8	2.9	0.285	false
+82678	Hardware Heroes SP Bob Veale PIT 1964	Starter	89	5	L			0.314	0.278	0.325	16.6	10.3	2.3	0.285	false
+83182	Veteran Presence RP Elmer Singleton CHC 1959	Reliever	67	5	R			0.314	0.315	0.314	13.0	6.8	2.5	0.287	false
+83221	Snapshot SP Jim McDonald NYY 1953	Starter	86	5	R			0.314	0.318	0.312	9.5	7.2	2.1	0.284	false
+85846	Heart Attack - Snapshot CL Bill Caudill SEA 1982	Reliever	81	5	R			0.314	0.313	0.315	19.9	8.2	4.0	0.269	false
+85646	June Gems - Baseball Reference 3 SP Milo Candini WS1 1943	Starter	67	5	R			0.314	0.321	0.309	12.9	8.5	2.2	0.284	false
+83276	Snapshot SP Tommy Byrne NYY 1948	Starter	90	5	L			0.314	0.299	0.319	19.0	12.5	3.0	0.266	false
+85698	T4 Ep. 2 - Rookie Sensation SP Jim Bouton NYY 1963	Starter	64	5	R			0.314	0.321	0.31	13.3	8.6	3.0	0.268	false
+83269	Snapshot SP Pete Vuckovich STL 1978	Starter	81	0	R			0.315	0.329	0.307	17.2	8.1	2.8	0.291	false
+84854	Limited Edition/42 RP Jack Meyer PHI 1958	Reliever	69	0	R			0.315	0.301	0.323	19.1	8.4	3.0	0.289	false
+84864	Clubhouse - Negro League Star SP Booker McDaniel KCM 1945	Starter	82	0	R			0.315	0.312	0.317	18.5	8.6	3.1	0.285	false
+85888	Heart Attack - Negro League Star SP Leroy Matlock PiCr 1935	Starter	86	0	L			0.315	0.297	0.321	12.5	5.5	2.9	0.285	false
+83302	Snapshot SP Lefty Gomez NYY 1931	Starter	96	0	L			0.315	0.301	0.319	18.2	10.5	2.6	0.284	false
+85764	SwitchKnucklers - Hall of Fame SP Early Wynn CWS 1959	Starter	72	5	R			0.315	0.325	0.309	15.9	9.5	2.9	0.275	false
+83189	Snapshot RP Jim Todd ATH 1975	Reliever	68	5	R			0.315	0.315	0.316	10.1	6.8	2.6	0.277	false
+83292	Snapshot SP Connie Johnson BAL 1957	Starter	85	5	R			0.315	0.313	0.317	16.5	7.4	3.2	0.283	false
+84502	Negro League Star SP Bill Holland NYLG 1930	Starter	87	5	R			0.315	0.308	0.32	15.3	6.8	3.2	0.283	false
+84281	Rookie Sensation SP Bob Grim NYY 1954	Starter	73	5	R			0.315	0.311	0.317	15.1	8.2	2.8	0.282	false
+84488	Negro League Star SP Frank Bradley KCM 1940	Starter	82	5	R			0.315	0.31	0.318	15.9	7.0	3.1	0.284	false
+83296	Snapshot SP Steve Rogers MON 1977	Starter	85	0	R			0.316	0.336	0.304	14.1	7.7	2.9	0.282	false
+85892	Heart Attack - Negro League Star SP Roy Partlow HoGr 1939	Starter	78	0	L			0.316	0.299	0.321	12.7	8.5	3.0	0.269	false
+84837	Celebrating 42 - Negro League Star SP Satchel Paige ClCu 1931	Starter	87	0	R			0.316	0.319	0.315	17.5	6.7	3.7	0.281	false
+83172	Snapshot RP Dale Murray TOR 1982	Reliever	66	0	R			0.316	0.335	0.304	11.2	7.5	2.0	0.291	false
+83310	Snapshot SP Jack Kramer SLA 1944	Starter	89	0	R			0.316	0.319	0.314	15.7	7.9	3.1	0.282	false
+83240	Snapshot RP Terry Forster ATL 1983	Reliever	76	0	L			0.316	0.313	0.317	14.9	8.3	2.9	0.281	false
+85146	Limited Edition/40 RP Boom-Boom Beck PIT 1945	Reliever	82	0	R			0.316	0.332	0.306	9.5	7.7	2.5	0.275	false
+83893	Historical All-Star SP Phil Niekro ATL 1969	Starter	86	5	R			0.316	0.309	0.32	13.5	5.2	3.6	0.276	false
+83883	Veteran Presence SP Thornton Lee CWS 1945	Starter	79	5	L			0.316	0.314	0.317	16.5	7.5	3.3	0.281	false
+83157	Snapshot RP Clay Carroll CIN 1975	Reliever	65	5	R			0.316	0.312	0.318	10.7	6.9	2.3	0.285	false
+83901	Historical All-Star SP Tommy Bridges DET 1939	Starter	90	5	R			0.316	0.352	0.294	19.7	6.9	3.8	0.283	false
+83226	Veteran Presence RP Johnny Klippstein PHI 1963	Reliever	72	0	R			0.317	0.303	0.327	14.9	9.9	2.5	0.284	false
+85499	60s Theme Week - Snapshot SP Bob Gibson STL 1961	Starter	70	0	R			0.317	0.326	0.312	16.2	10.6	2.3	0.286	false
+84847	Limited Edition/42 SP Curt Davis PHI 1934	Starter	78	0	R			0.317	0.321	0.315	12.7	5.7	3.0	0.286	false
+82694	Hardware Heroes SP Robin Roberts PHI 1953	Starter	74	5	R			0.317	0.331	0.308	15.6	4.6	3.7	0.285	false
+84487	Negro League Star SP Terris McDuffie PhSt 1942	Starter	80	5	R			0.317	0.314	0.32	14.7	6.8	3.1	0.286	false
+84472	Negro League Star SP Jimmy Hill NeEa 1938	Starter	77	5	L			0.317	0.307	0.32	17.0	7.7	3.2	0.285	false
+83284	Snapshot SP Ed Halicki SF 1978	Starter	81	5	R			0.317	0.309	0.321	12.2	5.6	3.2	0.280	false
+84478	Negro League Star SP Rocky Ellis PhSt 1936	Starter	80	5	R			0.317	0.313	0.32	13.3	5.6	3.2	0.284	false
+83190	Snapshot SP Bruce Dal Canton KC 1974	Starter	75	5	R			0.317	0.307	0.322	13.1	10.0	2.6	0.272	false
+83253	Snapshot SP Larry Christenson PHI 1978	Starter	79	5	R			0.317	0.323	0.314	13.5	5.5	3.5	0.278	false
+84822	Baseball Reference 1 SP Tom Cheney WS2 1963	Starter	78	5	R			0.317	0.312	0.319	15.5	5.4	4.3	0.267	false
+83287	Snapshot SP Ray Benge PHI 1931	Starter	85	5	R			0.317	0.318	0.316	16.5	6.6	3.4	0.284	false
+83237	Snapshot RP Eddie Watt BAL 1967	Reliever	72	0	R			0.318	0.322	0.315	16.4	9.2	3.4	0.271	false
+83236	Snapshot RP Dave Tomlin SD 1977	Reliever	74	0	L			0.318	0.284	0.329	11.0	7.8	2.2	0.289	false
+83235	Snapshot RP Greg Harris TEX 1985	Reliever	76	0	R			0.318	0.317	0.318	18.7	9.8	3.4	0.275	false
+84264	Rookie Sensation RP Bill Dailey CLE 1962	Reliever	76	0	R			0.318	0.357	0.294	11.0	9.3	1.7	0.290	false
+84457	Negro League Star SP Joe Strong HoGr 1933	Starter	77	5	R			0.318	0.313	0.321	16.8	7.0	3.4	0.285	false
+83180	Snapshot RP Ken Sanders NYM 1975	Reliever	68	5	R			0.318	0.313	0.321	6.8	5.4	3.1	0.267	false
+82673	Hardware Heroes CL Dick Radatz BOS 1964	Reliever	71	5	R			0.318	0.338	0.305	19.0	8.7	3.7	0.277	false
+83882	Historical All-Star SP Ed Lopat NYY 1951	Starter	75	5	L			0.318	0.327	0.315	11.7	6.9	3.1	0.275	false
+83206	Veteran Presence SP Jerry Koosman PHI 1984	Starter	75	5	L			0.318	0.283	0.33	12.0	6.9	2.5	0.288	false
+85717	SwitchKnucklers - Snapshot SP Mickey Haefner WS1 1944	Starter	64	5	L			0.318	0.31	0.321	12.8	7.4	2.6	0.286	false
+83212	Snapshot RP Reggie Cleveland TEX 1978	Reliever	72	5	R			0.318	0.326	0.313	15.3	6.5	3.5	0.280	false
+84253	Rookie Sensation SP Wally Bunker BAL 1964	Starter	82	5	R			0.318	0.309	0.323	9.7	7.6	2.7	0.275	false
+83264	Veteran Presence SP Hal Brown HOU 1963	Starter	84	5	R			0.318	0.311	0.322	11.0	4.4	3.2	0.283	false
+83181	Snapshot CL Marshall Bridges NYY 1962	Reliever	65	5	L			0.318	0.315	0.319	18.4	11.9	2.9	0.274	false
+84040	All-Time Legend SP Steve Barber BAL Peak	Starter	69	5	L			0.318	0.314	0.319	13.7	8.1	2.8	0.282	false
+84720	Clubhouse - April Fools&#39; Day CL Mike Marshall MON 1973	Reliever	57	0	R			0.319	0.305	0.328	15.5	9.3	2.6	0.289	false
+84490	Negro League Star SP Max Manning NeEa 1939	Starter	87	0	R			0.319	0.319	0.319	15.2	7.6	3.1	0.285	false
+82823	Unsung Heroes RP John D&#39;Acquisto SD 1978	Reliever	76	0	R			0.319	0.319	0.319	19.3	12.8	2.5	0.283	false
+83301	Snapshot RP Sandy Consuegra CWS 1955	Reliever	85	0	R			0.319	0.311	0.325	6.8	4.6	2.5	0.285	false
+83265	Snapshot SP Virgil Trucks DET 1948	Starter	80	5	R			0.319	0.31	0.324	16.8	7.5	3.6	0.280	false
+84448	Negro League Star SP Neck Stanley NYBY 1939	Starter	78	5	L			0.319	0.31	0.322	14.8	6.9	3.3	0.283	false
+83214	Snapshot SP Gene Schott CIN 1937	Starter	71	5	R			0.319	0.328	0.314	11.0	7.0	2.7	0.281	false
+85827	T4 Ep. 3 - Negro League Star SP Bob Romby BEG 1948	Starter	58	5	L			0.319	0.302	0.325	14.9	9.8	3.2	0.269	false
+83880	Historical All-Star SP Juan Pizarro CWS 1963	Starter	77	5	L			0.319	0.303	0.324	15.1	7.6	3.2	0.282	false
+84242	Rookie Sensation RP Steve Olin CLE 1989	Reliever	58	5	R			0.319	0.32	0.318	14.2	8.1	2.4	0.294	false
+83136	Snapshot RP Fred Green PIT 1960	Reliever	62	5	L			0.319	0.308	0.323	15.5	8.4	3.0	0.284	false
+82672	Hardware Heroes CL Roy Face PIT 1958	Reliever	66	5	R			0.319	0.304	0.328	13.3	6.2	3.2	0.284	false
+84276	Rookie Sensation SP Lou Brissie PHA 1948	Starter	71	5	L			0.319	0.317	0.32	17.5	8.7	2.9	0.291	false
+83146	Snapshot RP Juan Berenguer MIN 1987	Reliever	64	5	R			0.319	0.336	0.308	18.0	8.1	3.3	0.287	false
+85869	T4 Ep. 3 - Historical All-Star SP Johnny Antonelli NY1 1954	Starter	67	5	L			0.319	0.347	0.31	16.6	7.7	4.0	0.269	false
+84286	Rookie Sensation SP Johnny Allen NYY 1932	Starter	78	5	R			0.319	0.334	0.31	18.1	9.4	3.5	0.276	false
+83291	Veteran Presence CL Ron Reed PHI 1978	Reliever	85	0	R			0.320	0.311	0.326	16.4	6.4	3.7	0.284	false
+85285	May Names 1 - Veteran Presence SP Rudy May NYY 1980	Starter	82	0	L			0.320	0.345	0.312	16.6	6.9	4.0	0.274	false
+83885	Historical All-Star SP Walt Masterson WS1 1947	Starter	82	0	R			0.320	0.332	0.313	15.9	8.4	3.3	0.279	false
+83228	Veteran Presence RP Dixie Howell CWS 1955	Reliever	72	0	R			0.320	0.315	0.323	8.1	7.6	1.8	0.289	false
+84069	All-Time Legend SP Ken Forsch HOU Peak	Starter	87	0	R			0.320	0.315	0.323	12.3	6.5	3.0	0.284	false
+84494	Negro League Star SP Ray Brown HoGr 1939	Starter	85	0	R			0.320	0.318	0.321	11.0	6.3	2.8	0.285	false
+83225	Snapshot SP Lary Sorensen STL 1981	Starter	78	5	R			0.320	0.322	0.318	9.0	5.5	2.5	0.287	false
+84282	Rookie Sensation SP Bob Rush CHC 1948	Starter	74	5	R			0.320	0.311	0.326	15.8	6.3	3.3	0.290	false
+85156	Dock&#39;s Counterpart SP Dave Roberts SD 1970	Starter	68	5	L			0.320	0.327	0.318	14.5	4.9	3.6	0.286	false
+83090	Snapshot CL Tom Morgan NYY 1955	Reliever	58	5	R			0.320	0.333	0.312	8.0	7.1	2.5	0.279	false
+83192	Snapshot SP Jack Harshman CWS 1954	Starter	69	5	L			0.320	0.298	0.328	17.8	11.1	2.6	0.288	false
+85057	HOF 1 - Baseball Reference SP Rich Gossage CWS 1976	Starter	65	5	R			0.320	0.334	0.311	15.5	8.6	3.0	0.284	false
+84456	Negro League Star SP Roosevelt Davis NeEa 1938	Starter	73	5	R			0.320	0.316	0.322	12.6	5.7	3.2	0.285	false
+84446	Negro League Star SP Bill Byrd CEG 1935	Starter	73	5	R			0.320	0.316	0.323	12.6	5.6	3.2	0.285	false
+83197	Snapshot RP Mike Stanton SEA 1984	Reliever	72	0	R			0.321	0.319	0.322	16.9	8.2	3.1	0.290	false
+83182	Veteran Presence RP Elmer Singleton CHC 1959	Reliever	67	0	R			0.321	0.322	0.321	11.9	6.9	2.7	0.289	false
+85500	60s Theme Week - Snapshot SP Curt Simmons STL 1961	Starter	74	0	L			0.321	0.301	0.327	12.1	6.9	2.7	0.289	false
+83890	Historical All-Star SP Rick Reuschel CHC 1977	Starter	83	0	R			0.321	0.345	0.306	13.8	7.7	3.1	0.283	false
+83272	Snapshot RP Alejandro Pena LAD 1988	Reliever	81	0	R			0.321	0.31	0.328	16.0	7.5	3.3	0.285	false
+84265	Rookie Sensation RP Clay Bryant CHC 1936	Reliever	66	0	R			0.321	0.321	0.321	17.4	9.3	2.8	0.292	false
+83227	Snapshot CL Jack Aker NYY 1970	Reliever	73	0	R			0.321	0.316	0.324	9.7	6.8	2.8	0.280	false
+83874	Historical All-Star SP Whit Wyatt BRO 1939	Starter	68	5	R			0.321	0.315	0.324	15.5	7.4	3.2	0.287	false
+83277	Snapshot SP Tom Sturdivant NYY 1956	Starter	81	5	R			0.321	0.306	0.33	16.5	7.3	3.7	0.280	false
+83151	Snapshot SP Chuck Stobbs WS1 1954	Starter	67	5	L			0.321	0.318	0.322	10.2	7.4	2.5	0.285	false
+84664	Opening Day Heroes - Snapshot SP Rick Mahler ATL 1982	Starter	69	5	R			0.321	0.301	0.333	13.5	7.3	2.9	0.287	false
+85875	Heart Attack - Snapshot SP Greg Maddux CHC 1989	Starter	62	5	R			0.321	0.319	0.323	13.6	7.6	3.3	0.278	false
+84443	Negro League Star SP Jim LaMarque KCM 1945	Starter	72	5	L			0.321	0.31	0.324	15.6	7.0	3.4	0.285	false
+86106	Obscure All-Stars - Baseball Reference 5 CL Bill Henry CIN 1960	Reliever	69	5	L			0.321	0.322	0.32	19.5	6.7	4.0	0.286	true
+83220	Snapshot SP Storm Davis BAL 1984	Starter	77	5	R			0.321	0.312	0.326	10.1	7.6	2.5	0.283	false
+82670	Hardware Heroes CL Bill Campbell MIN 1976	Reliever	64	5	R			0.321	0.309	0.328	16.7	7.4	3.6	0.283	false
+83148	Snapshot SP Hal Woodeshick HOU 1962	Starter	66	0	L			0.322	0.304	0.328	11.0	8.4	1.7	0.300	false
+85871	T4 Ep. 3 - Historical All-Star SP Mario Soto CIN 1983	Starter	83	0	R			0.322	0.326	0.32	19.2	7.2	4.7	0.268	false
+83300	Snapshot RP Barney Schultz CHC 1961	Reliever	85	0	R			0.322	0.363	0.297	17.0	8.6	3.5	0.283	false
+84489	Negro League Star SP Andy Porter CEG 1935	Starter	84	0	R			0.322	0.316	0.325	15.4	7.0	3.3	0.288	false
+85456	May Birthdays - Veteran Presence RP Billy Hoeft CHC 1965	Reliever	75	0	L			0.322	0.309	0.327	14.5	8.5	3.2	0.280	false
+82805	Unsung Heroes SP Wayne Twitchell PHI 1972	Starter	60	5	R			0.322	0.302	0.335	15.4	8.6	3.0	0.288	false
+84447	Negro League Star SP Sam Thompson PhSt 1936	Starter	73	5	R			0.322	0.316	0.326	12.0	5.9	3.2	0.284	false
+84034	All-Time Legend SP Jerry Staley STL Peak	Starter	66	5	R			0.322	0.335	0.314	10.4	5.6	3.2	0.280	false
+82807	Unsung Heroes RP Hal McKain CWS 1930	Reliever	57	5	R			0.322	0.322	0.322	17.6	9.4	2.7	0.295	false
+83150	Snapshot SP Bob Kuzava NYY 1951	Starter	68	5	L			0.322	0.329	0.319	16.0	7.7	3.5	0.282	false
+86073	Obscure All-Stars - Baseball Reference 5 SP Harry Kincannon PiCr 1934	Starter	45	5	R			0.322	0.323	0.322	16.9	7.3	3.0	0.300	true
+83121	Snapshot RP Adrian Devine ATL 1976	Reliever	62	5	R			0.322	0.321	0.322	15.0	7.1	3.2	0.289	false
+84248	Rookie Sensation RP Neil Allen NYM 1979	Reliever	60	5	R			0.322	0.315	0.326	15.6	8.7	2.8	0.292	false
+82678	Hardware Heroes SP Bob Veale PIT 1964	Starter	89	0	L			0.323	0.29	0.334	15.8	11.0	2.5	0.288	false
+83221	Snapshot SP Jim McDonald NYY 1953	Starter	86	0	R			0.323	0.326	0.321	8.6	7.6	2.3	0.286	false
+83274	Snapshot RP Ramon Hernandez PIT 1973	Reliever	81	0	L			0.323	0.319	0.324	14.5	6.8	3.5	0.283	false
+85646	June Gems - Baseball Reference 3 SP Milo Candini WS1 1943	Starter	67	0	R			0.323	0.33	0.319	12.0	9.2	2.5	0.285	false
+83276	Snapshot SP Tommy Byrne NYY 1948	Starter	90	0	L			0.323	0.312	0.326	18.2	13.1	3.2	0.267	false
+84466	Negro League Star SP William Bell NeEa 1937	Starter	78	0	R			0.323	0.323	0.324	10.6	5.7	3.0	0.287	false
+84883	Celebrating 42 - Negro League Star SP Johnny Wright HoGr 1941	Starter	68	5	R			0.323	0.32	0.325	12.3	6.8	3.8	0.268	false
+84425	Negro League Star SP Roy Welmaker HoSt 1953	Starter	68	5	L			0.323	0.311	0.327	13.9	7.3	3.2	0.284	false
+83193	Snapshot SP Jim Weaver CHC 1934	Starter	69	5	R			0.323	0.321	0.324	17.9	8.8	3.5	0.284	false
+84429	Negro League Star SP Ted Trent CAG 1936	Starter	69	5	R			0.323	0.317	0.327	12.9	6.8	3.2	0.284	false
+84035	All-Time Legend SP Eddie Smith CWS Peak	Starter	67	5	L			0.323	0.328	0.322	15.5	8.4	3.5	0.278	false
+83112	Snapshot SP Chris Short PHI 1963	Starter	65	5	L			0.323	0.29	0.334	15.5	8.3	3.2	0.287	false
+82815	Unsung Heroes RP Pete Redfern MIN 1979	Reliever	66	5	R			0.323	0.349	0.307	17.5	7.9	3.6	0.287	false
+84048	All-Time Legend SP Bob Purkey CIN Peak	Starter	75	5	R			0.323	0.324	0.322	9.9	5.4	3.1	0.283	false
+84881	Celebrating 42 - Negro League Star SP Willie Pope PHG 1947	Starter	71	5	R			0.323	0.32	0.325	15.5	7.7	3.3	0.287	false
+84435	Negro League Star SP Rufus Lewis NeEa 1947	Starter	70	5	R			0.323	0.318	0.326	14.3	7.0	3.3	0.285	false
+84047	All-Time Legend SP Charlie Leibrandt KC Peak	Starter	74	5	L			0.323	0.303	0.329	11.4	6.2	3.1	0.284	false
+83169	Snapshot SP Al Hollingsworth CIN 1936	Starter	69	5	L			0.323	0.305	0.329	14.3	7.6	3.1	0.286	false
+84273	Rookie Sensation SP Johnny Hetki CIN 1946	Starter	70	5	R			0.323	0.327	0.321	9.7	6.2	2.9	0.283	false
+83215	Snapshot SP Mel Harder CLE 1938	Starter	73	5	R			0.323	0.345	0.309	14.2	6.5	3.7	0.279	false
+83285	Veteran Presence SP Luke Hamlin BRO 1940	Starter	84	5	R			0.323	0.357	0.301	16.9	4.3	4.5	0.280	false
+83168	Snapshot SP Mike Fornieles BOS 1957	Starter	67	5	R			0.323	0.315	0.327	13.1	7.2	2.9	0.289	false
+83125	Snapshot RP Don Brennan CIN 1935	Reliever	60	5	R			0.323	0.343	0.311	15.6	9.1	3.4	0.279	false
+85669	June Gems - Baseball Reference 3 CL Dan Spillner CLE 1982	Reliever	64	0	R			0.324	0.33	0.32	14.5	7.7	3.2	0.285	false
+84695	Clubhouse - April Fools&#39; Day SP Bob Miller PHI 1950	Starter	69	0	R			0.324	0.334	0.317	7.4	6.5	2.4	0.286	false
+84502	Negro League Star SP Bill Holland NYLG 1930	Starter	87	0	R			0.324	0.316	0.33	14.4	6.9	3.5	0.284	false
+83157	Snapshot RP Clay Carroll CIN 1975	Reliever	65	0	R			0.324	0.32	0.326	9.7	7.3	2.5	0.287	false
+83901	Historical All-Star SP Tommy Bridges DET 1939	Starter	90	0	R			0.324	0.36	0.302	19.3	7.3	4.1	0.285	false
+84488	Negro League Star SP Frank Bradley KCM 1940	Starter	82	0	R			0.324	0.32	0.327	15.0	7.5	3.4	0.286	false
+85068	HOF 1 - Veteran Presence SP Don Sutton ATH 1985	Starter	71	5	R			0.324	0.314	0.33	10.9	6.6	3.2	0.279	false
+83869	Historical All-Star SP Dave Stieb TOR 1981	Starter	65	5	R			0.324	0.298	0.341	14.7	7.6	3.9	0.273	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	Starter	56	5	L			0.324	0.314	0.328	14.0	8.7	2.5	0.296	false
+84437	Negro League Star SP Connie Rector NYBY 1932	Starter	70	5	R			0.324	0.319	0.328	12.5	6.7	3.2	0.284	false
+82681	Hardware Heroes SP Billy Pierce CWS 1953	Starter	80	5	L			0.324	0.302	0.331	17.5	7.6	4.0	0.279	false
+83063	Snapshot RP Don Nottebart CIN 1967	Reliever	57	5	R			0.324	0.336	0.317	11.4	6.3	3.0	0.287	false
+84420	Negro League Star SP Connie Johnson KCM 1946	Starter	65	5	R			0.324	0.314	0.33	16.9	8.9	3.1	0.290	false
+83142	Snapshot SP Wes Ferrell BOS 1934	Starter	65	5	R			0.324	0.329	0.321	11.4	6.9	3.1	0.283	false
+83086	Snapshot RP Tom Bruno STL 1979	Reliever	58	5	R			0.324	0.334	0.318	15.5	11.9	2.3	0.287	false
+83119	Snapshot RP Mike Armstrong KC 1982	Reliever	60	5	R			0.324	0.321	0.326	16.0	9.0	3.8	0.270	false
+84272	Rookie Sensation RP Dick Lines WS2 1966	Reliever	69	0	L			0.325	0.325	0.325	11.6	7.6	3.1	0.280	false
+83275	Snapshot SP Bob Knepper SF 1978	Starter	83	0	L			0.325	0.301	0.333	12.7	7.8	3.1	0.282	false
+85309	Baseball Reference 2 SP Ken Holtzman ATH 1973	Starter	76	0	L			0.325	0.295	0.334	12.3	7.6	3.2	0.280	false
+83309	Snapshot SP Teddy Higuera ML4 1988	Starter	89	0	L			0.325	0.31	0.33	16.3	7.5	3.9	0.280	false
+84023	All-Time Legend SP Bill Wight CWS Peak	Starter	61	5	L			0.325	0.304	0.332	10.3	7.0	2.6	0.289	false
+83241	Snapshot SP Bill Swift PIT 1933	Starter	75	5	R			0.325	0.318	0.33	10.6	4.9	3.6	0.281	false
+83091	Snapshot RP Jack Russell CHC 1939	Reliever	58	5	R			0.325	0.329	0.322	15.0	7.3	3.3	0.288	false
+84428	Negro League Star SP Henry McHenry NeBr 1932	Starter	66	5	R			0.325	0.317	0.329	12.2	6.9	3.2	0.285	false
+83143	Snapshot SP Carl Fischer DET 1933	Starter	64	5	L			0.325	0.326	0.325	17.4	9.8	3.4	0.283	false
+83189	Snapshot RP Jim Todd ATH 1975	Reliever	68	0	R			0.326	0.327	0.325	9.2	7.3	2.8	0.282	false
+84487	Negro League Star SP Terris McDuffie PhSt 1942	Starter	80	0	R			0.326	0.322	0.328	13.5	6.9	3.3	0.288	false
+83292	Snapshot SP Connie Johnson BAL 1957	Starter	85	0	R			0.326	0.328	0.326	15.6	7.7	3.5	0.285	false
+83283	Snapshot RP Tom House ATL 1974	Reliever	81	0	L			0.326	0.311	0.331	13.7	6.8	4.0	0.274	false
+85877	T4 Ep. 3 - Snapshot SP Jim Deshaies HOU 1989	Starter	67	0	L			0.326	0.324	0.326	13.4	8.4	3.2	0.280	false
+84253	Rookie Sensation SP Wally Bunker BAL 1964	Starter	82	0	R			0.326	0.318	0.332	8.9	8.4	2.8	0.276	false
+85428	Baseball Reference 2 SP Tiny Bonham NYY 1942	Starter	82	0	R			0.326	0.327	0.326	11.2	4.0	4.3	0.273	false
+83073	Snapshot SP Steve Stone CWS 1973	Starter	61	5	R			0.326	0.336	0.32	16.6	10.0	3.1	0.287	false
+83207	Snapshot SP Billy O&#39;Dell SF 1962	Starter	72	5	L			0.326	0.311	0.33	14.1	6.5	3.0	0.298	false
+82680	Hardware Heroes SP Stu Miller SF 1958	Starter	79	5	R			0.326	0.323	0.327	15.2	7.2	3.9	0.278	false
+84061	All-Time Legend SP Mike McCormick SF Peak	Starter	83	5	L			0.326	0.301	0.335	13.9	6.1	3.9	0.281	false
+83223	Veteran Presence SP Waite Hoyt BRO 1937	Starter	71	5	R			0.326	0.33	0.324	9.9	5.3	3.3	0.284	false
+84421	Negro League Star SP Jesse Houston CAG 1938	Starter	67	5	R			0.326	0.32	0.329	11.9	6.8	3.2	0.285	false
+83047	Snapshot RP Ken Brett LAD 1979	Reliever	55	5	L			0.326	0.327	0.326	7.6	7.0	2.4	0.287	false
+85764	SwitchKnucklers - Hall of Fame SP Early Wynn CWS 1959	Starter	72	0	R			0.327	0.335	0.323	14.9	10.2	3.3	0.276	false
+83225	Snapshot SP Lary Sorensen STL 1981	Starter	78	0	R			0.327	0.328	0.326	8.2	5.6	2.7	0.290	false
+83180	Snapshot RP Ken Sanders NYM 1975	Reliever	68	0	R			0.327	0.322	0.33	6.1	6.1	3.4	0.268	false
+84472	Negro League Star SP Jimmy Hill NeEa 1938	Starter	77	0	L			0.327	0.317	0.331	16.0	8.4	3.4	0.287	false
+83284	Snapshot SP Ed Halicki SF 1978	Starter	81	0	R			0.327	0.317	0.334	11.3	6.0	3.5	0.281	false
+85717	SwitchKnucklers - Snapshot SP Mickey Haefner WS1 1944	Starter	64	0	L			0.327	0.32	0.33	11.7	8.2	2.8	0.288	false
+83264	Veteran Presence SP Hal Brown HOU 1963	Starter	84	0	R			0.327	0.322	0.33	10.2	4.6	3.5	0.284	false
+85698	T4 Ep. 2 - Rookie Sensation SP Jim Bouton NYY 1963	Starter	64	0	R			0.327	0.334	0.323	12.1	9.3	3.3	0.271	false
+85895	FLF 14 &amp; Co. - Unsung Heroes SP Earl Wilson BOS 1962	Starter	55	5	R			0.327	0.336	0.321	16.0	10.9	3.5	0.270	false
+83156	Snapshot CL Lee Smith CHC 1986	Reliever	64	5	R			0.327	0.341	0.319	18.1	8.7	3.7	0.286	false
+83191	Snapshot SP Eric Rasmussen SD 1979	Starter	70	5	R			0.327	0.321	0.33	8.4	6.9	3.1	0.276	false
+83134	Veteran Presence SP Joe Niekro HOU 1981	Starter	66	5	R			0.327	0.324	0.329	11.2	7.5	3.2	0.281	false
+83074	Snapshot RP Ken Lehman BAL 1958	Reliever	57	5	L			0.327	0.315	0.331	13.6	6.7	3.4	0.288	false
+83158	Snapshot SP Whitey Ford NYY 1962	Starter	67	5	L			0.327	0.311	0.332	13.0	6.9	3.5	0.283	false
+85515	Clubhouse - 60s Week - Hardware Heroes SP Frank Lary DET 1961	Starter	67	0	R			0.328	0.322	0.331	12.0	6.1	3.5	0.285	false
+83206	Veteran Presence SP Jerry Koosman PHI 1984	Starter	75	0	L			0.328	0.292	0.34	11.1	7.2	2.8	0.290	false
+83192	Snapshot SP Jack Harshman CWS 1954	Starter	69	0	L			0.328	0.308	0.335	17.0	11.7	2.7	0.289	false
+84281	Rookie Sensation SP Bob Grim NYY 1954	Starter	73	0	R			0.328	0.329	0.327	14.0	9.0	3.1	0.286	false
+83220	Snapshot SP Storm Davis BAL 1984	Starter	77	0	R			0.328	0.321	0.333	9.2	8.1	2.6	0.284	false
+83190	Snapshot SP Bruce Dal Canton KC 1974	Starter	75	0	R			0.328	0.318	0.334	12.1	10.8	2.8	0.277	false
+85846	Heart Attack - Snapshot CL Bill Caudill SEA 1982	Reliever	81	0	R			0.328	0.325	0.33	19.5	8.5	4.6	0.273	false
+83039	Snapshot SP Vic Sorrell DET 1930	Starter	56	5	R			0.328	0.345	0.318	15.1	9.4	3.5	0.279	false
+83137	Snapshot SP Claude Osteen LAD 1965	Starter	64	5	L			0.328	0.327	0.328	10.9	7.2	3.3	0.280	false
+85509	60s Theme Week - Unsung Heroes SP Jack Kralick MIN 1961	Starter	64	5	L			0.328	0.294	0.339	13.6	5.9	3.5	0.292	false
+84268	Rookie Sensation SP Ed Heusser STL 1935	Starter	68	5	R			0.328	0.314	0.337	10.9	6.3	3.4	0.283	false
+82669	Hardware Heroes SP General Crowder WS1 1933	Starter	66	5	R			0.328	0.325	0.329	13.7	7.0	3.8	0.279	false
+83043	Snapshot SP Bob Bruce HOU 1962	Starter	57	5	R			0.328	0.352	0.314	16.1	9.6	3.6	0.279	false
+83151	Snapshot SP Chuck Stobbs WS1 1954	Starter	67	0	L			0.329	0.328	0.329	9.3	7.9	2.6	0.287	false
+84448	Negro League Star SP Neck Stanley NYBY 1939	Starter	78	0	L			0.329	0.317	0.333	13.7	7.2	3.6	0.284	false
+83214	Snapshot SP Gene Schott CIN 1937	Starter	71	0	R			0.329	0.339	0.322	10.0	7.7	2.9	0.283	false
+82694	Hardware Heroes SP Robin Roberts PHI 1953	Starter	74	0	R			0.329	0.344	0.319	14.6	4.8	4.1	0.287	false
+84242	Rookie Sensation RP Steve Olin CLE 1989	Reliever	58	0	R			0.329	0.329	0.328	13.1	8.8	2.6	0.296	false
+83090	Snapshot CL Tom Morgan NYY 1955	Reliever	58	0	R			0.329	0.341	0.322	7.2	7.5	2.6	0.283	false
+84664	Opening Day Heroes - Snapshot SP Rick Mahler ATL 1982	Starter	69	0	R			0.329	0.306	0.344	12.5	7.8	3.1	0.289	false
+85226	Clubhouse - Y&amp;O 1 - Rookie Sensation RP Charlie Hough LAD 1973	Reliever	65	0	R			0.329	0.341	0.322	15.7	11.5	2.8	0.286	false
+83136	Snapshot RP Fred Green PIT 1960	Reliever	62	0	L			0.329	0.317	0.334	14.6	9.2	3.2	0.286	false
+85501	Clubhouse - 60s Week - Snapshot SP Joe Gibbon PIT 1961	Starter	80	0	L			0.329	0.292	0.342	15.6	7.3	3.8	0.287	false
+84478	Negro League Star SP Rocky Ellis PhSt 1936	Starter	80	0	R			0.329	0.325	0.331	12.3	6.4	3.5	0.285	false
+84276	Rookie Sensation SP Lou Brissie PHA 1948	Starter	71	0	L			0.329	0.325	0.33	16.7	9.5	3.1	0.293	false
+83287	Snapshot SP Ray Benge PHI 1931	Starter	85	0	R			0.329	0.331	0.328	15.5	7.0	3.9	0.286	false
+86197	Clubhouse - Baseball Reference 5 RP Ace Adams NY1 1943	Reliever	46	0	R			0.329	0.363	0.308	10.7	8.7	3.5	0.269	true
+84029	Veteran Presence SP Rip Sewell PIT Peak	Starter	63	5	R			0.329	0.35	0.317	10.8	7.3	3.4	0.278	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	Starter	57	5	R			0.329	0.325	0.331	10.4	7.7	2.8	0.287	false
+82674	Hardware Heroes SP Jim Palmer BAL 1977	Starter	74	5	R			0.329	0.328	0.329	14.4	7.6	3.9	0.277	false
+83138	Snapshot RP Cal McLish CLE 1957	Reliever	63	5	R			0.329	0.312	0.34	14.9	9.0	3.5	0.281	false
+83200	Snapshot SP Dutch Leonard WS1 1938	Starter	69	5	R			0.329	0.305	0.344	10.1	6.3	3.3	0.282	false
+82979	Veteran Presence RP Don Larsen BAL 1965	Reliever	49	5	R			0.329	0.348	0.318	13.0	8.3	3.1	0.288	false
+83123	Snapshot SP Al Fitzmorris KC 1976	Starter	63	5	R			0.329	0.324	0.333	9.3	6.8	2.9	0.286	false
+83877	Historical All-Star SP Al Downing NYY 1967	Starter	70	5	L			0.329	0.336	0.326	15.9	8.3	3.7	0.283	false
+83199	Snapshot SP Dick Donovan CWS 1956	Starter	72	5	R			0.329	0.327	0.331	12.4	6.6	3.9	0.277	false
+84254	Rookie Sensation SP Arnold Carter CIN 1944	Starter	63	5	L			0.329	0.319	0.332	8.2	7.1	2.8	0.283	false
+83165	Snapshot SP Britt Burns CWS 1983	Starter	67	5	L			0.329	0.325	0.331	14.8	7.5	3.7	0.284	false
+84718	Clubhouse - April Fools&#39; Day RP Mike Stanton SEA 1983	Reliever	56	0	R			0.330	0.334	0.327	14.6	9.0	3.1	0.290	false
+83893	Historical All-Star SP Phil Niekro ATL 1969	Starter	86	0	R			0.330	0.32	0.337	12.5	6.0	4.0	0.278	false
+83882	Historical All-Star SP Ed Lopat NYY 1951	Starter	75	0	L			0.330	0.342	0.326	10.7	7.1	3.4	0.280	false
+85829	Clubhouse - Rookie Sensation SP Joe Krakauskas WS1 1938	Starter	57	0	L			0.330	0.313	0.335	19.2	14.3	3.1	0.275	false
+82672	Hardware Heroes CL Roy Face PIT 1958	Reliever	66	0	R			0.330	0.314	0.339	12.2	6.6	3.5	0.285	false
+83146	Snapshot RP Juan Berenguer MIN 1987	Reliever	64	0	R			0.330	0.35	0.318	17.1	8.9	3.6	0.290	false
+84040	All-Time Legend SP Steve Barber BAL Peak	Starter	69	0	L			0.330	0.325	0.331	12.6	8.8	3.1	0.285	false
+84255	Rookie Sensation SP Hal Smith PIT 1933	Starter	63	5	R			0.330	0.339	0.324	10.2	5.7	3.5	0.283	false
+83252	Snapshot SP Frank Pastore CIN 1980	Starter	70	5	R			0.330	0.327	0.331	14.4	6.6	4.1	0.278	false
+84045	All-Time Legend SP Sal Maglie NY1 Peak	Starter	75	5	R			0.330	0.315	0.339	15.0	6.9	4.0	0.283	false
+83062	Snapshot SP Ed Lynch NYM 1982	Starter	60	5	R			0.330	0.331	0.329	8.6	7.4	2.7	0.286	false
+84019	All-Time Legend RP Max Leon ATL Peak	Reliever	52	5	R			0.330	0.332	0.328	12.8	6.8	3.3	0.290	false
+84030	All-Time Legend SP Ron Kline PIT Peak	Starter	62	5	R			0.330	0.35	0.317	11.0	6.9	3.5	0.279	false
+83873	Veteran Presence SP Tommy John NYY 1980	Starter	66	5	L			0.330	0.325	0.332	8.2	6.6	3.1	0.282	false
+83179	Snapshot RP Jerry Garvin TOR 1980	Reliever	67	5	L			0.330	0.302	0.34	15.8	7.0	4.1	0.282	false
+84262	Rookie Sensation SP Bo Belinsky LAA 1962	Starter	66	5	L			0.330	0.336	0.328	16.3	12.6	3.1	0.276	false
+86207	Limited Edition/89 SP Vinegar Bend Mizell STL 1959	Starter	57	0	L			0.331	0.317	0.335	12.3	8.6	3.1	0.286	true
+82807	Unsung Heroes RP Hal McKain CWS 1930	Reliever	57	0	R			0.331	0.33	0.332	16.7	10.2	2.9	0.297	false
+84047	All-Time Legend SP Charlie Leibrandt KC Peak	Starter	74	0	L			0.331	0.311	0.338	10.4	6.5	3.3	0.285	false
+83883	Veteran Presence SP Thornton Lee CWS 1945	Starter	79	0	L			0.331	0.324	0.333	15.6	8.2	3.7	0.285	false
+85057	HOF 1 - Baseball Reference SP Rich Gossage CWS 1976	Starter	65	0	R			0.331	0.349	0.319	14.5	9.4	3.3	0.285	false
+83168	Snapshot SP Mike Fornieles BOS 1957	Starter	67	0	R			0.331	0.324	0.336	12.1	7.5	3.1	0.291	false
+83212	Snapshot RP Reggie Cleveland TEX 1978	Reliever	72	0	R			0.331	0.341	0.325	14.3	7.2	3.9	0.283	false
+84822	Baseball Reference 1 SP Tom Cheney WS2 1963	Starter	78	0	R			0.331	0.326	0.334	14.5	6.1	4.8	0.268	false
+83181	Snapshot CL Marshall Bridges NYY 1962	Reliever	65	0	L			0.331	0.332	0.331	17.5	12.6	3.2	0.279	false
+85869	T4 Ep. 3 - Historical All-Star SP Johnny Antonelli NY1 1954	Starter	67	0	L			0.331	0.36	0.322	15.8	8.5	4.3	0.271	false
+83183	Snapshot SP Lon Warneke STL 1940	Starter	69	5	R			0.331	0.338	0.327	11.4	5.5	3.9	0.281	false
+83087	Snapshot CL Cecil Upshaw ATL 1971	Reliever	59	5	R			0.331	0.35	0.319	14.0	5.7	3.3	0.301	false
+84232	Rookie Sensation RP Carl Scheib PHA 1944	Reliever	50	5	R			0.331	0.333	0.33	12.5	7.5	3.3	0.287	false
+83238	Snapshot SP Hal Newhouser DET 1949	Starter	76	5	L			0.331	0.313	0.337	15.6	7.3	4.0	0.283	false
+82801	Unsung Heroes RP Rocky Childress HOU 1987	Reliever	51	5	R			0.331	0.325	0.334	10.8	6.9	3.2	0.287	false
+84408	Negro League Star SP Ramon Arano MCDR 1964	Starter	55	5	R			0.331	0.329	0.332	8.8	7.0	2.9	0.285	false
+83874	Historical All-Star SP Whit Wyatt BRO 1939	Starter	68	0	R			0.332	0.324	0.336	14.5	8.3	3.4	0.290	false
+85827	T4 Ep. 3 - Negro League Star SP Bob Romby BEG 1948	Starter	58	0	L			0.332	0.313	0.338	13.8	10.6	3.6	0.272	false
+84048	All-Time Legend SP Bob Purkey CIN Peak	Starter	75	0	R			0.332	0.337	0.329	9.1	5.5	3.4	0.284	false
+83880	Historical All-Star SP Juan Pizarro CWS 1963	Starter	77	0	L			0.332	0.311	0.339	14.2	8.3	3.6	0.284	false
+84456	Negro League Star SP Roosevelt Davis NeEa 1938	Starter	73	0	R			0.332	0.329	0.334	11.6	6.4	3.5	0.286	false
+84248	Rookie Sensation RP Neil Allen NYM 1979	Reliever	60	0	R			0.332	0.324	0.337	14.6	9.4	3.0	0.294	false
+84286	Rookie Sensation SP Johnny Allen NYY 1932	Starter	78	0	R			0.332	0.348	0.322	17.2	10.2	3.9	0.278	false
+83037	Snapshot RP Charlie Williams SF 1974	Reliever	54	5	R			0.332	0.343	0.325	10.9	6.9	3.5	0.283	false
+83065	Snapshot SP Bob Klinger PIT 1942	Starter	59	5	R			0.332	0.33	0.334	11.9	7.0	3.6	0.283	false
+82673	Hardware Heroes CL Dick Radatz BOS 1964	Reliever	71	0	R			0.333	0.352	0.32	18.5	9.5	4.3	0.279	false
+83169	Snapshot SP Al Hollingsworth CIN 1936	Starter	69	0	L			0.333	0.315	0.34	13.3	8.4	3.4	0.288	false
+84273	Rookie Sensation SP Johnny Hetki CIN 1946	Starter	70	0	R			0.333	0.336	0.331	8.8	6.7	3.2	0.284	false
+86106	Obscure All-Stars - Baseball Reference 5 CL Bill Henry CIN 1960	Reliever	69	0	L			0.333	0.333	0.333	19.1	6.9	4.6	0.288	true
+83253	Snapshot SP Larry Christenson PHI 1978	Starter	79	0	R			0.333	0.336	0.332	12.5	5.7	4.1	0.283	false
+84446	Negro League Star SP Bill Byrd CEG 1935	Starter	73	0	R			0.333	0.33	0.335	11.6	6.4	3.6	0.287	false
+83086	Snapshot RP Tom Bruno STL 1979	Reliever	58	0	R			0.333	0.343	0.326	14.6	12.5	2.5	0.289	false
+83894	Historical All-Star SP Preacher Roe BRO 1949	Starter	85	5	L			0.333	0.325	0.336	16.5	4.9	4.8	0.283	false
+83864	Historical All-Star SP Hugh Mulcahy PHI 1940	Starter	54	5	R			0.333	0.317	0.344	9.5	7.2	3.3	0.282	false
+83102	Snapshot SP Russ Meyer PHI 1949	Starter	62	5	R			0.333	0.33	0.335	11.6	6.9	3.7	0.282	false
+84245	Rookie Sensation RP Will McEnaney CIN 1975	Reliever	56	5	L			0.333	0.327	0.335	10.8	5.3	3.7	0.287	false
+84235	Rookie Sensation RP Wayne Granger STL 1968	Reliever	49	5	R			0.333	0.328	0.337	11.8	6.9	3.2	0.293	false
+84241	Rookie Sensation SP Don Drysdale BRO 1956	Starter	59	5	R			0.333	0.336	0.332	13.5	7.3	4.0	0.280	false
+83870	Historical All-Star SP Mort Cooper BSN 1945	Starter	63	5	R			0.333	0.337	0.33	16.6	7.7	4.1	0.286	false
+83052	Snapshot RP Tim Birtsas CIN 1989	Reliever	54	5	L			0.333	0.325	0.336	15.9	7.4	3.9	0.290	false
+84024	Veteran Presence SP Huck Betts BSN Peak	Starter	62	5	R			0.333	0.34	0.328	9.5	5.4	3.7	0.280	false
+84425	Negro League Star SP Roy Welmaker HoSt 1953	Starter	68	0	L			0.334	0.322	0.338	12.8	8.1	3.5	0.285	false
+84429	Negro League Star SP Ted Trent CAG 1936	Starter	69	0	R			0.334	0.328	0.338	11.8	6.9	3.7	0.285	false
+84034	All-Time Legend SP Jerry Staley STL Peak	Starter	66	0	R			0.334	0.345	0.327	9.5	6.3	3.6	0.281	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	Starter	56	0	L			0.334	0.324	0.337	13.0	9.5	2.6	0.298	false
+82815	Unsung Heroes RP Pete Redfern MIN 1979	Reliever	66	0	R			0.334	0.364	0.315	16.8	8.4	3.9	0.289	false
+83207	Snapshot SP Billy O&#39;Dell SF 1962	Starter	72	0	L			0.334	0.32	0.339	13.1	6.8	3.2	0.300	false
+84428	Negro League Star SP Henry McHenry NeBr 1932	Starter	66	0	R			0.334	0.325	0.339	11.2	7.0	3.4	0.287	false
+85875	Heart Attack - Snapshot SP Greg Maddux CHC 1989	Starter	62	0	R			0.334	0.33	0.336	12.5	8.0	3.7	0.279	false
+83121	Snapshot RP Adrian Devine ATL 1976	Reliever	62	0	R			0.334	0.334	0.335	13.9	7.7	3.5	0.292	false
+84239	Rookie Sensation SP Curt Simmons PHI 1948	Starter	56	5	L			0.334	0.337	0.333	15.8	10.6	3.4	0.286	false
+82682	Hardware Heroes SP Bobby Shantz PHA 1952	Starter	79	5	L			0.334	0.301	0.345	15.4	6.1	4.4	0.283	false
+85480	60s Theme Week - Rookie Sensation SP Don Schwall BOS 1961	Starter	52	5	R			0.334	0.34	0.33	11.2	11.9	2.4	0.284	false
+83089	Snapshot RP Johnny Murphy NYY 1940	Reliever	58	5	R			0.334	0.34	0.33	11.5	6.7	4.0	0.277	false
+83149	Snapshot SP Dennis Leonard KC 1976	Starter	67	5	R			0.334	0.33	0.336	14.1	7.2	3.9	0.284	false
+85459	May Birthdays - Unsung Heroes RP Mark Huismann KC 1985	Reliever	50	5	R			0.334	0.352	0.324	10.3	6.0	3.5	0.288	false
+84263	Rookie Sensation SP Ed Holley PHI 1932	Starter	69	5	R			0.334	0.346	0.326	14.0	6.7	3.9	0.286	false
+83057	Snapshot SP Cliff Fannin SLA 1947	Starter	60	5	R			0.334	0.339	0.33	16.1	9.6	3.8	0.282	false
+83124	Snapshot SP Joe Dobson BOS 1946	Starter	65	5	R			0.334	0.33	0.336	15.8	8.2	4.3	0.278	false
+83044	Snapshot SP Gene Conley ML1 1956	Starter	57	5	R			0.334	0.332	0.335	10.3	6.8	3.3	0.288	false
+83113	Snapshot SP Larry Benton CIN 1932	Starter	64	5	R			0.334	0.338	0.331	8.1	4.6	3.5	0.285	false
+84023	All-Time Legend SP Bill Wight CWS Peak	Starter	61	0	L			0.335	0.315	0.342	9.4	7.9	2.8	0.291	false
+82805	Unsung Heroes SP Wayne Twitchell PHI 1972	Starter	60	0	R			0.335	0.314	0.348	14.4	9.4	3.3	0.291	false
+84447	Negro League Star SP Sam Thompson PhSt 1936	Starter	73	0	R			0.335	0.329	0.34	11.0	6.6	3.7	0.285	false
+84457	Negro League Star SP Joe Strong HoGr 1933	Starter	77	0	R			0.335	0.33	0.339	15.8	7.8	4.0	0.287	false
+83091	Snapshot RP Jack Russell CHC 1939	Reliever	58	0	R			0.335	0.344	0.33	14.0	7.7	3.6	0.291	false
+84437	Negro League Star SP Connie Rector NYBY 1932	Starter	70	0	R			0.335	0.331	0.338	11.5	6.8	3.6	0.286	false
+86073	Obscure All-Stars - Baseball Reference 5 SP Harry Kincannon PiCr 1934	Starter	45	0	R			0.335	0.337	0.333	15.8	8.0	3.3	0.301	true
+84420	Negro League Star SP Connie Johnson KCM 1946	Starter	65	0	R			0.335	0.326	0.341	15.8	9.6	3.4	0.292	false
+84421	Negro League Star SP Jesse Houston CAG 1938	Starter	67	0	R			0.335	0.329	0.339	10.8	6.9	3.4	0.287	false
+83215	Snapshot SP Mel Harder CLE 1938	Starter	73	0	R			0.335	0.358	0.32	13.2	6.8	4.0	0.283	false
+84021	All-Time Legend SP Hank Wyse CHC Peak	Starter	58	5	R			0.335	0.334	0.336	9.8	6.0	3.6	0.285	false
+83122	Snapshot CL Dave LaRoche CLE 1975	Reliever	61	5	L			0.335	0.309	0.343	20.2	11.8	3.8	0.285	false
+82962	Snapshot RP Bart Johnson CWS 1977	Reliever	48	5	R			0.335	0.338	0.333	10.8	8.6	2.7	0.295	false
+84409	Negro League Star SP Ches Buchanan PhSt 1941	Starter	57	5	R			0.335	0.329	0.339	8.5	6.7	3.3	0.284	false
+82806	Unsung Heroes SP Johnny Babich PHA 1940	Starter	60	5	R			0.335	0.338	0.333	12.8	7.7	3.9	0.280	false
+84883	Celebrating 42 - Negro League Star SP Johnny Wright HoGr 1941	Starter	68	0	R			0.336	0.332	0.338	11.3	7.0	4.4	0.269	false
+83193	Snapshot SP Jim Weaver CHC 1934	Starter	69	0	R			0.336	0.338	0.334	17.0	9.6	3.8	0.287	false
+83265	Snapshot SP Virgil Trucks DET 1948	Starter	80	0	R			0.336	0.327	0.342	15.9	8.2	4.2	0.283	false
+85068	HOF 1 - Veteran Presence SP Don Sutton ATH 1985	Starter	71	0	R			0.336	0.328	0.341	10.0	6.8	3.6	0.282	false
+83277	Snapshot SP Tom Sturdivant NYY 1956	Starter	81	0	R			0.336	0.318	0.347	15.6	7.8	4.3	0.283	false
+83112	Snapshot SP Chris Short PHI 1963	Starter	65	0	L			0.336	0.297	0.348	14.4	9.0	3.5	0.288	false
+84282	Rookie Sensation SP Bob Rush CHC 1948	Starter	74	0	R			0.336	0.325	0.343	14.7	6.7	4.0	0.292	false
+83063	Snapshot RP Don Nottebart CIN 1967	Reliever	57	0	R			0.336	0.349	0.328	10.4	6.9	3.4	0.288	false
+83285	Veteran Presence SP Luke Hamlin BRO 1940	Starter	84	0	R			0.336	0.369	0.315	16.0	4.5	5.1	0.281	false
+82670	Hardware Heroes CL Bill Campbell MIN 1976	Reliever	64	0	R			0.336	0.323	0.344	15.7	8.2	4.1	0.284	false
+83047	Snapshot RP Ken Brett LAD 1979	Reliever	55	0	L			0.336	0.336	0.336	6.9	7.6	2.6	0.289	false
+82665	Hardware Heroes SP Claude Passeau PHI 1937	Starter	62	5	R			0.336	0.333	0.338	14.2	6.8	3.8	0.292	false
+83061	Snapshot RP Roy Lee Jackson SD 1985	Reliever	58	5	R			0.336	0.336	0.337	15.1	7.6	4.4	0.280	false
+84275	Rookie Sensation SP Atlee Hammaker SF 1982	Starter	62	5	L			0.336	0.336	0.336	12.8	4.4	4.3	0.288	false
+83048	Snapshot SP Ed Figueroa NYY 1977	Starter	58	5	R			0.336	0.335	0.337	10.0	7.8	3.5	0.281	false
+83101	Snapshot SP Nino Espinosa NYM 1977	Starter	63	5	R			0.336	0.361	0.32	11.4	7.4	3.9	0.278	false
+82809	Veteran Presence SP Dick Barrett PHI 1943	Starter	62	5	R			0.336	0.312	0.351	13.6	8.0	3.9	0.284	false
+83073	Snapshot SP Steve Stone CWS 1973	Starter	61	0	R			0.337	0.349	0.33	15.7	10.7	3.4	0.289	false
+85142	PTCS 2 - Veteran Presence SP Tom Seaver CIN 1981	Starter	56	0	R			0.337	0.327	0.343	13.2	9.7	3.9	0.274	false
+85156	Dock&#39;s Counterpart SP Dave Roberts SD 1970	Starter	68	0	L			0.337	0.34	0.336	13.4	5.5	4.2	0.289	false
+84443	Negro League Star SP Jim LaMarque KCM 1945	Starter	72	0	L			0.337	0.323	0.342	14.7	7.9	3.9	0.287	false
+83142	Snapshot SP Wes Ferrell BOS 1934	Starter	65	0	R			0.337	0.337	0.336	10.4	7.2	3.4	0.286	false
+84254	Rookie Sensation SP Arnold Carter CIN 1944	Starter	63	0	L			0.337	0.329	0.34	7.4	7.4	3.1	0.284	false
+83125	Snapshot RP Don Brennan CIN 1935	Reliever	60	0	R			0.337	0.357	0.325	14.6	9.8	3.7	0.282	false
+83025	Snapshot SP Roger Moret BOS 1975	Starter	53	5	L			0.337	0.324	0.341	13.0	10.4	3.3	0.283	false
+83139	Snapshot SP Jesse Flores PHA 1944	Starter	66	5	R			0.337	0.311	0.353	12.1	6.9	4.1	0.279	false
+83140	Snapshot SP Harry Brecheen STL 1949	Starter	67	5	L			0.337	0.328	0.34	12.9	6.7	4.2	0.280	false
+84881	Celebrating 42 - Negro League Star SP Willie Pope PHG 1947	Starter	71	0	R			0.338	0.336	0.339	14.6	8.4	3.8	0.289	false
+83062	Snapshot SP Ed Lynch NYM 1982	Starter	60	0	R			0.338	0.339	0.336	7.8	7.8	2.8	0.289	false
+84435	Negro League Star SP Rufus Lewis NeEa 1947	Starter	70	0	R			0.338	0.334	0.341	13.1	7.5	3.9	0.287	false
+83223	Veteran Presence SP Waite Hoyt BRO 1937	Starter	71	0	R			0.338	0.344	0.334	9.0	5.5	3.6	0.287	false
+83123	Snapshot SP Al Fitzmorris KC 1976	Starter	63	0	R			0.338	0.33	0.342	8.5	7.2	3.1	0.289	false
+83007	Snapshot SP Jack Sanford PHI 1958	Starter	51	5	R			0.338	0.351	0.33	12.7	9.4	3.4	0.287	false
+83191	Snapshot SP Eric Rasmussen SD 1979	Starter	70	0	R			0.339	0.33	0.345	7.6	7.3	3.4	0.280	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	Starter	57	0	R			0.339	0.335	0.342	9.6	8.5	3.1	0.289	false
+83134	Veteran Presence SP Joe Niekro HOU 1981	Starter	66	0	R			0.339	0.335	0.342	10.2	7.8	3.6	0.283	false
+82680	Hardware Heroes SP Stu Miller SF 1958	Starter	79	0	R			0.339	0.333	0.344	14.1	7.6	4.3	0.281	false
+84862	Clubhouse - Negro League Star SP Jack Matchett KCM 1944	Starter	53	0	R			0.339	0.327	0.347	10.8	7.0	3.6	0.289	false
+85507	Clubhouse - 60s Week - Unsung Heroes SP Earl Francis PIT 1961	Starter	53	0	R			0.339	0.355	0.329	10.5	9.8	2.7	0.292	false
+84015	All-Time Legend RP Dave Rucker STL Peak	Reliever	48	5	L			0.339	0.321	0.345	11.3	9.8	2.6	0.297	false
+84236	Rookie Sensation SP Wayne Garland BAL 1974	Starter	53	5	R			0.339	0.335	0.341	11.4	7.3	3.7	0.286	false
+83036	Snapshot SP Ray Burris MON 1983	Starter	56	5	R			0.339	0.349	0.333	14.1	8.6	4.1	0.282	false
+83869	Historical All-Star SP Dave Stieb TOR 1981	Starter	65	0	R			0.340	0.31	0.359	13.7	8.4	4.3	0.278	false
+83156	Snapshot CL Lee Smith CHC 1986	Reliever	64	0	R			0.340	0.355	0.33	17.2	9.5	4.1	0.288	false
+82681	Hardware Heroes SP Billy Pierce CWS 1953	Starter	80	0	L			0.340	0.31	0.349	16.7	8.3	4.5	0.284	false
+83074	Snapshot RP Ken Lehman BAL 1958	Reliever	57	0	L			0.340	0.329	0.344	12.5	6.9	3.8	0.291	false
+83873	Veteran Presence SP Tommy John NYY 1980	Starter	66	0	L			0.340	0.339	0.341	7.5	6.8	3.4	0.285	false
+84017	All-Time Legend SP Jack Wilson BOS Peak	Starter	53	5	R			0.340	0.335	0.343	15.9	9.9	3.8	0.288	false
+83001	Snapshot SP Chris Welsh CIN 1986	Starter	52	5	L			0.340	0.336	0.342	7.2	6.9	3.0	0.290	false
+82963	Snapshot SP Bob Shaw CWS 1960	Starter	48	5	R			0.340	0.323	0.351	7.0	7.0	3.3	0.284	false
+83021	Snapshot RP Jesse Orosco LAD 1988	Reliever	52	5	L			0.340	0.329	0.344	16.7	11.8	4.0	0.277	false
+84261	Rookie Sensation RP Ed Olwine ATL 1986	Reliever	63	5	L			0.340	0.319	0.347	16.1	6.8	4.9	0.281	false
+84229	Rookie Sensation SP Glen Hobbie CHC 1958	Starter	48	5	R			0.340	0.344	0.338	11.6	10.6	3.3	0.283	false
+83045	Snapshot SP Larry French PIT 1931	Starter	55	5	L			0.340	0.325	0.345	9.3	6.8	3.7	0.284	false
+83103	Snapshot SP Freddie Fitzsimmons NY1 1930	Starter	62	5	R			0.340	0.346	0.337	11.7	6.9	4.4	0.277	false
+84827	Baseball Reference 1 SP Brian Fisher PIT 1988	Starter	43	5	R			0.340	0.354	0.332	10.3	7.7	3.5	0.287	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	Starter	51	5	R			0.340	0.338	0.341	8.9	6.8	3.5	0.286	false
+85895	FLF 14 &amp; Co. - Unsung Heroes SP Earl Wilson BOS 1962	Starter	55	0	R			0.341	0.35	0.336	15.1	11.6	4.0	0.274	false
+83241	Snapshot SP Bill Swift PIT 1933	Starter	75	0	R			0.341	0.336	0.344	9.7	5.3	4.2	0.283	false
+84029	Veteran Presence SP Rip Sewell PIT Peak	Starter	63	0	R			0.341	0.364	0.326	9.8	7.6	3.8	0.281	false
+82674	Hardware Heroes SP Jim Palmer BAL 1977	Starter	74	0	R			0.341	0.338	0.344	13.5	8.2	4.3	0.279	false
+84061	All-Time Legend SP Mike McCormick SF Peak	Starter	83	0	L			0.341	0.311	0.351	12.8	6.6	4.4	0.283	false
+82979	Veteran Presence RP Don Larsen BAL 1965	Reliever	49	0	R			0.341	0.362	0.329	12.0	9.1	3.4	0.289	false
+83150	Snapshot SP Bob Kuzava NYY 1951	Starter	68	0	L			0.341	0.345	0.339	15.0	8.5	4.1	0.286	false
+84030	All-Time Legend SP Ron Kline PIT Peak	Starter	62	0	R			0.341	0.362	0.328	10.0	7.0	3.8	0.284	false
+83158	Snapshot SP Whitey Ford NYY 1962	Starter	67	0	L			0.341	0.321	0.348	12.0	7.2	4.0	0.285	false
+84262	Rookie Sensation SP Bo Belinsky LAA 1962	Starter	66	0	L			0.341	0.343	0.34	15.3	13.2	3.3	0.281	false
+83119	Snapshot RP Mike Armstrong KC 1982	Reliever	60	0	R			0.341	0.34	0.341	15.0	9.8	4.4	0.273	false
+82999	Snapshot SP Kirk McCaskill CAL 1988	Starter	51	5	R			0.341	0.331	0.347	13.5	9.5	3.4	0.292	false
+84405	Negro League Star SP Cliff Carter HiCl 1930	Starter	53	5	R			0.341	0.335	0.345	10.8	7.3	3.8	0.285	false
+83037	Snapshot RP Charlie Williams SF 1974	Reliever	54	0	R			0.342	0.356	0.333	9.9	7.3	3.8	0.284	false
+83087	Snapshot CL Cecil Upshaw ATL 1971	Reliever	59	0	R			0.342	0.362	0.329	13.0	6.1	3.7	0.303	false
+84035	All-Time Legend SP Eddie Smith CWS Peak	Starter	67	0	L			0.342	0.342	0.342	14.5	9.2	4.1	0.282	false
+85480	60s Theme Week - Rookie Sensation SP Don Schwall BOS 1961	Starter	52	0	R			0.342	0.347	0.339	10.2	12.6	2.6	0.285	false
+83137	Snapshot SP Claude Osteen LAD 1965	Starter	64	0	L			0.342	0.34	0.343	10.0	7.8	3.7	0.284	false
+85509	60s Theme Week - Unsung Heroes SP Jack Kralick MIN 1961	Starter	64	0	L			0.342	0.302	0.356	12.6	6.5	3.9	0.294	false
+83143	Snapshot SP Carl Fischer DET 1933	Starter	64	0	L			0.342	0.339	0.342	16.5	10.6	3.9	0.286	false
+83199	Snapshot SP Dick Donovan CWS 1956	Starter	72	0	R			0.342	0.337	0.346	11.5	6.8	4.4	0.280	false
+82801	Unsung Heroes RP Rocky Childress HOU 1987	Reliever	51	0	R			0.342	0.336	0.345	10.0	7.1	3.6	0.289	false
+84408	Negro League Star SP Ramon Arano MCDR 1964	Starter	55	0	R			0.342	0.339	0.343	7.9	7.8	3.2	0.287	false
+82803	Unsung Heroes SP Roy Mahaffey PHA 1932	Starter	55	5	R			0.342	0.345	0.34	16.7	9.2	4.4	0.283	false
+83014	Snapshot SP Mike Krukow CHC 1978	Starter	54	5	R			0.342	0.33	0.35	14.0	8.8	4.2	0.281	false
+83027	Snapshot SP Joe Hatten BRO 1947	Starter	53	5	L			0.342	0.312	0.352	10.2	9.4	3.3	0.283	false
+83167	Snapshot SP Dave Boswell MIN 1966	Starter	67	5	R			0.342	0.344	0.341	18.1	9.6	4.9	0.275	false
+83252	Snapshot SP Frank Pastore CIN 1980	Starter	70	0	R			0.343	0.338	0.346	13.5	7.2	4.6	0.279	false
+83200	Snapshot SP Dutch Leonard WS1 1938	Starter	69	0	R			0.343	0.315	0.36	9.3	6.7	3.9	0.284	false
+85459	May Birthdays - Unsung Heroes RP Mark Huismann KC 1985	Reliever	50	0	R			0.343	0.361	0.332	9.4	6.5	3.7	0.289	false
+83877	Historical All-Star SP Al Downing NYY 1967	Starter	70	0	L			0.343	0.35	0.341	15.0	9.1	4.2	0.285	false
+84220	Rookie Sensation RP Garry Roggenburk MIN 1963	Reliever	47	5	L			0.343	0.327	0.348	9.6	9.6	3.1	0.287	false
+85689	Baseball Reference 3 SP Lou Kretlow KC1 1956	Starter	48	5	R			0.343	0.339	0.345	14.2	10.8	4.4	0.268	false
+82795	Unsung Heroes RP Willard Hunter NYM 1964	Reliever	50	5	L			0.343	0.331	0.347	9.0	5.9	3.5	0.294	false
+84233	Rookie Sensation SP Mudcat Grant CLE 1958	Starter	51	5	R			0.343	0.343	0.343	12.1	10.2	4.0	0.274	false
+85067	HOF 1 - Veteran Presence SP Lefty Gomez NYY 1941	Starter	54	5	L			0.343	0.318	0.352	15.9	14.1	3.2	0.283	false
+83039	Snapshot SP Vic Sorrell DET 1930	Starter	56	0	R			0.344	0.359	0.334	14.2	10.1	3.9	0.283	false
+84255	Rookie Sensation SP Hal Smith PIT 1933	Starter	63	0	R			0.344	0.35	0.34	9.3	6.2	4.0	0.285	false
+84045	All-Time Legend SP Sal Maglie NY1 Peak	Starter	75	0	R			0.344	0.33	0.353	14.0	7.3	4.5	0.285	false
+84019	All-Time Legend RP Max Leon ATL Peak	Reliever	52	0	R			0.344	0.344	0.345	11.8	6.9	3.9	0.292	false
+82962	Snapshot RP Bart Johnson CWS 1977	Reliever	48	0	R			0.344	0.347	0.342	9.9	9.4	2.9	0.296	false
+84268	Rookie Sensation SP Ed Heusser STL 1935	Starter	68	0	R			0.344	0.326	0.355	10.0	6.8	4.0	0.285	false
+84235	Rookie Sensation RP Wayne Granger STL 1968	Reliever	49	0	R			0.344	0.337	0.349	10.8	7.1	3.6	0.295	false
+83179	Snapshot RP Jerry Garvin TOR 1980	Reliever	67	0	L			0.344	0.309	0.356	14.9	7.7	4.6	0.283	false
+82669	Hardware Heroes SP General Crowder WS1 1933	Starter	66	0	R			0.344	0.337	0.349	12.7	7.5	4.4	0.283	false
+83044	Snapshot SP Gene Conley ML1 1956	Starter	57	0	R			0.344	0.345	0.343	9.5	7.0	3.6	0.290	false
+83043	Snapshot SP Bob Bruce HOU 1962	Starter	57	0	R			0.344	0.366	0.33	15.1	10.4	4.1	0.282	false
+83028	Snapshot SP Dizzy Trout DET 1942	Starter	55	5	R			0.344	0.335	0.35	13.8	8.3	4.4	0.282	false
+84252	Rookie Sensation SP Dave Rozema DET 1977	Starter	63	5	R			0.344	0.337	0.348	9.8	4.7	4.6	0.281	false
+82789	Unsung Heroes SP Marino Pieretti CWS 1948	Starter	50	5	R			0.344	0.335	0.349	8.8	8.1	3.5	0.284	false
+82811	Unsung Heroes SP Bill Lohrman NY1 1940	Starter	63	5	R			0.344	0.366	0.33	11.2	5.9	4.7	0.278	false
+84154	All-Time Legend CF Johnny Lindell NYY Peak	Starter	79	5	R			0.344	0.35	0.34	15.6	11.3	3.5	0.291	false
+82989	Snapshot SP Johnny Humphries CWS 1943	Starter	51	5	R			0.344	0.35	0.341	9.0	6.9	3.8	0.285	false
+84239	Rookie Sensation SP Curt Simmons PHI 1948	Starter	56	0	L			0.345	0.351	0.344	14.9	11.3	3.7	0.287	false
+83238	Snapshot SP Hal Newhouser DET 1949	Starter	76	0	L			0.345	0.32	0.354	14.7	7.9	4.5	0.286	false
+83138	Snapshot RP Cal McLish CLE 1957	Reliever	63	0	R			0.345	0.327	0.357	13.8	9.8	4.1	0.283	false
+83065	Snapshot SP Bob Klinger PIT 1942	Starter	59	0	R			0.345	0.345	0.345	11.0	7.4	4.0	0.286	false
+83165	Snapshot SP Britt Burns CWS 1983	Starter	67	0	L			0.345	0.339	0.347	13.7	8.3	4.3	0.285	false
+82943	Snapshot SP Rick Waits CLE 1976	Starter	45	5	L			0.345	0.331	0.35	12.5	9.5	3.4	0.294	false
+83213	Snapshot SP Luis Tiant BOS 1973	Starter	73	5	R			0.345	0.342	0.347	16.6	7.5	5.2	0.279	false
+85840	T4 Ep. 3 - Snapshot SP Mark Langston SEA 1986	Starter	48	5	L			0.345	0.313	0.356	18.4	9.7	4.5	0.290	false
+83016	Snapshot SP Ruben Gomez NY1 1954	Starter	52	5	R			0.345	0.36	0.337	13.0	9.3	4.3	0.278	false
+82966	Snapshot SP Benny Frey CIN 1931	Starter	47	5	R			0.345	0.359	0.336	7.0	7.0	3.3	0.288	false
+84263	Rookie Sensation SP Ed Holley PHI 1932	Starter	69	0	R			0.346	0.357	0.34	12.9	6.9	4.4	0.288	false
+82954	Snapshot SP Pat Zachry NYM 1982	Starter	46	5	R			0.346	0.369	0.332	10.9	9.2	3.7	0.286	false
+82978	Snapshot SP Freddie Toliver MIN 1988	Starter	49	5	R			0.346	0.35	0.343	12.6	9.6	3.8	0.287	false
+83111	Snapshot CL Skip Lockwood NYM 1978	Reliever	58	5	R			0.346	0.333	0.355	17.7	7.3	5.4	0.280	false
+82976	Snapshot RP Steve Crawford BOS 1986	Reliever	49	5	R			0.346	0.362	0.335	11.0	5.8	3.7	0.301	false
+83183	Snapshot SP Lon Warneke STL 1940	Starter	69	0	R			0.347	0.353	0.344	10.4	5.6	4.5	0.285	false
+82682	Hardware Heroes SP Bobby Shantz PHA 1952	Starter	79	0	L			0.347	0.308	0.36	14.3	6.3	4.9	0.286	false
+84232	Rookie Sensation RP Carl Scheib PHA 1944	Reliever	50	0	R			0.347	0.344	0.348	11.5	8.1	3.9	0.289	false
+84015	All-Time Legend RP Dave Rucker STL Peak	Reliever	48	0	L			0.347	0.33	0.353	10.4	10.6	2.8	0.299	false
+83089	Snapshot RP Johnny Murphy NYY 1940	Reliever	58	0	R			0.347	0.353	0.344	10.5	6.9	4.6	0.278	false
+83102	Snapshot SP Russ Meyer PHI 1949	Starter	62	0	R			0.347	0.344	0.35	10.7	7.3	4.2	0.284	false
+83122	Snapshot CL Dave LaRoche CLE 1975	Reliever	61	0	L			0.347	0.317	0.357	19.8	12.4	4.3	0.287	false
+83048	Snapshot SP Ed Figueroa NYY 1977	Starter	58	0	R			0.347	0.349	0.347	9.2	8.4	3.8	0.283	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	Starter	58	5	R			0.347	0.332	0.356	10.6	7.0	4.4	0.281	false
+83038	Snapshot SP Roger Craig STL 1964	Starter	56	5	R			0.347	0.323	0.363	9.6	6.3	4.1	0.287	false
+82945	Snapshot SP Max Butcher PHI 1939	Starter	45	5	R			0.347	0.347	0.347	8.6	7.6	4.0	0.281	false
+83861	Historical All-Star SP Bob Buhl ML1 1960	Starter	50	5	R			0.347	0.321	0.363	11.4	9.2	4.3	0.275	false
+83029	Snapshot SP Ed Brandt BSN 1930	Starter	54	5	L			0.347	0.321	0.356	15.1	8.4	4.6	0.284	false
+83004	Snapshot SP Gerry Arrigo CIN 1968	Starter	52	5	L			0.347	0.322	0.355	13.4	9.3	4.1	0.285	false
+83894	Historical All-Star SP Preacher Roe BRO 1949	Starter	85	0	L			0.348	0.338	0.351	15.5	5.3	5.4	0.285	false
+83025	Snapshot SP Roger Moret BOS 1975	Starter	53	0	L			0.348	0.339	0.351	11.9	11.1	3.6	0.284	false
+83149	Snapshot SP Dennis Leonard KC 1976	Starter	67	0	R			0.348	0.345	0.35	13.0	7.6	4.5	0.286	false
+83101	Snapshot SP Nino Espinosa NYM 1977	Starter	63	0	R			0.348	0.372	0.334	10.5	8.0	4.3	0.281	false
+84409	Negro League Star SP Ches Buchanan PhSt 1941	Starter	57	0	R			0.348	0.341	0.352	7.7	6.8	3.8	0.285	false
+83052	Snapshot RP Tim Birtsas CIN 1989	Reliever	54	0	L			0.348	0.337	0.352	15.0	8.0	4.4	0.292	false
+83113	Snapshot SP Larry Benton CIN 1932	Starter	64	0	R			0.348	0.351	0.346	7.3	4.9	4.1	0.287	false
+83109	Snapshot SP Ed Whitson SD 1989	Starter	64	5	R			0.348	0.378	0.328	10.6	5.8	4.9	0.277	false
+83072	Snapshot RP Ed Roebuck LAD 1960	Reliever	56	5	R			0.348	0.339	0.353	15.2	6.9	4.9	0.286	false
+84246	Rookie Sensation SP Larry Dierker HOU 1965	Starter	62	5	R			0.348	0.313	0.369	13.7	6.9	4.9	0.283	false
+82944	Snapshot RP Sarge Connally CLE 1932	Reliever	47	5	R			0.348	0.381	0.328	9.0	8.7	4.0	0.278	false
+84021	All-Time Legend SP Hank Wyse CHC Peak	Starter	58	0	R			0.349	0.349	0.349	8.9	6.6	4.0	0.289	false
+82665	Hardware Heroes SP Claude Passeau PHI 1937	Starter	62	0	R			0.349	0.346	0.352	13.3	6.9	4.4	0.294	false
+83864	Historical All-Star SP Hugh Mulcahy PHI 1940	Starter	54	0	R			0.349	0.329	0.362	8.6	7.9	3.8	0.286	false
+84245	Rookie Sensation RP Will McEnaney CIN 1975	Reliever	56	0	L			0.349	0.34	0.352	9.9	6.0	4.2	0.289	false
+83870	Historical All-Star SP Mort Cooper BSN 1945	Starter	63	0	R			0.349	0.352	0.347	15.5	8.4	4.6	0.288	false
+82941	Snapshot SP Oral Hildebrand SLA 1937	Starter	45	5	R			0.349	0.367	0.337	11.3	8.6	4.3	0.279	false
+83084	Snapshot SP Ron Darling NYM 1988	Starter	62	5	R			0.349	0.336	0.357	13.7	7.2	4.9	0.282	false
+85508	Clubhouse - 60s Week - Unsung Heroes SP Joe Nuxhall KC1 1961	Starter	55	0	L			0.350	0.307	0.365	13.2	10.5	3.9	0.288	false
+83057	Snapshot SP Cliff Fannin SLA 1947	Starter	60	0	R			0.350	0.353	0.348	15.1	10.4	4.4	0.284	false
+84241	Rookie Sensation SP Don Drysdale BRO 1956	Starter	59	0	R			0.350	0.349	0.351	12.4	7.9	4.5	0.284	false
+83124	Snapshot SP Joe Dobson BOS 1946	Starter	65	0	R			0.350	0.344	0.353	14.8	8.9	4.8	0.280	false
+84024	Veteran Presence SP Huck Betts BSN Peak	Starter	62	0	R			0.350	0.354	0.347	8.7	6.2	4.3	0.284	false
+83015	Snapshot SP Early Wynn WS1 1943	Starter	53	5	R			0.350	0.328	0.363	11.3	7.2	4.7	0.280	false
+82797	Unsung Heroes SP Herm Wehmeier PHI 1954	Starter	52	5	R			0.350	0.347	0.351	9.9	8.2	4.2	0.281	false
+82790	Unsung Heroes SP Dick Starr SLA 1949	Starter	48	5	R			0.350	0.345	0.352	14.6	8.9	4.2	0.293	false
+82781	Unsung Heroes SP Ed Rakow KC1 1963	Starter	47	5	R			0.350	0.352	0.349	11.4	8.3	4.3	0.284	false
+83022	Snapshot SP Randy O&#39;Neal DET 1986	Starter	53	5	R			0.350	0.374	0.335	10.7	7.5	4.4	0.284	false
+82972	Snapshot SP Sam McDowell SF 1972	Starter	49	5	L			0.350	0.347	0.351	15.1	10.9	4.1	0.288	false
+83010	Snapshot SP Harry Gumbert NY1 1939	Starter	51	5	R			0.350	0.338	0.358	10.8	7.3	4.6	0.281	false
+85916	5th of July HR RP Rick Camp ATL 1985	Reliever	44	5	R			0.350	0.342	0.356	9.1	9.2	3.6	0.286	false
+83001	Snapshot SP Chris Welsh CIN 1986	Starter	52	0	L			0.351	0.352	0.35	6.4	7.3	3.4	0.293	false
+83007	Snapshot SP Jack Sanford PHI 1958	Starter	51	0	R			0.351	0.367	0.341	11.7	10.1	3.7	0.290	false
+84275	Rookie Sensation SP Atlee Hammaker SF 1982	Starter	62	0	L			0.351	0.35	0.351	11.7	4.8	4.8	0.291	false
+83139	Snapshot SP Jesse Flores PHA 1944	Starter	66	0	R			0.351	0.326	0.367	11.1	7.2	4.7	0.282	false
+82809	Veteran Presence SP Dick Barrett PHI 1943	Starter	62	0	R			0.351	0.325	0.367	12.5	8.7	4.4	0.285	false
+82806	Unsung Heroes SP Johnny Babich PHA 1940	Starter	60	0	R			0.351	0.354	0.35	11.7	8.3	4.5	0.283	false
+82785	Unsung Heroes SP Ed Wells NYY 1930	Starter	49	5	L			0.351	0.343	0.354	10.2	7.1	4.3	0.286	false
+83026	Snapshot SP Jim Kaat MIN 1965	Starter	55	5	L			0.351	0.318	0.362	10.6	6.5	4.6	0.286	false
+85367	Clubhouse - Played Where? - Unsung Heroes RP Sparky Lyle TEX 1979	Reliever	51	0	L			0.352	0.307	0.367	11.9	7.7	5.3	0.269	false
+84827	Baseball Reference 1 SP Brian Fisher PIT 1988	Starter	43	0	R			0.352	0.369	0.342	9.4	8.2	3.9	0.289	false
+83140	Snapshot SP Harry Brecheen STL 1949	Starter	67	0	L			0.352	0.34	0.356	11.8	6.8	4.8	0.284	false
+82787	Unsung Heroes CL Byron McLaughlin SEA 1979	Reliever	49	5	R			0.352	0.346	0.356	14.4	9.6	4.6	0.283	false
+82961	Snapshot SP Shawn Hillegas LAD 1988	Starter	47	5	R			0.352	0.375	0.338	12.7	8.6	4.4	0.288	false
+85486	Clubhouse - 60s Week - Historical All-Star SP Stan Williams LAD 1960	Starter	69	0	R			0.353	0.36	0.349	19.3	8.8	6.3	0.267	false
+84220	Rookie Sensation RP Garry Roggenburk MIN 1963	Reliever	47	0	L			0.353	0.336	0.358	8.8	10.4	3.3	0.289	false
+83061	Snapshot RP Roy Lee Jackson SD 1985	Reliever	58	0	R			0.353	0.35	0.355	14.1	8.3	4.9	0.283	false
+84229	Rookie Sensation SP Glen Hobbie CHC 1958	Starter	48	0	R			0.353	0.358	0.349	10.7	11.3	3.6	0.285	false
+84236	Rookie Sensation SP Wayne Garland BAL 1974	Starter	53	0	R			0.353	0.35	0.356	10.4	7.8	4.2	0.289	false
+84511	Negro League Star CF Bullet Rogan NEL 1930	Starter	81	5	R			0.353	0.343	0.359	12.4	8.5	4.4	0.287	false
+83064	Snapshot SP Milt Pappas ATL 1968	Starter	61	5	R			0.353	0.354	0.352	11.5	4.8	5.0	0.288	false
+84017	All-Time Legend SP Jack Wilson BOS Peak	Starter	53	0	R			0.354	0.347	0.358	14.8	10.7	4.3	0.289	false
+84261	Rookie Sensation RP Ed Olwine ATL 1986	Reliever	63	0	L			0.354	0.333	0.36	15.2	6.9	5.4	0.283	false
+82966	Snapshot SP Benny Frey CIN 1931	Starter	47	0	R			0.354	0.372	0.343	6.3	7.4	3.7	0.290	false
+83103	Snapshot SP Freddie Fitzsimmons NY1 1930	Starter	62	0	R			0.354	0.358	0.352	10.8	7.3	4.9	0.278	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	Starter	51	0	R			0.354	0.351	0.357	8.1	7.0	4.1	0.288	false
+82947	Veteran Presence SP Charlie Root CHC 1934	Starter	44	5	R			0.354	0.366	0.346	12.2	8.8	4.3	0.289	false
+85025	The Other Emerson - Unsung Heroes RP Emerson Dickman BOS 1939	Reliever	60	5	R			0.354	0.32	0.375	13.6	7.0	5.1	0.284	false
+84876	Celebrating 42 - Negro League Star SP Satchel Davis ClBu 1947	Starter	48	5	R			0.354	0.338	0.363	12.6	6.7	4.8	0.289	false
+82963	Snapshot SP Bob Shaw CWS 1960	Starter	48	0	R			0.355	0.341	0.364	6.3	7.7	3.8	0.288	false
+82999	Snapshot SP Kirk McCaskill CAL 1988	Starter	51	0	R			0.355	0.34	0.364	12.5	10.2	3.9	0.294	false
+85067	HOF 1 - Veteran Presence SP Lefty Gomez NYY 1941	Starter	54	0	L			0.355	0.327	0.364	15.0	14.7	3.6	0.285	false
+83045	Snapshot SP Larry French PIT 1931	Starter	55	0	L			0.355	0.337	0.361	8.4	6.9	4.3	0.286	false
+83036	Snapshot SP Ray Burris MON 1983	Starter	56	0	R			0.355	0.363	0.35	13.0	9.3	4.6	0.285	false
+82940	Snapshot SP Joe Haynes CWS 1946	Starter	45	5	R			0.355	0.365	0.349	10.0	7.3	4.7	0.282	false
+84217	Rookie Sensation SP Bob Harris SLA 1939	Starter	44	5	R			0.355	0.331	0.37	12.3	10.0	4.1	0.290	false
+83013	Veteran Presence SP Bert Blyleven MIN 1987	Starter	54	5	R			0.355	0.372	0.345	14.4	8.2	5.4	0.277	false
+83006	Snapshot SP Joe Presko STL 1952	Starter	51	5	R			0.356	0.357	0.356	11.2	7.8	5.0	0.279	false
+82789	Unsung Heroes SP Marino Pieretti CWS 1948	Starter	50	0	R			0.357	0.348	0.362	8.0	8.9	4.0	0.286	false
+83021	Snapshot RP Jesse Orosco LAD 1988	Reliever	52	0	L			0.357	0.345	0.361	15.7	12.5	4.5	0.282	false
+82803	Unsung Heroes SP Roy Mahaffey PHA 1932	Starter	55	0	R			0.357	0.36	0.356	15.8	10.0	5.0	0.286	false
+83027	Snapshot SP Joe Hatten BRO 1947	Starter	53	0	L			0.357	0.319	0.369	9.3	10.2	3.9	0.285	false
+84405	Negro League Star SP Cliff Carter HiCl 1930	Starter	53	0	R			0.357	0.349	0.361	9.9	8.1	4.4	0.287	false
+83167	Snapshot SP Dave Boswell MIN 1966	Starter	67	0	R			0.357	0.358	0.356	17.2	10.4	5.5	0.276	false
+82991	Snapshot SP Sloppy Thurston BRO 1932	Starter	50	5	R			0.357	0.363	0.354	8.6	6.6	4.6	0.284	false
+83088	Snapshot SP John Candelaria PIT 1979	Starter	60	5	L			0.357	0.346	0.361	10.7	5.4	5.5	0.278	false
+83053	Snapshot SP Floyd Bannister CWS 1987	Starter	57	5	L			0.357	0.332	0.365	10.7	6.1	5.7	0.270	false
+83213	Snapshot SP Luis Tiant BOS 1973	Starter	73	0	R			0.358	0.354	0.361	15.7	7.9	5.7	0.281	false
+85689	Baseball Reference 3 SP Lou Kretlow KC1 1956	Starter	48	0	R			0.358	0.355	0.36	13.1	11.5	5.0	0.270	false
+84233	Rookie Sensation SP Mudcat Grant CLE 1958	Starter	51	0	R			0.358	0.357	0.358	11.2	10.9	4.6	0.275	false
+82976	Snapshot RP Steve Crawford BOS 1986	Reliever	49	0	R			0.358	0.374	0.348	10.0	6.4	4.1	0.302	false
+82934	Veteran Presence RP Fred Frankhouse BSN 1939	Reliever	41	5	R			0.358	0.341	0.369	10.7	9.1	4.4	0.288	false
+83863	Historical All-Star SP Mike Cuellar BAL 1971	Starter	52	5	L			0.358	0.377	0.351	9.6	7.1	5.3	0.273	false
+82954	Snapshot SP Pat Zachry NYM 1982	Starter	46	0	R			0.359	0.383	0.344	9.9	10.0	4.0	0.289	false
+82978	Snapshot SP Freddie Toliver MIN 1988	Starter	49	0	R			0.359	0.365	0.355	11.5	10.4	4.1	0.289	false
+84252	Rookie Sensation SP Dave Rozema DET 1977	Starter	63	0	R			0.359	0.351	0.364	8.9	5.0	5.1	0.284	false
+83014	Snapshot SP Mike Krukow CHC 1978	Starter	54	0	R			0.359	0.347	0.367	12.9	9.5	4.7	0.285	false
+82989	Snapshot SP Johnny Humphries CWS 1943	Starter	51	0	R			0.359	0.363	0.357	8.2	7.1	4.4	0.287	false
+82956	Snapshot SP John Whitehead CWS 1937	Starter	47	5	R			0.359	0.369	0.353	9.1	7.3	4.6	0.286	false
+84216	Rookie Sensation RP Dwight Bernard NYM 1978	Reliever	40	5	R			0.359	0.356	0.361	12.9	10.4	4.0	0.297	false
+82933	Snapshot SP Gene Bearden CLE 1949	Starter	40	5	L			0.359	0.36	0.359	9.9	11.0	3.2	0.302	false
+83028	Snapshot SP Dizzy Trout DET 1942	Starter	55	0	R			0.360	0.351	0.366	12.7	9.0	5.0	0.285	false
+82811	Unsung Heroes SP Bill Lohrman NY1 1940	Starter	63	0	R			0.360	0.377	0.349	10.2	6.5	5.2	0.282	false
+84154	All-Time Legend CF Johnny Lindell NYY Peak	Starter	79	0	R			0.360	0.364	0.357	14.6	12.0	4.1	0.294	false
+85840	T4 Ep. 3 - Snapshot SP Mark Langston SEA 1986	Starter	48	0	L			0.360	0.327	0.371	17.8	10.5	5.1	0.292	false
+82795	Unsung Heroes RP Willard Hunter NYM 1964	Reliever	50	0	L			0.360	0.345	0.364	8.1	6.5	4.2	0.296	false
+85718	T4 Ep. 2 - Snapshot SP Ted Lyons CWS 1936	Starter	55	5	R			0.360	0.359	0.361	10.3	5.0	5.4	0.285	false
+82973	Snapshot SP Art Houtteman CLE 1955	Starter	48	5	R			0.360	0.34	0.372	10.8	7.7	5.0	0.283	false
+84537	Negro League Star C Goose Curry PhSt 1947	Starter	83	5	R			0.360	0.349	0.367	9.2	7.2	4.8	0.285	false
+83109	Snapshot SP Ed Whitson SD 1989	Starter	64	0	R			0.361	0.389	0.344	9.7	6.3	5.4	0.279	false
+82943	Snapshot SP Rick Waits CLE 1976	Starter	45	0	L			0.361	0.347	0.366	11.4	10.3	4.0	0.296	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	Starter	58	0	R			0.361	0.345	0.371	9.7	7.4	4.9	0.283	false
+83072	Snapshot RP Ed Roebuck LAD 1960	Reliever	56	0	R			0.361	0.352	0.367	14.2	7.3	5.4	0.288	false
+83111	Snapshot CL Skip Lockwood NYM 1978	Reliever	58	0	R			0.361	0.348	0.37	16.8	8.1	5.9	0.284	false
+83016	Snapshot SP Ruben Gomez NY1 1954	Starter	52	0	R			0.361	0.373	0.353	11.9	10.1	4.8	0.280	false
+83038	Snapshot SP Roger Craig STL 1964	Starter	56	0	R			0.361	0.337	0.377	8.8	6.7	4.7	0.290	false
+82784	Unsung Heroes SP Bill Stoneman MON 1970	Starter	48	5	R			0.361	0.389	0.344	16.0	9.8	5.2	0.288	false
+82988	Snapshot SP Rollie Sheldon KC1 1965	Starter	50	5	R			0.361	0.364	0.359	10.9	7.3	5.1	0.285	false
+82967	Snapshot SP Al Benton DET 1938	Starter	46	5	R			0.361	0.342	0.373	12.2	8.3	4.9	0.289	false
+84872	Clubhouse - Negro League Star RF Walter Thomas KCM 1945	Starter	63	0	R			0.362	0.361	0.363	12.0	9.0	4.1	0.303	false
+84246	Rookie Sensation SP Larry Dierker HOU 1965	Starter	62	0	R			0.362	0.327	0.383	12.7	7.2	5.4	0.286	false
+85916	5th of July HR RP Rick Camp ATL 1985	Reliever	44	0	R			0.362	0.351	0.369	8.3	9.5	4.1	0.287	false
+83861	Historical All-Star SP Bob Buhl ML1 1960	Starter	50	0	R			0.362	0.334	0.38	10.4	9.9	4.8	0.277	false
+85884	Clubhouse - Veteran Presence SP Vida Blue SF 1986	Starter	47	0	L			0.362	0.343	0.368	13.2	9.3	5.6	0.274	false
+83004	Snapshot SP Gerry Arrigo CIN 1968	Starter	52	0	L			0.362	0.332	0.372	12.4	10.1	4.6	0.287	false
+82663	Hardware Heroes SP Lew Burdette ML1 1959	Starter	60	5	R			0.362	0.323	0.387	8.7	4.3	5.5	0.283	false
+82788	Unsung Heroes SP Gene Brabender BAL 1968	Starter	49	5	R			0.362	0.352	0.369	13.7	9.9	5.0	0.286	false
+83022	Snapshot SP Randy O&#39;Neal DET 1986	Starter	53	0	R			0.363	0.386	0.349	9.8	7.9	4.9	0.285	false
+83084	Snapshot SP Ron Darling NYM 1988	Starter	62	0	R			0.363	0.351	0.37	12.6	7.6	5.4	0.284	false
+82944	Snapshot RP Sarge Connally CLE 1932	Reliever	47	0	R			0.363	0.393	0.345	8.2	9.4	4.5	0.281	false
+82945	Snapshot SP Max Butcher PHI 1939	Starter	45	0	R			0.363	0.362	0.364	7.8	8.0	4.6	0.285	false
+83029	Snapshot SP Ed Brandt BSN 1930	Starter	54	0	L			0.363	0.335	0.372	14.0	9.2	5.2	0.286	false
+83024	Snapshot SP Lee Stange MIN 1963	Starter	53	5	R			0.363	0.338	0.379	11.3	7.4	5.3	0.284	false
+86232	Baseball Reference 5 CL Al Holland PHI 1984	Reliever	47	5	L			0.363	0.309	0.381	13.9	7.1	6.4	0.268	true
+82964	Snapshot SP Ray Herbert CWS 1964	Starter	47	5	R			0.363	0.362	0.363	9.2	6.3	5.0	0.287	false
+82946	Veteran Presence SP Ken Heintzelman PHI 1951	Starter	46	5	L			0.363	0.318	0.377	13.5	8.4	5.2	0.288	false
+82777	Unsung Heroes SP Roric Harrison ATL 1974	Starter	40	5	R			0.363	0.36	0.364	8.6	8.2	4.4	0.288	false
+82955	Snapshot SP Joaquin Andujar ATH 1986	Starter	47	5	R			0.363	0.379	0.354	10.2	8.0	5.6	0.270	false
+83015	Snapshot SP Early Wynn WS1 1943	Starter	53	0	R			0.364	0.341	0.379	10.3	7.9	5.2	0.282	false
+82797	Unsung Heroes SP Herm Wehmeier PHI 1954	Starter	52	0	R			0.364	0.359	0.367	9.1	9.0	4.7	0.283	false
+83026	Snapshot SP Jim Kaat MIN 1965	Starter	55	0	L			0.364	0.329	0.375	9.7	6.8	5.1	0.287	false
+84221	Rookie Sensation SP Bill Macdonald PIT 1950	Starter	46	5	R			0.364	0.349	0.374	11.3	10.1	5.3	0.273	false
+84224	Rookie Sensation SP Urbano Lugo CAL 1985	Starter	46	5	R			0.364	0.348	0.374	11.2	8.2	5.0	0.287	false
+82790	Unsung Heroes SP Dick Starr SLA 1949	Starter	48	0	R			0.365	0.359	0.368	13.7	9.6	4.8	0.295	false
+82972	Snapshot SP Sam McDowell SF 1972	Starter	49	0	L			0.365	0.361	0.366	14.1	11.6	4.7	0.289	false
+82941	Snapshot SP Oral Hildebrand SLA 1937	Starter	45	0	R			0.365	0.38	0.356	10.3	9.4	4.8	0.283	false
+85025	The Other Emerson - Unsung Heroes RP Emerson Dickman BOS 1939	Reliever	60	0	R			0.365	0.327	0.389	12.7	7.7	5.5	0.286	false
+83862	Historical All-Star SP Rick Rhoden LAD 1976	Starter	52	5	R			0.365	0.391	0.349	10.1	7.5	5.5	0.277	false
+83003	Snapshot SP Joe Moeller LAD 1970	Starter	51	5	R			0.365	0.333	0.386	9.3	7.5	5.3	0.281	false
+82785	Unsung Heroes SP Ed Wells NYY 1930	Starter	49	0	L			0.366	0.357	0.369	9.4	7.8	4.9	0.287	false
+82781	Unsung Heroes SP Ed Rakow KC1 1963	Starter	47	0	R			0.366	0.367	0.365	10.4	9.1	4.8	0.287	false
+82787	Unsung Heroes CL Byron McLaughlin SEA 1979	Reliever	49	0	R			0.366	0.358	0.372	13.4	10.4	5.1	0.284	false
+83010	Snapshot SP Harry Gumbert NY1 1939	Starter	51	0	R			0.366	0.353	0.374	9.9	7.8	5.1	0.284	false
+83064	Snapshot SP Milt Pappas ATL 1968	Starter	61	0	R			0.367	0.367	0.368	10.5	5.3	5.5	0.290	false
+82961	Snapshot SP Shawn Hillegas LAD 1988	Starter	47	0	R			0.367	0.387	0.355	11.7	9.3	4.9	0.290	false
+82977	Veteran Presence SP Gaylord Perry SEA 1983	Starter	49	5	R			0.367	0.366	0.368	9.9	6.8	5.2	0.288	false
+82932	Snapshot RP Harry Eisenstat CLE 1941	Reliever	40	5	L			0.367	0.361	0.369	10.2	8.5	4.3	0.302	false
+84511	Negro League Star CF Bullet Rogan NEL 1930	Starter	81	0	R			0.368	0.357	0.375	11.4	9.2	5.0	0.289	false
+84876	Celebrating 42 - Negro League Star SP Satchel Davis ClBu 1947	Starter	48	0	R			0.368	0.351	0.378	11.6	6.9	5.4	0.291	false
+82947	Veteran Presence SP Charlie Root CHC 1934	Starter	44	0	R			0.369	0.378	0.363	11.2	9.5	4.8	0.291	false
+83100	Snapshot RP Buddy Schultz STL 1979	Reliever	58	5	L			0.369	0.377	0.367	18.3	6.7	6.7	0.287	false
+83012	Snapshot SP LaMarr Hoyt CWS 1984	Starter	53	5	R			0.369	0.388	0.356	11.2	5.4	5.8	0.288	false
+82940	Snapshot SP Joe Haynes CWS 1946	Starter	45	0	R			0.370	0.378	0.366	9.1	7.7	5.2	0.286	false
+83013	Veteran Presence SP Bert Blyleven MIN 1987	Starter	54	0	R			0.370	0.383	0.362	13.4	8.9	5.9	0.280	false
+82933	Snapshot SP Gene Bearden CLE 1949	Starter	40	0	L			0.370	0.373	0.368	8.9	11.7	3.5	0.303	false
+84228	Rookie Sensation RP Stan Wall LAD 1976	Reliever	47	5	L			0.370	0.357	0.374	12.4	7.0	5.7	0.288	false
+84514	Negro League Star 2B Walter Cannady NYBY 1937	Starter	83	5	R			0.370	0.368	0.371	9.2	8.7	5.0	0.287	false
+84217	Rookie Sensation SP Bob Harris SLA 1939	Starter	44	0	R			0.371	0.348	0.386	11.3	10.7	4.7	0.293	false
+84492	Negro League Star LF Johnny Davis HoEa 1950	Starter	74	5	R			0.371	0.361	0.377	9.2	8.4	4.4	0.300	false
+82991	Snapshot SP Sloppy Thurston BRO 1932	Starter	50	0	R			0.372	0.377	0.368	7.8	7.2	5.1	0.288	false
+83006	Snapshot SP Joe Presko STL 1952	Starter	51	0	R			0.372	0.369	0.374	10.2	8.6	5.5	0.282	false
+83863	Historical All-Star SP Mike Cuellar BAL 1971	Starter	52	0	L			0.372	0.39	0.366	8.7	7.9	5.8	0.275	false
+82965	Snapshot SP Jim Tobin BSN 1945	Starter	52	5	R			0.372	0.35	0.386	8.2	7.6	5.0	0.290	false
+83088	Snapshot SP John Candelaria PIT 1979	Starter	60	0	L			0.373	0.358	0.378	9.8	5.9	6.0	0.283	false
+82956	Snapshot SP John Whitehead CWS 1937	Starter	47	0	R			0.374	0.381	0.369	8.3	8.1	5.1	0.287	false
+85718	T4 Ep. 2 - Snapshot SP Ted Lyons CWS 1936	Starter	55	0	R			0.374	0.372	0.376	9.4	5.4	5.9	0.287	false
+82973	Snapshot SP Art Houtteman CLE 1955	Starter	48	0	R			0.374	0.356	0.385	9.8	8.1	5.4	0.286	false
+82934	Veteran Presence RP Fred Frankhouse BSN 1939	Reliever	41	0	R			0.374	0.356	0.385	9.8	9.8	4.9	0.290	false
+84216	Rookie Sensation RP Dwight Bernard NYM 1978	Reliever	40	0	R			0.374	0.37	0.377	11.8	11.1	4.5	0.299	false
+83053	Snapshot SP Floyd Bannister CWS 1987	Starter	57	0	L			0.374	0.349	0.382	9.8	6.8	6.2	0.275	false
+82784	Unsung Heroes SP Bill Stoneman MON 1970	Starter	48	0	R			0.375	0.4	0.36	15.0	10.6	5.7	0.289	false
+86232	Baseball Reference 5 CL Al Holland PHI 1984	Reliever	47	0	L			0.375	0.322	0.393	13.0	7.8	6.8	0.269	true
+84508	Negro League Star RF Bob Thurman PHG 1947	Starter	80	5	L			0.375	0.372	0.376	8.6	8.5	5.0	0.292	false
+83024	Snapshot SP Lee Stange MIN 1963	Starter	53	0	R			0.376	0.349	0.394	10.4	7.9	5.8	0.285	false
+82988	Snapshot SP Rollie Sheldon KC1 1965	Starter	50	0	R			0.376	0.375	0.376	10.0	8.2	5.6	0.287	false
+84537	Negro League Star C Goose Curry PhSt 1947	Starter	83	0	R			0.376	0.363	0.383	8.3	8.0	5.3	0.286	false
+82663	Hardware Heroes SP Lew Burdette ML1 1959	Starter	60	0	R			0.376	0.339	0.4	7.9	4.5	6.0	0.286	false
+82788	Unsung Heroes SP Gene Brabender BAL 1968	Starter	49	0	R			0.376	0.365	0.383	12.8	10.6	5.4	0.288	false
+82967	Snapshot SP Al Benton DET 1938	Starter	46	0	R			0.376	0.356	0.389	11.1	9.0	5.4	0.291	false
+83862	Historical All-Star SP Rick Rhoden LAD 1976	Starter	52	0	R			0.378	0.402	0.363	9.3	8.0	6.0	0.278	false
+83003	Snapshot SP Joe Moeller LAD 1970	Starter	51	0	R			0.378	0.344	0.4	8.5	8.0	5.7	0.282	false
+84224	Rookie Sensation SP Urbano Lugo CAL 1985	Starter	46	0	R			0.378	0.362	0.389	10.3	9.0	5.5	0.289	false
+82964	Snapshot SP Ray Herbert CWS 1964	Starter	47	0	R			0.378	0.376	0.379	8.3	6.7	5.5	0.291	false
+82946	Veteran Presence SP Ken Heintzelman PHI 1951	Starter	46	0	L			0.378	0.335	0.391	12.4	9.1	5.7	0.290	false
+82777	Unsung Heroes SP Roric Harrison ATL 1974	Starter	40	0	R			0.378	0.374	0.381	7.8	9.0	5.0	0.291	false
+82955	Snapshot SP Joaquin Andujar ATH 1986	Starter	47	0	R			0.379	0.389	0.372	9.3	8.8	6.1	0.274	false
+84440	Negro League Star 2B Matt Carlisle HoGr 1943	Starter	64	5	R			0.379	0.368	0.387	9.0	9.0	4.9	0.299	false
+82977	Veteran Presence SP Gaylord Perry SEA 1983	Starter	49	0	R			0.380	0.375	0.382	9.0	6.9	5.7	0.290	false
+83100	Snapshot RP Buddy Schultz STL 1979	Reliever	58	0	L			0.381	0.386	0.379	17.6	6.9	7.2	0.290	false
+84221	Rookie Sensation SP Bill Macdonald PIT 1950	Starter	46	0	R			0.381	0.365	0.391	10.3	10.8	5.8	0.278	false
+83012	Snapshot SP LaMarr Hoyt CWS 1984	Starter	53	0	R			0.381	0.398	0.371	10.2	5.6	6.3	0.290	false
+84677	Happy Easter SS Jelly Jackson HoGr 1938	Starter	47	5	R			0.381	0.369	0.389	8.5	9.0	5.0	0.298	false
+82932	Snapshot RP Harry Eisenstat CLE 1941	Reliever	40	0	L			0.382	0.374	0.385	9.3	9.2	4.8	0.304	false
+84121	All-Time Legend 3B Bernie Friberg PHI Peak	Reliever	60	5	R			0.382	0.393	0.374	9.2	10.8	5.1	0.291	false
+84228	Rookie Sensation RP Stan Wall LAD 1976	Reliever	47	0	L			0.384	0.37	0.388	11.4	7.7	6.2	0.291	false
+84484	Negro League Star 1B Harry Simpson PhSt 1948	Starter	75	5	R			0.384	0.379	0.387	9.1	8.8	5.6	0.290	false
+82965	Snapshot SP Jim Tobin BSN 1945	Starter	52	0	R			0.385	0.364	0.398	7.4	8.0	5.5	0.291	false
+84492	Negro League Star LF Johnny Davis HoEa 1950	Starter	74	0	R			0.385	0.374	0.392	8.3	9.2	5.0	0.301	false
+84514	Negro League Star 2B Walter Cannady NYBY 1937	Starter	83	0	R			0.385	0.381	0.387	8.3	9.5	5.5	0.289	false
+84414	Negro League Star C Pepper Bassett PiCr 1938	Starter	57	5	R			0.385	0.374	0.391	8.6	8.9	5.3	0.297	false
+85498	Clubhouse - 60s Week - Snapshot SP Jim Maloney CIN 1961	Starter	41	0	R			0.386	0.41	0.371	13.9	12.9	6.0	0.284	false
+86198	Limited Edition/96 SP Bill Voiselle NY1 1944	Starter	46	0	R			0.387	0.413	0.371	15.4	9.3	7.4	0.274	true
+85894	Clubhouse - Unsung Heroes SP Jerry Ujdur DET 1982	Starter	49	0	R			0.389	0.403	0.38	12.2	8.3	7.5	0.267	false
+84508	Negro League Star RF Bob Thurman PHG 1947	Starter	80	0	L			0.390	0.385	0.392	7.7	9.3	5.5	0.294	false
+84484	Negro League Star 1B Harry Simpson PhSt 1948	Starter	75	0	R			0.397	0.391	0.4	8.3	9.5	6.1	0.292	false

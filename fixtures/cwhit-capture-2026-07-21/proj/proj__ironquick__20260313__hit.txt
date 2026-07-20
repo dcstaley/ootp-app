@@ -1,0 +1,1032 @@
+# CAPPROJ key=ironquick__20260313 role=hit label=Iron Quick type=Quick variantMode=all_cards projval=40-59 vlvl0=675 vlvl5=355 recordsTotal=1030 rows=1030
+CID	Name	Position	VAL	VLvl	Hand	Cap Value	Slots Value	pwOBA	pwOBA_vL	pwOBA_vR	BBpct	SOpct	HRpct	BABIP	XBHpct	ProjectedNewCard
+85905	4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	5	R			0.361	0.352	0.366	6.3	16.3	5.2	0.291	25.7	false
+86086	Obscure All-Stars - Baseball Reference 5 1B Ty Wigginton BAL 2010	1B	54	5	R			0.351	0.326	0.365	8.4	16.3	4.3	0.288	25.1	true
+85905	4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	0	R			0.343	0.328	0.351	5.7	17.8	4.9	0.284	24.3	false
+83514	Snapshot LF Gus Zernial CWS 1950	LF	59	5	R			0.342	0.332	0.347	6.1	22.0	5.2	0.292	19.9	false
+85391	Played Where? - Unsung Heroes RF Grady Sizemore TB 2015	RF	53	5	L			0.340	0.359	0.331	7.8	16.6	3.5	0.296	24.3	false
+84882	Celebrating 42 - Negro League Star 1B Joe Scott BBB 1948	1B	54	5	L			0.340	0.333	0.343	11.0	19.5	4.2	0.264	32.3	false
+84394	World Baseball Classic 2B Esteban Quiroz MEX 2017	2B	56	5	L			0.340	0.314	0.354	8.5	17.4	3.4	0.301	22.3	false
+84666	Opening Day Heroes - Unsung Heroes 1B Matt Davidson CWS 2018	1B	56	5	R			0.340	0.374	0.322	11.2	25.4	4.3	0.289	27.5	false
+84390	Celebrating 42 - Rookie Sensation 1B Jackie Robinson BRO 1947	1B	58	5	R			0.339	0.39	0.312	8.1	12.7	2.6	0.301	25.4	false
+85393	Mr. May - Veteran Presence DH Dave Winfield MIN 1993	DH	55	5	R			0.338	0.334	0.341	6.3	22.9	4.8	0.295	24.1	false
+83433	Snapshot 1B Bob Oliver KC 1970	1B	57	5	R			0.338	0.345	0.334	6.5	19.2	4.8	0.277	25.7	false
+83463	Snapshot LF Jim Lemon MIN 1961	LF	57	5	R			0.338	0.33	0.343	8.8	21.6	3.7	0.293	31.5	false
+83464	Snapshot 1B Tony Horton CLE 1970	1B	58	5	R			0.337	0.35	0.33	6.4	15.8	4.6	0.268	26.2	false
+86086	Obscure All-Stars - Baseball Reference 5 1B Ty Wigginton BAL 2010	1B	54	0	R			0.336	0.311	0.35	7.9	17.7	4.1	0.282	23.4	true
+83506	Snapshot 3B Mike Pagliarulo NYY 1985	3B	56	5	L			0.336	0.323	0.342	10.1	21.6	5.1	0.255	25.6	false
+85742	T4 Ep. 2 - Unsung Heroes 3B Jeimer Candelario DET 2021	3B	56	5	S			0.336	0.311	0.349	8.3	21.4	2.4	0.323	32.3	false
+85944	July Jewels - Baseball Reference 4 RF Clyde Vollmer BOS 1951	RF	55	5	R			0.335	0.329	0.338	11.0	25.4	5.5	0.264	15.8	false
+83503	Snapshot 2B Keith Ginter MIL 2004	2B	57	5	R			0.334	0.339	0.332	8.9	22.3	4.4	0.279	27.5	false
+83547	Snapshot LF Gates Brown DET 1965	LF	58	5	L			0.334	0.34	0.331	7.1	18.0	4.7	0.262	30.4	false
+83489	Snapshot 1B Don Bollweg NYY 1953	1B	50	5	L			0.334	0.331	0.335	9.2	24.6	4.1	0.296	24.6	false
+84805	Baseball Reference 1 LF Eddie Rosario MIN 2019	LF	51	5	L			0.333	0.333	0.333	3.0	12.9	4.4	0.279	22.3	false
+83642	Snapshot LF Gary Roenicke BAL 1980	LF	59	5	R			0.333	0.336	0.331	11.5	18.5	4.4	0.251	24.7	false
+84333	Rookie Sensation LF Mark Quinn KC 2000	LF	59	5	R			0.333	0.35	0.324	6.0	17.7	3.9	0.291	24.6	false
+83441	Snapshot RF Wally Post PHI 1959	RF	54	5	R			0.333	0.325	0.337	7.0	20.5	4.9	0.270	25.3	false
+85800	Family Connections - Veteran Presence LF Ken Griffey Jr. SEA 2009	LF	50	5	L			0.331	0.321	0.336	12.2	22.3	4.7	0.251	20.8	false
+83922	Historical All-Star 2B Ozzie Albies ATL 2021	2B	58	5	S			0.331	0.34	0.326	7.0	15.9	4.0	0.266	30.2	false
+86126	Limited Edition/69 C Matt Nokes DET 1987	C	57	0	L			0.330	0.289	0.353	6.3	21.3	5.4	0.271	15.4	false
+82877	Unsung Heroes RF Tom Poorman BSN 1886	RF	58	5	L			0.330	0.323	0.334	6.5	18.7	3.9	0.287	26.2	false
+83522	Snapshot LF Rube Oldring PHA 1914	LF	58	5	R			0.330	0.317	0.337	4.5	13.3	3.6	0.285	25.5	false
+85743	T4 Ep. 2 - Unsung Heroes SS Freddy Galvis TOR 2019	SS	58	5	S			0.330	0.322	0.335	4.3	22.1	4.1	0.308	23.5	false
+83501	Snapshot LF Andrew Benintendi BOS 2019	LF	59	5	L			0.330	0.334	0.328	10.0	18.2	2.1	0.301	30	false
+86088	Clubhouse - Baseball Reference 5 RF Myril Hoag SLA 1939	RF	46	0	R			0.329	0.327	0.33	5.1	16.0	3.9	0.287	22.7	true
+83468	Snapshot LF Taylor Ward LAA 2023	LF	58	5	R			0.329	0.32	0.334	10.5	16.9	3.6	0.267	23	false
+83498	Snapshot 3B Jonathan Villar NYM 2021	3B	58	5	S			0.329	0.296	0.346	8.4	23.2	3.8	0.301	20.8	false
+83416	Snapshot 3B David Freese LAA 2014	3B	55	5	R			0.329	0.34	0.324	9.0	19.5	3.5	0.286	23.9	false
+85200	Young &amp; Old 1 - Rookie Sensation 1B Mark Trumbo LAA 2011	1B	49	5	R			0.328	0.329	0.327	3.6	23.7	5.3	0.284	26.1	false
+83451	Snapshot 3B Greg Norton CWS 1999	3B	58	5	S			0.328	0.342	0.321	11.0	19.5	3.8	0.264	25.2	false
+83931	Historical All-Star 3B Frank Malzone BOS 1958	3B	58	5	R			0.328	0.328	0.328	5.7	13.2	3.0	0.292	22.8	false
+83916	Historical All-Star CF Gus Bell CIN 1957	CF	56	5	L			0.328	0.316	0.334	5.3	15.4	3.3	0.297	21.8	false
+85349	T4 Ep. 1 - Snapshot C Jonathan Lucroy COL 2017	C	48	5	R			0.327	0.298	0.342	11.7	10.8	1.2	0.289	23.7	false
+84320	Rookie Sensation 1B Mike Jacobs FLO 2006	1B	52	5	L			0.327	0.303	0.339	8.0	19.9	4.0	0.267	31.5	false
+83453	Snapshot CF Jim Hickman NYM 1965	CF	56	5	R			0.327	0.353	0.314	7.2	18.8	4.6	0.260	28.5	false
+85708	T4 Ep. 2 - Historical All-Star 2B Tom Herr STL 1985	2B	58	5	S			0.327	0.304	0.339	9.6	14.4	0.9	0.315	26.7	false
+83918	Historical All-Star 1B Eddie Robinson PHA 1953	1B	56	5	L			0.326	0.331	0.324	9.0	15.2	4.3	0.244	28.1	false
+85835	T4 Ep. 3 - Historical All-Star SS Cal Ripken Jr. BAL 1987	SS	58	5	R			0.326	0.307	0.336	10.4	13.9	3.6	0.255	21.8	false
+83399	Snapshot LF Wayne Nordhagen CWS 1980	LF	53	5	R			0.326	0.352	0.313	2.6	15.1	4.6	0.269	27.8	false
+84110	All-Time Legend RF Xavier Nady PIT Peak	RF	56	5	R			0.326	0.33	0.324	6.1	17.9	4.0	0.280	24.9	false
+83634	Memorial Day OnStream Builds - Snapshot 1B Wilmer Flores NYM 2018	1B	59	5	R			0.326	0.28	0.35	6.6	9.0	2.6	0.276	25.8	false
+84701	Clubhouse - April Fools&#39; Day LF Mike Marshall LAD 1984	LF	56	0	R			0.325	0.359	0.307	6.2	25.7	4.7	0.291	23	false
+83518	Snapshot RF Carl Reynolds CWS 1931	RF	59	5	R			0.325	0.316	0.33	6.2	13.2	3.4	0.273	26	false
+84115	All-Time Legend 2B Don Gutteridge SLA Peak	2B	59	5	R			0.325	0.317	0.33	7.6	15.7	2.7	0.286	30	false
+84321	Rookie Sensation 3B Leo Gomez BAL 1991	3B	52	5	R			0.325	0.313	0.332	9.2	19.3	4.7	0.248	24.4	false
+83514	Snapshot LF Gus Zernial CWS 1950	LF	59	0	R			0.324	0.316	0.328	5.4	24.1	5.0	0.285	18.2	false
+83934	Live Collection Reward - Historical All-Star 3B Troy Glaus ANA 2003	3B	58	0	R			0.324	0.335	0.318	10.4	25.0	4.4	0.263	26.2	false
+83925	Historical All-Star LF Claudell Washington ATH 1975	LF	59	5	L			0.324	0.312	0.329	5.0	17.3	2.7	0.314	21.8	false
+83461	Snapshot LF Greg Luzinski CWS 1984	LF	56	5	R			0.324	0.295	0.339	11.3	19.7	4.1	0.255	19.6	false
+84122	All-Time Legend LF Pat Duncan CIN Peak	LF	59	5	R			0.324	0.312	0.331	7.1	14.3	2.7	0.287	26	false
+83527	Veteran Presence RF Andre Dawson BOS 1993	RF	58	5	R			0.324	0.368	0.3	5.9	13.4	3.8	0.264	27.4	false
+83534	Snapshot SS Don Zimmer LAD 1958	SS	59	5	R			0.323	0.306	0.332	6.4	19.3	4.0	0.284	20.5	false
+83533	Snapshot RF Bill Nicholson CHC 1946	RF	54	5	L			0.323	0.302	0.334	10.1	18.0	4.6	0.234	27.4	false
+84323	Rookie Sensation LF Austin McHenry STL 1918	LF	54	5	R			0.323	0.32	0.325	7.4	16.1	3.2	0.275	30.1	false
+83454	Heart Attack - Snapshot SS Ron Hansen CWS 1967	SS	58	5	R			0.323	0.328	0.321	11.8	11.8	2.2	0.266	23.2	false
+83419	Snapshot RF Bobby Darwin MIN 1973	RF	53	5	R			0.323	0.302	0.334	7.2	22.7	4.0	0.287	23.4	false
+83509	Snapshot LF Dusty Baker LAD 1978	LF	56	5	R			0.323	0.323	0.322	8.5	16.4	3.4	0.273	22.3	false
+85659	Limited Edition/89 1B Andres Galarraga COL 1995	1B	59	0	R			0.322	0.319	0.323	4.9	31.3	5.3	0.303	22	false
+84351	Rookie Sensation RF Will Venable SD 2009	RF	59	5	L			0.322	0.3	0.333	7.6	25.6	4.2	0.289	23.7	false
+83437	Snapshot RF Wes Schulmerich BSN 1932	RF	51	5	R			0.322	0.29	0.338	7.4	20.6	4.3	0.265	26.1	false
+83385	Snapshot 1B Fred Merkle NY1 1913	1B	51	5	R			0.322	0.344	0.31	6.8	16.4	3.2	0.274	31.7	false
+83450	Snapshot 3B Corey Koskie TOR 2005	3B	55	5	L			0.322	0.3	0.334	10.6	22.4	3.3	0.281	24.3	false
+85087	Earth Day - Unsung Heroes SS Pumpsie Green BOS 1961	SS	56	5	S			0.322	0.371	0.296	11.6	17.8	1.9	0.290	25.6	false
+85374	T4 Ep. 1 - Veteran Presence 1B Jason Giambi COL 2011	1B	58	5	L			0.322	0.299	0.334	11.5	33.6	5.5	0.267	14.7	false
+84335	Rookie Sensation RF Junior Felix TOR 1989	RF	57	5	S			0.322	0.314	0.326	8.0	22.8	3.4	0.296	23.7	false
+82569	MLB 2026 Live RF Randal Grichuk CWS	RF	55	0	R			0.321	0.324	0.319	5.8	20.4	4.1	0.278	26.1	false
+85799	Limited Edition/59 RF Jesus Alou HOU 1970	RF	59	0	R			0.321	0.327	0.318	3.0	6.5	0.3	0.317	32.3	false
+84416	Negro League Star LF Dee Williams KCRG 1910	LF	54	5	R			0.321	0.323	0.32	6.4	16.2	3.3	0.282	23.6	false
+84342	Rookie Sensation CF Bobby Brown NYY 1980	CF	58	5	S			0.321	0.295	0.335	6.0	20.6	4.3	0.279	21.6	false
+83429	Snapshot LF Glenn Braggs ML4 1989	LF	53	5	R			0.321	0.327	0.318	7.8	20.3	4.3	0.273	16	false
+83505	Snapshot RF Derek Bell HOU 1997	RF	58	5	R			0.321	0.288	0.338	8.2	18.1	3.4	0.275	25	false
+85944	July Jewels - Baseball Reference 4 RF Clyde Vollmer BOS 1951	RF	55	0	R			0.320	0.317	0.322	10.1	27.2	5.3	0.258	14.6	false
+84390	Celebrating 42 - Rookie Sensation 1B Jackie Robinson BRO 1947	1B	58	0	R			0.320	0.367	0.296	7.3	13.9	2.2	0.293	23.8	false
+84666	Opening Day Heroes - Unsung Heroes 1B Matt Davidson CWS 2018	1B	56	0	R			0.320	0.359	0.3	10.5	27.2	3.9	0.282	25.8	false
+85449	PTCS 3 - Snapshot LF Ken Berry CWS 1966	LF	55	0	R			0.320	0.341	0.309	7.4	16.6	2.2	0.304	23.4	false
+84336	Rookie Sensation C Jack Shepard PIT 1954	C	56	5	R			0.320	0.345	0.306	8.2	19.5	2.4	0.306	20.7	false
+84316	Rookie Sensation C Nelson Santovenia MON 1988	C	49	5	R			0.320	0.325	0.317	7.7	23.1	3.7	0.279	32.3	false
+82854	Unsung Heroes CF Johnny Rucker NY1 1945	CF	52	5	L			0.320	0.294	0.334	4.8	16.7	3.7	0.279	27.1	false
+83492	Snapshot RF Dick Porter CLE 1932	RF	58	5	L			0.320	0.329	0.316	8.9	15.6	1.8	0.298	24.8	false
+83428	Snapshot C Josh Phegley ATH 2015	C	51	5	R			0.320	0.352	0.304	5.0	20.0	4.2	0.276	27.1	false
+83458	Snapshot CF Jay Payton NYM 2000	CF	58	5	R			0.320	0.328	0.316	6.0	14.1	3.5	0.274	20.6	false
+85678	In Memoriam - Veteran Presence 1B Bob Horner STL 1988	1B	44	5	R			0.320	0.368	0.295	11.9	12.8	2.1	0.273	18.2	false
+85416	Played Where? - Snapshot LF Eric Davis DET 1993	LF	54	5	R			0.320	0.305	0.329	9.7	25.0	4.5	0.270	18.7	false
+83476	Snapshot CF Garret Anderson ANA 1999	CF	59	5	L			0.320	0.337	0.312	3.9	14.5	3.4	0.288	22.6	false
+85393	Mr. May - Veteran Presence DH Dave Winfield MIN 1993	DH	55	0	R			0.319	0.309	0.324	5.7	25.0	4.5	0.287	22.5	false
+85391	Played Where? - Unsung Heroes RF Grady Sizemore TB 2015	RF	53	0	L			0.319	0.334	0.311	7.0	18.0	3.1	0.289	22.8	false
+84882	Celebrating 42 - Negro League Star 1B Joe Scott BBB 1948	1B	54	0	L			0.319	0.31	0.324	10.4	21.3	3.6	0.258	32.3	false
+84322	Rookie Sensation 1B Tommy McCraw CWS 1963	1B	54	5	L			0.319	0.327	0.315	7.9	17.9	3.0	0.282	25	false
+83374	Snapshot LF Geoff Jenkins MIL 2007	LF	49	5	L			0.319	0.316	0.32	7.0	25.5	4.7	0.270	26.6	false
+85725	T4 Ep. 2 - Snapshot CF Dexter Fowler COL 2010	CF	53	5	S			0.319	0.318	0.32	11.4	23.4	1.3	0.319	28.8	false
+85873	T4 Ep. 3 - Snapshot CF Tony Armas BOS 1983	CF	48	5	R			0.319	0.33	0.312	5.3	30.1	5.7	0.273	26.5	false
+84330	Rookie Sensation CF Buster Adams PHI 1943	CF	57	5	R			0.319	0.333	0.311	8.4	20.0	2.9	0.290	23.6	false
+84394	World Baseball Classic 2B Esteban Quiroz MEX 2017	2B	56	0	L			0.318	0.295	0.33	7.6	18.9	2.9	0.294	20.5	false
+83506	Snapshot 3B Mike Pagliarulo NYY 1985	3B	56	0	L			0.318	0.304	0.326	9.3	23.5	4.7	0.250	24.2	false
+85742	T4 Ep. 2 - Unsung Heroes 3B Jeimer Candelario DET 2021	3B	56	0	S			0.318	0.296	0.33	7.3	23.3	2.0	0.319	32.3	false
+85802	Limited Edition/82 3B David Bell SF 2002	3B	56	0	R			0.318	0.322	0.316	9.1	17.5	3.1	0.276	20.3	false
+83556	Snapshot 3B Buck Weaver CWS 1920	3B	57	5	S			0.318	0.321	0.317	5.8	12.6	1.8	0.301	24.4	false
+83932	Historical All-Star 1B Eddie Waitkus PHI 1949	1B	52	5	L			0.318	0.294	0.331	9.5	16.2	1.5	0.295	29.1	false
+83471	Snapshot 1B Rowdy Tellez MIL 2022	1B	52	5	L			0.318	0.318	0.319	9.1	17.9	5.0	0.226	24.4	false
+83362	Snapshot 3B Eduardo Escobar NYM 2022	3B	46	5	S			0.318	0.32	0.317	6.9	19.1	4.0	0.265	27.5	false
+83380	Snapshot LF Del Ennis PHI 1956	LF	51	5	R			0.318	0.33	0.311	4.4	14.6	4.4	0.259	23.4	false
+84315	Rookie Sensation CF Lou Brock CHC 1962	CF	51	5	L			0.318	0.268	0.345	6.8	21.8	2.5	0.306	31	false
+84414	Negro League Star C Pepper Bassett PiCr 1938	C	57	5	S			0.318	0.311	0.322	4.6	16.1	4.1	0.265	25.7	false
+84805	Baseball Reference 1 LF Eddie Rosario MIN 2019	LF	51	0	L			0.317	0.315	0.318	2.5	14.2	4.2	0.273	20.8	false
+82149	MLB 2026 Live 3B Austin Riley ATL	3B	58	0	R			0.317	0.319	0.316	7.5	25.3	3.7	0.291	25.7	false
+82306	MLB 2026 Live RF Jo Adell LAA	RF	59	0	R			0.317	0.323	0.315	4.5	22.4	4.3	0.286	23.2	false
+82869	Unsung Heroes CF John Shelby LAD 1988	CF	55	5	S			0.317	0.292	0.33	7.6	24.6	3.0	0.308	25.1	false
+83420	Veteran Presence CF Terry Moore STL 1947	CF	54	5	R			0.317	0.309	0.321	6.8	15.4	2.8	0.288	19.8	false
+83497	Snapshot RF MJ Melendez KC 2023	RF	55	5	L			0.317	0.319	0.316	9.3	21.2	2.8	0.286	27.5	false
+84318	Rookie Sensation 3B Harry Lord BOS 1908	3B	53	5	L			0.317	0.316	0.317	5.5	14.3	3.3	0.280	19.8	false
+83398	Snapshot CF Roberto Kelly ATL 1994	CF	53	5	R			0.317	0.313	0.318	7.4	16.7	2.6	0.292	21.9	false
+82876	Unsung Heroes CF Zip Collins PIT 1915	CF	59	5	L			0.317	0.326	0.312	6.7	16.8	2.2	0.310	18.3	false
+85313	Baseball Reference 2 SS Tim Beckham TB 2017	SS	48	5	R			0.317	0.327	0.311	6.1	28.5	3.6	0.323	22.4	false
+83457	Snapshot 3B Jimmy Austin SLA 1911	3B	58	5	S			0.317	0.316	0.317	10.5	19.6	2.1	0.288	27.5	false
+85064	HOF 1 - Hall of Fame 2B Ryne Sandberg CHC 1996	2B	57	5	R			0.316	0.325	0.311	6.7	18.7	3.6	0.275	23.3	false
+83462	Veteran Presence 1B Gary Redus PIT 1991	1B	59	5	R			0.316	0.319	0.314	11.1	17.5	2.7	0.266	24.3	false
+83456	Snapshot LF Duffy Lewis BOS 1917	LF	54	5	R			0.316	0.321	0.313	5.9	15.9	1.5	0.312	26.7	false
+83389	Snapshot 3B Gene Freese PIT 1957	3B	55	5	R			0.316	0.323	0.313	5.8	16.0	2.3	0.299	25.2	false
+84385	Rookie Sensation 3B Jim Doyle CHC 1911	3B	56	5	R			0.316	0.33	0.308	7.5	19.5	2.2	0.302	27.6	false
+83433	Snapshot 1B Bob Oliver KC 1970	1B	57	0	R			0.315	0.321	0.312	5.9	20.8	4.2	0.270	23.9	false
+83464	Snapshot 1B Tony Horton CLE 1970	1B	58	0	R			0.315	0.327	0.309	5.8	17.3	4.0	0.262	24.7	false
+81746	MLB 2026 Live 1B Ty France SD	1B	57	0	R			0.315	0.317	0.315	6.1	20.1	3.2	0.292	23.5	false
+83584	Live Collection Reward - Snapshot SS Willy Adames MIL 2022	SS	59	0	R			0.315	0.299	0.323	6.4	27.4	4.5	0.282	25.8	false
+83432	Snapshot 3B Paul Schaal KC 1972	3B	56	5	R			0.315	0.326	0.309	11.4	16.3	2.5	0.260	27.8	false
+86083	Obscure All-Stars - Baseball Reference 5 C Biff Pocoroba ATL 1978	C	44	5	S			0.315	0.285	0.331	9.6	7.8	2.5	0.256	17.9	true
+82855	Unsung Heroes CF Charlie Jones WS1 1906	CF	51	5	R			0.315	0.285	0.332	6.0	19.2	4.0	0.273	21.9	false
+83402	Snapshot 3B Al Gallagher SF 1971	3B	53	5	R			0.315	0.339	0.303	7.6	16.1	2.0	0.297	23	false
+84310	Rookie Sensation 3B Cheslor Cuthbert KC 2016	3B	51	5	R			0.315	0.326	0.31	6.6	16.4	2.7	0.288	23.7	false
+83424	Snapshot RF Lonnie Chisenhall CLE 2016	RF	53	5	L			0.315	0.318	0.313	6.2	15.7	2.2	0.293	27.1	false
+83589	Snapshot LF Bernie Carbo CIN 1971	LF	56	5	L			0.315	0.31	0.317	12.0	19.0	2.7	0.255	32.3	false
+83478	Snapshot 3B Aaron Boone CIN 1999	3B	59	5	R			0.315	0.291	0.328	4.7	17.5	3.0	0.291	25.7	false
+83544	Clubhouse - Y&amp;O 1 - Veteran Presence C Gregg Zaun TOR 2007	C	59	0	S			0.314	0.309	0.317	11.1	16.4	2.5	0.262	26.2	false
+85349	T4 Ep. 1 - Snapshot C Jonathan Lucroy COL 2017	C	48	0	R			0.314	0.287	0.327	11.3	11.7	1.1	0.282	22	false
+85800	Family Connections - Veteran Presence LF Ken Griffey Jr. SEA 2009	LF	50	0	L			0.314	0.31	0.317	11.8	23.7	4.3	0.246	19.1	false
+82049	MLB 2026 Live RF Adolis Garcia PHI	RF	59	0	R			0.314	0.317	0.313	6.9	26.2	4.1	0.285	24.3	false
+83921	Historical All-Star SS Michael Young TEX 2008	SS	59	5	R			0.314	0.332	0.304	7.9	16.4	2.3	0.290	21.4	false
+83443	Snapshot RF Don Padgett STL 1938	RF	52	5	L			0.314	0.293	0.325	4.3	15.3	3.8	0.261	31.3	false
+85733	T4 Ep. 2 - Unsung Heroes C Doug Mirabelli BOS 2001	C	50	5	R			0.314	0.335	0.303	10.7	26.2	3.3	0.286	20.9	false
+83500	Veteran Presence C Travis d&#39;Arnaud ATL 2022	C	55	5	R			0.314	0.323	0.309	5.3	22.9	4.0	0.286	22.1	false
+85200	Young &amp; Old 1 - Rookie Sensation 1B Mark Trumbo LAA 2011	1B	49	0	R			0.313	0.314	0.312	3.2	25.5	5.1	0.277	24.8	false
+83642	Snapshot LF Gary Roenicke BAL 1980	LF	59	0	R			0.313	0.318	0.31	11.1	20.4	3.8	0.246	23.1	false
+82054	MLB 2026 Live C J.T. Realmuto PHI	C	57	0	R			0.313	0.313	0.313	6.9	21.3	3.2	0.286	26.1	false
+83463	Snapshot LF Jim Lemon MIN 1961	LF	57	0	R			0.313	0.306	0.316	7.8	23.8	3.2	0.286	29.6	false
+85708	T4 Ep. 2 - Historical All-Star 2B Tom Herr STL 1985	2B	58	0	S			0.313	0.289	0.325	9.2	15.6	0.8	0.310	25	false
+83434	Snapshot LF Bobby Thomson ML1 1956	LF	49	5	R			0.313	0.325	0.307	7.3	18.7	4.6	0.248	19.4	false
+83469	Snapshot SS Geraldo Perdomo ARI 2024	SS	59	5	S			0.313	0.325	0.307	9.8	14.4	1.1	0.296	24	false
+83418	Snapshot 1B Hal Morris CIN 1992	1B	56	5	L			0.313	0.279	0.331	8.6	16.5	2.4	0.281	25.1	false
+83936	Historical All-Star C Gus Mancuso NY1 1935	C	58	5	R			0.313	0.266	0.338	6.5	10.3	1.8	0.291	18.1	false
+83449	Snapshot CF Rajai Davis DET 2015	CF	57	5	R			0.313	0.317	0.311	7.3	18.2	2.9	0.275	30.2	false
+83404	Snapshot 1B Danny Cater NYY 1970	1B	57	5	R			0.313	0.328	0.305	5.4	10.3	1.5	0.300	21	false
+82861	Unsung Heroes CF Vin Campbell BSN 1912	CF	54	5	L			0.313	0.282	0.33	5.3	13.7	2.8	0.278	26.6	false
+84109	All-Time Legend CF Joe Birmingham CLE Peak	CF	54	5	R			0.313	0.323	0.307	6.5	16.5	2.9	0.280	24.6	false
+82367	MLB 2026 Live 2B Michael Massey KC	2B	59	0	L			0.312	0.31	0.313	5.4	18.5	3.0	0.287	25.2	false
+81812	MLB 2026 Live 1B Blaine Crim TEX	1B	56	0	R			0.312	0.319	0.308	7.6	22.4	3.2	0.286	25.1	false
+83547	Snapshot LF Gates Brown DET 1965	LF	58	0	L			0.312	0.318	0.309	6.5	19.7	4.1	0.256	29.3	false
+83473	Snapshot CF Endy Chavez TEX 2011	CF	59	5	L			0.312	0.311	0.312	4.3	13.1	2.5	0.292	20.4	false
+84333	Rookie Sensation LF Mark Quinn KC 2000	LF	59	0	R			0.311	0.325	0.304	5.4	19.1	3.3	0.284	23.2	false
+83441	Snapshot RF Wally Post PHI 1959	RF	54	0	R			0.311	0.31	0.311	6.4	22.7	4.4	0.264	23.7	false
+86115	Limited Edition/62 CF Oris Hockett CLE 1944	CF	55	0	L			0.311	0.295	0.32	7.7	17.4	0.9	0.321	22.2	true
+84784	PTCS 1 - Snapshot RF Jason Heyward CHC 2018	RF	57	0	L			0.311	0.312	0.311	7.7	13.5	1.6	0.291	23.7	false
+83503	Snapshot 2B Keith Ginter MIL 2004	2B	57	0	R			0.311	0.316	0.308	7.9	24.1	3.8	0.273	26.2	false
+85374	T4 Ep. 1 - Veteran Presence 1B Jason Giambi COL 2011	1B	58	0	L			0.311	0.289	0.322	11.1	35.0	5.4	0.261	13.5	false
+85101	Clubhouse - Y&amp;O 1 - Veteran Presence 3B Wade Boggs TB 1999	3B	57	0	L			0.311	0.298	0.318	7.5	12.1	1.2	0.302	17.9	false
+83381	Snapshot 1B Lou Limmer PHA 1954	1B	52	5	L			0.311	0.291	0.322	8.0	18.0	4.9	0.225	23.7	false
+84808	Baseball Reference 1 CF Austin Jackson DET 2010	CF	48	5	R			0.311	0.304	0.315	6.5	25.2	1.8	0.332	28.6	false
+84612	World Baseball Classic 2B Tsung-Che Cheng TPE 2026	2B	44	5	L			0.311	0.287	0.324	12.2	18.9	1.4	0.303	13.1	false
+83526	Snapshot C Jimmy Archer CHC 1913	C	59	5	R			0.311	0.294	0.32	6.0	13.7	3.0	0.268	24.1	false
+82404	MLB 2026 Live CF Matt Vierling DET	CF	59	0	R			0.310	0.312	0.309	7.4	19.5	2.8	0.282	25.7	false
+82114	MLB 2026 Live C Agustin Ramirez MIA	C	59	0	R			0.310	0.314	0.308	7.4	20.4	3.2	0.278	24.9	false
+82106	MLB 2026 Live LF Heriberto Hernandez MIA	LF	57	0	R			0.310	0.317	0.306	9.4	27.8	3.9	0.279	21.7	false
+83501	Snapshot LF Andrew Benintendi BOS 2019	LF	59	0	L			0.310	0.315	0.308	8.9	19.6	1.8	0.293	29	false
+85578	MLB 2026 Live 2B Travis Bazzana CLE	2B	56	0	L			0.310	0.305	0.313	9.3	25.7	3.1	0.288	25.4	false
+83922	Historical All-Star 2B Ozzie Albies ATL 2021	2B	58	0	S			0.310	0.318	0.305	6.4	17.3	3.5	0.260	29.8	false
+84311	Rookie Sensation 3B Rick Schu PHI 1985	3B	51	5	R			0.310	0.344	0.292	8.2	18.9	2.4	0.286	25.7	false
+84332	Rookie Sensation 2B Bucky Harris WS1 1920	2B	58	5	R			0.310	0.308	0.312	10.5	15.4	1.2	0.288	24.8	false
+83365	Snapshot 3B Jim Davenport SF 1965	3B	49	5	R			0.310	0.318	0.306	7.5	17.5	2.2	0.285	28.5	false
+82225	MLB 2026 Live 2B Cole Young SEA	2B	59	0	L			0.309	0.301	0.313	7.7	18.8	2.6	0.285	22.5	false
+82265	MLB 2026 Live RF Colby Thomas ATH	RF	55	0	R			0.309	0.309	0.31	6.2	27.3	3.6	0.295	28.1	false
+82610	MLB 2026 Live SS Trevor Story BOS	SS	52	0	R			0.309	0.314	0.306	5.3	24.7	3.2	0.306	24.5	false
+82877	Unsung Heroes RF Tom Poorman BSN 1886	RF	58	0	L			0.309	0.302	0.313	5.8	20.1	3.3	0.281	25.1	false
+83522	Snapshot LF Rube Oldring PHA 1914	LF	58	0	R			0.309	0.297	0.315	4.0	14.9	3.1	0.278	24	false
+83451	Snapshot 3B Greg Norton CWS 1999	3B	58	0	S			0.309	0.321	0.303	10.3	21.1	3.3	0.258	23.9	false
+81838	MLB 2026 Live LF Lourdes Gurriel Jr. AZ	LF	54	0	R			0.309	0.312	0.307	5.9	17.8	2.8	0.282	24.8	false
+83489	Snapshot 1B Don Bollweg NYY 1953	1B	50	0	L			0.309	0.307	0.311	8.2	26.4	3.5	0.289	22.8	false
+81841	MLB 2026 Live 1B Luken Baker AZ	1B	58	0	R			0.309	0.314	0.307	10.0	27.0	4.3	0.260	19.9	false
+82860	Unsung Heroes 2B Tony Piet PIT 1932	2B	54	5	R			0.309	0.279	0.324	8.0	18.1	2.6	0.280	22.3	false
+83400	Snapshot 2B Mariano Duncan CIN 1991	2B	53	5	R			0.309	0.32	0.304	5.0	17.7	4.0	0.268	17.5	false
+83919	Historical All-Star 3B Scott Cooper BOS 1993	3B	58	5	L			0.309	0.296	0.316	7.9	17.6	2.3	0.285	23.4	false
+85048	Celebrating GA - Baseball Reference LF Garret Anderson LAA 2008	LF	49	5	L			0.309	0.288	0.321	3.0	15.5	2.2	0.309	21.6	false
+83459	Snapshot 2B Luis Alicea TEX 2000	2B	59	5	S			0.309	0.315	0.305	9.0	14.8	1.3	0.295	21.5	false
+84412	Negro League Star LF Koke Alexander CoBu 1921	LF	53	5	R			0.309	0.313	0.307	6.7	15.4	2.3	0.281	26.1	false
+83468	Snapshot LF Taylor Ward LAA 2023	LF	58	0	R			0.308	0.302	0.311	9.7	18.3	3.1	0.261	21.2	false
+82361	MLB 2026 Live 1B Abraham Toro KC	1B	58	0	S			0.308	0.304	0.311	6.6	19.0	2.9	0.281	24.9	false
+85835	T4 Ep. 3 - Historical All-Star SS Cal Ripken Jr. BAL 1987	SS	58	0	R			0.308	0.29	0.317	9.9	15.1	3.1	0.250	20.5	false
+82305	MLB 2026 Live C Logan O&#39;Hoppe LAA	C	56	0	R			0.308	0.311	0.307	7.0	24.2	3.5	0.291	18.6	false
+83931	Historical All-Star 3B Frank Malzone BOS 1958	3B	58	0	R			0.308	0.308	0.308	5.1	14.6	2.6	0.285	21	false
+82018	MLB 2026 Live LF Daylen Lile WSH	LF	57	0	L			0.308	0.299	0.312	6.6	19.4	2.4	0.289	29.1	false
+83453	Snapshot CF Jim Hickman NYM 1965	CF	56	0	R			0.308	0.34	0.292	6.5	20.5	4.1	0.254	27.7	false
+85743	T4 Ep. 2 - Unsung Heroes SS Freddy Galvis TOR 2019	SS	58	0	S			0.308	0.305	0.309	3.8	23.8	3.5	0.302	21.9	false
+83416	Snapshot 3B David Freese LAA 2014	3B	55	0	R			0.308	0.32	0.302	8.4	21.3	3.0	0.279	22.3	false
+83634	Memorial Day OnStream Builds - Snapshot 1B Wilmer Flores NYM 2018	1B	59	0	R			0.308	0.268	0.33	6.0	9.9	2.2	0.270	24.5	false
+85741	Clubhouse - SwitchKnucklers - Veteran Presence 3B Asdrubal Cabrera TEX 2019	3B	54	0	S			0.308	0.305	0.309	10.0	21.0	2.5	0.283	21.4	false
+85088	Happy Birthday Nico - Super Utility 2B Nico Hoerner CHC 2021	2B	48	5	R			0.308	0.299	0.313	7.6	12.5	0.2	0.315	22.8	false
+82856	Unsung Heroes SS Mickey Doolin PHI 1908	SS	53	5	R			0.308	0.286	0.319	5.1	16.7	3.1	0.270	31.2	false
+83498	Snapshot 3B Jonathan Villar NYM 2021	3B	58	0	S			0.307	0.279	0.322	7.5	25.2	3.3	0.295	19	false
+82051	MLB 2026 Live 2B Edmundo Sosa PHI	2B	58	0	R			0.307	0.315	0.303	3.7	21.1	3.5	0.288	24.2	false
+86230	Limited Edition/103 LF Henry Rodriguez MON 1996	LF	47	0	L			0.307	0.275	0.324	5.0	37.0	5.5	0.286	32.1	true
+82393	MLB 2026 Live RF Wenceel Perez DET	RF	55	0	S			0.307	0.305	0.307	7.4	19.6	3.1	0.272	24.7	false
+82378	MLB 2026 Live C Salvador Perez KC	C	55	0	R			0.307	0.311	0.304	4.3	19.7	4.2	0.265	22.1	false
+83399	Snapshot LF Wayne Nordhagen CWS 1980	LF	53	0	R			0.307	0.337	0.291	2.1	16.6	4.2	0.263	26.6	false
+83454	Heart Attack - Snapshot SS Ron Hansen CWS 1967	SS	58	0	R			0.307	0.314	0.304	11.4	13.0	1.9	0.260	21.3	false
+81743	MLB 2026 Live RF Nick Castellanos SD	RF	52	0	R			0.307	0.312	0.304	5.5	21.8	3.2	0.289	25.3	false
+83916	Historical All-Star CF Gus Bell CIN 1957	CF	56	0	L			0.307	0.298	0.312	4.8	16.9	2.8	0.291	20.2	false
+82875	Unsung Heroes 2B Bill Wambsganss CLE 1923	2B	57	5	R			0.307	0.312	0.304	10.7	12.9	1.1	0.275	26.6	false
+83354	Snapshot LF AJ Pollock CWS 2022	LF	50	5	R			0.307	0.331	0.295	6.3	16.0	3.2	0.265	24.4	false
+83446	Snapshot 2B Dots Miller STL 1917	2B	56	5	R			0.307	0.323	0.299	6.5	16.3	3.0	0.272	21.4	false
+83519	Snapshot 3B Andy High BRO 1923	3B	59	5	L			0.307	0.288	0.317	9.2	10.2	2.0	0.253	28.4	false
+84352	Rookie Sensation CF Vince DiMaggio BSN 1937	CF	46	5	R			0.307	0.285	0.318	6.8	26.7	4.1	0.281	20.5	false
+82874	Unsung Heroes 2B Ken Boswell NYM 1969	2B	57	5	L			0.307	0.281	0.321	8.1	15.5	1.4	0.295	23.7	false
+84112	All-Time Legend 3B Bobby Adams CIN Peak	3B	56	5	R			0.307	0.299	0.311	8.1	16.3	1.7	0.289	25	false
+84115	All-Time Legend 2B Don Gutteridge SLA Peak	2B	59	0	R			0.306	0.299	0.31	6.9	17.2	2.4	0.279	28.2	false
+85087	Earth Day - Unsung Heroes SS Pumpsie Green BOS 1961	SS	56	0	S			0.306	0.351	0.282	11.2	19.2	1.6	0.283	23.8	false
+86148	Limited Edition/112 2B Pete Coscarart BRO 1940	2B	46	0	R			0.306	0.282	0.318	8.6	19.4	2.1	0.288	23.9	false
+82257	MLB 2026 Live RF Carlos Cortes ATH	RF	55	0	L			0.306	0.304	0.307	7.9	20.3	3.0	0.274	23.4	false
+83358	Snapshot 1B Jim Spencer CAL 1970	1B	49	5	L			0.306	0.295	0.312	4.5	15.1	3.0	0.276	22.5	false
+84113	All-Time Legend SS Bill Knickerbocker CLE Peak	SS	57	5	R			0.306	0.301	0.308	6.9	13.8	2.1	0.276	25.6	false
+84114	Veteran Presence 1B Tom Jones DET Peak	1B	56	5	R			0.306	0.305	0.306	7.5	9.5	1.9	0.265	24.9	false
+84314	Rookie Sensation C Eliezer J. Alfonzo SF 2006	C	48	5	R			0.306	0.292	0.313	3.6	22.5	3.9	0.283	25.1	false
+84108	Limited Edition/64 2B Burgess Whitehead NY1 1937	2B	58	0	R			0.305	0.314	0.3	5.3	7.8	1.3	0.287	20.7	true
+82166	MLB 2026 Live RF Cam Smith HOU	RF	55	0	R			0.305	0.307	0.304	7.9	25.6	3.1	0.286	25.4	false
+83918	Historical All-Star 1B Eddie Robinson PHA 1953	1B	56	0	L			0.305	0.308	0.303	8.0	16.7	3.7	0.239	26.7	false
+82458	MLB 2026 Live 3B Curtis Mead WSH	3B	51	0	R			0.305	0.308	0.303	7.8	21.0	3.2	0.270	25.2	false
+84320	Rookie Sensation 1B Mike Jacobs FLO 2006	1B	52	0	L			0.305	0.282	0.317	7.1	21.5	3.5	0.262	30.9	false
+81957	MLB 2026 Live 1B Christian Encarnacion-Strand BAL	1B	51	0	R			0.305	0.311	0.301	5.4	25.5	3.8	0.284	25.2	false
+81715	MLB 2026 Live RF Jerar Encarnacion SF	RF	58	0	R			0.305	0.314	0.301	6.8	28.1	3.7	0.299	18.5	false
+84122	All-Time Legend LF Pat Duncan CIN Peak	LF	59	0	R			0.305	0.295	0.311	6.4	15.8	2.4	0.280	24.4	false
+83527	Veteran Presence RF Andre Dawson BOS 1993	RF	58	0	R			0.305	0.351	0.281	5.4	14.8	3.4	0.258	25.7	false
+85416	Played Where? - Snapshot LF Eric Davis DET 1993	LF	54	0	R			0.305	0.288	0.314	8.9	26.8	4.3	0.264	17.1	false
+82021	MLB 2026 Live 1B Andres Chaparro WSH	1B	54	0	R			0.305	0.309	0.304	7.7	24.2	3.3	0.279	25	false
+85330	T4 Ep. 1 - In Memoriam 3B Bobby Cox NYY 1968	3B	48	5	R			0.305	0.334	0.291	9.1	22.1	2.5	0.289	19.8	false
+83397	Snapshot 2B Starlin Castro MIA 2019	2B	51	5	R			0.305	0.322	0.296	4.7	14.8	3.1	0.270	22.6	false
+82851	Unsung Heroes 1B Scoops Carey WS1 1902	1B	52	5	R			0.305	0.306	0.305	5.8	13.3	0.6	0.302	32.3	false
+83347	Snapshot 1B Rico Brogna PHI 1997	1B	44	5	L			0.305	0.277	0.32	5.2	19.7	3.8	0.261	28.9	false
+84107	All-Time Legend 2B Marlon Anderson PHI Peak	2B	54	5	L			0.305	0.31	0.302	6.7	14.9	2.5	0.271	24.5	false
+83925	Historical All-Star LF Claudell Washington ATH 1975	LF	59	0	L			0.304	0.295	0.309	4.4	18.9	2.3	0.307	20	false
+84934	MLB 2026 Live LF Ryan Vilade TB	LF	55	0	R			0.304	0.306	0.303	7.7	24.1	2.6	0.295	24	false
+82012	MLB 2026 Live C Keibert Ruiz WSH	C	50	0	S			0.304	0.306	0.303	4.8	16.1	2.8	0.278	23.7	false
+83518	Snapshot RF Carl Reynolds CWS 1931	RF	59	0	R			0.304	0.297	0.308	5.6	14.5	2.9	0.267	24.5	false
+84110	All-Time Legend RF Xavier Nady PIT Peak	RF	56	0	R			0.304	0.307	0.302	5.5	19.2	3.4	0.273	23	false
+84323	Rookie Sensation LF Austin McHenry STL 1918	LF	54	0	R			0.304	0.3	0.305	6.8	17.6	2.8	0.268	28.4	false
+82428	MLB 2026 Live LF Angel Martinez CLE	LF	56	0	S			0.304	0.303	0.304	5.4	19.7	3.1	0.279	25.3	false
+83461	Snapshot LF Greg Luzinski CWS 1984	LF	56	0	R			0.304	0.279	0.318	10.7	21.2	3.6	0.250	18.1	false
+82489	MLB 2026 Live RF Nathan Lukes TOR	RF	54	0	L			0.304	0.301	0.306	6.5	19.2	2.4	0.292	21.6	false
+82456	MLB 2026 Live RF Jarred Kelenic CWS	RF	58	0	L			0.304	0.301	0.306	7.2	25.6	2.8	0.301	23.8	false
+85678	In Memoriam - Veteran Presence 1B Bob Horner STL 1988	1B	44	0	R			0.304	0.347	0.282	11.5	14.1	1.8	0.266	16.7	false
+82554	MLB 2026 Live RF Yanquiel Fernandez NYY	RF	53	0	L			0.304	0.29	0.311	6.1	21.5	3.1	0.285	23.3	false
+82601	MLB 2026 Live LF Jarren Duran BOS	LF	56	0	L			0.304	0.302	0.305	6.7	24.6	3.3	0.282	27	false
+82557	MLB 2026 Live LF Jasson Dominguez NYY	LF	57	0	S			0.304	0.302	0.305	7.6	24.8	3.1	0.288	23.1	false
+85873	T4 Ep. 3 - Snapshot CF Tony Armas BOS 1983	CF	48	0	R			0.304	0.315	0.299	4.7	31.6	5.5	0.267	24.9	false
+83481	Snapshot C Dave Valle SEA 1989	C	55	5	R			0.304	0.314	0.299	9.2	13.2	3.3	0.237	21.8	false
+82859	Unsung Heroes C Frank House DET 1954	C	52	5	L			0.304	0.292	0.311	6.9	16.2	3.4	0.257	21.6	false
+83407	Snapshot 3B Mark Christman SLA 1943	3B	52	5	R			0.304	0.312	0.301	6.2	12.8	2.2	0.277	22.1	false
+84858	Limited Edition/42 C Lenny Webster BAL 1998	C	49	0	R			0.303	0.329	0.29	3.3	16.3	3.2	0.283	20.1	false
+85545	MLB 2026 Live 1B Esmerlyn Valdez PIT	1B	52	0	R			0.303	0.309	0.299	7.8	28.1	3.8	0.277	24.3	false
+81837	MLB 2026 Live 1B Tyler Locklear AZ	1B	54	0	R			0.303	0.306	0.301	7.7	25.2	2.7	0.294	26.4	false
+85257	MLB 2026 Live RF Rece Hinds MIA	RF	53	0	R			0.303	0.31	0.3	6.0	30.0	3.9	0.295	24.7	false
+85725	T4 Ep. 2 - Snapshot CF Dexter Fowler COL 2010	CF	53	0	S			0.303	0.305	0.303	10.5	25.4	1.1	0.315	27.2	false
+81901	MLB 2026 Live C Henry Davis PIT	C	54	0	R			0.303	0.307	0.301	7.3	22.8	3.6	0.267	24.8	false
+84317	Rookie Sensation C Sammy Taylor CHC 1958	C	50	5	L			0.303	0.309	0.3	7.4	18.7	2.4	0.283	23	false
+85023	HOF 1 - Hall of Fame 3B Brooks Robinson BAL 1963	3B	49	5	R			0.303	0.332	0.287	6.6	18.1	2.3	0.285	23.4	false
+83392	Snapshot 1B Buddy Hassett BSN 1939	1B	50	5	L			0.303	0.28	0.314	3.6	7.2	0.7	0.314	11.8	false
+82298	MLB 2026 Live LF Chris Taylor LAA	LF	57	0	R			0.302	0.307	0.299	7.2	26.8	2.6	0.309	22	false
+83437	Snapshot RF Wes Schulmerich BSN 1932	RF	51	0	R			0.302	0.27	0.318	6.7	22.5	3.9	0.259	24.6	false
+83533	Snapshot RF Bill Nicholson CHC 1946	RF	54	0	L			0.302	0.281	0.312	9.6	19.9	4.0	0.230	25.7	false
+84321	Rookie Sensation 3B Leo Gomez BAL 1991	3B	52	0	R			0.302	0.291	0.307	8.2	21.0	4.1	0.243	23	false
+82303	MLB 2026 Live RF Gustavo Campero LAA	RF	52	0	S			0.302	0.302	0.301	6.4	19.5	2.5	0.281	26.6	false
+81903	MLB 2026 Live C Joey Bart ATL	C	59	0	R			0.302	0.304	0.3	7.7	25.9	2.8	0.303	17	false
+82436	MLB 2026 Live SS Gabriel Arias CLE	SS	59	0	R			0.302	0.301	0.302	5.8	26.7	3.2	0.302	22.8	false
+84793	Baseball Reference 1 CF Mike Trout LAA 2024	CF	51	5	R			0.302	0.239	0.336	10.7	17.4	3.8	0.234	13.2	false
+83929	Historical All-Star 2B Johnny Temple CLE 1961	2B	57	5	R			0.302	0.302	0.302	9.3	12.0	1.0	0.282	21.8	false
+83339	Snapshot CF Chris Singleton BAL 2002	CF	45	5	L			0.302	0.293	0.307	5.8	17.1	2.5	0.275	28.7	false
+82833	Unsung Heroes 3B Jeff Hamilton LAD 1989	3B	45	5	R			0.302	0.273	0.318	4.1	15.3	3.4	0.256	29.9	false
+85417	Played Where? - Veteran Presence LF Curtis Granderson MIA 2019	LF	45	5	L			0.302	0.31	0.297	11.4	22.2	2.6	0.259	25.7	false
+83534	Snapshot SS Don Zimmer LAD 1958	SS	59	0	R			0.301	0.287	0.309	5.7	21.1	3.5	0.278	18.9	false
+85452	PTMS 1 LF Bill Robinson PIT 1979	LF	47	0	R			0.301	0.343	0.278	4.1	29.4	5.0	0.273	21.6	false
+83492	Snapshot RF Dick Porter CLE 1932	RF	58	0	L			0.301	0.308	0.298	7.9	17.0	1.5	0.291	23.4	false
+83385	Snapshot 1B Fred Merkle NY1 1913	1B	51	0	R			0.301	0.323	0.29	6.2	17.9	2.7	0.267	30.4	false
+84911	MLB 2026 Live LF Andrew McCutchen TEX	LF	57	0	R			0.301	0.311	0.295	10.5	24.0	2.5	0.279	20.2	false
+83450	Snapshot 3B Corey Koskie TOR 2005	3B	55	0	L			0.301	0.278	0.313	9.9	24.3	2.8	0.274	22.7	false
+82302	MLB 2026 Live 2B Vaughn Grissom LAA	2B	59	0	R			0.301	0.303	0.3	7.6	19.2	2.4	0.279	24.2	false
+82371	MLB 2026 Live LF Isaac Collins KC	LF	58	0	S			0.301	0.304	0.3	11.0	24.1	1.9	0.286	25.8	false
+82474	MLB 2026 Live LF Brooks Baldwin CWS	LF	54	0	S			0.301	0.304	0.3	6.5	23.3	3.3	0.281	21.5	false
+83509	Snapshot LF Dusty Baker LAD 1978	LF	56	0	R			0.301	0.303	0.3	7.7	17.8	2.9	0.267	20.5	false
+82832	Unsung Heroes 3B Ken Reitz STL 1979	3B	49	5	R			0.301	0.334	0.283	4.2	16.8	2.2	0.287	29.5	false
+82847	Unsung Heroes 2B Johnny O&#39;Brien PIT 1955	2B	52	5	R			0.301	0.293	0.305	5.8	12.6	0.8	0.301	24.7	false
+83508	Snapshot CF Rick Miller CAL 1979	CF	59	5	L			0.301	0.267	0.319	9.6	18.7	0.9	0.308	18.9	false
+83378	Snapshot 2B Ray Durham CWS 1997	2B	52	5	S			0.301	0.302	0.301	8.6	15.3	2.2	0.270	20.3	false
+84416	Negro League Star LF Dee Williams KCRG 1910	LF	54	0	R			0.300	0.303	0.299	5.8	17.7	2.8	0.276	21.8	false
+83556	Snapshot 3B Buck Weaver CWS 1920	3B	57	0	S			0.300	0.301	0.3	5.2	13.7	1.5	0.293	22.8	false
+83932	Historical All-Star 1B Eddie Waitkus PHI 1949	1B	52	0	L			0.300	0.278	0.312	8.4	17.6	1.3	0.288	27.5	false
+84336	Rookie Sensation C Jack Shepard PIT 1954	C	56	0	R			0.300	0.326	0.285	7.3	21.2	2.1	0.300	19	false
+82565	MLB 2026 Live 3B Amed Rosario NYY	3B	55	0	R			0.300	0.306	0.296	4.9	18.6	2.6	0.287	22.3	false
+82016	MLB 2026 Live 1B Matt Mervis WSH	1B	50	0	L			0.300	0.289	0.306	6.5	27.8	4.3	0.271	21.5	false
+82632	MLB 2026 Live LF Heston Kjerstad BAL	LF	53	0	L			0.300	0.292	0.304	6.4	26.0	3.3	0.289	23.9	false
+82024	MLB 2026 Live C Harry Ford WSH	C	57	0	R			0.300	0.309	0.295	9.8	22.8	2.3	0.281	22.8	false
+83419	Snapshot RF Bobby Darwin MIN 1973	RF	53	0	R			0.300	0.281	0.309	6.6	24.6	3.4	0.281	21.6	false
+82020	MLB 2026 Live RF Dylan Crews WSH	RF	54	0	R			0.300	0.305	0.298	6.6	22.6	3.1	0.281	23.2	false
+84315	Rookie Sensation CF Lou Brock CHC 1962	CF	51	0	L			0.300	0.251	0.326	6.2	23.7	2.1	0.302	29.7	false
+81711	MLB 2026 Live RF Will Brennan SF	RF	59	0	L			0.300	0.29	0.305	5.3	16.4	1.8	0.297	21.2	false
+81801	MLB 2026 Live 2B Adael Amador COL	2B	59	0	S			0.300	0.304	0.298	9.9	19.5	2.2	0.273	20.6	false
+83435	Snapshot 1B Tony Lupien BOS 1943	1B	52	5	L			0.300	0.286	0.308	7.3	10.9	2.1	0.261	21.7	false
+84413	Negro League Star CF Cando Lopez NYC 1935	CF	59	5	R			0.300	0.301	0.299	7.2	14.8	1.9	0.274	24.7	false
+82863	Unsung Heroes 2B Ted Kubiak ML4 1971	2B	53	5	S			0.300	0.295	0.303	11.1	15.9	2.0	0.255	24.6	false
+83388	Snapshot LF Alex Johnson TEX 1974	LF	50	5	R			0.300	0.285	0.308	5.6	15.9	1.9	0.297	17.9	false
+83379	Snapshot 1B Steve Balboni KC 1985	1B	43	5	R			0.300	0.307	0.297	7.2	39.6	5.4	0.284	22.2	false
+84984	MLB 2026 Live 1B Shay Whitcomb HOU	1B	52	0	R			0.299	0.305	0.295	6.7	28.7	3.9	0.284	20.3	false
+84351	Rookie Sensation RF Will Venable SD 2009	RF	59	0	L			0.299	0.278	0.31	6.9	27.4	3.6	0.282	22.2	false
+83471	Snapshot 1B Rowdy Tellez MIL 2022	1B	52	0	L			0.299	0.293	0.303	8.1	19.6	4.6	0.222	23	false
+82854	Unsung Heroes CF Johnny Rucker NY1 1945	CF	52	0	L			0.299	0.275	0.312	4.2	18.1	3.1	0.272	25.5	false
+85006	MLB 2026 Live CF Tristan Peters CWS	CF	56	0	L			0.299	0.296	0.3	7.4	21.4	2.3	0.286	25.3	false
+83458	Snapshot CF Jay Payton NYM 2000	CF	58	0	R			0.299	0.306	0.295	5.4	15.7	3.0	0.268	18.8	false
+82625	MLB 2026 Live RF Jhonkensy Noel BAL	RF	51	0	R			0.299	0.307	0.295	6.1	27.2	4.6	0.262	21.6	false
+82264	MLB 2026 Live 3B Max Muncy ATH	3B	54	0	R			0.299	0.302	0.297	6.6	28.7	2.8	0.304	26.7	false
+83456	Snapshot LF Duffy Lewis BOS 1917	LF	54	0	R			0.299	0.305	0.296	5.3	17.1	1.3	0.304	25.2	false
+84335	Rookie Sensation RF Junior Felix TOR 1989	RF	57	0	S			0.299	0.291	0.304	7.2	24.8	2.9	0.288	21.9	false
+83589	Snapshot LF Bernie Carbo CIN 1971	LF	56	0	L			0.299	0.295	0.302	11.6	20.5	2.3	0.250	32.3	false
+84342	Rookie Sensation CF Bobby Brown NYY 1980	CF	58	0	S			0.299	0.274	0.312	5.4	22.1	3.7	0.272	19.8	false
+83505	Snapshot RF Derek Bell HOU 1997	RF	58	0	R			0.299	0.27	0.315	7.4	19.4	2.9	0.269	23.2	false
+83476	Snapshot CF Garret Anderson ANA 1999	CF	59	0	L			0.299	0.315	0.291	3.4	15.9	2.9	0.281	20.8	false
+83529	Snapshot 2B Alan Wiggins SD 1984	2B	59	5	S			0.299	0.324	0.285	10.9	13.3	1.2	0.269	20.7	false
+82848	Unsung Heroes RF Wally Roettger STL 1931	RF	50	5	R			0.299	0.279	0.309	5.7	15.1	0.9	0.303	25.7	false
+82886	Unsung Heroes 1B Tom O&#39;Brien PIT 1900	1B	43	5	R			0.299	0.322	0.287	5.2	17.4	2.2	0.279	32.3	false
+83421	Snapshot SS Frankie Gustine PIT 1943	SS	57	5	R			0.299	0.315	0.291	6.7	15.4	0.7	0.306	24.2	false
+84306	Rookie Sensation 1B Art Griggs SLA 1909	1B	49	5	R			0.299	0.313	0.292	7.0	16.5	0.7	0.303	27.7	false
+82866	Unsung Heroes 1B Bill Everitt CHC 1898	1B	42	5	L			0.299	0.296	0.301	8.5	17.2	0.7	0.311	17.6	false
+83405	Snapshot C Rick Dempsey BAL 1979	C	55	5	R			0.299	0.308	0.295	8.9	14.5	2.4	0.249	29	false
+82702	Hardware Heroes SS Luis Aparicio CWS 1957	SS	52	5	R			0.299	0.308	0.294	8.1	13.0	0.5	0.298	21.4	false
+86248	FLF 16 - Future Legend C Eliezer Alfonzo LAD 2026	C	48	5	S			0.299	0.298	0.3	7.8	15.0	1.9	0.273	23.4	true
+82139	MLB 2026 Live RF Eli White ATL	RF	52	0	R			0.298	0.302	0.296	5.8	23.3	2.9	0.293	20.1	false
+83432	Snapshot 3B Paul Schaal KC 1972	3B	56	0	R			0.298	0.308	0.293	10.9	17.7	2.1	0.254	26.6	false
+84316	Rookie Sensation C Nelson Santovenia MON 1988	C	49	0	R			0.298	0.304	0.294	6.9	25.0	3.1	0.273	31.1	false
+86083	Obscure All-Stars - Baseball Reference 5 C Biff Pocoroba ATL 1978	C	44	0	S			0.298	0.27	0.312	8.5	8.8	2.2	0.250	16.6	true
+82107	MLB 2026 Live 1B Connor Norby MIA	1B	56	0	R			0.298	0.3	0.297	7.5	27.4	2.7	0.294	27.4	false
+83420	Veteran Presence CF Terry Moore STL 1947	CF	54	0	R			0.298	0.29	0.301	6.2	16.8	2.4	0.281	18.1	false
+84322	Rookie Sensation 1B Tommy McCraw CWS 1963	1B	54	0	L			0.298	0.305	0.295	7.1	19.5	2.6	0.275	23.2	false
+85078	Clubhouse - Y&amp;O 1 - Rookie Sensation CF Tony Gwynn SD 1982	CF	58	0	L			0.298	0.283	0.307	4.7	14.2	0.5	0.313	26.4	false
+84713	Clubhouse - April Fools&#39; Day SS Brian Giles SEA 1990	SS	54	0	R			0.298	0.303	0.295	9.0	28.7	2.9	0.284	26.5	false
+81816	MLB 2026 Live C Braxton Fulford COL	C	53	0	R			0.298	0.302	0.296	7.2	27.4	2.7	0.301	25.7	false
+83389	Snapshot 3B Gene Freese PIT 1957	3B	55	0	R			0.298	0.308	0.293	5.2	17.4	2.0	0.293	23.6	false
+85966	MLB 2026 Live C Rafael Flores Jr. PIT	C	52	0	R			0.298	0.305	0.294	7.1	27.6	3.0	0.293	24.4	false
+82876	Unsung Heroes CF Zip Collins PIT 1915	CF	59	0	L			0.298	0.306	0.294	6.1	18.3	1.9	0.302	16.9	false
+83404	Snapshot 1B Danny Cater NYY 1970	1B	57	0	R			0.298	0.315	0.289	4.8	11.2	1.3	0.294	19.4	false
+83429	Snapshot LF Glenn Braggs ML4 1989	LF	53	0	R			0.298	0.304	0.296	7.1	22.1	3.7	0.267	14.8	false
+82011	MLB 2026 Live C Riley Adams WSH	C	59	0	R			0.298	0.303	0.296	6.1	27.5	3.4	0.296	20.3	false
+83349	Snapshot 3B Chris Johnson ATL 2014	3B	48	5	R			0.298	0.332	0.279	4.7	20.7	2.3	0.303	19.8	false
+85849	Heart Attack - Unsung Heroes C Billy Bryan KC1 1965	C	48	5	L			0.298	0.233	0.332	6.2	32.0	3.5	0.307	25.7	false
+83465	Snapshot 1B Lu Blue DET 1927	1B	54	5	S			0.298	0.282	0.307	12.7	16.0	0.5	0.279	22.5	false
+84972	MLB 2026 Live C Brandon Valenzuela TOR	C	53	0	S			0.297	0.295	0.299	9.0	27.4	3.5	0.270	19.9	false
+81893	MLB 2026 Live 1B Enmanuel Valdez PIT	1B	56	0	L			0.297	0.285	0.303	8.5	23.9	2.8	0.275	23.3	false
+85064	HOF 1 - Hall of Fame 2B Ryne Sandberg CHC 1996	2B	57	0	R			0.297	0.31	0.291	6.0	20.0	3.2	0.269	21.5	false
+83462	Veteran Presence 1B Gary Redus PIT 1991	1B	59	0	R			0.297	0.298	0.297	10.4	18.9	2.3	0.260	22.5	false
+83428	Snapshot C Josh Phegley ATH 2015	C	51	0	R			0.297	0.328	0.281	4.4	21.7	3.6	0.270	25.5	false
+85733	T4 Ep. 2 - Unsung Heroes C Doug Mirabelli BOS 2001	C	50	0	R			0.297	0.319	0.286	10.1	28.0	3.0	0.280	19.3	false
+84925	MLB 2026 Live RF Starling Marte KC	RF	53	0	R			0.297	0.304	0.294	6.8	22.0	2.1	0.301	20	false
+83936	Historical All-Star C Gus Mancuso NY1 1935	C	58	0	R			0.297	0.254	0.319	5.8	11.2	1.6	0.284	16.6	false
+82040	MLB 2026 Live 3B Otto Kemp PHI	3B	54	0	R			0.297	0.31	0.289	6.9	28.1	3.1	0.291	25	false
+83398	Snapshot CF Roberto Kelly ATL 1994	CF	53	0	R			0.297	0.294	0.298	6.7	18.2	2.2	0.285	20.1	false
+85088	Happy Birthday Nico - Super Utility 2B Nico Hoerner CHC 2021	2B	48	0	R			0.297	0.289	0.301	7.1	13.8	0.2	0.309	21.6	false
+83402	Snapshot 3B Al Gallagher SF 1971	3B	53	0	R			0.297	0.317	0.286	6.8	17.5	1.8	0.290	21.1	false
+82623	MLB 2026 Live 2B Thairo Estrada BAL	2B	50	0	R			0.297	0.302	0.294	4.9	17.9	2.7	0.276	24.6	false
+83362	Snapshot 3B Eduardo Escobar NYM 2022	3B	46	0	S			0.297	0.299	0.295	6.2	20.6	3.4	0.259	26.2	false
+82591	MLB 2026 Live 3B Caleb Durbin BOS	3B	50	0	R			0.297	0.299	0.295	6.8	17.5	2.5	0.264	29.3	false
+83424	Snapshot RF Lonnie Chisenhall CLE 2016	RF	53	0	L			0.297	0.299	0.297	5.6	17.2	1.9	0.286	25.9	false
+84612	World Baseball Classic 2B Tsung-Che Cheng TPE 2026	2B	44	0	L			0.297	0.275	0.309	11.8	20.3	1.2	0.295	12	false
+85313	Baseball Reference 2 SS Tim Beckham TB 2017	SS	48	0	R			0.297	0.306	0.292	5.4	30.1	3.0	0.318	20.7	false
+84414	Negro League Star C Pepper Bassett PiCr 1938	C	57	0	S			0.297	0.289	0.301	4.1	17.6	3.5	0.260	24.5	false
+82410	MLB 2026 Live SS Javier Baez DET	SS	52	0	R			0.297	0.304	0.293	3.9	20.3	2.8	0.290	23.3	false
+83457	Snapshot 3B Jimmy Austin SLA 1911	3B	58	0	S			0.297	0.301	0.295	9.7	21.5	1.8	0.281	25.8	false
+84330	Rookie Sensation CF Buster Adams PHI 1943	CF	57	0	R			0.297	0.311	0.289	7.5	22.1	2.5	0.284	21.9	false
+82701	Hardware Heroes SS Jorge Mateo BAL 2022	SS	47	5	R			0.297	0.283	0.305	5.0	24.5	3.0	0.287	30.1	false
+84804	Baseball Reference 1 SS Mario Guerrero ATH 1978	SS	46	5	R			0.297	0.307	0.291	0.9	10.9	0.6	0.321	22	false
+85823	FLF 13 &amp; Co. - 2X Variant Booster DH Byron Buxton MIN 2023	DH	44	5	R			0.297	0.263	0.315	10.1	32.9	4.3	0.256	24.3	false
+84299	Rookie Sensation C John Bateman HOU 1963	C	44	5	R			0.297	0.344	0.272	6.0	22.0	3.7	0.264	22.4	false
+85620	MLB 2026 Live SS Gage Workman DET	SS	58	0	L			0.296	0.289	0.3	7.2	31.5	3.7	0.289	22.7	false
+82359	MLB 2026 Live LF Drew Waters KC	LF	56	0	S			0.296	0.293	0.298	7.3	26.2	2.3	0.301	26.3	false
+82079	MLB 2026 Live C Luis Torrens NYM	C	57	0	R			0.296	0.3	0.294	6.0	20.6	2.3	0.289	23.5	false
+81842	MLB 2026 Live CF Alek Thomas LAD	CF	51	0	L			0.296	0.295	0.297	5.3	20.2	2.4	0.286	27.4	false
+85595	MLB 2026 Live 3B Sung-mun Song SD	3B	53	0	L			0.296	0.29	0.298	7.8	21.8	2.7	0.274	22.1	false
+82869	Unsung Heroes CF John Shelby LAD 1988	CF	55	0	S			0.296	0.274	0.307	6.9	26.5	2.6	0.300	23.5	false
+82236	MLB 2026 Live RF Rob Refsnyder SEA	RF	54	0	R			0.296	0.303	0.293	8.0	26.4	3.2	0.285	17.2	false
+83469	Snapshot SS Geraldo Perdomo ARI 2024	SS	59	0	S			0.296	0.309	0.289	8.7	15.6	0.9	0.289	22.6	false
+83497	Snapshot RF MJ Melendez KC 2023	RF	55	0	L			0.296	0.3	0.294	8.3	22.9	2.4	0.279	25.8	false
+82337	MLB 2026 Live RF Austin Martin MIN	RF	59	0	R			0.296	0.298	0.295	10.5	19.5	1.1	0.289	22	false
+84318	Rookie Sensation 3B Harry Lord BOS 1908	3B	53	0	L			0.296	0.294	0.298	4.9	15.8	2.8	0.274	18.2	false
+83374	Snapshot LF Geoff Jenkins MIL 2007	LF	49	0	L			0.296	0.294	0.297	6.4	27.4	4.1	0.264	25.4	false
+82626	MLB 2026 Live 2B Jeremiah Jackson BAL	2B	52	0	R			0.296	0.301	0.294	4.2	22.2	3.6	0.276	22.4	false
+85265	MLB 2026 Live C Sam Huff BAL	C	51	0	R			0.296	0.311	0.288	6.5	30.1	3.7	0.291	20.9	false
+83380	Snapshot LF Del Ennis PHI 1956	LF	51	0	R			0.296	0.307	0.291	3.8	16.0	3.8	0.253	21.5	false
+84385	Rookie Sensation 3B Jim Doyle CHC 1911	3B	56	0	R			0.296	0.308	0.289	6.8	21.3	1.8	0.294	26.3	false
+82168	MLB 2026 Live LF Zach Dezenzo HOU	LF	52	0	R			0.296	0.293	0.297	6.7	28.4	3.0	0.301	22.2	false
+84310	Rookie Sensation 3B Cheslor Cuthbert KC 2016	3B	51	0	R			0.296	0.305	0.29	6.0	17.9	2.3	0.281	22	false
+82553	MLB 2026 Live 3B Oswaldo Cabrera NYY	3B	57	0	S			0.296	0.297	0.296	7.0	19.1	2.6	0.277	19.2	false
+83913	Historical All-Star 2B Steve Sax LAD 1983	2B	53	5	R			0.296	0.282	0.303	8.0	15.6	1.4	0.289	17.2	false
+82849	Unsung Heroes SS Heinie Sand PHI 1924	SS	48	5	R			0.296	0.285	0.302	8.7	18.5	3.2	0.246	23.2	false
+84411	Negro League Star LF Judy Gans CAG 1918	LF	50	5	L			0.296	0.289	0.299	9.1	18.4	2.4	0.259	25.1	false
+83411	Snapshot 3B Wid Conroy WS1 1909	3B	53	5	R			0.296	0.306	0.291	7.4	13.9	2.1	0.266	21.4	false
+83401	Snapshot SS Larry Brown CLE 1967	SS	51	5	R			0.296	0.295	0.296	9.8	14.6	2.3	0.251	20.3	false
+85824	FLF 13 &amp; Co. - Rookie Sensation C Kevin Brown TOR 1998	C	45	5	R			0.296	0.266	0.312	8.1	27.7	2.4	0.300	25.9	false
+83444	Snapshot SS Dick Bartell CHC 1939	SS	55	5	R			0.296	0.298	0.295	10.8	14.9	1.8	0.243	32.3	false
+82850	Unsung Heroes 3B Walter Barbare PIT 1919	3B	49	5	R			0.296	0.299	0.295	6.1	14.4	2.0	0.272	24.3	false
+85152	Young &amp; Old 1 - Unsung Heroes 2B Jerry Adair BOS 1967	2B	45	5	R			0.296	0.299	0.295	4.4	14.1	0.7	0.312	22.7	false
+83921	Historical All-Star SS Michael Young TEX 2008	SS	59	0	R			0.295	0.311	0.287	7.1	17.9	2.0	0.283	19.7	false
+85264	MLB 2026 Live 1B Weston Wilson SEA	1B	56	0	R			0.295	0.301	0.292	7.6	27.4	3.9	0.268	18.5	false
+81778	MLB 2026 Live CF Jack Suwinski LAD	CF	59	0	L			0.295	0.283	0.302	7.9	27.8	2.9	0.287	24.8	false
+85587	MLB 2026 Live C Endy Rodriguez PIT	C	57	0	S			0.295	0.297	0.294	8.2	23.6	2.3	0.281	26.6	false
+82624	MLB 2026 Live LF Will Robertson BAL	LF	51	0	L			0.295	0.287	0.299	6.5	29.6	4.4	0.266	22.4	false
+82113	MLB 2026 Live LF Christopher Morel NYM	LF	59	0	R			0.295	0.298	0.294	7.9	27.1	3.0	0.286	22	false
+83500	Veteran Presence C Travis d&#39;Arnaud ATL 2022	C	55	0	R			0.295	0.308	0.288	4.7	24.8	3.7	0.279	21	false
+85759	Limited Edition/80 CF Chuck Carr FLO 1993	CF	47	0	S			0.295	0.295	0.294	7.3	17.2	1.1	0.299	21	false
+83478	Snapshot 3B Aaron Boone CIN 1999	3B	59	0	R			0.295	0.271	0.308	4.1	19.1	2.6	0.284	24.4	false
+83479	Snapshot 2B Bip Roberts SD 1991	2B	59	5	S			0.295	0.272	0.307	8.3	17.1	1.2	0.298	16.1	false
+83406	Snapshot C Clay Dalrymple PHI 1964	C	51	5	L			0.295	0.281	0.302	8.2	13.8	2.2	0.252	25.5	false
+83413	Snapshot C Lou Criger BOS 1902	C	51	5	R			0.295	0.296	0.295	9.6	14.9	0.3	0.283	32.3	false
+84396	Negro League Star 1B Toussaint Allen WiPo 1925	1B	45	5	R			0.295	0.299	0.294	7.3	19.0	3.6	0.243	25.1	false
+82469	MLB 2026 Live 2B Lenyn Sosa TOR	2B	51	0	R			0.294	0.299	0.291	3.5	19.7	3.0	0.283	21.6	false
+83418	Snapshot 1B Hal Morris CIN 1992	1B	56	0	L			0.294	0.264	0.31	7.7	17.9	2.0	0.274	23.3	false
+82291	MLB 2026 Live 2B Christian Moore LAA	2B	52	0	R			0.294	0.304	0.289	8.1	28.2	2.6	0.294	23.5	false
+85248	MLB 2026 Live RF MJ Melendez NYM	RF	52	0	L			0.294	0.289	0.296	7.6	29.2	3.4	0.277	26	false
+84808	Baseball Reference 1 CF Austin Jackson DET 2010	CF	48	0	R			0.294	0.288	0.297	5.9	27.2	1.6	0.327	27.1	false
+81961	MLB 2026 Live CF TJ Friedl CIN	CF	58	0	L			0.294	0.292	0.295	9.1	20.2	2.1	0.273	21.8	false
+82457	MLB 2026 Live 1B Tim Elko CWS	1B	49	0	R			0.294	0.299	0.292	5.7	28.8	3.7	0.291	19.8	false
+83449	Snapshot CF Rajai Davis DET 2015	CF	57	0	R			0.294	0.297	0.293	6.6	19.5	2.5	0.269	29.1	false
+82861	Unsung Heroes CF Vin Campbell BSN 1912	CF	54	0	L			0.294	0.266	0.309	4.8	15.1	2.4	0.271	24.6	false
+83466	Snapshot LF Roy Hartzell NYY 1914	LF	56	5	L			0.294	0.276	0.303	11.1	13.9	1.5	0.253	24	false
+82703	Hardware Heroes CF Marquis Grissom MON 1991	CF	52	5	R			0.294	0.303	0.289	6.1	17.7	1.7	0.290	22.9	false
+86068	4th of July On-Stream - Unsung Heroes CF Jordan Danks CWS 2013	CF	45	5	L			0.294	0.248	0.318	9.9	30.1	2.3	0.302	21.3	false
+85685	June Gems - Baseball Reference 3 LF Vince Coleman STL 1985	LF	55	5	S			0.294	0.287	0.297	7.5	19.7	0.4	0.320	22.7	false
+83445	Snapshot 3B Bill Bradley CLE 1905	3B	56	5	R			0.294	0.29	0.296	7.7	16.1	0.6	0.290	30.6	false
+82434	MLB 2026 Live RF George Valera CLE	RF	54	0	L			0.293	0.276	0.302	8.2	28.6	3.1	0.285	20.2	false
+83434	Snapshot LF Bobby Thomson ML1 1956	LF	49	0	R			0.293	0.304	0.287	6.7	20.1	4.0	0.244	17.9	false
+82019	MLB 2026 Live 3B Jose Tena WSH	3B	54	0	L			0.293	0.287	0.296	6.8	26.1	1.9	0.307	27.4	false
+82324	MLB 2026 Live LF Alan Roden MIN	LF	54	0	L			0.293	0.286	0.296	7.6	19.6	1.7	0.283	25.1	false
+85253	MLB 2026 Live LF Tommy Pham PHI	LF	52	0	R			0.293	0.3	0.289	8.8	23.4	2.0	0.288	21.6	false
+81872	MLB 2026 Live C Pedro Pages STL	C	54	0	R			0.293	0.296	0.291	5.7	23.4	3.0	0.282	21.9	false
+84916	MLB 2026 Live CF Jared Oliva NYM	CF	50	0	R			0.293	0.299	0.291	6.1	22.5	2.7	0.283	22.5	false
+82855	Unsung Heroes CF Charlie Jones WS1 1906	CF	51	0	R			0.293	0.267	0.307	5.4	20.9	3.4	0.266	20.1	false
+84332	Rookie Sensation 2B Bucky Harris WS1 1920	2B	58	0	R			0.293	0.289	0.295	9.6	16.9	1.0	0.281	23.3	false
+82851	Unsung Heroes 1B Scoops Carey WS1 1902	1B	52	0	R			0.293	0.293	0.292	5.2	14.4	0.6	0.295	32.3	false
+82288	MLB 2026 Live 3B Jeimer Candelario LAA	3B	53	0	S			0.293	0.295	0.293	7.0	23.1	3.2	0.268	21.7	false
+84109	All-Time Legend CF Joe Birmingham CLE Peak	CF	54	0	R			0.293	0.304	0.288	5.9	18.0	2.5	0.273	23	false
+83409	Snapshot RF Danny Moeller WS1 1914	RF	53	5	S			0.293	0.273	0.303	9.8	20.6	1.3	0.285	23.9	false
+84993	MLB 2026 Live 2B Nick Yorke PIT	2B	54	0	R			0.292	0.292	0.292	7.2	22.2	2.0	0.288	24	false
+85572	MLB 2026 Live RF Sterlin Thompson COL	RF	51	0	L			0.292	0.287	0.295	6.8	24.3	2.4	0.287	25.7	false
+82099	MLB 2026 Live 3B Javier Sanoja MIA	3B	52	0	R			0.292	0.301	0.288	6.3	15.2	1.6	0.275	28.2	false
+82234	MLB 2026 Live RF Victor Robles SEA	RF	53	0	R			0.292	0.296	0.289	5.9	19.6	1.9	0.295	19.9	false
+82528	MLB 2026 Live 2B Richie Palacios TB	2B	59	0	L			0.292	0.287	0.295	9.8	19.5	1.4	0.282	20.9	false
+83443	Snapshot RF Don Padgett STL 1938	RF	52	0	L			0.292	0.272	0.303	3.7	17.0	3.2	0.255	30	false
+82362	MLB 2026 Live 3B Nick Loftin KC	3B	55	0	R			0.292	0.298	0.289	9.3	19.2	2.1	0.262	25.5	false
+83381	Snapshot 1B Lou Limmer PHA 1954	1B	52	0	L			0.292	0.269	0.305	7.2	19.6	4.5	0.221	22.2	false
+85230	MLB 2026 Live 2B Hao-Yu Lee DET	2B	52	0	R			0.292	0.296	0.291	6.9	23.3	2.6	0.282	23.7	false
+86056	MLB 2026 Live 1B Buddy Kennedy SEA	1B	50	0	R			0.292	0.298	0.289	7.7	20.0	2.1	0.277	23.2	false
+85640	MLB 2026 Live 3B Justin Foscue TEX	3B	53	0	R			0.292	0.295	0.29	7.9	21.0	2.8	0.260	24.7	false
+85564	MLB 2026 Live SS Colt Emerson SEA	SS	52	0	L			0.292	0.285	0.295	8.1	23.6	2.3	0.280	24.9	false
+83365	Snapshot 3B Jim Davenport SF 1965	3B	49	0	R			0.292	0.301	0.287	6.8	18.8	1.9	0.279	27	false
+82307	MLB 2026 Live C Travis d&#39;Arnaud LAA	C	50	0	R			0.292	0.295	0.291	6.2	23.9	3.2	0.276	21.5	false
+83473	Snapshot CF Endy Chavez TEX 2011	CF	59	0	L			0.292	0.293	0.292	3.7	14.4	2.1	0.284	18.8	false
+83526	Snapshot C Jimmy Archer CHC 1913	C	59	0	R			0.292	0.275	0.301	5.4	15.2	2.6	0.262	22.7	false
+85584	MLB 2026 Live RF Kevin Alcantara CHC	RF	57	0	R			0.292	0.306	0.285	7.6	28.4	2.8	0.291	22.7	false
+84399	Negro League Star 2B John Shackelford HaGi 1925	2B	47	5	L			0.292	0.289	0.293	5.7	15.3	2.6	0.267	18.1	false
+82879	Unsung Heroes C Tom Padden PIT 1935	C	57	5	R			0.292	0.31	0.283	11.6	16.4	1.0	0.274	16.3	false
+83355	Snapshot 2B Kevin Newman PIT 2022	2B	47	5	R			0.292	0.303	0.287	6.1	14.7	0.9	0.295	24.2	false
+83338	Veteran Presence 1B Yuli Gurriel HOU 2022	1B	41	5	R			0.292	0.299	0.289	6.7	12.5	1.8	0.259	29.1	false
+85252	MLB 2026 Live LF Ryan Ward LAD	LF	50	0	L			0.291	0.283	0.295	7.0	28.0	3.8	0.266	22.9	false
+82875	Unsung Heroes 2B Bill Wambsganss CLE 1923	2B	57	0	R			0.291	0.299	0.286	9.8	14.2	0.9	0.268	25.3	false
+81733	MLB 2026 Live 3B Will Wagner SD	3B	57	0	L			0.291	0.285	0.294	9.5	20.1	1.2	0.285	23.4	false
+85639	MLB 2026 Live 2B Michael Stefanic ATH	2B	56	0	R			0.291	0.3	0.286	8.5	17.0	1.3	0.286	18.4	false
+84311	Rookie Sensation 3B Rick Schu PHI 1985	3B	51	0	R			0.291	0.323	0.275	7.4	20.7	2.1	0.279	23.9	false
+82407	MLB 2026 Live C Jake Rogers DET	C	54	0	R			0.291	0.294	0.29	7.1	26.4	3.2	0.277	22.4	false
+82603	MLB 2026 Live 2B Marcelo Mayer BOS	2B	53	0	L			0.291	0.289	0.292	6.9	22.2	2.4	0.279	25.3	false
+84114	Veteran Presence 1B Tom Jones DET Peak	1B	56	0	R			0.291	0.29	0.291	6.9	10.5	1.6	0.259	23.3	false
+82375	MLB 2026 Live CF Kyle Isbel KC	CF	58	0	L			0.291	0.283	0.296	6.3	20.3	1.8	0.289	25.1	false
+86040	MLB 2026 Live 2B Tyler Callihan PIT	2B	55	0	L			0.291	0.278	0.297	7.0	29.2	3.1	0.290	23.4	false
+85048	Celebrating GA - Baseball Reference LF Garret Anderson LAA 2008	LF	49	0	L			0.291	0.275	0.3	2.4	17.1	1.9	0.302	20	false
+83459	Snapshot 2B Luis Alicea TEX 2000	2B	59	0	S			0.291	0.298	0.287	8.0	16.2	1.1	0.288	19.9	false
+84412	Negro League Star LF Koke Alexander CoBu 1921	LF	53	0	R			0.291	0.294	0.289	6.1	16.8	1.9	0.274	24.9	false
+84331	Rookie Sensation CF Jimmy Walsh PHA 1913	CF	51	5	R			0.291	0.303	0.284	10.3	18.5	0.8	0.276	29.6	false
+83410	Snapshot 3B George Pinkney BR3 1886	3B	40	5	R			0.291	0.293	0.289	10.1	15.9	0.5	0.282	23.5	false
+83343	Snapshot LF Lou Piniella KC 1971	LF	46	5	R			0.291	0.298	0.287	4.5	13.8	1.2	0.290	24.6	false
+83914	Historical All-Star SS Larry Bowa PHI 1978	SS	57	5	S			0.291	0.287	0.293	4.0	10.2	1.0	0.291	20.7	false
+82076	MLB 2026 Live CF Tyrone Taylor NYM	CF	51	0	R			0.290	0.293	0.289	4.7	19.7	2.5	0.279	24.8	false
+85240	MLB 2026 Live LF Yohendrick Pinango TOR	LF	49	0	L			0.290	0.282	0.293	6.8	24.0	2.7	0.278	22.1	false
+82860	Unsung Heroes 2B Tony Piet PIT 1932	2B	54	0	R			0.290	0.263	0.304	7.1	19.4	2.3	0.274	20.5	false
+85571	MLB 2026 Live LF Wade Meckler LAA	LF	56	0	L			0.290	0.284	0.293	7.7	22.0	1.3	0.301	21.6	false
+82070	MLB 2026 Live 3B Ronny Mauricio NYM	3B	51	0	S			0.290	0.288	0.292	5.2	25.0	3.3	0.282	20.6	false
+81902	MLB 2026 Live CF Jake Mangum PIT	CF	56	0	S			0.290	0.288	0.291	5.5	19.2	0.8	0.314	22.8	false
+85615	MLB 2026 Live C Joe Mack MIA	C	51	0	L			0.290	0.281	0.295	6.9	27.5	3.3	0.279	20.6	false
+82010	MLB 2026 Live 3B Brady House WSH	3B	48	0	R			0.290	0.292	0.289	5.7	27.2	3.1	0.289	22	false
+83919	Historical All-Star 3B Scott Cooper BOS 1993	3B	58	0	L			0.290	0.278	0.296	7.1	19.0	2.0	0.278	21.6	false
+82874	Unsung Heroes 2B Ken Boswell NYM 1969	2B	57	0	L			0.290	0.265	0.303	7.3	16.9	1.2	0.288	22.2	false
+83372	Veteran Presence C Charles Zimmer PHI 1903	C	48	5	R			0.290	0.288	0.292	8.3	20.5	3.0	0.253	21.8	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	P	56	5	L			0.290	0.273	0.3	4.5	13.7	0.2	0.311	24.4	false
+83911	Historical All-Star 2B Cookie Rojas KC 1974	2B	48	5	R			0.290	0.288	0.292	5.8	13.1	2.0	0.270	17.2	false
+85069	HOF 1 - Veteran Presence RF Sam Rice CLE 1934	RF	48	5	L			0.290	0.214	0.329	5.9	10.5	0.7	0.287	19.8	false
+85161	Dock&#39;s Patients LF Ivan Murrell SD 1970	LF	44	5	R			0.290	0.28	0.295	4.0	30.2	3.7	0.298	20	false
+83567	Snapshot 1B Cal McVey CN1 1879	1B	47	5	R			0.290	0.296	0.286	6.4	12.6	0.3	0.292	25	false
+82839	Unsung Heroes C Frank Gibson BSN 1924	C	50	5	S			0.290	0.266	0.302	5.4	20.1	1.9	0.286	27.9	false
+83370	Snapshot RF Walton Cruise BSN 1920	RF	50	5	L			0.290	0.255	0.309	9.6	17.4	1.7	0.270	17.5	false
+85275	1st Mexican Born Player - Snapshot CF Mel Almada WS1 1937	CF	43	5	L			0.290	0.253	0.309	6.8	13.8	0.8	0.291	21.1	false
+84926	MLB 2026 Live CF Joey Wiemer WSH	CF	55	0	R			0.289	0.304	0.28	7.9	27.8	2.7	0.285	22.8	false
+84793	Baseball Reference 1 CF Mike Trout LAA 2024	CF	51	0	R			0.289	0.23	0.32	9.8	19.2	3.7	0.230	12.1	false
+82045	MLB 2026 Live CF Johan Rojas PHI	CF	59	0	R			0.289	0.293	0.287	5.6	19.8	1.4	0.301	21.7	false
+81921	MLB 2026 Live CF Blake Perkins MIL	CF	57	0	S			0.289	0.291	0.287	8.9	25.3	2.0	0.287	23.3	false
+81949	MLB 2026 Live CF Dane Myers CIN	CF	52	0	R			0.289	0.293	0.287	7.1	26.4	2.6	0.293	18.5	false
+83519	Snapshot 3B Andy High BRO 1923	3B	59	0	L			0.289	0.273	0.298	8.1	11.2	1.7	0.248	26.5	false
+84936	MLB 2026 Live C Kyle Higashioka TEX	C	48	0	R			0.289	0.294	0.286	6.1	23.9	3.3	0.268	21.8	false
+83400	Snapshot 2B Mariano Duncan CIN 1991	2B	53	0	R			0.289	0.3	0.283	4.4	19.0	3.5	0.262	16	false
+82856	Unsung Heroes SS Mickey Doolin PHI 1908	SS	53	0	R			0.289	0.269	0.299	4.5	18.1	2.6	0.263	30.6	false
+84112	All-Time Legend 3B Bobby Adams CIN Peak	3B	56	0	R			0.289	0.281	0.293	7.3	17.8	1.5	0.282	23.2	false
+84403	Negro League Star 2B Frank Russell BEG 1943	2B	52	5	R			0.289	0.293	0.287	7.2	14.8	0.6	0.288	26	false
+84312	Rookie Sensation C Buck Rodgers LAA 1962	C	42	5	S			0.289	0.265	0.301	6.3	15.4	1.5	0.270	30	false
+84417	Negro League Star 2B Jack Marshall CAG 1934	2B	58	5	R			0.289	0.294	0.286	9.5	16.9	1.3	0.272	21.2	false
+82844	Unsung Heroes LF Bris Lord PHA 1910	LF	47	5	R			0.289	0.266	0.302	6.3	19.2	1.6	0.280	32.3	false
+84339	Rookie Sensation C Walt Lerian PHI 1928	C	54	5	R			0.289	0.257	0.306	11.6	28.5	1.9	0.284	24	false
+83442	Snapshot CF Nemo Leibold BOS 1921	CF	55	5	L			0.289	0.283	0.292	8.2	14.6	0.5	0.286	25.2	false
+84099	All-Time Legend SS Enzo Hernandez SD Peak	SS	50	5	R			0.289	0.275	0.297	7.9	8.9	0.4	0.279	19.1	false
+83915	Historical All-Star SS Royce Clayton STL 1997	SS	58	5	R			0.289	0.291	0.289	5.6	18.6	1.8	0.281	28.3	false
+84406	Negro League Star 2B Rainey Bibbs CiTi 1937	2B	53	5	S			0.289	0.284	0.292	6.1	14.7	1.5	0.280	21.3	false
+83354	Snapshot LF AJ Pollock CWS 2022	LF	50	0	R			0.288	0.31	0.276	5.7	17.4	2.7	0.259	22.8	false
+85978	MLB 2026 Live 3B Charles McAdoo TOR	3B	49	0	R			0.288	0.298	0.283	7.1	27.5	3.1	0.277	23.4	false
+84597	Limited Edition/97 LF Ron LeFlore MON 1980	LF	48	0	R			0.288	0.28	0.293	9.4	24.3	0.5	0.309	27.4	false
+84113	All-Time Legend SS Bill Knickerbocker CLE Peak	SS	57	0	R			0.288	0.285	0.289	6.3	15.3	1.8	0.270	24.3	false
+84930	MLB 2026 Live 2B Scott Kingery CHC	2B	55	0	R			0.288	0.293	0.286	7.0	28.4	3.0	0.287	22.9	false
+83392	Snapshot 1B Buddy Hassett BSN 1939	1B	50	0	L			0.288	0.271	0.297	3.0	8.3	0.6	0.307	10.7	false
+84949	MLB 2026 Live C Mitch Garver SEA	C	54	0	R			0.288	0.295	0.285	10.5	28.8	3.3	0.259	17.6	false
+81735	MLB 2026 Live C Freddy Fermin SD	C	53	0	R			0.288	0.29	0.287	7.1	20.4	2.4	0.268	22.4	false
+83920	Veteran Presence C Luke Sewell CWS 1937	C	52	5	R			0.288	0.305	0.279	8.9	10.7	0.8	0.262	25.2	false
+82867	Unsung Heroes 3B Babe Pinelli CIN 1922	3B	44	5	R			0.288	0.289	0.288	8.8	15.8	0.8	0.286	18.5	false
+82827	Unsung Heroes LF Hal Lee BSN 1935	LF	43	5	R			0.288	0.295	0.284	4.7	13.6	0.8	0.296	21.8	false
+85318	Baseball Reference 2 2B Derek Dietrich CIN 2019	2B	51	5	L			0.288	0.209	0.33	9.2	22.4	3.9	0.241	10	false
+81895	MLB 2026 Live SS Alika Williams ATH	SS	50	0	R			0.287	0.293	0.284	5.8	21.4	1.8	0.292	23.1	false
+83358	Snapshot 1B Jim Spencer CAL 1970	1B	49	0	L			0.287	0.276	0.293	3.9	16.5	2.6	0.269	20.6	false
+82599	MLB 2026 Live 1B Nick Sogard BOS	1B	56	0	S			0.287	0.291	0.285	9.7	22.2	1.0	0.289	25.3	false
+83446	Snapshot 2B Dots Miller STL 1917	2B	56	0	R			0.287	0.302	0.279	5.9	17.8	2.6	0.266	19.7	false
+86020	MLB 2026 Live RF Trey Mancini LAA	RF	47	0	R			0.287	0.291	0.284	5.7	26.4	3.2	0.282	19.3	false
+82165	MLB 2026 Live LF Joey Loperfido HOU	LF	51	0	L			0.287	0.281	0.29	6.9	28.1	2.6	0.290	25.6	false
+82258	MLB 2026 Live SS Darell Hernaiz ATH	SS	57	0	R			0.287	0.294	0.284	7.5	19.4	1.5	0.283	22.2	false
+85576	MLB 2026 Live CF Jhostynxon Garcia PIT	CF	49	0	R			0.287	0.289	0.286	6.6	27.2	2.8	0.285	23.5	false
+84950	MLB 2026 Live 2B Kyle Farmer ATL	2B	47	0	R			0.287	0.295	0.282	5.9	20.6	2.3	0.279	22	false
+82590	MLB 2026 Live RF Nate Eaton BOS	RF	50	0	R			0.287	0.295	0.283	6.7	25.0	2.2	0.289	25.4	false
+85609	MLB 2026 Live CF Blake Dunn CIN	CF	54	0	R			0.287	0.293	0.284	7.8	26.9	1.9	0.305	19.3	false
+82357	MLB 2026 Live C Elias Diaz TEX	C	49	0	R			0.287	0.291	0.286	5.8	21.3	2.8	0.274	18.9	false
+83407	Snapshot 3B Mark Christman SLA 1943	3B	52	0	R			0.287	0.294	0.284	5.6	14.2	1.9	0.271	20.3	false
+83379	Snapshot 1B Steve Balboni KC 1985	1B	43	0	R			0.287	0.294	0.284	6.5	40.6	5.2	0.277	20.4	false
+82852	Hardware Heroes 2B Brice Turang MIL 2024	2B	55	5	L			0.287	0.27	0.296	8.0	16.9	0.7	0.291	22.3	false
+85524	Memorial Day OnStream Builds - Snapshot 1B Nick Pratto KC 2023	1B	45	5	L			0.287	0.33	0.264	8.2	34.2	2.3	0.322	21.8	false
+82862	Unsung Heroes C Jimmy Peoples BR3 1887	C	53	5	R			0.287	0.289	0.287	7.1	12.6	1.7	0.254	27.4	false
+82858	Unsung Heroes SS Ivy Olson BRO 1919	SS	49	5	R			0.287	0.286	0.287	5.5	7.3	1.1	0.270	18	false
+83361	Snapshot CF Hi Myers BRO 1917	CF	50	5	R			0.287	0.285	0.289	3.8	12.7	1.8	0.276	22.9	false
+84303	Rookie Sensation SS Marty Marion STL 1940	SS	48	5	R			0.287	0.287	0.287	3.7	16.0	1.4	0.299	20.3	false
+84100	All-Time Legend 2B Denny Doyle PHI Peak	2B	51	5	L			0.287	0.265	0.299	7.0	12.9	1.2	0.270	23.1	false
+84398	Negro League Star LF John Bissant CAG 1944	LF	48	5	R			0.287	0.288	0.287	6.6	15.3	1.0	0.282	25.7	false
+82556	MLB 2026 Live 3B Jorbit Vivas WSH	3B	51	0	L			0.286	0.277	0.29	8.7	16.8	1.6	0.266	20.7	false
+83481	Snapshot C Dave Valle SEA 1989	C	55	0	R			0.286	0.297	0.28	8.4	14.5	2.8	0.232	20.2	false
+85614	MLB 2026 Live LF Tommy Troy AZ	LF	52	0	R			0.286	0.292	0.283	7.6	22.6	2.1	0.278	22.8	false
+83929	Historical All-Star 2B Johnny Temple CLE 1961	2B	57	0	R			0.286	0.285	0.287	8.3	13.1	0.8	0.275	20.2	false
+81892	MLB 2026 Live 2B Ronny Simon PIT	2B	53	0	S			0.286	0.285	0.287	7.2	21.2	1.7	0.284	23.8	false
+85235	MLB 2026 Live 1B Felix Reyes PHI	1B	46	0	R			0.286	0.284	0.287	4.2	21.1	2.7	0.278	23.7	false
+82142	MLB 2026 Live SS Jorge Mateo ATL	SS	54	0	R			0.286	0.292	0.282	5.5	24.9	2.5	0.290	22.9	false
+82863	Unsung Heroes 2B Ted Kubiak ML4 1971	2B	53	0	S			0.286	0.281	0.288	10.5	17.3	1.7	0.250	23	false
+82468	MLB 2026 Live LF Dustin Harris CWS	LF	50	0	L			0.286	0.285	0.286	7.1	21.8	2.0	0.284	21.2	false
+82527	MLB 2026 Live RF Jonny DeLuca TB	RF	52	0	R			0.286	0.289	0.285	6.2	21.6	2.5	0.272	24.2	false
+85330	T4 Ep. 1 - In Memoriam 3B Bobby Cox NYY 1968	3B	48	0	R			0.286	0.312	0.272	8.4	24.0	2.2	0.282	18.2	false
+82700	Hardware Heroes 2B Tony Womack PIT 1997	2B	42	5	L			0.286	0.289	0.284	6.3	17.6	1.3	0.290	20.6	false
+83390	Snapshot CF Lloyd Waner PIT 1935	CF	50	5	L			0.286	0.271	0.294	3.9	6.6	0.6	0.282	21.3	false
+83436	Snapshot C Mike Tresh CWS 1940	C	50	5	R			0.286	0.274	0.293	8.5	15.7	0.6	0.293	16.9	false
+84309	Rookie Sensation CF Esteury Ruiz ATH 2023	CF	50	5	R			0.286	0.289	0.284	6.4	17.1	1.3	0.285	22.5	false
+84302	Rookie Sensation SS Swede Risberg CWS 1917	SS	46	5	R			0.286	0.305	0.275	10.4	19.1	2.0	0.241	32.1	false
+83391	Snapshot CF Ernie Orsatti STL 1933	CF	52	5	L			0.286	0.267	0.295	6.7	16.6	0.5	0.298	23.3	false
+82868	Unsung Heroes LF Fred Odwell CIN 1907	LF	44	5	L			0.286	0.274	0.293	8.6	18.9	0.5	0.300	20.3	false
+85158	Dock&#39;s Patients 2B Dave Campbell SD 1970	2B	50	5	R			0.286	0.328	0.264	5.0	23.1	2.9	0.270	25	false
+84344	Rookie Sensation C Henry Blanco COL 1999	C	54	5	R			0.286	0.297	0.28	9.2	15.9	1.7	0.256	21.4	false
+83412	Snapshot 2B Jack Barry BOS 1915	2B	49	5	R			0.286	0.287	0.285	8.3	9.0	0.7	0.257	26.6	false
+82847	Unsung Heroes 2B Johnny O&#39;Brien PIT 1955	2B	52	0	R			0.285	0.277	0.289	5.2	14.0	0.7	0.293	22.7	false
+83508	Snapshot CF Rick Miller CAL 1979	CF	59	0	L			0.285	0.252	0.303	8.8	20.3	0.8	0.301	17.3	false
+82604	MLB 2026 Live 2B Isiah Kiner-Falefa BOS	2B	52	0	R			0.285	0.282	0.286	6.0	17.5	1.4	0.291	18.2	false
+85273	MLB 2026 Live 1B Connor Joe SEA	1B	50	0	R			0.285	0.292	0.282	9.9	23.2	1.7	0.272	24.8	false
+82859	Unsung Heroes C Frank House DET 1954	C	52	0	L			0.285	0.273	0.29	6.3	17.6	2.9	0.252	19.8	false
+84804	Baseball Reference 1 SS Mario Guerrero ATH 1978	SS	46	0	R			0.285	0.294	0.281	0.6	11.8	0.5	0.317	20.2	false
+85979	MLB 2026 Live 1B LuJames Groover AZ	1B	49	0	R			0.285	0.287	0.284	6.9	20.0	1.9	0.276	22.4	false
+85417	Played Where? - Veteran Presence LF Curtis Granderson MIA 2019	LF	45	0	L			0.285	0.295	0.279	10.9	24.0	2.2	0.254	23.9	false
+81706	MLB 2026 Live CF Drew Gilbert SF	CF	53	0	L			0.285	0.283	0.287	7.9	21.0	2.3	0.263	24	false
+85986	MLB 2026 Live C Jimmy Crooks STL	C	50	0	L			0.285	0.276	0.29	7.2	27.6	2.6	0.286	23.9	false
+82490	MLB 2026 Live LF Jonatan Clase TOR	LF	55	0	S			0.285	0.285	0.285	7.9	27.8	2.5	0.283	24.7	false
+83397	Snapshot 2B Starlin Castro MIA 2019	2B	51	0	R			0.285	0.3	0.277	4.1	16.2	2.7	0.265	20.8	false
+83465	Snapshot 1B Lu Blue DET 1927	1B	54	0	S			0.285	0.269	0.294	12.3	17.8	0.4	0.273	20.7	false
+84107	All-Time Legend 2B Marlon Anderson PHI Peak	2B	54	0	L			0.285	0.29	0.283	6.1	16.3	2.1	0.265	22.4	false
+83359	Snapshot C Johnny Edwards HOU 1969	C	48	5	L			0.285	0.261	0.298	7.5	16.2	1.9	0.256	27.3	false
+84317	Rookie Sensation C Sammy Taylor CHC 1958	C	50	0	L			0.284	0.291	0.281	6.7	20.1	2.0	0.276	21.4	false
+85023	HOF 1 - Hall of Fame 3B Brooks Robinson BAL 1963	3B	49	0	R			0.284	0.309	0.271	6.0	19.5	2.0	0.278	21.5	false
+82832	Unsung Heroes 3B Ken Reitz STL 1979	3B	49	0	R			0.284	0.315	0.267	3.7	18.1	1.9	0.280	28.6	false
+86014	MLB 2026 Live C Logan Porter LAA	C	50	0	R			0.284	0.296	0.277	8.4	25.9	2.1	0.287	19.1	false
+82358	MLB 2026 Live CF Kameron Misner KC	CF	57	0	L			0.284	0.271	0.29	9.8	29.9	2.3	0.281	23.2	false
+83435	Snapshot 1B Tony Lupien BOS 1943	1B	52	0	L			0.284	0.271	0.291	6.7	12.0	1.8	0.255	20	false
+83388	Snapshot LF Alex Johnson TEX 1974	LF	50	0	R			0.284	0.27	0.291	5.0	17.1	1.7	0.290	16.4	false
+82256	MLB 2026 Live 3B Brett Harris BOS	3B	53	0	R			0.284	0.29	0.28	8.3	21.6	2.2	0.266	20.3	false
+83421	Snapshot SS Frankie Gustine PIT 1943	SS	57	0	R			0.284	0.302	0.275	6.1	16.9	0.6	0.300	22.3	false
+84306	Rookie Sensation 1B Art Griggs SLA 1909	1B	49	0	R			0.284	0.295	0.278	6.4	17.9	0.6	0.295	26.3	false
+82327	MLB 2026 Live SS Tristan Gray MIN	SS	50	0	L			0.284	0.275	0.289	6.1	28.3	2.9	0.287	22.5	false
+82531	MLB 2026 Live C Hunter Feduccia TB	C	58	0	L			0.284	0.272	0.29	9.7	28.2	1.9	0.287	21.7	false
+84352	Rookie Sensation CF Vince DiMaggio BSN 1937	CF	46	0	R			0.284	0.264	0.295	6.1	28.5	3.6	0.274	18.9	false
+85001	MLB 2026 Live LF Nathan Church STL	LF	53	0	L			0.284	0.279	0.287	6.4	21.3	2.2	0.279	20.9	false
+83347	Snapshot 1B Rico Brogna PHI 1997	1B	44	0	L			0.284	0.257	0.298	4.6	21.5	3.3	0.255	27.4	false
+82702	Hardware Heroes SS Luis Aparicio CWS 1957	SS	52	0	R			0.284	0.293	0.279	7.3	14.3	0.5	0.290	19.7	false
+82845	Unsung Heroes SS Kevin Stocker PHI 1997	SS	49	5	S			0.284	0.269	0.293	7.7	17.3	1.1	0.281	22	false
+82834	Unsung Heroes LF Charlie Eden PT1 1885	LF	40	5	L			0.284	0.282	0.285	7.3	18.4	0.5	0.293	27.5	false
+83383	Snapshot SS Dave Bancroft PHI 1919	SS	49	5	S			0.284	0.297	0.277	7.6	16.9	0.7	0.285	24.6	false
+82530	MLB 2026 Live SS Taylor Walls TB	SS	59	0	S			0.283	0.288	0.28	10.0	23.0	0.9	0.288	23.5	false
+83339	Snapshot CF Chris Singleton BAL 2002	CF	45	0	L			0.283	0.275	0.288	5.2	18.5	2.1	0.269	26.7	false
+85985	MLB 2026 Live RF Gabriel Rincones Jr. PHI	RF	52	0	L			0.283	0.269	0.29	8.1	27.9	3.1	0.265	20.9	false
+82360	MLB 2026 Live RF John Rave KC	RF	52	0	L			0.283	0.269	0.29	8.6	28.1	2.2	0.286	23.5	false
+86007	MLB 2026 Live CF Junior Perez CWS	CF	49	0	R			0.283	0.292	0.279	8.7	29.3	3.0	0.267	24.5	false
+81844	MLB 2026 Live C James McCann AZ	C	50	0	R			0.283	0.288	0.28	5.2	23.2	2.0	0.295	22.1	false
+84413	Negro League Star CF Cando Lopez NYC 1935	CF	59	0	R			0.283	0.285	0.282	6.6	16.2	1.7	0.268	22.6	false
+84953	MLB 2026 Live LF Eloy Jimenez TOR	LF	46	0	R			0.283	0.283	0.283	6.1	21.2	2.9	0.263	18.1	false
+85606	MLB 2026 Live C Eric Haase SF	C	52	0	R			0.283	0.287	0.281	6.0	28.4	3.0	0.286	20.4	false
+81899	MLB 2026 Live RF Dominic Fletcher PIT	RF	49	0	L			0.283	0.269	0.291	5.5	21.5	1.9	0.284	26.9	false
+83378	Snapshot 2B Ray Durham CWS 1997	2B	52	0	S			0.283	0.285	0.283	7.6	16.6	1.9	0.264	18.7	false
+83405	Snapshot C Rick Dempsey BAL 1979	C	55	0	R			0.283	0.295	0.277	8.3	15.8	2.0	0.244	27.1	false
+82588	MLB 2026 Live 3B Vinny Capra BOS	3B	50	0	R			0.283	0.29	0.279	6.8	20.7	1.7	0.282	23	false
+84314	Rookie Sensation C Eliezer J. Alfonzo SF 2006	C	48	0	R			0.283	0.27	0.29	3.1	24.6	3.4	0.276	23.8	false
+86248	FLF 16 - Future Legend C Eliezer Alfonzo LAD 2026	C	48	0	S			0.283	0.281	0.283	7.1	16.4	1.7	0.267	21.6	true
+84308	Rookie Sensation 3B Ed Gremminger BSN 1902	3B	41	5	R			0.283	0.28	0.285	7.8	17.8	1.5	0.267	26.4	false
+84324	Rookie Sensation 1B Jay Faatz CL3 1888	1B	41	5	R			0.283	0.288	0.281	7.3	12.3	0.7	0.282	15.6	false
+85665	June Gems - Baseball Reference 3 CF Maurice Archdeacon CWS 1924	CF	45	5	L			0.283	0.28	0.284	11.8	30.6	0.2	0.331	19.4	false
+83529	Snapshot 2B Alan Wiggins SD 1984	2B	59	0	S			0.282	0.307	0.269	9.9	14.8	1.0	0.263	19.2	false
+85547	MLB 2026 Live CF Ryan Waldschmidt AZ	CF	52	0	R			0.282	0.286	0.28	7.8	25.1	1.6	0.292	24.1	false
+85637	MLB 2026 Live 2B Bryan Torres STL	2B	52	0	L			0.282	0.274	0.287	9.1	21.5	1.2	0.285	18.5	false
+82848	Unsung Heroes RF Wally Roettger STL 1931	RF	50	0	R			0.282	0.266	0.291	5.1	16.5	0.8	0.295	23.9	false
+85582	MLB 2026 Live C Jesus Rodriguez SF	C	51	0	R			0.282	0.286	0.28	7.0	20.4	1.7	0.284	17.9	false
+81871	MLB 2026 Live C Yohel Pozo STL	C	48	0	R			0.282	0.289	0.279	3.6	17.1	2.5	0.266	24.7	false
+82293	MLB 2026 Live 2B Oswald Peraza LAA	2B	51	0	R			0.282	0.286	0.28	5.6	26.2	2.8	0.283	20.1	false
+82886	Unsung Heroes 1B Tom O&#39;Brien PIT 1900	1B	43	0	R			0.282	0.304	0.271	4.6	18.8	1.9	0.273	31	false
+82833	Unsung Heroes 3B Jeff Hamilton LAD 1989	3B	45	0	R			0.282	0.255	0.297	3.6	16.7	2.9	0.250	29	false
+86047	MLB 2026 Live 2B Cody Freeman TEX	2B	46	0	R			0.282	0.282	0.282	6.4	19.0	2.3	0.262	22.8	false
+82532	MLB 2026 Live C Nick Fortes TB	C	47	0	R			0.282	0.289	0.278	5.1	16.5	1.9	0.275	20.1	false
+82866	Unsung Heroes 1B Bill Everitt CHC 1898	1B	42	0	L			0.282	0.28	0.283	7.6	18.7	0.6	0.303	16.2	false
+86004	MLB 2026 Live 3B Trei Cruz DET	3B	50	0	S			0.282	0.285	0.28	9.2	26.4	2.2	0.272	23	false
+83413	Snapshot C Lou Criger BOS 1902	C	51	0	R			0.282	0.28	0.283	8.5	16.1	0.3	0.276	32.3	false
+82133	MLB 2026 Live 3B Nacho Alvarez Jr. ATL	3B	51	0	R			0.282	0.28	0.283	8.6	21.8	1.6	0.280	19.4	false
+82169	MLB 2026 Live SS Nick Allen HOU	SS	56	0	R			0.282	0.288	0.278	7.2	19.7	1.3	0.288	18.4	false
+82831	Unsung Heroes CF Marvell Wynne PIT 1984	CF	45	5	L			0.282	0.275	0.286	6.9	15.5	0.7	0.285	22.6	false
+83371	Snapshot 2B Heinie Wagner BOS 1915	2B	50	5	R			0.282	0.289	0.279	11.0	18.2	0.5	0.272	24.3	false
+84407	Negro League Star 2B Recurvon Teran CSE 1923	2B	50	5	R			0.282	0.285	0.28	8.1	16.5	2.3	0.240	26.1	false
+83382	Snapshot LF Jimmy Slagle PHI 1900	LF	51	5	L			0.282	0.273	0.287	9.5	16.7	0.5	0.280	20.7	false
+83345	Snapshot 1B Bert Haas CIN 1946	1B	41	5	R			0.282	0.297	0.274	5.5	14.6	1.4	0.273	24.2	false
+82826	Unsung Heroes SS Cristian Guzman WAS 2009	SS	46	5	S			0.282	0.286	0.28	3.5	15.4	1.4	0.287	22.3	false
+83455	Snapshot C Dave Duncan CLE 1974	C	49	5	R			0.282	0.289	0.278	8.4	31.3	4.9	0.228	15.3	false
+82520	MLB 2026 Live 2B Ben Williamson TB	2B	52	0	R			0.281	0.288	0.277	7.1	21.6	1.3	0.288	24.8	false
+82636	MLB 2026 Live 3B Luis Vazquez BAL	3B	50	0	R			0.281	0.283	0.281	5.8	24.7	2.6	0.281	21	false
+84893	MLB 2026 Live LF Austin Slater TB	LF	51	0	R			0.281	0.29	0.277	8.6	28.3	1.9	0.297	19.4	false
+86015	MLB 2026 Live 3B Anthony Seigler BOS	3B	49	0	L			0.281	0.278	0.282	10.6	25.2	1.9	0.265	22.6	false
+81925	MLB 2026 Live 3B Luis Rengifo SD	3B	52	0	S			0.281	0.281	0.281	6.9	17.2	1.1	0.280	21.7	false
+82336	MLB 2026 Live CF Ryan Kreidler MIN	CF	54	0	R			0.281	0.287	0.278	10.0	27.3	2.0	0.277	21.2	false
+85958	MLB 2026 Live SS Denzer Guzman LAA	SS	50	0	R			0.281	0.286	0.278	7.2	27.9	2.5	0.284	22.1	false
+86064	MLB 2026 Live RF Kyler Fedko MIN	RF	48	0	R			0.281	0.293	0.275	7.9	25.7	2.7	0.267	21	false
+83444	Snapshot SS Dick Bartell CHC 1939	SS	55	0	R			0.281	0.284	0.279	9.8	16.4	1.6	0.239	32.3	false
+82853	Unsung Heroes 2B Dave Shean BOS 1918	2B	50	5	R			0.281	0.269	0.287	8.4	14.2	0.6	0.271	24	false
+82838	Unsung Heroes CF Dave Fultz PHA 1901	CF	49	5	R			0.281	0.273	0.284	6.4	13.8	0.8	0.282	20.7	false
+83908	Historical All-Star SS Shawon Dunston CHC 1988	SS	44	5	R			0.281	0.287	0.278	1.0	18.1	2.8	0.276	24	false
+83364	Snapshot C Alberto Castillo STL 1999	C	51	5	R			0.281	0.263	0.29	8.1	18.3	1.7	0.271	14.5	false
+84304	Rookie Sensation LF Eddie Carnett CWS 1944	LF	47	5	L			0.281	0.272	0.285	6.8	15.7	0.8	0.284	21.1	false
+84668	Opening Day Heroes - Super Utility 3B Emilio Bonifacio FLO 2009	3B	47	5	S			0.281	0.273	0.285	6.8	19.7	0.6	0.302	22.5	false
+83352	Snapshot CF Ethan Allen CIN 1928	CF	50	5	R			0.281	0.283	0.28	5.3	15.2	0.8	0.287	25.1	false
+85976	MLB 2026 Live LF Kahlil Watson CLE	LF	52	0	L			0.280	0.271	0.284	7.3	29.0	3.1	0.269	21.8	false
+85969	MLB 2026 Live C Collin Price HOU	C	48	0	R			0.280	0.291	0.274	7.0	29.1	3.6	0.261	19.2	false
+82039	MLB 2026 Live SS Liover Peguero PHI	SS	49	0	R			0.280	0.286	0.278	5.9	24.5	2.6	0.276	22.3	false
+84948	MLB 2026 Live C Reese McGuire CWS	C	47	0	L			0.280	0.279	0.281	4.8	21.9	3.3	0.258	20.4	false
+83466	Snapshot LF Roy Hartzell NYY 1914	LF	56	0	L			0.280	0.263	0.289	10.7	15.4	1.3	0.247	22.6	false
+81954	MLB 2026 Live LF Garrett Hampson CIN	LF	52	0	R			0.280	0.292	0.273	7.7	23.2	1.2	0.297	19	false
+84985	MLB 2026 Live 3B Deyvison De Los Santos MIA	3B	45	0	R			0.280	0.285	0.278	5.6	25.8	3.1	0.274	18.4	false
+83445	Snapshot 3B Bill Bradley CLE 1905	3B	56	0	R			0.280	0.275	0.282	6.9	17.6	0.5	0.283	30.1	false
+85583	MLB 2026 Live 1B Victor Bericoto SF	1B	46	0	R			0.280	0.284	0.278	5.8	24.9	2.5	0.282	20	false
+85626	MLB 2026 Live 2B Donovan Walton LAA	2B	47	0	L			0.279	0.277	0.28	6.2	19.2	2.0	0.269	21	false
+81863	MLB 2026 Live 2B Thomas Saggese STL	2B	48	0	R			0.279	0.28	0.279	6.3	26.4	2.1	0.290	23.4	false
+83479	Snapshot 2B Bip Roberts SD 1991	2B	59	0	S			0.279	0.258	0.289	7.4	18.4	1.0	0.291	14.9	false
+82879	Unsung Heroes C Tom Padden PIT 1935	C	57	0	R			0.279	0.296	0.271	11.3	17.8	0.9	0.268	15	false
+82195	MLB 2026 Live LF Alejandro Osuna TEX	LF	53	0	L			0.279	0.274	0.282	8.2	22.7	1.2	0.288	21.5	false
+83349	Snapshot 3B Chris Johnson ATL 2014	3B	48	0	R			0.279	0.313	0.262	4.2	22.4	2.0	0.296	18.3	false
+84996	MLB 2026 Live LF Billy Cook PIT	LF	50	0	R			0.279	0.285	0.276	6.6	27.4	2.4	0.285	23	false
+83411	Snapshot 3B Wid Conroy WS1 1909	3B	53	0	R			0.279	0.29	0.273	6.7	15.1	1.8	0.260	19.6	false
+85685	June Gems - Baseball Reference 3 LF Vince Coleman STL 1985	LF	55	0	S			0.279	0.27	0.283	6.8	21.6	0.3	0.315	21.1	false
+85849	Heart Attack - Unsung Heroes C Billy Bryan KC1 1965	C	48	0	L			0.279	0.225	0.308	5.6	33.4	3.0	0.301	24.6	false
+83401	Snapshot SS Larry Brown CLE 1967	SS	51	0	R			0.279	0.278	0.279	8.8	15.9	2.0	0.246	18.7	false
+85543	MLB 2026 Live CF Henry Bolte ATH	CF	49	0	R			0.279	0.281	0.278	7.5	29.2	2.2	0.292	23.1	false
+82372	MLB 2026 Live LF Dairon Blanco TEX	LF	53	0	R			0.279	0.291	0.272	6.5	25.8	1.8	0.296	22.2	false
+85271	MLB 2026 Live LF Tyler Black MIL	LF	49	0	L			0.279	0.271	0.283	9.0	26.5	2.1	0.273	22.6	false
+84970	MLB 2026 Live CF Jorge Barrosa AZ	CF	51	0	S			0.279	0.282	0.277	7.9	24.6	1.8	0.275	27.6	false
+85152	Young &amp; Old 1 - Unsung Heroes 2B Jerry Adair BOS 1967	2B	45	0	R			0.279	0.283	0.277	3.9	15.7	0.6	0.303	21.1	false
+82864	Unsung Heroes C Clyde Sukeforth CIN 1931	C	51	5	L			0.279	0.275	0.281	9.6	11.3	0.7	0.252	22.5	false
+85321	Baseball Reference 2 SS Roger Metzger HOU 1973	SS	43	5	S			0.279	0.245	0.296	6.7	19.0	0.3	0.301	23	false
+84301	Rookie Sensation 2B Carl Lind CLE 1928	2B	43	5	R			0.279	0.275	0.281	5.6	15.9	0.6	0.288	26.3	false
+84686	Happy Easter C Ted Easterly CLE 1910	C	58	5	L			0.279	0.203	0.319	6.1	17.6	0.2	0.300	21.7	false
+82846	Unsung Heroes SS Darrel Chaney ATL 1976	SS	40	5	S			0.279	0.275	0.281	8.5	20.4	0.5	0.290	24.1	false
+84708	Clubhouse - April Fools&#39; Day SS Bill White LS2 1886	SS	48	0	R			0.278	0.296	0.268	7.1	18.6	0.8	0.284	25.4	false
+82394	MLB 2026 Live SS Trey Sweeney DET	SS	49	0	L			0.278	0.253	0.29	7.6	28.3	2.6	0.277	20.9	false
+83913	Historical All-Star 2B Steve Sax LAD 1983	2B	53	0	R			0.278	0.266	0.285	7.1	17.0	1.2	0.282	15.7	false
+82009	MLB 2026 Live CF Robert Hassell III WSH	CF	51	0	L			0.278	0.271	0.281	7.0	24.8	1.7	0.290	21	false
+83338	Veteran Presence 1B Yuli Gurriel HOU 2022	1B	41	0	R			0.278	0.285	0.274	6.1	13.5	1.5	0.254	28.3	false
+84947	MLB 2026 Live 2B Adam Frazier LAA	2B	50	0	L			0.278	0.272	0.281	6.7	21.1	1.6	0.278	23	false
+81839	MLB 2026 Live C Adrian Del Castillo AZ	C	51	0	L			0.278	0.269	0.282	7.2	28.5	2.9	0.273	21.3	false
+82850	Unsung Heroes 3B Walter Barbare PIT 1919	3B	49	0	R			0.278	0.283	0.276	5.5	15.9	1.7	0.266	22.4	false
+83369	Snapshot RF Harry Wolter CHC 1917	RF	44	5	L			0.278	0.268	0.284	9.5	18.0	0.6	0.270	27.7	false
+83357	Snapshot C Jeff Reed CIN 1989	C	47	5	L			0.278	0.255	0.289	9.3	18.2	1.8	0.248	21.8	false
+83507	Snapshot 2B Jeff Frye BOS 1996	2B	42	5	R			0.278	0.272	0.281	6.7	14.1	0.5	0.299	9.2	false
+84328	Rookie Sensation CF Al Burch STL 1906	CF	41	5	L			0.278	0.253	0.292	9.2	19.7	0.5	0.301	10.9	false
+85335	T4 Ep. 1 - Rookie Sensation RF Bobby Abreu HOU 1997	RF	46	5	L			0.278	0.247	0.294	9.1	28.0	1.5	0.288	24.5	false
+85482	Clubhouse - 60s Week - Hall of Fame C Joe Torre ML1 1961	C	57	0	R			0.277	0.225	0.305	4.6	23.3	2.1	0.285	25.2	false
+84895	MLB 2026 Live C Brett Sullivan COL	C	48	0	L			0.277	0.269	0.281	5.6	19.8	2.2	0.263	25.8	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	P	56	0	L			0.277	0.259	0.287	3.9	15.1	0.2	0.306	22.5	false
+85508	Clubhouse - 60s Week - Unsung Heroes SP Joe Nuxhall KC1 1961	P	55	0	L			0.277	0.317	0.255	5.9	34.7	2.7	0.310	18.5	false
+83409	Snapshot RF Danny Moeller WS1 1914	RF	53	0	S			0.277	0.256	0.288	9.1	22.1	1.1	0.279	22.3	false
+82703	Hardware Heroes CF Marquis Grissom MON 1991	CF	52	0	R			0.277	0.285	0.272	5.5	19.1	1.5	0.283	21.1	false
+85625	MLB 2026 Live C Rodolfo Duran SD	C	46	0	R			0.277	0.28	0.276	5.8	25.8	2.9	0.266	24.3	false
+85318	Baseball Reference 2 2B Derek Dietrich CIN 2019	2B	51	0	L			0.277	0.197	0.319	8.8	23.8	3.7	0.237	9	false
+83406	Snapshot C Clay Dalrymple PHI 1964	C	51	0	L			0.277	0.265	0.283	7.4	15.3	1.9	0.247	24	false
+85824	FLF 13 &amp; Co. - Rookie Sensation C Kevin Brown TOR 1998	C	45	0	R			0.277	0.253	0.29	7.2	29.3	2.0	0.294	24.5	false
+84980	MLB 2026 Live 3B Juan Brito CLE	3B	48	0	S			0.277	0.279	0.276	8.5	23.0	1.9	0.264	23.7	false
+84299	Rookie Sensation C John Bateman HOU 1963	C	44	0	R			0.277	0.321	0.253	5.4	24.0	3.2	0.258	20.8	false
+84400	Negro League Star C William Tenny KCG 1909	C	50	5	R			0.277	0.28	0.275	5.5	14.6	0.6	0.288	20.9	false
+85777	Family Connections - Historical All-Star C Steve Swisher CHC 1976	C	45	5	R			0.277	0.258	0.287	5.6	29.0	2.5	0.292	21.5	false
+84319	Rookie Sensation 2B Ike Rockenfield SLA 1905	2B	51	5	R			0.277	0.284	0.273	12.7	17.2	0.5	0.249	25.1	false
+82835	Unsung Heroes SS Doc Lavan STL 1920	SS	50	5	R			0.277	0.286	0.272	4.8	15.7	1.1	0.283	22.3	false
+83342	Snapshot CF Sonny Jackson ATL 1971	CF	47	5	L			0.277	0.267	0.282	6.3	13.3	0.8	0.274	21.6	false
+82841	Unsung Heroes SS Chick Galloway PHA 1923	SS	47	5	R			0.277	0.296	0.267	6.9	14.7	1.4	0.261	22.2	false
+84331	Rookie Sensation CF Jimmy Walsh PHA 1913	CF	51	0	R			0.276	0.286	0.27	9.4	19.8	0.7	0.270	28.7	false
+81834	MLB 2026 Live 2B Tim Tawa AZ	2B	52	0	R			0.276	0.279	0.275	7.8	26.3	2.6	0.264	21.4	false
+82849	Unsung Heroes SS Heinie Sand PHI 1924	SS	48	0	R			0.276	0.267	0.281	7.7	20.1	2.7	0.242	21.4	false
+84403	Negro League Star 2B Frank Russell BEG 1943	2B	52	0	R			0.276	0.279	0.274	6.6	16.3	0.5	0.282	24.9	false
+85238	MLB 2026 Live C Drew Romo CWS	C	59	0	S			0.276	0.275	0.277	6.3	23.4	2.5	0.264	23.7	false
+83355	Snapshot 2B Kevin Newman PIT 2022	2B	47	0	R			0.276	0.287	0.271	5.5	16.2	0.7	0.288	22.6	false
+82022	MLB 2026 Live C Drew Millas WSH	C	49	0	S			0.276	0.274	0.277	6.9	21.3	1.8	0.273	21.5	false
+83567	Snapshot 1B Cal McVey CN1 1879	1B	47	0	R			0.276	0.283	0.272	5.7	13.7	0.3	0.286	23.2	false
+82701	Hardware Heroes SS Jorge Mateo BAL 2022	SS	47	0	R			0.276	0.263	0.283	4.4	26.4	2.5	0.280	28.6	false
+81705	MLB 2026 Live 2B Christian Koss SF	2B	49	0	R			0.276	0.278	0.275	4.9	23.8	1.9	0.292	21.1	false
+84099	All-Time Legend SS Enzo Hernandez SD Peak	SS	50	0	R			0.276	0.263	0.283	7.0	10.0	0.3	0.273	17.7	false
+84411	Negro League Star LF Judy Gans CAG 1918	LF	50	0	L			0.276	0.27	0.279	8.1	19.7	2.0	0.253	23.3	false
+82069	MLB 2026 Live 3B Vidal Brujan NYM	3B	49	0	S			0.276	0.273	0.278	6.6	19.6	1.6	0.276	19.3	false
+84396	Negro League Star 1B Toussaint Allen WiPo 1925	1B	45	0	R			0.276	0.279	0.275	6.7	20.4	3.0	0.239	23.4	false
+82111	MLB 2026 Live 3B Max Acosta MIA	3B	50	0	R			0.276	0.279	0.274	7.2	23.8	2.1	0.273	20.8	false
+84103	All-Time Legend CF Tony Scott STL Peak	CF	41	5	S			0.276	0.284	0.272	6.1	18.6	1.2	0.280	23.7	false
+84296	Rookie Sensation SS Marr Phillips IN3 1884	SS	42	5	R			0.276	0.28	0.274	2.7	17.8	0.7	0.305	26.5	false
+84116	All-Time Legend CF Jocko Conlan CWS Peak	CF	52	5	L			0.276	0.285	0.271	8.4	10.2	0.2	0.261	25	false
+83368	Snapshot CF Ginger Beaumont BSN 1909	CF	49	5	L			0.276	0.249	0.289	7.7	13.4	0.5	0.274	19.8	false
+84938	MLB 2026 Live C Christian Vazquez HOU	C	49	0	R			0.275	0.282	0.271	6.7	19.1	2.1	0.260	19.5	false
+81963	MLB 2026 Live C Jose Trevino CIN	C	50	0	R			0.275	0.275	0.275	5.4	16.9	1.8	0.266	20.7	false
+85069	HOF 1 - Veteran Presence RF Sam Rice CLE 1934	RF	48	0	L			0.275	0.204	0.312	5.4	11.7	0.6	0.280	18	false
+83410	Snapshot 3B George Pinkney BR3 1886	3B	40	0	R			0.275	0.277	0.274	9.0	17.3	0.5	0.276	21.7	false
+85599	MLB 2026 Live C Jhonny Pereda SEA	C	51	0	R			0.275	0.275	0.275	8.2	24.2	1.4	0.288	17.2	false
+86001	MLB 2026 Live CF Victor Mesa Jr. TB	CF	51	0	L			0.275	0.274	0.275	7.2	23.6	2.4	0.263	20.6	false
+86058	MLB 2026 Live CF Stuart Fairchild CLE	CF	45	0	R			0.275	0.285	0.271	6.7	27.2	2.4	0.279	20.9	false
+85823	FLF 13 &amp; Co. - 2X Variant Booster DH Byron Buxton MIN 2023	DH	44	0	R			0.275	0.245	0.291	9.0	34.2	3.7	0.251	22.8	false
+83914	Historical All-Star SS Larry Bowa PHI 1978	SS	57	0	S			0.275	0.272	0.277	3.5	11.3	0.8	0.283	19.1	false
+85603	MLB 2026 Live SS Orlando Arcia MIN	SS	49	0	R			0.275	0.28	0.273	6.2	20.0	2.2	0.263	19.5	false
+84093	All-Time Legend SS Tom Veryzer CLE Peak	SS	45	5	R			0.275	0.276	0.275	6.2	13.6	1.0	0.270	21.3	false
+85478	Baseball Reference 2 C Al Spohrer BSN 1933	C	43	5	R			0.275	0.327	0.247	6.3	14.7	0.6	0.283	19	false
+85691	June Gems - Baseball Reference 3 RF Sammy Sosa CWS 1990	RF	43	5	R			0.275	0.347	0.237	4.8	32.4	2.6	0.301	29.5	false
+82836	Unsung Heroes 3B Bill Shipke WS1 1908	3B	40	5	R			0.275	0.295	0.264	11.0	18.6	0.6	0.260	24.5	false
+83344	Snapshot 3B Steve Mesner CIN 1943	3B	47	5	R			0.275	0.292	0.267	4.7	11.2	0.7	0.273	23.5	false
+84399	Negro League Star 2B John Shackelford HaGi 1925	2B	47	0	L			0.274	0.271	0.275	5.2	16.7	2.2	0.261	16.8	false
+83920	Veteran Presence C Luke Sewell CWS 1937	C	52	0	R			0.274	0.289	0.266	8.0	11.6	0.7	0.256	23.5	false
+83911	Historical All-Star 2B Cookie Rojas KC 1974	2B	48	0	R			0.274	0.269	0.276	5.2	14.4	1.8	0.264	15.7	false
+83343	Snapshot LF Lou Piniella KC 1971	LF	46	0	R			0.274	0.281	0.27	3.9	15.2	1.0	0.283	23.1	false
+82104	MLB 2026 Live 3B Graham Pauley MIA	3B	50	0	L			0.274	0.268	0.277	7.4	23.0	2.4	0.255	24.2	false
+82606	MLB 2026 Live C Carlos Narvaez BOS	C	49	0	R			0.274	0.278	0.272	7.8	28.6	2.2	0.279	23	false
+82197	MLB 2026 Live C Willie MacIver TOR	C	48	0	R			0.274	0.279	0.272	7.1	27.1	2.0	0.284	21.1	false
+82844	Unsung Heroes LF Bris Lord PHA 1910	LF	47	0	R			0.274	0.25	0.287	5.7	20.7	1.4	0.273	32.1	false
+84339	Rookie Sensation C Walt Lerian PHI 1928	C	54	0	R			0.274	0.246	0.289	11.2	30.2	1.6	0.278	22.6	false
+83442	Snapshot CF Nemo Leibold BOS 1921	CF	55	0	L			0.274	0.268	0.278	7.3	16.1	0.4	0.279	23.6	false
+82226	MLB 2026 Live C Andrew Knizner BOS	C	47	0	R			0.274	0.28	0.271	6.6	19.3	1.7	0.271	19.4	false
+86068	4th of July On-Stream - Unsung Heroes CF Jordan Danks CWS 2013	CF	45	0	L			0.274	0.235	0.295	8.8	31.8	2.0	0.294	19.9	false
+85275	1st Mexican Born Player - Snapshot CF Mel Almada WS1 1937	CF	43	0	L			0.274	0.238	0.293	6.1	15.2	0.6	0.284	19.3	false
+83912	Historical All-Star SS Freddie Patek KC 1976	SS	43	5	R			0.274	0.283	0.268	9.1	17.6	0.6	0.268	24.9	false
+82840	Unsung Heroes 1B Pop Dillon BRO 1904	1B	47	5	L			0.274	0.247	0.288	7.1	13.9	0.6	0.269	23.6	false
+83390	Snapshot CF Lloyd Waner PIT 1935	CF	50	0	L			0.273	0.259	0.28	3.4	7.7	0.5	0.276	19.6	false
+84312	Rookie Sensation C Buck Rodgers LAA 1962	C	42	0	S			0.273	0.25	0.285	5.7	16.9	1.3	0.264	29.3	false
+85544	MLB 2026 Live 3B Pedro Ramirez CHC	3B	47	0	S			0.273	0.267	0.276	6.5	21.7	1.5	0.281	20.3	false
+85963	MLB 2026 Live SS Cooper Pratt MIL	SS	51	0	R			0.273	0.278	0.27	7.7	21.4	1.6	0.267	21.5	false
+82867	Unsung Heroes 3B Babe Pinelli CIN 1922	3B	44	0	R			0.273	0.273	0.273	7.9	17.2	0.7	0.279	17	false
+82862	Unsung Heroes C Jimmy Peoples BR3 1887	C	53	0	R			0.273	0.274	0.272	6.4	13.7	1.5	0.248	26.1	false
+82593	MLB 2026 Live C Mickey Gasper BOS	C	51	0	S			0.273	0.271	0.274	8.0	21.4	1.4	0.270	21.6	false
+85014	MLB 2026 Live 1B Jose Fernandez AZ	1B	46	0	R			0.273	0.279	0.269	5.1	24.2	1.9	0.287	21.2	false
+85592	MLB 2026 Live 3B Oliver Dunn TB	3B	49	0	L			0.273	0.262	0.278	7.8	30.8	1.9	0.293	23.7	false
+83370	Snapshot RF Walton Cruise BSN 1920	RF	50	0	L			0.273	0.241	0.291	8.6	18.9	1.5	0.264	16	false
+85665	June Gems - Baseball Reference 3 CF Maurice Archdeacon CWS 1924	CF	45	0	L			0.273	0.271	0.274	11.4	32.1	0.2	0.327	18.2	false
+83360	Snapshot C Bennie Tate WS1 1929	C	48	5	L			0.273	0.266	0.276	5.8	9.9	0.5	0.268	21.5	false
+84410	Negro League Star 3B Jimmy Binder DeSt 1933	3B	52	5	R			0.273	0.273	0.273	7.0	15.8	0.5	0.279	21.4	false
+85524	Memorial Day OnStream Builds - Snapshot 1B Nick Pratto KC 2023	1B	45	0	L			0.272	0.313	0.25	7.4	35.7	2.1	0.316	19.9	false
+82858	Unsung Heroes SS Ivy Olson BRO 1919	SS	49	0	R			0.272	0.272	0.272	4.9	8.4	0.9	0.264	16.5	false
+84417	Negro League Star 2B Jack Marshall CAG 1934	2B	58	0	R			0.272	0.276	0.269	8.4	18.3	1.1	0.266	19.4	false
+85498	Clubhouse - 60s Week - Snapshot SP Jim Maloney CIN 1961	P	41	0	L			0.272	0.233	0.293	4.6	22.7	2.2	0.303	3.1	false
+82827	Unsung Heroes LF Hal Lee BSN 1935	LF	43	0	R			0.272	0.278	0.269	4.1	15.0	0.7	0.289	20	false
+81768	MLB 2026 Live SS Hye-seong Kim LAD	SS	50	0	L			0.272	0.262	0.277	5.4	27.2	1.8	0.300	21.2	false
+84656	Limited Edition/81 1B Julio Franco NYM 2006	1B	47	0	R			0.272	0.24	0.289	6.5	30.0	0.9	0.324	23	false
+84398	Negro League Star LF John Bissant CAG 1944	LF	48	0	R			0.272	0.272	0.272	6.0	16.7	0.9	0.276	24.4	false
+84406	Negro League Star 2B Rainey Bibbs CiTi 1937	2B	53	0	S			0.272	0.268	0.275	5.5	16.2	1.3	0.274	19.5	false
+82008	MLB 2026 Live 1B Warming Bernabel WSH	1B	43	0	R			0.272	0.28	0.268	4.8	19.5	1.9	0.270	21.7	false
+82965	Snapshot SP Jim Tobin BSN 1945	P	52	5	R			0.272	0.24	0.289	10.8	38.7	4.5	0.229	15.1	false
+83366	Snapshot C Johnny Peacock BOS 1942	C	43	5	L			0.272	0.269	0.274	6.2	10.7	0.5	0.275	16	false
+83351	Snapshot RF Willie McGee SF 1992	RF	49	5	S			0.272	0.252	0.283	5.3	25.0	0.3	0.328	21.2	false
+85673	June Gems - Baseball Reference 3 2B Rafael Landestoy HOU 1980	2B	44	5	S			0.272	0.319	0.247	7.9	16.0	0.4	0.271	23.4	false
+82837	Unsung Heroes 2B Chick Fulmer BFN 1879	2B	41	5	R			0.272	0.275	0.271	6.3	19.3	0.7	0.290	22.9	false
+83372	Veteran Presence C Charles Zimmer PHI 1903	C	48	0	R			0.271	0.271	0.271	7.4	22.2	2.6	0.248	20	false
+82852	Hardware Heroes 2B Brice Turang MIL 2024	2B	55	0	L			0.271	0.256	0.279	7.1	18.3	0.6	0.284	20.5	false
+83436	Snapshot C Mike Tresh CWS 1940	C	50	0	R			0.271	0.258	0.277	7.6	17.4	0.5	0.286	15.6	false
+85594	MLB 2026 Live C Cesar Salazar HOU	C	50	0	L			0.271	0.257	0.278	8.2	22.1	2.2	0.254	18.4	false
+83391	Snapshot CF Ernie Orsatti STL 1933	CF	52	0	L			0.271	0.253	0.281	6.0	18.1	0.5	0.291	21.5	false
+82868	Unsung Heroes LF Fred Odwell CIN 1907	LF	44	0	L			0.271	0.26	0.277	7.7	20.2	0.4	0.293	18.7	false
+83361	Snapshot CF Hi Myers BRO 1917	CF	50	0	R			0.271	0.269	0.272	3.2	13.9	1.5	0.270	21.1	false
+82231	MLB 2026 Live 3B Miles Mastrobuoni SEA	3B	51	0	L			0.271	0.257	0.278	8.8	21.4	1.0	0.273	21.7	false
+82839	Unsung Heroes C Frank Gibson BSN 1924	C	50	0	S			0.271	0.251	0.282	4.8	21.8	1.6	0.279	26.5	false
+84100	All-Time Legend 2B Denny Doyle PHI Peak	2B	51	0	L			0.271	0.249	0.283	6.4	14.0	1.0	0.264	21.2	false
+83915	Historical All-Star SS Royce Clayton STL 1997	SS	58	0	R			0.271	0.272	0.271	5.0	20.2	1.5	0.274	26.9	false
+83412	Snapshot 2B Jack Barry BOS 1915	2B	49	0	R			0.271	0.275	0.269	7.5	10.0	0.6	0.251	24.6	false
+85801	Family Connections - Unsung Heroes CF Jose Tartabull ATH 1969	CF	46	5	L			0.271	0.221	0.298	3.7	8.1	0.2	0.277	20.6	false
+82269	MLB 2026 Live C Austin Wynns TEX	C	49	0	R			0.270	0.267	0.272	6.2	23.0	1.6	0.287	16.7	false
+83371	Snapshot 2B Heinie Wagner BOS 1915	2B	50	0	R			0.270	0.274	0.267	10.3	19.5	0.5	0.266	22.9	false
+84940	MLB 2026 Live 2B Ildemaro Vargas AZ	2B	46	0	S			0.270	0.27	0.27	5.9	16.7	1.4	0.265	21.5	false
+84309	Rookie Sensation CF Esteury Ruiz ATH 2023	CF	50	0	R			0.270	0.274	0.268	5.8	18.6	1.1	0.278	20.7	false
+82461	MLB 2026 Live C Edgar Quero CWS	C	48	0	S			0.270	0.267	0.272	7.7	22.7	1.9	0.270	14.4	false
+85161	Dock&#39;s Patients LF Ivan Murrell SD 1970	LF	44	0	R			0.270	0.266	0.272	3.5	31.8	3.2	0.292	18.8	false
+85586	MLB 2026 Live C Omar Martinez LAA	C	48	0	L			0.270	0.249	0.281	8.0	29.3	2.9	0.261	17.6	false
+84303	Rookie Sensation SS Marty Marion STL 1940	SS	48	0	R			0.270	0.271	0.27	3.2	17.5	1.2	0.291	18.6	false
+81923	MLB 2026 Live LF Brandon Lockridge MIL	LF	50	0	R			0.270	0.276	0.267	7.1	27.1	0.7	0.308	23.9	false
+85246	MLB 2026 Live RF Greg Jones MIL	RF	52	0	S			0.270	0.271	0.269	6.1	31.3	2.3	0.295	20.9	false
+86013	MLB 2026 Live 1B Jacob Gonzalez CWS	1B	49	0	L			0.270	0.262	0.274	6.4	21.0	1.9	0.263	21.4	false
+84324	Rookie Sensation 1B Jay Faatz CL3 1888	1B	41	0	R			0.270	0.275	0.268	6.7	13.3	0.6	0.276	14.3	false
+82834	Unsung Heroes LF Charlie Eden PT1 1885	LF	40	0	L			0.270	0.268	0.271	6.7	19.7	0.5	0.286	26.2	false
+86036	MLB 2026 Live 2B Raynel Delgado HOU	2B	45	0	L			0.270	0.252	0.279	6.8	22.4	1.4	0.281	18.1	false
+86044	MLB 2026 Live CF Steward Berroa PHI	CF	49	0	S			0.270	0.265	0.272	8.7	29.4	1.4	0.291	21.8	false
+82700	Hardware Heroes 2B Tony Womack PIT 1997	2B	42	0	L			0.269	0.271	0.267	5.6	19.3	1.1	0.283	19	false
+84302	Rookie Sensation SS Swede Risberg CWS 1917	SS	46	0	R			0.269	0.287	0.259	9.6	20.6	1.7	0.235	30.9	false
+85590	MLB 2026 Live SS Cesar Prieto STL	SS	44	0	L			0.269	0.259	0.275	5.0	20.5	1.4	0.279	24.5	false
+84983	MLB 2026 Live 2B Tanner Murray CWS	2B	44	0	R			0.269	0.273	0.266	5.2	24.2	1.9	0.278	22.5	false
+85549	MLB 2026 Live LF Nick Morabito NYM	LF	50	0	R			0.269	0.275	0.266	7.4	24.0	1.2	0.284	20.5	false
+82328	MLB 2026 Live C Alex Jackson MIN	C	48	0	R			0.269	0.277	0.265	5.6	28.9	2.9	0.270	21.3	false
+82559	MLB 2026 Live C J.C. Escarra NYY	C	51	0	L			0.269	0.26	0.273	7.7	20.9	1.5	0.259	24.2	false
+83383	Snapshot SS Dave Bancroft PHI 1919	SS	49	0	S			0.269	0.282	0.263	6.9	18.3	0.6	0.278	23	false
+85600	MLB 2026 Live RF Jose Azocar ATL	RF	48	0	R			0.269	0.272	0.267	5.2	21.8	1.4	0.285	21	false
+85169	Dock&#39;s Patients SS Tommy Dean SD 1970	SS	41	5	R			0.269	0.232	0.288	6.0	21.3	1.8	0.272	17.3	false
+82831	Unsung Heroes CF Marvell Wynne PIT 1984	CF	45	0	L			0.268	0.261	0.271	6.3	16.9	0.6	0.279	20.9	false
+82845	Unsung Heroes SS Kevin Stocker PHI 1997	SS	49	0	S			0.268	0.255	0.276	6.9	18.7	1.0	0.275	20.2	false
+82071	MLB 2026 Live C Ben Rortvedt NYM	C	47	0	L			0.268	0.252	0.277	7.0	25.4	2.0	0.273	18.5	false
+81734	MLB 2026 Live LF Bryce Johnson SD	LF	54	0	S			0.268	0.272	0.266	7.9	27.8	1.2	0.295	20.7	false
+84308	Rookie Sensation 3B Ed Gremminger BSN 1902	3B	41	0	R			0.268	0.264	0.27	7.1	19.1	1.3	0.262	24.9	false
+83359	Snapshot C Johnny Edwards HOU 1969	C	48	0	L			0.268	0.246	0.28	6.8	17.5	1.6	0.250	25.7	false
+84686	Happy Easter C Ted Easterly CLE 1910	C	58	0	L			0.268	0.193	0.308	5.5	19.0	0.2	0.296	20.3	false
+85158	Dock&#39;s Patients 2B Dave Campbell SD 1970	2B	50	0	R			0.268	0.309	0.246	4.5	24.8	2.5	0.265	23.6	false
+84344	Rookie Sensation C Henry Blanco COL 1999	C	54	0	R			0.268	0.278	0.263	8.2	17.0	1.5	0.251	19.6	false
+82459	MLB 2026 Live SS Luisangel Acuna CWS	SS	47	0	R			0.268	0.271	0.267	6.2	21.0	1.3	0.281	17.3	false
+85895	FLF 14 &amp; Co. - Unsung Heroes SP Earl Wilson BOS 1962	P	55	5	R			0.268	0.256	0.275	5.3	30.8	3.9	0.256	16.7	false
+84927	MLB 2026 Live C Daniel Susac SF	C	46	0	R			0.267	0.273	0.264	5.9	26.1	1.7	0.285	21.3	false
+82046	MLB 2026 Live C Garrett Stubbs PHI	C	46	0	L			0.267	0.256	0.272	6.7	25.5	1.8	0.278	18	false
+83382	Snapshot LF Jimmy Slagle PHI 1900	LF	51	0	L			0.267	0.258	0.271	8.5	18.1	0.5	0.273	19	false
+82235	MLB 2026 Live 3B Leonardo Rivas SEA	3B	56	0	S			0.267	0.268	0.267	11.4	27.6	1.0	0.275	18	false
+85514	Clubhouse - 60s Week - Unsung Heroes SS Roy McMillan ML1 1961	SS	47	0	R			0.267	0.252	0.275	10.5	23.8	1.5	0.259	12.9	false
+83345	Snapshot 1B Bert Haas CIN 1946	1B	41	0	R			0.267	0.282	0.258	4.9	15.8	1.2	0.267	22.2	false
+85975	MLB 2026 Live SS Edwin Arroyo CIN	SS	56	0	S			0.267	0.27	0.265	5.7	22.8	1.1	0.289	21	false
+84297	Rookie Sensation 1B John Leary SLA 1914	1B	40	5	R			0.267	0.247	0.277	2.1	18.1	0.8	0.292	28.2	false
+84677	Happy Easter SS Jelly Jackson HoGr 1938	SS	47	5	R			0.267	0.269	0.265	8.9	16.0	1.5	0.244	15.3	false
+83356	Snapshot SS Ivan De Jesus PHI 1982	SS	41	5	R			0.267	0.252	0.275	8.1	17.3	1.0	0.258	22.9	false
+85631	MLB 2026 Live SS Zack Short NYM	SS	49	0	R			0.266	0.276	0.26	10.2	29.0	2.3	0.252	17.3	false
+84319	Rookie Sensation 2B Ike Rockenfield SLA 1905	2B	51	0	R			0.266	0.273	0.263	12.3	18.6	0.5	0.244	23.4	false
+82132	MLB 2026 Live RF DaShawn Keirsey Jr. ATL	RF	46	0	L			0.266	0.249	0.276	6.0	27.9	1.8	0.288	23.8	false
+84914	MLB 2026 Live C P.J. Higgins CIN	C	43	0	R			0.266	0.274	0.261	5.9	25.3	1.7	0.280	22	false
+82826	Unsung Heroes SS Cristian Guzman WAS 2009	SS	46	0	S			0.266	0.269	0.264	3.1	16.8	1.2	0.280	20.6	false
+86063	MLB 2026 Live CF Justin Dean CHC	CF	47	0	R			0.266	0.272	0.263	8.6	29.9	1.4	0.290	20.3	false
+84668	Opening Day Heroes - Super Utility 3B Emilio Bonifacio FLO 2009	3B	47	0	S			0.266	0.259	0.27	6.2	21.2	0.5	0.295	20.8	false
+82825	Unsung Heroes C Zack Taylor BRO 1923	C	40	5	R			0.266	0.27	0.263	3.9	12.2	0.6	0.274	21.2	false
+84404	Negro League Star SP George Mitchell InAB 1926	P	52	5	R			0.266	0.27	0.263	6.5	33.7	3.2	0.267	23	false
+82948	Snapshot SP Frank Dwyer CIN 1891	P	47	5	R			0.266	0.268	0.265	4.1	15.8	0.3	0.292	21.8	false
+82864	Unsung Heroes C Clyde Sukeforth CIN 1931	C	51	0	L			0.265	0.264	0.265	8.8	12.3	0.6	0.246	20.6	false
+82853	Unsung Heroes 2B Dave Shean BOS 1918	2B	50	0	R			0.265	0.254	0.271	7.5	15.7	0.5	0.265	22.4	false
+84969	MLB 2026 Live SS Leo Jimenez MIA	SS	48	0	R			0.265	0.268	0.264	7.4	23.5	1.5	0.268	21.2	false
+82194	MLB 2026 Live CF Michael Helman TEX	CF	45	0	R			0.265	0.268	0.263	6.4	23.9	2.2	0.257	22	false
+82838	Unsung Heroes CF Dave Fultz PHA 1901	CF	49	0	R			0.265	0.26	0.269	5.8	15.3	0.6	0.275	19.2	false
+83507	Snapshot 2B Jeff Frye BOS 1996	2B	42	0	R			0.265	0.26	0.268	6.0	15.4	0.4	0.292	8.4	false
+84905	MLB 2026 Live 2B Santiago Espinal LAD	2B	47	0	R			0.265	0.27	0.263	5.6	17.5	1.3	0.270	18.1	false
+83455	Snapshot C Dave Duncan CLE 1974	C	49	0	R			0.265	0.267	0.264	7.5	32.8	4.5	0.223	14	false
+83364	Snapshot C Alberto Castillo STL 1999	C	51	0	R			0.265	0.248	0.275	7.3	19.6	1.5	0.265	13.3	false
+84304	Rookie Sensation LF Eddie Carnett CWS 1944	LF	47	0	L			0.265	0.258	0.268	6.0	17.2	0.7	0.277	19.5	false
+83352	Snapshot CF Ethan Allen CIN 1928	CF	50	0	R			0.265	0.268	0.264	4.7	16.6	0.7	0.280	23.4	false
+85834	Heart Attack - Historical All-Star C Jim Hegan CLE 1949	C	46	5	R			0.265	0.286	0.254	7.8	31.2	2.2	0.271	25.5	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	P	51	5	R			0.265	0.27	0.262	6.1	32.7	3.2	0.262	25.4	false
+83909	Historical All-Star SS Leo Durocher STL 1936	SS	41	5	R			0.265	0.239	0.28	5.7	17.0	0.6	0.280	20.9	false
+83369	Snapshot RF Harry Wolter CHC 1917	RF	44	0	L			0.264	0.253	0.269	8.4	19.3	0.5	0.264	26.4	false
+84407	Negro League Star 2B Recurvon Teran CSE 1923	2B	50	0	R			0.264	0.267	0.262	7.3	18.0	1.9	0.235	24.9	false
+85321	Baseball Reference 2 SS Roger Metzger HOU 1973	SS	43	0	S			0.264	0.232	0.281	6.1	20.6	0.3	0.293	21.8	false
+84301	Rookie Sensation 2B Carl Lind CLE 1928	2B	43	0	R			0.264	0.261	0.265	5.0	17.3	0.5	0.281	24.3	false
+82502	MLB 2026 Live C Tyler Heineman LAA	C	46	0	S			0.264	0.269	0.261	7.2	21.5	1.8	0.259	17.7	false
+84116	All-Time Legend CF Jocko Conlan CWS Peak	CF	52	0	L			0.264	0.271	0.26	7.7	11.4	0.2	0.255	23.7	false
+82846	Unsung Heroes SS Darrel Chaney ATL 1976	SS	40	0	S			0.264	0.257	0.268	7.7	22.0	0.5	0.283	22.7	false
+84329	Super Utility C Blake Swihart BOS 2018	C	45	5	S			0.264	0.18	0.308	6.1	28.3	1.3	0.297	21.2	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	CF	57	5	R			0.264	0.27	0.262	7.7	18.7	0.8	0.259	27.6	false
+85460	May Birthdays - Unsung Heroes SS Billy Jurges CHC 1935	SS	57	5	R			0.264	0.295	0.248	7.2	14.9	0.4	0.263	23.8	false
+84130	Unsung Heroes SS Charlie Gelbert STL 1931	SS	48	5	R			0.264	0.275	0.259	4.2	17.3	0.6	0.291	18.2	false
+84400	Negro League Star C William Tenny KCG 1909	C	50	0	R			0.263	0.266	0.261	4.9	16.1	0.5	0.282	19.1	false
+83342	Snapshot CF Sonny Jackson ATL 1971	CF	47	0	L			0.263	0.254	0.267	5.6	14.3	0.7	0.267	19.9	false
+83908	Historical All-Star SS Shawon Dunston CHC 1988	SS	44	0	R			0.263	0.268	0.26	0.6	19.4	2.4	0.270	22.4	false
+83368	Snapshot CF Ginger Beaumont BSN 1909	CF	49	0	L			0.263	0.237	0.276	6.9	14.5	0.4	0.268	18.1	false
+83331	Snapshot C Otto Miller BRO 1919	C	40	5	R			0.263	0.272	0.258	6.3	17.5	1.5	0.252	22.2	false
+84296	Rookie Sensation SS Marr Phillips IN3 1884	SS	42	0	R			0.262	0.266	0.26	2.3	19.2	0.6	0.297	25.4	false
+83344	Snapshot 3B Steve Mesner CIN 1943	3B	47	0	R			0.262	0.28	0.253	4.2	12.1	0.6	0.267	21.9	false
+82841	Unsung Heroes SS Chick Galloway PHA 1923	SS	47	0	R			0.262	0.281	0.251	6.3	15.9	1.2	0.255	20.4	false
+84328	Rookie Sensation CF Al Burch STL 1906	CF	41	0	L			0.262	0.24	0.274	8.2	21.6	0.5	0.293	9.9	false
+85478	Baseball Reference 2 C Al Spohrer BSN 1933	C	43	0	R			0.261	0.31	0.236	5.7	16.0	0.5	0.277	17.5	false
+82836	Unsung Heroes 3B Bill Shipke WS1 1908	3B	40	0	R			0.261	0.279	0.251	10.2	20.5	0.5	0.254	23	false
+85266	MLB 2026 Live 2B Nicky Lopez TEX	2B	49	0	L			0.261	0.256	0.263	6.2	18.0	0.6	0.277	17.5	false
+82835	Unsung Heroes SS Doc Lavan STL 1920	SS	50	0	R			0.261	0.272	0.255	4.3	17.2	0.9	0.276	20.5	false
+85568	MLB 2026 Live 2B Jim Jarvis ATL	2B	51	0	L			0.261	0.244	0.27	6.5	20.6	1.2	0.265	21.8	false
+85613	MLB 2026 Live CF Petey Halpin CLE	CF	47	0	L			0.261	0.249	0.267	6.6	28.3	1.7	0.281	21.8	false
+82840	Unsung Heroes 1B Pop Dillon BRO 1904	1B	47	0	L			0.261	0.235	0.274	6.4	15.0	0.5	0.263	22	false
+85335	T4 Ep. 1 - Rookie Sensation RF Bobby Abreu HOU 1997	RF	46	0	L			0.261	0.236	0.274	8.4	29.7	1.3	0.281	22.9	false
+84295	Rookie Sensation RF George Hunter BRO 1909	RF	40	5	S			0.261	0.273	0.254	7.5	24.2	0.2	0.291	25.9	false
+82936	Snapshot SP Bill Hoffer BLN 1897	P	49	5	R			0.261	0.264	0.259	6.3	27.7	2.6	0.251	26.2	false
+84397	Negro League Star C Paul Hardy BBB 1942	C	47	5	R			0.261	0.268	0.257	9.3	17.4	0.3	0.267	14.2	false
+84093	All-Time Legend SS Tom Veryzer CLE Peak	SS	45	0	R			0.260	0.262	0.259	5.5	15.2	0.8	0.264	19.5	false
+82965	Snapshot SP Jim Tobin BSN 1945	P	52	0	R			0.260	0.223	0.28	10.2	39.8	4.3	0.225	13.8	false
+83360	Snapshot C Bennie Tate WS1 1929	C	48	0	L			0.260	0.254	0.263	5.2	10.9	0.4	0.262	19.7	false
+85691	June Gems - Baseball Reference 3 RF Sammy Sosa CWS 1990	RF	43	0	R			0.260	0.332	0.222	4.2	33.9	2.4	0.294	27.9	false
+85258	MLB 2026 Live 3B Braden Shewmake HOU	3B	48	0	L			0.260	0.256	0.262	5.5	20.5	2.0	0.253	20.5	false
+84103	All-Time Legend CF Tony Scott STL Peak	CF	41	0	S			0.260	0.268	0.256	5.4	19.9	1.0	0.274	21.9	false
+83357	Snapshot C Jeff Reed CIN 1989	C	47	0	L			0.260	0.238	0.271	8.2	19.9	1.6	0.243	20.2	false
+83366	Snapshot C Johnny Peacock BOS 1942	C	43	0	L			0.260	0.257	0.262	5.6	11.7	0.4	0.269	14.8	false
+82443	MLB 2026 Live C Austin Hedges CLE	C	56	0	R			0.260	0.264	0.258	6.2	24.2	1.6	0.272	18.3	false
+83335	Snapshot C Bob Swift DET 1945	C	43	5	R			0.260	0.272	0.253	8.4	15.0	0.8	0.255	12.5	false
+85801	Family Connections - Unsung Heroes CF Jose Tartabull ATH 1969	CF	46	0	L			0.259	0.212	0.284	3.2	9.2	0.2	0.271	19.5	false
+85777	Family Connections - Historical All-Star C Steve Swisher CHC 1976	C	45	0	R			0.259	0.241	0.269	5.0	30.6	2.2	0.288	19.7	false
+83912	Historical All-Star SS Freddie Patek KC 1976	SS	43	0	R			0.259	0.269	0.254	8.1	18.9	0.5	0.262	23.3	false
+85954	MLB 2026 Live CF Rikuu Nishida CWS	CF	47	0	L			0.259	0.251	0.263	7.7	19.2	0.5	0.275	15.2	false
+83351	Snapshot RF Willie McGee SF 1992	RF	49	0	S			0.259	0.239	0.27	4.8	26.8	0.3	0.323	19.4	false
+82050	MLB 2026 Live C Rafael Marchan PHI	C	45	0	S			0.259	0.262	0.257	5.6	19.2	1.9	0.254	16.4	false
+84410	Negro League Star 3B Jimmy Binder DeSt 1933	3B	52	0	R			0.259	0.259	0.259	6.4	17.2	0.5	0.273	19.6	false
+84862	Clubhouse - Negro League Star SP Jack Matchett KCM 1944	P	53	0	L			0.258	0.254	0.26	6.9	20.5	0.2	0.284	20.5	false
+86043	MLB 2026 Live 2B Nick Madrigal TB	2B	47	0	R			0.258	0.263	0.255	5.4	16.2	0.7	0.270	19.1	false
+82837	Unsung Heroes 2B Chick Fulmer BFN 1879	2B	41	0	R			0.258	0.26	0.256	5.6	21.0	0.6	0.283	21.1	false
+85673	June Gems - Baseball Reference 3 2B Rafael Landestoy HOU 1980	2B	44	0	S			0.257	0.304	0.232	7.0	17.7	0.4	0.264	21.9	false
+84300	Rookie Sensation SS Irv Hall PHA 1943	SS	40	5	R			0.256	0.252	0.258	4.6	16.1	0.8	0.271	17.8	false
+85598	MLB 2026 Live C Chadwick Tromp BAL	C	43	0	R			0.255	0.267	0.249	5.9	27.2	2.4	0.257	18.5	false
+84722	Happy Easter 2X Variant Booster SS Henry Easterday KC2 1888	SS	42	5	R			0.255	0.26	0.251	10.5	37.5	2.8	0.238	26.5	false
+84298	Rookie Sensation C Monte Beville NYY 1903	C	40	5	L			0.255	0.279	0.242	8.3	16.1	0.6	0.235	32.3	false
+85991	MLB 2026 Live 2B Tsung-Che Cheng BOS	2B	45	0	L			0.254	0.247	0.257	7.7	27.3	1.1	0.273	22.1	false
+82830	Unsung Heroes C Bruno Block CWS 1912	C	41	5	R			0.254	0.279	0.24	4.9	24.0	0.3	0.293	26.8	false
+82224	MLB 2026 Live 2B Will Wilson SEA	2B	41	0	R			0.253	0.259	0.249	6.4	27.6	2.1	0.259	18.4	false
+82363	MLB 2026 Live CF Tyler Tolbert KC	CF	47	0	R			0.253	0.254	0.252	6.1	27.5	1.0	0.287	20.3	false
+82825	Unsung Heroes C Zack Taylor BRO 1923	C	40	0	R			0.253	0.257	0.251	3.4	13.1	0.5	0.268	19.4	false
+85460	May Birthdays - Unsung Heroes SS Billy Jurges CHC 1935	SS	57	0	R			0.253	0.283	0.236	6.6	16.1	0.3	0.258	22.2	false
+85982	MLB 2026 Live CF Jonah Cox SF	CF	43	0	R			0.253	0.257	0.251	6.1	26.3	1.3	0.278	20.6	false
+85171	Dock&#39;s Patients 1B Ramon Webster SD 1970	1B	42	5	L			0.253	0.161	0.302	4.4	16.6	1.2	0.267	10.9	false
+84305	Rookie Sensation C Del Rice STL 1945	C	40	5	R			0.253	0.283	0.237	4.0	33.4	1.2	0.318	24.8	false
+84094	All-Time Legend 2B Doug Flynn NYM Peak	2B	40	5	R			0.253	0.262	0.249	3.3	11.2	0.5	0.261	23	false
+82290	MLB 2026 Live CF Bryce Teodosio LAA	CF	46	0	R			0.252	0.254	0.252	5.6	29.7	1.0	0.299	21.9	false
+84297	Rookie Sensation 1B John Leary SLA 1914	1B	40	0	R			0.252	0.234	0.261	1.7	19.4	0.6	0.285	26.8	false
+82196	MLB 2026 Live C Jose Herrera TEX	C	49	0	S			0.252	0.26	0.248	8.2	23.5	1.2	0.256	17.5	false
+82948	Snapshot SP Frank Dwyer CIN 1891	P	47	0	R			0.252	0.253	0.251	3.5	17.2	0.2	0.285	20	false
+85169	Dock&#39;s Patients SS Tommy Dean SD 1970	SS	41	0	R			0.252	0.221	0.268	5.4	23.0	1.6	0.266	15.8	false
+83356	Snapshot SS Ivan De Jesus PHI 1982	SS	41	0	R			0.252	0.239	0.259	7.3	18.6	0.8	0.252	21.1	false
+84098	All-Time Legend 2B Sparky Anderson PHI Peak	2B	41	5	R			0.252	0.254	0.251	8.6	14.1	0.2	0.251	15	false
+84677	Happy Easter SS Jelly Jackson HoGr 1938	SS	47	0	R			0.251	0.253	0.249	7.9	17.5	1.3	0.239	13.9	false
+83909	Historical All-Star SS Leo Durocher STL 1936	SS	41	0	R			0.251	0.225	0.265	5.1	18.6	0.5	0.273	19.1	false
+84920	MLB 2026 Live LF Luke Williams ATL	LF	43	0	R			0.250	0.262	0.244	5.9	28.8	1.9	0.267	19.8	false
+84329	Super Utility C Blake Swihart BOS 2018	C	45	0	S			0.250	0.17	0.292	5.5	30.1	1.1	0.293	20	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	CF	57	0	R			0.250	0.254	0.248	7.0	20.0	0.7	0.254	26.3	false
+84130	Unsung Heroes SS Charlie Gelbert STL 1931	SS	48	0	R			0.250	0.26	0.245	3.7	18.7	0.5	0.284	16.7	false
+85090	Clubhouse - 60s Week - Unsung Heroes SS Coot Veal WS2 Peak	SS	40	0	R			0.249	0.231	0.258	6.2	16.9	0.3	0.266	16.8	false
+82072	MLB 2026 Live C Hayden Senger NYM	C	44	0	R			0.248	0.252	0.247	5.7	28.7	1.6	0.276	18.8	false
+84404	Negro League Star SP George Mitchell InAB 1926	P	52	0	R			0.248	0.251	0.246	5.9	35.0	2.8	0.261	21.2	false
+83332	Snapshot C Gabby Street WS1 1909	C	41	5	R			0.248	0.271	0.236	7.0	12.5	0.5	0.235	23.5	false
+83331	Snapshot C Otto Miller BRO 1919	C	40	0	R			0.247	0.257	0.242	5.6	18.9	1.3	0.247	20.4	false
+85834	Heart Attack - Historical All-Star C Jim Hegan CLE 1949	C	46	0	R			0.247	0.265	0.238	7.0	32.8	1.9	0.265	23.9	false
+84397	Negro League Star C Paul Hardy BBB 1942	C	47	0	R			0.247	0.253	0.244	8.3	18.8	0.3	0.261	13.1	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	P	51	0	R			0.247	0.252	0.245	5.4	34.0	2.8	0.257	24	false
+83335	Snapshot C Bob Swift DET 1945	C	43	0	R			0.246	0.256	0.241	7.6	16.4	0.7	0.250	11.5	false
+84295	Rookie Sensation RF George Hunter BRO 1909	RF	40	0	S			0.246	0.256	0.24	6.7	26.2	0.2	0.284	24.4	false
+85503	Clubhouse - 60s Week - Snapshot 2B Chuck Cottier WS2 1961	2B	43	0	R			0.246	0.233	0.253	6.0	22.6	0.5	0.273	21.4	false
+85805	T4 Ep. 3 - Unsung Heroes SS Hal Lanier SF 1969	SS	43	5	R			0.246	0.297	0.218	5.3	13.8	0.2	0.264	12	false
+83067	Snapshot SP Fred Goldsmith CHC 1882	P	59	5	R			0.246	0.247	0.245	5.6	25.8	0.3	0.278	32.3	false
+82937	Snapshot SP Al Mays NY4 1886	P	44	5	R			0.245	0.247	0.243	5.3	18.3	3.0	0.193	30.2	false
+82936	Snapshot SP Bill Hoffer BLN 1897	P	49	0	R			0.243	0.247	0.242	5.7	29.4	2.2	0.246	25.1	false
+84298	Rookie Sensation C Monte Beville NYY 1903	C	40	0	L			0.243	0.265	0.231	7.5	17.6	0.6	0.230	31.7	false
+84684	Happy Easter Variant Booster 3B Eguy Rosario SD 2024	3B	44	5	R			0.243	0.294	0.216	4.0	25.6	1.8	0.270	13.2	false
+82993	Snapshot SP Sam Weaver LS2 1883	P	46	5	R			0.242	0.245	0.241	9.7	16.7	0.3	0.226	23	false
+84300	Rookie Sensation SS Irv Hall PHA 1943	SS	40	0	R			0.241	0.239	0.242	4.0	17.6	0.6	0.265	16.3	false
+84094	All-Time Legend 2B Doug Flynn NYM Peak	2B	40	0	R			0.241	0.249	0.237	2.8	12.3	0.4	0.255	21.1	false
+84687	Happy Easter 2X Variant Booster 1B Bunny Brief CWS 1915	1B	40	5	R			0.241	0.331	0.194	5.5	32.0	2.2	0.262	16.4	false
+85171	Dock&#39;s Patients 1B Ramon Webster SD 1970	1B	42	0	L			0.240	0.156	0.285	4.0	18.0	1.0	0.261	10	false
+82830	Unsung Heroes C Bruno Block CWS 1912	C	41	0	R			0.240	0.266	0.227	4.3	25.5	0.3	0.286	25.6	false
+84098	All-Time Legend 2B Sparky Anderson PHI Peak	2B	41	0	R			0.240	0.243	0.239	7.8	15.6	0.2	0.246	13.8	false
+84866	Clubhouse - Negro League Star C Sammie Haynes KCM 1945	C	40	0	R			0.239	0.243	0.237	7.0	19.8	0.6	0.244	21.2	false
+85903	Limited Edition/71 CF Billy Bean DET 1987	CF	40	0	L			0.239	0.188	0.267	4.4	19.5	0.2	0.273	17.8	false
+84305	Rookie Sensation C Del Rice STL 1945	C	40	0	R			0.238	0.27	0.221	3.5	34.9	1.0	0.310	23.5	false
+83332	Snapshot C Gabby Street WS1 1909	C	41	0	R			0.237	0.26	0.224	6.3	13.7	0.5	0.230	22	false
+81805	MLB 2026 Live RP Zach Agnos COL	P	46	0	R			0.237	0.241	0.235	5.6	29.4	1.5	0.264	17.3	false
+84722	Happy Easter 2X Variant Booster SS Henry Easterday KC2 1888	SS	42	0	R			0.236	0.242	0.233	9.3	38.6	2.4	0.233	25.3	false
+85805	T4 Ep. 3 - Unsung Heroes SS Hal Lanier SF 1969	SS	43	0	R			0.235	0.284	0.209	4.7	15.1	0.2	0.259	10.9	false
+85827	T4 Ep. 3 - Negro League Star SP Bob Romby BEG 1948	P	58	5	L			0.235	0.228	0.239	6.2	32.1	2.4	0.237	22.4	false
+83067	Snapshot SP Fred Goldsmith CHC 1882	P	59	0	R			0.233	0.234	0.232	5.0	27.7	0.3	0.272	32.3	false
+82384	MLB 2026 Live CL Lucas Erceg KC	P	58	0	L			0.233	0.238	0.23	5.0	33.4	1.9	0.262	20.9	false
+82937	Snapshot SP Al Mays NY4 1886	P	44	0	R			0.231	0.234	0.23	4.7	19.6	2.6	0.193	28.5	false
+84606	St. Patrick&#39;s Day Variant Booster C Paddy O&#39;Connor Pittsburgh Rebels 1915	C	41	5	R			0.231	0.277	0.207	4.2	24.0	0.2	0.270	22.1	false
+84684	Happy Easter Variant Booster 3B Eguy Rosario SD 2024	3B	44	0	R			0.230	0.276	0.206	3.6	26.8	1.6	0.265	13.2	false
+84225	Rookie Sensation SP Stoney McGlynn STL 1907	P	46	5	R			0.230	0.238	0.226	5.6	24.7	0.3	0.256	30	false
+85541	Memorial Day OnStream Builds - Variant Booster x2 SS John Gochnauer CLE 1903	SS	40	5	R			0.230	0.251	0.219	10.1	23.4	0.2	0.230	22	false
+82993	Snapshot SP Sam Weaver LS2 1883	P	46	0	R			0.229	0.232	0.228	8.7	18.2	0.3	0.222	21.2	false
+84687	Happy Easter 2X Variant Booster 1B Bunny Brief CWS 1915	1B	40	0	R			0.226	0.309	0.182	4.8	33.2	1.9	0.256	15.3	false
+85170	Dock&#39;s Patients 3B Van Kelly SD 1970	3B	40	5	L			0.226	0.144	0.269	10.5	33.4	1.2	0.229	13	false
+84607	St. Patrick&#39;s Day Variant Booster 1B John McGuinness SR1 1879	1B	40	5	S			0.225	0.229	0.223	1.5	25.1	0.2	0.288	22.8	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	P	58	5	R			0.221	0.244	0.208	3.8	36.0	1.7	0.261	26.5	false
+84606	St. Patrick&#39;s Day Variant Booster C Paddy O&#39;Connor Pittsburgh Rebels 1915	C	41	0	R			0.220	0.265	0.196	3.7	25.3	0.2	0.264	20.7	false
+84225	Rookie Sensation SP Stoney McGlynn STL 1907	P	46	0	R			0.218	0.225	0.215	5.0	26.6	0.2	0.250	29.6	false
+85541	Memorial Day OnStream Builds - Variant Booster x2 SS John Gochnauer CLE 1903	SS	40	0	R			0.218	0.241	0.206	9.3	25.3	0.2	0.225	20.2	false
+85170	Dock&#39;s Patients 3B Van Kelly SD 1970	3B	40	0	L			0.216	0.141	0.257	10.0	34.5	1.1	0.226	12.1	false
+84607	St. Patrick&#39;s Day Variant Booster 1B John McGuinness SR1 1879	1B	40	0	S			0.212	0.215	0.21	1.1	27.1	0.2	0.281	21	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	P	58	0	R			0.206	0.226	0.195	3.2	37.4	1.5	0.256	24.9	false

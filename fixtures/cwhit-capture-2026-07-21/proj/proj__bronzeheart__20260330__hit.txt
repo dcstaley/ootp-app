@@ -1,0 +1,631 @@
+# CAPPROJ key=bronzeheart__20260330 role=hit label=Bronze Heart type=Daily variantMode=all_cards projval=40-69 vlvl0=329 vlvl5=300 recordsTotal=629 rows=629
+CID	Name	Position	VAL	VLvl	Hand	Cap Value	Slots Value	pwOBA	pwOBA_vL	pwOBA_vR	BBpct	SOpct	HRpct	BABIP	XBHpct	ProjectedNewCard
+85525	Memorial Day OnStream Builds - Unsung Heroes CF Rick Monday CHC 1976	CF	69	5	L			0.378	0.359	0.387	8.4	14.3	4.6	0.298	23.8	false
+85766	Family Connections - Super Utility RF Danny Tartabull SEA 1986	RF	63	5	R			0.369	0.409	0.35	10.3	15.0	1.8	0.334	28	false
+85773	Limited Edition/96 CF Matty Alou PIT 1969	CF	69	0	L			0.367	0.325	0.387	5.2	3.7	0.3	0.337	29.7	false
+85532	Memorial Day OnStream Builds - Rookie Sensation LF Greg Briley SEA 1989	LF	64	5	L			0.365	0.387	0.355	7.7	12.4	2.3	0.321	27.8	false
+85525	Memorial Day OnStream Builds - Unsung Heroes CF Rick Monday CHC 1976	CF	69	0	L			0.359	0.339	0.368	7.8	15.2	4.1	0.292	22.4	false
+85843	T4 Ep. 3 - Hardware Heroes SS Leo Cardenas CIN 1965	SS	68	5	R			0.357	0.377	0.347	8.7	10.7	1.1	0.324	28	false
+85858	T4 Ep. 3 - Unsung Heroes LF Bill Buckner LAD 1974	LF	64	5	L			0.354	0.327	0.366	4.6	2.7	1.3	0.305	29.4	false
+84464	Negro League Star RF Donald Reeves ABC 1938	RF	69	5	L			0.351	0.346	0.353	6.0	8.0	2.7	0.293	24.8	false
+83648	Snapshot CF Mule Haas PHA 1931	CF	69	5	L			0.351	0.354	0.35	6.0	7.4	2.6	0.293	25.3	false
+85766	Family Connections - Super Utility RF Danny Tartabull SEA 1986	RF	63	0	R			0.350	0.378	0.337	9.8	15.8	1.6	0.323	26.6	false
+85063	HOF 1 - Veteran Presence 1B Mickey Mantle NYY 1967	1B	68	5	S			0.349	0.363	0.343	11.9	13.1	3.5	0.269	17.2	false
+85945	July Jewels - Baseball Reference 4 2B Julio Cruz SEA 1979	2B	62	5	S			0.349	0.398	0.327	11.4	9.0	0.3	0.323	21	false
+84887	Celebrating 42 - Rookie Sensation LF Marv Rackley BRO 1948	LF	65	5	L			0.347	0.285	0.376	4.8	8.1	0.3	0.341	24.2	false
+86267	All-Star Week - Historical All-Star LF Tim Raines MON 1982	LF	62	5	S			0.346	0.341	0.348	10.1	8.2	0.7	0.309	25	true
+86265	T4 Ep. 4 - Historical All-Star SS Alan Trammell DET 1980	SS	63	5	R			0.345	0.346	0.345	9.8	7.7	1.0	0.305	23.9	true
+83625	Snapshot C Babe Phelps BRO 1937	C	63	5	L			0.345	0.346	0.345	5.8	7.4	2.0	0.290	30.8	false
+83649	Snapshot LF Dave Harris WS1 1930	LF	67	5	R			0.345	0.383	0.327	9.1	11.3	1.8	0.289	33.90000000000001	false
+85858	T4 Ep. 3 - Unsung Heroes LF Bill Buckner LAD 1974	LF	64	0	L			0.344	0.316	0.357	4.0	3.4	1.2	0.302	28.5	false
+85532	Memorial Day OnStream Builds - Rookie Sensation LF Greg Briley SEA 1989	LF	64	0	L			0.344	0.358	0.338	7.0	12.9	2.0	0.309	26.4	false
+85833	T4 Ep. 3 - Historical All-Star C Tim McCarver STL 1966	C	68	5	L			0.344	0.294	0.368	5.8	4.4	2.1	0.285	25.3	false
+83676	Snapshot 1B Dale Alexander DET 1931	1B	69	5	R			0.343	0.343	0.343	9.0	7.5	0.7	0.299	31.1	false
+84353	Rookie Sensation RF Wally Moses PHA 1935	RF	66	5	L			0.342	0.323	0.351	6.7	6.9	2.0	0.291	23.9	false
+86254	All-Star Week - Historical All-Star C Gabby Hartnett CHC 1936	C	66	5	R			0.342	0.361	0.333	6.4	9.5	1.8	0.304	25.1	true
+83489	Snapshot 1B Don Bollweg NYY 1953	1B	50	5	L			0.341	0.347	0.338	8.2	12.2	2.5	0.290	24.3	false
+85905	4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	5	R			0.340	0.325	0.347	5.6	8.2	2.2	0.288	27.4	false
+84459	Negro League Star 1B Ed Mayweather NYBY 1942	1B	66	5	L			0.339	0.334	0.342	9.2	8.8	1.8	0.287	23.9	false
+83623	Snapshot 3B Pinky Higgins PHA 1935	3B	65	5	R			0.339	0.345	0.336	7.2	12.3	2.3	0.295	26	false
+83616	Snapshot CF Jim Northrup DET 1967	CF	68	5	L			0.338	0.329	0.343	7.4	8.9	1.9	0.294	22.3	false
+85537	Memorial Day OnStream Builds - Veteran Presence LF Jerry Mumphrey CHC 1987	LF	69	5	S			0.338	0.232	0.387	8.4	9.1	1.8	0.285	28.8	false
+85168	Dock&#39;s Patients C Chris Cannizzaro SD 1970	C	65	5	R			0.338	0.363	0.327	10.7	8.3	0.6	0.301	23.8	false
+85289	May Names 1 - Snapshot C Milt May HOU 1974	C	63	5	L			0.337	0.325	0.342	5.8	8.6	1.9	0.303	20	false
+85708	T4 Ep. 2 - Historical All-Star 2B Tom Herr STL 1985	2B	58	5	S			0.337	0.311	0.348	8.6	7.2	0.5	0.304	25.9	false
+83928	Historical All-Star SS Dave Concepcion CIN 1978	SS	60	5	R			0.337	0.374	0.32	7.3	9.0	0.7	0.312	26.3	false
+85843	T4 Ep. 3 - Hardware Heroes SS Leo Cardenas CIN 1965	SS	68	0	R			0.336	0.346	0.331	8.1	11.3	1.0	0.309	26.7	false
+84359	Rookie Sensation LF Gary Matthews SF 1973	LF	69	5	R			0.336	0.339	0.334	7.7	8.9	1.2	0.300	26.1	false
+86267	All-Star Week - Historical All-Star LF Tim Raines MON 1982	LF	62	0	S			0.335	0.326	0.339	9.6	9.3	0.6	0.306	23.9	true
+86126	Limited Edition/69 C Matt Nokes DET 1987	C	57	0	L			0.335	0.276	0.363	5.7	10.3	4.1	0.264	15.1	false
+83925	Historical All-Star LF Claudell Washington ATH 1975	LF	59	5	L			0.335	0.339	0.334	4.4	8.7	1.7	0.309	21.6	false
+83932	Historical All-Star 1B Eddie Waitkus PHI 1949	1B	52	5	L			0.335	0.314	0.345	8.4	8.1	1.1	0.291	28.1	false
+83492	Snapshot RF Dick Porter CLE 1932	RF	58	5	L			0.335	0.339	0.333	8.0	7.7	1.2	0.294	24.6	false
+83668	Snapshot RF Pat Kelly KC 1969	RF	68	5	L			0.335	0.322	0.341	8.7	9.1	1.7	0.284	26.5	false
+82870	Unsung Heroes 3B Ed Goodson SF 1973	3B	61	5	L			0.335	0.305	0.349	3.3	7.5	2.4	0.290	24.6	false
+83605	Veteran Presence CF Bill Bruton DET 1962	CF	66	5	L			0.335	0.341	0.332	7.7	7.9	2.1	0.277	25.7	false
+83493	Veteran Presence 1B Jim Bottomley SLA 1936	1B	60	5	L			0.335	0.311	0.347	6.7	9.4	2.6	0.272	29.8	false
+86265	T4 Ep. 4 - Historical All-Star SS Alan Trammell DET 1980	SS	63	0	R			0.334	0.334	0.334	9.2	8.7	0.9	0.302	22	true
+83648	Snapshot CF Mule Haas PHA 1931	CF	69	0	L			0.334	0.333	0.335	5.3	8.1	2.3	0.286	23.9	false
+84454	Negro League Star CF David Whatley HoGr 1941	CF	67	5	L			0.334	0.331	0.336	6.2	7.4	1.7	0.295	22.3	false
+82869	Unsung Heroes CF John Shelby LAD 1988	CF	55	5	S			0.334	0.317	0.343	7.2	12.0	1.7	0.301	25.4	false
+85533	Memorial Day OnStream Builds - Snapshot LF Gene Richards SD 1980	LF	65	5	L			0.334	0.32	0.34	7.8	7.7	0.6	0.304	26.3	false
+84315	Rookie Sensation CF Lou Brock CHC 1962	CF	51	5	L			0.334	0.299	0.351	6.3	11.1	1.6	0.297	29.5	false
+83672	Snapshot C Andy Seminick PHI 1946	C	66	5	R			0.333	0.341	0.329	7.6	11.4	1.8	0.293	25.3	false
+84390	Celebrating 42 - Rookie Sensation 1B Jackie Robinson BRO 1947	1B	58	5	R			0.333	0.357	0.322	7.2	6.6	0.9	0.296	27	false
+83622	Veteran Presence 1B Joe Kuhel WS1 1945	1B	66	5	L			0.333	0.336	0.331	9.9	7.4	0.9	0.285	27.6	false
+83512	Snapshot 1B Donn Clendenon PIT 1964	1B	61	5	R			0.333	0.337	0.331	6.0	10.2	1.2	0.302	29.8	false
+84326	Rookie Sensation 3B Buddy Blair PHA 1942	3B	60	5	L			0.332	0.339	0.329	5.8	7.1	1.8	0.285	27.1	false
+84464	Negro League Star RF Donald Reeves ABC 1938	RF	69	0	L			0.331	0.325	0.334	5.3	8.9	2.3	0.287	23.1	false
+85150	PTCS 2 - Veteran Presence 2B Joe Morgan PHI 1983	2B	65	0	L			0.331	0.301	0.344	13.9	8.1	2.4	0.243	20.2	false
+85945	July Jewels - Baseball Reference 4 2B Julio Cruz SEA 1979	2B	62	0	S			0.331	0.367	0.314	10.8	10.1	0.3	0.310	19.2	false
+83575	Snapshot CF Oddibe McDowell TEX 1986	CF	64	5	L			0.331	0.312	0.339	7.9	9.8	2.3	0.275	23.6	false
+83463	Snapshot LF Jim Lemon MIN 1961	LF	57	5	R			0.331	0.33	0.331	8.0	11.2	1.3	0.290	31.6	false
+85157	Young &amp; Old 1 - Veteran Presence 1B Ron Fairly TOR 1977	1B	62	5	L			0.331	0.292	0.35	8.5	9.6	2.2	0.275	21.9	false
+85833	T4 Ep. 3 - Historical All-Star C Tim McCarver STL 1966	C	68	0	L			0.330	0.277	0.355	5.3	4.9	1.9	0.279	24.2	false
+86254	All-Star Week - Historical All-Star C Gabby Hartnett CHC 1936	C	66	0	R			0.330	0.344	0.323	5.8	10.5	1.6	0.302	23.7	true
+85799	Limited Edition/59 RF Jesus Alou HOU 1970	RF	59	0	R			0.330	0.338	0.326	2.4	3.1	0.2	0.306	32.5	false
+84450	Negro League Star RF Clyde Spearman PiCr 1937	RF	64	5	L			0.330	0.325	0.332	8.9	7.7	1.4	0.284	22.3	false
+84882	Celebrating 42 - Negro League Star 1B Joe Scott BBB 1948	1B	54	5	L			0.330	0.324	0.333	9.4	10.4	2.5	0.254	31.9	false
+83683	Snapshot 2B Connie Ryan PHI 1953	2B	69	5	R			0.330	0.329	0.331	8.4	10.1	0.9	0.296	28.5	false
+85850	Heart Attack - Unsung Heroes C Andy Etchebarren BAL 1971	C	63	5	R			0.330	0.339	0.326	6.9	12.3	1.7	0.303	21.8	false
+83649	Snapshot LF Dave Harris WS1 1930	LF	67	0	R			0.329	0.367	0.312	8.5	12.0	1.6	0.281	32.8	false
+83676	Snapshot 1B Dale Alexander DET 1931	1B	69	0	R			0.329	0.327	0.33	8.4	8.3	0.6	0.293	29.7	false
+83944	Historical All-Star 2B Charlie Neal LAD 1959	2B	67	5	R			0.329	0.336	0.326	6.3	8.8	1.3	0.293	28.2	false
+83607	Veteran Presence 1B Eddie Mathews HOU 1967	1B	65	5	L			0.329	0.348	0.32	9.8	11.3	3.0	0.258	21.1	false
+84132	All-Time Legend SS Don Buddin BOS Peak	SS	68	5	R			0.329	0.336	0.325	11.3	9.1	1.0	0.271	31.7	false
+83618	Snapshot SS Eddie Bressoud BOS 1962	SS	68	5	R			0.329	0.312	0.336	6.1	10.3	1.0	0.295	34.3	false
+83916	Historical All-Star CF Gus Bell CIN 1957	CF	56	5	L			0.329	0.328	0.33	4.8	7.9	2.0	0.291	21.5	false
+83625	Snapshot C Babe Phelps BRO 1937	C	63	0	L			0.328	0.327	0.328	5.2	8.1	1.8	0.281	29.8	false
+83587	Snapshot SS U L Washington KC 1982	SS	64	5	S			0.328	0.345	0.32	7.1	7.2	1.8	0.281	22.6	false
+83608	Snapshot CF Jim Landis CWS 1958	CF	66	5	R			0.328	0.347	0.319	8.2	9.3	1.3	0.287	26.2	false
+83594	Snapshot 1B Babe Dahlgren PIT 1944	1B	67	5	R			0.328	0.312	0.335	7.0	8.6	1.6	0.284	26.1	false
+85849	Heart Attack - Unsung Heroes C Billy Bryan KC1 1965	C	48	5	L			0.328	0.294	0.344	5.8	15.5	2.2	0.303	24.9	false
+85063	HOF 1 - Veteran Presence 1B Mickey Mantle NYY 1967	1B	68	0	S			0.327	0.336	0.323	11.2	13.8	3.2	0.257	15.6	false
+85168	Dock&#39;s Patients C Chris Cannizzaro SD 1970	C	65	0	R			0.327	0.352	0.315	10.2	9.2	0.6	0.297	21.9	false
+83532	Snapshot CF Irv Noren WS1 1951	CF	62	5	L			0.327	0.303	0.338	6.7	6.9	1.6	0.276	28.4	false
+83408	Veteran Presence 2B Eddie Mayo DET 1947	2B	62	5	L			0.327	0.296	0.341	6.9	7.3	1.7	0.279	24	false
+84367	Rookie Sensation CF Cliff Mapes NYY 1949	CF	68	5	L			0.327	0.309	0.335	9.9	10.8	2.2	0.265	24.4	false
+84353	Rookie Sensation RF Wally Moses PHA 1935	RF	66	0	L			0.326	0.305	0.335	6.0	7.5	1.7	0.285	22.3	false
+86115	Limited Edition/62 CF Oris Hockett CLE 1944	CF	55	0	L			0.326	0.318	0.33	6.7	8.6	0.7	0.307	22.1	true
+85708	T4 Ep. 2 - Historical All-Star 2B Tom Herr STL 1985	2B	58	0	S			0.326	0.299	0.339	8.0	8.0	0.4	0.302	24.8	false
+84134	All-Time Legend SS Craig Reynolds HOU Peak	SS	68	5	L			0.326	0.302	0.337	5.6	5.9	0.7	0.304	22	false
+86282	All-Star Week - Historical All-Star C Tony Pena Sr. PIT 1984	C	62	5	R			0.326	0.343	0.318	5.8	9.9	1.3	0.300	25.4	true
+83580	Snapshot LF Lou Novikoff CHC 1942	LF	63	5	R			0.326	0.322	0.328	4.6	6.7	1.3	0.294	25.9	false
+84335	Rookie Sensation RF Junior Felix TOR 1989	RF	57	5	S			0.326	0.309	0.334	7.1	11.6	1.7	0.291	24	false
+84887	Celebrating 42 - Rookie Sensation LF Marv Rackley BRO 1948	LF	65	0	L			0.325	0.279	0.347	4.2	8.6	0.3	0.324	23.1	false
+83621	Snapshot 2B Jerry Priddy WS1 1943	2B	63	5	R			0.325	0.314	0.331	8.5	10.2	0.9	0.291	27.6	false
+84322	Rookie Sensation 1B Tommy McCraw CWS 1963	1B	54	5	L			0.325	0.329	0.323	7.3	9.1	1.9	0.277	24.7	false
+84471	Negro League Star C Johnny Hayes NYBY 1940	C	69	5	L			0.325	0.321	0.326	10.0	8.7	1.8	0.272	18.1	false
+85087	Earth Day - Unsung Heroes SS Pumpsie Green BOS 1961	SS	56	5	S			0.325	0.358	0.309	10.3	9.1	0.9	0.282	25.4	false
+85495	60s Theme Week - Veteran Presence LF Yogi Berra NYY 1961	LF	68	5	L			0.325	0.314	0.33	7.2	4.9	3.1	0.256	12.5	false
+85078	Clubhouse - Y&amp;O 1 - Rookie Sensation CF Tony Gwynn SD 1982	CF	58	0	L			0.324	0.325	0.324	4.7	7.2	0.4	0.310	26.3	false
+85449	PTCS 3 - Snapshot LF Ken Berry CWS 1966	LF	55	0	R			0.324	0.335	0.318	6.6	8.6	0.8	0.299	24.8	false
+83550	Snapshot 1B Vic Wertz CLE 1955	1B	60	5	L			0.324	0.3	0.336	7.4	10.3	3.3	0.248	25.2	false
+83506	Snapshot 3B Mike Pagliarulo NYY 1985	3B	56	5	L			0.324	0.309	0.331	8.8	11.0	3.3	0.243	25.4	false
+83953	Historical All-Star 2B Buddy Myer WS1 1937	2B	66	5	L			0.324	0.33	0.321	11.2	8.1	0.5	0.287	20.9	false
+83596	Snapshot LF Goose Goslin DET 1935	LF	64	5	L			0.324	0.333	0.32	7.7	6.9	2.0	0.265	24.9	false
+83491	Snapshot CF Phil Cavarretta CHC 1937	CF	60	5	L			0.324	0.313	0.329	7.2	9.1	1.8	0.276	25.8	false
+83547	Snapshot LF Gates Brown DET 1965	LF	58	5	L			0.324	0.337	0.318	6.6	9.1	2.8	0.252	31.2	false
+82874	Unsung Heroes 2B Ken Boswell NYM 1969	2B	57	5	L			0.324	0.297	0.337	7.5	7.7	1.0	0.290	23.6	false
+85484	Clubhouse - 60s Week - Rookie Sensation 2B Jake Wood DET 1961	2B	60	0	R			0.323	0.321	0.324	6.1	12.7	1.0	0.310	25.9	false
+84315	Rookie Sensation CF Lou Brock CHC 1962	CF	51	0	L			0.323	0.283	0.341	5.7	11.8	1.5	0.294	28.5	false
+83489	Snapshot 1B Don Bollweg NYY 1953	1B	50	0	L			0.323	0.33	0.319	7.6	12.8	2.1	0.283	22.6	false
+84115	All-Time Legend 2B Don Gutteridge SLA Peak	2B	59	5	R			0.323	0.328	0.321	7.0	7.8	1.0	0.282	30.8	false
+83485	Snapshot CF Frank Baumholtz CHC 1953	CF	60	5	L			0.323	0.29	0.339	6.1	7.3	0.7	0.295	27.5	false
+85533	Memorial Day OnStream Builds - Snapshot LF Gene Richards SD 1980	LF	65	0	L			0.322	0.307	0.328	7.1	8.4	0.5	0.299	24.9	false
+83616	Snapshot CF Jim Northrup DET 1967	CF	68	0	L			0.322	0.314	0.325	6.6	10.0	1.8	0.288	20.4	false
+83623	Snapshot 3B Pinky Higgins PHA 1935	3B	65	0	R			0.322	0.329	0.319	6.5	12.8	2.0	0.287	24.5	false
+84336	Rookie Sensation C Jack Shepard PIT 1954	C	56	5	R			0.322	0.342	0.313	7.6	10.4	0.9	0.300	22	false
+83488	Snapshot 2B Johnny Lucadello SLA 1941	2B	62	5	S			0.322	0.321	0.323	8.7	7.0	0.8	0.278	28	false
+83617	Snapshot RF Mike Hershberger CWS 1963	RF	63	5	R			0.322	0.316	0.324	7.7	6.1	0.4	0.289	26	false
+85062	HOF 1 - Veteran Presence CF Joe DiMaggio NYY 1951	CF	64	5	R			0.322	0.335	0.316	8.7	9.0	1.4	0.274	27.8	false
+83932	Historical All-Star 1B Eddie Waitkus PHI 1949	1B	52	0	L			0.321	0.298	0.331	7.8	8.8	1.0	0.285	27.2	false
+85905	4 HR on 4th of July 3B Jim Tabor BOS 1939	3B	54	0	R			0.321	0.308	0.328	5.0	9.1	2.0	0.280	25.9	false
+84459	Negro League Star 1B Ed Mayweather NYBY 1942	1B	66	0	L			0.321	0.317	0.323	8.5	9.9	1.6	0.279	22	false
+85289	May Names 1 - Snapshot C Milt May HOU 1974	C	63	0	L			0.321	0.308	0.327	5.1	9.1	1.6	0.297	18.3	false
+83514	Snapshot LF Gus Zernial CWS 1950	LF	59	5	R			0.321	0.316	0.323	5.5	11.3	2.1	0.288	21.2	false
+83646	Snapshot RF Wally Westlake PIT 1949	RF	67	5	R			0.321	0.333	0.316	6.3	9.8	1.9	0.275	28	false
+83515	Snapshot SS Pete Runnels WS1 1954	SS	60	5	L			0.321	0.312	0.326	9.2	9.0	0.8	0.287	23.6	false
+82854	Unsung Heroes CF Johnny Rucker NY1 1945	CF	52	5	L			0.321	0.303	0.329	4.1	8.3	2.3	0.273	26.7	false
+83606	Snapshot 2B Jorge Orta CWS 1979	2B	69	5	L			0.321	0.245	0.357	8.9	8.1	2.1	0.258	23.9	false
+83578	Snapshot 1B John Mayberry TOR 1978	1B	68	5	L			0.321	0.281	0.34	8.3	9.2	3.0	0.257	14.7	false
+84140	All-Time Legend SS Don Kessinger CHC Peak	SS	69	5	S			0.321	0.316	0.324	8.2	6.1	0.5	0.285	26.8	false
+83549	Snapshot 3B Randy Jackson CHC 1953	3B	62	5	R			0.321	0.317	0.323	6.3	9.0	1.5	0.281	27.6	false
+84849	In Memoriam - Historical All-Star 2B Phil Garner PIT 1980	2B	63	5	R			0.321	0.326	0.319	6.4	6.8	0.6	0.292	27.7	false
+84358	Rookie Sensation CF Dave Gallagher CWS 1988	CF	68	5	R			0.321	0.301	0.33	6.9	7.4	0.9	0.295	20.1	false
+84454	Negro League Star CF David Whatley HoGr 1941	CF	67	0	L			0.320	0.316	0.322	5.5	8.0	1.5	0.289	20.6	false
+82869	Unsung Heroes CF John Shelby LAD 1988	CF	55	0	S			0.320	0.302	0.328	6.4	12.6	1.5	0.296	23.8	false
+84390	Celebrating 42 - Rookie Sensation 1B Jackie Robinson BRO 1947	1B	58	0	R			0.320	0.343	0.309	6.5	7.1	0.8	0.291	25.3	false
+83492	Snapshot RF Dick Porter CLE 1932	RF	58	0	L			0.320	0.325	0.318	7.4	8.4	1.1	0.288	23.3	false
+84359	Rookie Sensation LF Gary Matthews SF 1973	LF	69	0	R			0.320	0.321	0.32	7.0	9.8	1.0	0.293	24.4	false
+83402	Snapshot 3B Al Gallagher SF 1971	3B	53	5	R			0.320	0.336	0.313	6.8	7.9	0.8	0.292	24.6	false
+83403	Snapshot 2B Tito Fuentes SF 1972	2B	60	5	S			0.320	0.326	0.318	6.3	6.8	1.2	0.275	30.7	false
+83490	Snapshot 1B Walt Dropo CWS 1955	1B	63	5	R			0.320	0.335	0.312	6.4	9.9	1.7	0.286	21.4	false
+85314	Baseball Reference 2 1B Don Baylor ATH 1976	1B	64	5	R			0.320	0.327	0.316	8.2	7.6	1.7	0.263	26.4	false
+85184	Young &amp; Old 1 - Rookie Sensation 2B Jim Baxes CLE 1959	2B	65	5	R			0.320	0.339	0.311	6.9	11.6	2.2	0.274	24.4	false
+83668	Snapshot RF Pat Kelly KC 1969	RF	68	0	L			0.319	0.306	0.325	8.1	10.1	1.5	0.276	25.3	false
+84356	Rookie Sensation CF Glenn Wilson DET 1982	CF	69	5	R			0.319	0.326	0.316	4.8	9.3	1.6	0.290	24.2	false
+84131	All-Time Legend RF Lee Walls CHC Peak	RF	65	5	R			0.319	0.312	0.322	7.4	9.9	1.1	0.287	24.8	false
+83508	Snapshot CF Rick Miller CAL 1979	CF	59	5	L			0.319	0.29	0.333	8.4	9.7	0.6	0.301	18.7	false
+83622	Veteran Presence 1B Joe Kuhel WS1 1945	1B	66	0	L			0.318	0.322	0.316	9.3	8.0	0.7	0.278	26.3	false
+82870	Unsung Heroes 3B Ed Goodson SF 1973	3B	61	0	L			0.318	0.289	0.332	2.8	8.1	2.1	0.284	23	false
+83928	Historical All-Star SS Dave Concepcion CIN 1978	SS	60	0	R			0.318	0.343	0.306	6.6	10.0	0.6	0.301	24.5	false
+83512	Snapshot 1B Donn Clendenon PIT 1964	1B	61	0	R			0.318	0.321	0.316	5.3	11.1	1.1	0.296	28.3	false
+83605	Veteran Presence CF Bill Bruton DET 1962	CF	66	0	L			0.318	0.325	0.314	7.1	8.7	1.9	0.269	24.1	false
+83931	Historical All-Star 3B Frank Malzone BOS 1958	3B	58	5	R			0.318	0.323	0.316	5.1	6.8	1.1	0.290	24.2	false
+83389	Snapshot 3B Gene Freese PIT 1957	3B	55	5	R			0.318	0.331	0.312	5.2	7.9	0.9	0.292	26.8	false
+84112	All-Time Legend 3B Bobby Adams CIN Peak	3B	56	5	R			0.318	0.307	0.323	7.5	8.1	0.7	0.286	26.6	false
+83925	Historical All-Star LF Claudell Washington ATH 1975	LF	59	0	L			0.317	0.312	0.319	3.8	9.5	1.6	0.299	19.9	false
+83683	Snapshot 2B Connie Ryan PHI 1953	2B	69	0	R			0.317	0.321	0.314	7.8	10.9	0.8	0.290	26.9	false
+85461	Limited Edition/74 CF Bill North ATH 1975	CF	69	0	S			0.317	0.328	0.312	10.6	11.3	0.3	0.299	19.4	false
+84597	Limited Edition/97 LF Ron LeFlore MON 1980	LF	48	0	R			0.317	0.309	0.321	8.2	11.9	0.2	0.302	28.2	false
+85732	Clubhouse - SwitchKnucklers - Hall of Fame C Rick Ferrell WS1 1945	C	67	0	R			0.317	0.351	0.301	10.5	6.0	0.4	0.280	19.3	false
+84326	Rookie Sensation 3B Buddy Blair PHA 1942	3B	60	0	L			0.317	0.325	0.314	5.1	7.8	1.7	0.277	25.9	false
+85326	Baseball Reference 2 1B Eddie Robinson NYY 1955	1B	67	5	L			0.317	0.333	0.31	13.2	9.7	4.7	0.195	7.000000000000001	false
+83935	Historical All-Star 2B Bill Rigney NY1 1948	2B	66	5	R			0.317	0.359	0.298	7.1	11.4	1.5	0.285	24.3	false
+83421	Snapshot SS Frankie Gustine PIT 1943	SS	57	5	R			0.317	0.33	0.312	6.2	7.7	0.3	0.300	25.7	false
+83643	Snapshot 3B Wayne Gross BAL 1985	3B	63	5	L			0.317	0.316	0.318	11.1	11.5	2.8	0.240	21.9	false
+84125	All-Time Legend CF Vic Davalillo CLE Peak	CF	65	5	L			0.317	0.305	0.322	4.7	7.0	1.2	0.292	21.9	false
+83589	Snapshot LF Bernie Carbo CIN 1971	LF	56	5	L			0.317	0.304	0.323	10.9	9.9	1.7	0.243	34.59999999999999	false
+84342	Rookie Sensation CF Bobby Brown NYY 1980	CF	58	5	S			0.317	0.3	0.325	5.6	10.4	2.4	0.273	21.9	false
+83582	Snapshot C Lou Berberet WS1 1956	C	65	5	L			0.317	0.299	0.326	10.1	10.8	1.6	0.269	21.4	false
+83672	Snapshot C Andy Seminick PHI 1946	C	66	0	R			0.316	0.325	0.312	6.9	11.9	1.6	0.285	23.3	false
+83493	Veteran Presence 1B Jim Bottomley SLA 1936	1B	60	0	L			0.316	0.292	0.327	6.0	10.3	2.2	0.264	28.9	false
+83590	Snapshot 3B Bill Madlock SF 1977	3B	64	5	R			0.316	0.317	0.316	5.7	5.3	1.0	0.282	23.7	false
+83595	Snapshot C Clyde Kluttz NY1 1945	C	61	5	R			0.316	0.316	0.317	5.6	6.7	1.2	0.276	28.5	false
+83619	Snapshot C Elrod Hendricks BAL 1971	C	64	5	L			0.316	0.314	0.317	8.3	8.1	2.4	0.249	25.3	false
+82891	Unsung Heroes 2B Bill Cissell CLE 1932	2B	60	5	R			0.316	0.321	0.314	4.8	6.4	1.0	0.289	24.8	false
+84872	Clubhouse - Negro League Star RF Walter Thomas KCM 1945	RF	63	0	R			0.315	0.322	0.312	4.5	7.8	0.5	0.302	24.9	false
+83463	Snapshot LF Jim Lemon MIN 1961	LF	57	0	R			0.315	0.317	0.314	7.4	11.7	1.1	0.282	30.7	false
+83651	Snapshot 2B Cookie Lavagetto BRO 1937	2B	68	5	R			0.315	0.336	0.306	9.3	7.6	1.1	0.265	26.2	false
+83365	Snapshot 3B Jim Davenport SF 1965	3B	49	5	R			0.315	0.33	0.308	7.0	8.8	0.9	0.279	30	false
+85685	June Gems - Baseball Reference 3 LF Vince Coleman STL 1985	LF	55	5	S			0.315	0.316	0.315	7.0	10.5	0.3	0.307	22.8	false
+83404	Snapshot 1B Danny Cater NYY 1970	1B	57	5	R			0.315	0.325	0.31	4.8	5.3	0.6	0.294	22.4	false
+82702	Hardware Heroes SS Luis Aparicio CWS 1957	SS	52	5	R			0.315	0.316	0.315	7.3	6.6	0.2	0.294	22.8	false
+84330	Rookie Sensation CF Buster Adams PHI 1943	CF	57	5	R			0.315	0.33	0.309	7.7	10.8	1.1	0.286	25	false
+85157	Young &amp; Old 1 - Veteran Presence 1B Ron Fairly TOR 1977	1B	62	0	L			0.314	0.272	0.333	7.8	10.6	2.0	0.267	20.7	false
+85850	Heart Attack - Unsung Heroes C Andy Etchebarren BAL 1971	C	63	0	R			0.314	0.323	0.309	6.1	13.1	1.5	0.297	20	false
+84132	All-Time Legend SS Don Buddin BOS Peak	SS	68	0	R			0.314	0.321	0.31	10.7	10.1	0.9	0.262	30.4	false
+83618	Snapshot SS Eddie Bressoud BOS 1962	SS	68	0	R			0.314	0.296	0.323	5.4	11.1	0.9	0.288	33.2	false
+83943	Historical All-Star 2B Frank White KC 1978	2B	66	5	R			0.314	0.304	0.319	5.9	8.8	1.0	0.284	27.2	false
+83630	Snapshot C Bill Salkeld BSN 1949	C	61	5	L			0.314	0.217	0.359	11.9	14.1	2.2	0.262	12	false
+82848	Unsung Heroes RF Wally Roettger STL 1931	RF	50	5	R			0.314	0.3	0.321	5.1	7.5	0.4	0.297	26.9	false
+82847	Unsung Heroes 2B Johnny O&#39;Brien PIT 1955	2B	52	5	R			0.314	0.298	0.322	5.3	6.5	0.3	0.295	26.2	false
+83484	Veteran Presence 1B Dale Long WS2 1962	1B	61	5	L			0.314	0.299	0.322	9.0	7.5	2.1	0.250	23.1	false
+83942	Historical All-Star SS Jim Fregosi CAL 1966	SS	69	5	R			0.314	0.29	0.325	9.2	8.1	1.0	0.262	30.7	false
+83726	Snapshot 2B Tim Flannery SD 1985	2B	63	5	L			0.314	0.262	0.339	9.9	6.3	0.4	0.280	21	false
+83419	Snapshot RF Bobby Darwin MIN 1973	RF	53	5	R			0.314	0.313	0.314	6.7	11.5	1.4	0.284	24.8	false
+84450	Negro League Star RF Clyde Spearman PiCr 1937	RF	64	0	L			0.313	0.308	0.316	8.2	8.4	1.2	0.276	20.6	false
+84134	All-Time Legend SS Craig Reynolds HOU Peak	SS	68	0	L			0.313	0.29	0.324	5.0	6.5	0.6	0.299	20.5	false
+84316	Rookie Sensation C Nelson Santovenia MON 1988	C	49	5	R			0.313	0.324	0.308	6.9	11.6	1.3	0.274	33.8	false
+84462	Negro League Star 3B Clemente Carreras NYC 1941	3B	67	5	R			0.313	0.316	0.312	7.7	8.9	1.4	0.268	26.4	false
+84440	Negro League Star 2B Matt Carlisle HoGr 1943	2B	64	5	R			0.313	0.315	0.312	7.7	7.5	0.7	0.284	22	false
+84882	Celebrating 42 - Negro League Star 1B Joe Scott BBB 1948	1B	54	0	L			0.312	0.306	0.315	8.9	11.2	2.2	0.246	30.9	false
+83621	Snapshot 2B Jerry Priddy WS1 1943	2B	63	0	R			0.312	0.297	0.319	7.9	11.0	0.8	0.285	26.1	false
+86282	All-Star Week - Historical All-Star C Tony Pena Sr. PIT 1984	C	62	0	R			0.312	0.328	0.305	5.1	10.8	1.1	0.295	23.5	true
+83944	Historical All-Star 2B Charlie Neal LAD 1959	2B	67	0	R			0.312	0.321	0.308	5.6	9.8	1.1	0.285	26.6	false
+83575	Snapshot CF Oddibe McDowell TEX 1986	CF	64	0	L			0.312	0.294	0.321	7.3	10.6	2.0	0.267	21.8	false
+83608	Snapshot CF Jim Landis CWS 1958	CF	66	0	R			0.312	0.33	0.303	7.6	10.3	1.2	0.280	24.2	false
+83916	Historical All-Star CF Gus Bell CIN 1957	CF	56	0	L			0.312	0.315	0.311	4.2	8.6	1.8	0.284	19.8	false
+84317	Rookie Sensation C Sammy Taylor CHC 1958	C	50	5	L			0.312	0.328	0.305	6.6	9.8	1.6	0.277	22.6	false
+84347	Rookie Sensation 1B George Scott BOS 1966	1B	64	5	R			0.312	0.33	0.304	8.4	11.9	1.7	0.269	24.5	false
+84311	Rookie Sensation 3B Rick Schu PHI 1985	3B	51	5	R			0.312	0.339	0.299	7.3	9.9	0.9	0.281	26.9	false
+83516	Snapshot 2B Danny Murtaugh PIT 1948	2B	62	5	R			0.312	0.318	0.309	7.7	7.5	0.2	0.293	21.9	false
+82895	Unsung Heroes C Duffy Dyer NYM 1972	C	69	5	R			0.312	0.32	0.309	6.5	12.0	1.2	0.281	32	false
+85873	T4 Ep. 3 - Snapshot CF Tony Armas BOS 1983	CF	48	5	R			0.312	0.306	0.314	4.6	14.8	2.8	0.267	28.2	false
+83587	Snapshot SS U L Washington KC 1982	SS	64	0	S			0.311	0.33	0.302	6.4	8.1	1.6	0.273	20.8	false
+83580	Snapshot LF Lou Novikoff CHC 1942	LF	63	0	R			0.311	0.307	0.313	4.0	7.3	1.1	0.287	24.1	false
+83532	Snapshot CF Irv Noren WS1 1951	CF	62	0	L			0.311	0.287	0.323	6.0	7.5	1.4	0.268	27.3	false
+85537	Memorial Day OnStream Builds - Veteran Presence LF Jerry Mumphrey CHC 1987	LF	69	0	S			0.311	0.219	0.354	7.7	10.1	1.6	0.266	27.6	false
+83607	Veteran Presence 1B Eddie Mathews HOU 1967	1B	65	0	L			0.311	0.332	0.302	9.2	12.2	2.6	0.252	19.4	false
+84701	Clubhouse - April Fools&#39; Day LF Mike Marshall LAD 1984	LF	56	0	R			0.311	0.338	0.299	5.0	12.4	1.7	0.288	24.4	false
+86088	Clubhouse - Baseball Reference 5 RF Myril Hoag SLA 1939	RF	46	0	R			0.311	0.312	0.31	4.5	7.9	1.3	0.282	24.4	true
+84335	Rookie Sensation RF Junior Felix TOR 1989	RF	57	0	S			0.311	0.292	0.321	6.5	12.2	1.6	0.285	22.2	false
+83594	Snapshot 1B Babe Dahlgren PIT 1944	1B	67	0	R			0.311	0.293	0.319	6.3	9.4	1.4	0.276	24.3	false
+86148	Limited Edition/112 2B Pete Coscarart BRO 1940	2B	46	0	R			0.311	0.307	0.312	7.8	10.4	0.8	0.283	25.4	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	P	56	5	L			0.311	0.298	0.317	3.9	7.0	0.3	0.303	24.1	false
+83420	Veteran Presence CF Terry Moore STL 1947	CF	54	5	R			0.311	0.297	0.318	6.3	7.6	1.0	0.284	21.2	false
+83936	Historical All-Star C Gus Mancuso NY1 1935	C	58	5	R			0.311	0.27	0.33	5.9	5.2	0.7	0.286	19.2	false
+83551	Veteran Presence C Al Lopez PIT 1946	C	62	5	R			0.311	0.316	0.309	8.6	9.3	0.9	0.293	12.6	false
+85166	Dock&#39;s Patients SS Steve Huntz SD 1970	SS	63	5	S			0.311	0.325	0.305	12.1	13.1	2.0	0.261	12.3	false
+83454	Heart Attack - Snapshot SS Ron Hansen CWS 1967	SS	58	5	R			0.311	0.321	0.307	10.5	6.1	0.9	0.257	24.6	false
+84804	Baseball Reference 1 SS Mario Guerrero ATH 1978	SS	46	5	R			0.311	0.321	0.307	1.5	5.5	0.3	0.311	23.4	false
+84367	Rookie Sensation CF Cliff Mapes NYY 1949	CF	68	0	L			0.310	0.295	0.317	9.4	11.4	1.9	0.256	23	false
+85087	Earth Day - Unsung Heroes SS Pumpsie Green BOS 1961	SS	56	0	S			0.310	0.347	0.293	9.7	10.2	0.8	0.275	23.9	false
+85381	Clubhouse - Played Where? - Veteran Presence SS Lou Boudreau BOS 1951	SS	65	0	R			0.310	0.31	0.31	7.0	4.9	0.7	0.267	29.3	false
+82874	Unsung Heroes 2B Ken Boswell NYM 1969	2B	57	0	L			0.310	0.28	0.323	6.8	8.4	0.9	0.284	22.2	false
+83485	Snapshot CF Frank Baumholtz CHC 1953	CF	60	0	L			0.310	0.274	0.326	5.4	7.9	0.6	0.288	26.3	false
+84360	Rookie Sensation CF Albie Pearson WS1 1958	CF	65	5	L			0.310	0.275	0.327	8.7	5.2	0.7	0.268	23.3	false
+83433	Snapshot 1B Bob Oliver KC 1970	1B	57	5	R			0.310	0.327	0.302	6.0	10.1	1.7	0.270	26.9	false
+83486	Snapshot RF Sam Mele WS1 1950	RF	61	5	R			0.310	0.341	0.296	7.4	7.7	1.3	0.264	27.6	false
+83647	Snapshot 1B Dick Gernert BOS 1953	1B	65	5	R			0.310	0.331	0.3	10.8	10.3	1.7	0.254	20.2	false
+85152	Young &amp; Old 1 - Unsung Heroes 2B Jerry Adair BOS 1967	2B	45	5	R			0.310	0.318	0.307	3.7	7.2	0.3	0.304	24	false
+83953	Historical All-Star 2B Buddy Myer WS1 1937	2B	66	0	L			0.309	0.318	0.305	10.6	9.2	0.4	0.280	19.2	false
+83408	Veteran Presence 2B Eddie Mayo DET 1947	2B	62	0	L			0.309	0.279	0.324	6.2	7.8	1.5	0.270	22.7	false
+84471	Negro League Star C Johnny Hayes NYBY 1940	C	69	0	L			0.309	0.306	0.31	9.4	9.8	1.7	0.264	16.5	false
+83930	Historical All-Star CF Max West BSN 1940	CF	61	5	L			0.309	0.271	0.327	8.3	8.9	1.6	0.260	24.4	false
+83929	Historical All-Star 2B Johnny Temple CLE 1961	2B	57	5	R			0.309	0.314	0.306	8.3	5.9	0.4	0.277	23.1	false
+84403	Negro League Star 2B Frank Russell BEG 1943	2B	52	5	R			0.309	0.311	0.307	6.7	7.4	0.2	0.285	27.7	false
+83391	Snapshot CF Ernie Orsatti STL 1933	CF	52	5	L			0.309	0.289	0.318	6.2	8.2	0.4	0.293	23.1	false
+83520	Snapshot 2B Tony Cuccinello BRO 1932	2B	64	5	R			0.309	0.319	0.305	6.7	7.6	1.4	0.265	25.8	false
+85275	1st Mexican Born Player - Snapshot CF Mel Almada WS1 1937	CF	43	5	L			0.309	0.279	0.322	6.4	7.1	0.6	0.288	21	false
+84691	Clubhouse - April Fools&#39; Day LF Frank Thomas NYM 1962	LF	63	0	R			0.308	0.303	0.31	6.0	11.6	2.0	0.268	24.3	false
+84115	All-Time Legend 2B Don Gutteridge SLA Peak	2B	59	0	R			0.308	0.312	0.306	6.3	8.6	0.9	0.274	29.7	false
+84849	In Memoriam - Historical All-Star 2B Phil Garner PIT 1980	2B	63	0	R			0.308	0.311	0.306	5.7	7.4	0.5	0.286	26	false
+85849	Heart Attack - Unsung Heroes C Billy Bryan KC1 1965	C	48	0	L			0.308	0.273	0.324	5.2	16.5	1.9	0.293	23.4	false
+85944	July Jewels - Baseball Reference 4 RF Clyde Vollmer BOS 1951	RF	55	5	R			0.308	0.277	0.323	9.5	12.5	2.5	0.253	16	false
+84338	Rookie Sensation 3B Ken Keltner CLE 1938	3B	68	5	R			0.308	0.299	0.312	4.9	9.8	2.2	0.256	30.8	false
+85330	T4 Ep. 1 - In Memoriam 3B Bobby Cox NYY 1968	3B	48	5	R			0.308	0.33	0.297	8.2	11.3	1.0	0.284	20.6	false
+84336	Rookie Sensation C Jack Shepard PIT 1954	C	56	0	R			0.307	0.326	0.298	6.8	11.1	0.8	0.293	20.1	false
+83515	Snapshot SS Pete Runnels WS1 1954	SS	60	0	L			0.307	0.298	0.311	8.7	9.8	0.7	0.279	22.2	false
+85508	Clubhouse - 60s Week - Unsung Heroes SP Joe Nuxhall KC1 1961	P	55	0	L			0.307	0.327	0.298	6.1	18.3	1.7	0.304	19.3	false
+84322	Rookie Sensation 1B Tommy McCraw CWS 1963	1B	54	0	L			0.307	0.31	0.305	6.6	10.2	1.7	0.269	23	false
+83488	Snapshot 2B Johnny Lucadello SLA 1941	2B	62	0	S			0.307	0.307	0.308	8.1	7.6	0.7	0.270	26.9	false
+84140	All-Time Legend SS Don Kessinger CHC Peak	SS	69	0	S			0.307	0.303	0.31	7.6	6.6	0.4	0.277	25.5	false
+83617	Snapshot RF Mike Hershberger CWS 1963	RF	63	0	R			0.307	0.301	0.31	6.9	6.6	0.4	0.282	24.6	false
+83596	Snapshot LF Goose Goslin DET 1935	LF	64	0	L			0.307	0.316	0.302	7.1	7.4	1.7	0.258	23.3	false
+84358	Rookie Sensation CF Dave Gallagher CWS 1988	CF	68	0	R			0.307	0.286	0.317	6.2	7.9	0.8	0.288	18.3	false
+83491	Snapshot CF Phil Cavarretta CHC 1937	CF	60	0	L			0.307	0.298	0.312	6.4	10.0	1.7	0.268	24.4	false
+85483	60s Theme Week - Rookie Sensation 2B Chuck Schilling BOS 1961	2B	61	5	R			0.307	0.313	0.305	8.8	7.4	0.5	0.275	22.9	false
+85321	Baseball Reference 2 SS Roger Metzger HOU 1973	SS	43	5	S			0.307	0.288	0.316	6.2	9.2	0.3	0.296	23.4	false
+85678	In Memoriam - Veteran Presence 1B Bob Horner STL 1988	1B	44	5	R			0.307	0.352	0.286	10.7	6.6	0.8	0.262	18.5	false
+83392	Snapshot 1B Buddy Hassett BSN 1939	1B	50	5	L			0.307	0.288	0.316	3.1	3.4	0.6	0.304	11.8	false
+82888	Unsung Heroes SS Tim Foli PIT 1979	SS	62	5	R			0.307	0.285	0.317	3.1	3.3	0.2	0.293	22.5	false
+83483	Snapshot 3B Ken Boyer STL 1965	3B	61	5	R			0.307	0.306	0.308	8.5	7.7	1.2	0.263	21.8	false
+84108	Limited Edition/64 2B Burgess Whitehead NY1 1937	2B	58	0	R			0.306	0.315	0.301	4.7	3.7	0.5	0.282	22.1	true
+83508	Snapshot CF Rick Miller CAL 1979	CF	59	0	L			0.306	0.276	0.32	7.8	10.6	0.5	0.295	17	false
+85062	HOF 1 - Veteran Presence CF Joe DiMaggio NYY 1951	CF	64	0	R			0.306	0.32	0.299	8.0	10.1	1.2	0.267	26.2	false
+85685	June Gems - Baseball Reference 3 LF Vince Coleman STL 1985	LF	55	0	S			0.306	0.305	0.306	6.3	11.2	0.3	0.304	21.2	false
+85495	60s Theme Week - Veteran Presence LF Yogi Berra NYY 1961	LF	68	0	L			0.306	0.296	0.31	6.5	5.4	2.7	0.248	11.4	false
+83534	Snapshot SS Don Zimmer LAD 1958	SS	59	5	R			0.306	0.298	0.31	5.8	10.3	1.4	0.280	21.9	false
+83358	Snapshot 1B Jim Spencer CAL 1970	1B	49	5	L			0.306	0.289	0.314	3.9	7.5	1.9	0.270	22.2	false
+83518	Snapshot RF Carl Reynolds CWS 1931	RF	59	5	R			0.306	0.311	0.304	5.7	6.8	1.2	0.266	27.8	false
+82860	Unsung Heroes 2B Tony Piet PIT 1932	2B	54	5	R			0.306	0.282	0.318	7.3	9.3	1.0	0.276	23.7	false
+83506	Snapshot 3B Mike Pagliarulo NYY 1985	3B	56	0	L			0.305	0.291	0.312	8.2	11.7	2.9	0.236	24	false
+83403	Snapshot 2B Tito Fuentes SF 1972	2B	60	0	S			0.305	0.311	0.301	5.6	7.4	1.1	0.267	29.3	false
+83441	Snapshot RF Wally Post PHI 1959	RF	54	5	R			0.305	0.291	0.312	6.5	11.0	1.8	0.263	26.9	false
+84113	All-Time Legend SS Bill Knickerbocker CLE Peak	SS	57	5	R			0.305	0.304	0.305	6.3	7.0	0.8	0.270	27.2	false
+83388	Snapshot LF Alex Johnson TEX 1974	LF	50	5	R			0.305	0.28	0.316	5.1	8.2	0.8	0.292	19	false
+83464	Snapshot 1B Tony Horton CLE 1970	1B	58	5	R			0.305	0.324	0.296	5.9	7.8	1.6	0.259	27.8	false
+83531	Snapshot 3B Clete Boyer NYY 1965	3B	66	5	R			0.305	0.331	0.294	6.0	8.2	1.6	0.257	29.5	false
+83509	Snapshot LF Dusty Baker LAD 1978	LF	56	5	R			0.305	0.316	0.3	7.6	8.2	1.2	0.265	23.9	false
+83514	Snapshot LF Gus Zernial CWS 1950	LF	59	0	R			0.304	0.298	0.307	4.8	11.8	1.8	0.282	19.3	false
+83550	Snapshot 1B Vic Wertz CLE 1955	1B	60	0	L			0.304	0.28	0.315	6.8	11.3	2.9	0.241	23.4	false
+84131	All-Time Legend RF Lee Walls CHC Peak	RF	65	0	R			0.304	0.297	0.307	6.8	10.8	1.0	0.280	22.9	false
+83606	Snapshot 2B Jorge Orta CWS 1979	2B	69	0	L			0.304	0.233	0.337	8.3	8.6	1.8	0.250	22.8	false
+83402	Snapshot 3B Al Gallagher SF 1971	3B	53	0	R			0.304	0.322	0.296	6.1	8.9	0.7	0.285	22.5	false
+83389	Snapshot 3B Gene Freese PIT 1957	3B	55	0	R			0.304	0.321	0.296	4.6	8.9	0.8	0.286	25.1	false
+83547	Snapshot LF Gates Brown DET 1965	LF	58	0	L			0.304	0.317	0.298	5.9	10.1	2.5	0.244	30.2	false
+85184	Young &amp; Old 1 - Rookie Sensation 2B Jim Baxes CLE 1959	2B	65	0	R			0.304	0.324	0.294	6.2	12.1	2.0	0.267	22.7	false
+85786	Limited Edition/77 2B Sandy Alomar Sr. CAL 1971	2B	65	0	S			0.304	0.307	0.303	5.4	6.7	0.5	0.287	21.7	false
+83436	Snapshot C Mike Tresh CWS 1940	C	50	5	R			0.304	0.295	0.308	7.7	8.1	0.2	0.291	17.8	false
+83511	Snapshot 2B Rennie Stennett PIT 1972	2B	60	5	R			0.304	0.329	0.292	2.7	7.6	0.7	0.297	23.4	false
+83913	Historical All-Star 2B Steve Sax LAD 1983	2B	53	5	R			0.304	0.289	0.311	7.3	7.7	0.6	0.285	17.6	false
+83918	Historical All-Star 1B Eddie Robinson PHA 1953	1B	56	5	L			0.304	0.31	0.302	8.0	7.6	2.6	0.228	26.9	false
+85023	HOF 1 - Hall of Fame 3B Brooks Robinson BAL 1963	3B	49	5	R			0.304	0.301	0.306	6.1	9.4	0.8	0.281	25	false
+84424	Negro League Star 2B Javier Perez PBG 1933	2B	61	5	R			0.304	0.306	0.303	7.9	8.8	0.4	0.277	26.4	false
+83687	Snapshot RF Jim King WS2 1962	RF	68	5	L			0.304	0.28	0.315	9.6	7.5	2.4	0.227	24.5	false
+83440	Snapshot CF George Hendrick CLE 1973	CF	67	5	R			0.304	0.292	0.31	5.4	9.1	1.9	0.260	25.2	false
+83561	Snapshot CF Sam Chapman PHA 1939	CF	63	5	R			0.304	0.279	0.315	7.3	10.1	1.6	0.258	26.8	false
+82846	Unsung Heroes SS Darrel Chaney ATL 1976	SS	40	5	S			0.304	0.303	0.305	7.6	10.3	0.3	0.287	24.5	false
+84414	Negro League Star C Pepper Bassett PiCr 1938	C	57	5	S			0.304	0.286	0.312	4.0	7.9	2.2	0.256	26.1	false
+83646	Snapshot RF Wally Westlake PIT 1949	RF	67	0	R			0.303	0.316	0.297	5.6	10.7	1.7	0.266	26.7	false
+83549	Snapshot 3B Randy Jackson CHC 1953	3B	62	0	R			0.303	0.299	0.304	5.6	10.0	1.3	0.273	25.7	false
+83726	Snapshot 2B Tim Flannery SD 1985	2B	63	0	L			0.303	0.251	0.328	9.3	6.8	0.3	0.274	19.3	false
+83582	Snapshot C Lou Berberet WS1 1956	C	65	0	L			0.303	0.284	0.312	9.5	11.4	1.5	0.261	19.6	false
+82832	Unsung Heroes 3B Ken Reitz STL 1979	3B	49	5	R			0.303	0.326	0.293	3.7	8.6	0.8	0.281	31	false
+83443	Snapshot RF Don Padgett STL 1938	RF	52	5	L			0.303	0.281	0.314	3.7	7.9	2.3	0.251	30.4	false
+84121	All-Time Legend 3B Bernie Friberg PHI Peak	3B	60	5	R			0.303	0.31	0.3	8.4	10.5	0.9	0.274	22.7	false
+84356	Rookie Sensation CF Glenn Wilson DET 1982	CF	69	0	R			0.302	0.313	0.297	4.2	10.3	1.4	0.283	22.5	false
+85511	Clubhouse - 60s Week - Super Utility C Haywood Sullivan KC1 1961	C	60	0	R			0.302	0.311	0.297	9.3	10.2	0.7	0.269	22.7	false
+85828	Heart Attack - Negro League Star SP Patricio Scantlebury NYC 1946	P	56	0	L			0.302	0.287	0.309	3.4	7.5	0.3	0.300	22.3	false
+82854	Unsung Heroes CF Johnny Rucker NY1 1945	CF	52	0	L			0.302	0.286	0.309	3.6	9.3	2.0	0.265	25.4	false
+83578	Snapshot 1B John Mayberry TOR 1978	1B	68	0	L			0.302	0.264	0.319	7.6	10.0	2.6	0.250	13.1	false
+83931	Historical All-Star 3B Frank Malzone BOS 1958	3B	58	0	R			0.302	0.308	0.3	4.5	7.3	1.0	0.281	22.4	false
+84857	Limited Edition/42 DH Ron Kittle CLE 1988	DH	60	0	R			0.302	0.284	0.31	3.9	15.6	2.4	0.283	18.6	false
+83421	Snapshot SS Frankie Gustine PIT 1943	SS	57	0	R			0.302	0.315	0.296	5.5	8.6	0.2	0.293	23.8	false
+84804	Baseball Reference 1 SS Mario Guerrero ATH 1978	SS	46	0	R			0.302	0.303	0.301	1.4	6.1	0.2	0.306	21.6	false
+84125	All-Time Legend CF Vic Davalillo CLE Peak	CF	65	0	L			0.302	0.288	0.308	4.1	7.7	1.0	0.285	20.2	false
+82891	Unsung Heroes 2B Bill Cissell CLE 1932	2B	60	0	R			0.302	0.308	0.299	4.2	7.0	0.9	0.282	23	false
+83589	Snapshot LF Bernie Carbo CIN 1971	LF	56	0	L			0.302	0.291	0.307	10.3	10.8	1.6	0.236	33.5	false
+85314	Baseball Reference 2 1B Don Baylor ATH 1976	1B	64	0	R			0.302	0.309	0.298	7.6	8.6	1.5	0.255	24.8	false
+82702	Hardware Heroes SS Luis Aparicio CWS 1957	SS	52	0	R			0.302	0.301	0.303	6.6	7.2	0.2	0.287	21	false
+82909	Unsung Heroes 2B Pep Young PIT 1938	2B	63	5	R			0.302	0.294	0.307	5.7	9.4	0.7	0.280	28.3	false
+83432	Snapshot 3B Paul Schaal KC 1972	3B	56	5	R			0.302	0.323	0.292	10.0	8.0	1.0	0.247	28.8	false
+84305	Rookie Sensation C Del Rice STL 1945	C	40	5	R			0.302	0.359	0.275	3.4	16.1	0.5	0.320	25.6	false
+84413	Negro League Star CF Cando Lopez NYC 1935	CF	59	5	R			0.302	0.303	0.301	6.7	7.4	0.8	0.268	26.2	false
+83487	Snapshot SS Johnny Berardino SLA 1941	SS	60	5	R			0.302	0.273	0.316	6.7	7.0	0.9	0.262	29.4	false
+82848	Unsung Heroes RF Wally Roettger STL 1931	RF	50	0	R			0.301	0.287	0.307	4.5	8.1	0.3	0.291	25.3	false
+83935	Historical All-Star 2B Bill Rigney NY1 1948	2B	66	0	R			0.301	0.341	0.282	6.4	12.2	1.3	0.277	22.4	false
+83590	Snapshot 3B Bill Madlock SF 1977	3B	64	0	R			0.301	0.302	0.301	5.0	5.9	0.9	0.274	22	false
+83651	Snapshot 2B Cookie Lavagetto BRO 1937	2B	68	0	R			0.301	0.322	0.291	8.7	8.4	1.0	0.258	24.5	false
+83595	Snapshot C Clyde Kluttz NY1 1945	C	61	0	R			0.301	0.301	0.301	4.9	7.2	1.1	0.268	27.2	false
+83643	Snapshot 3B Wayne Gross BAL 1985	3B	63	0	L			0.301	0.301	0.301	10.5	12.0	2.4	0.233	20.2	false
+83490	Snapshot 1B Walt Dropo CWS 1955	1B	63	0	R			0.301	0.315	0.295	5.7	10.8	1.5	0.277	19.5	false
+83404	Snapshot 1B Danny Cater NYY 1970	1B	57	0	R			0.301	0.316	0.294	4.2	5.8	0.5	0.288	20.6	false
+84330	Rookie Sensation CF Buster Adams PHI 1943	CF	57	0	R			0.301	0.317	0.293	7.0	11.4	1.0	0.279	23.3	false
+84112	All-Time Legend 3B Bobby Adams CIN Peak	3B	56	0	R			0.301	0.292	0.305	6.8	9.1	0.6	0.278	24.6	false
+82831	Unsung Heroes CF Marvell Wynne PIT 1984	CF	45	5	L			0.301	0.293	0.304	6.4	7.7	0.4	0.281	22.5	false
+84840	Celebrating 42 - Snapshot 3B Jackie Robinson BRO 1955	3B	68	5	R			0.301	0.311	0.296	10.8	5.4	1.2	0.246	16.1	false
+82827	Unsung Heroes LF Hal Lee BSN 1935	LF	43	5	R			0.301	0.308	0.298	4.1	6.9	0.3	0.292	23.2	false
+82871	Unsung Heroes 3B Bob Kennedy CWS 1955	3B	61	5	R			0.301	0.32	0.293	6.9	7.5	1.3	0.259	25.5	false
+84398	Negro League Star LF John Bissant CAG 1944	LF	48	5	R			0.301	0.302	0.301	6.0	7.6	0.4	0.277	27.3	false
+82847	Unsung Heroes 2B Johnny O&#39;Brien PIT 1955	2B	52	0	R			0.300	0.283	0.309	4.7	7.0	0.3	0.288	24.2	false
+83365	Snapshot 3B Jim Davenport SF 1965	3B	49	0	R			0.300	0.316	0.292	6.3	9.9	0.8	0.272	28.8	false
+86083	Obscure All-Stars - Baseball Reference 5 C Biff Pocoroba ATL 1978	C	44	5	S			0.300	0.267	0.315	8.5	3.8	1.5	0.244	18.1	true
+83343	Snapshot LF Lou Piniella KC 1971	LF	46	5	R			0.300	0.314	0.293	3.8	7.0	0.5	0.284	26.1	false
+83407	Snapshot 3B Mark Christman SLA 1943	3B	52	5	R			0.300	0.294	0.303	5.6	6.6	0.8	0.272	23.5	false
+84406	Negro League Star 2B Rainey Bibbs CiTi 1937	2B	53	5	S			0.300	0.292	0.304	5.5	7.4	0.9	0.275	21.6	false
+83516	Snapshot 2B Danny Murtaugh PIT 1948	2B	62	0	R			0.299	0.303	0.296	6.9	8.3	0.2	0.287	20.1	false
+83619	Snapshot C Elrod Hendricks BAL 1971	C	64	0	L			0.299	0.298	0.3	7.6	8.7	2.1	0.242	23.9	false
+83942	Historical All-Star SS Jim Fregosi CAL 1966	SS	69	0	R			0.299	0.277	0.31	8.5	9.0	0.9	0.254	29.6	false
+83437	Snapshot RF Wes Schulmerich BSN 1932	RF	51	5	R			0.299	0.279	0.308	6.8	10.8	1.6	0.256	27.9	false
+84312	Rookie Sensation C Buck Rodgers LAA 1962	C	42	5	S			0.299	0.265	0.314	5.7	7.7	0.9	0.263	29.5	false
+85069	HOF 1 - Veteran Presence RF Sam Rice CLE 1934	RF	48	5	L			0.299	0.214	0.338	5.5	5.2	0.5	0.278	19.4	false
+84303	Rookie Sensation SS Marty Marion STL 1940	SS	48	5	R			0.299	0.302	0.298	3.1	7.9	0.6	0.295	21.6	false
+83435	Snapshot 1B Tony Lupien BOS 1943	1B	52	5	L			0.299	0.286	0.305	6.8	5.5	1.5	0.251	21.7	false
+83453	Snapshot CF Jim Hickman NYM 1965	CF	56	5	R			0.299	0.326	0.286	6.7	9.9	1.7	0.248	30.2	false
+84099	All-Time Legend SS Enzo Hernandez SD Peak	SS	50	5	R			0.299	0.287	0.304	7.1	4.4	0.2	0.274	20.4	false
+84352	Rookie Sensation CF Vince DiMaggio BSN 1937	CF	46	5	R			0.299	0.286	0.305	6.2	12.9	1.4	0.276	21.9	false
+83510	Snapshot 3B Tommy Davis LAD 1961	3B	67	5	R			0.299	0.355	0.273	4.8	7.4	1.4	0.275	16.9	false
+84304	Rookie Sensation LF Eddie Carnett CWS 1944	LF	47	5	L			0.299	0.286	0.305	6.1	7.8	0.6	0.280	21	false
+83914	Historical All-Star SS Larry Bowa PHI 1978	SS	57	5	S			0.299	0.282	0.307	3.4	5.2	0.6	0.286	21	false
+83379	Snapshot 1B Steve Balboni KC 1985	1B	43	5	R			0.299	0.295	0.301	6.1	21.0	2.4	0.280	23.6	false
+84316	Rookie Sensation C Nelson Santovenia MON 1988	C	49	0	R			0.298	0.309	0.293	6.2	12.1	1.1	0.266	32.7	false
+83630	Snapshot C Bill Salkeld BSN 1949	C	61	0	L			0.298	0.205	0.342	11.3	15.1	1.9	0.256	10.8	false
+85326	Baseball Reference 2 1B Eddie Robinson NYY 1955	1B	67	0	L			0.298	0.313	0.291	12.5	10.6	4.2	0.186	6.7	false
+83936	Historical All-Star C Gus Mancuso NY1 1935	C	58	0	R			0.298	0.259	0.317	5.2	5.7	0.7	0.280	17.8	false
+83484	Veteran Presence 1B Dale Long WS2 1962	1B	61	0	L			0.298	0.283	0.304	8.3	8.2	1.8	0.243	21.2	false
+85152	Young &amp; Old 1 - Unsung Heroes 2B Jerry Adair BOS 1967	2B	45	0	R			0.298	0.306	0.294	3.2	7.7	0.2	0.298	22.3	false
+83529	Snapshot 2B Alan Wiggins SD 1984	2B	59	5	S			0.298	0.324	0.286	9.2	6.8	0.6	0.260	20.9	false
+83650	Snapshot SS Billy Myers CIN 1937	SS	67	5	R			0.298	0.32	0.288	8.8	10.9	1.3	0.256	24	false
+82863	Unsung Heroes 2B Ted Kubiak ML4 1971	2B	53	5	S			0.298	0.284	0.304	9.5	7.8	1.3	0.243	24.9	false
+83482	Snapshot CF Jose Cardenal CLE 1969	CF	60	5	R			0.298	0.278	0.308	6.7	7.1	1.0	0.257	27.7	false
+83943	Historical All-Star 2B Frank White KC 1978	2B	66	0	R			0.297	0.288	0.302	5.2	9.6	0.9	0.275	25.7	false
+84311	Rookie Sensation 3B Rick Schu PHI 1985	3B	51	0	R			0.297	0.324	0.284	6.7	10.8	0.8	0.273	25.3	false
+83551	Veteran Presence C Al Lopez PIT 1946	C	62	0	R			0.297	0.303	0.294	8.0	10.4	0.8	0.286	11.2	false
+85166	Dock&#39;s Patients SS Steve Huntz SD 1970	SS	63	0	S			0.297	0.312	0.29	11.4	13.6	1.8	0.254	11.1	false
+83454	Heart Attack - Snapshot SS Ron Hansen CWS 1967	SS	58	0	R			0.297	0.306	0.293	10.0	6.6	0.8	0.249	22.7	false
+82895	Unsung Heroes C Duffy Dyer NYM 1972	C	69	0	R			0.297	0.303	0.294	5.8	12.8	1.0	0.273	31	false
+83419	Snapshot RF Bobby Darwin MIN 1973	RF	53	0	R			0.297	0.298	0.297	6.0	12.0	1.2	0.275	23	false
+84440	Negro League Star 2B Matt Carlisle HoGr 1943	2B	64	0	R			0.297	0.3	0.296	7.0	8.0	0.6	0.276	20.1	false
+84342	Rookie Sensation CF Bobby Brown NYY 1980	CF	58	0	S			0.297	0.285	0.303	4.9	11.2	2.1	0.264	20	false
+85835	T4 Ep. 3 - Historical All-Star SS Cal Ripken Jr. BAL 1987	SS	58	5	R			0.297	0.282	0.305	9.4	7.0	1.3	0.243	23	false
+82879	Unsung Heroes C Tom Padden PIT 1935	C	57	5	R			0.297	0.314	0.289	10.3	8.2	0.4	0.267	16.7	false
+84317	Rookie Sensation C Sammy Taylor CHC 1958	C	50	0	L			0.296	0.313	0.288	6.0	10.7	1.4	0.269	21.1	false
+84347	Rookie Sensation 1B George Scott BOS 1966	1B	64	0	R			0.296	0.312	0.288	7.8	12.5	1.5	0.261	22.8	false
+83420	Veteran Presence CF Terry Moore STL 1947	CF	54	0	R			0.296	0.281	0.303	5.6	8.3	0.9	0.276	19.2	false
+85321	Baseball Reference 2 SS Roger Metzger HOU 1973	SS	43	0	S			0.296	0.277	0.305	5.5	9.8	0.3	0.291	22	false
+83392	Snapshot 1B Buddy Hassett BSN 1939	1B	50	0	L			0.296	0.285	0.301	2.7	4.0	0.5	0.300	10.6	false
+83642	Snapshot LF Gary Roenicke BAL 1980	LF	59	5	R			0.296	0.316	0.287	10.0	9.8	1.5	0.236	26.1	false
+83533	Snapshot RF Bill Nicholson CHC 1946	RF	54	5	L			0.296	0.266	0.311	9.1	9.6	2.8	0.214	26.8	false
+83614	Snapshot 3B Carney Lansford ATH 1986	3B	67	5	R			0.296	0.297	0.296	6.2	6.4	1.3	0.263	16.7	false
+82859	Unsung Heroes C Frank House DET 1954	C	52	5	L			0.296	0.299	0.295	6.3	8.2	2.1	0.245	21.4	false
+84100	All-Time Legend 2B Denny Doyle PHI Peak	2B	51	5	L			0.296	0.269	0.309	6.5	6.6	0.9	0.263	22.8	false
+83429	Snapshot LF Glenn Braggs ML4 1989	LF	53	5	R			0.296	0.29	0.299	7.2	10.6	1.5	0.266	16.7	false
+84403	Negro League Star 2B Frank Russell BEG 1943	2B	52	0	R			0.295	0.298	0.294	6.0	8.0	0.2	0.277	26.4	false
+84360	Rookie Sensation CF Albie Pearson WS1 1958	CF	65	0	L			0.295	0.261	0.311	8.0	5.9	0.6	0.260	21.7	false
+83391	Snapshot CF Ernie Orsatti STL 1933	CF	52	0	L			0.295	0.274	0.305	5.5	9.3	0.4	0.287	21.3	false
+84462	Negro League Star 3B Clemente Carreras NYC 1941	3B	67	0	R			0.295	0.298	0.293	7.0	10.0	1.2	0.259	24.4	false
+84417	Negro League Star 2B Jack Marshall CAG 1934	2B	58	5	R			0.295	0.299	0.292	8.3	8.3	0.5	0.265	22.6	false
+83930	Historical All-Star CF Max West BSN 1940	CF	61	0	L			0.294	0.257	0.311	7.6	9.6	1.4	0.252	22.8	false
+83929	Historical All-Star 2B Johnny Temple CLE 1961	2B	57	0	R			0.294	0.298	0.293	7.6	6.6	0.3	0.269	21.3	false
+83486	Snapshot RF Sam Mele WS1 1950	RF	61	0	R			0.294	0.323	0.281	6.7	8.5	1.1	0.256	26.2	false
+85678	In Memoriam - Veteran Presence 1B Bob Horner STL 1988	1B	44	0	R			0.294	0.339	0.273	10.2	7.2	0.7	0.255	16.7	false
+83647	Snapshot 1B Dick Gernert BOS 1953	1B	65	0	R			0.294	0.314	0.284	10.2	11.1	1.5	0.246	18.4	false
+82888	Unsung Heroes SS Tim Foli PIT 1979	SS	62	0	R			0.294	0.272	0.305	2.7	3.9	0.2	0.287	20.8	false
+85873	T4 Ep. 3 - Snapshot CF Tony Armas BOS 1983	CF	48	0	R			0.294	0.288	0.297	4.0	15.4	2.6	0.259	26.6	false
+83390	Snapshot CF Lloyd Waner PIT 1935	CF	50	5	L			0.294	0.273	0.305	3.3	3.1	0.4	0.278	21.2	false
+83399	Snapshot LF Wayne Nordhagen CWS 1980	LF	53	5	R			0.294	0.317	0.283	2.1	7.6	1.7	0.260	28.8	false
+85498	Clubhouse - 60s Week - Snapshot SP Jim Maloney CIN 1961	P	41	0	L			0.293	0.261	0.307	4.4	11.5	1.4	0.298	6.1	false
+85330	T4 Ep. 1 - In Memoriam 3B Bobby Cox NYY 1968	3B	48	0	R			0.293	0.317	0.282	7.5	11.8	0.9	0.277	18.8	false
+85275	1st Mexican Born Player - Snapshot CF Mel Almada WS1 1937	CF	43	0	L			0.293	0.266	0.305	5.6	7.6	0.5	0.280	19.2	false
+83461	Snapshot LF Greg Luzinski CWS 1984	LF	56	5	R			0.293	0.277	0.3	9.8	10.2	1.5	0.243	20.5	false
+85944	July Jewels - Baseball Reference 4 RF Clyde Vollmer BOS 1951	RF	55	0	R			0.292	0.261	0.306	8.8	13.3	2.3	0.246	14.6	false
+85483	60s Theme Week - Rookie Sensation 2B Chuck Schilling BOS 1961	2B	61	0	R			0.292	0.298	0.29	8.1	8.1	0.4	0.267	21.1	false
+83433	Snapshot 1B Bob Oliver KC 1970	1B	57	0	R			0.292	0.309	0.284	5.3	11.0	1.5	0.262	25.3	false
+83520	Snapshot 2B Tony Cuccinello BRO 1932	2B	64	0	R			0.292	0.302	0.288	6.0	8.5	1.3	0.257	24.2	false
+84103	All-Time Legend CF Tony Scott STL Peak	CF	41	5	S			0.292	0.293	0.291	5.5	9.7	0.6	0.276	24	false
+85161	Dock&#39;s Patients LF Ivan Murrell SD 1970	LF	44	5	R			0.292	0.308	0.285	3.3	14.3	1.4	0.291	20.8	false
+83939	Historical All-Star 2B Frank Bolling ML1 1961	2B	65	5	R			0.292	0.301	0.287	7.8	7.3	1.1	0.253	19	false
+85482	Clubhouse - 60s Week - Hall of Fame C Joe Torre ML1 1961	C	57	0	R			0.291	0.253	0.309	4.1	11.6	0.8	0.282	26.8	false
+83388	Snapshot LF Alex Johnson TEX 1974	LF	50	0	R			0.291	0.266	0.302	4.4	9.0	0.7	0.286	17.3	false
+83483	Snapshot 3B Ken Boyer STL 1965	3B	61	0	R			0.291	0.29	0.292	7.9	8.5	1.1	0.256	19.9	false
+83192	Snapshot SP Jack Harshman CWS 1954	P	69	5	L			0.291	0.197	0.335	10.8	18.2	4.4	0.196	12.7	false
+83406	Snapshot C Clay Dalrymple PHI 1964	C	51	5	L			0.291	0.288	0.293	7.6	7.0	1.5	0.238	25.2	false
+84410	Negro League Star 3B Jimmy Binder DeSt 1933	3B	52	5	R			0.291	0.29	0.291	6.5	7.8	0.2	0.274	22.8	false
+83534	Snapshot SS Don Zimmer LAD 1958	SS	59	0	R			0.290	0.282	0.293	5.1	11.0	1.2	0.272	20.1	false
+83511	Snapshot 2B Rennie Stennett PIT 1972	2B	60	0	R			0.290	0.32	0.276	2.2	8.5	0.6	0.291	21.4	false
+83358	Snapshot 1B Jim Spencer CAL 1970	1B	49	0	L			0.290	0.272	0.299	3.3	8.1	1.7	0.262	20.4	false
+83518	Snapshot RF Carl Reynolds CWS 1931	RF	59	0	R			0.290	0.296	0.287	5.0	7.3	1.0	0.258	26.2	false
+82860	Unsung Heroes 2B Tony Piet PIT 1932	2B	54	0	R			0.290	0.266	0.302	6.7	10.3	0.9	0.268	21.9	false
+84113	All-Time Legend SS Bill Knickerbocker CLE Peak	SS	57	0	R			0.290	0.289	0.29	5.7	7.6	0.7	0.262	25.8	false
+84338	Rookie Sensation 3B Ken Keltner CLE 1938	3B	68	0	R			0.290	0.282	0.294	4.3	10.7	1.9	0.249	29.6	false
+82846	Unsung Heroes SS Darrel Chaney ATL 1976	SS	40	0	S			0.290	0.289	0.291	6.9	11.1	0.3	0.279	23.1	false
+85777	Family Connections - Historical All-Star C Steve Swisher CHC 1976	C	45	5	R			0.290	0.253	0.307	5.0	13.7	1.0	0.282	22.9	false
+83359	Snapshot C Johnny Edwards HOU 1969	C	48	5	L			0.290	0.263	0.303	7.0	8.1	1.4	0.244	26.5	false
+83436	Snapshot C Mike Tresh CWS 1940	C	50	0	R			0.289	0.281	0.293	7.0	8.7	0.2	0.282	16.1	false
+83913	Historical All-Star 2B Steve Sax LAD 1983	2B	53	0	R			0.289	0.273	0.296	6.7	8.5	0.5	0.277	15.9	false
+82832	Unsung Heroes 3B Ken Reitz STL 1979	3B	49	0	R			0.289	0.315	0.277	3.1	9.5	0.7	0.273	29.6	false
+83920	Veteran Presence C Luke Sewell CWS 1937	C	52	5	R			0.289	0.301	0.283	8.0	5.4	0.3	0.252	26.7	false
+83342	Snapshot CF Sonny Jackson ATL 1971	CF	47	5	L			0.289	0.282	0.292	5.7	6.7	0.6	0.268	21.5	false
+83432	Snapshot 3B Paul Schaal KC 1972	3B	56	0	R			0.288	0.308	0.279	9.4	9.0	0.9	0.240	27.5	false
+84840	Celebrating 42 - Snapshot 3B Jackie Robinson BRO 1955	3B	68	0	R			0.288	0.297	0.283	10.2	5.9	1.1	0.239	14.5	false
+83441	Snapshot RF Wally Post PHI 1959	RF	54	0	R			0.288	0.274	0.294	5.8	11.5	1.5	0.256	25.2	false
+84424	Negro League Star 2B Javier Perez PBG 1933	2B	61	0	R			0.288	0.289	0.287	7.3	9.9	0.3	0.269	24.3	false
+83687	Snapshot RF Jim King WS2 1962	RF	68	0	L			0.288	0.265	0.299	9.0	8.2	2.1	0.221	23.1	false
+83464	Snapshot 1B Tony Horton CLE 1970	1B	58	0	R			0.288	0.305	0.279	5.2	8.6	1.4	0.251	26.2	false
+84121	All-Time Legend 3B Bernie Friberg PHI Peak	3B	60	0	R			0.288	0.294	0.285	7.8	11.1	0.8	0.266	20.8	false
+83531	Snapshot 3B Clete Boyer NYY 1965	3B	66	0	R			0.288	0.313	0.277	5.4	9.1	1.4	0.249	28.3	false
+83487	Snapshot SS Johnny Berardino SLA 1941	SS	60	0	R			0.288	0.259	0.301	6.0	7.7	0.8	0.254	28	false
+83509	Snapshot LF Dusty Baker LAD 1978	LF	56	0	R			0.288	0.302	0.281	6.9	9.1	1.0	0.257	21.9	false
+83918	Historical All-Star 1B Eddie Robinson PHA 1953	1B	56	0	L			0.287	0.292	0.284	7.3	8.2	2.2	0.221	25.8	false
+85023	HOF 1 - Hall of Fame 3B Brooks Robinson BAL 1963	3B	49	0	R			0.287	0.282	0.289	5.4	10.4	0.7	0.273	22.9	false
+82827	Unsung Heroes LF Hal Lee BSN 1935	LF	43	0	R			0.287	0.295	0.283	3.5	7.5	0.3	0.284	21.3	false
+83561	Snapshot CF Sam Chapman PHA 1939	CF	63	0	R			0.287	0.264	0.298	6.7	11.0	1.4	0.250	25.4	false
+83345	Snapshot 1B Bert Haas CIN 1946	1B	41	5	R			0.287	0.305	0.278	4.8	7.3	0.6	0.265	25.7	false
+82896	Unsung Heroes SS Dick Culler BSN 1946	SS	64	5	R			0.287	0.319	0.272	8.7	4.1	0.2	0.253	19.2	false
+82909	Unsung Heroes 2B Pep Young PIT 1938	2B	63	0	R			0.286	0.278	0.29	5.0	10.3	0.6	0.271	26.6	false
+82831	Unsung Heroes CF Marvell Wynne PIT 1984	CF	45	0	L			0.286	0.277	0.291	5.6	8.4	0.4	0.274	20.8	false
+83443	Snapshot RF Don Padgett STL 1938	RF	52	0	L			0.286	0.263	0.296	3.1	8.6	1.9	0.243	29.5	false
+84862	Clubhouse - Negro League Star SP Jack Matchett KCM 1944	P	53	0	L			0.286	0.283	0.287	6.4	10.8	0.3	0.280	20.4	false
+84413	Negro League Star CF Cando Lopez NYC 1935	CF	59	0	R			0.286	0.287	0.285	6.0	7.9	0.7	0.259	24	false
+83440	Snapshot CF George Hendrick CLE 1973	CF	67	0	R			0.286	0.274	0.292	4.8	10.1	1.7	0.253	23.3	false
+84398	Negro League Star LF John Bissant CAG 1944	LF	48	0	R			0.286	0.287	0.286	5.4	8.2	0.3	0.269	25.9	false
+85478	Baseball Reference 2 C Al Spohrer BSN 1933	C	43	5	R			0.286	0.332	0.264	5.7	7.3	0.3	0.274	19.9	false
+83912	Historical All-Star SS Freddie Patek KC 1976	SS	43	5	R			0.286	0.306	0.276	8.1	9.0	0.2	0.258	26.4	false
+85069	HOF 1 - Veteran Presence RF Sam Rice CLE 1934	RF	48	0	L			0.285	0.203	0.323	4.9	5.8	0.4	0.271	17.9	false
+84305	Rookie Sensation C Del Rice STL 1945	C	40	0	R			0.285	0.33	0.264	3.1	16.9	0.4	0.308	24	false
+86083	Obscure All-Stars - Baseball Reference 5 C Biff Pocoroba ATL 1978	C	44	0	S			0.285	0.253	0.3	7.8	4.4	1.4	0.237	16.5	true
+83343	Snapshot LF Lou Piniella KC 1971	LF	46	0	R			0.285	0.301	0.278	3.3	7.6	0.4	0.277	24.4	false
+82871	Unsung Heroes 3B Bob Kennedy CWS 1955	3B	61	0	R			0.285	0.303	0.276	6.2	8.2	1.1	0.251	23.5	false
+84099	All-Time Legend SS Enzo Hernandez SD Peak	SS	50	0	R			0.285	0.273	0.291	6.5	5.0	0.2	0.266	18.6	false
+83407	Snapshot 3B Mark Christman SLA 1943	3B	52	0	R			0.285	0.28	0.287	5.0	7.2	0.7	0.264	21.6	false
+83914	Historical All-Star SS Larry Bowa PHI 1978	SS	57	0	S			0.285	0.267	0.293	2.8	5.8	0.5	0.280	19.2	false
+84414	Negro League Star C Pepper Bassett PiCr 1938	C	57	0	S			0.285	0.268	0.292	3.5	8.9	1.9	0.249	24.8	false
+85822	FLF 13 &amp; Co. - Veteran Presence C Buck Martinez TOR 1983	C	63	5	R			0.285	0.339	0.259	10.4	12.0	1.4	0.239	16.9	false
+84303	Rookie Sensation SS Marty Marion STL 1940	SS	48	0	R			0.284	0.289	0.281	2.6	8.8	0.5	0.287	19.7	false
+84406	Negro League Star 2B Rainey Bibbs CiTi 1937	2B	53	0	S			0.284	0.276	0.287	4.9	8.0	0.8	0.267	19.9	false
+85801	Family Connections - Unsung Heroes CF Jose Tartabull ATH 1969	CF	46	5	L			0.284	0.225	0.312	3.2	3.9	0.3	0.272	20.5	false
+83909	Historical All-Star SS Leo Durocher STL 1936	SS	41	5	R			0.284	0.254	0.297	5.2	8.6	0.2	0.275	22.3	false
+83529	Snapshot 2B Alan Wiggins SD 1984	2B	59	0	S			0.283	0.309	0.271	8.6	7.4	0.5	0.252	19.2	false
+83437	Snapshot RF Wes Schulmerich BSN 1932	RF	51	0	R			0.283	0.265	0.291	6.1	11.4	1.4	0.248	26.3	false
+84312	Rookie Sensation C Buck Rodgers LAA 1962	C	42	0	S			0.283	0.249	0.299	5.1	8.4	0.8	0.256	28.4	false
+82879	Unsung Heroes C Tom Padden PIT 1935	C	57	0	R			0.283	0.3	0.275	9.7	9.1	0.3	0.260	15	false
+83435	Snapshot 1B Tony Lupien BOS 1943	1B	52	0	L			0.283	0.27	0.289	6.1	6.0	1.3	0.243	19.9	false
+82863	Unsung Heroes 2B Ted Kubiak ML4 1971	2B	53	0	S			0.283	0.271	0.289	8.9	8.7	1.1	0.236	23.3	false
+83510	Snapshot 3B Tommy Davis LAD 1961	3B	67	0	R			0.283	0.338	0.258	4.2	8.3	1.2	0.268	15.1	false
+84304	Rookie Sensation LF Eddie Carnett CWS 1944	LF	47	0	L			0.283	0.272	0.288	5.4	8.6	0.5	0.272	19.3	false
+83482	Snapshot CF Jose Cardenal CLE 1969	CF	60	0	R			0.283	0.265	0.292	6.0	7.7	0.9	0.250	26	false
+83911	Historical All-Star 2B Cookie Rojas KC 1974	2B	48	5	R			0.283	0.265	0.292	5.2	6.7	0.8	0.263	18.2	false
+83405	Snapshot C Rick Dempsey BAL 1979	C	55	5	R			0.283	0.301	0.274	8.0	7.3	0.9	0.234	29.8	false
+83444	Snapshot SS Dick Bartell CHC 1939	SS	55	5	R			0.283	0.287	0.28	9.2	7.5	0.8	0.226	33.8	false
+83642	Snapshot LF Gary Roenicke BAL 1980	LF	59	0	R			0.282	0.301	0.272	9.5	10.5	1.3	0.229	24.4	false
+85835	T4 Ep. 3 - Historical All-Star SS Cal Ripken Jr. BAL 1987	SS	58	0	R			0.282	0.269	0.289	8.8	7.7	1.1	0.236	21.4	false
+83650	Snapshot SS Billy Myers CIN 1937	SS	67	0	R			0.282	0.304	0.272	8.1	11.4	1.1	0.248	22.2	false
+84352	Rookie Sensation CF Vince DiMaggio BSN 1937	CF	46	0	R			0.282	0.27	0.288	5.6	13.5	1.2	0.268	20.1	false
+83579	Snapshot CF Bill Wilson PHA 1954	CF	60	5	R			0.282	0.282	0.282	9.2	10.7	1.7	0.225	23.7	false
+83592	Snapshot SS Phil Rizzuto NYY 1948	SS	66	5	R			0.282	0.298	0.275	8.1	6.4	0.9	0.244	18.4	false
+83366	Snapshot C Johnny Peacock BOS 1942	C	43	5	L			0.282	0.282	0.282	5.6	5.4	0.4	0.268	15.5	false
+85673	June Gems - Baseball Reference 3 2B Rafael Landestoy HOU 1980	2B	44	5	S			0.282	0.328	0.261	7.2	8.6	0.3	0.259	23.7	false
+85834	Heart Attack - Historical All-Star C Jim Hegan CLE 1949	C	46	5	R			0.282	0.289	0.279	7.3	14.8	0.8	0.264	27.1	false
+84130	Unsung Heroes SS Charlie Gelbert STL 1931	SS	48	5	R			0.282	0.3	0.273	3.7	8.7	0.3	0.285	18.9	false
+84116	All-Time Legend CF Jocko Conlan CWS Peak	CF	52	5	L			0.282	0.301	0.274	7.4	4.8	0.3	0.249	25	false
+83390	Snapshot CF Lloyd Waner PIT 1935	CF	50	0	L			0.281	0.26	0.29	2.8	3.8	0.4	0.270	19.5	false
+83453	Snapshot CF Jim Hickman NYM 1965	CF	56	0	R			0.281	0.307	0.27	6.0	10.8	1.5	0.241	29	false
+84093	All-Time Legend SS Tom Veryzer CLE Peak	SS	45	5	R			0.281	0.29	0.276	5.5	7.0	0.4	0.262	22.7	false
+83344	Snapshot 3B Steve Mesner CIN 1943	3B	47	5	R			0.281	0.31	0.268	4.0	5.7	0.3	0.265	24.8	false
+83381	Snapshot 1B Lou Limmer PHA 1954	1B	52	5	L			0.281	0.262	0.29	7.4	9.0	3.2	0.199	23.6	false
+83380	Snapshot LF Del Ennis PHI 1956	LF	51	5	R			0.281	0.305	0.27	3.7	7.3	1.5	0.246	24.8	false
+85452	PTMS 1 LF Bill Robinson PIT 1979	LF	47	0	R			0.280	0.333	0.256	3.4	14.2	1.8	0.262	22.9	false
+83614	Snapshot 3B Carney Lansford ATH 1986	3B	67	0	R			0.280	0.282	0.28	5.6	6.9	1.1	0.255	15	false
+84100	All-Time Legend 2B Denny Doyle PHI Peak	2B	51	0	L			0.280	0.253	0.292	5.8	7.1	0.7	0.256	21	false
+83429	Snapshot LF Glenn Braggs ML4 1989	LF	53	0	R			0.280	0.273	0.283	6.5	11.3	1.3	0.259	15.1	false
+83379	Snapshot 1B Steve Balboni KC 1985	1B	43	0	R			0.280	0.277	0.282	5.5	22.0	2.1	0.272	21.8	false
+84427	Negro League Star SS Jake Stephens HoGr 1931	SS	64	5	R			0.280	0.281	0.28	8.3	9.1	0.3	0.253	23.3	false
+83357	Snapshot C Jeff Reed CIN 1989	C	47	5	L			0.280	0.257	0.29	8.2	9.0	1.3	0.234	21.5	false
+83581	Snapshot 3B Willie Jones PHI 1952	3B	63	5	R			0.280	0.275	0.283	7.8	6.5	1.6	0.231	16.6	false
+83908	Historical All-Star SS Shawon Dunston CHC 1988	SS	44	5	R			0.280	0.268	0.285	1.5	9.3	1.0	0.270	25.5	false
+83401	Snapshot SS Larry Brown CLE 1967	SS	51	5	R			0.280	0.263	0.288	8.6	7.4	0.9	0.238	21.7	false
+83533	Snapshot RF Bill Nicholson CHC 1946	RF	54	0	L			0.279	0.246	0.294	8.5	10.2	2.4	0.207	25.6	false
+84417	Negro League Star 2B Jack Marshall CAG 1934	2B	58	0	R			0.279	0.283	0.277	7.7	9.5	0.4	0.257	20.7	false
+82859	Unsung Heroes C Frank House DET 1954	C	52	0	L			0.279	0.283	0.277	5.7	8.9	1.8	0.238	19.7	false
+85777	Family Connections - Historical All-Star C Steve Swisher CHC 1976	C	45	0	R			0.278	0.239	0.296	4.4	14.6	0.9	0.279	21.1	false
+85161	Dock&#39;s Patients LF Ivan Murrell SD 1970	LF	44	0	R			0.278	0.299	0.268	2.8	15.2	1.2	0.285	19.2	false
+82864	Unsung Heroes C Clyde Sukeforth CIN 1931	C	51	5	L			0.278	0.273	0.28	8.5	5.7	0.5	0.238	22.2	false
+82833	Unsung Heroes 3B Jeff Hamilton LAD 1989	3B	45	5	R			0.278	0.255	0.289	3.4	7.6	1.2	0.244	30.9	false
+85158	Dock&#39;s Patients 2B Dave Campbell SD 1970	2B	50	5	R			0.278	0.329	0.254	4.9	11.4	1.0	0.255	26.7	false
+84299	Rookie Sensation C John Bateman HOU 1963	C	44	5	R			0.278	0.319	0.26	5.4	11.4	1.3	0.253	23.7	false
+83399	Snapshot LF Wayne Nordhagen CWS 1980	LF	53	0	R			0.277	0.301	0.266	1.7	8.5	1.5	0.253	27.5	false
+83461	Snapshot LF Greg Luzinski CWS 1984	LF	56	0	R			0.277	0.265	0.283	9.2	11.1	1.3	0.236	18.8	false
+83406	Snapshot C Clay Dalrymple PHI 1964	C	51	0	L			0.276	0.272	0.279	6.9	7.6	1.3	0.231	23.7	false
+83939	Historical All-Star 2B Frank Bolling ML1 1961	2B	65	0	R			0.276	0.286	0.272	7.1	7.9	1.0	0.245	17.3	false
+84410	Negro League Star 3B Jimmy Binder DeSt 1933	3B	52	0	R			0.276	0.276	0.276	5.8	8.6	0.2	0.266	21	false
+83920	Veteran Presence C Luke Sewell CWS 1937	C	52	0	R			0.275	0.287	0.27	7.3	6.0	0.3	0.244	25	false
+84103	All-Time Legend CF Tony Scott STL Peak	CF	41	0	S			0.275	0.277	0.274	4.8	10.7	0.5	0.268	22.2	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	CF	57	5	R			0.275	0.279	0.273	7.1	9.7	0.3	0.248	29.5	false
+85460	May Birthdays - Unsung Heroes SS Billy Jurges CHC 1935	SS	57	5	R			0.275	0.312	0.257	6.7	7.8	0.2	0.251	25.2	false
+85169	Dock&#39;s Patients SS Tommy Dean SD 1970	SS	41	5	R			0.275	0.247	0.288	5.5	10.9	0.7	0.266	18.2	false
+83192	Snapshot SP Jack Harshman CWS 1954	P	69	0	L			0.274	0.187	0.315	10.2	19.2	4.0	0.188	11.5	false
+83359	Snapshot C Johnny Edwards HOU 1969	C	48	0	L			0.274	0.248	0.286	6.2	8.8	1.2	0.237	25.2	false
+82896	Unsung Heroes SS Dick Culler BSN 1946	SS	64	0	R			0.274	0.306	0.26	8.2	4.7	0.2	0.245	17.4	false
+83434	Snapshot LF Bobby Thomson ML1 1956	LF	49	5	R			0.274	0.285	0.269	6.8	9.8	1.6	0.233	20.5	false
+83356	Snapshot SS Ivan De Jesus PHI 1982	SS	41	5	R			0.274	0.254	0.283	7.5	8.8	0.4	0.247	24.4	false
+83342	Snapshot CF Sonny Jackson ATL 1971	CF	47	0	L			0.273	0.268	0.276	5.0	7.2	0.5	0.259	19.8	false
+83548	Snapshot SS Mark Belanger BAL 1974	SS	64	5	R			0.273	0.269	0.275	8.2	8.5	0.8	0.235	22.8	false
+85801	Family Connections - Unsung Heroes CF Jose Tartabull ATH 1969	CF	46	0	L			0.272	0.217	0.298	2.8	4.5	0.3	0.264	19.6	false
+85478	Baseball Reference 2 C Al Spohrer BSN 1933	C	43	0	R			0.272	0.318	0.25	5.1	8.3	0.2	0.266	18.2	false
+83912	Historical All-Star SS Freddie Patek KC 1976	SS	43	0	R			0.272	0.292	0.262	7.5	10.0	0.2	0.250	24.7	false
+84397	Negro League Star C Paul Hardy BBB 1942	C	47	5	R			0.272	0.278	0.269	8.3	8.8	0.2	0.258	14.1	false
+83345	Snapshot 1B Bert Haas CIN 1946	1B	41	0	R			0.271	0.29	0.262	4.2	8.0	0.5	0.258	23.6	false
+85514	Clubhouse - 60s Week - Unsung Heroes SS Roy McMillan ML1 1961	SS	47	0	R			0.270	0.246	0.281	9.4	11.8	0.6	0.249	12.4	false
+85822	FLF 13 &amp; Co. - Veteran Presence C Buck Martinez TOR 1983	C	63	0	R			0.270	0.324	0.246	9.9	12.6	1.2	0.230	15.5	false
+85673	June Gems - Baseball Reference 3 2B Rafael Landestoy HOU 1980	2B	44	0	S			0.270	0.315	0.249	6.6	9.2	0.3	0.252	22.1	false
+83909	Historical All-Star SS Leo Durocher STL 1936	SS	41	0	R			0.270	0.241	0.283	4.5	9.3	0.2	0.267	20.4	false
+84116	All-Time Legend CF Jocko Conlan CWS Peak	CF	52	0	L			0.270	0.288	0.262	6.8	5.5	0.3	0.242	23.6	false
+83444	Snapshot SS Dick Bartell CHC 1939	SS	55	0	R			0.270	0.275	0.268	8.5	8.1	0.7	0.220	32.7	false
+84428	Negro League Star SP Henry McHenry NeBr 1932	P	66	5	R			0.270	0.272	0.269	6.2	15.7	1.2	0.253	24	false
+83911	Historical All-Star 2B Cookie Rojas KC 1974	2B	48	0	R			0.269	0.251	0.277	4.6	7.3	0.7	0.255	16.4	false
+83592	Snapshot SS Phil Rizzuto NYY 1948	SS	66	0	R			0.269	0.284	0.262	7.5	7.0	0.8	0.237	16.6	false
+83405	Snapshot C Rick Dempsey BAL 1979	C	55	0	R			0.269	0.287	0.26	7.3	8.1	0.8	0.227	28.5	false
+85503	Clubhouse - 60s Week - Snapshot 2B Chuck Cottier WS2 1961	2B	43	0	R			0.269	0.252	0.277	5.4	11.5	0.2	0.266	22.8	false
+83366	Snapshot C Johnny Peacock BOS 1942	C	43	0	L			0.268	0.269	0.268	4.9	5.9	0.4	0.260	14	false
+83481	Snapshot C Dave Valle SEA 1989	C	55	5	R			0.268	0.263	0.271	8.2	6.6	1.1	0.217	23.1	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	P	51	5	R			0.268	0.272	0.266	5.5	15.7	1.1	0.252	27	false
+83579	Snapshot CF Bill Wilson PHA 1954	CF	60	0	R			0.267	0.267	0.267	8.5	11.3	1.5	0.218	22	false
+83344	Snapshot 3B Steve Mesner CIN 1943	3B	47	0	R			0.267	0.296	0.254	3.5	6.2	0.2	0.258	23.2	false
+85834	Heart Attack - Historical All-Star C Jim Hegan CLE 1949	C	46	0	R			0.267	0.272	0.264	6.6	15.6	0.7	0.256	25.4	false
+84130	Unsung Heroes SS Charlie Gelbert STL 1931	SS	48	0	R			0.267	0.286	0.258	3.1	9.8	0.2	0.278	17.1	false
+84093	All-Time Legend SS Tom Veryzer CLE Peak	SS	45	0	R			0.266	0.276	0.261	4.9	7.5	0.3	0.254	20.9	false
+83401	Snapshot SS Larry Brown CLE 1967	SS	51	0	R			0.266	0.25	0.273	7.9	8.1	0.8	0.231	19.9	false
+85171	Dock&#39;s Patients 1B Ramon Webster SD 1970	1B	42	5	L			0.266	0.159	0.316	5.0	8.4	0.9	0.255	11.6	false
+84300	Rookie Sensation SS Irv Hall PHA 1943	SS	40	5	R			0.266	0.262	0.268	4.0	7.9	0.3	0.264	18.3	false
+85090	Clubhouse - 60s Week - Unsung Heroes SS Coot Veal WS2 Peak	SS	40	0	R			0.265	0.231	0.281	5.6	8.4	0.2	0.257	17.7	false
+84427	Negro League Star SS Jake Stephens HoGr 1931	SS	64	0	R			0.265	0.266	0.265	7.7	10.1	0.3	0.246	21.5	false
+83581	Snapshot 3B Willie Jones PHI 1952	3B	63	0	R			0.265	0.259	0.267	7.1	7.0	1.4	0.224	15	false
+83380	Snapshot LF Del Ennis PHI 1956	LF	51	0	R			0.265	0.287	0.255	3.2	7.9	1.3	0.239	22.9	false
+83908	Historical All-Star SS Shawon Dunston CHC 1988	SS	44	0	R			0.265	0.253	0.271	1.4	10.4	0.9	0.263	23.8	false
+85903	Limited Edition/71 CF Billy Bean DET 1987	CF	40	0	L			0.265	0.2	0.295	5.0	10.4	0.3	0.266	17.6	false
+82864	Unsung Heroes C Clyde Sukeforth CIN 1931	C	51	0	L			0.264	0.262	0.265	7.9	6.2	0.4	0.231	20.4	false
+84299	Rookie Sensation C John Bateman HOU 1963	C	44	0	R			0.264	0.302	0.246	4.8	11.8	1.2	0.245	22	false
+84444	Negro League Star 2B Dick Seay NeEa 1940	2B	66	5	R			0.264	0.266	0.264	8.2	8.6	1.0	0.224	19.4	false
+83357	Snapshot C Jeff Reed CIN 1989	C	47	0	L			0.263	0.241	0.273	7.6	9.9	1.2	0.226	19.8	false
+82833	Unsung Heroes 3B Jeff Hamilton LAD 1989	3B	45	0	R			0.263	0.242	0.273	2.9	8.2	1.1	0.237	29.7	false
+83381	Snapshot 1B Lou Limmer PHA 1954	1B	52	0	L			0.262	0.243	0.27	6.7	9.7	2.7	0.191	22.2	false
+85460	May Birthdays - Unsung Heroes SS Billy Jurges CHC 1935	SS	57	0	R			0.262	0.298	0.244	6.0	8.6	0.2	0.244	23.5	false
+85169	Dock&#39;s Patients SS Tommy Dean SD 1970	SS	41	0	R			0.261	0.234	0.273	4.9	11.6	0.7	0.258	16.7	false
+85158	Dock&#39;s Patients 2B Dave Campbell SD 1970	2B	50	0	R			0.261	0.305	0.24	4.4	12.2	1.0	0.244	25.2	false
+84418	Negro League Star CF Double Duty Radcliffe NEL 1944	CF	57	0	R			0.260	0.264	0.258	6.4	10.7	0.3	0.240	28	false
+84397	Negro League Star C Paul Hardy BBB 1942	C	47	0	R			0.259	0.264	0.256	7.6	9.8	0.2	0.250	12.7	false
+83356	Snapshot SS Ivan De Jesus PHI 1982	SS	41	0	R			0.259	0.241	0.267	6.8	9.8	0.3	0.239	22.5	false
+83548	Snapshot SS Mark Belanger BAL 1974	SS	64	0	R			0.259	0.256	0.261	7.6	9.4	0.7	0.229	21	false
+83335	Snapshot C Bob Swift DET 1945	C	43	5	R			0.259	0.261	0.258	7.5	7.5	0.3	0.243	12	false
+85486	Clubhouse - 60s Week - Historical All-Star SP Stan Williams LAD 1960	P	69	0	R			0.258	0.273	0.25	2.6	21.9	0.9	0.297	15.1	false
+83434	Snapshot LF Bobby Thomson ML1 1956	LF	49	0	R			0.258	0.269	0.254	6.1	10.7	1.4	0.227	18.7	false
+85895	FLF 14 &amp; Co. - Unsung Heroes SP Earl Wilson BOS 1962	P	55	5	R			0.258	0.225	0.273	5.2	14.7	1.3	0.244	18	false
+84094	All-Time Legend 2B Doug Flynn NYM Peak	2B	40	5	R			0.258	0.268	0.253	2.6	5.8	0.2	0.250	24.4	false
+84677	Happy Easter SS Jelly Jackson HoGr 1938	SS	47	5	R			0.257	0.259	0.256	8.0	7.9	0.6	0.227	15.6	false
+84098	All-Time Legend 2B Sparky Anderson PHI Peak	2B	41	5	R			0.257	0.252	0.259	7.6	7.1	0.2	0.238	15.4	false
+84428	Negro League Star SP Henry McHenry NeBr 1932	P	66	0	R			0.255	0.257	0.254	5.5	16.4	1.0	0.246	22.2	false
+83481	Snapshot C Dave Valle SEA 1989	C	55	0	R			0.254	0.249	0.257	7.6	7.4	1.0	0.211	21.3	false
+84401	Negro League Star SP Isidro Fabre CSE 1931	P	51	0	R			0.254	0.258	0.252	4.8	16.4	1.0	0.244	25.5	false
+85171	Dock&#39;s Patients 1B Ramon Webster SD 1970	1B	42	0	L			0.253	0.151	0.301	4.6	9.2	0.8	0.248	10.5	false
+84444	Negro League Star 2B Dick Seay NeEa 1940	2B	66	0	R			0.251	0.253	0.25	7.6	9.7	0.9	0.218	17.7	false
+84300	Rookie Sensation SS Irv Hall PHA 1943	SS	40	0	R			0.251	0.248	0.252	3.4	8.9	0.2	0.256	16.5	false
+82965	Snapshot SP Jim Tobin BSN 1945	P	52	5	R			0.249	0.238	0.254	9.6	20.0	2.1	0.204	15.4	false
+85805	T4 Ep. 3 - Unsung Heroes SS Hal Lanier SF 1969	SS	43	5	R			0.249	0.303	0.225	4.7	7.3	0.2	0.250	11.3	false
+84029	Veteran Presence SP Rip Sewell PIT Peak	P	63	5	L			0.247	0.214	0.262	4.3	13.6	1.0	0.236	22.6	false
+83335	Snapshot C Bob Swift DET 1945	C	43	0	R			0.246	0.249	0.245	6.9	8.2	0.3	0.235	10.7	false
+85827	T4 Ep. 3 - Negro League Star SP Bob Romby BEG 1948	P	58	5	L			0.246	0.24	0.249	5.6	15.3	1.6	0.218	22.2	false
+84094	All-Time Legend 2B Doug Flynn NYM Peak	2B	40	0	R			0.245	0.255	0.241	2.2	6.3	0.2	0.242	22.5	false
+84098	All-Time Legend 2B Sparky Anderson PHI Peak	2B	41	0	R			0.245	0.242	0.246	6.9	7.7	0.2	0.230	13.8	false
+84677	Happy Easter SS Jelly Jackson HoGr 1938	SS	47	0	R			0.244	0.246	0.243	7.4	8.8	0.5	0.221	13.9	false
+84866	Clubhouse - Negro League Star C Sammie Haynes KCM 1945	C	40	0	R			0.244	0.248	0.242	6.5	10.6	0.2	0.228	22.6	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	P	58	5	R			0.244	0.27	0.232	3.2	17.4	0.7	0.249	28	false
+83455	Snapshot C Dave Duncan CLE 1974	C	49	5	R			0.243	0.255	0.237	7.7	15.0	1.8	0.201	15.8	false
+85805	T4 Ep. 3 - Unsung Heroes SS Hal Lanier SF 1969	SS	43	0	R			0.238	0.292	0.213	4.1	8.2	0.2	0.244	10	false
+85170	Dock&#39;s Patients 3B Van Kelly SD 1970	3B	40	5	L			0.237	0.144	0.281	9.8	17.4	1.0	0.204	14.2	false
+82965	Snapshot SP Jim Tobin BSN 1945	P	52	0	R			0.234	0.225	0.239	9.1	21.2	1.8	0.196	13.8	false
+83866	Veteran Presence SP Red Ruffing NYY 1941	P	58	0	R			0.229	0.256	0.217	2.6	18.6	0.6	0.242	26.4	false
+85170	Dock&#39;s Patients 3B Van Kelly SD 1970	3B	40	0	L			0.227	0.14	0.267	9.1	18.0	0.9	0.200	13.1	false
+83455	Snapshot C Dave Duncan CLE 1974	C	49	0	R			0.227	0.24	0.221	7.0	15.8	1.6	0.194	14.3	false
