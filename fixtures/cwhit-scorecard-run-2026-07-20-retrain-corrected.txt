@@ -1,17 +1,20 @@
 ################################################################################
-# INSTRUMENT: composite deconvolution ENABLED (2026-07-20).
-# The dcv column for the COMPOSITE channels (hitter wOBA / pitcher wOBAA) is
-# POPULATED in this run. In ALL PRIOR RUNS it read `n/a`: scorecard `noiseOf`
-# returned NaN for composites on the false premise that a composite has "no clean
-# binomial form". It does — the multinomial weighted-sum variance, now shared at
-# src/eval/cwhit/scorecard.ts (wobaNoiseCells / wobaNoiseVar).
-# Comparing a RAW composite ratio against noise-DECONVOLVED per-channel ratios
-# produced two retracted findings; do not do it. Read raw against raw, dcv against dcv.
-# NO VERDICT CHANGED vs the pre-fix run: the DUEL verdicts score ours vs cwhit on the
-# SAME observed series, so sampling noise cancels between the two models. What the
-# missing column broke was the ABSOLUTE "are we under-spread" read, not the duel.
-# KNOWN: cells whose noise share exceeds 100% are physically impossible and their dcv
-# is unusable (gold hit wOBA reads 106% here). Reliability markers are a separate unit.
+# INSTRUMENT (2026-07-20): composite deconvolution ENABLED + reliability markers.
+#  · dcv is now POPULATED for composites (wOBA / wOBAA). In ALL runs before this
+#    date it read `n/a` — scorecard `noiseOf` returned NaN on the false premise that
+#    a composite has "no clean binomial form". It has one: the multinomial
+#    weighted-sum variance, shared at src/eval/cwhit/scorecard.ts.
+#  · NEVER compare a RAW ratio against a DCV ratio. Raw-vs-raw, dcv-vs-dcv. That
+#    exact mismatch produced two retracted findings; see plan doc §15.8.
+#  · UNREL = the noise-share CI upper crosses 100% (shown as ↑x%) ⇒ dcv is not a
+#    measurement; read the raw ratio beside it. ⚠THIN = N < 20.
+#  · Neither marker invalidates a DUEL verdict. Duels score both models on the SAME
+#    observed series, so noise cancels BETWEEN them. The markers bound the ABSOLUTE
+#    "are we at 1.0×" read only. Spread verdict tallies are UNCHANGED by this fix
+#    (5 CWHIT / 40 TIE before and after).
+#  · SECTION A is the PROJECTION-JOINED SUBSAMPLE (range-restricted) — not the
+#    general read. SECTION B is observed-only and larger. Any quoted number must
+#    name its section and N.
 ################################################################################
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════╗
@@ -131,7 +134,9 @@ slope  = OLS of de-meaned pred on de-meaned obs; 1.0 = right responsiveness, <1 
   ⚠ DIAMOND pit: projected fixture EXISTS and joined, but only N=1 card(s) clear the well-sampled bar ⇒ NO THREE-WAY READ (need ≥5).
      This is a DEAD PREDICTION, not a missing capture: the tier's observed table is too thin (few tournament instances ⇒ low per-card IP), not a model or join failure.
 
-─── IRON PITCHERS — N=22 well-sampled cards with both predictions ───
+─── IRON PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=22 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 K9        OURS     +0.18*   [+0.02, +0.33]                  7.67      0.951  [0.88,0.98]   0.95    0.25   0.95    1.00   1.01     2%
@@ -150,13 +155,18 @@ BABIP     OURS    +0.011*   [+0.009, +0.014]               0.288      0.895  [0.
           cwhit   +0.001    [-0.001, +0.002]               0.288      0.952  [0.89,0.98]   0.95   0.003   0.82    0.86   0.98    23%
           DUEL   Δcorr -0.057 [-0.10,-0.01]*  (Δshape-MAE +0.001* = shape+spread composite)  Δ|ln spread| +0.05   Δ|level| +0.011*
                  ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): TIE    LEVEL: CWHIT
-wOBAA     OURS    +0.022*   [+0.019, +0.025]               0.306      0.284  [-0.16,0.63]   0.08   0.006   0.28    0.99   2.15    79%
-          cwhit   -0.004*   [-0.007, -0.002]               0.306      0.398  [-0.03,0.70]   0.19   0.005   0.36    0.91   1.98    79%
+wOBAA     OURS    +0.022*   [+0.019, +0.025]               0.306      0.284  [-0.16,0.63]   0.08   0.006   0.28    0.99  UNREL    79%↑252%
+          cwhit   -0.004*   [-0.007, -0.002]               0.306      0.398  [-0.03,0.70]   0.19   0.005   0.36    0.91  UNREL    79%↑252%
           DUEL   Δcorr -0.114 [-0.39,+0.08]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.09   Δ|level| +0.017*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── IRON HITTERS — N=36 well-sampled cards with both predictions ───
+─── IRON HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=36 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 BB%       OURS     +0.88*   [+0.59, +1.17]                  7.98      0.933  [0.87,0.97]   0.92    0.69   0.74    0.80   0.81     4%
@@ -180,8 +190,13 @@ wOBA      OURS    +0.012*   [+0.008, +0.016]               0.327      0.418  [0.
           DUEL   Δcorr -0.068 [-0.23,+0.11]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.03   Δ|level| +0.011*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── BRONZE PITCHERS — N=22 well-sampled cards with both predictions ───
+─── BRONZE PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=22 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 K9        OURS     +0.64*   [+0.42, +0.86]                  7.39      0.943  [0.86,0.98]   0.97    0.29   0.89    0.94   0.95     1%
@@ -205,8 +220,13 @@ wOBAA     OURS    +0.020*   [+0.016, +0.024]               0.303      0.482  [0.
           DUEL   Δcorr -0.157 [-0.48,+0.14]   (Δshape-MAE +0.002  = shape+spread composite)  Δ|ln spread| -0.53   Δ|level| +0.018*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── BRONZE HITTERS — N=35 well-sampled cards with both predictions ───
+─── BRONZE HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=35 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 BB%       OURS     +0.73*   [+0.55, +0.91]                  8.09      0.977  [0.95,0.99]   0.98    0.40   0.90    0.92   0.93     2%
@@ -230,8 +250,13 @@ wOBA      OURS    +0.014*   [+0.011, +0.017]               0.322      0.582  [0.
           DUEL   Δcorr +0.066 [-0.16,+0.27]   (Δshape-MAE -0.001  = shape+spread composite)  Δ|ln spread| -0.25   Δ|level| +0.012*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── SILVER PITCHERS — N=17 well-sampled cards with both predictions ───
+─── SILVER PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=17  ⚠THIN (no absolute-spread weight) ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 K9        OURS     +0.94*   [+0.76, +1.13]                  7.43      0.929  [0.81,0.97]   0.87    0.33   1.03    1.11   1.13     3%
@@ -250,13 +275,18 @@ BABIP     OURS    +0.008*   [+0.006, +0.010]               0.290      0.874  [0.
           cwhit   -0.000    [-0.002, +0.002]               0.290      0.923  [0.79,0.97]   0.88   0.004   1.13    1.23   1.64    44%
           DUEL   Δcorr -0.049 [-0.13,+0.01]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.09   Δ|level| +0.008*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
-wOBAA     OURS    +0.016*   [+0.013, +0.019]               0.305      0.604  [0.17,0.84]   0.70   0.005   0.73    1.21   2.75    81%
-          cwhit   -0.001    [-0.003, +0.001]               0.305      0.728  [0.38,0.90]   0.74   0.003   0.46    0.63   1.44    81%
+wOBAA     OURS    +0.016*   [+0.013, +0.019]               0.305      0.604  [0.17,0.84]   0.70   0.005   0.73    1.21  UNREL    81%↑186%
+          cwhit   -0.001    [-0.003, +0.001]               0.305      0.728  [0.38,0.90]   0.74   0.003   0.46    0.63  UNREL    81%↑186%
           DUEL   Δcorr -0.125 [-0.26,+0.05]   (Δshape-MAE +0.002  = shape+spread composite)  Δ|ln spread| -0.27   Δ|level| +0.015*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── SILVER HITTERS — N=34 well-sampled cards with both predictions ───
+─── SILVER HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=34 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 BB%       OURS     +1.23*   [+0.98, +1.48]                  6.26      0.966  [0.93,0.98]   0.96    0.58   1.06    1.10   1.12     3%
@@ -280,8 +310,13 @@ wOBA      OURS    +0.011*   [+0.007, +0.016]               0.323      0.489  [0.
           DUEL   Δcorr -0.008 [-0.22,+0.23]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| +0.03   Δ|level| +0.008*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── GOLD PITCHERS — N=11 well-sampled cards with both predictions ───
+─── GOLD PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=11  ⚠THIN (no absolute-spread weight) ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 K9        OURS     -0.18*   [-0.34, -0.02]                  7.71      0.955  [0.83,0.99]   0.94    0.22   1.01    1.06   1.09     5%
@@ -292,21 +327,26 @@ BB9       OURS     +0.56*   [+0.44, +0.69]                  2.73      0.975  [0.
           cwhit    -0.04    [-0.14, +0.07]                  2.73      0.993  [0.97,1.00]   0.99    0.14   0.84    0.85   0.86     2%
           DUEL   Δcorr -0.018 [-0.04,-0.00]*  (Δshape-MAE +0.01  = shape+spread composite)  Δ|ln spread| -0.14   Δ|level| +0.53*
                  ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): TIE    LEVEL: CWHIT
-HR9       OURS     +0.14*   [+0.11, +0.18]                  0.79      0.938  [0.77,0.98]   0.91    0.04   0.80    0.85   0.96    21%
-          cwhit    +0.07*   [+0.03, +0.10]                  0.79      0.948  [0.81,0.99]   0.73    0.05   0.70    0.74   0.83    21%
+HR9       OURS     +0.14*   [+0.11, +0.18]                  0.79      0.938  [0.77,0.98]   0.91    0.04   0.80    0.85  UNREL    21%↑134%
+          cwhit    +0.07*   [+0.03, +0.10]                  0.79      0.948  [0.81,0.99]   0.73    0.05   0.70    0.74  UNREL    21%↑134%
           DUEL   Δcorr -0.010 [-0.06,+0.19]   (Δshape-MAE -0.01  = shape+spread composite)  Δ|ln spread| -0.14   Δ|level| +0.08*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
-BABIP     OURS    +0.003*   [+0.000, +0.007]               0.299      0.844  [0.49,0.96]   0.90   0.004   0.88    1.05   1.60    57%
-          cwhit   -0.004*   [-0.008, -0.001]               0.299      0.858  [0.53,0.96]   0.86   0.004   1.04    1.21   1.85    57%
+BABIP     OURS    +0.003*   [+0.000, +0.007]               0.299      0.844  [0.49,0.96]   0.90   0.004   0.88    1.05  UNREL    57%↑150%
+          cwhit   -0.004*   [-0.008, -0.001]               0.299      0.858  [0.53,0.96]   0.86   0.004   1.04    1.21  UNREL    57%↑150%
           DUEL   Δcorr -0.015 [-0.04,+0.02]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.14   Δ|level| -0.001 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
-wOBAA     OURS    +0.016*   [+0.013, +0.020]               0.308      0.221  [-0.44,0.72]   0.16   0.005   0.14    0.64    n/a   112%
-          cwhit   -0.007*   [-0.011, -0.004]               0.308      0.511  [-0.13,0.85]   0.46   0.004   0.28    0.54    n/a   112%
+wOBAA     OURS    +0.016*   [+0.013, +0.020]               0.308      0.221  [-0.44,0.72]   0.16   0.005   0.14    0.64  UNREL   112%↑375%
+          cwhit   -0.007*   [-0.011, -0.004]               0.308      0.511  [-0.13,0.85]   0.46   0.004   0.28    0.54  UNREL   112%↑375%
           DUEL   Δcorr -0.291 [-0.88,+0.11]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.17   Δ|level| +0.009*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── GOLD HITTERS — N=26 well-sampled cards with both predictions ───
+─── GOLD HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=26 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 BB%       OURS     +1.51*   [+1.20, +1.81]                  6.67      0.948  [0.89,0.98]   0.96    0.54   1.15    1.21   1.28     9%
@@ -325,13 +365,18 @@ BABIP     OURS    +0.015*   [+0.011, +0.019]               0.292      0.873  [0.
           cwhit   +0.000    [-0.003, +0.004]               0.292      0.891  [0.77,0.95]   0.90   0.007   0.81    0.90   1.14    37%
           DUEL   Δcorr -0.018 [-0.07,+0.02]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.01   Δ|level| +0.015*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
-wOBA      OURS    +0.013*   [+0.009, +0.017]               0.324      0.403  [0.02,0.68]   0.31   0.010   0.25    0.62    n/a   106%
-          cwhit   -0.002    [-0.006, +0.003]               0.324      0.395  [0.01,0.68]   0.20   0.010   0.22    0.55    n/a   106%
+wOBA      OURS    +0.013*   [+0.009, +0.017]               0.324      0.403  [0.02,0.68]   0.31   0.010   0.25    0.62  UNREL   106%↑207%
+          cwhit   -0.002    [-0.006, +0.003]               0.324      0.395  [0.01,0.68]   0.20   0.010   0.22    0.55  UNREL   106%↑207%
           DUEL   Δcorr +0.008 [-0.14,+0.19]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.11   Δ|level| +0.011*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
-─── DIAMOND HITTERS — N=10 well-sampled cards with both predictions ───
+─── DIAMOND HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=10  ⚠THIN (no absolute-spread weight) ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
                  ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
 channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
 BB%       OURS     +1.07*   [+0.53, +1.61]                  5.91      0.948  [0.79,0.99]   0.92    0.70   1.31    1.38   1.49    14%
@@ -346,15 +391,18 @@ HR600     OURS     +0.88    [-1.31, +3.07]                 14.60      0.860  [0.
           cwhit    +1.90    [-0.21, +4.01]                 14.60      0.858  [0.50,0.97]   0.85    2.16   0.67    0.78   0.84    14%
           DUEL   Δcorr +0.002 [-0.02,+0.02]   (Δshape-MAE +0.19  = shape+spread composite)  Δ|ln spread| +0.12   Δ|level| -1.02 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
-BABIP     OURS    +0.011*   [+0.005, +0.018]               0.291      0.929  [0.72,0.98]   0.85   0.008   0.63    0.68   0.84    34%
-          cwhit   +0.002    [-0.004, +0.008]               0.291      0.955  [0.82,0.99]   0.92   0.007   0.63    0.66   0.82    34%
+BABIP     OURS    +0.011*   [+0.005, +0.018]               0.291      0.929  [0.72,0.98]   0.85   0.008   0.63    0.68  UNREL    34%↑215%
+          cwhit   +0.002    [-0.004, +0.008]               0.291      0.955  [0.82,0.99]   0.92   0.007   0.63    0.66  UNREL    34%↑215%
           DUEL   Δcorr -0.027 [-0.14,+0.07]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.03   Δ|level| +0.009*
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
-wOBA      OURS    +0.014*   [+0.005, +0.023]               0.321      0.703  [0.13,0.92]   0.10   0.013   0.37    0.53   0.71    44%
-          cwhit   +0.001    [-0.007, +0.009]               0.321      0.908  [0.65,0.98]   0.87   0.009   0.40    0.44   0.60    44%
+wOBA      OURS    +0.014*   [+0.005, +0.023]               0.321      0.703  [0.13,0.92]   0.10   0.013   0.37    0.53  UNREL    44%↑454%
+          cwhit   +0.001    [-0.007, +0.009]               0.321      0.908  [0.65,0.98]   0.87   0.009   0.40    0.44  UNREL    44%↑454%
           DUEL   Δcorr -0.205 [-1.23,+0.01]   (Δshape-MAE +0.004  = shape+spread composite)  Δ|ln spread| -0.18   Δ|level| +0.013 
                  ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
   (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
 
 
 ╔═══ B. OBSERVED-ONLY AXIS — ours vs observed, EVERY tier (no cwhit projection needed) ═══════╗

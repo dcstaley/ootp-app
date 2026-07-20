@@ -36,7 +36,7 @@ import { parseCatalogCsv } from "../src/data/catalog.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import {
   agreement, duel, pearson, per9NoiseVar, babipNoiseVar, pctNoiseVar, per600NoiseVar, BF_PER_9,
-  wobaNoiseCells, wobaNoiseVar,
+  wobaNoiseCells, wobaNoiseVar, noiseShareCiUpper,
   type Agreement,
 } from "../src/eval/cwhit/scorecard.ts";
 import {
@@ -208,6 +208,12 @@ console.log(`SPREAD = SD(pred)/SD(obs). Observed SD is noise-inflated ⇒ the ra
 console.log(`slope  = OLS of de-meaned pred on de-meaned obs; 1.0 = right responsiveness, <1 = we under-react to the rating signal.`);
 
 const MIN_N = 5;
+// Cells below this N carry NO ABSOLUTE-SPREAD WEIGHT (ruling 5, 2026-07-20). They still PRINT —
+// thinness is information; the diamond-pit dead cell taught us that — but they are marked so a
+// reader cannot mistake a thin cell for a measurement. Note this bounds the ABSOLUTE read only:
+// DUEL verdicts score both models on the SAME observed series, so sampling noise cancels BETWEEN
+// them and a thin/unreliable cell can still carry a valid ours-vs-cwhit comparison.
+const THIN_N = 20;
 const threeWayAll = QUICK.flatMap(({ tier }) => (["pit", "hit"] as const).map((role) => ({ tier, role, rows: recs.filter((r) => r.tier === tier && r.role === role && r.proj && wellSampled(r)) })));
 const threeWay = threeWayAll.filter((x) => x.rows.length >= MIN_N);
 // A tier×role that HAS a projected fixture but too few well-sampled joined cards must say so out
@@ -222,19 +228,33 @@ if (!threeWay.length) console.log(`\n  (no tier×role has ≥${MIN_N} well-sampl
 
 const verdicts: { tier: string; role: string; ch: string; shape: string; spread: string; level: string; d: ReturnType<typeof duel> }[] = [];
 for (const { tier, role, rows } of threeWay) {
-  console.log(`\n─── ${tier.toUpperCase()} ${role === "pit" ? "PITCHERS" : "HITTERS"} — N=${rows.length} well-sampled cards with both predictions ───`);
+  // LOUD POPULATION LABEL (2026-07-20). Sections A and B print the SAME statistics for DIFFERENT
+  // populations. A number was once quoted off Section A as if it were the general result — see plan
+  // §15.8. State the population and N in the header, and point at the fuller sample.
+  console.log(`\n─── ${tier.toUpperCase()} ${role === "pit" ? "PITCHERS" : "HITTERS"} — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=${rows.length}${rows.length < THIN_N ? "  ⚠THIN (no absolute-spread weight)" : ""} ───`);
+  console.log(`     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.`);
+  console.log(`     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).`);
   console.log(`                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐`);
   console.log(`channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%`);
   for (const { key, lbl, d } of CH[role]) {
     const obs = rows.map((r) => r.obs[key]!), nv = rows.map((r) => noiseOf(r, key));
     const useNv = nv.every((x) => Number.isFinite(x)) ? nv : undefined;
+    // RELIABILITY GATE (2026-07-20). A noise share ≥ 1 is physically impossible — sampling noise
+    // cannot exceed total observed variance — so the deconvolved SD collapses and dcv is garbage.
+    // Tested on the CI UPPER, not the point estimate: gold pitchers read a POINT share of 75% with
+    // a CI to 199% and printed a dcv of 2.17 as if it were a measurement. FLAG, DO NOT SUPPRESS:
+    // the row still prints (thinness is itself information — the diamond-pit dead cell taught us
+    // that), but dcv is replaced by an explicit marker so it cannot be read as a number.
+    // dcvBad depends only on (obs, noiseVar) — it is a property of the CELL, not of either predictor.
+    const nsHi = useNv ? noiseShareCiUpper(obs, useNv) : NaN;
+    const dcvBad = Number.isFinite(nsHi) && nsHi >= 1;
     const lines: [string, Agreement][] = [["OURS", agreement(rows.map((r) => r.ours[key]!), obs, useNv)], ["cwhit", agreement(rows.map((r) => r.proj![key]!), obs, useNv)]];
     for (const [who, a] of lines) {
       console.log(
         `${(who === "OURS" ? lbl : "").padEnd(9)} ${who.padEnd(6)} ${sgn(a.level.bias, d).padStart(7)}${a.level.sig ? "*" : " "}   [${sgn(a.level.ciLo, d)}, ${sgn(a.level.ciHi, d)}]`.padEnd(58) +
         `${f(rows.reduce((s, r) => s + r.obs[key]!, 0) / rows.length, d).padStart(6)}      ` +
         `${f(a.shape.corr, 3).padStart(5)}  [${f(a.shape.corrLo, 2)},${f(a.shape.corrHi, 2)}]  ${f(a.shape.spearman, 2).padStart(5)}  ${f(a.shape.mae, d).padStart(6)}  ${f(a.shape.slope, 2).padStart(5)}   ` +
-        `${f(a.spread.ratio, 2).padStart(5)}  ${f(a.spread.ratioDeconv, 2).padStart(5)}  ${(Number.isFinite(a.spread.noiseShare) ? `${f(a.spread.noiseShare * 100, 0)}%` : "n/a").padStart(5)}`,
+        `${f(a.spread.ratio, 2).padStart(5)}  ${(dcvBad ? "UNREL" : f(a.spread.ratioDeconv, 2)).padStart(5)}  ${(Number.isFinite(a.spread.noiseShare) ? `${f(a.spread.noiseShare * 100, 0)}%` : "n/a").padStart(5)}${dcvBad ? `↑${f(nsHi * 100, 0)}%` : ""}`,
       );
     }
     // The DUEL — paired bootstrap on the ours-minus-cwhit gap (the only defensible "who wins").
@@ -254,6 +274,9 @@ for (const { tier, role, rows } of threeWay) {
     verdicts.push({ tier, role, ch: lbl, shape: shapeV, spread: spreadV, level: levelV, d: dl });
   }
   console.log(`  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)`);
+  console.log(`  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is`);
+  console.log(`   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < ${THIN_N}. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed`);
+  console.log(`   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)`);
 }
 
 // ═══ B. OBSERVED-ONLY (incl. the IRON GATE) ═════════════════════════════════

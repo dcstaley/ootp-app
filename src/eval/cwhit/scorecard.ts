@@ -442,6 +442,31 @@ function rng(seed: number): () => number {
   let a = seed >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
+/** 97.5th-percentile bootstrap upper bound on a cell's NOISE SHARE (mean sampling var ÷ observed
+ *  var). A share ≥ 1 is PHYSICALLY IMPOSSIBLE — it says sampling noise exceeds the total observed
+ *  variance — so the deconvolved SD collapses to ~0 and the dcv ratio explodes to garbage.
+ *
+ *  Why the CI UPPER and not the point estimate: the motivating case (gold pitchers, N=15) had a
+ *  POINT share of 75% with a CI reaching 199%. A point-estimate test passes that cell and prints a
+ *  dcv of 2.17 as if it were a measurement. Callers should mark such cells UNRELIABLE.
+ *
+ *  Deterministic (mulberry32, same convention as `duel`) so committed fixtures are reproducible. */
+export function noiseShareCiUpper(obs: number[], noiseVar: number[], B = 2000, seed = 20260720): number {
+  const n = obs.length;
+  if (n < 3 || noiseVar.length !== n || !noiseVar.every((x) => Number.isFinite(x))) return NaN;
+  const rnd = rng(seed);
+  const shares: number[] = [];
+  for (let b = 0; b < B; b++) {
+    const io: number[] = [], iv: number[] = [];
+    for (let i = 0; i < n; i++) { const k = Math.floor(rnd() * n); io.push(obs[k]!); iv.push(noiseVar[k]!); }
+    const vo = sdPop(io) ** 2;
+    if (vo > 0) shares.push(mean(iv) / vo);
+  }
+  if (!shares.length) return NaN;
+  shares.sort((a, b) => a - b);
+  return shares[Math.min(shares.length - 1, Math.floor(0.975 * shares.length))]!;
+}
+
 export interface Delta { est: number; lo: number; hi: number; sig: boolean }
 export interface Duel {
   n: number;
