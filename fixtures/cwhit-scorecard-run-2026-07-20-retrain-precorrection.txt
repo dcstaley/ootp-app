@@ -1,4 +1,12 @@
 ################################################################################
+# SUPERSEDED 2026-07-21 — PREVIOUS MODEL GENERATION.
+# This run used league-41-42 + K_SPREAD_PIT {A:9.5394, G:319}. The live unit is
+# now league-42-43 + {A:5.0871, G:152.5}. Use
+#   fixtures/cwhit-scorecard-run-2026-07-21-live-*.txt
+# as the comparison baseline. Retained as the historical record of this
+# generation only — do NOT diff forward-looking work against it.
+################################################################################
+################################################################################
 # INSTRUMENT (2026-07-20): composite deconvolution ENABLED + reliability markers.
 #  · dcv is now POPULATED for composites (wOBA / wOBAA). In ALL runs before this
 #    date it read `n/a` — scorecard `noiseOf` returned NaN on the false premise that

@@ -1773,3 +1773,39 @@ either a **coherent shape** (monotone in gap, era or tier) or **replication in i
   analyst error; an instrument that prints the same statistic for two different populations under quiet
   headers invites it.
 - **Report both axes always**; a spread read that is not noise-deconvolved is not a spread read.
+
+### 15.9 Doctrine additions (2026-07-21) — window-advancing retrains, executable pins
+
+Three rulings from the `league-42-43` activation cycle. All three are standing.
+
+**(a) Task-0 after a WINDOW-ADVANCING retrain is a refit-and-compare-shape, not a cell-movement test.**
+The null is *"shape params agree within CI"*, not *"cells did not move"*. Absolute cell-movement
+thresholds (the `>0.05` rule) apply only to **same-window** retrains.
+Rationale: the league frame strengthens every window, so gaps against a fixed pool drift and the
+correction constants go stale **by construction**. A window-advancing retrain that moves cells is
+behaving normally; the 2026-07-21 A2 run fired its gate with nothing wrong anywhere. Note the
+premise operates **per channel** — aggregate improvement is *not* per-channel monotone. On
+[2041,2042]→[2042,2043] the hitter frame rose on `eye` +2.90 / `pow` +2.43 / `babip` +1.20 but FELL
+on `kRat` −1.76, and `kRat` is the one channel the K ramp keys on. Do not reason from the aggregate
+to a channel.
+
+**(b) Compare ramps on β over the observed gap range — NEVER on raw {A,G}.**
+`G` is identified only as a lower bound (SSE flat within 5% of the linear limit across a wide `G`
+range), so a `G` point value is a **pinning-rule outcome, not an estimate**. Comparing `{A,G}` across
+fits compares two pinning outcomes. Compare each ramp's local slope over **its own** observed gaps,
+and cross-check at **matched** gaps.
+Also: never compare against a run's **linear-limit** figure — that is a different member of the
+within-5%-SSE family (`G→∞`), not the pinned ramp. Mixing the two produced a "+8%" claim in the
+2026-07-21 relay that was actually **+5.4%**; the error survived one hop between analysts because
+the second reader repeated the number without checking its producer.
+
+**(c) EXECUTABLE PINS, NOT COMMENTS — now doctrine.**
+Any recorded numeric convention — ramp constants, comparison framings, gate thresholds — gets a
+**test pin**, not a prose note.
+Proof case: the β pin written to *encode* convention (b) immediately **failed on its own author's
+mis-encoding of it**, catching the +8%/+5.4% error before it reached production provenance. A
+comment cannot do that. Corollary: when a pinned constant legitimately changes, the pin FAILING is
+the system working — refresh it as part of the reviewed change, never weaken or delete it.
+
+Related: [15.8](#158-measurement-correction-2026-07-20--two-retractions-one-instrument-cause) records
+the instrument-defect pattern these are guarding against.
