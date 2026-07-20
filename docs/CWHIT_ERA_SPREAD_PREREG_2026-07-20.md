@@ -155,7 +155,7 @@ Fit on the remaining clean points; never on any cap/slots format for the era ter
 
 | gate | requirement | fail ⇒ |
 |---|---|---|
-| **G0 — park orthogonality** *(superseded — see Amendment, item 2)* | The fitted era residual must be uncorrelated with the point's park factors (avg, hr, hr-handedness split, gap), CI including 0; OR the model must carry an explicit park term and the era term must survive its inclusion CI-clear. | HOLD. Without this the fit is a park fit wearing an era label. |
+| **G0 — park orthogonality** *(superseded — see Amendment, item 2; **HR/BABIP limb CLOSED — see Amendment 2**)* | The fitted era residual must be uncorrelated with the point's park factors (avg, hr, hr-handedness split, gap), CI including 0; OR the model must carry an explicit park term and the era term must survive its inclusion CI-clear. | HOLD. Without this the fit is a park fit wearing an era label. |
 | **G1 — held-out spread** | On `gold-rush`, predicted `s` must cover the measured K-spread calibration slope, and the post-correction spread ratio must move toward 1.0 **CI-clear** (paired bootstrap on the same cards, Δ excluding 0). Noise-deconvolved (dcv) throughout; never a raw ratio. | HOLD. |
 | **G2 — extreme-band held-out** | Same on `bronze-heart`. | HOLD. |
 | **G3 — no ordering regression** | On every scored format, no ordering metric (corr/Spearman/regret) may degrade CI-clear. Ordering-neutral is the requirement; ordering gain is not needed. | HOLD. |
@@ -167,6 +167,12 @@ Reporting is two-axis on every gate: **ordering and spacing both, always.** A sp
 ordering-only report is not a gate result.
 
 ## 5. era_hr — measure, do not assume
+
+*(superseded — see **Amendment 2**. This section reads as though the HR fit were merely pending;
+it is not. G0's HR/BABIP limb is CLOSED and `era_hr` is formally UNIDENTIFIED park-free. The
+identifiability argument below is about the ERA DESIGN MATRIX — it shows K and HR are not
+collinear across the era set, which remains true — and it says nothing about the PARK confound,
+which is what actually blocks the channel. Do not read §5 alone as authorising an HR fit.)*
 
 The queue says to check whether `era_hr` needs the same treatment and explicitly not to assume it.
 Pre-registered: run the **identical** residual measurement on the HR channel against `era_hr`
@@ -308,3 +314,63 @@ Whichever identifying data lands first runs first.
 1. the cap instrument itself;
 2. promoting `nightmare-cap` and `bronze-cap` into the era fit as extra points;
 3. unlocking `cwhit-cap` on the HR channel (item 1).
+
+---
+
+## AMENDMENT 2 — 2026-07-20 (G0 fallback invoked: era_hr UNIDENTIFIED park-free)
+
+Amendment 1 item 2 made G0 channel-conditional: K and BB are park-clean by construction, but any
+HR/BABIP-channel era claim requires park-neutral or park-matched data. It was then established that
+**ZERO tournaments in the game are uncapped + park-neutral + non-modern** — the requirement is
+unsatisfiable with data that can exist.
+
+A within-format **handedness-contrast** route was proposed as an alternative identification strategy:
+park HR factors are handedness-split, era factors are not, so an L-vs-R contrast inside one format
+holds era, pool, budget and window constant by construction. It was accepted **only** conditional on
+a mandatory dry-run against existing captures, with a pre-registered fallback if the dry-run failed.
+
+**The dry-run failed.** Tool: `tools/park-hand-contrast.ts`, commit `176bf84`.
+
+### 1. Dry-run results
+
+**Pre-measurement verifications — all three resolved.**
+
+1. `hr_l` / `hr_r` ARE batter-handedness (`src/scoring-core/helpers.ts:37-49`). The switch-hitter
+   branch takes `hr_l` vs RHP and `hr_r` vs LHP — i.e. it follows the side batted from. A
+   to-left-field reading could not flip with the PITCHER's hand.
+2. `cp(p) = 1 + (p − 1)·0.26`.
+3. Non-neutral env plumbing works.
+
+**Measurements.**
+
+| point | true contrast | measured Λ_net | 95% CI | verdict |
+|---|---|---|---|---|
+| Quick null (5 park-1 tiers) | **ZERO by construction** | **+0.079** | [+0.033, +0.128] | CI-clear ⇒ a REAL hand-correlated model bias exists |
+| `early-gold` (near-null gate) | bounded ±0.014 under ANY compression | **−0.223** | [−0.354, −0.092] | CI-clear, **≈16× the bound** ⇒ **GATE FAILED** |
+| `bronze-heart` (largest lever, dHr +0.490) | — | **−0.577** | [−0.756, −0.399] | exceeds even the fully-uncompressed prediction of −0.424 ⇒ **no compression in [0,4] solves it; physically inadmissible** |
+| `gold-cap` (dHr −0.235, opposite sign) | — | implied compression **0.617** | [0.18, 1.08] | net CI **includes 0** ⇒ equally consistent with `cp` = 0.26 |
+
+The near-null failure is the load-bearing one: the estimator carries a **FORMAT-SPECIFIC**
+hand-correlated nuisance that is not park. Being per-format, the Quick null cannot absorb it.
+
+**Pitchers are dead BY CONSTRUCTION.** Trained exposure has RHP facing 46.1% RHB and LHP 75.8%, so
+the LHP−RHP contrast retains only **0.296** of the hitter contrast, **with the sign reversed**.
+
+### 2. Ruling
+
+1. **`era_hr` is formally UNIDENTIFIED PARK-FREE.** G0 is **CLOSED** for the HR and BABIP channels.
+   An unpassable gate must not stand as if it might pass.
+2. **G0 remains LIVE and unchanged for K and BB**, which are park-clean by construction (Amendment 1
+   item 2). The era-K fit is unaffected by any of this.
+3. **The one-cp structure is NEITHER falsified NOR confirmed.** This instrument cannot adjudicate it:
+   the only physically admissible lever (`gold-cap`) is statistically consistent with `cp` = 0.26, and
+   `bronze-heart`'s excursion is better read as evidence against the ESTIMATOR than against the model.
+   **Do not cite the dry-run as evidence about `cp` in either direction.**
+4. **Methodological trap, recorded for future readers.** In the mis-specified **ABSOLUTE** frame the
+   two levers' implied compressions overlap tidily at **1.58** and **0.88** — a clean-looking "reality
+   is uncompressed" answer. It is an artifact of netting a level-scaled null across formats whose mean
+   ranges **4.2 to 17.2 HR600**. The scale-free **LOG** frame is the valid one, and the near-null gate
+   is what exposed the mis-specification. The gate earned its place in the design.
+5. The same handedness route was flagged as potentially extending to **BABIP** via park `avg_l`/`avg_r`
+   splits (relevant to the parked Early Gold BABIP 1.50 question). That extension is **CLOSED** by the
+   same failure — the demonstrated nuisance is not channel-specific.
