@@ -20,6 +20,7 @@ import { loadWindow, type TrainObs } from "../src/training/loader.ts";
 import { PITCHER } from "../src/training/bakeoff.ts";
 import { fitPitForm, STUFFAUG_PIT, RAWQUAD_PIT } from "../src/training/forms.ts";
 import type { EventForm, FittedHit } from "../src/model/curves.ts";
+import { wobaNoiseVar } from "../src/eval/cwhit/scorecard.ts";
 
 const num = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const repo = new Repository("data");
@@ -62,7 +63,13 @@ const DUMMY_HIT = trained.eventForm.hit as FittedHit; // hitter form irrelevant 
 const per600 = (x: number, d: number) => (d > 0 ? (x * 600) / d : 0);
 const wvar = (x: number[], wt: number[]) => { const sw = wt.reduce((a, b) => a + b, 0); const m = x.reduce((a, v, i) => a + wt[i]! * v, 0) / sw; return x.reduce((a, v, i) => a + wt[i]! * (v - m) ** 2, 0) / sw; };
 const wmean = (x: number[], wt: number[]) => { const sw = wt.reduce((a, b) => a + b, 0); return x.reduce((a, v, i) => a + wt[i]! * v, 0) / sw; };
-const seW = (uBB: number, HmHR: number, HR: number, XBH: number, d: number) => { const t: [number, number][] = [[w.bb, uBB / 600], [w.b1, (HmHR - XBH) / 600], [w.xbh, XBH / 600], [w.hr, HR / 600]]; const E = t.reduce((a, [ww, p]) => a + ww * p, 0), E2 = t.reduce((a, [ww, p]) => a + ww * ww * p, 0); return d > 0 ? Math.sqrt(Math.max(E2 - E * E, 0) / d) : 0; };
+// COMPOSITE NOISE — the multinomial weighted-sum variance is IMPORTED, not re-derived.
+// This file previously carried its own `seW`. It was arithmetically correct — and that is the
+// point: FOUR tools held the correct closed form while tools/cwhit-scorecard.ts asserted "a
+// composite; no clean binomial form" and returned NaN, which produced two retracted findings on
+// 2026-07-20 (plan §15.8). The form now lives once, in src/eval/cwhit/scorecard.ts.
+// Local wrapper keeps this file's units: per-600 rates -> proportions, and SD not variance.
+const seW = (uBB: number, HmHR: number, HR: number, XBH: number, d: number) => Math.sqrt(wobaNoiseVar([{ p: uBB / 600, w: w.bb }, { p: (HmHR - XBH) / 600, w: w.b1 }, { p: XBH / 600, w: w.xbh }, { p: HR / 600, w: w.hr }], d));
 
 interface Row { pred: number; real: number; w: number; se: number; role: "SP" | "RP" | "swing" }
 function rows(ef: EventForm): Row[] {

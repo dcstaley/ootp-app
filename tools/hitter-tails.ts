@@ -19,6 +19,7 @@ import { loadWindow, type TrainObs } from "../src/training/loader.ts";
 import { HITTER, PITCHER } from "../src/training/bakeoff.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT } from "../src/training/forms.ts";
 import type { EventForm, FittedHit, FittedPit } from "../src/model/curves.ts";
+import { wobaNoiseVar } from "../src/eval/cwhit/scorecard.ts";
 
 const R2 = { kind: "rawpoly", degree: 2 } as const;
 const repo = new Repository("data");
@@ -41,7 +42,13 @@ const w = wobaWeightsFromCoeffs(coeffs);
 const per600 = (x: number, d: number) => (d > 0 ? (x * 600) / d : 0);
 const wvar = (x: number[], wt: number[]) => { const sw = wt.reduce((a, b) => a + b, 0); const m = x.reduce((a, v, i) => a + wt[i]! * v, 0) / sw; return x.reduce((a, v, i) => a + wt[i]! * (v - m) ** 2, 0) / sw; };
 const wmean = (x: number[], wt: number[]) => { const sw = wt.reduce((a, b) => a + b, 0); return x.reduce((a, v, i) => a + wt[i]! * v, 0) / sw; };
-const seW = (uBB: number, HmHR: number, HR: number, XBH: number, d: number) => { const t: [number, number][] = [[w.bb, uBB / 600], [w.b1, (HmHR - XBH) / 600], [w.xbh, XBH / 600], [w.hr, HR / 600]]; const E = t.reduce((a, [ww, p]) => a + ww * p, 0), E2 = t.reduce((a, [ww, p]) => a + ww * ww * p, 0); return d > 0 ? Math.sqrt(Math.max(E2 - E * E, 0) / d) : 0; };
+// COMPOSITE NOISE — the multinomial weighted-sum variance is IMPORTED, not re-derived.
+// This file previously carried its own `seW`. It was arithmetically correct — and that is the
+// point: FOUR tools held the correct closed form while tools/cwhit-scorecard.ts asserted "a
+// composite; no clean binomial form" and returned NaN, which produced two retracted findings on
+// 2026-07-20 (plan §15.8). The form now lives once, in src/eval/cwhit/scorecard.ts.
+// Local wrapper keeps this file's units: per-600 rates -> proportions, and SD not variance.
+const seW = (uBB: number, HmHR: number, HR: number, XBH: number, d: number) => Math.sqrt(wobaNoiseVar([{ p: uBB / 600, w: w.bb }, { p: (HmHR - XBH) / 600, w: w.b1 }, { p: XBH / 600, w: w.xbh }, { p: HR / 600, w: w.hr }], d));
 interface Row { pred: number; real: number; w: number; se: number }
 const spreadRatio = (rs: Row[]) => { const sPred = Math.sqrt(wvar(rs.map((r) => r.pred), rs.map((r) => r.w))); const sTrue = Math.sqrt(Math.max(wvar(rs.map((r) => r.real), rs.map((r) => r.w)) - wmean(rs.map((r) => r.se ** 2), rs.map((r) => r.w)), 1e-9)); return sPred / sTrue; };
 const pear = (rs: Row[]) => { const p = rs.map((r) => r.pred), a = rs.map((r) => r.real), wt = rs.map((r) => r.w); const mp = wmean(p, wt), mr = wmean(a, wt); let c = 0, vp = 0, vr = 0; for (let i = 0; i < p.length; i++) { const dp = p[i]! - mp, dr = a[i]! - mr; c += wt[i]! * dp * dr; vp += wt[i]! * dp * dp; vr += wt[i]! * dr * dr; } return c / Math.sqrt(vp * vr); };

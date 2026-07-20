@@ -22,6 +22,7 @@ import type { EventForm } from "../src/model/curves.ts";
 import { cleanTournamentRows } from "../src/eval/tournament-clean.ts";
 import { parseCatalogCsv } from "../src/data/catalog.ts";
 import { rowEligible } from "../src/config/eligibility.ts";
+import { wobaNoiseVar } from "../src/eval/cwhit/scorecard.ts";
 
 const sPitFn = (g: number) => 1 + 1.03 * (1 - Math.exp(-g / 14.5));
 const sHitFn = (g: number) => 1 + 0.76 * (1 - Math.exp(-g / 17.5));
@@ -51,7 +52,13 @@ const nw = wobaWeightsFromCoeffs(nCoeffs);
 
 const wvar = (x: number[], w: number[]) => { const sw = w.reduce((a, b) => a + b, 0); const m = x.reduce((a, v, i) => a + w[i]! * v, 0) / sw; return x.reduce((a, v, i) => a + w[i]! * (v - m) ** 2, 0) / sw; };
 const wmean = (x: number[], w: number[]) => { const sw = w.reduce((a, b) => a + b, 0); return x.reduce((a, v, i) => a + w[i]! * v, 0) / sw; };
-const seW = (rate: { uBB: number; HmHR: number; HR: number; XBH: number }, denom: number) => { const t: [number, number][] = [[nw.bb, rate.uBB / 600], [nw.b1, (rate.HmHR - rate.XBH) / 600], [nw.xbh, rate.XBH / 600], [nw.hr, rate.HR / 600]]; const E = t.reduce((a, [w, p]) => a + w * p, 0), E2 = t.reduce((a, [w, p]) => a + w * w * p, 0); return denom > 0 ? Math.sqrt(Math.max(E2 - E * E, 0) / denom) : 0; };
+// COMPOSITE NOISE — the multinomial weighted-sum variance is IMPORTED, not re-derived.
+// This file previously carried its own `seW`. It was arithmetically correct — and that is the
+// point: FOUR tools held the correct closed form while tools/cwhit-scorecard.ts asserted "a
+// composite; no clean binomial form" and returned NaN, which produced two retracted findings on
+// 2026-07-20 (plan §15.8). The form now lives once, in src/eval/cwhit/scorecard.ts.
+// Local wrapper keeps this file's units: per-600 rates -> proportions, and SD not variance.
+const seW = (rate: { uBB: number; HmHR: number; HR: number; XBH: number }, denom: number) => Math.sqrt(wobaNoiseVar([{ p: rate.uBB / 600, w: nw.bb }, { p: (rate.HmHR - rate.XBH) / 600, w: nw.b1 }, { p: rate.XBH / 600, w: nw.xbh }, { p: rate.HR / 600, w: nw.hr }], denom));
 const ratio = (cv: CardValues, se: number[]) => { const sPred = Math.sqrt(wvar(cv.pred, cv.w)); const sTrue = Math.sqrt(Math.max(wvar(cv.real, cv.w) - wmean(se.map((s) => s * s), cv.w), 1e-9)); return sPred / sTrue; };
 const pearson = (cv: CardValues) => { const mp = wmean(cv.pred, cv.w), mr = wmean(cv.real, cv.w); let c = 0, vp = 0, vr = 0; for (let i = 0; i < cv.pred.length; i++) { const dp = cv.pred[i]! - mp, dr = cv.real[i]! - mr; c += cv.w[i]! * dp * dr; vp += cv.w[i]! * dp * dp; vr += cv.w[i]! * dr * dr; } return c / Math.sqrt(vp * vr); };
 
