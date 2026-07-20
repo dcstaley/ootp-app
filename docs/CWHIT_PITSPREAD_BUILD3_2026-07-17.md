@@ -95,6 +95,16 @@ nil (wOBAA Δ −.004 ns, corr .94 stays .94), N=14, and the structure mirrors t
 gold-quick G2 exception Derek overruled (thin cell, non-replicating at matched gap in the
 sibling dataset). Rollback = the kill-switch.
 
+**FLAG 1 UPDATE (Derek ruling, 2026-07-20): quick-vs-daily is DEAD as a candidate axis.**
+Quicks, dailies, and weeklies have absolutely no functional difference (unlike league play).
+The live candidate is **CAP-mode pool composition**: salary caps force rosters to carry a huge
+selection of bad/cheap cards, so the REALIZED playing pool in cap formats is much wider (and
+weaker at the bottom) than the eligible-window pool our own-gap/spread machinery is computed
+from. Gold-quick (uncapped) vs gold-cap (capped) at the same nominal gap is exactly this
+contrast. Any future conditioning variable here is a cap property (cap tightness relative to
+pool prices / realized participant distribution), never format cadence. The new cap captures
+(Nightmare Cap, Cwhit Cap, Bronze Cap Weekly, Silver Cap) are the discriminating data.
+
 **FLAG 2 — BABIP era/environment residual (factor-conditioned framing):** Early Gold's BABIP
 slope stays 1.50 CI-clear post-correction (and pre, 1.71 — the largest BABIP defect measured
 anywhere). Unlike the K precedent (era_k 0.35 over-compressing predicted spread), **era_h at
