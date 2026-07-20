@@ -49,7 +49,7 @@ import { pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/a
 import { HBP_PER_PA } from "../src/eval/cwhit/scorecard.ts";
 import { qualityBins } from "../src/eval/cwhit/two-ledger.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK,
+  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK, inValueWindow,
   type Rec, type SampleDeps, type Exposure,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -117,10 +117,11 @@ function quantile(sorted: number[], p: number): number {
 }
 const poolQ = new Map<string, Record<string, Q>>();          // `${tier}|${role}` → axis → Q
 const poolRatings = new Map<string, Record<string, number>[]>();  // pool cards' ratings (for shares)
-for (const { tier, cap } of QUICK) {
+for (const win of QUICK) {
+  const { tier } = win;
   for (const role of ["pit", "hit"] as const) {
     const pool = baseCards
-      .filter((c) => n_(c["Card Value"]) <= cap && (role === "pit") === isPit(c))
+      .filter((c) => inValueWindow(c, win) && (role === "pit") === isPit(c))
       .map((c) => blendRatings(c, role));
     poolRatings.set(`${tier}|${role}`, pool);
     const q: Record<string, Q> = {};

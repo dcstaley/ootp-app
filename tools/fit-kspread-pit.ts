@@ -53,7 +53,7 @@ import { parseCwhitPit } from "../src/eval/cwhit/parse.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
-  QUICK, MIN_IP, FIELD_N, OBS_DIR,
+  QUICK, inValueWindow, MIN_IP, FIELD_N, OBS_DIR,
   type Rec, type SampleDeps, type KSpreadPit,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -141,8 +141,9 @@ interface TierCell {
   m: Mmse;
 }
 const cells: TierCell[] = [];
-for (const { tier, cap } of QUICK) {
-  const basePool = deps.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+for (const win of QUICK) {
+  const { tier } = win;
+  const basePool = deps.baseCards.filter((c) => inValueWindow(c, win));
   const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
   const gap = buildFrameShift(TM, poolField).pit.vR.stu ?? 0;
   const pt = buildPoolTransform(ref, poolField, deps.envelope);

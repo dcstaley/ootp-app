@@ -25,6 +25,7 @@ import { wls } from "../src/training/fit.ts";
 import { parseCwhitPit } from "../src/eval/cwhit/index.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/index.ts";
 import { pitWobaFromChannels, channelBias, spread, PER9_TO_PER600, type AuditRow, type WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
+import { QUICK, inValueWindow } from "../src/eval/cwhit/sample.ts";
 
 const FIX = "fixtures/cwhit", FIELD_N = 50, PER600_TO_PER9 = 1 / PER9_TO_PER600;
 const n = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
@@ -32,7 +33,6 @@ const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 const handLetter = (c: number) => (c === 2 ? "L" : c === 3 ? "S" : "R");
 const fmt = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
 // Quick-tier value caps (nested eligibility: a tier's pool = all cards ≤ cap). Iron 59 standard.
-const QUICK: { tier: string; cap: number }[] = [{ tier: "iron", cap: 59 }, { tier: "bronze", cap: 69 }, { tier: "silver", cap: 79 }, { tier: "gold", cap: 89 }, { tier: "diamond", cap: 99 }];
 
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
@@ -74,17 +74,18 @@ function combinedPit(c: Card, pt?: PoolTransform): { k9: number; bb9: number; hr
 
 // Build own-gap audit rows per Quick tier (transform pool = cards ≤ cap; predictions tier-specific).
 const rowsByMode: Record<"raw" | "owngap", AuditRow[]> = { raw: [], owngap: [] };
-for (const { tier, cap } of QUICK) {
+for (const win of QUICK) {
+  const { tier } = win;
   const f = `cwhit-${tier}-pit.tsv`;
   if (!readdirSync(FIX).includes(f)) continue;
-  const basePool = baseCards.filter((c) => n(c["Card Value"]) <= cap);
+  const basePool = baseCards.filter((c) => inValueWindow(c, win));
   const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
   const pt = buildPoolTransform(ref, poolField, envelope);
   // our-side cards eligible at this tier, predicted with the tier transform (own-gap) and without (raw).
   const mkCards = (mode: "raw" | "owngap"): { cards: JoinCard[]; byId: Map<string, { ratings: Record<string, number>; pred: Record<string, number> }> } => {
     const cards: JoinCard[] = [], byId = new Map<string, { ratings: Record<string, number>; pred: Record<string, number> }>();
     for (const bc of baseCards) for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as const) {
-      if (!isPitcher(c) || n(c["Card Value"]) > cap) continue;
+      if (!isPitcher(c) || !inValueWindow(c, win)) continue;
       const cid = `${bc["Card ID"]}${vlvl ? "#V" : ""}`, p = combinedPit(c, mode === "owngap" ? pt : undefined);
       cards.push({ cid, name: cardName(c), val: n(c["Card Value"]), vlvl, hand: handLetter(n(c["Throws"])), primary: [clamp01((n(c["Stamina"]) - 20) / 40), p.babip], validate: [p.k9, p.bb9, p.hr9] });
       byId.set(cid, { ratings: { con: n(c["Control vR"]), stu: n(c["Stuff vR"]), hrr: n(c["pHR vR"]), pbabip: n(c["pBABIP vR"]) }, pred: p });

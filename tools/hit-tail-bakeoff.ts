@@ -83,7 +83,7 @@ import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import { HBP_PER_PA } from "../src/eval/cwhit/scorecard.ts";
 import { mmse, meanEst } from "../src/eval/cwhit/two-ledger.ts";
 import {
-  buildCwhitSample, ourHit, wellSampled, handLetter, isPit, cardName, n_, FIELD_N, MIN_PA, QUICK,
+  buildCwhitSample, ourHit, wellSampled, handLetter, isPit, cardName, n_, FIELD_N, MIN_PA, QUICK, inValueWindow, type ValueWindow,
   type Rec, type SampleDeps, type Exposure,
 } from "../src/eval/cwhit/sample.ts";
 import {
@@ -269,10 +269,11 @@ function chStat(xs: number[]): ChStat {
 }
 function buildCtx(d: SampleDeps, pools: { tier: string; role: string; byChannel: Record<string, number[]> }[]): Map<string, TierCtx> {
   const out = new Map<string, TierCtx>();
-  for (const { tier, cap } of QUICK) {
+  for (const win of QUICK) {
+    const { tier } = win;
     const pd = pools.find((p) => p.tier === tier && p.role === "hit");
     if (!pd) continue;
-    const basePool = d.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+    const basePool = d.baseCards.filter((c) => inValueWindow(c, win));
     const fs = computeUnifiedFieldStats(basePool, d.coeffs, d.model, FIELD_N, true);
     const g = (k: string) => Math.max((d.ref.hit.vR[k]!.mu / Math.max(fs.hit.vR[k]!.mu, 1e-9)) - 1, 0);
     out.set(tier, {
@@ -336,8 +337,9 @@ function quantile(sorted: number[], p: number): number {
   return sorted[lo]! + (sorted[hi]! - sorted[lo]!) * (i - lo);
 }
 const poolQ = new Map<string, Record<string, Q3>>();
-for (const { tier, cap } of QUICK) {
-  const pool = baseCards.filter((c) => n_(c["Card Value"]) <= cap && !isPit(c));
+for (const win of QUICK) {
+  const { tier } = win;
+  const pool = baseCards.filter((c) => inValueWindow(c, win) && !isPit(c));
   const q: Record<string, Q3> = {};
   for (const [a, base] of [["pow", "Power"], ["eye", "Eye"], ["babip", "BABIP"], ["kRat", "Avoid K"]] as const) {
     const xs = pool.map((c) => blendHit(c, base)).filter(Number.isFinite).sort((x, y) => x - y);
@@ -409,8 +411,9 @@ function archTable(rows: ERow[]): Map<string, ArchRow> {
 
 // ── POW-quartile bias grid (the hr-reconcile cut) ─────────────────────────────────────────────────
 const powCuts = new Map<string, [number, number, number]>();
-for (const { tier, cap } of QUICK) {
-  const xs = baseCards.filter((c) => n_(c["Card Value"]) <= cap && !isPit(c)).map((c) => blendHit(c, "Power")).filter(Number.isFinite).sort((a, b) => a - b);
+for (const win of QUICK) {
+  const { tier } = win;
+  const xs = baseCards.filter((c) => inValueWindow(c, win) && !isPit(c)).map((c) => blendHit(c, "Power")).filter(Number.isFinite).sort((a, b) => a - b);
   const at = (p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))]!;
   powCuts.set(tier, [at(0.25), at(0.5), at(0.75)]);
 }
@@ -818,13 +821,16 @@ const FMTS = [
 for (const { key, tid } of FMTS) {
   const t = tournaments.find((x) => x.id === tid);
   if (!t) { console.log(`\n  ${key}: tournament config '${tid}' not found — skipped`); continue; }
-  const cap = t.card_value_max ?? Infinity;
+  // Window from the tournament config — BOTH bounds. Reading only card_value_max silently admits
+  // cards below card_value_min for min-bearing formats (nightmare-cap 50-74, cwhit-cap 60-74,
+  // gold-sporer-sandlot 60-89), which would feed a wrong pool into the own-gap machinery.
+  const winF: ValueWindow = { tier: t.id, valueMin: t.card_value_min ?? undefined, valueMax: t.card_value_max ?? Infinity };
   const cf = resolveCoeffs(model, eras.get(t.eraId)!, parks.get(t.parkId)!, t.softcaps);
   applyWobaWeights(cf, trained.wobaWeights);
   const dv = computeDerived(cf);
   const refF = computeUnifiedFieldStats(baseCards, cf, rp, FIELD_N, true);
   const depsF: SampleDeps = { baseCards, coeffs: cf, derived: dv, eventForm: trained.eventForm, model: rp, W, ref: refF, envelope, pitExp, hitExp };
-  const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+  const basePool = baseCards.filter((c) => inValueWindow(c, winF));
   const fsF = computeUnifiedFieldStats(basePool, cf, rp, FIELD_N, true);
   const pt = buildPoolTransform(refF, fsF, envelope);
   const cal = calibrate(basePool, { coeffs: cf, derived: dv, eventForm: trained.eventForm, poolTransform: pt });
@@ -836,7 +842,7 @@ for (const { key, tid } of FMTS) {
   const poolHr: number[] = [], poolBab: number[] = [];
   for (const bc of baseCards) {
     for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as const) {
-      if (n_(c["Card Value"]) > cap || isPit(c)) continue;
+      if (!inValueWindow(c, winF) || isPit(c)) continue;
       const p = ourHit(c, pt, depsF, cal);
       const cid = `${bc["Card ID"]}|${vlvl}`;
       cards.push({ cid, name: cardName(c), val: n_(c["Card Value"]), vlvl, hand: handLetter(n_(c["Bats"])), primary: [p.dep.babip!], validate: [p.dep.bbPct!, p.dep.soPct!, p.dep.hr600!] });

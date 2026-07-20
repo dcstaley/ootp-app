@@ -22,12 +22,12 @@ import { wls } from "../src/training/fit.ts";
 import { parseCwhitHit } from "../src/eval/cwhit/index.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/index.ts";
 import { hitWobaFromRates, channelBias, spread, type AuditRow, type WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
+import { QUICK, inValueWindow } from "../src/eval/cwhit/sample.ts";
 
 const FIX = "fixtures/cwhit", FIELD_N = 50, WOBA_SCALE = 1.25; // runs per wOBA point (for baserunning mwOBA-equiv)
 const n = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const handLetter = (c: number) => (c === 2 ? "L" : c === 3 ? "S" : "R");
 const fmt = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
-const QUICK = [{ tier: "iron", cap: 59 }, { tier: "bronze", cap: 69 }, { tier: "silver", cap: 79 }, { tier: "gold", cap: 89 }, { tier: "diamond", cap: 99 }];
 
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
@@ -69,15 +69,16 @@ function combinedHit(c: Card, pt?: PoolTransform) {
 
 const rowsByMode: Record<"raw" | "owngap", AuditRow[]> = { raw: [], owngap: [] };
 const brRows: { spd: number; stl: number; run: number; wsb: number; ubr: number; pa: number }[] = [];
-for (const { tier, cap } of QUICK) {
+for (const win of QUICK) {
+  const { tier } = win;
   const f = `cwhit-${tier}-hit.tsv`;
   if (!readdirSync(FIX).includes(f)) continue;
-  const basePool = baseCards.filter((c) => n(c["Card Value"]) <= cap);
+  const basePool = baseCards.filter((c) => inValueWindow(c, win));
   const pt = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), envelope);
   const mk = (mode: "raw" | "owngap") => {
     const cards: JoinCard[] = [], byId = new Map<string, { ratings: Record<string, number>; pred: Record<string, number>; spd: number; stl: number; run: number }>();
     for (const bc of baseCards) for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as const) {
-      if (!isHitter(c) || n(c["Card Value"]) > cap) continue;
+      if (!isHitter(c) || !inValueWindow(c, win)) continue;
       const cid = `${bc["Card ID"]}${vlvl ? "#V" : ""}`, h = combinedHit(c, mode === "owngap" ? pt : undefined);
       cards.push({ cid, name: cardName(c), val: n(c["Card Value"]), vlvl, hand: handLetter(n(c["Bats"])), primary: [h.babip], validate: [h.bbPct, h.soPct, h.hr600] });
       byId.set(cid, { ratings: { eye: n(c["Eye vR"]), pow: n(c["Power vR"]), kRat: n(c["Avoid K vR"]), babip: n(c["BABIP vR"]), gap: n(c["Gap vR"]) }, pred: h, spd: n(c["Speed"]), stl: n(c["Stealing"]), run: n(c["Baserunning"]) });

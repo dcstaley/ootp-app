@@ -46,10 +46,29 @@ export const FIELD_N = 50;
 /** "Well-sampled" bars, carried from the v1 triangulation for continuity. */
 export const MIN_IP = 1000, MIN_PA = 1000;
 /** The five Quick tiers: known VAL caps + neutral era/park. Daily/Cap formats are out of scope. */
-export const QUICK: { tier: string; cap: number }[] = [
-  { tier: "iron", cap: 59 }, { tier: "bronze", cap: 69 }, { tier: "silver", cap: 79 },
-  { tier: "gold", cap: 89 }, { tier: "diamond", cap: 99 },
+// ── ELIGIBILITY WINDOW (Derek's terminology ruling, 2026-07-20) ──────────────
+// "CAP" MEANS SALARY CAP IN OOTP AND NOTHING ELSE. These are card-VALUE tier cutoffs, which is
+// a different quantity from `total_cap` (a budget in the same config file), and calling both
+// "cap" is how a matched-pair read gets misinterpreted later. Field is `valueMax`.
+//
+// `valueMin` EXISTS BECAUSE REAL FORMATS HAVE ONE: nightmare-cap is 50–74, cwhit-cap 60–74,
+// gold-sporer-sandlot 60–89. The Quick ladder happens to be max-only, so every consumer wrote
+// `cardValue <= cap` — which SILENTLY ADMITS INELIGIBLE CARDS BELOW THE MIN the moment a
+// min-bearing format is scored. Pools feed the own-gap/spread machinery, so that is a wrong
+// number, not a cosmetic one. Use `inValueWindow`; do not re-implement the comparison.
+export interface ValueWindow { tier: string; valueMin?: number; valueMax: number }
+
+export const QUICK: ValueWindow[] = [
+  { tier: "iron", valueMax: 59 }, { tier: "bronze", valueMax: 69 }, { tier: "silver", valueMax: 79 },
+  { tier: "gold", valueMax: 89 }, { tier: "diamond", valueMax: 99 },
 ];
+
+/** THE one place that decides whether a card falls in a format's card-value eligibility window.
+ *  Mirrors the server's config-level test (server.ts ~line 398, card_value_min/card_value_max). */
+export const inValueWindow = (c: Record<string, unknown>, w: ValueWindow): boolean => {
+  const v = n_(c["Card Value"]);
+  return v <= w.valueMax && (w.valueMin === undefined || v >= w.valueMin);
+};
 
 export const n_ = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 export const handLetter = (c: number): string => (c === 2 ? "L" : c === 3 ? "S" : "R");
@@ -278,8 +297,9 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   const notices: string[] = [];
   const projUnjoined: string[] = [];
 
-  for (const { tier, cap } of QUICK) {
-    const basePool = d.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+  for (const win of QUICK) {
+    const { tier } = win;
+    const basePool = d.baseCards.filter((c) => inValueWindow(c, win));
     const pt = buildPoolTransform(d.ref, computeUnifiedFieldStats(basePool, d.coeffs, d.model, FIELD_N, true), d.envelope);
     // Optional pitcher spread + hitter tail for this tier — threaded into calibrate too (production
     // computes the anchor on the SAME corrected events the scores use). sHit=1 ⇒ the hitter K leg is
@@ -301,7 +321,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
       const poolCh: Record<string, number[]> = {};
       for (const bc of d.baseCards) {
         for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as const) {
-          if (n_(c["Card Value"]) > cap) continue;
+          if (!inValueWindow(c, win)) continue;
           if (role === "pit" ? !isPit(c) : isPit(c)) continue;
           const cid = `${bc["Card ID"]}|${vlvl}`;
           const p = role === "pit" ? ourPit(c, pt, d, cal, ks) : ourHit(c, pt, d, cal, ht);

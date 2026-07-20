@@ -38,7 +38,7 @@ import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import { agreement } from "../src/eval/cwhit/scorecard.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, QUICK,
+  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, QUICK, inValueWindow, type ValueWindow,
   type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -85,7 +85,7 @@ for (const c of baseCards) handOf.set(String(c["//Card Title"]), handLetter(n_(c
 const CORRECTIONS = !process.argv.includes("--no-corrections");
 
 // ── one measured format ──────────────────────────────────────────────────────
-interface Fmt { key: string; label: string; tournamentId: string; tiers: { tier: string; cap: number }[] }
+interface Fmt { key: string; label: string; tournamentId: string; tiers: ValueWindow[] }
 
 /**
  * Score one format group under ITS OWN era/park. This is the piece `tools/cwhit-scorecard.ts`
@@ -112,8 +112,9 @@ function runFormat(fm: Fmt): { recs: Rec[]; coeffsHrL: number; coeffsHrR: number
     const TMeans = trained!.trainingMeans;
     if (!TMeans) throw new Error("corrections ON needs the active model's trainingMeans — or run with --no-corrections");
     ksMap = new Map(); htMap = new Map();
-    for (const { tier, cap } of fm.tiers) {
-      const basePool = baseCards.filter((c: Card) => n_(c["Card Value"]) <= cap);
+    for (const win of fm.tiers) {
+      const { tier } = win;
+      const basePool = baseCards.filter((c: Card) => inValueWindow(c, win));
       const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
       const pt = buildPoolTransform(ref, poolField, envelope);
       const shift = buildFrameShift(TMeans, poolField);
@@ -228,11 +229,11 @@ const CP = PARK_COMPRESSION;
 
 const FORMATS: Fmt[] = [
   { key: "quick-null", label: "5 Quick tiers (park-1, TRUE contrast ZERO)", tournamentId: "bronze-quick", tiers: [
-    { tier: "iron", cap: 59 }, { tier: "bronze", cap: 69 }, { tier: "silver", cap: 79 }, { tier: "gold", cap: 89 }, { tier: "diamond", cap: 99 },
+    { tier: "iron", valueMax: 59 }, { tier: "bronze", valueMax: 69 }, { tier: "silver", valueMax: 79 }, { tier: "gold", valueMax: 89 }, { tier: "diamond", valueMax: 99 },
   ] },
-  { key: "earlygolddaily", label: "Early Gold Daily (NEAR-NULL)", tournamentId: "early-gold", tiers: [{ tier: "earlygolddaily", cap: 89 }] },
-  { key: "bronzeheartdaily", label: "Bronze Heart Daily (LEVER 1)", tournamentId: "bronze-heart", tiers: [{ tier: "bronzeheartdaily", cap: 69 }] },
-  { key: "goldcapdaily", label: "Gold Cap Daily (LEVER 2, opposite sign)", tournamentId: "gold-cap", tiers: [{ tier: "goldcapdaily", cap: 89 }] },
+  { key: "earlygolddaily", label: "Early Gold Daily (NEAR-NULL)", tournamentId: "early-gold", tiers: [{ tier: "earlygolddaily", valueMax: 89 }] },
+  { key: "bronzeheartdaily", label: "Bronze Heart Daily (LEVER 1)", tournamentId: "bronze-heart", tiers: [{ tier: "bronzeheartdaily", valueMax: 69 }] },
+  { key: "goldcapdaily", label: "Gold Cap Daily (LEVER 2, opposite sign)", tournamentId: "gold-cap", tiers: [{ tier: "goldcapdaily", valueMax: 89 }] },
 ];
 
 console.log(`\n── V3. NON-NEUTRAL ENV PLUMBING ──`);

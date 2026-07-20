@@ -53,7 +53,7 @@ import { parseCwhitPit } from "../src/eval/cwhit/parse.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
-  QUICK, MIN_IP, FIELD_N, OBS_DIR,
+  QUICK, inValueWindow, MIN_IP, FIELD_N, OBS_DIR,
   type Rec, type SampleDeps, type KSpreadPit,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -171,8 +171,9 @@ interface TierCell {
 }
 const ksBase = new Map<string, KSpreadPit>();
 const tierGeom = new Map<string, { gapStu: number; gapHr: number; gapBab: number; kbar: number; hrbar: number; babbar: number }>();
-for (const { tier, cap } of QUICK) {
-  const basePool = deps.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+for (const win of QUICK) {
+  const { tier } = win;
+  const basePool = deps.baseCards.filter((c) => inValueWindow(c, win));
   const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
   const shift = buildFrameShift(TM, poolField);
   const pt = buildPoolTransform(ref, poolField, deps.envelope);
@@ -328,8 +329,8 @@ const post = buildCwhitSample({ ...deps, kSpreadPit: ksPost });
   } as Parameters<typeof ourPit>[3];
   {
     const c0 = cells.find((c) => c.tier === "bronze") ?? cells[0]!;
-    const cap = QUICK.find((q) => q.tier === c0.tier)!.cap;
-    const basePool = deps.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+    const win = QUICK.find((q) => q.tier === c0.tier)!;
+    const basePool = deps.baseCards.filter((c) => inValueWindow(c, win));
     const pt = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), deps.envelope);
     const pits = basePool.filter((c) => isPit(c)).slice(0, 60);
     let maxK = 0;

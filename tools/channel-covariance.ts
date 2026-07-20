@@ -36,7 +36,7 @@ import {
   pitWobaFromChannels, hitWobaFromRates, PER9_TO_PER600, type WobaWeights as WW,
 } from "../src/eval/cwhit/audit.ts";
 import {
-  buildCwhitSample, wellSampled, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK,
+  buildCwhitSample, wellSampled, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK, inValueWindow,
   type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -76,8 +76,9 @@ if (CORRECTIONS) {
   const TMeans = trained.trainingMeans;
   if (!TMeans) throw new Error("corrections ON needs the active model's trainingMeans — or run with --no-corrections");
   ksMap = new Map(); htMap = new Map();
-  for (const { tier, cap } of QUICK) {
-    const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+  for (const win of QUICK) {
+    const { tier } = win;
+    const basePool = baseCards.filter((c) => inValueWindow(c, win));
     const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
     const pt = buildPoolTransform(ref, poolField, envelope);
     const shift = buildFrameShift(TMeans, poolField);

@@ -43,7 +43,7 @@ import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
 import { makeVariant } from "../src/data/variants.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_PA, QUICK,
+  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_PA, QUICK, inValueWindow,
   type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -80,8 +80,9 @@ const htMap = new Map<string, HitTail>();
 const poolFieldByTier = new Map<string, FieldStats>();
 const TMeans = trained.trainingMeans;
 if (!TMeans) throw new Error("this tool needs the active model's trainingMeans (retrain to embed them)");
-for (const { tier, cap } of QUICK) {
-  const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+for (const win of QUICK) {
+  const { tier } = win;
+  const basePool = baseCards.filter((c) => inValueWindow(c, win));
   const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
   poolFieldByTier.set(tier, poolField);
   const pt = buildPoolTransform(ref, poolField, envelope);
@@ -139,10 +140,11 @@ function obsWobaNoiseVar(raw: Record<string, number>, w: WW, hbp = 0.008): numbe
 // Card ratings, keyed the same way, so d_c can be regressed on card properties. Exposure-weighted
 // vR/vL by the card's Bats hand — the same weights the prediction itself blends the two sides with.
 const ratByKey = new Map<string, Record<string, number>>();
-for (const { tier, cap } of QUICK) {
+for (const win of QUICK) {
+  const { tier } = win;
   for (const bc of baseCards) {
     for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as [number, Card][]) {
-      if (n_(c["Card Value"]) > cap || isPit(c)) continue;
+      if (!inValueWindow(c, win) || isPit(c)) continue;
       const { wR, wL } = hitExp.get(handLetter(n_(c["Bats"]))) ?? { wR: 0.5, wL: 0.5 };
       const col: Record<string, string> = { eye: "Eye", pow: "Power", kRat: "Avoid K", babip: "BABIP", gap: "Gap" };
       const rat: Record<string, number> = {};

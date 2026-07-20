@@ -41,7 +41,7 @@ import {
 } from "../src/eval/cwhit/scorecard.ts";
 import {
   buildCwhitSample, wellSampled, handLetter, isPit, n_, OBS_DIR as OBS, PROJ_DIR as PROJ, FIELD_N,
-  MIN_IP, MIN_PA, QUICK, type KSpreadPit, type Rec, type SampleDeps,
+  MIN_IP, MIN_PA, QUICK, inValueWindow, type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
@@ -89,8 +89,9 @@ if (CORRECTIONS) {
   const TMeans = trained.trainingMeans;
   if (!TMeans) throw new Error("corrections ON needs the active model's trainingMeans (retrain to embed them) — or run with --no-corrections");
   ksMap = new Map(); htMap = new Map();
-  for (const { tier, cap } of QUICK) {
-    const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+  for (const win of QUICK) {
+    const { tier } = win;
+    const basePool = baseCards.filter((c) => inValueWindow(c, win));
     const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
     const pt = buildPoolTransform(ref, poolField, envelope);           // same build the sample runs per tier
     const shift = buildFrameShift(TMeans, poolField);

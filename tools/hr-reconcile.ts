@@ -65,7 +65,7 @@ import { cleanTournamentRows } from "../src/eval/tournament-clean.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import { per600NoiseVar, per9NoiseVar, BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK,
+  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK, inValueWindow, type ValueWindow,
   type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 import { meanEst, biasGradient, mmse, type Est } from "../src/eval/cwhit/two-ledger.ts";
@@ -128,8 +128,8 @@ const cutsOf = (pool: number[]): Cuts => {
   return [at(0.25), at(0.5), at(0.75)];
 };
 const bucketOf = (x: number, c: Cuts): number => (x < c[0] ? 0 : x < c[1] ? 1 : x < c[2] ? 2 : 3);
-const poolAxis = (cap: number, role: "pit" | "hit", ratingBase: string): number[] =>
-  baseCards.filter((c) => n_(c["Card Value"]) <= cap && (role === "pit" ? isPit(c) : !isPit(c)))
+const poolAxis = (win: ValueWindow, role: "pit" | "hit", ratingBase: string): number[] =>
+  baseCards.filter((c) => inValueWindow(c, win) && (role === "pit" ? isPit(c) : !isPit(c)))
     .map((c) => blendRating(c, role === "pit" ? "pit" : "hit", ratingBase));
 
 interface QRow { axis: number; pred: number; obs: number; w: number; nv: number }
@@ -177,8 +177,9 @@ const { recs } = buildCwhitSample(deps);
 const xbhPred = new Map<Rec, number>();
 {
   let maxDiff = 0;
-  for (const { tier, cap } of QUICK) {
-    const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+  for (const win of QUICK) {
+    const { tier } = win;
+    const basePool = baseCards.filter((c) => inValueWindow(c, win));
     const pt = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), trained.ratingEnvelope);
     for (const r of recs.filter((x) => x.tier === tier && x.role === "hit")) {
       const c = cardOf(r); if (!c) continue;
@@ -239,10 +240,11 @@ for (const role of ["hit", "pit"] as const) {
     console.log(`\n── ${role.toUpperCase()} ${p.name}${p.headline ? "   ◄ HEADLINE" : ""} ──${p.note ? `\n   (${p.note})` : ""}`);
     console.log(`tier      N    ${[1, 2, 3, 4].map((q) => `Q${q}`.padEnd(19)).join("")}mono?      β(bias~pred)          slope(obs~pred)`);
     const pooled: QRow[] = [];
-    for (const { tier, cap } of QUICK) {
+    for (const win of QUICK) {
+      const { tier } = win;
       const rows = rowsFor(tier, role, p);
       if (rows.length < 8) { if (rows.length) console.log(`${tier.padEnd(9)} ${String(rows.length).padStart(3)}  (too few well-sampled cards to cut into quartiles)`); continue; }
-      const cuts = cutsOf(poolAxis(cap, role, p.axis));
+      const cuts = cutsOf(poolAxis(win, role, p.axis));
       const cs: (ReturnType<typeof cell> | null)[] = [];
       for (let b = 0; b < 4; b++) {
         const rs = rows.filter((r) => bucketOf(r.axis, cuts) === b);
@@ -278,10 +280,11 @@ for (const role of ["hit", "pit"] as const) {
 console.log(`\n\n── HEADLINE DETAIL — the HR channel, pred & obs levels per quartile (the elite-HR verdict rides here) ──`);
 for (const [role, p] of [["hit", PAIRS.hit.find((x) => x.headline)!], ["pit", PAIRS.pit.find((x) => x.headline)!]] as const) {
   console.log(`\n  ${role === "hit" ? "HITTERS HR/600 by POW quartile" : "PITCHERS HR9 by HRR quartile (separate ledger; high HRR = elite suppression)"}`);
-  for (const { tier, cap } of QUICK) {
+  for (const win of QUICK) {
+    const { tier } = win;
     const rows = rowsFor(tier, role, p);
     if (rows.length < 8) continue;
-    const cuts = cutsOf(poolAxis(cap, role, p.axis));
+    const cuts = cutsOf(poolAxis(win, role, p.axis));
     console.log(`  ${tier.toUpperCase()} — N=${rows.length}, ${Math.round(rows.reduce((s, r) => s + r.w, 0)).toLocaleString()} ${role === "hit" ? "PA" : "IP"}; pool cuts ${cuts.map((c) => f(c, 1)).join("/")}`);
     console.log(`    qtile      n     pred     obs     bias ±1.96·SEcount   card t-CI`);
     for (let b = 0; b < 4; b++) {
@@ -312,9 +315,9 @@ console.log(`Inclusion: ≥100 PA (hit) / ≥100 BF (pit) — far shallower than
 console.log(`Pitcher rates are per-600-BF scaled to HR9 via the shared BF/9=${BF_PER_9.toFixed(1)} constant (cancels in pred−obs shape).`);
 
 const QDIRS = [
-  { tier: "open", dir: "Tournament Data/Quicks - Open", cap: Infinity },
-  { tier: "bronze", dir: "Tournament Data/Quicks - Bronze", cap: 69 },
-  { tier: "gold", dir: "Tournament Data/Quicks - Gold", cap: 89 },
+  { tier: "open", dir: "Tournament Data/Quicks - Open", valueMax: Infinity },
+  { tier: "bronze", dir: "Tournament Data/Quicks - Bronze", valueMax: 69 },
+  { tier: "gold", dir: "Tournament Data/Quicks - Gold", valueMax: 89 },
 ];
 const POS_PIT = new Set(["SP", "RP", "CL", "P"]);
 const R = (r: Record<string, unknown>, s: string, c: string) => n_(r[`${c} ${s}`]);
@@ -334,13 +337,13 @@ function quicksTable(label: string, rows: QRow[], pool: number[], unit: number, 
   console.log(`  ${label.padEnd(24)} N=${String(rows.length).padStart(3)}  ${cs.map(cellStr).join("")}${mono ? "mono" : "NON-MONO"}  β ${ciS(g.slope, 3)}`);
 }
 
-for (const { tier, dir, cap } of QDIRS) {
+for (const { tier, dir, valueMax } of QDIRS) {
   if (!existsSync(dir)) { console.log(`\n  ${tier.toUpperCase()}: directory "${dir}" not found — skipped.`); continue; }
-  const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+  const basePool = baseCards.filter((c) => inValueWindow(c, { tier, valueMax }));
   const pt: PoolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), trained.ratingEnvelope);
 
   const agg = new Map<string, QAgg>();
-  console.log(`\n─── QUICKS ${tier.toUpperCase()} (cap ${Number.isFinite(cap) ? cap : "none"}) — per-running ghost-cleaning ──`);
+  console.log(`\n─── QUICKS ${tier.toUpperCase()} (value ≤ ${Number.isFinite(valueMax) ? valueMax : "none"}) — per-running ghost-cleaning ──`);
   let files = 0;
   for (const fn of readdirSync(dir).filter((x) => x.endsWith(".csv"))) {
     files++;
@@ -395,8 +398,8 @@ for (const { tier, dir, cap } of QDIRS) {
     });
 
   console.log(`  cells: bias = pred − obs, weighted ± card t half-width (n); quartiles within-pool as in the primary grid`);
-  quicksTable(`hit HR/600 by POW qtile`, hitRows, poolAxis(cap === Infinity ? Infinity : cap, "hit", "Power"), 600, 2);
-  quicksTable(`pit HR9 by HRR qtile`, pitRows, poolAxis(cap === Infinity ? Infinity : cap, "pit", "pHR"), 9, 2);
+  quicksTable(`hit HR/600 by POW qtile`, hitRows, poolAxis({ tier, valueMax }, "hit", "Power"), 600, 2);
+  quicksTable(`pit HR9 by HRR qtile`, pitRows, poolAxis({ tier, valueMax }, "pit", "pHR"), 9, 2);
 
   // THE LEVEL + ITS CI — the ×0.87 question. Multiplier = observed total HR / predicted total HR,
   // CI from the Poisson-scale uncertainty on the observed count (pred is deterministic).

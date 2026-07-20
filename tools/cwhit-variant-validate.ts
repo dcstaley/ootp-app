@@ -31,13 +31,13 @@ import { makeVariant } from "../src/data/variants.ts";
 import { HIT_BIP_ADJ, PIT_BIP_ADJ } from "../src/model/curves.ts";
 import { parseCwhitHit, parseCwhitPit, joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/index.ts";
 import { hitWobaFromRates, pitWobaFromChannels, PER9_TO_PER600, type WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
+import { QUICK, inValueWindow } from "../src/eval/cwhit/sample.ts";
 
 const FIX = "fixtures/cwhit", FIELD_N = 50, PER600_TO_PER9 = 1 / PER9_TO_PER600;
 const HIT_PA_MIN = 300, PIT_IP_MIN = 75; // both base AND v5 must clear these
 const n = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const handLetter = (c: number) => (c === 2 ? "L" : c === 3 ? "S" : "R");
 const fmt = (x: number, d = 2) => (Number.isFinite(x) ? (x >= 0 ? "+" : "") + x.toFixed(d) : "n/a");
-const QUICK_CAP: Record<string, number> = { iron: 59, bronze: 69, silver: 79, gold: 89, diamond: 99 };
 
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
@@ -103,7 +103,7 @@ const tierOf = (f: string) => f.replace(/^cwhit-/, "").replace(/-(hit|pit)\.tsv$
 for (const f of files) {
   const isHit = f.endsWith("-hit.tsv"), isPit = f.endsWith("-pit.tsv");
   if (!isHit && !isPit) continue;
-  const tier = tierOf(f), quick = tier in QUICK_CAP;
+  const tier = tierOf(f), quick = QUICK.some((q) => q.tier === tier);
   const tsv = readFileSync(`${FIX}/${f}`, "utf8");
 
   // Build catalog candidates at vlvl 0 (base) + 5 (variant), RAW predictions, and join to obs.
@@ -207,11 +207,11 @@ console.log(`(if own-gap lift ≈ raw lift, the boost calibration story is trans
 for (const role of ["hit", "pit"] as const) {
   const pairs = (role === "hit" ? hitPairs : pitPairs).filter((p) => p.quick);
   if (!pairs.length) continue;
-  // build a tier PoolTransform once per tier from base cards ≤ cap
+  // build a tier PoolTransform once per tier from the base cards in that tier's value window
   const ptByTier = new Map<string, PoolTransform>();
   for (const t of new Set(pairs.map((p) => p.tier))) {
-    const cap = QUICK_CAP[t]!;
-    const pool = baseCards.filter((c) => n(c["Card Value"]) <= cap);
+    const win = QUICK.find((q) => q.tier === t)!;
+    const pool = baseCards.filter((c) => inValueWindow(c, win));
     ptByTier.set(t, buildPoolTransform(ref, computeUnifiedFieldStats(pool, coeffs, rp, FIELD_N, true), envelope));
   }
   const chans = role === "hit" ? HIT_CH : PIT_CH;
