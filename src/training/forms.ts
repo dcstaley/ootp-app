@@ -23,6 +23,7 @@ import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type 
 import { DEFAULT_WOBA_WEIGHTS } from "../scoring-core/woba-weights.ts";
 import {
   ln1, dot, baseVal, row, rowTerms, rate, rateRaw, rateAux, capActive, hDesign, hRate, LOG, HIT_BIP_ADJ, PIT_BIP_ADJ,
+  inDomainVertex, inDomainVertexH,
   type Curve, type FittedEvent, type CurveFit, type FittedH, type FittedHit, type FittedPit,
 } from "../model/curves.ts";
 
@@ -113,6 +114,88 @@ function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[],
   return { beta: wls(ratingVals.map((rv, i) => hDesign(rating, rv, bip, bipVals[i]!)), y, w), rating, bip };
 }
 
+// ── Vertex-pin monotone fallback (bake-off C, 2026-07-21) — the ONE copy ───────
+// A fitted degree-2 rawpoly channel whose vertex lands INSIDE the observed rating domain is a
+// corrupt SHAPE (past the vertex a better rating predicts a worse rate). The production remedy
+// (ruling 2026-07-21; evidence fixtures/pithr-form-bakeoff-run-2026-07-21.txt + tools/
+// pithr-form-bakeoff.ts candidate C): REFIT that channel with the vertex PINNED AT THE DOMAIN
+// MAX — the one-parameter family rate(z) = c0 + c2·(z − zpin)², zpin = uMax (+ the event's aux
+// term, jointly), least squares over c0/c2. With the vertex at the edge the parabola is monotone
+// over the whole fit domain for EITHER sign of c2; the fitted c2's direction must still match
+// the channel's intended direction (read off the unconstrained fit — sign of f(uMax) − f(uMin),
+// the same rule the monotone cap uses; the pinned family is increasing iff c2 < 0). A
+// contradiction ⇒ the degenerate flat-in-rating fit (c2 = 0), never a wrong-way curve.
+// The result is REPACKAGED as a standard rawpoly-2 FittedEvent (b0 = c0 + c2·zpin²,
+// b1 = −2·c2·zpin, b2 = c2) so every downstream evaluator (rate/rateAux/tangent extension/
+// deploy gate) works unchanged; the vertex sits exactly at uMax ⇒ inDomainVertex (strict
+// interior test) passes. Applied ONLY when the unconstrained vertex is in-domain and ONLY when
+// the caller passes a `pins` collector (the production trainer path — server.saveTrainedModel);
+// otherwise fits are bit-identical to the unconstrained ones.
+export interface VertexPin { channel: string; pinZ: number }
+
+/** Vertex-pinned refit of one rawpoly-2 event (see block comment above). Caller has already
+ *  established the unconstrained vertex is in-domain. `auxVals` required iff the event has aux. */
+export function pinQuadAtDomainMax(e: FittedEvent, vals: number[], y: number[], w: number[], auxVals?: number[]): FittedEvent {
+  if (e.curve.kind !== "rawpoly" || e.curve.degree !== 2 || e.uMin == null || e.uMax == null) throw new Error("pinQuadAtDomainMax: rawpoly-2 with a stored fit domain required");
+  if (e.aux && !auxVals) throw new Error("pinQuadAtDomainMax: event has an aux term — auxVals required to refit it jointly");
+  const zpin = e.uMax;
+  const u = vals.map((v) => (e.sd > 1e-9 ? (v - e.mu) / e.sd : 0));
+  const za = e.aux && auxVals ? auxVals.map((v) => (e.aux!.sd > 1e-9 ? (ln1(v) - e.aux!.mu) / e.aux!.sd : 0)) : null;
+  let X = u.map((ui, i) => (za ? [1, (ui - zpin) ** 2, za[i]!] : [1, (ui - zpin) ** 2]));
+  let beta = wls(X, y, w);
+  let c0 = beta[0]!, c2 = beta[1]!, auxB = za ? beta[2]! : 0;
+  const b1 = e.beta[1] ?? 0, b2 = e.beta[2] ?? 0;
+  const dirUp = b1 * (e.uMax - e.uMin) + b2 * (e.uMax * e.uMax - e.uMin * e.uMin) > 0; // intended direction (b0 cancels)
+  if (c2 !== 0 && (c2 < 0) !== dirUp) { // pinned LS direction contradicts the channel ⇒ flat-in-rating
+    X = u.map((_, i) => (za ? [1, za[i]!] : [1]));
+    beta = wls(X, y, w);
+    c0 = beta[0]!; c2 = 0; auxB = za ? beta[1]! : 0;
+  }
+  return {
+    beta: [c0 + c2 * zpin * zpin, -2 * c2 * zpin, c2], mu: e.mu, sd: e.sd, curve: e.curve,
+    ...(e.aux ? { aux: { beta: auxB, mu: e.aux.mu, sd: e.aux.sd } } : {}),
+    uMin: e.uMin, uMax: e.uMax,
+  };
+}
+
+/** Same pin for the H event's RATING quad (the BIP term rides along in the joint refit; under
+ *  perBip the refit mirrors fitH's algebraically-equivalent per-BIP WLS objective). */
+export function pinHQuadAtDomainMax(h: FittedH, ratingVals: number[], bipVals: number[], y: number[], w: number[]): FittedH {
+  const r = h.rating;
+  if (r.curve.kind !== "rawpoly" || r.curve.degree !== 2 || r.uMin == null || r.uMax == null) throw new Error("pinHQuadAtDomainMax: rawpoly-2 rating with a stored fit domain required");
+  const zpin = r.uMax;
+  const u = ratingVals.map((v) => (r.sd > 1e-9 ? (v - r.mu) / r.sd : 0));
+  const target = h.perBip ? y.map((v, i) => v / Math.max(bipVals[i]!, 1)) : y;
+  const wgt = h.perBip ? w.map((v, i) => v * bipVals[i]! ** 2) : w;
+  const bipTerms = (i: number) => (h.perBip ? [] : rowTerms(h.bip!.curve, bipVals[i]!, h.bip!.mu, h.bip!.sd));
+  let X = u.map((ui, i) => [1, (ui - zpin) ** 2, ...bipTerms(i)]);
+  let beta = wls(X, target, wgt);
+  let c0 = beta[0]!, c2 = beta[1]!, tail = beta.slice(2);
+  const b1 = h.beta[1] ?? 0, b2 = h.beta[2] ?? 0;
+  const dirUp = b1 * (r.uMax - r.uMin) + b2 * (r.uMax * r.uMax - r.uMin * r.uMin) > 0;
+  if (c2 !== 0 && (c2 < 0) !== dirUp) {
+    X = u.map((_, i) => [1, ...bipTerms(i)]);
+    beta = wls(X, target, wgt);
+    c0 = beta[0]!; c2 = 0; tail = beta.slice(1);
+  }
+  return { ...h, beta: [c0 + c2 * zpin * zpin, -2 * c2 * zpin, c2, ...tail] };
+}
+
+/** Pin one event when the caller collects pins AND the unconstrained vertex is in-domain;
+ *  otherwise the SAME object back (bit-identical no-pin path). Records the pin. */
+function pinEvent(pins: VertexPin[] | undefined, channel: string, e: FittedEvent, vals: number[], y: number[], w: number[], auxVals?: number[]): FittedEvent {
+  if (!pins || inDomainVertex(e) == null) return e;
+  const pinned = pinQuadAtDomainMax(e, vals, y, w, auxVals);
+  pins.push({ channel, pinZ: pinned.uMax! });
+  return pinned;
+}
+function pinH(pins: VertexPin[] | undefined, channel: string, h: FittedH, ratingVals: number[], bipVals: number[], y: number[], w: number[]): FittedH {
+  if (!pins || inDomainVertexH(h) == null) return h;
+  const pinned = pinHQuadAtDomainMax(h, ratingVals, bipVals, y, w);
+  pins.push({ channel, pinZ: pinned.rating.uMax! });
+  return pinned;
+}
+
 // ── Hitting form ───────────────────────────────────────────────────────────────
 // `h` is the curve on the BABIP rating in the non-HR-hit event. `hBip` picks the H↔BIP
 // relation: absent ⇒ the fitted log-BIP term (the DEPLOYED shape — the fit finds elasticity
@@ -121,7 +204,11 @@ function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[],
 // The XBH curve fits the SHARE of (predicted) hits that go for extra bases.
 export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve | "unit" }
 
-export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): FittedHit {
+// `pins` (optional) = the vertex-pin collector: when passed (the production trainer path), any
+// quad channel whose unconstrained vertex lands in-domain is refit vertex-pinned (see the
+// vertex-pin block above) and recorded; when absent, fits are bit-identical to the historical
+// unconstrained behavior (every bake-off/measurement tool keeps seeing the raw shape).
+export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75, pins?: VertexPin[]): FittedHit {
   const w = obs.map((p) => Math.pow(p.hit.PA, fitExp));
   const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.hit.PA, 1)) * 600);
   // BB target = UNINTENTIONAL walks (BB − IBB): IBB is manager behavior, not talent —
@@ -134,15 +221,15 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const pow = obs.map((p) => p.ratings.hit.pow), gap = obs.map((p) => p.ratings.hit.gap);
   const babip = obs.map((p) => p.ratings.hit.babip);
 
-  const bb = fitEvent(form.bb, eye, BB, w);
-  const k = fitEvent(form.k, kr, K, w);
-  const hr = fitEvent(form.hr, pow, HR, w);
-  // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2).
+  const bb = pinEvent(pins, "hit.bb", fitEvent(form.bb, eye, BB, w), eye, BB, w);
+  const k = pinEvent(pins, "hit.k", fitEvent(form.k, kr, K, w), kr, K, w);
+  const hr = pinEvent(pins, "hit.hr", fitEvent(form.hr, pow, HR, w), pow, HR, w);
+  // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2); pinned rates when pinned.
   const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rate(k, kr[i]!) - rate(hr, pow[i]!) - HIT_BIP_ADJ, 1));
-  const h = fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG);
+  const h = pinH(pins, "hit.h", fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG), babip, bip, nonHRH, w);
   const hP = obs.map((_, i) => hRate(h, babip[i]!, bip[i]!));
   const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
-  const xbh = fitEvent(form.xbh, gap, share, w);
+  const xbh = pinEvent(pins, "hit.xbh", fitEvent(form.xbh, gap, share, w), gap, share, w);
   return { bb, k, hr, h, xbh };
 }
 
@@ -169,7 +256,7 @@ export function predictHitForm(m: FittedHit, o: TrainObs): number {
 // walks/homers beyond Control/HRR (an outcome-measured channel the K route alone misses).
 export interface PitForm { name: string; bb: Curve; k: Curve; hr: Curve; h: Curve; hBip?: Curve | "unit"; stuffAug?: boolean }
 
-export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): FittedPit {
+export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75, pins?: VertexPin[]): FittedPit {
   const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));
   const per600 = (f: (o: TrainObs) => number) => obs.map((p) => (f(p) / Math.max(p.pitch.BF, 1)) * 600);
   // BB target = UNINTENTIONAL walks (BB − IBB) — see fitHitForm; predicted BB is uBB.
@@ -179,14 +266,15 @@ export function fitPitForm(form: PitForm, obs: TrainObs[], fitExp = 0.75): Fitte
   const hrr = obs.map((p) => p.ratings.pitch.hrr), pbabip = obs.map((p) => p.ratings.pitch.pbabip);
 
   // BB: saturating-exponential (grid-τ) when form.bb is satexp, else the standard curve; Stuff aux retained either way.
-  const bb = form.bb.kind === "satexp"
+  const bb = pinEvent(pins, "pit.bb", form.bb.kind === "satexp"
     ? fitSatEvent(con, BB, w, form.stuffAug ? stu : undefined)
-    : (form.stuffAug ? fitEventAux(form.bb, con, stu, BB, w) : fitEvent(form.bb, con, BB, w));
-  const k = fitEvent(form.k, stu, K, w);
-  const hr = form.stuffAug ? fitEventAux(form.hr, hrr, stu, HR, w) : fitEvent(form.hr, hrr, HR, w);
-  // Predicted BB/HR (with the Stuff aux when present) drive BIP — training mirrors inference.
+    : (form.stuffAug ? fitEventAux(form.bb, con, stu, BB, w) : fitEvent(form.bb, con, BB, w)), con, BB, w, form.stuffAug ? stu : undefined);
+  const k = pinEvent(pins, "pit.k", fitEvent(form.k, stu, K, w), stu, K, w);
+  const hr = pinEvent(pins, "pit.hr", form.stuffAug ? fitEventAux(form.hr, hrr, stu, HR, w) : fitEvent(form.hr, hrr, HR, w), hrr, HR, w, form.stuffAug ? stu : undefined);
+  // Predicted BB/HR (with the Stuff aux when present) drive BIP — training mirrors inference
+  // (pinned rates when pinned, so the downstream H fit sees the deployed chain).
   const bip = obs.map((_, i) => Math.max(600 - rateAux(bb, con[i]!, stu[i]!) - rate(k, stu[i]!) - rateAux(hr, hrr[i]!, stu[i]!) - PIT_BIP_ADJ, 1));
-  const h = fitH(pbabip, bip, nHH, w, form.h, form.hBip ?? LOG);
+  const h = pinH(pins, "pit.h", fitH(pbabip, bip, nHH, w, form.h, form.hBip ?? LOG), pbabip, bip, nHH, w);
   return { bb, k, hr, h };
 }
 
@@ -566,6 +654,17 @@ export const SATBB_PIT: PitForm = { name: "woba·satbb", bb: { kind: "satexp", t
 // that turned over in-domain (B.2/B.4); dropping it to log costs only 0.78→0.74 and clears the cap. Hitters
 // unchanged (RAWPOLY_HIT). This is the pareto pick over the all-quad "winner" (statistical tie out-of-frame,
 // but the winner's BB-quad is cap-dependent inside the pool).
+// 2026-07-21: quad channels now carry the VERTEX-PIN monotone fallback in the production fit path
+// (pinQuadAtDomainMax/pinHQuadAtDomainMax above, applied when the trainer passes a `pins` collector).
+// Evidence: fixtures/pithr-form-bakeoff-run-2026-07-21.txt + tools/pithr-form-bakeoff.ts + the
+// tools/diag-pithr-2043.ts diagnostic — on window [2042,2043] the pit.hr quad's vertex landed
+// in-domain (z=2.50; TAIL NOISE, not a form break: in-sample/CV was a three-way statistical tie
+// A'/B/C). The guard's named remedy (hr → LOG) was REJECTED: out-of-frame the log under-spreads
+// the elite HR tail (−0.05..−0.10 vs the quad on the top-pHR cards) and would leave the BUILD-3
+// HR-spread ramp constants +28% stale (A 0.2648 → 0.3386 under log). The pinned quad (bake-off
+// candidate C) is a BEHAVIORAL NULL vs the deployed quad everywhere that matters — tournament
+// scorecard cells within ±0.01, BUILD-3 constants NOT stale (A 0.2674/0.2730 vs deployed 0.2648),
+// CV nominally best of the three — while passing the monotone guard by construction.
 export const PARETO_PIT: PitForm = { name: "woba·pareto", bb: LOG, k: Q2, hr: Q2, h: Q2, stuffAug: true };
 
 // Uniform-curve forms apply one curve to EVERY rating-driven event (incl. the BABIP

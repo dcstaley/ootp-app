@@ -16,6 +16,10 @@
 //        sits exactly at uMax ⇒ inDomainVertex (strict interior test) passes. When the
 //        unconstrained vertex is OUTSIDE the domain the constraint is inactive and the fit is the
 //        unconstrained PARETO_PIT fit exactly (verified below on [2041,2042]).
+//        2026-07-21 RULING: candidate C SHIPPED as the production vertex-pin fallback. The
+//        constrained-fit math now lives in src/training/forms.ts (pinQuadAtDomainMax /
+//        pinHQuadAtDomainMax, generic across all quad channels) and fitPitFormHRCQ below is a
+//        thin wrapper over the production path — this tool holds NO second copy of it.
 //
 // Subcommands:
 //   node tools/pithr-form-bakeoff.ts fit                 → in-frame three-way table + elite-tail
@@ -27,16 +31,16 @@ import { writeFileSync, readFileSync } from "node:fs";
 import { loadWindow, type TrainObs, type LoadedTraining } from "../src/training/loader.ts";
 import {
   fitPitForm, fitHitForm, pitFormModel, predictPitForm, PARETO_PIT, RAWPOLY_HIT,
-  type PitForm, type FittedPit, type FittedHit,
+  type PitForm, type FittedPit, type FittedHit, type VertexPin,
 } from "../src/training/forms.ts";
 import { HITTER, PITCHER } from "../src/training/bakeoff.ts";
 import { inSample, crossValidate } from "../src/training/evaluate.ts";
 import { evalMetrics } from "../src/training/metrics.ts";
 import { predictHitWoba, predictPitWoba, actualHitWoba, actualPitWoba } from "../src/training/bakeoff.ts";
-import { wls, trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching } from "../src/training/fit.ts";
+import { trainWobaHitting, trainWobaPitching, trainBasicHitting, trainBasicPitching } from "../src/training/fit.ts";
 import {
-  inDomainVertex, rateAux, rateRaw, hDesign, ln1, LOG, PIT_BIP_ADJ, rate,
-  formVertexOffenders, type Curve, type FittedEvent, type CurveFit, type FittedH, type EventForm,
+  inDomainVertex, rateAux, rateRaw, LOG,
+  formVertexOffenders, type Curve, type FittedEvent, type EventForm,
 } from "../src/model/curves.ts";
 import { computePlatoon } from "../src/training/platoon.ts";
 import { Repository } from "../src/persistence/repository.ts";
@@ -59,59 +63,16 @@ const HRLOG_PIT: PitForm = { name: "woba·pareto-hrlog", bb: LOG, k: Q2, hr: LOG
 const f = (x: number, d = 4) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
 const sd = (xs: number[]) => { const m = xs.reduce((s, x) => s + x, 0) / xs.length; return Math.sqrt(xs.reduce((s, x) => s + (x - m) ** 2, 0) / xs.length); };
 
-// ── weighted stats (the curveNorm/uDomain math for rawpoly — forms.ts keeps them private) ──
-function wstats(vals: number[], w: number[]): { mu: number; sd: number } {
-  const W = w.reduce((s, x) => s + x, 0);
-  const mu = vals.reduce((s, v, i) => s + w[i]! * v, 0) / W;
-  return { mu, sd: Math.sqrt(vals.reduce((s, v, i) => s + w[i]! * (v - mu) ** 2, 0) / W) || 1 };
-}
-const domainOf = (vals: number[], mu: number, s: number) => {
-  const ss = s > 1e-9 ? s : 1;
-  let uMin = Infinity, uMax = -Infinity;
-  for (const v of vals) { const u = (v - mu) / ss; if (u < uMin) uMin = u; if (u > uMax) uMax = u; }
-  return { uMin, uMax };
-};
-
-// ── Candidate C: vertex-constrained quad refit of the hr channel ────────────────
-// Mirrors fitPitForm's steps exactly, swapping only the hr fit when the unconstrained
-// vertex is interior; bb/k are hr-independent and are reused from the unconstrained fit;
-// BIP + H refit downstream of the constrained hr (training mirrors inference).
+// ── Candidate C: vertex-pinned quad — NOW THE PRODUCTION FALLBACK ───────────────
+// 2026-07-21 ruling: the constrained-fit math moved INTO production (src/training/forms.ts
+// pinQuadAtDomainMax/pinHQuadAtDomainMax, applied per quad channel by fitPitForm/fitHitForm
+// when a `pins` collector is passed — exactly what server.saveTrainedModel now does). This
+// wrapper IS that path; the tool keeps no second copy of the constrained fit. When no vertex
+// is in-domain the pins stay empty and the fit is bit-identical to the unconstrained PARETO_PIT
+// fit (verified below on [2041,2042]).
 export function fitPitFormHRCQ(obs: TrainObs[], fitExp = 0.75): FittedPit {
-  const base = fitPitForm(PARETO_PIT, obs, fitExp);
-  if (inDomainVertex(base.hr) == null) return base;   // constraint inactive ⇒ EXACTLY the unconstrained fit
-  const w = obs.map((p) => Math.pow(p.pitch.BF, fitExp));
-  const HR = obs.map((p) => (p.pitch.HR / Math.max(p.pitch.BF, 1)) * 600);
-  const hrr = obs.map((p) => p.ratings.pitch.hrr), stu = obs.map((p) => p.ratings.pitch.stu);
-  const con = obs.map((p) => p.ratings.pitch.con), pbabip = obs.map((p) => p.ratings.pitch.pbabip);
-  // hr design: [1, (u − zpin)², zAux] with zpin = uMax (same μ/σ/domain conventions as fitEventAux)
-  const { mu, sd: sdv } = wstats(hrr, w);
-  const { uMin, uMax } = domainOf(hrr, mu, sdv);
-  const zpin = uMax;
-  const la = stu.map(ln1);
-  const { mu: amu, sd: asd } = wstats(la, w);
-  const u = hrr.map((v) => (sdv > 1e-9 ? (v - mu) / sdv : 0));
-  const za = la.map((v) => (asd > 1e-9 ? (v - amu) / asd : 0));
-  let X = u.map((ui, i) => [1, (ui - zpin) ** 2, za[i]!]);
-  let beta = wls(X, HR, w);
-  let c0 = beta[0]!, c2 = beta[1]!, aux = beta[2]!;
-  if (c2 < 0) { // c2 ≥ 0 constraint active at the boundary → degenerate flat-in-rating fit
-    X = u.map((_, i) => [1, za[i]!]);
-    beta = wls(X, HR, w);
-    c0 = beta[0]!; c2 = 0; aux = beta[1]!;
-  }
-  // Repackage (z − zpin)² as a standard rawpoly-2: b0 = c0 + c2·zpin², b1 = −2·c2·zpin, b2 = c2.
-  const hr: FittedEvent = {
-    beta: [c0 + c2 * zpin * zpin, -2 * c2 * zpin, c2], mu, sd: sdv, curve: Q2,
-    aux: { beta: aux, mu: amu, sd: asd }, uMin, uMax,
-  };
-  // Downstream, exactly as fitPitForm: BIP from the (constrained) predicted rates, then refit H.
-  const bip = obs.map((_, i) => Math.max(600 - rateAux(base.bb, con[i]!, stu[i]!) - rate(base.k, stu[i]!) - rateAux(hr, hrr[i]!, stu[i]!) - PIT_BIP_ADJ, 1));
-  const nHH = obs.map((p) => ((p.pitch.b1 + p.pitch.b2 + p.pitch.b3) / Math.max(p.pitch.BF, 1)) * 600);
-  const hn = wstats(pbabip, w);
-  const rating: CurveFit = { curve: Q2, mu: hn.mu, sd: hn.sd, ...domainOf(pbabip, hn.mu, hn.sd) };
-  const bipFit: CurveFit = { curve: LOG, mu: 0, sd: 1 };
-  const h: FittedH = { beta: wls(pbabip.map((rv, i) => hDesign(rating, rv, bipFit, bip[i]!)), nHH, w), rating, bip: bipFit };
-  return { bb: base.bb, k: base.k, hr, h };
+  const pins: VertexPin[] = []; // collector arms the production pin; contents not needed here
+  return fitPitForm(PARETO_PIT, obs, fitExp, pins);
 }
 const HRCQ_MODEL = { name: "woba·pareto-hrcq", role: "pitcher" as const, fit: (t: TrainObs[]) => fitPitFormHRCQ(t), predict: (p: unknown, test: TrainObs[]) => test.map((o) => predictPitForm(p as FittedPit, o)) };
 

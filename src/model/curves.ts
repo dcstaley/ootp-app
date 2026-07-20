@@ -129,9 +129,12 @@ export const capActive = (e: FittedEvent, lo: number, hi: number): boolean => {
 // The monotone cap and tangent-linear extension make an interior-vertex quad SAFE to *evaluate*,
 // but a fitted quad that turns over WITHIN its own fit domain is still a corrupt SHAPE: over that
 // band a better rating predicts a worse rate, and the cap only masks it downstream. The T-3 pattern
-// is to BLOCK persisting such a form (force-override, error names the channel, suggests the log
-// fallback) rather than silently deploying a capped-over lie. These helpers locate the vertex; the
-// gate that throws lives at the persist site (server.saveTrainedModel).
+// is to BLOCK persisting such a form (force-override, error names the channel) rather than
+// silently deploying a capped-over lie. These helpers locate the vertex. Since 2026-07-21 the
+// production trainer auto-REFITS an offending quad with its vertex PINNED at the domain max
+// (forms.ts pinQuadAtDomainMax — bake-off candidate C, a behavioral null vs the deployed quad;
+// recorded on the artifact as `vertexPinned`), so the persist-site gate (server.saveTrainedModel)
+// remains only as the should-be-impossible residual backstop.
 /** For a rawpoly-2 FittedEvent with a stored fit domain, the z-vertex iff it lies STRICTLY inside
  *  [uMin,uMax] (a real in-domain turn-over); null for every other curve/degree or missing domain. */
 export function inDomainVertex(e: FittedEvent): number | null {

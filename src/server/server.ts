@@ -22,7 +22,7 @@ import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
 import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
-import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT } from "../training/forms.ts";
+import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT, type VertexPin } from "../training/forms.ts";
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
 import type { KSpread as KSpreadCfg } from "../config/types.ts"; // K + BUILD-3 pitcher per-channel spread fields
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
@@ -1391,7 +1391,8 @@ interface TrainedModel {
   id: string; name: string; datasetRoot: string; window: number[]; minPA: number; includeVariants: boolean;
   formatVersion?: number; // T-4: evaluation-semantics version; absent ⇒ predates versioning (v1)
   validation?: { errors: number; warnings: number; excluded: string[]; forced: boolean }; // T-3: dataset state at train time
-  vertexGate?: { ok: boolean; forced: boolean; offenders: { channel: string; vertexZ: number }[] }; // Batch-1 item 1: in-domain-vertex outcome at deploy time (ok ⇒ no quad turned over in its fit domain; forced ⇒ persisted over a live offender)
+  vertexGate?: { ok: boolean; forced: boolean; offenders: { channel: string; vertexZ: number }[] }; // Batch-1 item 1: in-domain-vertex outcome at deploy time (ok ⇒ no quad turned over in its fit domain; forced ⇒ persisted over a live offender). Since the 2026-07-21 vertex-pin fallback, offenders should be impossible (the pin clears them at fit time).
+  vertexPinned?: VertexPin[]; // 2026-07-21 vertex-pin fallback provenance: quad channels whose unconstrained vertex landed in-domain, refit with the vertex pinned at the domain max (pinZ). Absent ⇒ no channel needed the pin.
   coefficients: { woba_hitting: WobaHittingCoeffs; woba_pitching: WobaPitchingCoeffs; basic_hitting: BasicHittingCoeffs; basic_pitching: BasicPitchingCoeffs };
   // D3 #2 (raw-poly) fitted form — the DEPLOYED event math, frozen here so scoring is
   // reproducible even as the (gitignored, weekly-changing) training data moves. Optional
@@ -1440,17 +1441,27 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   // turned over under all-quad — so the monotone gate is fully clean (plan §11.31).
   const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
   const hitQual = obs.filter((o) => HITTER.qualifies(o, minPA)), pitQual = obs.filter((o) => PITCHER.qualifies(o, minPA));
-  const eventForm: EventForm = { hit: fitHitForm(RAWPOLY_HIT, hitQual), pit: fitPitForm(PARETO_PIT, pitQual) };
-  // Deploy-time vertex gate (Batch-1 item 1, T-3 pattern): BLOCK persisting a form whose fitted quad
-  // turned over WITHIN its own fit domain — the cap/tangent extension keep it safe to evaluate but the
-  // SHAPE is corrupt (a better rating scoring worse over that band). Force-override records the fact on
-  // the artifact; never a silent fallback. The named-channel remedy is the log baseline for that event.
+  // Vertex-pin monotone fallback (ruling 2026-07-21, bake-off candidate C — evidence
+  // fixtures/pithr-form-bakeoff-run-2026-07-21.txt): passing the `vertexPinned` collector makes
+  // fitHitForm/fitPitForm auto-REFIT any quad channel whose unconstrained vertex lands in-domain,
+  // with the vertex pinned at the domain max (monotone by construction, behavioral null vs the
+  // deployed quad). Pins are recorded on the artifact + surfaced in the response notes below.
+  const vertexPinned: VertexPin[] = [];
+  const eventForm: EventForm = { hit: fitHitForm(RAWPOLY_HIT, hitQual, 0.75, vertexPinned), pit: fitPitForm(PARETO_PIT, pitQual, 0.75, vertexPinned) };
+  // Deploy-time vertex gate (Batch-1 item 1, T-3 pattern) — now the RESIDUAL backstop: the pin
+  // fallback clears any in-domain vertex at fit time (the pinned vertex sits AT the domain edge,
+  // outside the strict-interior test), so an offender here means the pinned refit itself failed —
+  // should be impossible. Hard error; force=true still deploys + records, per the T-3 pattern.
   const vertexOffenders = formVertexOffenders(eventForm);
   const vertexGate = { ok: vertexOffenders.length === 0, forced: vertexOffenders.length > 0 && !!body.force, offenders: vertexOffenders };
   if (vertexOffenders.length && !body.force) {
     const names = vertexOffenders.map((o) => `${o.channel} (vertex z=${o.vertexZ.toFixed(2)})`).join(", ");
-    throw new Error(`fitted quad turns over in-domain on channel(s): ${names} — a better rating would score worse over that band. Switch the channel(s) to the log baseline in the form spec, or resave with force=true to deploy anyway (recorded on the artifact).`);
+    throw new Error(`vertex-pin refit FAILED to clear channel(s): ${names} — the pinned vertex should sit AT the domain edge, so this case should be impossible. Investigate the fit (src/training/forms.ts pinQuadAtDomainMax), or resave with force=true to deploy anyway (recorded on the artifact).`);
   }
+  const vertexPinNote = vertexPinned.length
+    ? `vertex-pin fallback applied: ${vertexPinned.map((p) => `${p.channel} quad vertex was in-domain — refit with vertex pinned at domain max (z=${p.pinZ.toFixed(3)})`).join("; ")}; monotone by construction, behavioral null vs the unconstrained quad (bake-off C, 2026-07-21)`
+    : undefined;
+  if (vertexPinNote) console.warn(`[server] ${vertexPinNote}`);
   // Per-rating training MAX over the fitting obs (pooled across sides) — the saturation
   // ceilings the pool transform won't lift past. Recomputed per model, so it tracks retrains.
   const maxOf = (rows: TrainObs[], get: (o: TrainObs) => number) => rows.reduce((m, o) => Math.max(m, get(o)), 0);
@@ -1521,6 +1532,7 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     formatVersion: MODEL_FORMAT_VERSION,
     validation: { errors: validation.errors, warnings: validation.warnings, excluded: validation.excluded, forced: !validation.ok },
     vertexGate,
+    vertexPinned: vertexPinned.length ? vertexPinned : undefined,
     coefficients: { woba_hitting: f.woba_hitting.coefficients, woba_pitching: f.woba_pitching.coefficients, basic_hitting: f.basic_hitting.coefficients, basic_pitching: f.basic_pitching.coefficients },
     eventForm,
     platoon,
@@ -1528,7 +1540,9 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     ratingEnvelope,
     trainingMeans,
     diag: { hitPearson: f.wobaDiagHit?.pearson ?? null, pitPearson: f.wobaDiagPit?.pearson ?? null, rowsHit: f.woba_hitting.rowCount, rowsPit: f.woba_pitching.rowCount },
-    trainedAt: new Date().toISOString(), notes: body.notes ? String(body.notes) : undefined,
+    trainedAt: new Date().toISOString(),
+    // The pin note rides on `notes` so the train response + model list SHOW that the fallback fired.
+    notes: [body.notes ? String(body.notes) : undefined, vertexPinNote].filter(Boolean).join(" · ") || undefined,
   };
   await repo.save("trained-models", id, model);
   // NEVER leave the DB with artifacts but no active pointer. Deleting the active model
