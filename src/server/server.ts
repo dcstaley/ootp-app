@@ -1531,6 +1531,17 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     trainedAt: new Date().toISOString(), notes: body.notes ? String(body.notes) : undefined,
   };
   await repo.save("trained-models", id, model);
+  // NEVER leave the DB with artifacts but no active pointer. Deleting the active model
+  // correctly nulls activeModelId (see the delete handler), so a delete-then-retrain cycle
+  // used to land with a saved artifact and `activeModelId: null` — the app scores through the
+  // log-linear fallback and every tool that resolves the active model throws. Auto-activate
+  // ONLY when nothing is active: training an extra/experimental model must never silently
+  // swap the pointer out from under a live production model.
+  if (!state.activeModelId) {
+    state.activeModelId = id;
+    await saveState();
+    await refreshActiveModel(); // load the form into memory + clear the scoring cache
+  }
   return modelSummary(model);
 }
 

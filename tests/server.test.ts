@@ -118,6 +118,39 @@ describe.skipIf(!HAVE_DATA)("Q-2 — server hardening smoke", () => {
     const body = await after.json() as { tournament: string };
     expect(body.tournament).toBe(before.tournament);
   });
+
+  // Regression: a delete-then-retrain cycle used to land with a saved artifact and
+  // `activeModelId: null` (delete correctly nulls the pointer; save never set it), so the app
+  // scored through the log-linear fallback and every tool resolving the active model threw.
+  // saveTrainedModel now auto-activates WHEN NOTHING IS ACTIVE — and must NOT hijack the
+  // pointer when a model is already active (training an experimental model must not silently
+  // swap production scoring).
+  it("saving a trained model activates it only when no model is active", async () => {
+    // deactivate → the null-pointer state a delete-of-the-active-model leaves behind
+    let r = await fetch(`${base}/api/training/models/activate?id=`, { method: "POST" });
+    expect(r.status).toBe(200);
+    expect((await r.json() as { activeId: string | null }).activeId).toBe(null);
+
+    // save with nothing active → the new artifact becomes active
+    r = await fetch(`${base}/api/training/models/save`, {
+      method: "POST", body: JSON.stringify({ name: "Smoke Autoactivate" }),
+    });
+    expect(r.status).toBe(200);
+    const first = await r.json() as { ok: boolean; error?: string; model: { id: string }; activeId: string | null };
+    expect(first.ok, first.error).toBe(true);
+    expect(first.activeId).toBe(first.model.id);
+    expect(first.activeId).not.toBe(null);
+
+    // save again with one already active → pointer must stay on the FIRST model
+    r = await fetch(`${base}/api/training/models/save`, {
+      method: "POST", body: JSON.stringify({ name: "Smoke Second" }),
+    });
+    expect(r.status).toBe(200);
+    const second = await r.json() as { ok: boolean; model: { id: string }; activeId: string | null };
+    expect(second.ok).toBe(true);
+    expect(second.model.id).not.toBe(first.model.id); // a genuinely new artifact
+    expect(second.activeId).toBe(first.model.id);     // ...that did NOT steal the pointer
+  }, 120_000);
 });
 
 // ── helpers that read the committed catalog once ─────────────────────────────
