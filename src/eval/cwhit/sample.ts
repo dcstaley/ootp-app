@@ -31,6 +31,7 @@ import type { Card } from "../../data/catalog.ts";
 import { makeVariant } from "../../data/variants.ts";
 import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/curves.ts";
 import { applyPitSpread } from "../../model/pool-transform.ts";
+import { applyHitTail, type HitTail } from "../../scoring-core/hit-tail.ts";
 import { parseCwhitPit, parseCwhitHit } from "./parse.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "./join.ts";
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "./audit.ts";
@@ -101,6 +102,12 @@ export interface SampleDeps {
    *  sHit = 1). Present ⇒ ourPit applies it at the PRODUCTION placement (raw K, pre-BIP, pre-era)
    *  and the per-tier calibrate() sees the same correction. Absent ⇒ bit-identical to before. */
   kSpreadPit?: Map<string, KSpreadPit>;
+  /** Optional per-Quick-tier BUILD-2 hitter tail correction (the eval mirror of production
+   *  `config.hitTail`, built by the ONE `computeHitTail`). Present ⇒ ourHit applies it at the
+   *  PRODUCTION placement (applyHitTail on the raw side events, post-model, pre-BIP, pre-era —
+   *  the score-card.ts seam) and the per-tier calibrate() sees the same correction. Absent ⇒
+   *  bit-identical to before. Hitter-ONLY — the pitcher path never sees it (BUILD-1/3 own pitchers). */
+  hitTail?: Map<string, HitTail>;
 }
 
 /** A card's two predicted lines. See `ourPit`/`ourHit` for why BOTH exist and what each answers. */
@@ -196,8 +203,9 @@ export function ourPit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales
   return { raw, dep, axis: n_(c["Stuff vR"]) };
 }
 
-/** Hitter: combined own-gap line → per-PA channels + wOBA (BATTING-ONLY, to match cwhit), RAW and DEPLOYED. */
-export function ourHit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales): TwoLines {
+/** Hitter: combined own-gap line → per-PA channels + wOBA (BATTING-ONLY, to match cwhit), RAW and DEPLOYED.
+ *  `ht` (optional) = the BUILD-2 hitter tail correction, applied EXACTLY where production applies it. */
+export function ourHit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales, ht?: HitTail): TwoLines {
   const { wR, wL } = d.hitExp.get(handLetter(n_(c["Bats"]))) ?? { wR: 0.5, wL: 0.5 };
   const bats = n_(c["Bats"]);
   const speed = n_(c["Speed"]), stealRate = n_(c["Steal Rate"]), steal = n_(c["Stealing"]), run = n_(c["Baserunning"]);
@@ -210,6 +218,13 @@ export function ourHit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales
     }, d.coeffs);
   };
   const eR = side("R"), eL = side("L");
+  // BUILD-2 hitter tail correction (eval mirror of the production seam): applyHitTail is the ONE
+  // copy of the order of operations — SO′/HR′ from their own channels, then BABIP measured on the
+  // ORIGINAL BIP, corrected, re-applied on the NEW BIP with the rate move riding e.hMul (the
+  // deployed hittingComponents carrier). Per-side, post-model, pre-BIP-chain, pre-era — exactly
+  // score-card.ts. The RAW line below then reads the corrected oneB/GAP/SO/HR directly, and the
+  // DEPLOYED line's hittingComponents/trusted assembly picks the BABIP leg up via e.hMul.
+  if (ht) { applyHitTail(eR, ht); applyHitTail(eL, ht); }
 
   // RAW.
   const BB = wR * eR.BB + wL * eL.BB, SO = wR * eR.SO + wL * eL.SO, HR = wR * eR.HR + wL * eL.HR;
@@ -266,13 +281,15 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   for (const { tier, cap } of QUICK) {
     const basePool = d.baseCards.filter((c) => n_(c["Card Value"]) <= cap);
     const pt = buildPoolTransform(d.ref, computeUnifiedFieldStats(basePool, d.coeffs, d.model, FIELD_N, true), d.envelope);
-    // Optional pitcher K-spread for this tier — threaded into calibrate too (production computes the
-    // anchor on the SAME corrected events the scores use). sHit=1 ⇒ the hitter side is untouched
-    // (applyKSpread short-circuits s===1 to the exact raw K).
+    // Optional pitcher spread + hitter tail for this tier — threaded into calibrate too (production
+    // computes the anchor on the SAME corrected events the scores use). sHit=1 ⇒ the hitter K leg is
+    // untouched (applyKSpread short-circuits s===1 to the exact raw K); the BUILD-3 HR/BABIP fields
+    // ride along so the anchor matches production (absent ⇒ exact identity legs).
     const ks = d.kSpreadPit?.get(tier);
-    const kSpread = ks ? { sHit: 1, sPit: ks.s, meanHit: 0, meanPit: ks.mean } : undefined;
+    const ht = d.hitTail?.get(tier);
+    const kSpread = ks ? { sHit: 1, sPit: ks.s, meanHit: 0, meanPit: ks.mean, sPitHr: ks.sHr, meanPitHr: ks.meanHr, sPitBab: ks.sBab, meanPitBab: ks.meanBab } : undefined;
     // The REAL per-tier calibration — same call the deployed path makes (cf. tools/cwhit-bsr-validate.ts).
-    const cal = calibrate(basePool, { coeffs: d.coeffs, derived: d.derived, eventForm: d.eventForm, poolTransform: pt, kSpread });
+    const cal = calibrate(basePool, { coeffs: d.coeffs, derived: d.derived, eventForm: d.eventForm, poolTransform: pt, kSpread, hitTail: ht });
     cals.push({ tier, cal });
 
     for (const role of ["pit", "hit"] as const) {
@@ -287,7 +304,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
           if (n_(c["Card Value"]) > cap) continue;
           if (role === "pit" ? !isPit(c) : isPit(c)) continue;
           const cid = `${bc["Card ID"]}|${vlvl}`;
-          const p = role === "pit" ? ourPit(c, pt, d, cal, ks) : ourHit(c, pt, d, cal);
+          const p = role === "pit" ? ourPit(c, pt, d, cal, ks) : ourHit(c, pt, d, cal, ht);
           // The JOIN fingerprint rides the same line the audit judges. Immaterial either way: the two
           // lines coincide per-channel on a neutral env (sBB=sHR=1, era/park=1) — the tool proves it.
           const fp = role === "pit"

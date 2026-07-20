@@ -28,8 +28,10 @@ import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
   makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
-  type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights,
+  buildPoolTransform, buildFrameShift, poolPitMeansOwn, kSpreadPitRamp, pitSpreadHrRamp,
+  type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
+import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../src/scoring-core/hit-tail.ts";
 import { parseCatalogCsv } from "../src/data/catalog.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import {
@@ -37,8 +39,8 @@ import {
   type Agreement,
 } from "../src/eval/cwhit/scorecard.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, n_, OBS_DIR as OBS, PROJ_DIR as PROJ, FIELD_N,
-  MIN_IP, MIN_PA, QUICK, type Rec, type SampleDeps,
+  buildCwhitSample, wellSampled, handLetter, isPit, n_, OBS_DIR as OBS, PROJ_DIR as PROJ, FIELD_N,
+  MIN_IP, MIN_PA, QUICK, type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
@@ -48,7 +50,7 @@ const sgn = (x: number, d = 2) => (Number.isFinite(x) ? `${x >= 0 ? "+" : ""}${x
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
 const state = (await repo.load<{ activeModelId?: string; catalogSourceId?: string }>("state", "app")) ?? {};
-type TM = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
+type TM = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
 const trained = (await repo.loadAll<TM>("trained-models")).find((x) => x.id === state.activeModelId);
 if (!trained?.eventForm || !trained.wobaWeights || !trained.platoon) throw new Error("active model missing eventForm/wobaWeights/platoon");
 const rp = makeRawPolyModel(trained.eventForm);
@@ -68,9 +70,42 @@ const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
 const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
 
+// ── PRODUCTION spread/tail corrections (BUILD-1/2/3), per Quick tier ─────────
+// Default ON (matches production standard scoring, all three on-by-default). `--no-corrections`
+// runs the pre-correction model for before/after comparison. Per-tier parameters are computed
+// EXACTLY as src/server/server.ts scoreTournament does on the own-gap path (and as the fit tools
+// tools/fit-kspread-pit.ts / tools/fit-pitspread-hrbab.ts computed them):
+//   · gaps from buildFrameShift(trainingMeans, poolField) — pit.vR.stu (K) / pit.vR.hrr (HR);
+//   · s from the live ramps kSpreadPitRamp / pitSpreadHrRamp (constants in pool-transform.ts);
+//   · centering means from poolPitMeansOwn (top-N field, OWN-GAP ratings, pre-era);
+//   · the hitter tail state from computeHitTail (pool-property gaps + pinned universal λs).
+// The BUILD-3 BABIP scalar is HELD in production — sBab is NEVER set here.
+const CORRECTIONS = !process.argv.includes("--no-corrections");
+let ksMap: Map<string, KSpreadPit> | undefined;
+let htMap: Map<string, HitTail> | undefined;
+const tierParams: { tier: string; sK: number; kBar: number; sHr: number; hrBar: number; lwHr: number; lwBab: number; lwSo: number }[] = [];
+if (CORRECTIONS) {
+  const TMeans = trained.trainingMeans;
+  if (!TMeans) throw new Error("corrections ON needs the active model's trainingMeans (retrain to embed them) — or run with --no-corrections");
+  ksMap = new Map(); htMap = new Map();
+  for (const { tier, cap } of QUICK) {
+    const basePool = baseCards.filter((c) => n_(c["Card Value"]) <= cap);
+    const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+    const pt = buildPoolTransform(ref, poolField, envelope);           // same build the sample runs per tier
+    const shift = buildFrameShift(TMeans, poolField);
+    const pm = poolPitMeansOwn(basePool, coeffs, rp, pt, FIELD_N);
+    const ks: KSpreadPit = { s: kSpreadPitRamp(shift.pit.vR.stu ?? 0), mean: pm.k, sHr: pitSpreadHrRamp(shift.pit.vR.hrr ?? 0), meanHr: pm.hr }; // sBab HELD — never set
+    ksMap.set(tier, ks);
+    const hitPool = basePool.filter((c) => !isPit(c));                 // the server's hitter-pool filter
+    const ht = computeHitTail(hitPool, coeffs, rp, pt, ref, poolField, PINNED_HIT_TAIL);
+    htMap.set(tier, ht);
+    tierParams.push({ tier, sK: ks.s, kBar: ks.mean, sHr: ks.sHr!, hrBar: ks.meanHr!, lwHr: ht.hr.lw, lwBab: ht.bab.lw, lwSo: ht.so.lw });
+  }
+}
+
 // The judged sample — built by the ONE shared builder (src/eval/cwhit/sample.ts), so this tool and
 // tools/cwhit-two-ledger.ts necessarily score the identical cards with the identical predicted lines.
-const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp };
+const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap };
 const { recs, windows, notices, projUnjoined, obsFiles, projFiles } = buildCwhitSample(deps);
 const hasObs = (tier: string, role: "pit" | "hit") => obsFiles.includes(`cwhit-${tier}-${role}.tsv`);
 const projFile = (tier: string, role: "pit" | "hit") => (projFiles.includes(`cwhit-${tier}-${role}-proj.tsv`) ? `${PROJ}/cwhit-${tier}-${role}-proj.tsv` : null);
@@ -101,7 +136,16 @@ console.log(`\n╔════════════════════�
 console.log(`║  cwhit BENCHMARK SCORECARD — UNIVERSAL (ours) vs NATIVE (cwhit) vs OBSERVED                 ║`);
 console.log(`╚════════════════════════════════════════════════════════════════════════════════════════════╝`);
 console.log(`model '${trained.id}' | catalog '${srcId}' | neutral env (bronze-quick era/park) | own-gap pool transform ON`);
-console.log(`join: observed→catalog = name+VAL+VLvl+Hand fingerprint (existing joinCwhit); projected→catalog = FULL //Card Title + VLvl (exact)\n`);
+console.log(`join: observed→catalog = name+VAL+VLvl+Hand fingerprint (existing joinCwhit); projected→catalog = FULL //Card Title + VLvl (exact)`);
+console.log(`PRODUCTION CORRECTIONS: ${CORRECTIONS
+  ? "ON (production default) — BUILD-1 pit K-spread ramp + BUILD-3 pit HR9 spread + BUILD-2 hitter tail (HR/BABIP/SO); pit BABIP scalar HELD (never set). Run with --no-corrections for the pre-correction model."
+  : "OFF (--no-corrections) — the PRE-correction model; production ships all three ON."}`);
+if (CORRECTIONS) {
+  console.log(`  per-tier parameters (computed from pool composition + the live universal constants — no per-tournament fitting):`);
+  console.log(`  tier       s(K)    K̄_pool   s(HR)   HR̄_pool   hitTail lw: HR      BABIP   SO`);
+  for (const p of tierParams) console.log(`  ${p.tier.padEnd(9)} ${f(p.sK, 3).padStart(5)}  ${f(p.kBar, 1).padStart(7)}   ${f(p.sHr, 3).padStart(5)}  ${f(p.hrBar, 2).padStart(7)}          ${f(p.lwHr, 3).padStart(6)}  ${f(p.lwBab, 3).padStart(6)}  ${f(p.lwSo, 3).padStart(5)}`);
+}
+console.log(``);
 
 console.log(`── FIXTURES DISCOVERED (glob-driven; no tier hard-coded) ──`);
 console.log(`  observed  (${OBS}):  ${obsFiles.filter((x) => x.endsWith(".tsv")).length} tables — Quick tiers used: ${QUICK.filter((q) => hasObs(q.tier, "pit") || hasObs(q.tier, "hit")).map((q) => q.tier).join(", ")}`);
