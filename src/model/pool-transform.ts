@@ -170,18 +170,60 @@ export function applyPitSpread(
 }
 
 // ── Pitcher K-spread ramp (own-gap path; PRODUCTION, on by default) ─────────────
-// FIT PROVENANCE (2026-07-16, tools/fit-kspread-pit.ts; results doc
-// docs/CWHIT_KSPREAD_PIT_2026-07-16.md; Derek ruled 2026-07-17: ship on-by-default):
-// per-tier cwhit K9 calibration slopes (iron 1.90 / bronze 1.70 / silver 1.51 / gold 1.43 at
-// stu-gaps 27.7/25.7/22.5/19.3), precision-weighted; s(0)=1 hard — league in-frame K is already
-// calibrated (insample-frame-check), so the amplification is a tournament-frame parameter by
-// construction. G is identified only as a lower bound over the observed gap range (g≈19–28 is
+// ORIGINAL FIT PROVENANCE (2026-07-16, tools/fit-kspread-pit.ts; results doc
+// docs/CWHIT_KSPREAD_PIT_2026-07-16.md; Derek ruled 2026-07-17: ship on-by-default), fitted under
+// model league-41-42: per-tier cwhit K9 calibration slopes (iron 1.90 / bronze 1.70 / silver 1.51 /
+// gold 1.43 at stu-gaps 27.7/25.7/22.5/19.3), precision-weighted; s(0)=1 hard — league in-frame K is
+// already calibrated (insample-frame-check), so the amplification is a tournament-frame parameter by
+// construction. G is identified only as a LOWER BOUND over the observed gap range (g≈19–28 is
 // near-linear, β≈0.0287/pt); A/G pinned by rule at the most-saturating member within 5% of the
-// linear-limit SSE (least extrapolated amplification beyond observed gaps). Held-out bronze:
-// predicted 1.77 [1.64,1.87] vs measured 1.70 [1.60,1.80]. Reference values: s(10)=1.29,
-// s(20)=1.58, s(28)=1.80. Gold-quick G2 exception overruled by Derek (thin pre-declared cell,
-// non-replicating at matched gap in gold-cap daily, instrument-inherent per the oracle-s test).
-export const K_SPREAD_PIT = { A: 9.5394, G: 319 } as const;
+// linear-limit SSE. Held-out bronze: predicted 1.77 [1.64,1.87] vs measured 1.70 [1.60,1.80].
+// Old values were { A: 9.5394, G: 319 }.
+//
+// ── DATED PARAMETER REFRESH — 2026-07-21, refit under model league-42-43 ─────────
+// (tools/fit-kspread-pit.ts; fixtures/kspread-refit-run-2026-07-21-league-42-43.txt; Fable ruled:
+// refit + model ship as ONE unit.) Gate records are NOT re-opened; this is a refresh, not a re-fit
+// of the design.
+//
+// COMPARE ramps on β, NEVER on raw {A,G} — this is now the standing convention. G is only
+// lower-bounded (SSE within 5% of the linear limit for G ∈ [152.5, 400+]), so a G point value is a
+// PINNING-RULE OUTCOME, not an estimate; only s over the observed gap range is measured.
+// β, each ramp over ITS OWN observed gaps: old {9.5394,319} = 0.0278/pt (19.3–27.7)
+//                                          new {5.0871,152.5} = 0.0293/pt (15.9–23.6)   ⇒ +5.4%
+// At MATCHED gaps the new ramp delivers uniformly MORE correction: +0.040 at g=16 rising to +0.052
+// at g=28. The OLD deployed A=9.5394 sits INSIDE the refit CI [0.947, 9.666] ⇒ WINDOW-COHERENT by
+// the ruling's criterion.
+// CAUTION, learned the hard way: do NOT compare against a run's LINEAR-LIMIT figure (this run's was
+// 0.0310). That is a different member of the within-5%-SSE family (G→∞), not the pinned ramp. The
+// first draft of this comment mixed the two and claimed "+8%"; the regression pin in
+// tests/kspread-pit.test.ts caught it.
+//
+// THE +5.4% IS A COORDINATE TAX, NOT A CHANGE IN THE WORLD. Measured per-tier slopes barely moved
+// (iron 1.90→1.86, bronze 1.70→1.65, silver 1.51→1.46, gold 1.43→1.39; −2..−3%) while the GAPS
+// moved a lot (27.7→23.6, 25.7→22.8, 22.5→20.5, 19.3→15.9; −13..−18%). β had to steepen to deliver
+// the same correction over a shorter gap range. Cause traced in tools/kramp-gap-trace.ts (commit
+// c0e9f78): g = train.hit.kRat − pool.hit.kRat, and BOTH sides are top-FIELD_N cohorts selected by
+// the model's OWN predicted wOBA — so g is a property of (league, pool, MODEL), and a new artifact
+// reshuffles it. The pool side moved +3.17 on an IDENTICAL catalog (64% of the shrink); the league
+// side moved −1.76 because kRat is the one hitter channel that fell while the frame otherwise rose.
+// ⇒ Cohort-rule arbitration MUST LAND before the 43-44 retrain; this refresh visibly paid the tax.
+//
+// Held-out bronze (refit): predicted 1.74 [1.60,1.86] vs measured 1.65 [1.56,1.76] — PASS.
+// Hitter identity check: bit-identical (max |Δ| = 0).
+//
+// GATE OVERRULES ON THIS RAMP (both dated, both standing):
+//  · GOLD-QUICK G2 — overruled by Derek 2026-07-17. Thin pre-declared cell (N=15), non-replicating
+//    at matched gap in gold-cap daily, instrument-inherent per the oracle-s test. Still FAILs on the
+//    2026-07-21 refit (Δcorr −0.134 [−0.316,−0.021]) while gold-cap daily at the SAME gap 15.9 reads
+//    −0.0057 ns. Prior overrule STANDS.
+//  · SILVER G1 — overruled by Fable 2026-07-21. Grounds: the same documented +0.14–0.15 thin-cell
+//    overshoot accepted at BUILD-1 shipping; a 0.02 boundary crossing at N=22 (orig 0.91 [0.64,1.02]
+//    PASS → refit 0.89 [0.62,1.00] FAIL); no new mechanism; and the cell already sits under the open
+//    truncation-diagnostic question. CONDITION: the silver cell gets a FORMAL RE-READ when deeper
+//    silver/gold captures land — a CI-clear overshoot on deeper data RE-OPENS the ramp's tier response.
+//  · EG / Bronze-Heart weird-env K9 FAILs (post 1.51 / 1.46) remain the RECORDED TASK-1 RESIDUAL
+//    (era_k over-compresses at extreme eras) — not a defect of this ramp.
+export const K_SPREAD_PIT = { A: 5.0871, G: 152.5 } as const;
 
 /** s(gap) for the pitcher K-spread on the own-gap path: 1 + A·(1 − e^(−g/G)), with s(g ≤ 0) = 1
  *  EXACTLY (league anchor; a stronger-than-training pool is never compressed). The caller applies

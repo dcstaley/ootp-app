@@ -56,9 +56,14 @@ function card(over: Record<string, number> = {}): Record<string, unknown> {
 
 // ── 0) the production ramp (constants shipped 2026-07-17, Derek's ruling) ───────
 describe("kSpreadPitRamp — fitted constants + league anchor + shape (regression pins)", () => {
-  it("pins the fit provenance constants exactly (A=9.5394, G=319 — docs/CWHIT_KSPREAD_PIT_2026-07-16.md §2)", () => {
-    expect(K_SPREAD_PIT.A).toBe(9.5394);
-    expect(K_SPREAD_PIT.G).toBe(319);
+  // REFRESHED 2026-07-21 for the league-42-43 refit (Fable ruling: model + constants ship as ONE
+  // unit). Previous pin was { A: 9.5394, G: 319 }, fitted under league-41-42.
+  // These two pins FAILED on the constant change, which is precisely their job — a ramp constant
+  // must never move without a reviewed refit behind it. Provenance + both gate overrules are in
+  // src/model/pool-transform.ts; run record in fixtures/kspread-refit-run-2026-07-21-league-42-43.txt.
+  it("pins the fit provenance constants exactly (A=5.0871, G=152.5 — 2026-07-21 refit under league-42-43)", () => {
+    expect(K_SPREAD_PIT.A).toBe(5.0871);
+    expect(K_SPREAD_PIT.G).toBe(152.5);
   });
   it("s(0) === 1 EXACTLY, and s(g ≤ 0) === 1 (league anchor; stronger-than-training pools never compressed)", () => {
     expect(kSpreadPitRamp(0)).toBe(1);
@@ -66,15 +71,26 @@ describe("kSpreadPitRamp — fitted constants + league anchor + shape (regressio
     expect(kSpreadPitRamp(-100)).toBe(1);
   });
   it("reproduces the fitted ramp values at the reference gaps (stable gate-run numbers, 2dp)", () => {
-    // From the shipping-candidate table in the results doc: s(10)=1.29, s(20)=1.58, s(28)=1.80.
-    expect(kSpreadPitRamp(10)).toBeCloseTo(1.29, 2);
-    expect(kSpreadPitRamp(20)).toBeCloseTo(1.58, 2);
-    expect(kSpreadPitRamp(28)).toBeCloseTo(1.80, 2);
-    // And at the measured Quick-tier gaps: iron 27.7→1.79, bronze 25.7→1.74, silver 22.5→1.65, gold 19.3→1.56.
-    expect(kSpreadPitRamp(27.7)).toBeCloseTo(1.79, 2);
-    expect(kSpreadPitRamp(25.7)).toBeCloseTo(1.74, 2);
-    expect(kSpreadPitRamp(22.5)).toBeCloseTo(1.65, 2);
-    expect(kSpreadPitRamp(19.3)).toBeCloseTo(1.56, 2);
+    // 2026-07-21 refit: s(10)=1.32, s(20)=1.63, s(28)=1.85.  (was 1.29 / 1.58 / 1.80)
+    expect(kSpreadPitRamp(10)).toBeCloseTo(1.32, 2);
+    expect(kSpreadPitRamp(20)).toBeCloseTo(1.63, 2);
+    expect(kSpreadPitRamp(28)).toBeCloseTo(1.85, 2);
+    // At the measured Quick-tier gaps. NOTE THE GAPS THEMSELVES MOVED: iron 27.7→23.6,
+    // bronze 25.7→22.8, silver 22.5→20.5, gold 19.3→15.9. That shift is a COORDINATE effect
+    // (both sides of g are model-selected top-N cohorts — see tools/kramp-gap-trace.ts), not a
+    // change in the measured K-spread, whose per-tier slopes moved only −2..−3%.
+    expect(kSpreadPitRamp(23.6)).toBeCloseTo(1.73, 2);
+    expect(kSpreadPitRamp(22.8)).toBeCloseTo(1.71, 2);
+    expect(kSpreadPitRamp(20.5)).toBeCloseTo(1.64, 2);
+    expect(kSpreadPitRamp(15.9)).toBeCloseTo(1.50, 2);
+    // β over the observed range — THE standing comparison for ramp shape (never raw {A,G}, since G
+    // is only lower-bounded and its point value is a pinning-rule outcome).
+    // Local slope over THIS ramp's own observed gaps (15.9–23.6) = 0.0293/pt. The previous shipped
+    // ramp {A:9.5394,G:319} was 0.0278/pt over ITS observed gaps (19.3–27.7) ⇒ +5.4%.
+    // DO NOT compare against the run's LINEAR-LIMIT figure (0.0310): that is a different member of
+    // the within-5%-SSE family (G→∞), not the pinned ramp. Mixing the two is how the first draft of
+    // this pin claimed "+8%".
+    expect((kSpreadPitRamp(23.6) - kSpreadPitRamp(15.9)) / (23.6 - 15.9)).toBeCloseTo(0.0293, 4);
   });
   it("is monotone non-decreasing in the gap and bounded by the plateau 1 + A", () => {
     let prev = kSpreadPitRamp(0);
