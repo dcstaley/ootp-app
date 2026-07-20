@@ -36,7 +36,7 @@ import {
   pitWobaFromChannels, hitWobaFromRates, PER9_TO_PER600, type WobaWeights as WW,
 } from "../src/eval/cwhit/audit.ts";
 import {
-  buildCwhitSample, wellSampled, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK, inValueWindow,
+  buildCwhitSample, wellSampled, isPit, n_, FIELD_N, MIN_BF, MIN_PA, QUICK, inValueWindow,
   type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -299,7 +299,7 @@ console.log(`║  CHANNEL COVARIANCE DECOMPOSITION — is the composite spread g
 console.log(`╚══════════════════════════════════════════════════════════════════════════════════════════════╝`);
 console.log(`model '${trained.id}' | catalog '${srcId}' | neutral env (bronze-quick era/park) | own-gap pool transform ON`);
 console.log(`PRODUCTION CORRECTIONS: ${CORRECTIONS ? "ON (production default: BUILD-1 pit K-spread + BUILD-3 pit HR9 spread + BUILD-2 hitter tail; pit BABIP HELD)" : "OFF (--no-corrections)"}`);
-console.log(`well-sampled bar: IP≥${MIN_IP} (pit) / PA≥${MIN_PA} (hit).  Bootstrap: ${B} card-resampled reps, percentile CIs.`);
+console.log(`well-sampled bar: BF≥${MIN_BF} (pit) / PA≥${MIN_PA} (hit).  Bootstrap: ${B} card-resampled reps, percentile CIs.`);
 console.log(`CHANNEL BASIS (weighted contributions, wOBA units): ${CH.map((c) => CH_LBL[c]).join(", ")} + a CONSTANT HBP leg (zero variance, dropped from covariance).`);
 console.log(`  wOBA weights: bb=${f(W.bb, 4)} hbp=${f(W.hbp, 4)} 1B=${f(W.b1, 4)} XBH=${f(W.xbh, 4)} HR=${f(W.hr, 4)}`);
 console.log(`  ⚠ SO/K IS NOT A wOBA CHANNEL — it carries no weight in either composite and enters only via the BIP denominator.`);

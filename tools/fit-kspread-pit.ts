@@ -53,7 +53,7 @@ import { parseCwhitPit } from "../src/eval/cwhit/parse.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
-  QUICK, inValueWindow, MIN_IP, FIELD_N, OBS_DIR,
+  QUICK, inValueWindow, MIN_BF, FIELD_N, OBS_DIR,
   type Rec, type SampleDeps, type KSpreadPit,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -460,7 +460,7 @@ for (const [di, D] of DAILY.entries()) {
   const obs: JoinObs<typeof obsRows[0]>[] = obsRows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.ip, row: r }));
   const j = joinCwhit(obs, cards);
   const paired = j.matched
-    .filter((m) => m.obs.row.ip >= MIN_IP)
+    .filter((m) => m.obs.row.bf >= MIN_BF)
     .map((m) => {
       const our = byCid.get(m.card.cid)!, o = m.obs.row;
       return {
@@ -470,7 +470,7 @@ for (const [di, D] of DAILY.entries()) {
       };
     });
   console.log(`\n  ── ${D.label} ──`);
-  console.log(`  pool ${basePool.length} cards | joined ${j.matched.length}/${obs.length} (unique ${j.stats.matchedUnique} + fp ${j.stats.matchedFingerprint}), well-sampled (IP≥${MIN_IP}) ${paired.length} | gap ${f(gap, 1)}  K̄_pool ${f(kbar, 1)}/600  s(gap) = ${f(s, 2)}  era_k ${f(coeffsF.era_k, 3)}`);
+  console.log(`  pool ${basePool.length} cards | joined ${j.matched.length}/${obs.length} (unique ${j.stats.matchedUnique} + fp ${j.stats.matchedFingerprint}), well-sampled (BF≥${MIN_BF}) ${paired.length} | gap ${f(gap, 1)}  K̄_pool ${f(kbar, 1)}/600  s(gap) = ${f(s, 2)}  era_k ${f(coeffsF.era_k, 3)}`);
   if (paired.length < 8) { console.log(`  N too thin for a slope verdict — reporting nothing (never a number from noise)`); continue; }
   const preP = paired.map((r) => r.pre.k9!), postP = paired.map((r) => r.post.k9!), o9 = paired.map((r) => r.obs.k9), nv = paired.map((r) => r.nv);
   const preM = mmse(preP, o9, nv), postM = mmse(postP, o9, nv);

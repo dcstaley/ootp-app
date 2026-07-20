@@ -53,7 +53,7 @@ import { parseCwhitPit } from "../src/eval/cwhit/parse.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
-  QUICK, inValueWindow, MIN_IP, FIELD_N, OBS_DIR,
+  QUICK, inValueWindow, MIN_BF, FIELD_N, OBS_DIR,
   type Rec, type SampleDeps, type KSpreadPit,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -562,7 +562,7 @@ for (const [di, D] of DAILY.entries()) {
   const obs: JoinObs<typeof obsRows[0]>[] = obsRows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.ip, row: r }));
   const j = joinCwhit(obs, cards);
   const paired = j.matched
-    .filter((m) => m.obs.row.ip >= MIN_IP)
+    .filter((m) => m.obs.row.bf >= MIN_BF)
     .map((m) => {
       const our = byCid.get(m.card.cid)!, o = m.obs.row;
       return { pre: our.pre, post: our.post, postH: our.postH, obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) }, ip: o.ip };

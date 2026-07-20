@@ -34,7 +34,7 @@ import { parseCatalogCsv } from "../src/data/catalog.ts";
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import { BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, n_, MIN_IP, MIN_PA, QUICK,
+  buildCwhitSample, wellSampled, handLetter, n_, MIN_BF, MIN_PA, QUICK,
   type Rec, type SampleDeps, type Chan,
 } from "../src/eval/cwhit/sample.ts";
 import {
@@ -88,7 +88,7 @@ console.log(`\n╔════════════════════�
 console.log(`║  THE TWO-LEDGER DIAGNOSTIC — per-channel error levels: frame constant, or selection artifact?║`);
 console.log(`╚════════════════════════════════════════════════════════════════════════════════════════════╝`);
 console.log(`model '${trained.id}' | catalog '${srcId}' | neutral env (bronze-quick era/park) | own-gap pool transform ON`);
-console.log(`sample = ours vs cwhit OBSERVED, well-sampled (IP≥${MIN_IP} / PA≥${MIN_PA}), via the existing joinCwhit fingerprint join.`);
+console.log(`sample = ours vs cwhit OBSERVED, well-sampled (BF≥${MIN_BF} / PA≥${MIN_PA}), via the existing joinCwhit fingerprint join.`);
 console.log(`cwhit's PROJECTIONS are NOT used anywhere in this tool ⇒ no window-overlap caveat applies to any number below.`);
 console.log(`MEASUREMENT ONLY: nothing here is fitted, and nothing here touches the scoring path.\n`);
 
@@ -376,7 +376,7 @@ for (const { role, tier, ch, g, dec, v } of gradRows) {
   console.log(`\n  3. THE ACTUAL BINDING CONSTRAINT IS PITCHER USAGE DEPTH, NOT PAGE COUNT.`);
   for (const { tier } of QUICK) {
     const all = recs.filter((r) => r.tier === tier && r.role === "pit");
-    if (all.length) console.log(`     ${tier.padEnd(9)} pitchers: ${String(all.filter(wellSampled).length).padStart(3)} of ${String(all.length).padStart(3)} joined rows clear IP≥${MIN_IP} (${f((all.filter(wellSampled).length / all.length) * 100, 0)}%)`);
+    if (all.length) console.log(`     ${tier.padEnd(9)} pitchers: ${String(all.filter(wellSampled).length).padStart(3)} of ${String(all.length).padStart(3)} joined rows clear BF≥${MIN_BF} (${f((all.filter(wellSampled).length / all.length) * 100, 0)}%)`);
   }
   console.log(`     Silver/gold/diamond throw away 78%/85%/99% of their rows to the IP bar. More PAGES there would add rows that are ALREADY below the`);
   console.log(`     bar — the pitcher fix is more tournament INSTANCES (deeper IP per card), which is cwhit's crawl cadence, not a paging choice of ours.`);

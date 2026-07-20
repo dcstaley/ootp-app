@@ -43,8 +43,14 @@ import {
 export const OBS_DIR = "fixtures/cwhit";
 export const PROJ_DIR = "fixtures/cwhit-proj";
 export const FIELD_N = 50;
-/** "Well-sampled" bars, carried from the v1 triangulation for continuity. */
-export const MIN_IP = 1000, MIN_PA = 1000;
+/** "Well-sampled" bars — 1000 OPPONENTS FACED on each side: BF≥1000 for pitchers, PA≥1000 for
+ *  hitters. These are symmetric by construction (a pitcher's BF is the plate-appearance analogue).
+ *  BUGFIX 2026-07-21 (Derek): the pitcher bar was previously MIN_IP=1000 compared against IP, i.e.
+ *  BF≥4300 — ~4.3x too strict and asymmetric with the hitter PA bar, shrinking pitcher N to ~1/3
+ *  (bronze: 41 vs the correct 125, hitters 130). It also silently fed the K/HR-spread FITS
+ *  (fit-*.ts filtered on row.ip>=MIN_IP). Now BF-based, matching tournament-eval.ts and the ~10
+ *  analysis tools that always floored pitchers on o.bf. */
+export const MIN_BF = 1000, MIN_PA = 1000;
 /** The five Quick tiers: known VAL caps + neutral era/park. Daily/Cap formats are out of scope. */
 // ── ELIGIBILITY WINDOW (Derek's terminology ruling, 2026-07-20) ──────────────
 // "CAP" MEANS SALARY CAP IN OOTP AND NOTHING ELSE. These are card-VALUE tier cutoffs, which is
@@ -82,7 +88,7 @@ export type Exposure = Map<string, { wR: number; wL: number }>;
 export interface Rec {
   tier: string; role: "pit" | "hit";
   title: string; name: string; vlvl: number;
-  sample: number;          // IP (pit) or PA (hit)
+  sample: number;          // BF (pit) or PA (hit) — 'opponents faced', symmetric across roles
   axis: number;            // the headline rating axis (Stuff vR / Power vR) — reported, never joined on
   /** RAW event-model line — THE EVAL FRAME. Derek's call: the anchor/sFinal is a CONVENTION (a readable
    *  scale + the cap optimizer's budget unit), not a prediction, so absolute agreement with cwhit on an
@@ -275,7 +281,7 @@ export function ourHit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales
   return { raw, dep, axis: n_(c["Power vR"]) };
 }
 
-export const wellSampled = (r: Rec): boolean => (r.role === "pit" ? r.sample >= MIN_IP : r.sample >= MIN_PA);
+export const wellSampled = (r: Rec): boolean => (r.role === "pit" ? r.sample >= MIN_BF : r.sample >= MIN_PA);
 
 /**
  * Build the judged sample: for every Quick tier × role with an observed fixture, join cwhit's observed
@@ -375,12 +381,12 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
       // observed → our cards (the EXISTING fingerprint join; not rebuilt).
       if (role === "pit") {
         const { rows } = parseCwhitPit(readFileSync(`${OBS_DIR}/cwhit-${tier}-pit.tsv`, "utf8"));
-        const obs: JoinObs<typeof rows[0]>[] = rows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.ip, row: r }));
+        const obs: JoinObs<typeof rows[0]>[] = rows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.bf, row: r }));
         const j = joinCwhit(obs, cards);
         for (const m of j.matched) {
           const our = byCid.get(m.card.cid)!, o = m.obs.row;
           recs.push({
-            tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.ip, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
+            tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.bf, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
             obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, d.W) },
             proj: projBy?.get(`${our.title}|${our.vlvl}`),
             raw: { ip: o.ip, k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, ra9: o.ra9, era: o.era, gsPer: o.gsPer, ipPerGame: o.ipPerGame },

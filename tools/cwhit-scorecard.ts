@@ -41,7 +41,7 @@ import {
 } from "../src/eval/cwhit/scorecard.ts";
 import {
   buildCwhitSample, wellSampled, handLetter, isPit, n_, OBS_DIR as OBS, PROJ_DIR as PROJ, FIELD_N,
-  MIN_IP, MIN_PA, QUICK, inValueWindow, type KSpreadPit, type Rec, type SampleDeps,
+  MIN_BF, MIN_PA, QUICK, inValueWindow, type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
@@ -185,7 +185,7 @@ console.log(`  (Verified: reconstructing his published BABIP from his own column
 
 // ── sample-depth accounting (no silent caps) ────────────────────────────────
 console.log(`\n── N + SAMPLE DEPTH (what is kept, what is dropped) ──`);
-console.log(`tier      role  joined   well-sampled (IP≥${MIN_IP} / PA≥${MIN_PA})   dropped   median depth (kept)   also has cwhit projection`);
+console.log(`tier      role  joined   well-sampled (BF≥${MIN_BF} / PA≥${MIN_PA})   dropped   median depth (kept)   also has cwhit projection`);
 for (const { tier } of QUICK) for (const role of ["pit", "hit"] as const) {
   const all = recs.filter((r) => r.tier === tier && r.role === role); if (!all.length) continue;
   const kept = all.filter(wellSampled), med = kept.length ? [...kept.map((r) => r.sample)].sort((a, b) => a - b)[Math.floor(kept.length / 2)]! : NaN;

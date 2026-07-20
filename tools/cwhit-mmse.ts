@@ -43,7 +43,7 @@ import { pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/a
 import { per9NoiseVar, babipNoiseVar, pctNoiseVar, per600NoiseVar, BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import { mmse, type Mmse } from "../src/eval/cwhit/two-ledger.ts";
 import {
-  buildCwhitSample, wellSampled, QUICK, MIN_IP, MIN_PA,
+  buildCwhitSample, wellSampled, QUICK, MIN_BF, MIN_PA,
   type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -212,7 +212,7 @@ console.log(`\n╔════════════════════�
 console.log(`║  MMSE / SPACING-CALIBRATION BATTERY — is the compression a defect, and is it FLAT or TAIL?    ║`);
 console.log(`╚══════════════════════════════════════════════════════════════════════════════════════════════╝`);
 console.log(`model '${trained.id}' | catalog '${srcId}' | RAW event line, own-gap ON, no anchor (the like-for-like eval frame)`);
-console.log(`well-sampled bar: IP≥${MIN_IP} (pit) / PA≥${MIN_PA} (hit). Per-tier cells need N≥${MIN_TIER_N}; POOLED = all tiers with N≥${MIN_POOL_N}, de-meaned within tier (tier fixed effects) so frame-level differences cannot leak into the slope.`);
+console.log(`well-sampled bar: BF≥${MIN_BF} (pit) / PA≥${MIN_PA} (hit). Per-tier cells need N≥${MIN_TIER_N}; POOLED = all tiers with N≥${MIN_POOL_N}, de-meaned within tier (tier fixed effects) so frame-level differences cannot leak into the slope.`);
 console.log(`\nHOW TO READ: slope = OLS of obs on pred (noise-immune — sampling noise lands in the residual, so it needs NO deconvolution). slope 1.0 = calibrated = consistent with honest MMSE shrinkage.`);
 console.log(`slope > 1 (CI-clear) = OVER-SHRUNK: we under-react by that factor. The SD-space view says the same thing: an MMSE-optimal predictor has ratio = corr, i.e. shrinkIdx = ratioDcv/corrDcv = 1.`);
 console.log(`CIs on the slope are a 2000-rep card bootstrap (resample cards within tier, re-de-mean, re-band per replicate). mmse()'s analytic t-CI is computed for every cell too; the max endpoint disagreement vs the bootstrap is printed after §1 as a cross-check.`);

@@ -65,7 +65,7 @@ import { cleanTournamentRows } from "../src/eval/tournament-clean.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import { per600NoiseVar, per9NoiseVar, BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK, inValueWindow, type ValueWindow,
+  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_BF, MIN_PA, QUICK, inValueWindow, type ValueWindow,
   type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 import { meanEst, biasGradient, mmse, type Est } from "../src/eval/cwhit/two-ledger.ts";
@@ -163,7 +163,7 @@ console.log(`Ruling-1 scope: a UNIFORM within-role level is mostly convention (t
 // ═══ PRIMARY — CWHIT DATA (25–100× our depth) ════════════════════════════════════════════════════
 console.log(`\n\n╔═══ PRIMARY — THE RATING→CHANNEL GRID ON CWHIT DATA (the deliverable) ═══════════════════════╗`);
 console.log(`Judged sample = the scorecard's own (src/eval/cwhit/sample.ts): observed fixtures joined by fingerprint, well-sampled`);
-console.log(`(hit PA≥${MIN_PA} / pit IP≥${MIN_IP}). Quartiles are WITHIN-POOL: cuts from every VLvl-0 card under the tier VAL cap; a judged card`);
+console.log(`(hit PA≥${MIN_PA} / pit BF≥${MIN_BF}). Quartiles are WITHIN-POOL: cuts from every VLvl-0 card under the tier VAL cap; a judged card`);
 console.log(`(incl. v5 variants) is placed against those cuts by its own exposure-blended rating. Cells report bias = pred − obs:`);
 console.log(`PA/IP-weighted point estimate ± the card-level t 95% half-width, with per-cell n in parentheses. '—' = no judged card`);
 console.log(`in that pool quartile (top-100-by-usage selection). mono = quartile biases monotone; NON-MONO rows must never be`);

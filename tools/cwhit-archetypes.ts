@@ -49,7 +49,7 @@ import { pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/a
 import { HBP_PER_PA } from "../src/eval/cwhit/scorecard.ts";
 import { qualityBins } from "../src/eval/cwhit/two-ledger.ts";
 import {
-  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK, inValueWindow,
+  buildCwhitSample, wellSampled, handLetter, isPit, n_, FIELD_N, MIN_BF, MIN_PA, QUICK, inValueWindow,
   type Rec, type SampleDeps, type Exposure,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -248,7 +248,7 @@ console.log(`╚═════════════════════�
 console.log(`model '${trained.id}' | catalog '${srcId}' | neutral env | own-gap ON | RAW event-model line (Ruling 1: unanchored)`);
 console.log(`metric: batting-only wOBA both sides (his pwOBA never used); + = we OVER-value the type, − = UNDER-value (pitcher sign already flipped)`);
 console.log(`level-free: role×tier mean bias subtracted ⇒ frame/format/anchor level constants are OUT of every number below`);
-console.log(`sample: ${kept.length} well-sampled joined cards (IP≥${MIN_IP} / PA≥${MIN_PA}); ${missingRatings} dropped for missing ratings lookup`);
+console.log(`sample: ${kept.length} well-sampled joined cards (BF≥${MIN_BF} / PA≥${MIN_PA}); ${missingRatings} dropped for missing ratings lookup`);
 const nBy = (role: "pit" | "hit") => byTier(role).map((g) => `${g.tier} ${g.rows.length}`).join(", ");
 console.log(`  hitters: ${nBy("hit")}\n  pitchers: ${nBy("pit")}  (diamond pit is a known dead cell)`);
 console.log(`\nCAVEAT (pooled rows): the same card recurs across tiers (Quick pools nest), so pooled N overstates`);

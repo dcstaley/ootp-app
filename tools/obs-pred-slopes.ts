@@ -59,7 +59,7 @@ import {
 } from "../src/eval/cwhit/scorecard.ts";
 import { IP_TO_BF } from "../src/eval/cwhit/parse.ts";
 import {
-  buildCwhitSample, wellSampled, isPit, n_, FIELD_N, MIN_IP, MIN_PA, QUICK, inValueWindow,
+  buildCwhitSample, wellSampled, isPit, n_, FIELD_N, MIN_BF, MIN_PA, QUICK, inValueWindow,
   type KSpreadPit, type Rec, type SampleDeps,
 } from "../src/eval/cwhit/sample.ts";
 
@@ -230,7 +230,7 @@ console.log(`║  CALIBRATION SLOPES DONE RIGHT (obs~pred) + COMPOSITE wOBA DECO
 console.log(`╚══════════════════════════════════════════════════════════════════════════════════════════════════════╝`);
 console.log(`model '${trained.id}' | catalog '${srcId}' | neutral env (bronze-quick era/park) | own-gap pool transform ON`);
 console.log(`PRODUCTION CORRECTIONS: ${CORRECTIONS ? "ON (production default — the LIVE path)" : "OFF (--no-corrections)"}`);
-console.log(`sample: the SHARED builder src/eval/cwhit/sample.ts (buildCwhitSample), well-sampled bar IP≥${MIN_IP} / PA≥${MIN_PA}, five Quick tiers.`);
+console.log(`sample: the SHARED builder src/eval/cwhit/sample.ts (buildCwhitSample), well-sampled bar BF≥${MIN_BF} / PA≥${MIN_PA}, five Quick tiers.`);
 console.log(`comparison is OURS vs OBSERVED throughout — cwhit's projections are not touched by this tool.`);
 console.log(`\nWHAT THE TWO SLOPES MEAN`);
 console.log(`  pred~obs  = cov(pred,obs)/var(obs)  — the CURRENT scorecard column (scorecard.ts:345). ATTENUATED: its`);
