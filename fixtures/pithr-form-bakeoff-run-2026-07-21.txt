@@ -1,0 +1,510 @@
+PIT.HR FORM BAKE-OFF RUN — 2026-07-21 (tools/pithr-form-bakeoff.ts)
+Window [2042,2043]; candidates A' = PARETO_PIT quad hr (guard-BYPASSED, measurement only),
+B = hr LOG, C = HRCQ vertex-constrained quad (vertex pinned at domain max z).
+Artifacts built offline (saveTrainedModel mirror), installed transiently; live state (app.json +
+trained-models) backed up and restored byte-identical after the run (sha256 verified).
+Scorecard baseline for window-effect isolation: fixtures/cwhit-scorecard-run-2026-07-20-corrected.txt ([2041,2042] model).
+
+════════ 1. IN-FRAME THREE-WAY + ELITE TAIL (node tools/pithr-form-bakeoff.ts fit) ════════
+window [2042,2043] pitQual n=149 (minBF=1000, variants included)
+VERIFY inactive-constraint reduction on [2041,2042] (vertex OUTSIDE domain): HRCQ === unconstrained → PASS (bit-identical)
+GUARD (inDomainVertex on pit.hr): A' vertex z=2.498 → FIRES (blocked in production; bypassed here for measurement)
+                                 B  (log) → passes;  C (pinned quad, b=[15.0615, -1.6730, 0.3154], vertex z=2.652 = uMax 2.652) → passes
+
+=== IN-FRAME THREE-WAY [2042,2043] ===
+cand   in-sample wP/spear     cv wP/spear         HRch SD/600 (rateAux)   composite wOBAA SD
+A' quad  0.7910/0.7587      0.7589/0.7324     2.421                   0.0126
+B hrlog  0.7899/0.7519      0.7601/0.7259     2.369                   0.0127
+C hrcq   0.7913/0.7581      0.7611/0.7339     2.417                   0.0126
+
+=== ELITE TAIL — top 10 cdmx pitchers by pHR vR, raw ratings → hr channel (per 600 BF) ===
+name                        VAL  pHRvR  z(A')   A'cap    A'raw    B(log)   C(hrcq)
+Mike Gonzalez                80    175   3.63   13.05   13.41   10.02   12.92
+Jonny Venters                98    166   3.04   13.20   13.08   10.87   13.06
+Dan Quisenberry              84    166   3.04   14.32   13.08   11.76   14.16
+Bob Miller                   69    160   2.65   13.58   12.99   11.68   13.43
+Barry Latman                 95    157   2.46   13.46   12.98   11.85   13.33
+Gregory Santos               74    155   2.32   13.54   12.99   12.08   13.41
+Pete Donohue                 96    154   2.26   13.60   13.00   12.21   13.48
+Hal Woodeshick               66    153   2.19   14.29   13.01   12.84   14.17
+Dale Murray                  66    153   2.19   13.66   13.01   12.34   13.55
+Sam Jones                    92    152   2.13   13.16   13.02   12.02   13.06
+(A'cap = deployed eval: monotone cap + tangent extension + Stuff aux; A'raw = uncapped quad, no aux — the shape itself.)
+
+════════ 2. SCORECARD (tools/cwhit-scorecard.ts, corrections ON) UNDER EACH CANDIDATE ════════
+Hitter sections verified IDENTICAL across A'/B/C (md5 b4b119521dd6b47b2667b13194b60b61 on the
+observed-only hitter block for all three) — the pit.hr swap leaks nowhere. Pitcher extracts:
+
+──────── candidate Aprime: per-tier correction params ────────
+  per-tier parameters (computed from pool composition + the live universal constants — no per-tournament fitting):
+  tier       s(K)    K̄_pool   s(HR)   HR̄_pool   hitTail lw: HR      BABIP   SO
+  iron      1.681    120.6   1.265    16.43           1.626   1.097  0.264
+  bronze    1.657    120.4   1.265    16.31           1.049   1.069  0.260
+  silver    1.595    119.6   1.263    16.22           0.683   0.928  0.248
+  gold      1.465    120.5   1.259    15.89           0.440   0.870  0.214
+  diamond   1.305    119.0   1.227    15.57           0.181   0.686  0.152
+
+──────── candidate Aprime: SECTION B OBSERVED-ONLY, PITCHERS ────────
+─── PITCHERS ───
+tier      chan       N    LEVEL bias [95% CI]              corr    rho    SHAPE MAE   SPREAD raw / dcv
+iron      K9         44      +0.25* [+0.14, +0.35]                0.977   0.97      0.27     0.88 / 0.89
+iron      BB9        44      +0.67* [+0.62, +0.72]                0.972   0.95      0.15     0.90 / 0.91
+iron      HR9        44      +0.18* [+0.15, +0.21]                0.867   0.83      0.07     0.83 / 0.88
+iron      BABIP      44     +0.012* [+0.010, +0.013]              0.881   0.87     0.004     0.81 / 0.98
+iron      wOBAA      44     +0.022* [+0.020, +0.024]              0.760   0.67     0.006     0.75 / 0.87
+bronze    K9         52      +0.62* [+0.51, +0.73]                0.970   0.98      0.25     0.97 / 0.98
+bronze    BB9        52      +0.79* [+0.73, +0.86]                0.946   0.92      0.16     0.96 / 0.97
+bronze    HR9        52      +0.21* [+0.19, +0.23]                0.949   0.93      0.07     0.98 / 1.01
+bronze    BABIP      52     +0.011* [+0.009, +0.012]              0.841   0.83     0.005     0.62 / 0.71
+bronze    wOBAA      52     +0.021* [+0.019, +0.023]              0.769   0.74     0.006     0.89 / 0.99
+silver    K9         22      +0.90* [+0.75, +1.05]                0.953   0.89      0.31     1.04 / 1.05
+silver    BB9        22      +0.87* [+0.79, +0.95]                0.976   0.98      0.14     1.05 / 1.06
+silver    HR9        22      +0.16* [+0.12, +0.20]                0.935   0.95      0.07     0.93 / 0.96
+silver    BABIP      22     +0.008* [+0.006, +0.010]              0.906   0.90     0.003     0.97 / 1.21
+silver    wOBAA      22     +0.015* [+0.013, +0.018]              0.843   0.82     0.004     0.77 / 0.89
+gold      K9         15      -0.15* [-0.28, -0.02]                0.943   0.91      0.21     0.99 / 1.03
+gold      BB9        15      +0.56* [+0.47, +0.66]                0.974   0.99      0.14     0.97 / 0.98
+gold      HR9        15      +0.15* [+0.12, +0.18]                0.974   0.95      0.05     0.94 / 0.98
+gold      BABIP      15     +0.005* [+0.003, +0.008]              0.860   0.90     0.004     0.90 / 1.15
+gold      wOBAA      15     +0.018* [+0.015, +0.020]              0.740   0.75     0.004     1.05 / 2.11
+diamond   (N=1 well-sampled — too few to report)
+
+
+──────── candidate B: per-tier correction params ────────
+  per-tier parameters (computed from pool composition + the live universal constants — no per-tournament fitting):
+  tier       s(K)    K̄_pool   s(HR)   HR̄_pool   hitTail lw: HR      BABIP   SO
+  iron      1.681    120.8   1.265    16.38           1.626   1.097  0.264
+  bronze    1.657    120.7   1.265    15.81           1.049   1.069  0.260
+  silver    1.595    119.6   1.263    15.98           0.683   0.928  0.248
+  gold      1.465    121.2   1.259    15.54           0.440   0.870  0.214
+  diamond   1.305    118.2   1.227    15.27           0.181   0.686  0.152
+
+──────── candidate B: SECTION B OBSERVED-ONLY, PITCHERS ────────
+─── PITCHERS ───
+tier      chan       N    LEVEL bias [95% CI]              corr    rho    SHAPE MAE   SPREAD raw / dcv
+iron      K9         44      +0.22* [+0.11, +0.33]                0.977   0.97      0.27     0.88 / 0.89
+iron      BB9        44      +0.71* [+0.66, +0.76]                0.972   0.95      0.15     0.90 / 0.91
+iron      HR9        44      +0.15* [+0.13, +0.18]                0.884   0.83      0.07     0.82 / 0.88
+iron      BABIP      44     +0.012* [+0.011, +0.014]              0.883   0.87     0.004     0.81 / 0.98
+iron      wOBAA      44     +0.021* [+0.019, +0.024]              0.771   0.70     0.006     0.74 / 0.86
+bronze    K9         52      +0.80* [+0.69, +0.91]                0.971   0.98      0.24     0.98 / 0.98
+bronze    BB9        52      +1.00* [+0.94, +1.07]                0.948   0.93      0.15     0.97 / 0.98
+bronze    HR9        52      +0.15* [+0.13, +0.18]                0.932   0.92      0.07     0.93 / 0.96
+bronze    BABIP      52     +0.011* [+0.009, +0.012]              0.838   0.83     0.005     0.65 / 0.74
+bronze    wOBAA      52     +0.019* [+0.017, +0.021]              0.752   0.71     0.006     0.83 / 0.93
+silver    K9         22      +1.00* [+0.85, +1.15]                0.954   0.89      0.31     1.04 / 1.05
+silver    BB9        22      +0.94* [+0.86, +1.02]                0.976   0.98      0.15     1.06 / 1.07
+silver    HR9        22      +0.16* [+0.12, +0.20]                0.922   0.95      0.07     0.83 / 0.86
+silver    BABIP      22     +0.008* [+0.006, +0.010]              0.907   0.90     0.003     1.00 / 1.24
+silver    wOBAA      22     +0.015* [+0.013, +0.017]              0.853   0.88     0.004     0.70 / 0.81
+gold      K9         15      -0.02  [-0.15, +0.11]                0.943   0.91      0.20     1.00 / 1.03
+gold      BB9        15      +0.71* [+0.61, +0.81]                0.972   1.00      0.15     0.99 / 1.00
+gold      HR9        15      +0.11* [+0.08, +0.14]                0.975   0.95      0.05     0.88 / 0.92
+gold      BABIP      15     +0.006* [+0.004, +0.009]              0.862   0.90     0.004     0.91 / 1.17
+gold      wOBAA      15     +0.017* [+0.015, +0.019]              0.793   0.81     0.003     0.94 / 1.87
+diamond   (N=1 well-sampled — too few to report)
+
+
+──────── candidate C: per-tier correction params ────────
+  per-tier parameters (computed from pool composition + the live universal constants — no per-tournament fitting):
+  tier       s(K)    K̄_pool   s(HR)   HR̄_pool   hitTail lw: HR      BABIP   SO
+  iron      1.681    120.6   1.265    16.44           1.626   1.097  0.264
+  bronze    1.657    119.9   1.265    16.47           1.049   1.069  0.260
+  silver    1.595    119.6   1.263    16.20           0.683   0.928  0.248
+  gold      1.465    120.5   1.259    15.87           0.440   0.870  0.214
+  diamond   1.305    119.3   1.227    15.49           0.181   0.686  0.152
+
+──────── candidate C: SECTION B OBSERVED-ONLY, PITCHERS ────────
+─── PITCHERS ───
+tier      chan       N    LEVEL bias [95% CI]              corr    rho    SHAPE MAE   SPREAD raw / dcv
+iron      K9         44      +0.24* [+0.14, +0.35]                0.977   0.97      0.27     0.88 / 0.89
+iron      BB9        44      +0.69* [+0.64, +0.75]                0.972   0.95      0.15     0.90 / 0.91
+iron      HR9        44      +0.18* [+0.15, +0.21]                0.870   0.82      0.07     0.83 / 0.88
+iron      BABIP      44     +0.012* [+0.010, +0.013]              0.881   0.87     0.004     0.81 / 0.98
+iron      wOBAA      44     +0.022* [+0.020, +0.024]              0.762   0.67     0.006     0.75 / 0.87
+bronze    K9         52      +0.64* [+0.52, +0.75]                0.970   0.98      0.25     0.97 / 0.98
+bronze    BB9        52      +0.79* [+0.73, +0.86]                0.946   0.92      0.16     0.96 / 0.97
+bronze    HR9        52      +0.20* [+0.18, +0.23]                0.949   0.93      0.07     0.97 / 1.01
+bronze    BABIP      52     +0.011* [+0.009, +0.012]              0.841   0.83     0.005     0.63 / 0.72
+bronze    wOBAA      52     +0.020* [+0.018, +0.023]              0.769   0.74     0.006     0.88 / 0.99
+silver    K9         22      +0.90* [+0.75, +1.05]                0.953   0.89      0.31     1.04 / 1.05
+silver    BB9        22      +0.87* [+0.79, +0.95]                0.976   0.98      0.14     1.05 / 1.06
+silver    HR9        22      +0.16* [+0.12, +0.20]                0.934   0.95      0.07     0.93 / 0.96
+silver    BABIP      22     +0.008* [+0.006, +0.010]              0.906   0.90     0.003     0.97 / 1.21
+silver    wOBAA      22     +0.015* [+0.013, +0.018]              0.845   0.82     0.004     0.76 / 0.88
+gold      K9         15      -0.15* [-0.28, -0.02]                0.943   0.91      0.21     0.99 / 1.03
+gold      BB9        15      +0.56* [+0.47, +0.66]                0.974   0.99      0.14     0.97 / 0.98
+gold      HR9        15      +0.15* [+0.12, +0.18]                0.975   0.95      0.05     0.94 / 0.97
+gold      BABIP      15     +0.005* [+0.003, +0.008]              0.860   0.90     0.004     0.90 / 1.15
+gold      wOBAA      15     +0.018* [+0.015, +0.020]              0.746   0.75     0.004     1.05 / 2.09
+diamond   (N=1 well-sampled — too few to report)
+
+
+════════ 3+4. BUILD-3 RAMP REFIT + WEIRD-ENV BATTERY (tools/fit-pitspread-hrbab.ts) UNDER EACH ════════
+(full tool output per candidate; deployed constants for reference: HR_SPREAD_PIT {A:0.2648, G:5.8})
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ candidate Aprime ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  BUILD-3: PITCHER HR9 + BABIP SPREAD SCALARS — fit · held-out · two-axis gate · weird-env      ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'bakeoff-aq-4243' | catalog 'cdmx' | eval frame = RAW event line, own-gap ON, no anchor
+BASELINE INCLUDES the shipped BUILD-1 K-spread ramp (production reality; pre AND post carry it).
+gaps: pit.vR.hrr (HR) and pit.vR.pbabip (BABIP) from buildFrameShift(trainingMeans, poolField)
+means: poolPitMeansOwn (top-50 field, OWN-GAP ratings, pre-era) | application: applyPitSpread (one copy)
+
+[diamond] N=1 < 5 — excluded from the fit entirely (diamond pit is the known dead cell)
+
+╔═══ 1. PER-TIER MEASUREMENT — calibration slopes (obs~pred) on the K-ramp production line ═══╗
+tier      N    g_hr    g_bab   HR̄/600  BAB̄     HR9 slope [boot CI]  corr  rDcv/opt | BABIP slope [boot CI]  corr  rDcv/opt
+iron      44    52.3    49.8    16.4  0.302    1.33 [1.10,1.59]   0.867  0.70/0.93 |   1.09 [0.97,1.29]   0.881  0.98/1.00
+bronze    52    40.3    36.2    16.3  0.302    1.23 [1.11,1.35]   0.949  0.80/0.98 |   1.35 [1.11,1.65]   0.841  0.71/0.96
+silver    22    30.2    22.9    16.2  0.302    1.27 [0.88,1.55]   0.935  0.76/0.97 |   0.94 [0.75,1.11]   0.906  1.21/1.00
+gold      15    21.9    20.2    15.9  0.301    1.30 [1.10,1.48]   0.974  0.78/1.00 |   0.96 [0.65,1.24]   0.859  1.15/1.00
+POOLED (tier fixed effects): HR9 1.26 (battery said 1.24 [1.14,1.34])   BABIP 1.12 (battery said 1.24 [1.11,1.40])
+
+╔═══ 2. FITTED RAMPS (per channel; s(0)=1 hard — the league anchor) ═══╗
+  ── HR9 : s(g) = 1 + A·(1 − e^(−g/G)) ──
+  wide-grid optimum A=0.264 G=0.5 (SSE 0.85);  LINEAR LIMIT: s = 1 + 0.0068·g (SSE 4.30)
+  G equivalence band (≤ 1.05× best SSE): [0.5, 5.0] — saturating DECISIVELY beats linear ⇒ slopes are gap-FLAT over the observed range (NOT the K geometry)
+  SHIPPING PIN (BUILD-3 rule: G = g_min/3, 95% saturation at the lowest observed gap; A closed-form):
+    A = 0.2674 [boot 0.165, 0.367]   G = 7.3 (by rule)   plateau s(∞) = 1.27
+    iron     g= 52.3  s(g)=1.27 [1.16,1.37]   measured 1.33   resid -0.06
+    bronze   g= 40.3  s(g)=1.27 [1.16,1.37]   measured 1.23   resid +0.04
+    silver   g= 30.2  s(g)=1.26 [1.16,1.36]   measured 1.27   resid -0.00
+    gold     g= 21.9  s(g)=1.25 [1.16,1.35]   measured 1.30   resid -0.05
+  ── BABIP: s(g) = 1 + A·(1 − e^(−g/G)) ──
+  wide-grid optimum A=1.096 G=400.0 (SSE 6.45);  LINEAR LIMIT: s = 1 + 0.0026·g (SSE 6.44)
+  G equivalence band (≤ 1.05× best SSE): [27.0, 400.0+] — profile ~flat in G (weak identification)
+  SHIPPING PIN (BUILD-3 rule: G = g_min/3, 95% saturation at the lowest observed gap; A closed-form):
+    A = 0.0813 [boot -0.013, 0.200]   G = 6.7 (by rule)   plateau s(∞) = 1.08
+    iron     g= 49.8  s(g)=1.08 [0.99,1.20]   measured 1.09   resid -0.01
+    bronze   g= 36.2  s(g)=1.08 [0.99,1.20]   measured 1.35   resid -0.27
+    silver   g= 22.9  s(g)=1.08 [0.99,1.19]   measured 0.94   resid +0.14
+    gold     g= 20.2  s(g)=1.08 [0.99,1.19]   measured 0.96   resid +0.12
+
+╔═══ 3. HELD-OUT VALIDATION — fit WITHOUT bronze, predict bronze ═══╗
+  HR9  : predicted bronze 1.31 [1.14,1.44]  vs measured 1.23 [1.11,1.35]   PASS
+  BABIP: predicted bronze 1.01 [0.91,1.13]  vs measured 1.35 [1.11,1.65]   PASS
+
+  HITTER IDENTITY: 499 hitter recs pre↔post, max |Δ| = 0 (bit-identical ✓)
+  K9 IDENTITY:     60 bronze pool cards, same card ± HR/BAB legs: max |Δ k9| = 0 (bit-identical ✓ — the K leg is untouched by construction)
+
+╔═══ 4. TWO-AXIS GATE — Quick tiers, post-fix (shipping candidate = all-tier fits) ═══╗
+
+  ── iron (quick)  (N=44, s_hr=1.27, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.33 → post 1.05 [0.85,1.23]   PASS
+  G1 BABIP slope: pre 1.09 → post 1.01 [0.90,1.19]   PASS
+  G2 wOBAA corr:  pre 0.7319 → post 0.7527  (Δ +0.0207 [-0.0047,+0.0513])  ρ 0.6372 → 0.6629   PASS
+  G3 HR9 level:   +0.18 → +0.18 [+0.15,+0.21]  (algebraic exp +0.00);  BABIP level: +0.012 → +0.012 [+0.010,+0.013]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.70 → 0.88 (opt 0.93);  BABIP 0.98 → 1.05 (opt 1.00)
+
+  ── bronze (quick)  (N=52, s_hr=1.27, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.23 → post 0.97 [0.88,1.07]   PASS
+  G1 BABIP slope: pre 1.35 → post 1.25 [1.02,1.53]   FAIL (CI excludes 1)
+  G2 wOBAA corr:  pre 0.7651 → post 0.7808  (Δ +0.0157 [-0.0091,+0.0491])  ρ 0.7214 → 0.7440   PASS
+  G3 HR9 level:   +0.20 → +0.21 [+0.19,+0.23]  (algebraic exp +0.01);  BABIP level: +0.011 → +0.010 [+0.008,+0.012]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.80 → 1.01 (opt 0.98);  BABIP 0.71 → 0.77 (opt 0.96)
+
+  ── silver (quick)  (N=22, s_hr=1.26, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.27 → post 1.00 [0.71,1.22]   PASS
+  G1 BABIP slope: pre 0.94 → post 0.87 [0.70,1.04]   PASS
+  G2 wOBAA corr:  pre 0.8413 → post 0.8506  (Δ +0.0093 [-0.0709,+0.0581])  ρ 0.8713 → 0.8317   PASS
+  G3 HR9 level:   +0.15 → +0.16 [+0.12,+0.20]  (algebraic exp +0.01);  BABIP level: +0.008 → +0.008 [+0.006,+0.010]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.76 → 0.96 (opt 0.97);  BABIP 1.21 → 1.30 (opt 1.00)
+
+  ── gold (quick)  (N=15, s_hr=1.25, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.30 → post 1.04 [0.87,1.18]   PASS
+  G1 BABIP slope: pre 0.96 → post 0.89 [0.62,1.15]   PASS
+  G2 wOBAA corr:  pre 0.7009 → post 0.7452  (Δ +0.0443 [-0.0345,+0.1554])  ρ 0.7036 → 0.7607   PASS
+  G3 HR9 level:   +0.14 → +0.15 [+0.11,+0.18]  (algebraic exp +0.01);  BABIP level: +0.005 → +0.006 [+0.002,+0.009]  (exp +0.000)
+  G4 spread:      HR9 ratioDcv 0.78 → 0.97 (opt 1.00);  BABIP 1.15 → 1.24 (opt 1.00)
+
+  POOLED (tier fixed effects): HR9 slope 1.26 → 1.00;  BABIP 1.12 → 1.04
+  POOLED G2 (tier-de-meaned wOBAA ordering): pre 0.7600 → post 0.7764  (Δ +0.0164 [-0.0022,+0.0366])   PASS
+
+╔═══ 4b. HR-ONLY CANDIDATE (s_bab pinned 1) — its own gate record ═══╗
+  iron     G1 HR9 1.33 → 1.05 [0.84,1.23] PASS;  BABIP untouched 1.09 → 1.09;  G2 wOBAA 0.7319 → 0.7602 (Δ +0.0282 [-0.0011,+0.0644]) PASS
+  bronze   G1 HR9 1.23 → 0.97 [0.87,1.07] PASS;  BABIP untouched 1.35 → 1.35;  G2 wOBAA 0.7651 → 0.7692 (Δ +0.0041 [-0.0218,+0.0327]) PASS
+  silver   G1 HR9 1.27 → 1.00 [0.70,1.22] PASS;  BABIP untouched 0.94 → 0.94;  G2 wOBAA 0.8413 → 0.8435 (Δ +0.0022 [-0.0854,+0.0569]) PASS
+  gold     G1 HR9 1.30 → 1.04 [0.87,1.18] PASS;  BABIP untouched 0.96 → 0.96;  G2 wOBAA 0.7009 → 0.7398 (Δ +0.0388 [-0.0381,+0.1371]) PASS
+  POOLED: HR9 slope 1.26 → 1.00;  G2 wOBAA 0.7600 → 0.7715 (Δ +0.0116 [-0.0078,+0.0313])   PASS
+
+╔═══ 5. WEIRD-ENV BATTERY — dailies, DEPLOYED per-channel line (era/park applied) ═══╗
+  diamondcapdaily EXCLUDED (Derek: no config). Gap + means from each format's OWN eligible pool,
+  exactly as production would. BOTH pre and post carry the shipped K ramp. ERA-RESIDUAL CHECK:
+  the K precedent stalled at extreme eras (era_k over-compresses predicted spread); if HR/BABIP
+  show the same, it is FLAGGED as a factor-conditioned follow-up (a function of era_hr/era_h
+  FACTOR VALUES per plan §15.7) — never fit here, never a named-era exception.
+
+  ── Early Gold Daily — era-1920/park-169 ──
+  pool 3192 | joined 100/100, well-sampled 24 | g_hr 21.9 s_hr 1.25  g_bab 20.2 s_bab 1.08 | era_hr(eff) 0.252  era_h 0.974
+  HR9  : slope pre 0.98 [0.74,1.25] → post 0.78 [0.59,0.99]   OVERSHOOT <1   ratioDcv 0.98 → 1.22
+  BABIP: slope pre 1.53 [1.20,1.80] → post 1.41 [1.11,1.65]   RESIDUAL >1 (under-corrected here)   ratioDcv 0.63 → 0.69
+  wOBAA corr: pre 0.7636 → post(full) 0.7660  (Δ +0.0024 [-0.0166,+0.0282])   PASS
+  wOBAA corr: pre 0.7636 → post(HR-only) 0.7489  (Δ -0.0147 [-0.0411,+0.0043])   PASS
+
+  ── Bronze Heart Daily — era-1939/park-191 ──
+  pool 570 | joined 96/100, well-sampled 13 | g_hr 48.2 s_hr 1.27  g_bab 46.2 s_bab 1.08 | era_hr(eff) 0.584  era_h 0.966
+  HR9  : slope pre 1.28 [1.00,1.53] → post 1.01 [0.80,1.22]   PASS (CI covers 1)   ratioDcv 0.77 → 0.97
+  BABIP: slope pre 1.15 [0.55,1.72] → post 1.05 [0.51,1.59]   PASS (CI covers 1)   ratioDcv 1.28 → 1.40
+  wOBAA corr: pre 0.5050 → post(full) 0.5995  (Δ +0.0945 [-0.0095,+0.1693])   PASS
+  wOBAA corr: pre 0.5050 → post(HR-only) 0.6060  (Δ +0.1010 [-0.0247,+0.1854])   PASS
+
+  ── Gold Cap Daily — era-2010/park-156, cap 1580 ──
+  pool 3192 | joined 96/100, well-sampled 15 | g_hr 21.9 s_hr 1.25  g_bab 20.2 s_bab 1.08 | era_hr(eff) 1.000  era_h 1.000
+  HR9  : slope pre 1.01 [0.76,1.09] → post 0.81 [0.61,0.87]   OVERSHOOT <1   ratioDcv 1.02 → 1.27
+  BABIP: slope pre 0.91 [-0.24,1.61] → post 0.83 [-0.24,1.50]   PASS (CI covers 1)   ratioDcv 0.83 → 0.89
+  wOBAA corr: pre 0.9402 → post(full) 0.9408  (Δ +0.0005 [-0.0114,+0.0116])   PASS
+  wOBAA corr: pre 0.9402 → post(HR-only) 0.9387  (Δ -0.0015 [-0.0249,+0.0092])   PASS
+
+╔═══ 6. SHIPPING CANDIDATE — the constants production wiring would embed ═══╗
+  HR_SPREAD_PIT  = { A: 0.2674, G: 7.3 }   s at tier g_hr: iron 1.27, bronze 1.27, silver 1.26, gold 1.25
+  BAB_SPREAD_PIT = { A: 0.0813, G: 6.7 }   s at tier g_bab: iron 1.08, bronze 1.08, silver 1.08, gold 1.08
+  gaps = buildFrameShift(trainingMeans, poolField).pit.vR.{hrr, pbabip}; means = poolPitMeansOwn(...).{hr, bab}.
+  Application = applyPitSpread on the own-gap branch (K leg unchanged); BABIP rides e.hMul; NO per-tournament constants.
+
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ candidate B ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  BUILD-3: PITCHER HR9 + BABIP SPREAD SCALARS — fit · held-out · two-axis gate · weird-env      ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'bakeoff-hrlog-4243' | catalog 'cdmx' | eval frame = RAW event line, own-gap ON, no anchor
+BASELINE INCLUDES the shipped BUILD-1 K-spread ramp (production reality; pre AND post carry it).
+gaps: pit.vR.hrr (HR) and pit.vR.pbabip (BABIP) from buildFrameShift(trainingMeans, poolField)
+means: poolPitMeansOwn (top-50 field, OWN-GAP ratings, pre-era) | application: applyPitSpread (one copy)
+
+[diamond] N=1 < 5 — excluded from the fit entirely (diamond pit is the known dead cell)
+
+╔═══ 1. PER-TIER MEASUREMENT — calibration slopes (obs~pred) on the K-ramp production line ═══╗
+tier      N    g_hr    g_bab   HR̄/600  BAB̄     HR9 slope [boot CI]  corr  rDcv/opt | BABIP slope [boot CI]  corr  rDcv/opt
+iron      44    52.3    49.8    16.4  0.301    1.36 [1.15,1.56]   0.884  0.70/0.94 |   1.08 [0.97,1.27]   0.883  0.98/1.00
+bronze    52    40.3    36.2    15.8  0.301    1.27 [1.09,1.42]   0.932  0.76/0.97 |   1.29 [1.06,1.61]   0.838  0.74/0.96
+silver    22    30.2    22.9    16.0  0.301    1.40 [0.94,1.78]   0.922  0.68/0.95 |   0.91 [0.73,1.08]   0.907  1.24/1.00
+gold      15    21.9    20.2    15.5  0.302    1.39 [1.15,1.57]   0.975  0.73/1.00 |   0.95 [0.64,1.20]   0.862  1.17/1.00
+POOLED (tier fixed effects): HR9 1.33 (battery said 1.24 [1.14,1.34])   BABIP 1.10 (battery said 1.24 [1.11,1.40])
+
+╔═══ 2. FITTED RAMPS (per channel; s(0)=1 hard — the league anchor) ═══╗
+  ── HR9 : s(g) = 1 + A·(1 − e^(−g/G)) ──
+  wide-grid optimum A=0.334 G=0.5 (SSE 1.61);  LINEAR LIMIT: s = 1 + 0.0083·g (SSE 8.38)
+  G equivalence band (≤ 1.05× best SSE): [0.5, 5.0] — saturating DECISIVELY beats linear ⇒ slopes are gap-FLAT over the observed range (NOT the K geometry)
+  SHIPPING PIN (BUILD-3 rule: G = g_min/3, 95% saturation at the lowest observed gap; A closed-form):
+    A = 0.3386 [boot 0.214, 0.445]   G = 7.3 (by rule)   plateau s(∞) = 1.34
+    iron     g= 52.3  s(g)=1.34 [1.21,1.44]   measured 1.36   resid -0.02
+    bronze   g= 40.3  s(g)=1.34 [1.21,1.44]   measured 1.27   resid +0.07
+    silver   g= 30.2  s(g)=1.33 [1.21,1.44]   measured 1.40   resid -0.07
+    gold     g= 21.9  s(g)=1.32 [1.20,1.42]   measured 1.39   resid -0.07
+  ── BABIP: s(g) = 1 + A·(1 − e^(−g/G)) ──
+  wide-grid optimum A=0.869 G=400.0 (SSE 5.96);  LINEAR LIMIT: s = 1 + 0.0021·g (SSE 5.93)
+  G equivalence band (≤ 1.05× best SSE): [35.5, 400.0+] — profile ~flat in G (weak identification)
+  SHIPPING PIN (BUILD-3 rule: G = g_min/3, 95% saturation at the lowest observed gap; A closed-form):
+    A = 0.0567 [boot -0.035, 0.172]   G = 6.7 (by rule)   plateau s(∞) = 1.06
+    iron     g= 49.8  s(g)=1.06 [0.96,1.17]   measured 1.08   resid -0.03
+    bronze   g= 36.2  s(g)=1.06 [0.96,1.17]   measured 1.29   resid -0.24
+    silver   g= 22.9  s(g)=1.05 [0.97,1.17]   measured 0.91   resid +0.15
+    gold     g= 20.2  s(g)=1.05 [0.97,1.16]   measured 0.95   resid +0.11
+
+╔═══ 3. HELD-OUT VALIDATION — fit WITHOUT bronze, predict bronze ═══╗
+  HR9  : predicted bronze 1.39 [1.22,1.53]  vs measured 1.27 [1.09,1.42]   PASS
+  BABIP: predicted bronze 0.99 [0.90,1.11]  vs measured 1.29 [1.06,1.61]   PASS
+
+  HITTER IDENTITY: 499 hitter recs pre↔post, max |Δ| = 0 (bit-identical ✓)
+  K9 IDENTITY:     60 bronze pool cards, same card ± HR/BAB legs: max |Δ k9| = 0 (bit-identical ✓ — the K leg is untouched by construction)
+
+╔═══ 4. TWO-AXIS GATE — Quick tiers, post-fix (shipping candidate = all-tier fits) ═══╗
+
+  ── iron (quick)  (N=44, s_hr=1.34, s_bab=1.06) ──
+  G1 HR9 slope:   pre 1.36 → post 1.01 [0.85,1.16]   PASS
+  G1 BABIP slope: pre 1.08 → post 1.03 [0.92,1.20]   PASS
+  G2 wOBAA corr:  pre 0.7415 → post 0.7711  (Δ +0.0296 [-0.0031,+0.0718])  ρ 0.6713 → 0.7105   PASS
+  G3 HR9 level:   +0.15 → +0.15 [+0.13,+0.18]  (algebraic exp -0.00);  BABIP level: +0.012 → +0.012 [+0.011,+0.014]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.70 → 0.93 (opt 0.94);  BABIP 0.98 → 1.04 (opt 1.00)
+
+  ── bronze (quick)  (N=52, s_hr=1.34, s_bab=1.06) ──
+  G1 HR9 slope:   pre 1.27 → post 0.95 [0.82,1.07]   PASS
+  G1 BABIP slope: pre 1.29 → post 1.23 [0.99,1.52]   PASS
+  G2 wOBAA corr:  pre 0.7466 → post 0.7572  (Δ +0.0106 [-0.0307,+0.0624])  ρ 0.6947 → 0.7159   PASS
+  G3 HR9 level:   +0.14 → +0.15 [+0.13,+0.18]  (algebraic exp +0.01);  BABIP level: +0.011 → +0.010 [+0.008,+0.012]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.76 → 1.02 (opt 0.97);  BABIP 0.74 → 0.78 (opt 0.96)
+
+  ── silver (quick)  (N=22, s_hr=1.33, s_bab=1.05) ──
+  G1 HR9 slope:   pre 1.40 → post 1.05 [0.71,1.33]   PASS
+  G1 BABIP slope: pre 0.91 → post 0.86 [0.69,1.03]   PASS
+  G2 wOBAA corr:  pre 0.8173 → post 0.8562  (Δ +0.0389 [-0.0525,+0.1175])  ρ 0.8656 → 0.8701   PASS
+  G3 HR9 level:   +0.14 → +0.16 [+0.12,+0.21]  (algebraic exp +0.02);  BABIP level: +0.008 → +0.008 [+0.006,+0.010]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.68 → 0.91 (opt 0.95);  BABIP 1.24 → 1.31 (opt 1.00)
+
+  ── gold (quick)  (N=15, s_hr=1.32, s_bab=1.05) ──
+  G1 HR9 slope:   pre 1.39 → post 1.05 [0.87,1.19]   PASS
+  G1 BABIP slope: pre 0.95 → post 0.90 [0.62,1.15]   PASS
+  G2 wOBAA corr:  pre 0.7412 → post 0.7951  (Δ +0.0539 [-0.0411,+0.1645])  ρ 0.7500 → 0.7893   PASS
+  G3 HR9 level:   +0.10 → +0.11 [+0.08,+0.14]  (algebraic exp +0.01);  BABIP level: +0.006 → +0.006 [+0.003,+0.009]  (exp +0.000)
+  G4 spread:      HR9 ratioDcv 0.73 → 0.96 (opt 1.00);  BABIP 1.17 → 1.24 (opt 1.00)
+
+  POOLED (tier fixed effects): HR9 slope 1.33 → 0.99;  BABIP 1.10 → 1.04
+  POOLED G2 (tier-de-meaned wOBAA ordering): pre 0.7531 → post 0.7739  (Δ +0.0208 [-0.0054,+0.0498])   PASS
+
+╔═══ 4b. HR-ONLY CANDIDATE (s_bab pinned 1) — its own gate record ═══╗
+  iron     G1 HR9 1.36 → 1.01 [0.85,1.16] PASS;  BABIP untouched 1.08 → 1.08;  G2 wOBAA 0.7415 → 0.7757 (Δ +0.0341 [-0.0004,+0.0800]) PASS
+  bronze   G1 HR9 1.27 → 0.95 [0.82,1.07] PASS;  BABIP untouched 1.29 → 1.29;  G2 wOBAA 0.7466 → 0.7493 (Δ +0.0027 [-0.0392,+0.0470]) PASS
+  silver   G1 HR9 1.40 → 1.05 [0.71,1.34] PASS;  BABIP untouched 0.91 → 0.91;  G2 wOBAA 0.8173 → 0.8530 (Δ +0.0358 [-0.0637,+0.1141]) PASS
+  gold     G1 HR9 1.39 → 1.05 [0.88,1.19] PASS;  BABIP untouched 0.95 → 0.95;  G2 wOBAA 0.7412 → 0.7946 (Δ +0.0534 [-0.0455,+0.1666]) PASS
+  POOLED: HR9 slope 1.33 → 0.99;  G2 wOBAA 0.7531 → 0.7709 (Δ +0.0179 [-0.0101,+0.0474])   PASS
+
+╔═══ 5. WEIRD-ENV BATTERY — dailies, DEPLOYED per-channel line (era/park applied) ═══╗
+  diamondcapdaily EXCLUDED (Derek: no config). Gap + means from each format's OWN eligible pool,
+  exactly as production would. BOTH pre and post carry the shipped K ramp. ERA-RESIDUAL CHECK:
+  the K precedent stalled at extreme eras (era_k over-compresses predicted spread); if HR/BABIP
+  show the same, it is FLAGGED as a factor-conditioned follow-up (a function of era_hr/era_h
+  FACTOR VALUES per plan §15.7) — never fit here, never a named-era exception.
+
+  ── Early Gold Daily — era-1920/park-169 ──
+  pool 3192 | joined 100/100, well-sampled 24 | g_hr 21.9 s_hr 1.32  g_bab 20.2 s_bab 1.05 | era_hr(eff) 0.252  era_h 0.974
+  HR9  : slope pre 1.08 [0.80,1.43] → post 0.82 [0.60,1.08]   PASS (CI covers 1)   ratioDcv 0.86 → 1.14
+  BABIP: slope pre 1.48 [1.15,1.74] → post 1.40 [1.09,1.64]   RESIDUAL >1 (under-corrected here)   ratioDcv 0.65 → 0.69
+  wOBAA corr: pre 0.7588 → post(full) 0.7568  (Δ -0.0021 [-0.0214,+0.0219])   PASS
+  wOBAA corr: pre 0.7588 → post(HR-only) 0.7453  (Δ -0.0136 [-0.0393,+0.0079])   PASS
+
+  ── Bronze Heart Daily — era-1939/park-191 ──
+  pool 570 | joined 95/100, well-sampled 12 | g_hr 48.2 s_hr 1.34  g_bab 46.2 s_bab 1.06 | era_hr(eff) 0.584  era_h 0.966
+  HR9  : slope pre 1.36 [0.95,1.69] → post 1.03 [0.72,1.28]   PASS (CI covers 1)   ratioDcv 0.70 → 0.93
+  BABIP: slope pre 1.17 [0.66,1.75] → post 1.10 [0.62,1.66]   PASS (CI covers 1)   ratioDcv 1.24 → 1.32
+  wOBAA corr: pre 0.3422 → post(full) 0.4736  (Δ +0.1313 [-0.0504,+0.2884])   PASS
+  wOBAA corr: pre 0.3422 → post(HR-only) 0.4814  (Δ +0.1392 [-0.0693,+0.3130])   PASS
+
+  ── Gold Cap Daily — era-2010/park-156, cap 1580 ──
+  pool 3192 | joined 96/100, well-sampled 15 | g_hr 21.9 s_hr 1.32  g_bab 20.2 s_bab 1.05 | era_hr(eff) 1.000  era_h 1.000
+  HR9  : slope pre 1.13 [0.69,1.27] → post 0.85 [0.52,0.96]   OVERSHOOT <1   ratioDcv 0.90 → 1.19
+  BABIP: slope pre 0.91 [-0.23,1.59] → post 0.86 [-0.23,1.51]   PASS (CI covers 1)   ratioDcv 0.84 → 0.88
+  wOBAA corr: pre 0.9390 → post(full) 0.9387  (Δ -0.0003 [-0.0225,+0.0138])   PASS
+  wOBAA corr: pre 0.9390 → post(HR-only) 0.9373  (Δ -0.0017 [-0.0312,+0.0127])   PASS
+
+╔═══ 6. SHIPPING CANDIDATE — the constants production wiring would embed ═══╗
+  HR_SPREAD_PIT  = { A: 0.3386, G: 7.3 }   s at tier g_hr: iron 1.34, bronze 1.34, silver 1.33, gold 1.32
+  BAB_SPREAD_PIT = { A: 0.0567, G: 6.7 }   s at tier g_bab: iron 1.06, bronze 1.06, silver 1.05, gold 1.05
+  gaps = buildFrameShift(trainingMeans, poolField).pit.vR.{hrr, pbabip}; means = poolPitMeansOwn(...).{hr, bab}.
+  Application = applyPitSpread on the own-gap branch (K leg unchanged); BABIP rides e.hMul; NO per-tournament constants.
+
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ candidate C ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  BUILD-3: PITCHER HR9 + BABIP SPREAD SCALARS — fit · held-out · two-axis gate · weird-env      ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'bakeoff-hrcq-4243' | catalog 'cdmx' | eval frame = RAW event line, own-gap ON, no anchor
+BASELINE INCLUDES the shipped BUILD-1 K-spread ramp (production reality; pre AND post carry it).
+gaps: pit.vR.hrr (HR) and pit.vR.pbabip (BABIP) from buildFrameShift(trainingMeans, poolField)
+means: poolPitMeansOwn (top-50 field, OWN-GAP ratings, pre-era) | application: applyPitSpread (one copy)
+
+[diamond] N=1 < 5 — excluded from the fit entirely (diamond pit is the known dead cell)
+
+╔═══ 1. PER-TIER MEASUREMENT — calibration slopes (obs~pred) on the K-ramp production line ═══╗
+tier      N    g_hr    g_bab   HR̄/600  BAB̄     HR9 slope [boot CI]  corr  rDcv/opt | BABIP slope [boot CI]  corr  rDcv/opt
+iron      44    52.3    49.8    16.4  0.302    1.33 [1.11,1.58]   0.870  0.70/0.93 |   1.09 [0.97,1.28]   0.881  0.98/1.00
+bronze    52    40.3    36.2    16.5  0.301    1.23 [1.11,1.35]   0.949  0.80/0.98 |   1.35 [1.10,1.65]   0.841  0.71/0.96
+silver    22    30.2    22.9    16.2  0.302    1.28 [0.88,1.57]   0.934  0.76/0.97 |   0.94 [0.75,1.11]   0.906  1.21/1.00
+gold      15    21.9    20.2    15.9  0.301    1.31 [1.10,1.48]   0.975  0.77/1.00 |   0.96 [0.65,1.23]   0.859  1.15/1.00
+POOLED (tier fixed effects): HR9 1.27 (battery said 1.24 [1.14,1.34])   BABIP 1.12 (battery said 1.24 [1.11,1.40])
+
+╔═══ 2. FITTED RAMPS (per channel; s(0)=1 hard — the league anchor) ═══╗
+  ── HR9 : s(g) = 1 + A·(1 − e^(−g/G)) ──
+  wide-grid optimum A=0.269 G=0.5 (SSE 0.87);  LINEAR LIMIT: s = 1 + 0.0069·g (SSE 4.55)
+  G equivalence band (≤ 1.05× best SSE): [0.5, 5.0] — saturating DECISIVELY beats linear ⇒ slopes are gap-FLAT over the observed range (NOT the K geometry)
+  SHIPPING PIN (BUILD-3 rule: G = g_min/3, 95% saturation at the lowest observed gap; A closed-form):
+    A = 0.2730 [boot 0.168, 0.370]   G = 7.3 (by rule)   plateau s(∞) = 1.27
+    iron     g= 52.3  s(g)=1.27 [1.17,1.37]   measured 1.33   resid -0.06
+    bronze   g= 40.3  s(g)=1.27 [1.17,1.37]   measured 1.23   resid +0.04
+    silver   g= 30.2  s(g)=1.27 [1.17,1.36]   measured 1.28   resid -0.01
+    gold     g= 21.9  s(g)=1.26 [1.16,1.35]   measured 1.31   resid -0.05
+  ── BABIP: s(g) = 1 + A·(1 − e^(−g/G)) ──
+  wide-grid optimum A=1.072 G=400.0 (SSE 6.44);  LINEAR LIMIT: s = 1 + 0.0025·g (SSE 6.42)
+  G equivalence band (≤ 1.05× best SSE): [27.0, 400.0+] — profile ~flat in G (weak identification)
+  SHIPPING PIN (BUILD-3 rule: G = g_min/3, 95% saturation at the lowest observed gap; A closed-form):
+    A = 0.0791 [boot -0.015, 0.197]   G = 6.7 (by rule)   plateau s(∞) = 1.08
+    iron     g= 49.8  s(g)=1.08 [0.99,1.20]   measured 1.09   resid -0.01
+    bronze   g= 36.2  s(g)=1.08 [0.99,1.20]   measured 1.35   resid -0.27
+    silver   g= 22.9  s(g)=1.08 [0.99,1.19]   measured 0.94   resid +0.14
+    gold     g= 20.2  s(g)=1.08 [0.99,1.19]   measured 0.96   resid +0.12
+
+╔═══ 3. HELD-OUT VALIDATION — fit WITHOUT bronze, predict bronze ═══╗
+  HR9  : predicted bronze 1.31 [1.14,1.45]  vs measured 1.23 [1.11,1.35]   PASS
+  BABIP: predicted bronze 1.01 [0.91,1.13]  vs measured 1.35 [1.10,1.65]   PASS
+
+  HITTER IDENTITY: 499 hitter recs pre↔post, max |Δ| = 0 (bit-identical ✓)
+  K9 IDENTITY:     60 bronze pool cards, same card ± HR/BAB legs: max |Δ k9| = 0 (bit-identical ✓ — the K leg is untouched by construction)
+
+╔═══ 4. TWO-AXIS GATE — Quick tiers, post-fix (shipping candidate = all-tier fits) ═══╗
+
+  ── iron (quick)  (N=44, s_hr=1.27, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.33 → post 1.05 [0.85,1.23]   PASS
+  G1 BABIP slope: pre 1.09 → post 1.01 [0.90,1.19]   PASS
+  G2 wOBAA corr:  pre 0.7334 → post 0.7551  (Δ +0.0217 [-0.0043,+0.0533])  ρ 0.6393 → 0.6703   PASS
+  G3 HR9 level:   +0.18 → +0.18 [+0.15,+0.21]  (algebraic exp +0.00);  BABIP level: +0.012 → +0.012 [+0.010,+0.013]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.70 → 0.89 (opt 0.93);  BABIP 0.98 → 1.05 (opt 1.00)
+
+  ── bronze (quick)  (N=52, s_hr=1.27, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.23 → post 0.97 [0.88,1.07]   PASS
+  G1 BABIP slope: pre 1.35 → post 1.25 [1.02,1.53]   FAIL (CI excludes 1)
+  G2 wOBAA corr:  pre 0.7642 → post 0.7796  (Δ +0.0154 [-0.0104,+0.0501])  ρ 0.7266 → 0.7466   PASS
+  G3 HR9 level:   +0.19 → +0.20 [+0.18,+0.23]  (algebraic exp +0.01);  BABIP level: +0.011 → +0.010 [+0.008,+0.012]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.80 → 1.01 (opt 0.98);  BABIP 0.71 → 0.77 (opt 0.96)
+
+  ── silver (quick)  (N=22, s_hr=1.27, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.28 → post 1.01 [0.70,1.23]   PASS
+  G1 BABIP slope: pre 0.94 → post 0.87 [0.70,1.04]   PASS
+  G2 wOBAA corr:  pre 0.8409 → post 0.8516  (Δ +0.0107 [-0.0701,+0.0618])  ρ 0.8758 → 0.8351   PASS
+  G3 HR9 level:   +0.15 → +0.16 [+0.12,+0.20]  (algebraic exp +0.01);  BABIP level: +0.008 → +0.008 [+0.006,+0.010]  (exp -0.000)
+  G4 spread:      HR9 ratioDcv 0.76 → 0.96 (opt 0.97);  BABIP 1.21 → 1.30 (opt 1.00)
+
+  ── gold (quick)  (N=15, s_hr=1.26, s_bab=1.08) ──
+  G1 HR9 slope:   pre 1.31 → post 1.04 [0.86,1.17]   PASS
+  G1 BABIP slope: pre 0.96 → post 0.89 [0.62,1.15]   PASS
+  G2 wOBAA corr:  pre 0.7068 → post 0.7505  (Δ +0.0437 [-0.0352,+0.1567])  ρ 0.7036 → 0.7607   PASS
+  G3 HR9 level:   +0.14 → +0.15 [+0.11,+0.18]  (algebraic exp +0.01);  BABIP level: +0.005 → +0.006 [+0.002,+0.009]  (exp +0.000)
+  G4 spread:      HR9 ratioDcv 0.77 → 0.97 (opt 1.00);  BABIP 1.15 → 1.24 (opt 1.00)
+
+  POOLED (tier fixed effects): HR9 slope 1.27 → 1.00;  BABIP 1.12 → 1.04
+  POOLED G2 (tier-de-meaned wOBAA ordering): pre 0.7603 → post 0.7770  (Δ +0.0167 [-0.0022,+0.0374])   PASS
+
+╔═══ 4b. HR-ONLY CANDIDATE (s_bab pinned 1) — its own gate record ═══╗
+  iron     G1 HR9 1.33 → 1.05 [0.85,1.22] PASS;  BABIP untouched 1.09 → 1.09;  G2 wOBAA 0.7334 → 0.7623 (Δ +0.0289 [-0.0007,+0.0659]) PASS
+  bronze   G1 HR9 1.23 → 0.97 [0.87,1.07] PASS;  BABIP untouched 1.35 → 1.34;  G2 wOBAA 0.7642 → 0.7683 (Δ +0.0042 [-0.0227,+0.0338]) PASS
+  silver   G1 HR9 1.28 → 1.01 [0.70,1.23] PASS;  BABIP untouched 0.94 → 0.94;  G2 wOBAA 0.8409 → 0.8448 (Δ +0.0039 [-0.0842,+0.0595]) PASS
+  gold     G1 HR9 1.31 → 1.04 [0.87,1.18] PASS;  BABIP untouched 0.96 → 0.96;  G2 wOBAA 0.7068 → 0.7457 (Δ +0.0389 [-0.0396,+0.1386]) PASS
+  POOLED: HR9 slope 1.27 → 1.00;  G2 wOBAA 0.7603 → 0.7723 (Δ +0.0120 [-0.0079,+0.0325])   PASS
+
+╔═══ 5. WEIRD-ENV BATTERY — dailies, DEPLOYED per-channel line (era/park applied) ═══╗
+  diamondcapdaily EXCLUDED (Derek: no config). Gap + means from each format's OWN eligible pool,
+  exactly as production would. BOTH pre and post carry the shipped K ramp. ERA-RESIDUAL CHECK:
+  the K precedent stalled at extreme eras (era_k over-compresses predicted spread); if HR/BABIP
+  show the same, it is FLAGGED as a factor-conditioned follow-up (a function of era_hr/era_h
+  FACTOR VALUES per plan §15.7) — never fit here, never a named-era exception.
+
+  ── Early Gold Daily — era-1920/park-169 ──
+  pool 3192 | joined 100/100, well-sampled 24 | g_hr 21.9 s_hr 1.26  g_bab 20.2 s_bab 1.08 | era_hr(eff) 0.252  era_h 0.974
+  HR9  : slope pre 0.98 [0.74,1.26] → post 0.78 [0.59,1.00]   PASS (CI covers 1)   ratioDcv 0.97 → 1.22
+  BABIP: slope pre 1.53 [1.20,1.79] → post 1.41 [1.11,1.65]   RESIDUAL >1 (under-corrected here)   ratioDcv 0.63 → 0.69
+  wOBAA corr: pre 0.7645 → post(full) 0.7663  (Δ +0.0019 [-0.0173,+0.0272])   PASS
+  wOBAA corr: pre 0.7645 → post(HR-only) 0.7498  (Δ -0.0147 [-0.0411,+0.0045])   PASS
+
+  ── Bronze Heart Daily — era-1939/park-191 ──
+  pool 570 | joined 96/100, well-sampled 13 | g_hr 48.2 s_hr 1.27  g_bab 46.2 s_bab 1.08 | era_hr(eff) 0.584  era_h 0.966
+  HR9  : slope pre 1.29 [1.00,1.53] → post 1.02 [0.79,1.21]   PASS (CI covers 1)   ratioDcv 0.76 → 0.96
+  BABIP: slope pre 1.15 [0.55,1.71] → post 1.05 [0.51,1.59]   PASS (CI covers 1)   ratioDcv 1.29 → 1.40
+  wOBAA corr: pre 0.4989 → post(full) 0.5966  (Δ +0.0977 [-0.0103,+0.1751])   PASS
+  wOBAA corr: pre 0.4989 → post(HR-only) 0.6033  (Δ +0.1044 [-0.0248,+0.1909])   PASS
+
+  ── Gold Cap Daily — era-2010/park-156, cap 1580 ──
+  pool 3192 | joined 96/100, well-sampled 15 | g_hr 21.9 s_hr 1.26  g_bab 20.2 s_bab 1.08 | era_hr(eff) 1.000  era_h 1.000
+  HR9  : slope pre 1.02 [0.76,1.10] → post 0.81 [0.61,0.88]   OVERSHOOT <1   ratioDcv 1.01 → 1.27
+  BABIP: slope pre 0.91 [-0.24,1.61] → post 0.84 [-0.24,1.50]   PASS (CI covers 1)   ratioDcv 0.83 → 0.89
+  wOBAA corr: pre 0.9404 → post(full) 0.9408  (Δ +0.0004 [-0.0123,+0.0115])   PASS
+  wOBAA corr: pre 0.9404 → post(HR-only) 0.9388  (Δ -0.0016 [-0.0254,+0.0094])   PASS
+
+╔═══ 6. SHIPPING CANDIDATE — the constants production wiring would embed ═══╗
+  HR_SPREAD_PIT  = { A: 0.2730, G: 7.3 }   s at tier g_hr: iron 1.27, bronze 1.27, silver 1.27, gold 1.26
+  BAB_SPREAD_PIT = { A: 0.0791, G: 6.7 }   s at tier g_bab: iron 1.08, bronze 1.08, silver 1.08, gold 1.08
+  gaps = buildFrameShift(trainingMeans, poolField).pit.vR.{hrr, pbabip}; means = poolPitMeansOwn(...).{hr, bab}.
+  Application = applyPitSpread on the own-gap branch (K leg unchanged); BABIP rides e.hMul; NO per-tournament constants.
+
