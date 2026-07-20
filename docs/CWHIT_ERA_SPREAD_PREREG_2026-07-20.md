@@ -46,6 +46,9 @@ Every candidate point, from `data/tournaments/*.json` + `data/eras/*.json` + `da
 
 ### 2.1 PARK IS COLLINEAR WITH ERA across the entire capture set
 
+*(superseded — see Amendment, item 1: the blanket claim below is false; `cwhit-cap` and `silver-cap`
+are park-1.)*
+
 Every non-2010 era point sits in a **different, non-neutral park**. Only the era-2010 formats use
 neutral `park-1`. So in any naive fit, `s(era_k)` will absorb whatever park effect is present at
 each era point. Park factors are compressed (`cp` 0.26) so the effect is damped — but it is
@@ -58,6 +61,8 @@ points.
 
 **Consequence:** the fit must carry an explicit park term, or the residual must be shown to be
 park-orthogonal. This is a pre-registered requirement, not a post-hoc option — see gate G0.
+*(superseded — see Amendment, item 2: the requirement is channel-conditional, and an explicit park
+term is now ruled out in both branches as unidentifiable.)*
 
 ### 2.2 The motivating gold-cap anomaly has an unruled-out PARK explanation
 
@@ -87,7 +92,8 @@ consumes any cap-format point.
 
 `bronze-cap-weekly` is therefore the single highest-value outstanding capture: it is the only
 matched pair that isolates the budget variable cleanly. It should be prioritised above the
-extreme-era P1 targets.
+extreme-era P1 targets. *(superseded in part — see Amendment, item 5: `gold-slots` vs `gold-quick`
+is a second clean budget pair.)*
 
 The `nightmare-cap` vs `bronze-cap` "within-era tightness gradient" is weaker than the targets doc
 implies: era is held, but park moves *and in opposing directions* (park-182 is high-average
@@ -149,7 +155,7 @@ Fit on the remaining clean points; never on any cap/slots format for the era ter
 
 | gate | requirement | fail ⇒ |
 |---|---|---|
-| **G0 — park orthogonality** | The fitted era residual must be uncorrelated with the point's park factors (avg, hr, hr-handedness split, gap), CI including 0; OR the model must carry an explicit park term and the era term must survive its inclusion CI-clear. | HOLD. Without this the fit is a park fit wearing an era label. |
+| **G0 — park orthogonality** *(superseded — see Amendment, item 2)* | The fitted era residual must be uncorrelated with the point's park factors (avg, hr, hr-handedness split, gap), CI including 0; OR the model must carry an explicit park term and the era term must survive its inclusion CI-clear. | HOLD. Without this the fit is a park fit wearing an era label. |
 | **G1 — held-out spread** | On `gold-rush`, predicted `s` must cover the measured K-spread calibration slope, and the post-correction spread ratio must move toward 1.0 **CI-clear** (paired bootstrap on the same cards, Δ excluding 0). Noise-deconvolved (dcv) throughout; never a raw ratio. | HOLD. |
 | **G2 — extreme-band held-out** | Same on `bronze-heart`. | HOLD. |
 | **G3 — no ordering regression** | On every scored format, no ordering metric (corr/Spearman/regret) may degrade CI-clear. Ordering-neutral is the requirement; ordering gain is not needed. | HOLD. |
@@ -183,8 +189,122 @@ GET/POST pair, per §15.7. No per-tournament flag, no named-era branch.
 
 ## 7. Dependency
 
+*(superseded — see Amendment, item 6: the ordering is relaxed to opportunistic.)*
+
 Task 2 (cap/budget composition) **should run first**. §2.2 shows the anomaly motivating the cap
 hypothesis is park-confounded, and §2.4 shows the era curve's middle is only reachable through
 cap-confounded points. Until the budget effect is measured, either the mid-band stays empty or the
 era fit silently absorbs a budget term (which G6 would catch, but catching it late wastes the
 capture).
+
+---
+
+## AMENDMENT 2026-07-20 (post-review)
+
+Rulings from review of the pre-registration above, recorded before any fit is run. The original text
+is left intact; each item states what changed, why, and what it supersedes.
+
+### Item 1 — §2.1 is factually wrong as written
+
+**Superseded text:** "Every non-2010 era point sits in a **different, non-neutral park**. Only the
+era-2010 formats use neutral `park-1`."
+
+**Why:** false, and contradicted by the document's own design-matrix table three lines above it. Two
+non-2010 era points are on neutral `park-1`:
+
+| tournament | era | k | park | avg l/r | hr l/r | gap | cap |
+|---|---|---|---|---|---|---|---|
+| cwhit-cap | 1896 | 0.306 | 1 | 1.00 / 1.00 | 1.00 / 1.00 | 1.000 | 1700 |
+| silver-cap | 1998 | 0.916 | 1 | 1.00 / 1.00 | 1.00 / 1.00 | 1.000 | 1475 |
+
+**Corrected claim:** park is strongly collinear with era, **not totally** collinear. Two era points
+are park-clean.
+
+**Binding qualifier:** both park-clean era points are **CAPPED**. They are park-clean but
+**BUDGET-confounded**. `cwhit-cap` (k = 0.306) becomes usable as an era point only **after** the cap
+effect is measured (task 2). This does not reopen §2.4 — the k ≈ 0.42–0.72 hole stands, since 0.306
+and 0.916 both sit outside it.
+
+### Item 2 — Gate G0 becomes CHANNEL-CONDITIONAL
+
+**Superseded text:** G0 as written ("The fitted era residual must be uncorrelated with the point's
+park factors … OR the model must carry an explicit park term"), plus the §2.1 Consequence line that
+sets it up.
+
+**Why:** the original G0 was channel-blind, and therefore over-engineered. Park factors carry
+**avg / hr / gap ONLY**. There is no park K factor and no park BB factor anywhere — not in the Park
+model, not in scoring-core (park is applied to HR, hits and XBH only), not in the sim. K is upstream
+of BIP, so park cannot feed back into it.
+
+**Amended G0:**
+
+| channel | park requirement |
+|---|---|
+| **K** | none. `s(era_k)` is park-clean **BY CONSTRUCTION**. No park term, no park-matching. |
+| **BB** | none. Park-clean by construction, same argument. |
+| **HR / BABIP / gap** | park-neutral or park-matched data **IS required** for any era claim. |
+
+Consequence for §2.1's named offenders: `bronze-heart`'s hr_l 1.15 / hr_r 0.66 split (0.49) and
+`late-silver`'s gap 0.922 are **IRRELEVANT** to the K fit — which is the fit this document is for.
+They remain live objections on the HR / BABIP / gap channels.
+
+**In NEITHER branch do we carry an explicit park term.** We lack the design to identify one: there
+are no two parks at a matched era anywhere in the set.
+
+### Item 3 — Channel-basis corrections
+
+From the covariance-decomposition work. The era fit's channel definitions are stated on this
+corrected basis:
+
+1. **SO/K is NOT a wOBA channel.** It carries zero weight in either composite and enters only
+   through the BIP denominator.
+2. **Predicted hitter 1B/XBH is identified FROM the composite identity.** Residuals on that cell are
+   vacuous by construction. Its falsifiable check is `0 <= GAP <= nHH`.
+3. **The pitcher basis is effectively 3-D.** Pitcher 1B/XBH are degenerate — both sides use a fixed
+   0.25 XBH share, and the source table has no 1B/2B/3B split. Every pitcher cell therefore fails the
+   positive-semidefinite check on that pair, and correlations there are **NOT measurements**.
+
+### Item 4 — Multiple-comparisons policy (new; binding on this fit and generally)
+
+The scorecard grid is ~50 cells (5 tiers × 5 channels × 2 roles). At 95% CIs, **~2.5 false CI-clears
+are EXPECTED from noise alone.**
+
+A CI-clear cell is therefore **not by itself a finding**. Before any cell becomes a work item it must
+show either
+
+- a **coherent shape** — monotone in gap, era, or tier; or
+- **replication** in independent data.
+
+### Item 5 — Capture / slots swap
+
+| format | era | park | window | ruling |
+|---|---|---|---|---|
+| silver-slots | 2010 | **25** | ≤79 | **DEMOTED** for the general instrument — park-confounded against silver-quick. |
+| gold-slots | 2010 | **1** | ≤89 | **PROMOTED** — pairs exactly with `gold-quick` (era, park, window all match). |
+
+**Salvage note:** `silver-slots` remains usable for **K-CHANNEL-ONLY** slots reads, since park cannot
+touch K (item 2).
+
+**The clean budget pairs are therefore:**
+
+| pair | isolates |
+|---|---|
+| `bronze-cap-weekly` ↔ `bronze-quick` | cap |
+| `gold-slots` ↔ `gold-quick` | slots |
+
+Together these two also separate **"budget-forced composition generally"** from **"cap-specific"** —
+which neither pair does alone.
+
+### Item 6 — §7 ordering relaxed to OPPORTUNISTIC
+
+**Superseded text:** "Task 2 (cap/budget composition) **should run first**."
+
+**Amended:** if an **UNCAPPED, NON-SLOTS** format at era k ≈ 0.45–0.70 is captured, it directly
+identifies the era curve's gap region (§2.4), and **task 1 NO LONGER WAITS on task 2 for the K fit**.
+Whichever identifying data lands first runs first.
+
+**Task 2 remains REQUIRED regardless**, for three things:
+
+1. the cap instrument itself;
+2. promoting `nightmare-cap` and `bronze-cap` into the era fit as extra points;
+3. unlocking `cwhit-cap` on the HR channel (item 1).

@@ -1664,3 +1664,65 @@ and "era/park-specific" means PROPERTY CLASSES, not identities.** Pinned:
   on-by-default, kill-switch `hit-tail`; the per-tournament field demoted to override-OFF).
   Any future era-residual fix (e.g. the pending K era-spread item, or an HR/BABIP analog if the
   dailies show one) must be framed factor-conditioned in exactly this sense.
+
+### 15.8 Measurement correction (2026-07-20) — two retractions, one instrument cause
+
+**Two retractions, one cause.**
+
+- **RETRACTED: "hitter calibration slopes 0.25–0.50, hitters severely under-spread."** Two compounding
+  defects. (i) **WRONG METRIC** — the scorecard's `slope` column is documented at
+  `src/eval/cwhit/scorecard.ts:282` as "OLS slope of pred on obs" and computed at line 345 as
+  `cov(pred,obs)/var(obs)`. That is attenuated **by construction**: `obs = true + noise`, so it cannot
+  read 1.0 even from a perfect predictor (attenuation factor `var(obs)/var(pred)` = 1.2–3.0 on hitter
+  composites). The doctrine slope is `obs~pred` = `cov(obs,pred)/var(pred)`, unattenuated. (ii) **WRONG
+  SAMPLE** — the number was read off **Section A** (the three-way block, **N=26–36**, only cards that
+  ALSO carry a cwhit projection, additionally range-restricted) and quoted as the general result. The
+  observed-only sample is **N=64–100**.
+- **REFUTED: the cross-channel covariance hypothesis** (that predicted channel errors are too mutually
+  independent relative to reality's talent correlations). Decomposition reconstructs exactly (max residual
+  **1.11e-16**, all 10 cells). Covariance-term ratio `2ΣCov_pred / 2ΣCov_obs*` = **0.79–1.19**; covariance
+  **SHARE** indistinguishable pred vs obs everywhere; marginals `sqrt(ΣVar_pred/ΣVar_obs*)` = **0.90–1.08**;
+  **no cell has a CI-clear delta on either term** — except iron hit, where both are CI-clear in OPPOSITE
+  directions and cancel to **+0.34**. Worst channel pairs **ALTERNATE SIGN across tiers**. The model
+  reproduces the correct negative sign structure (**−220% to −480%**; BB/K/HR crowd out BIP hits).
+- **BOTH trace to ONE instrument defect:** `tools/cwhit-scorecard.ts:119`,
+  `if (ch === "woba") return NaN;   // a composite; no clean binomial form` (and the parallel hitter branch
+  at `:125`). **The comment is wrong** — the multinomial weighted-sum variance is a clean closed form.
+  Because `noiseOf` returns NaN, `agreement()` never deconvolves the composite and **only the RAW ratio
+  prints**, so the covariance premise compared **deconvolved per-channel** figures against a **raw
+  composite**. Deconvolved, the composite goes **0.78→1.15** (gold hit), **0.78→0.85** (silver hit),
+  **0.58→0.74** (diamond hit). The "~0.6 composite" also never held across the grid **even raw**: 0.6 in
+  exactly ONE cell (diamond hit, N=17, thin); gold/silver hit 0.78; everything else **0.87–1.08**.
+
+**True state of hitter spacing** (supersedes the retracted claim). Hitter composite `obs~pred` slope
+**0.81–1.28**; composite spread DCV **iron 0.96 / bronze 1.00 / silver 0.85 / gold 1.16 / diamond 0.75**,
+every CI containing 1.0 except silver (**0.85 [0.75, 1.02]**), which touches. **NO global hitter spacing
+defect exists.** The pre-correction slopes (**0.35–0.54**, reproducible under `--no-corrections`, CI-clear
+under-spread there — e.g. gold BABIP DCV **0.63 [0.52, 0.79]**) are an **INDEPENDENT VALIDATION OF
+BUILD-2**: the original finding was reporting BUILD-2's success as a bug.
+
+**Watch list — ruling: WATCH, do NOT instrument.** Six CI-clear per-channel residuals, **signed both ways**:
+CI-clear **UNDER**-spread at iron BB%, iron BABIP, gold SO%, gold HR600 (DCV **0.86–0.93**); CI-clear
+**OVER**-spread at silver BB% and gold BB% (**1.14–1.25**). Rationale: the grid is **~50 cells**
+(5 tiers × 5 channels × 2 roles); at 95% CIs **~2.5 false CI-clears are EXPECTED from noise alone**. Six,
+signed both ways and non-monotone in tier, is only mildly above chance and has **no coherent shape** — a
+gap- or era-conditioned defect would be monotone in something. Therefore **RECORD; require REPLICATION in
+the task-4 deeper-window captures before any cell becomes a work item.** Two earmarks: gold SO%/HR600-under
+folds into the existing thin-gold-cells re-read; if replication shows a consistent shape story, investigate
+**JOINTLY with the queued bronze HR600 overcorrect**, since both would implicate the hitter tail's `w(g)` at
+specific gaps.
+
+**MULTIPLE-COMPARISONS POLICY — binding generally.** A CI-clear cell is **not by itself a finding**. Require
+either a **coherent shape** (monotone in gap, era or tier) or **replication in independent data**.
+
+**Lessons (practice rules).**
+
+- **Instrument defects masquerade as model findings.** When two independent analyses point at the same
+  anomaly, check whether they **SHARE AN INSTRUMENT** before theorizing about the model. One line of eval
+  code manufactured a fake defect, a fake mechanism, and nearly a work item.
+- **ONE-COPY APPLIES TO EVAL INSTRUMENTS**, not just the scoring core. Metric conventions must live in one
+  shared module and be imported.
+- **Any quoted metric NAMES ITS SECTION AND N.** Quoting a statistic without stating its population is an
+  analyst error; an instrument that prints the same statistic for two different populations under quiet
+  headers invites it.
+- **Report both axes always**; a spread read that is not noise-deconvolved is not a spread read.
