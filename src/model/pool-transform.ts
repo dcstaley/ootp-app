@@ -202,9 +202,15 @@ export const kSpreadPitRamp = (gap: number): number =>
 // A = 0.2648 [boot 0.157, 0.355] closed-form at that G; held-out bronze PASS (pred 1.29
 // [1.14,1.42] vs measured 1.23 [1.09,1.34]). HR-only gate record: G1 4/4 quicks PASS (pooled
 // 1.26→1.00), G2 4/4 + pooled PASS (iron +0.027 CI-clear IMPROVE), G3 levels ~0, G4 ratios on
-// optimum. KNOWN FLAG: gold-cap daily overshoots (post 0.78 [0.60,0.83]) — gold-quick (1.31)
+// optimum. KNOWN FLAG: gold-cap overshoots (post 0.78 [0.60,0.83]) — gold-quick (1.31)
 // and gold-cap (0.97) disagree at the SAME gap; era factors are 1.0 there so it is NOT the era
-// class; candidate quick-vs-daily format-structural heterogeneity (plan §15.7 framing). The
+// class — but that clearance is INCOMPLETE (2026-07-20): gold-cap's park-156 is non-neutral on
+// the HR channel (hr_l 0.964 / hr_r 1.199, gap 1.132 — largest in the set) AND gold-cap is the
+// tightest cap format (TIGHT 0.317), so cap-composition and park are DEGENERATE here — no depth
+// at gold-cap can separate them. (Quick-vs-daily is DEAD as an axis — Derek ruling 2026-07-20:
+// no functional difference.) Discriminator = bronze-cap-weekly (cap, park-1 neutral,
+// window-matched vs bronze-quick). NOTE this flag is HR-channel-only; parks carry no K factor,
+// so the K ramp above is park-clean everywhere. The
 // sibling BABIP scalar was HELD (bronze G1 CI-clear fail) — sPitBab is never set in production.
 export const PIT_SPREAD_HR = { A: 0.2648, G: 5.8 } as const;
 
