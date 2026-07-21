@@ -9,9 +9,18 @@ import { fileURLToPath } from "node:url";
 import { dirname, join as pjoin } from "node:path";
 import { parseCwhitPit, parseCwhitHit, parseCwhitMeta, IP_TO_BF } from "../src/eval/cwhit/parse.ts";
 import { joinCwhit, joinKey, normalizeName, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
+import { CWHIT_CORPUS, CAPTURE_DIR_2026_07_21, captureObsPath } from "../src/eval/cwhit/corpus.ts";
 
-const FIX = pjoin(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "cwhit");
+const ROOT = pjoin(dirname(fileURLToPath(import.meta.url)), "..");
+const FIX = pjoin(ROOT, "fixtures", "cwhit");
 const read = (f: string) => readFileSync(pjoin(FIX, f), "utf8");
+
+/** A full-depth capture header advertises its own row count. Read straight off the verbatim header
+ *  the parser already carries, so no parser change is needed to pin depth. */
+const advertisedRows = (headerLine: string): number | undefined => {
+  const m = headerLine.match(/recordsTotal=(\d+)/);
+  return m ? Number(m[1]) : undefined;
+};
 
 describe("cwhit parse — real snapshot", () => {
   it("parses a pitcher table with provenance + BF derived from IP", () => {
@@ -46,7 +55,13 @@ describe("cwhit parse — real snapshot", () => {
       const isPit = f.includes("-pit");
       const { meta, rows } = isPit ? parseCwhitPit(read(f)) : parseCwhitHit(read(f));
       expect(rows.length, f).toBeGreaterThan(0);
-      if (meta.topN) expect(rows.length, f).toBeLessThanOrEqual(meta.topN);
+      // A table must match whatever depth IT advertises. The old form was `if (meta.topN) <=
+      // meta.topN`, which on a full-depth CAP header (topN deliberately undefined) silently
+      // no-opped — the assertion vanished instead of failing. Now every table asserts something.
+      const adv = advertisedRows(meta.headerLine);
+      if (adv !== undefined) expect(rows.length, f).toBe(adv);
+      else if (meta.topN) expect(rows.length, f).toBeLessThanOrEqual(meta.topN);
+      else throw new Error(`${f}: header advertises neither recordsTotal nor top-N — depth unverifiable`);
       for (const r of rows) { expect(Number.isFinite(r.val), f).toBe(true); expect(r.name.length, f).toBeGreaterThan(0); expect(["R", "L", "S"]).toContain(r.hand); }
     }
   });
@@ -56,6 +71,22 @@ describe("cwhit parse — real snapshot", () => {
     expect(m.format).toBe("Gold Cap Daily");
     expect(m.instances).toBe(40);
     expect(m.topN).toBe(100);
+  });
+
+  it("the FULL-DEPTH capture parses to exactly its advertised recordsTotal, every Quick table", () => {
+    // Registry-driven: the capture is the corpus the program now defaults to, so its depth is pinned
+    // here rather than left to the legacy fixtures, whose 100-row cut is a historical artifact.
+    for (const fmt of CWHIT_CORPUS.filter((x) => x.type === "Quick")) {
+      for (const role of ["pit", "hit"] as const) {
+        const p = pjoin(ROOT, captureObsPath(CAPTURE_DIR_2026_07_21, fmt, role));
+        const txt = readFileSync(p, "utf8");
+        const { meta, rows } = role === "pit" ? parseCwhitPit(txt) : parseCwhitHit(txt);
+        const adv = advertisedRows(meta.headerLine);
+        expect(adv, `${fmt.key} ${role} advertises recordsTotal`).toBeGreaterThan(0);
+        expect(rows.length, `${fmt.key} ${role}`).toBe(adv);
+        expect(meta.topN, `${fmt.key} ${role} is full depth`).toBeUndefined();
+      }
+    }
   });
 
   it("parseCwhitMeta reads the NEW full-depth (# CAP) header — multi-word label, dates, no top-N", () => {

@@ -212,7 +212,10 @@ export interface SampleResult {
   cals: { tier: string; cal: CalScales }[];
   windows: { tier: string; role: string; w: ReturnType<typeof windowOverlap>; meta: CwhitProjMeta; conv: string[] }[];
   notices: string[];
-  projUnjoined: string[];
+  /** Projection rows matching NO catalog card — a REAL join failure, listed individually. */
+  projUnjoinedCatalog: string[];
+  /** Eligible catalog cards nobody played — EXPECTED under full-pool projections, counted per cell. */
+  projUnobserved: { tier: string; role: string; n: number }[];
   obsFiles: string[];
   projFiles: string[];
   /** What this sample was actually built from + the floors it was built under — reported so a run's
@@ -415,19 +418,47 @@ function lookupProj(
   audit.missed++; return undefined;
 }
 
-/** Projection rows that no observed card consumed. Identified by which keys the join actually USED,
- *  so it is correct for either key shape (CID on captures, title on the legacy fixtures) instead of
- *  reconstructing our-side keys and hoping the shapes line up.
+/**
+ * Split the projection rows that no observed card consumed into the TWO things they actually are.
  *
- *  NOTE for the re-baseline: under FULL-POOL projections most of these are simply cards nobody played,
- *  which is expected rather than a defect, and the list runs to four figures. Fable has this scheduled
- *  as a SPLIT + RENAME (projUnjoinedCatalog = defect alarm vs projUnobserved = expected count) at the
- *  re-baseline; it is deliberately NOT done here, so the reported figure stays the one the current
- *  display is written against. */
+ * Under the legacy top-100 fixtures these were one bucket and that was defensible: both tables were
+ * 100-row cuts, so a projection row without an observed partner was mostly a selection artifact. Under
+ * FULL-POOL projections the bucket is dominated by cards nobody played — bronze proj carries 1424
+ * pitcher rows against 357 observed — and burying a genuine catalog-join failure inside a four-figure
+ * count of normal non-usage is how a real defect becomes invisible.
+ *
+ *   projUnjoinedCatalog — a projection row that matches nothing in THIS tier x role's eligible pool.
+ *                         NOT necessarily a catalog miss: `byCid` is scoped by value window AND by our
+ *                         `isPit` role split, so a card cwhit files as a pitcher and we classify as a
+ *                         hitter (or vice versa) lands here too. Measured 2026-07-21: 784 such rows at
+ *                         the final config, while an independent check found all 3521 projection CIDs
+ *                         DO resolve to catalog cards — so this bucket is dominated by role/window
+ *                         classification differences, not by unidentifiable cards. Reported
+ *                         individually because it is the only place such a difference is visible.
+ *   projUnobserved      — an eligible card in our own pool that nobody used. EXPECTED. Counted only.
+ *
+ * The distinguishing information was always present at the call site and merely not passed in: `byCid`
+ * is the complete set of catalog-eligible `${Card ID}|${vlvl}` keys for this tier x role, and it is the
+ * SAME key shape `projKey` emits for a capture row — which is exactly why lookupProj's primary lookup
+ * is a direct hit. On the LEGACY source the projection tables carry no CID, so keys are `title|vlvl`
+ * and catalog membership is tested through the titles instead.
+ */
 function recordUnjoined(
-  projBy: Map<string, Chan>, used: Set<string>, tier: string, role: "pit" | "hit", out: string[],
+  projBy: Map<string, Chan>, used: Set<string>,
+  byCid: Map<string, { title: string; vlvl: number }>,
+  tier: string, role: "pit" | "hit",
+  outCatalog: string[], outUnobserved: { tier: string; role: string; n: number }[],
 ): void {
-  for (const k of projBy.keys()) if (!used.has(k)) out.push(`${tier} ${role}: ${k}`);
+  const titleKeys = new Set<string>();
+  for (const v of byCid.values()) titleKeys.add(`${v.title}|${v.vlvl}`);
+  let unobserved = 0;
+  for (const k of projBy.keys()) {
+    if (used.has(k)) continue;
+    const inCatalog = byCid.has(k) || titleKeys.has(k);
+    if (inCatalog) unobserved++;
+    else outCatalog.push(`${tier} ${role}: ${k}`);
+  }
+  if (unobserved) outUnobserved.push({ tier, role, n: unobserved });
 }
 
 export function buildCwhitSample(d: SampleDeps): SampleResult {
@@ -462,7 +493,8 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   const cals: { tier: string; cal: CalScales }[] = [];
   const windows: SampleResult["windows"] = [];
   const notices: string[] = [];
-  const projUnjoined: string[] = [];
+  const projUnjoinedCatalog: string[] = [];
+  const projUnobserved: { tier: string; role: string; n: number }[] = [];
 
   const formats = d.formats ?? QUICK;
   // A caller that widened `formats` but not the correction maps would score the new formats with the
@@ -572,7 +604,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
             raw: { ip: o.ip, k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, ra9: o.ra9, era: o.era, gsPer: o.gsPer, ipPerGame: o.ipPerGame },
           });
         }
-        if (projBy) recordUnjoined(projBy, projJoin.used, tier, role, projUnjoined);
+        if (projBy) recordUnjoined(projBy, projJoin.used, byCid, tier, role, projUnjoinedCatalog, projUnobserved);
       } else {
         const rows = topNView(parseCwhitHit(readFileSync(obsPathOf(tier, "hit")!, "utf8")).rows, "obs", "hit", topN);
         const obs: JoinObs<typeof rows[0]>[] = rows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.babip], validate: [r.bbPct, r.soPct, r.hr600], sample: r.pa, row: r }));
@@ -588,11 +620,11 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
             raw: { pa: o.pa, avg: o.avg, obp: o.obp, slg: o.slg, bbPct: o.bbPct, soPctPerAb: o.soPct, soPctPerPa: soPa, hr600: o.hr600, babip: o.babip, xbhPct: o.xbhPct, tripleXbh: o.tripleXbh },
           });
         }
-        if (projBy) recordUnjoined(projBy, projJoin.used, tier, role, projUnjoined);
+        if (projBy) recordUnjoined(projBy, projJoin.used, byCid, tier, role, projUnjoinedCatalog, projUnobserved);
       }
     }
   }
   if (projJoin.viaCid || projJoin.viaTitle)
     notices.push(`projection join: ${projJoin.viaCid} via CID+VLvl, ${projJoin.viaTitle} via title fallback, ${projJoin.missed} observed rows with no projection`);
-  return { recs, pools, cals, windows, notices, projUnjoined, obsFiles, projFiles, source: src, floors: { minBf, minPa }, projJoin };
+  return { recs, pools, cals, windows, notices, projUnjoinedCatalog, projUnobserved, obsFiles, projFiles, source: src, floors: { minBf, minPa }, projJoin };
 }

@@ -74,5 +74,10 @@
     "k": 1,
     "h": 1,
     "gap": 1
+  },
+  "positionMins": {
+    "RF": {
+      "starter": {}
+    }
   }
 }

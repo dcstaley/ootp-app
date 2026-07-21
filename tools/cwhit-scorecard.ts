@@ -133,7 +133,7 @@ if (CORRECTIONS) {
 // The judged sample — built by the ONE shared builder (src/eval/cwhit/sample.ts), so this tool and
 // tools/cwhit-two-ledger.ts necessarily score the identical cards with the identical predicted lines.
 const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap, source: SOURCE, minBf: MIN_BF_RUN, minPa: MIN_PA_RUN };
-const { recs, windows, notices, projUnjoined, obsFiles, projFiles, source, floors, projJoin } = buildCwhitSample(deps);
+const { recs, windows, notices, projUnjoinedCatalog, projUnobserved, obsFiles, projFiles, source, floors, projJoin } = buildCwhitSample(deps);
 // WHICH TIERS ACTUALLY HAVE A PROJECTION, read off the JUDGED SAMPLE rather than re-derived from a
 // filename guess. These two helpers used to re-implement sample.ts's LEGACY `cwhit-<tier>-<role>.tsv`
 // template against the returned basenames; under a capture source (files are `.txt`, in a dated dir)
@@ -239,13 +239,23 @@ for (const { tier } of QUICK) for (const role of ["pit", "hit"] as const) {
   const kept = all.filter(wellSampled), med = kept.length ? [...kept.map((r) => r.sample)].sort((a, b) => a - b)[Math.floor(kept.length / 2)]! : NaN;
   console.log(`${tier.padEnd(9)} ${role}   ${String(all.length).padStart(4)}     ${String(kept.length).padStart(4)}                       ${String(all.length - kept.length).padStart(4)}      ${f(med, 0).padStart(7)}              ${String(kept.filter((r) => r.proj).length).padStart(4)}`);
 }
-if (projUnjoined.length) {
-  console.log(`  ${projUnjoined.length} projected rows did NOT join to an observed+catalog record — excluded, not forced. Per tier×role:`);
-  const by = new Map<string, number>();
-  for (const s of projUnjoined) { const k = s.split(":")[0]!; by.set(k, (by.get(k) ?? 0) + 1); }
-  for (const [k, n] of by) console.log(`      ${k.padEnd(14)} ${String(n).padStart(3)} unjoined`);
-  console.log(`      CAUSE (structural, not a join defect): his projected table is the top-100 by pwOBA over the WHOLE format pool (e.g. 2402 diamond cards),`);
-  console.log(`      while the observed table is the top-100 by IP. The two top-100s overlap only partly, so most of his projected rows have no observed line to be judged on.`);
+// TWO QUANTITIES, NOT ONE. Under full-pool projections "a projection row with no observed partner"
+// is overwhelmingly just a card nobody played, and the old single bucket printed that four-figure
+// count under the wording "did NOT join" — which reads as a defect. The genuine alarm (a projection
+// row matching no catalog card) is now separate and listed individually.
+if (projUnobserved.length) {
+  const tot = projUnobserved.reduce((a, x) => a + x.n, 0);
+  console.log(`  ${tot} projected card(s) had no observed row — EXPECTED: cwhit projects the FULL eligible pool, most of which nobody played. Per tier×role:`);
+  for (const { tier, role, n } of projUnobserved) console.log(`      ${`${tier} ${role}`.padEnd(14)} ${String(n).padStart(4)} eligible-but-unused`);
+}
+if (projUnjoinedCatalog.length) {
+  console.log(`  ${projUnjoinedCatalog.length} projected row(s) matched nothing in this tier×role's ELIGIBLE POOL. NOT a catalog miss:`);
+  console.log(`     our pool is scoped by value window AND by our isPit role split, so cards cwhit files under the other role land here.`);
+  console.log(`     (An independent check confirmed all 3521 projection CIDs resolve to catalog cards.) Sample:`);
+  for (const s2 of projUnjoinedCatalog.slice(0, 20)) console.log(`      ${s2}`);
+  if (projUnjoinedCatalog.length > 20) console.log(`      … and ${projUnjoinedCatalog.length - 20} more`);
+} else {
+  console.log(`  every projected row matched a card in this tier×role's eligible pool.`);
 }
 
 // ═══ A. THREE-WAY ═══════════════════════════════════════════════════════════
@@ -281,8 +291,18 @@ for (const { tier, role, rows } of threeWay) {
   // populations. A number was once quoted off Section A as if it were the general result — see plan
   // §15.8. State the population and N in the header, and point at the fuller sample.
   console.log(`\n─── ${tier.toUpperCase()} ${role === "pit" ? "PITCHERS" : "HITTERS"} — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=${rows.length}${rows.length < THIN_N ? "  ⚠THIN (no absolute-spread weight)" : ""} ───`);
-  console.log(`     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.`);
-  console.log(`     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).`);
+  // The double-selection warning is now CONDITIONAL, because full-pool projections dissolved it.
+  // Historically Section A was the intersection of two top-100 cuts (by usage AND by pwOBA), doubly
+  // selected with an unknown bias direction. The capture projects the WHOLE eligible pool, so when no
+  // observed row lacks a projection, Section A IS Section B and the old warning would be false. Kept —
+  // not deleted — because a derived top-N view (--depth) re-creates the restriction exactly.
+  if (projJoin.missed > 0) {
+    console.log(`     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED (${projJoin.missed} observed row(s) have none). This is NOT the general read.`);
+    console.log(`     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).`);
+  } else {
+    console.log(`     POPULATION: every observed card carries a projection ⇒ Section A IS the full observed sample.`);
+    console.log(`     The historical double-selection (top-100 by usage ∩ top-100 by pwOBA) is DISSOLVED under full-pool projections; Section B agrees cell for cell.`);
+  }
   console.log(`                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐`);
   console.log(`channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%`);
   for (const { key, lbl, d } of CH[role]) {
