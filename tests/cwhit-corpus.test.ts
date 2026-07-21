@@ -50,6 +50,28 @@ describe("cwhit corpus registry", () => {
     expect(CWHIT_CORPUS.filter((f) => f.type === "Quick").map((f) => f.legacySlug)).toEqual(QUICK.map((q) => q.tier));
   });
 
+  it("every captured format has a tournament config", () => {
+    // All 14 do as of 2026-07-21 (iron/silver/diamond-quick created that day, Derek override of
+    // 2bac554). Registering a new format without one SHOULD fail here: its eligibility window would
+    // have no authority, and the only other place to get one is the capture header's `obsval` — which
+    // is who happened to play, not the rule. §15.9(c): a pin failing on a real change is the system
+    // working; write the config, then refresh this.
+    expect(CWHIT_CORPUS.filter((f) => !f.tournamentId).map((f) => f.key)).toEqual([]);
+  });
+
+  it("the QUICK ladder's windows match the configs those tiers now have", () => {
+    // NEW DRIFT RISK, live since the three Quick configs were created: `QUICK` hardcodes the value
+    // windows the scorecard actually scores on, and the configs independently state the same rule.
+    // If they diverge, scoring silently uses one window while the config (and anything reading it)
+    // asserts another — and pools feed the own-gap machinery, so that is a wrong number.
+    for (const q of QUICK) {
+      const f = formatByLegacySlug(q.tier)!;
+      const t = JSON.parse(readFileSync(abs(`data/tournaments/${f.tournamentId}.json`), "utf8"));
+      expect(t.card_value_max, `${q.tier} valueMax`).toBe(q.valueMax);
+      expect(t.card_value_min ?? undefined, `${q.tier} valueMin`).toBe(q.valueMin);
+    }
+  });
+
   it("legacy slugs are unique and resolvable both ways", () => {
     const slugs = CWHIT_CORPUS.map((f) => f.legacySlug).filter(Boolean) as string[];
     expect(new Set(slugs).size).toBe(slugs.length);

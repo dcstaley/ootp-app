@@ -36,8 +36,10 @@ export interface CwhitFormat {
    *  when it had one. Five 2026-07-21 formats are new and have no legacy fixture. */
   legacySlug?: string;
   /** `data/tournaments/<id>.json` — the authority for the eligibility window and the era/park env.
-   *  Three Quick tiers deliberately have none: iron/silver/diamond Quick are scored from the QUICK
-   *  value ladder on the shared neutral env (recorded rationale, commit 2bac554). */
+   *  Every captured format now has one: iron/silver/diamond-quick were created 2026-07-21 (Derek
+   *  override of 2bac554, which had recorded them as deliberately configless because the scorecard
+   *  derives those tiers from the QUICK ladder on the shared neutral env). Optional in the type only
+   *  so a newly captured format can be registered before its config is written. */
   tournamentId?: string;
   /** True when the format runs on the neutral env (era-2010 / park-1) that `buildCwhitSample`'s single
    *  `coeffs` bag assumes. FALSE formats must be scored one-format-at-a-time under their own resolved
@@ -50,11 +52,11 @@ export interface CwhitFormat {
  *  `neutralEnv` reflects that config's eraId/parkId (era-2010 + park-1 ⇒ neutral). */
 export const CWHIT_CORPUS: CwhitFormat[] = [
   // ── the five Quick tiers: the benchmark ladder, all neutral env ──
-  { key: "ironquick", captureKey: "ironquick__20260313", label: "Iron Quick", type: "Quick", legacySlug: "iron", neutralEnv: true },
+  { key: "ironquick", captureKey: "ironquick__20260313", label: "Iron Quick", type: "Quick", legacySlug: "iron", tournamentId: "iron-quick", neutralEnv: true },
   { key: "bronzequick", captureKey: "bronzequick__20260313", label: "Bronze Quick", type: "Quick", legacySlug: "bronze", tournamentId: "bronze-quick", neutralEnv: true },
-  { key: "silverquick", captureKey: "silverquick__20260313", label: "Silver Quick", type: "Quick", legacySlug: "silver", neutralEnv: true },
+  { key: "silverquick", captureKey: "silverquick__20260313", label: "Silver Quick", type: "Quick", legacySlug: "silver", tournamentId: "silver-quick", neutralEnv: true },
   { key: "goldquick", captureKey: "goldquick__20260313", label: "Gold Quick", type: "Quick", legacySlug: "gold", tournamentId: "gold-quick", neutralEnv: true },
-  { key: "diamondquick", captureKey: "diamondquick__20260313", label: "Diamond Quick", type: "Quick", legacySlug: "diamond", neutralEnv: true },
+  { key: "diamondquick", captureKey: "diamondquick__20260313", label: "Diamond Quick", type: "Quick", legacySlug: "diamond", tournamentId: "diamond-quick", neutralEnv: true },
   // ── non-neutral formats: each carries its own era/park ──
   { key: "bronzeheart", captureKey: "bronzeheart__20260330", label: "Bronze Heart", type: "Daily", legacySlug: "bronzeheartdaily", tournamentId: "bronze-heart", neutralEnv: false },
   { key: "earlygold", captureKey: "earlygold__20260314", label: "Early Gold", type: "Daily", legacySlug: "earlygolddaily", tournamentId: "early-gold", neutralEnv: false },
