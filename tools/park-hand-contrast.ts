@@ -92,10 +92,10 @@ interface Fmt { key: string; label: string; tournamentId: string; tiers: ValueWi
  * explicitly declines to do ("Daily/Cap formats carry non-neutral era/park and are out of scope").
  * It is done here WITHOUT touching the scoring path: `resolveCoeffs(model, era, park, softcaps)` is
  * the production resolver, and the resolved bag is threaded through `SampleDeps.coeffs` exactly as
- * the neutral bag is. The only awkwardness is that `buildCwhitSample` iterates the module-level
- * QUICK list, which names the five neutral tiers; it is temporarily swapped for the target tier list
- * and restored. Swapping (rather than forking the builder) is deliberate: a second copy of the
- * sample assembly is the drift failure CLAUDE.md bans.
+ * the neutral bag is. The target formats are handed to the builder via `SampleDeps.formats`; forking
+ * the builder instead would be a second copy of the sample assembly, the drift failure CLAUDE.md bans.
+ * (This used to splice the exported module-level `QUICK` array and restore it in a `finally` — the
+ * only seam that existed before `formats`. See the note on `SampleDeps.formats`.)
  */
 function runFormat(fm: Fmt): { recs: Rec[]; coeffsHrL: number; coeffsHrR: number; parkId: string; eraId: string } {
   const t = tourneys.get(fm.tournamentId);
@@ -124,13 +124,8 @@ function runFormat(fm: Fmt): { recs: Rec[]; coeffsHrL: number; coeffsHrR: number
     }
   }
 
-  const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained!.eventForm!, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap };
-  const saved = QUICK.splice(0, QUICK.length, ...fm.tiers);
-  try {
-    return { recs: buildCwhitSample(deps).recs, coeffsHrL: coeffs.park_hr_l, coeffsHrR: coeffs.park_hr_r, parkId: t.parkId, eraId: t.eraId };
-  } finally {
-    QUICK.splice(0, QUICK.length, ...saved);
-  }
+  const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained!.eventForm!, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap, formats: fm.tiers };
+  return { recs: buildCwhitSample(deps).recs, coeffsHrL: coeffs.park_hr_l, coeffsHrR: coeffs.park_hr_r, parkId: t.parkId, eraId: t.eraId };
 }
 
 // ── the contrast ─────────────────────────────────────────────────────────────

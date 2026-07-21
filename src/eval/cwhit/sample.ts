@@ -133,6 +133,22 @@ export interface SampleDeps {
    *  the score-card.ts seam) and the per-tier calibrate() sees the same correction. Absent ⇒
    *  bit-identical to before. Hitter-ONLY — the pitcher path never sees it (BUILD-1/3 own pitchers). */
   hitTail?: Map<string, HitTail>;
+  /** The value windows to build. Absent ⇒ the five Quick tiers (`QUICK`), i.e. every existing caller
+   *  is unchanged.
+   *
+   *  THIS EXISTS TO RETIRE A MUTATION. `tools/park-hand-contrast.ts` needed to push NON-Quick formats
+   *  through this builder under their own resolved coeffs, and — correctly refusing to fork the sample
+   *  assembly (that copy is the drift failure CLAUDE.md bans) — reached the only seam available:
+   *  `QUICK.splice(0, QUICK.length, ...fm.tiers)` with a restore in a `finally`. That made the module's
+   *  exported ladder mutable shared state for the duration of a call, so any concurrent or nested read
+   *  of `QUICK` would have seen a foreign list, and an early process exit would have left it swapped.
+   *  Passing the list in is the same capability without the shared-state hazard.
+   *
+   *  ONE CONSTRAINT the caller owns: `kSpreadPit`/`hitTail` are keyed by `tier`. A caller that widens
+   *  `formats` MUST widen those maps to match, or the new formats run with corrections SILENTLY OFF
+   *  (`.get(tier)` returns undefined ⇒ the identity legs). `buildCwhitSample` reports any such gap in
+   *  `notices` rather than leaving it to be discovered in a number. */
+  formats?: ValueWindow[];
 }
 
 /** A card's two predicted lines. See `ourPit`/`ourHit` for why BOTH exist and what each answers. */
@@ -303,7 +319,17 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   const notices: string[] = [];
   const projUnjoined: string[] = [];
 
-  for (const win of QUICK) {
+  const formats = d.formats ?? QUICK;
+  // A caller that widened `formats` but not the correction maps would score the new formats with the
+  // corrections silently off. That is a wrong number, not a missing feature, so say so out loud.
+  if (d.kSpreadPit || d.hitTail) {
+    for (const w of formats) {
+      if (d.kSpreadPit && !d.kSpreadPit.has(w.tier)) notices.push(`format "${w.tier}" has NO kSpreadPit entry while other formats do → its pitchers run with the K/HR/BABIP spread corrections OFF`);
+      if (d.hitTail && !d.hitTail.has(w.tier)) notices.push(`format "${w.tier}" has NO hitTail entry while other formats do → its hitters run with the BUILD-2 tail correction OFF`);
+    }
+  }
+
+  for (const win of formats) {
     const { tier } = win;
     const basePool = d.baseCards.filter((c) => inValueWindow(c, win));
     const pt = buildPoolTransform(d.ref, computeUnifiedFieldStats(basePool, d.coeffs, d.model, FIELD_N, true), d.envelope);
