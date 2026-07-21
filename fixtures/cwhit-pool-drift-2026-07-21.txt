@@ -1,0 +1,54 @@
+################################################################################
+# POOL-DRIFT / CAPTURE-WINDOW TERM — old fixtures vs the DERIVED top-100 of the new
+# corpus (Fable session-3 ruling 2; session-4 condition b). Both sides are top-100 by
+# usage, so DEPTH is held constant and the only differences are the date window and
+# whatever changed in the world between them. This is our FIRST pool-drift measurement.
+################################################################################
+
+== WHY THE OLD FIXTURES CANNOT SERVE AS THE DEPTH CONTROL ==
+  NEW window is 2026-07-05..07-19 (15d) for all ten cells. OLD windows differ PER TIER:
+    iron/bronze  2026-06-28..07-12 (15d)  -> 8 days overlap
+    silver       2026-06-28..07-11 (14d)  -> 7 days
+    diamond      2026-06-28..07-11 (14d)  -> 7 days
+    gold         2026-06-28..07-05 ( 8d)  -> ONE DAY of overlap
+  Old gold also covered only 59 of 506 tournaments, old silver 95 of 774.
+  ⇒ an old-vs-full comparison confounds depth with the window. The derived top-100 of the
+    new corpus is the correct depth control, which is what the A/B used.
+
+== MEMBERSHIP CHURN (multiset match on Name+VAL+VLvl+Hand; N=100 per side) ==
+  tier     role   kept/100   tier     role   kept/100
+  iron     pit      94       iron     hit      90
+  bronze   pit      92       bronze   hit      91
+  silver   pit      78       silver   hit      86
+  gold     pit      73       gold     hit      81
+  diamond  pit      95       diamond  hit      93
+  Churn tracks window overlap: gold (1 day) churns hardest, iron/bronze (8 days) least.
+
+== USAGE LEVEL SHIFT (NEW/OLD ratios) ==
+  tier     role   total   rank-100 threshold   kept-set median per-card
+  iron     pit    0.840        0.910                 0.783
+  iron     hit    0.833        0.713                 0.763
+  bronze   pit    0.724        0.720                 0.719
+  bronze   hit    0.727        0.649                 0.674
+  silver   pit    1.352        1.772                 1.279
+  silver   hit    1.282        1.653                 1.227
+  gold     pit    1.487        1.416                 1.351
+  gold     hit    1.531        1.621                 1.301
+  diamond  pit    0.822        0.812                 0.810
+  diamond  hit    0.800        0.725                 0.793
+  DIRECTION IS NOT UNIFORM: iron/bronze/diamond DOWN 0.72-0.84, silver/gold UP 1.28-1.53.
+  Silver and gold are exactly the two tiers whose OLD captures were thinnest in tournaments
+  covered (95/774 and 59/506), so their rise is at least partly the old side being shallow.
+
+== RATE STABILITY ON THE KEPT SET (NEW minus OLD) ==
+  Mostly within display quantisation. Pitcher median |delta|: K9 0.095-0.400, BB9 0.080-0.210,
+  HR9 0.040-0.120, BABIP 0.0040-0.0120. Hitter: BB% 0.20-0.40, SO% 0.30-0.80, HR600 0.40-1.80,
+  BABIP 0.0040-0.0110. Magnitudes track usage inversely — diamond/pit (rank-100 = 17.3 IP) and
+  gold (126 IP / 796 PA) show the widest SDs, and diamond has the largest share of deltas
+  inside a single rounding quantum.
+
+== CORRECTION TO AN EARLIER CLAIM OF MINE ==
+  I previously wrote that the old fixtures are rounded while the new carry full float. That is
+  true only for wOBA/AVG/OBP/SLG/wOBAA. The RATE columns used above carry the SAME display
+  precision in both captures (2dp K9/BB9/HR9, 3dp BABIP, 1dp BB%/SO%/HR600), so the rate
+  deltas are symmetric — but QUANTISED, which is why they are reported against the quantum.
