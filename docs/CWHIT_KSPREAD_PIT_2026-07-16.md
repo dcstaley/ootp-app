@@ -80,7 +80,8 @@ K9 within-pool ordering: 0 rank moves at every tier (monotone by construction, v
 
 ## 5. Weird-env battery (dailies; DEPLOYED per-channel line, era/park applied)
 
-diamondcapdaily EXCLUDED (Derek: no config). Gap + K̄_pool computed from each format's own eligible
+diamondcapdaily EXCLUDED (Derek: no config) — SUPERSEDED 2026-07-21: the config now exists and the
+format is included; this document records the 2026-07-16 state. Gap + K̄_pool computed from each format's own eligible
 pool (VAL cap + eligibility rules), exactly as production would.
 
 | format | gap | s | era_k | N | K9 slope pre→post [CI] | wOBAA corr pre→post | ratioDcv → |

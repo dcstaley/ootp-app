@@ -50,6 +50,7 @@ import { pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/a
 import { per9NoiseVar, babipNoiseVar, pearson, spearman, BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import { mmse, meanEst, type Mmse, type Est } from "../src/eval/cwhit/two-ledger.ts";
 import { parseCwhitPit } from "../src/eval/cwhit/parse.ts";
+import { formatByLegacySlug } from "../src/eval/cwhit/corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
@@ -505,17 +506,20 @@ console.log(`\n╔═══ 4b. HR-ONLY CANDIDATE (s_bab pinned 1) — its own g
 
 // ═══ 5. WEIRD-ENV BATTERY + the HR/BABIP ERA-RESIDUAL CHECK ═══════════════════
 console.log(`\n╔═══ 5. WEIRD-ENV BATTERY — dailies, DEPLOYED per-channel line (era/park applied) ═══╗`);
-console.log(`  diamondcapdaily EXCLUDED (Derek: no config). Gap + means from each format's OWN eligible pool,`);
+console.log(`  diamondcapdaily INCLUDED since 2026-07-21 (config now exists). Gap + means from each format's OWN eligible pool,`);
 console.log(`  exactly as production would. BOTH pre and post carry the shipped K ramp. ERA-RESIDUAL CHECK:`);
 console.log(`  the K precedent stalled at extreme eras (era_k over-compresses predicted spread); if HR/BABIP`);
 console.log(`  show the same, it is FLAGGED as a factor-conditioned follow-up (a function of era_hr/era_h`);
 console.log(`  FACTOR VALUES per plan §15.7) — never fit here, never a named-era exception.`);
 
-const DAILY = [
-  { fmt: "earlygolddaily", tid: "early-gold", label: "Early Gold Daily — era-1920/park-169" },
-  { fmt: "bronzeheartdaily", tid: "bronze-heart", label: "Bronze Heart Daily — era-1939/park-191" },
-  { fmt: "goldcapdaily", tid: "gold-cap", label: "Gold Cap Daily — era-2010/park-156, cap 1580" },
-] as const;
+// See the note in fit-kspread-pit.ts: availability from the registry, ORDER pinned here because the
+// bootstrap seeds off the entry index, and diamondcapdaily APPENDED 4th so the existing three keep
+// their CIs. Report-only leg — the fits are built from the QUICK loop above.
+const DAILY = (["earlygolddaily", "bronzeheartdaily", "goldcapdaily", "diamondcapdaily"] as const).map((slug) => {
+  const f = formatByLegacySlug(slug);
+  if (!f?.tournamentId) throw new Error(`corpus registry has no tournament config for "${slug}"`);
+  return { fmt: slug, tid: f.tournamentId, label: f.label };
+});
 
 for (const [di, D] of DAILY.entries()) {
   const t = tournaments.find((x) => x.id === D.tid);
@@ -568,7 +572,10 @@ for (const [di, D] of DAILY.entries()) {
       const our = byCid.get(m.card.cid)!, o = m.obs.row;
       return { pre: our.pre, post: our.post, postH: our.postH, obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) }, bf: o.bf };
     });
-  console.log(`\n  ── ${D.label} ──`);
+  // Label composed from the CONFIG rather than retyped: the old hardcoded strings duplicated
+  // era/park/window/cap text that could silently drift from the config it described.
+  const envDesc = `${t.eraId} / ${t.parkId}, VAL≤${t.card_value_max ?? "—"}${t.total_cap ? `, cap ${t.total_cap}` : ""}`;
+  console.log(`\n  ── ${D.label} — ${envDesc} ──`);
   console.log(`  pool ${basePool.length} | joined ${j.matched.length}/${obs.length}, well-sampled ${paired.length} | g_hr ${f(shift.pit.vR.hrr ?? 0, 1)} s_hr ${f(ksFull.sHr!, 2)}  g_bab ${f(shift.pit.vR.pbabip ?? 0, 1)} s_bab ${f(ksFull.sBab!, 2)} | era_hr(eff) ${f(derivedF.era_effective_hr, 3)}  era_h ${f(derivedF.era_h, 3)}`);
   if (paired.length < 8) { console.log(`  N too thin for a slope verdict — reporting nothing (never a number from noise)`); continue; }
   const r3 = rng(SEED + 100 + di);

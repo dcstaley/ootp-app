@@ -56,7 +56,7 @@
 // acceptance (cancellation RESOLVED, not moved); card-bootstrap CIs; held-out tier; weird-env check
 // on the three confirmed daily/cap formats (earlygolddaily=early-gold era-1920/park-169,
 // bronzeheartdaily=bronze-heart era-1939/park-191, goldcapdaily=gold-cap era-2010/park-156).
-// diamondcapdaily EXCLUDED — no config.
+// diamondcapdaily INCLUDED since 2026-07-21 (data/tournaments/diamond-cap-daily.json, 2bac554).
 //
 // MEASUREMENT + DESIGN ONLY: fits nothing into the scoring path, changes no scoring, writes nothing.
 // cwhit RAW OBSERVED events = ground truth; his projections are never used here.
@@ -78,6 +78,7 @@ import { loadWindow, type TrainObs } from "../src/training/loader.ts";
 import { HITTER } from "../src/training/bakeoff.ts";
 import { fitHitForm, RAWPOLY_HIT, type HitForm } from "../src/training/forms.ts";
 import { parseCwhitHit } from "../src/eval/cwhit/parse.ts";
+import { formatByLegacySlug } from "../src/eval/cwhit/corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import type { WobaWeights as WW } from "../src/eval/cwhit/audit.ts";
 import { HBP_PER_PA } from "../src/eval/cwhit/scorecard.ts";
@@ -812,11 +813,13 @@ console.log(`multiplier (stated approximation). Verdict: does the GLOBAL λ (fit
 console.log(`RIGHT way in a non-neutral env, and does nothing blow up. One-format-deep — directional, never a fit.`);
 const wCfg: ACfg | null = winner.cfg ?? null;
 interface DRow { pow: number; hr: number; obsHr: number; bab: number; obsBab: number; rawHr: number; rawBab: number; pa: number }
-const FMTS = [
-  { key: "earlygolddaily", tid: "early-gold" },
-  { key: "bronzeheartdaily", tid: "bronze-heart" },
-  { key: "goldcapdaily", tid: "gold-cap" },
-];
+// Availability from the registry; diamondcapdaily appended (its config exists since 2bac554). This
+// §7 check is report-only — lambda is fit on the Quick rows above and `winner` is already chosen.
+const FMTS = (["earlygolddaily", "bronzeheartdaily", "goldcapdaily", "diamondcapdaily"] as const).map((slug) => {
+  const f = formatByLegacySlug(slug);
+  if (!f?.tournamentId) throw new Error(`corpus registry has no tournament config for "${slug}"`);
+  return { key: slug, tid: f.tournamentId };
+});
 for (const { key, tid } of FMTS) {
   const t = tournaments.find((x) => x.id === tid);
   if (!t) { console.log(`\n  ${key}: tournament config '${tid}' not found — skipped`); continue; }

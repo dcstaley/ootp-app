@@ -25,7 +25,7 @@
 // scorecard's exact path) and fit the ramp PRECISION-WEIGHTED (inverse-variance; iron/bronze dominate);
 // (2) held-out: fit without bronze, predict bronze's slope; (3) weird-env battery on the three
 // confirmed daily/cap formats (earlygolddaily/early-gold, bronzeheartdaily/bronze-heart,
-// goldcapdaily/gold-cap — diamondcapdaily EXCLUDED, Derek: no config); (4) two-axis gate.
+// goldcapdaily/gold-cap, and diamondcapdaily/diamond-cap-daily since 2026-07-21); (4) two-axis gate.
 // Pre-registered gates — never tuned past a failure:
 //   G1 post-fix per-tier K9 slope ≈ 1 within CI;   G2 composite wOBAA ordering corr MUST NOT DROP;
 //   G3 level bias unchanged (scalar centered on K̄_pool; the top-100 sample sits off the pool mean,
@@ -50,6 +50,7 @@ import { pitWobaFromChannels, type WobaWeights as WW } from "../src/eval/cwhit/a
 import { per9NoiseVar, babipNoiseVar, pearson, spearman, BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import { mmse, meanEst, type Mmse, type Est } from "../src/eval/cwhit/two-ledger.ts";
 import { parseCwhitPit } from "../src/eval/cwhit/parse.ts";
+import { formatByLegacySlug } from "../src/eval/cwhit/corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
@@ -406,16 +407,31 @@ for (const c of cells) {
 
 // ═══ 5. WEIRD-ENV BATTERY — the three confirmed daily/cap formats ═════════════
 console.log(`\n╔═══ 5. WEIRD-ENV BATTERY — daily/cap formats, DEPLOYED per-channel line (era/park applied) ═══╗`);
-console.log(`  diamondcapdaily EXCLUDED (Derek 2026-07-16: no config for it; do not infer one).`);
+console.log(`  diamondcapdaily INCLUDED since 2026-07-21 — its config now exists; the old exclusion read "no config".`);
 console.log(`  Each format's gap + K̄_pool are computed from ITS OWN eligible pool (config value cap + eligibility rules)`);
 console.log(`  — property-derived at scoring time, exactly as production would. Observed lines live in the format's env,`);
 console.log(`  so the judged line is the DEPLOYED per-channel line (raw K ×era_k etc.), not the neutral raw line.`);
 
-const DAILY = [
-  { fmt: "earlygolddaily", tid: "early-gold", label: "Early Gold Daily — era-1920 / park-169, VAL≤89" },
-  { fmt: "bronzeheartdaily", tid: "bronze-heart", label: "Bronze Heart Daily — era-1939 / park-191, VAL≤69, years 1930–89" },
-  { fmt: "goldcapdaily", tid: "gold-cap", label: "Gold Cap Daily — era-2010 / park-156, VAL≤89, cap 1580" },
-] as const;
+// AVAILABILITY FROM THE REGISTRY, ORDER PINNED HERE. The slugs are the non-neutral formats that
+// carry a legacy slug; ids come from the registry (which resolves them to real configs, pinned in
+// tests/cwhit-corpus.test.ts) instead of being retyped here.
+//
+// ORDER IS LOAD-BEARING, so it is written out rather than derived: the bootstrap below seeds off the
+// ENTRY INDEX (`rng(SEED + 100 + di)`). diamondcapdaily is APPENDED 4th precisely so the three
+// pre-existing formats keep their index and their CIs stay bit-identical; inserting it earlier — as
+// registry order would — silently re-rolls every later format's brackets while the point estimates
+// hold, which is the kind of movement that looks like a finding.
+//
+// diamondcapdaily was excluded as "Derek: no config"; data/tournaments/diamond-cap-daily.json was
+// created 2026-07-21 (2bac554), so the exclusion had become a frozen statement about a world that no
+// longer existed. This battery is REPORT-ONLY — the fitted point set comes from the QUICK loop and
+// `ship`/`sFull` are computed above, before this list is read — so including it cannot move
+// K_SPREAD_PIT.
+const DAILY = (["earlygolddaily", "bronzeheartdaily", "goldcapdaily", "diamondcapdaily"] as const).map((slug) => {
+  const f = formatByLegacySlug(slug);
+  if (!f?.tournamentId) throw new Error(`corpus registry has no tournament config for "${slug}"`);
+  return { fmt: slug, tid: f.tournamentId, label: f.label };
+});
 
 for (const [di, D] of DAILY.entries()) {
   const t = tournaments.find((x) => x.id === D.tid);
@@ -472,7 +488,10 @@ for (const [di, D] of DAILY.entries()) {
         nv: k9Noise(o.k9, o.bf),
       };
     });
-  console.log(`\n  ── ${D.label} ──`);
+  // Label composed from the CONFIG rather than retyped: the old hardcoded strings duplicated
+  // era/park/window/cap text that could silently drift from the config it described.
+  const envDesc = `${t.eraId} / ${t.parkId}, VAL≤${t.card_value_max ?? "—"}${t.total_cap ? `, cap ${t.total_cap}` : ""}`;
+  console.log(`\n  ── ${D.label} — ${envDesc} ──`);
   console.log(`  pool ${basePool.length} cards | joined ${j.matched.length}/${obs.length} (unique ${j.stats.matchedUnique} + fp ${j.stats.matchedFingerprint}), well-sampled (BF≥${MIN_BF}) ${paired.length} | gap ${f(gap, 1)}  K̄_pool ${f(kbar, 1)}/600  s(gap) = ${f(s, 2)}  era_k ${f(coeffsF.era_k, 3)}`);
   if (paired.length < 8) { console.log(`  N too thin for a slope verdict — reporting nothing (never a number from noise)`); continue; }
   const preP = paired.map((r) => r.pre.k9!), postP = paired.map((r) => r.post.k9!), o9 = paired.map((r) => r.obs.k9), nv = paired.map((r) => r.nv);

@@ -61,7 +61,9 @@ const FORMATS: Fmt[] = [
   { slug: "earlygolddaily", label: "Early Gold Daily", tourneyId: "early-gold" },
   { slug: "bronzeheartdaily", label: "Bronze Heart Daily", tourneyId: "bronze-heart" },
   { slug: "bronze", label: "Bronze Quick", tourneyId: "bronze-quick" },
-  { slug: "diamondcapdaily", label: "Diamond Cap Daily", tourneyId: null },
+  // tourneyId was null ("no config"); data/tournaments/diamond-cap-daily.json exists since 2bac554,
+  // so this format now gets the full window/pool/frame treatment instead of the descriptive-only cell.
+  { slug: "diamondcapdaily", label: "Diamond Cap Daily", tourneyId: "diamond-cap-daily" },
 ];
 interface Pair { kind: "CAP TEST" | "CONTROL"; a: string; b: string; note: string }
 const PAIRS: Pair[] = [
