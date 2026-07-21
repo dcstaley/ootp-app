@@ -1809,3 +1809,79 @@ the system working — refresh it as part of the reviewed change, never weaken o
 
 Related: [15.8](#158-measurement-correction-2026-07-20--two-retractions-one-instrument-cause) records
 the instrument-defect pattern these are guarding against.
+
+### 15.10 CASE STUDY — the pitcher K-need investigation, and why it CLOSED (2026-07-21)
+
+Recorded per Fable ruling (i)(E). The K-spread need is the longest-running open question in this
+program. It is now **closed on this corpus** — not solved. This section exists so the next person does
+not re-run any of it by accident, and so the re-open triggers are unambiguous.
+
+**THE OBJECT.** Each Quick tier has a measured pitcher-K calibration slope ("need"): the factor by
+which observed card-to-card K spread exceeds predicted. At BF≥600 these are iron 1.82 / bronze 1.62 /
+silver 1.48 / **gold 1.78** / diamond 1.04, against opponent-gaps 23.6 / 22.8 / 20.5 / **15.9** / 10.4.
+The coherent four are convex in gap; **gold sits off any 1-D gap curve**, which is what falsified the
+saturating ramp family and started the investigation.
+
+**WHAT WAS TESTED, AND WHAT EACH RESULT WAS.** Every one is a dated artifact under `fixtures/`; none
+is a reasoning step that can be re-litigated without re-measuring.
+
+| candidate | verdict | the number that decided it |
+|---|---|---|
+| opponent FIELD composition (centerpiece #1) | REFUTED | K candidate flat 1.09→1.04 against needs 1.04–1.82; **three weightings** (eligible-uniform, realized, realized+variant-corrected) move it < 0.01 |
+| opponent DISPERSION (Jensen/curvature term) | REFUTED | curvature term ~0.004 on K — one part in ~400 of what must be explained |
+| gold CARD DESIGN (the quality/stuff sign flip) | NOT CONFIRMED | corr(value, stuff) positive at every tier, gold 2nd strongest (+0.383); gold's top-25 is stuff-**above** its pool |
+| gold NEW RELEASES (short-lined elites censored by the bar) | REFUTED AT THE JOIN | catalog-level 4× July enrichment real, but the top predicted-K decile has **zero** July and zero in-window cards; release channel orthogonalized moves the slope **+0.02** |
+| RATING-LOCAL curve error (centerpiece #2) | REFUTED at its own pre-registered bar | knot boundary-pins at r0 = the training median under **both** policies (kill A1.5(7)); P1 3/5, P2 fails @1000, P3 reproduces 7–17% of gold's bar movement; diamond implied 1.60 vs need 1.04 |
+| true two-sided INTERACTION | UNTESTABLE on this corpus | opposition is a deterministic function of `card_value_max`; 52.3% of pairs have zero exposure difference |
+
+**WHAT SURVIVED, AND IT IS THE REDIRECTION.** Two facts outlived every refutation:
+1. **The sign is right, everywhere.** All six centerpiece-#2 fits returned A < 0 — the model
+   over-predicts K where a correction would bite. At card grain the five named sub-p05 gold cards
+   (Radke, Randy Jones, Hilton Smith, Barnes, Quisenberry) each struck out **1.4–3.1 fewer per nine
+   than predicted**.
+2. **A constant loses badly.** N1 c = 0.909 at weighted SSE 7334 against the hinge's 2730. There IS a
+   large systematic K curvature.
+
+Together: the residual is a **broad spread/calibration defect**, closer in character to the shipped
+spread-scalar than to any localized curve error. That is why the synthesis ships a re-estimated ramp
+rather than a new mechanism.
+
+**THE FIVE-CARD PROVENANCE — carry this with the shipped constant.** Gold's bar sensitivity
+(1.78@600 → 1.63@1000) is **entirely** five lightly-used sub-p05 cards: removing just those five gives
+1.64; removing the eighteen lightly-used *supported* cards gives 1.80, i.e. nothing. Those five carry
+31.5% of gold's predicted-K variance on 5.5% of its cards. Removing **all eleven** sub-p05 cards takes
+gold to 1.53 — so the usage bar *attenuates* the support problem, it does not solve it. Any future
+reading of gold's need that does not account for these cards is reading a different quantity.
+
+**WHY THE GOLD MISFIT IS PRESUMED ROSTER-RELEVANT (Derek, 2026-07-21).** An earlier framing held that
+these weak cards are never rostered and so the misfit is harmless. **That is retracted.** Budget and
+restricted formats *force* weak cards into play — the task-2 mechanism — so the sub-p05 class is
+exactly the population a cap/slots optimizer chooses between. The gold-quick top-half read is a
+gold-quick read, not a relevance verdict, and the re-estimated ramp carries a held-out validation leg
+on the budget-format captures where the low tail actually plays.
+
+**METHOD LESSONS worth more than the result.**
+- **A catalog-level screen is not a join.** The new-release hypothesis passed a clean 4× enrichment
+  screen at the top of the catalog stuff axis and died the moment it was joined to observed usage.
+  Screens propose; joins decide.
+- **Pre-registration earns its cost on the negative.** Centerpiece #2's kill condition (a knot at or
+  above the training median = "a global slope wearing a hinge") was written before the fit and fired
+  immediately. Without it the same fit reads as a success — it has the predicted sign, it beats the
+  constant null decisively, and it lands three of five tiers inside CI.
+- **A required null can dissolve the claim.** N2 — the same hinge on *predicted K* instead of a rating
+  — scored within 0.3% of the primary and was outright better under arm C. The "rating-local" clause
+  had no support even where the correction itself did.
+- **Selection masquerades as structure, in both directions.** A top-50 model-selected cohort's SDs run
+  24–45% larger than the full pool's (the item-3 retraction), and a row-grain observed statistic is
+  about card-*variant-levels* rather than cards (the item-5 half-artifact). Both produced findings that
+  were withdrawn.
+
+**RE-OPEN TRIGGERS — only these.**
+1. **Interaction-capable data**: within-format opponent variation across instances, i.e. opposition
+   moving without the value window moving. Option 3 is parked-priced-unfunded, not rejected.
+2. **Material need movement** at a retrain or a fresh capture. The needs are floor-stable for
+   iron/bronze/silver (drift ≤ 0.07 across BF 600→2000); a break in that stability is new information.
+3. **Optimizer-relevant misfit** demonstrated on the budget-format legs, where the low tail plays.
+
+Absent one of those, the shipped ramp stands as an **empirical patch with a recorded misfit at gold**,
+and the low-support display flag marks the card class responsible.
