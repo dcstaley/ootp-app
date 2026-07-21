@@ -70,7 +70,17 @@ export const MIN_BF = 600, MIN_PA = 500;
 // `cardValue <= cap` — which SILENTLY ADMITS INELIGIBLE CARDS BELOW THE MIN the moment a
 // min-bearing format is scored. Pools feed the own-gap/spread machinery, so that is a wrong
 // number, not a cosmetic one. Use `inValueWindow`; do not re-implement the comparison.
-export interface ValueWindow { tier: string; valueMin?: number; valueMax: number }
+export interface ValueWindow {
+  tier: string; valueMin?: number; valueMax: number;
+  /** A format's OWN eligibility rules beyond the value window — e.g. bronze-heart's Year 1930-1989,
+   *  live-open's Card Type restriction. Absent ⇒ the window is the whole rule, which is true of the
+   *  Quick ladder and is why this was not needed until the daily formats came through the builder.
+   *
+   *  IT LIVES HERE, ON THE WINDOW, BECAUSE ELIGIBILITY IS ONE DECISION. The daily legs of the fit
+   *  tools used to apply their own `rowEligible` beside their own join; routing them through the
+   *  builder without this would have silently DROPPED the rule and quietly widened those pools. */
+  eligible?: (c: Record<string, unknown>) => boolean;
+}
 
 export const QUICK: ValueWindow[] = [
   { tier: "iron", valueMax: 59 }, { tier: "bronze", valueMax: 69 }, { tier: "silver", valueMax: 79 },
@@ -81,7 +91,8 @@ export const QUICK: ValueWindow[] = [
  *  Mirrors the server's config-level test (server.ts ~line 398, card_value_min/card_value_max). */
 export const inValueWindow = (c: Record<string, unknown>, w: ValueWindow): boolean => {
   const v = n_(c["Card Value"]);
-  return v <= w.valueMax && (w.valueMin === undefined || v >= w.valueMin);
+  if (!(v <= w.valueMax && (w.valueMin === undefined || v >= w.valueMin))) return false;
+  return w.eligible ? w.eligible(c) : true;
 };
 
 export const n_ = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
