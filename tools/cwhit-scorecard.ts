@@ -127,8 +127,14 @@ if (CORRECTIONS) {
 // tools/cwhit-two-ledger.ts necessarily score the identical cards with the identical predicted lines.
 const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap, source: SOURCE, minBf: MIN_BF_RUN, minPa: MIN_PA_RUN };
 const { recs, windows, notices, projUnjoined, obsFiles, projFiles, source, floors, projJoin } = buildCwhitSample(deps);
-const hasObs = (tier: string, role: "pit" | "hit") => obsFiles.includes(`cwhit-${tier}-${role}.tsv`);
-const projFile = (tier: string, role: "pit" | "hit") => (projFiles.includes(`cwhit-${tier}-${role}-proj.tsv`) ? `${PROJ}/cwhit-${tier}-${role}-proj.tsv` : null);
+// WHICH TIERS ACTUALLY HAVE A PROJECTION, read off the JUDGED SAMPLE rather than re-derived from a
+// filename guess. These two helpers used to re-implement sample.ts's LEGACY `cwhit-<tier>-<role>.tsv`
+// template against the returned basenames; under a capture source (files are `.txt`, in a dated dir)
+// they answered "no" for everything, and the report printed "0/5 tiers (none)" for both roles two
+// lines below a join line reporting 2907 successful CID joins. A reader was told the opposite of the
+// truth by the provenance block. `recs` is the ground truth of what was joined, so ask it.
+const tiersWithProj = (role: "pit" | "hit"): string[] =>
+  QUICK.map((q) => q.tier).filter((t) => recs.some((r) => r.tier === t && r.role === role && r.proj));
 
 // ── noise variance of each observed value (for spread deconvolution) ─────────
 // COMPOSITES ARE NOW DECONVOLVED (2026-07-20). These two branches used to `return NaN` with the
@@ -192,7 +198,7 @@ const dataFiles = (xs: string[]) => xs.filter((x) => /\.(tsv|txt)$/i.test(x)).le
 console.log(`  tables: ${dataFiles(obsFiles)} observed / ${dataFiles(projFiles)} projected files present`);
 console.log(`  tiers scored: ${tiersUsed.join(", ") || "(none)"}  |  rows judged: ${recs.length}`);
 console.log(`  well-sampled floors (READ TIME): BF≥${floors.minBf} (pit) / PA≥${floors.minPa} (hit)`);
-console.log(`  projection join: ${projJoin.viaCid} via CID, ${projJoin.viaTitle} via title fallback`);
+console.log(`  projection join: ${projJoin.viaCid} via CID+VLvl, ${projJoin.viaTitle} via title fallback`);
 console.log(`  NOTE: only the five QUICK tiers are scored (known VAL caps + neutral env). Daily/Cap formats carry non-neutral era/park and are out of scope here.`);
 for (const s of notices) console.log(`  · ${s}`);
 
@@ -206,7 +212,7 @@ for (const { tier, role, w, meta, conv } of windows) {
 }
 { // Projected coverage is UNEVEN across roles — say so, so the hitter read is never mistaken for a
   // full 5-tier gradient like the pitcher one.
-  const pT = QUICK.filter((q) => projFile(q.tier, "pit")).map((q) => q.tier), hT = QUICK.filter((q) => projFile(q.tier, "hit")).map((q) => q.tier);
+  const pT = tiersWithProj("pit"), hT = tiersWithProj("hit");
   console.log(`\n  PROJECTED COVERAGE IS UNEVEN BY ROLE — pitchers: ${pT.length}/5 tiers (${pT.join(", ") || "none"});  hitters: ${hT.length}/5 tiers (${hT.join(", ") || "none"}).`);
   if (hT.length && hT.length < QUICK.length) {
     console.log(`  ⇒ The HITTER three-way is a FRAME-EXTREMES CONTRAST (${hT.join(" vs ")}), NOT a tier gradient. No hitter trend across tiers can be estimated, and no hitter claim generalizes to ${QUICK.filter((q) => !hT.includes(q.tier)).map((q) => q.tier).join("/")}.`);

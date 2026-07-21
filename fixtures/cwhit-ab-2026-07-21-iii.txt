@@ -1,12 +1,12 @@
 ################################################################################
 # THREE-FACTOR A/B SNAPSHOT (iii) — 2026-07-21. factor (iii) — FULL DEPTH, BF>=600 / PA>=500 (the FINAL CONFIG)
-# cmd: tools/cwhit-scorecard.ts --corpus=fixtures/cwhit-capture-2026-07-21 --min-bf=600 --min-pa=500  (needs --stack-size=16000 at full depth)
+# cmd: tools/cwhit-scorecard.ts --corpus=fixtures/cwhit-capture-2026-07-21 --min-bf=600 --min-pa=500   (needs --stack-size=16000 at full depth)
 # Model league-42-43 + K_SPREAD_PIT {A:5.0871,G:152.5}. Instrument: CORRECTED
-# (697cdb2 IP/BF unit fix) — pitcher noise is in BF, so dcv ratios are comparable
-# ACROSS these three snapshots but NOT against any pre-697cdb2 run.
-# Projection join is by CID (b173aeb); the title key would have dropped ~577 Quick rows.
+# (697cdb2 IP/BF unit fix) — dcv ratios are comparable ACROSS these three snapshots
+# and against NO pre-697cdb2 run. Projection join by CID+VLvl (b173aeb).
 # COMPLETENESS: verified to end at the Section-C caveat line. The scorecard segfaults
-# INTERMITTENTLY at full depth and a truncated run still looks like a valid report.
+# INTERMITTENTLY at full depth (3 of 6 attempts on this regeneration) and a truncated
+# run still looks like a valid report, so generation retries until the marker is present.
 ################################################################################
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════╗
@@ -28,9 +28,9 @@ PRODUCTION CORRECTIONS: ON (production default) — BUILD-1 pit K-spread ramp + 
   tables: 28 observed / 28 projected files present
   tiers scored: iron, bronze, silver, gold, diamond  |  rows judged: 2907
   well-sampled floors (READ TIME): BF≥600 (pit) / PA≥500 (hit)
-  projection join: 2907 via CID, 0 via title fallback
+  projection join: 2907 via CID+VLvl, 0 via title fallback
   NOTE: only the five QUICK tiers are scored (known VAL caps + neutral env). Daily/Cap formats carry non-neutral era/park and are out of scope here.
-  · projection join: 2907 via CID, 0 via title fallback, 0 observed rows with no projection
+  · projection join: 2907 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
 
 ── WINDOW OVERLAP (per projected table) — MUST be read before any ours-vs-cwhit claim ──
   iron pit:  observed coverage 2026-07-05..2026-07-19 (15d)   |   cwhit model trained ?..? (NaNd)
@@ -79,7 +79,7 @@ PRODUCTION CORRECTIONS: ON (production default) — BUILD-1 pit K-spread ramp + 
       convention: XBH: XBHpct → (2B+3B+HR)/H [measured]; HR subtracted to get the non-HR XBH our wOBA weight applies to
       convention: his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score
 
-  PROJECTED COVERAGE IS UNEVEN BY ROLE — pitchers: 0/5 tiers (none);  hitters: 0/5 tiers (none).
+  PROJECTED COVERAGE IS UNEVEN BY ROLE — pitchers: 5/5 tiers (iron, bronze, silver, gold, diamond);  hitters: 5/5 tiers (iron, bronze, silver, gold, diamond).
   cwhit's OBSERVED hitter SO% is K/AB (ours is K/PA) — converted per-row via the AVG/OBP identity before comparison.
   (Verified: reconstructing his published BABIP from his own columns gives mean |err| 0.003 under K/AB vs 0.012 under K/PA, across 4 tiers × N=100.)
 

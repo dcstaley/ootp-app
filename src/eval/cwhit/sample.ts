@@ -355,7 +355,9 @@ export const wellSampled = (r: Rec): boolean =>
  *  repairs that for the fallback, but one card (CID 86244) was also RENAMED between the capture and
  *  the catalog, which no title normalisation can fix and CID handles for free. Verified 1:1 at the
  *  VARIANT grain: VLvl is exactly {0,5}, (CID,VLvl) is unique in all 28 files, and all 3521 CIDs
- *  resolve into the 3669-card catalog. */
+ *  resolve into the 3669-card catalog. CID ALONE IS NOT UNIQUE — a card appears once per variant
+ *  level with different projected values (iron pit: 800 rows over 554 CIDs, 246 of them twice), so
+ *  the VLvl component is load-bearing, not decoration. */
 const projKey = (r: { cid?: string; title: string; vlvl: number }): string =>
   r.cid ? `${r.cid}|${r.vlvl}` : `${r.title}|${r.vlvl}`;
 
@@ -553,6 +555,6 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
     }
   }
   if (projJoin.viaCid || projJoin.viaTitle)
-    notices.push(`projection join: ${projJoin.viaCid} via CID, ${projJoin.viaTitle} via title fallback, ${projJoin.missed} observed rows with no projection`);
+    notices.push(`projection join: ${projJoin.viaCid} via CID+VLvl, ${projJoin.viaTitle} via title fallback, ${projJoin.missed} observed rows with no projection`);
   return { recs, pools, cals, windows, notices, projUnjoined, obsFiles, projFiles, source: src, floors: { minBf, minPa }, projJoin };
 }
