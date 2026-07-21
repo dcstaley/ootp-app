@@ -1,0 +1,80 @@
+################################################################################
+# PROPERTY BATTERY — ITEM 3: TWO-SIDED GAP PROFILES. 2026-07-21.
+# Rating space only, descriptive. No event prediction, no correction, nothing fitted.
+# Pools are NESTED (iron subset of bronze subset of ... diamond) — tier rows are not
+# independent samples, and every read below must be taken with that in mind.
+################################################################################
+
+╔═══ BATTERY ITEM 3 — TWO-SIDED GAP PROFILES (rating space, descriptive) ═══╗
+model 'league-42-43' | catalog 'cdmx' | field top-N = 50, side-unified (vR)
+gap = trainingMean(channel) − poolFieldMean(channel), OWN side. Positive = pool is BELOW the training frame on that channel.
+NOTE the pools are NESTED (iron ⊂ bronze ⊂ … ⊂ diamond), so tier rows are not independent samples.
+
+── OWN-SIDE GAPS ──
+tier      poolN  │ HITTER side:     eye     pow    kRat   babip     gap  │ PITCHER side:     con     stu     hrr  pbabip
+iron       1200  │                46.02   52.28   23.64   49.80   27.82  │                 31.91   53.85   35.67   44.43
+bronze     2096  │                30.73   40.28   22.76   36.18   26.02  │                 22.08   53.18   20.63   43.29
+silver     2748  │                26.93   30.17   20.55   22.86   16.24  │                 22.19   39.37   13.25   37.64
+gold       3192  │                18.65   21.93   15.95   20.17   11.20  │                 12.56   36.03    8.93   27.59
+diamond    3498  │                11.99   11.28   10.38   14.39   10.34  │                  2.22   30.75    7.43   17.74
+
+── POOL FIELD DISPERSION (SD within the top-50 field) ──
+tier            │ HITTER:     eye     pow    kRat   babip     gap  │ PITCHER:     con     stu     hrr  pbabip
+iron            │           19.16   25.91   31.19   16.48   22.75  │            17.87   20.07   18.90   24.51
+bronze          │           30.27   32.55   32.25   23.13   22.79  │            22.73   25.39   24.33   21.17
+silver          │           34.24   27.14   36.64   24.87   27.08  │            23.89   27.64   25.79   26.91
+gold            │           33.67   26.94   31.87   21.44   28.30  │            29.11   26.26   24.20   33.45
+diamond         │           33.73   27.84   33.94   20.08   24.60  │            30.38   28.65   22.18   31.02
+
+── CROSSED PAIRS (the coordinate scoring actually uses) ──
+tier      │     pit.stu←hit.kRat      pit.hrr←hit.pow      pit.con←hit.eye pit.pbabip←hit.babip
+iron      │                23.64                52.28                46.02                49.80
+bronze    │                22.76                40.28                30.73                36.18
+silver    │                20.55                30.17                26.93                22.86
+gold      │                15.95                21.93                18.65                20.17
+diamond   │                10.38                11.28                11.99                14.39
+
+── OWN-SIDE PITCHER GAP vs THE CROSSED GAP IT IS SCORED ON ──
+(if these disagree in ORDER across tiers, a gap-only pitcher ramp is reading a different axis than the pitchers' own position)
+tier      │    own pit.stu    own pit.hrr    own pit.con own pit.pbabip │   crossed kRat    crossed pow    crossed eye  crossed babip
+iron      │          53.85          35.67          31.91          44.43 │          23.64          52.28          46.02          49.80
+bronze    │          53.18          20.63          22.08          43.29 │          22.76          40.28          30.73          36.18
+silver    │          39.37          13.25          22.19          37.64 │          20.55          30.17          26.93          22.86
+gold      │          36.03           8.93          12.56          27.59 │          15.95          21.93          18.65          20.17
+diamond   │          30.75           7.43           2.22          17.74 │          10.38          11.28          11.99          14.39
+
+(end of battery item 3)
+
+################################################################################
+# READING (descriptive only — no coordinate proposed, no form implied)
+################################################################################
+
+GAP LEVEL DOES NOT DECOUPLE AT GOLD. Every channel, both roles, falls monotonically
+iron -> diamond. Gold sits between silver and diamond everywhere, on both sides. So the
+question item 3 was posed to answer — "does gold's hitter-side vs pitcher-side off-frame
+profile decouple where other tiers' don't?" — answers NO in gap LEVEL. Gold is ordinary
+on the axis the ramp currently reads.
+
+DISPERSION IS WHERE GOLD IS UNUSUAL. Within the top-50 field, gold is a LOCAL EXTREMUM
+(relative to silver and diamond) on 6 of the 9 channels:
+    LOCAL MIN  hit.eye 33.67 · hit.pow 26.94 · hit.kRat 31.87 · pit.stu 26.26
+    LOCAL MAX  hit.gap 28.30 · pit.pbabip 33.45
+  Only pit.con is monotone across all five tiers; hit.babip and pit.hrr are non-monotone
+  but with gold on a limb rather than at a turn.
+
+THE CONTRAST IS THE POINT. Gold is unremarkable in the FIRST moment (gap) and a turning
+point in the SECOND (dispersion) on two thirds of channels. The K need that no gap-only
+ramp can fit — gold 1.78 at gap 15.9, above silver's 1.48 at gap 20.5 — is a need the
+first moment cannot see.
+
+SPECIFICALLY ON THE K COORDINATE. Pitcher K is scored on the CROSSED gap, i.e. the
+opposing hitters' kRat gap, not the pitchers' own stu gap. Both are monotone. But
+hit.kRat DISPERSION is 36.64 at silver and 31.87 at gold — gold's opposing-K field is
+TIGHTER than silver's while its gap is smaller. Two tiers whose opponents differ in
+spread, scored on a coordinate that records only where the opponents sit on average.
+
+WHAT THIS IS NOT. This is one pool per tier, five nested pools, nine channels — 6-of-9 is
+a pattern worth carrying, NOT a result. It is descriptive support for looking beyond the
+mean gap; it does not identify a coordinate, does not rank candidates, and cannot on its
+own distinguish a real second-moment dependence from nesting artefacts. Items 1, 4 and 5
+are what would settle that.
