@@ -1,0 +1,411 @@
+################################################################################
+### THE GOLD QUERY — is gold's low-support weak tail the same set of cards as its
+### lightly-used cards, and are either of them NEW RELEASES?
+###
+### 2026-07-21. Tool: tools/gold-query.ts   (run: node tools/gold-query.ts)
+### Model: league-42-43 (raw-poly, the deployed event model), neutral bronze-quick env.
+### Catalog: 'cdmx' (data/imports/cdmx.csv, id from data/state/app.json), 3669 cards,
+###   release field = the `date` column, present on every card.
+### Corpus: fixtures/cwhit-capture-2026-07-21 (full depth, the DEFAULT_SOURCE).
+### OBSERVED CAPTURE WINDOW: 2026-07-05..2026-07-19, parsed from the fixture header
+###   fixtures/cwhit-capture-2026-07-21/cap__goldquick__20260313__pit.txt (never assumed).
+### Sample: buildCwhitSample at minBf=600; identity = Rec.cid (`${Card ID}|${vlvl}`),
+###   mapped to catalog cards through opponentSet. NO private join anywhere.
+###
+### ANSWERS Fable ruling (b) / the question step 0 left open:
+###   fixtures/cwhit-battery-needs-vs-bar-2026-07-21.txt        (need 1.78 -> 1.63 at BF>=1000)
+###   fixtures/cwhit-centerpiece2-step0-domain-2026-07-21.txt   (11 sub-p05 cards, 50.8% of variance)
+###   fixtures/cwhit-battery-gold-catalog-stu-2026-07-21.txt    (card-design mechanism REFUTED)
+###
+### VERDICT: WEAK-TAIL-DOMINATED. See the READING.
+###
+### MEASUREMENT ONLY — nothing fitted, no default or constant changed, nothing wired.
+### PERFORMANCE EVIDENCE ONLY — no price, cost, market or economy quantity is read.
+################################################################################
+
+
+╔═══ THE GOLD QUERY — low-support weak tail vs NEW RELEASES vs other ═══╗
+model 'league-42-43' | catalog 'cdmx' | corpus fixtures/cwhit-capture-2026-07-21 | floor BF>=600
+observed capture window (parsed from fixtures/cwhit-capture-2026-07-21/cap__goldquick__20260313__pit.txt): 2026-07-05..2026-07-19
+catalog release field: `date`, launch bulk 2026-03-13; classes LAUNCH / PRE-JUNE (03-14..05-31) / JUNE / JULY
+support classes from the LEAGUE TRAINING weight (root 'League Files', window [2042,2043], BF>=1000, weights BF^0.75, N obs 149):
+  train p05 z = -1.75   train p10 z = -1.46   (effective stuff, own-gap applied, exposure-blended — step 0's coordinate)
+gold well-sampled pitchers at BF>=600: N = 91   |  at BF>=1000: N = 68   |  drop-outs: 23
+THIN RULE: any cell with N < 15 carries NO verdict — "insufficient data", never "noise".
+v5 CAVEAT: a v5 row is its own card with its own ratings and usage, but its `date` is its BASE card's date.
+PERFORMANCE EVIDENCE ONLY — no price, cost, market or economy quantity is read anywhere in this tool.
+
+╔═══ 1. THE 2x2 — {below training p05 vs not} x {lightly used 600<=BF<1000 vs heavily used BF>=1000} ═══╗
+  Card counts AND the share of gold's predicted-K VARIANCE each cell carries. A slope is
+  variance-weighted, so counts alone under-read a cell's influence on the need.
+
+                      │  LIGHT 600<=BF<1000   │  HEAVY BF>=1000       │  row total
+  ────────────────────┼───────────────────────┼───────────────────────┼──────────────────
+  BELOW train p05     │  n= 5  var  31.5%     │  n= 6  var  19.3%     │  n=11  var  50.8%
+  AT/ABOVE p05        │  n=18  var  11.4%     │  n=62  var  37.8%     │  n=80  var  49.2%
+  ────────────────────┼───────────────────────┼───────────────────────┼──────────────────
+  col total           │  n=23  var  42.8%    │  n=68  var  57.2%    │  n=91  var 100.0%
+
+  PER-CELL DETAIL (mean/median over the cell; THIN cells flagged)
+  cell                        n   var%    med BF   mean predK9  mean obsK9   mean z   med train pctile
+  sub-p05 x LIGHT             5   31.5%      788        5.58        3.33    -2.98             0.0%  THIN
+  sub-p05 x HEAVY             6   19.3%     2498        6.13        4.80    -2.19             0.1%  THIN
+  supported x LIGHT          18   11.4%      790        7.85        7.83     0.51            60.3%
+  supported x HEAVY          62   37.8%     2877        7.85        7.99     0.50            61.2%
+
+  THE POSED QUESTION, ANSWERED DIRECTLY: of the 11 sub-p05 cards, 5 are lightly used and 6 are heavily used.
+  Of the 23 lightly-used cards, 5 are sub-p05 and 18 are not.
+  Expected sub-p05 & LIGHT under independence of the two margins: 2.8 vs observed 5.
+  (2x2 = [5, 6; 18, 62]; odds ratio 2.87 — descriptive, no test claimed at these counts.)
+
+  ALSO AT THE WIDER p10 SUPPORT BAR (step 0 reports both): sub-p10 n=12, var 52.8%;
+  of those, 6 lightly used / 6 heavily used.
+
+╔═══ 2. THE DROP-OUT SET — the 23 cards present at BF>=600 and ABSENT at BF>=1000 ═══╗
+  These cards, and only these, are what moves gold's need 1.78 -> 1.63. Everything about them.
+
+  #   card                              vlvl     BF   obsK9  predK9   resid   effStu z  trainPct  support   release     class     inWindow
+   1  Brad Radke                      v0    614    4.67    6.09    1.42     -2.25     0.1%  SUB-p05   2026-03-26  PRE-JUNE   -
+   2  Hod Lisenbee                    v0    618    7.45    7.45    0.00     -0.17    36.8%  ok        2026-03-13  LAUNCH     -
+   3  Jason Isringhausen              v5    659    7.98    7.67   -0.31      0.17    57.2%  ok        2026-03-13  LAUNCH     -
+   4  Norm Charlton                   v0    676    9.15    8.32   -0.83      1.28    92.0%  ok        2026-06-11  JUNE       -
+   5  Tug McGraw                      v0    678    6.45    7.30    0.85     -0.39    27.8%  ok        2026-03-13  LAUNCH     -
+   6  Mario Soto                      v5    685    8.64    8.88    0.24      2.32    98.2%  ok        2026-06-24  JUNE       -
+   7  Rhett Lowder                    v0    691    7.67    7.40   -0.27     -0.26    31.9%  ok        2026-03-21  PRE-JUNE   -
+   8  Gary Lavelle                    v0    701    9.06    7.73   -1.33      0.31    60.3%  ok        2026-06-24  JUNE       -
+   9  Randy Jones                     v0    705    2.30    5.37    3.07     -3.26     0.0%  SUB-p05   2026-07-15  JULY       YES
+  10  Rhett Lowder                    v5    719    7.37    7.68    0.31      0.19    57.2%  ok        2026-03-21  PRE-JUNE   -
+  11  Luis Arroyo                     v5    786    8.08    8.19    0.11      1.06    89.7%  ok        2026-05-28  PRE-JUNE   -
+  12  Hilton Smith                    v0    788    2.41    5.21    2.80     -3.50     0.0%  SUB-p05   2026-04-15  PRE-JUNE   -
+  13  Tiny Bonham                     v0    790    4.41    6.44    2.03     -1.74     7.3%  sub-p10   2026-05-21  PRE-JUNE   -
+  14  Jesse Barnes                    v0    791    4.70    6.06    1.36     -2.29     0.1%  SUB-p05   2026-03-13  LAUNCH     -
+  15  Al Hrabosky                     v0    804    8.52    8.24   -0.28      1.14    90.0%  ok        2026-03-13  LAUNCH     -
+  16  Chris Hammond                   v5    834    7.10    7.26    0.16     -0.46    26.8%  ok        2026-04-30  PRE-JUNE   -
+  17  Dan Quisenberry                 v0    882    2.55    5.14    2.59     -3.59     0.0%  SUB-p05   2026-06-24  JUNE       -
+  18  Dave Stieb                      v5    887    7.24    7.70    0.46      0.24    59.5%  ok        2026-07-01  JULY       -
+  19  Mario Soto                      v0    904    9.20    8.65   -0.55      1.88    98.1%  ok        2026-06-24  JUNE       -
+  20  Jonathan Broxton                v5    937    9.66    8.98   -0.68      2.48    98.2%  ok        2026-05-07  PRE-JUNE   -
+  21  Jack Kramer                     v0    982    7.17    7.45    0.28     -0.19    34.2%  ok        2026-03-13  LAUNCH     -
+  22  Nolan McLean                    v0    990    8.60    8.05   -0.55      0.81    82.6%  ok        2026-03-13  LAUNCH     -
+  23  David Aardsma                   v0    990    7.23    7.83    0.60      0.44    61.2%  ok        2026-03-16  PRE-JUNE   -
+
+  DROP-OUT COMPOSITION
+    by RELEASE class : LAUNCH 7  |  PRE-JUNE 9  |  JUNE 5  |  JULY 2
+    by SUPPORT class : sub-p05 5  |  sub-p10 (incl p05) 6  |  supported 17
+    released INSIDE the observation window 2026-07-05..2026-07-19: 1
+    variant split    : base v0 16  |  v5 7
+
+  DROP-OUTS vs RETAINED — the contrast that has to explain a 0.15 slope move
+    BF                     drop-outs   787.50 (SD 117.18)   retained  4758.03 (SD 5553.79)
+    observed K9            drop-outs     6.85 (SD 2.20)   retained     7.71 (SD 1.28)
+    predicted K9           drop-outs     7.35 (SD 1.10)   retained     7.70 (SD 0.75)
+    residual pred-obs      drop-outs     0.50 (SD 1.17)   retained    -0.01 (SD 0.59)
+    effective stuff z      drop-outs    -0.25 (SD 1.72)   retained     0.26 (SD 1.23)
+    K9 slope obs~pred      drop-outs     1.94 (n=23)            retained     1.63 (n=68)
+    all 91                 1.78   (OLS on the same rows; the committed needs use mmse with a noise term, so these are close but not identical)
+
+  WHAT THE DROP-OUT SET CARRIES: 42.8% of gold's predicted-K variance on 23 of 91 cards.
+  Within the drop-out set, its 5 sub-p05 cards hold 73.5% of that.
+
+╔═══ 2b. LEAVE-OUT DECOMPOSITION — which tag inside the drop-out set moves 1.78 -> 1.63? ═══╗
+  Each row REMOVES one tagged subset from the 91 and re-reads the slope. The tag that
+  reproduces the BF>=1000 slope on its own is the tag that caused the move.
+
+  removed subset                              n removed   N left   slope   Δ vs 1.78 baseline
+  (baseline: nothing removed)                       0       91    1.78     0.00
+  ALL lightly used (the BF>=1000 bar)              23       68    1.63    -0.15
+  lightly used AND sub-p05                          5       86    1.64    -0.14   (removed cell is THIN — read the Δ, not the cell)
+  lightly used AND supported (>=p05)               18       73    1.80     0.01
+  sub-p05, BOTH usage levels                       11       80    1.53    -0.25   (removed cell is THIN — read the Δ, not the cell)
+  all JULY-released                                 7       84    1.74    -0.04   (removed cell is THIN — read the Δ, not the cell)
+  all post-launch (PRE-JUNE/JUNE/JULY)             54       37    1.76    -0.03
+  released INSIDE the capture window                3       88    1.74    -0.04   (removed cell is THIN — read the Δ, not the cell)
+  lightly used AND post-launch                     16       75    1.65    -0.13
+  lightly used AND LAUNCH-bulk                      7       84    1.78    -0.00   (removed cell is THIN — read the Δ, not the cell)
+  lightly used, post-launch, SUPPORTED             12       79    1.80     0.02   (removed cell is THIN — read the Δ, not the cell)
+  lightly used, LAUNCH-bulk, sub-p05                1       90    1.78    -0.00   (removed cell is THIN — read the Δ, not the cell)
+
+  TAG OVERLAP inside the drop-out set (why the orthogonal rows are needed):
+    lightly-used sub-p05 cards (5): 4 post-launch / 1 launch-bulk
+    post-launch drop-outs (16): 4 sub-p05 / 12 supported
+
+╔═══ 3. RELEASE CLASS — all 91, then each 2x2 cell ═══╗
+  A v5's date is its base card's date (stated again because it is load-bearing here).
+
+  ALL 91
+  class      n   share    var%    med BF   mean obsK9  mean predK9  mean z   sub-p05   LIGHT   inWindow
+  LAUNCH    37   40.7%   22.4%     2000        7.66         7.64    0.15        2       7         0
+  PRE-JUNE  34   37.4%   38.3%     2263        7.47         7.62    0.16        4       9         0
+  JUNE      13   14.3%   26.8%     1727        7.48         7.66    0.27        3       5         0   THIN
+  JULY       7    7.7%   12.5%     1690        6.72         7.30   -0.34        2       2         3   THIN
+
+  PER 2x2 CELL
+  cell                        n      LAUNCH  PRE-JUNE      JUNE      JULY    inWindow
+  sub-p05 x LIGHT             5           1         2         1         1           1   THIN
+  sub-p05 x HEAVY             6           1         2         2         1           0   THIN
+  supported x LIGHT          18           6         7         4         1           0
+  supported x HEAVY          62          29        23         6         4           2
+
+  DOES RELEASE RECENCY TRACK USAGE? (the mechanism a new-release world needs)
+    LAUNCH    n=37   med BF  2000   share LIGHT  19%
+    PRE-JUNE  n=34   med BF  2263   share LIGHT  26%
+    JUNE      n=13   med BF  1727   share LIGHT  38%   THIN
+    JULY      n= 7   med BF  1690   share LIGHT  29%   THIN
+    post-launch overall: n=54, med BF 1809, share LIGHT 30%
+    launch bulk       : n=37, med BF 2000, share LIGHT 19%
+
+  RELEASED INSIDE THE OBSERVATION WINDOW 2026-07-05..2026-07-19 — the cards that PHYSICALLY
+  could not accumulate a full line, listed individually because that is the censoring case:
+    C.J. Wilson                  v0  BF  1690  HEAVY  predK9 8.17  obsK9 8.15  z   1.03  2026-07-09  supported
+    Brett Cecil                  v0  BF  1023  HEAVY  predK9 8.52  obsK9 9.08  z   1.64  2026-07-09  supported
+    Randy Jones                  v0  BF   705  LIGHT  predK9 5.37  obsK9 2.30  z  -3.26  2026-07-15  SUB-p05
+    ⇒ 2 of 3 in-window releases ALREADY clear BF>=1000, so "released inside the window" does not imply "short-lined".
+
+  THE ELITE-HIGH-K END — where a censoring story would have to live
+  (top decile of the 91 by PREDICTED K9; a new elite card that cannot yet have a full line is the censoring case)
+    n=9  var 20.6%  |  release LAUNCH 2 / PRE-JUNE 3 / JUNE 4 / JULY 0  |  LIGHT 3  |  inWindow 0   THIN
+      Edwin Diaz                   v0  BF  1300  predK9 9.02  obsK9 10.00  z   2.57  2026-03-13  LAUNCH
+      Jonathan Broxton             v5  BF   937  predK9 8.98  obsK9 9.66  z   2.48  2026-05-07  PRE-JUNE  LIGHT
+      Andres Munoz                 v0  BF  1828  predK9 8.91  obsK9 9.53  z   2.35  2026-03-13  LAUNCH
+      Pat Neshek                   v0  BF  1727  predK9 8.89  obsK9 9.28  z   2.32  2026-06-11  JUNE
+      Mario Soto                   v5  BF   685  predK9 8.88  obsK9 8.64  z   2.32  2026-06-24  JUNE  LIGHT
+      Yu Darvish                   v0  BF  1981  predK9 8.81  obsK9 9.34  z   2.16  2026-05-23  PRE-JUNE
+      A.J. Burnett                 v5  BF  1794  predK9 8.81  obsK9 9.47  z   2.16  2026-06-04  JUNE
+      Jonathan Broxton             v0  BF  1519  predK9 8.74  obsK9 9.04  z   2.03  2026-05-07  PRE-JUNE
+      Mario Soto                   v0  BF   904  predK9 8.65  obsK9 9.20  z   1.88  2026-06-24  JUNE  LIGHT
+
+╔═══ 4. COMPANION — level residuals (predicted MINUS observed) of gold's HEAVILY-PLAYED LOW-K cards ═══╗
+  Revealed preference via PERFORMANCE ONLY. Heavy play is how the field votes; the residual is
+  whether those cards then out-perform our prediction. On K9 a NEGATIVE residual = the card
+  struck out MORE than we predicted. On allowed wOBA a POSITIVE residual = the card allowed
+  LESS than we predicted, i.e. out-performed. Nothing here reads price, cost or market data.
+
+  heavily played = BF>=1000 (n=68); tertiles on PREDICTED K9 — the model's own valuation
+  group                            n   med BF   predK9  obsK9  resid K9   pred wOBAA  obs wOBAA  resid wOBAA   obs RA9
+  low-K tertile by PREDICTED K9   23    3265     6.85   6.32      0.52      0.3302     0.3172       0.0130     4.10
+  mid tertile                     22    4079     7.77   7.83     -0.06      0.3294     0.3111       0.0183     3.87
+  high-K tertile                  23    1981     8.48   8.98     -0.50      0.3280     0.3089       0.0191     3.76
+
+  THE SAME CUT ON OBSERVED K9 (so the tertile is not defined by the quantity under test)
+  group                            n   med BF   predK9  obsK9  resid K9   pred wOBAA  obs wOBAA  resid wOBAA   obs RA9
+  low-K tertile by OBSERVED K9    23    2725     6.87   6.29      0.58      0.3307     0.3186       0.0121     4.10
+  mid tertile                     22    4079     7.76   7.85     -0.09      0.3292     0.3099       0.0193     3.86
+  high-K tertile                  23    2000     8.46   8.99     -0.52      0.3277     0.3087       0.0190     3.77
+
+  THE MOST-PLAYED LOW-K CARDS INDIVIDUALLY (bottom OBSERVED-K9 tertile of the heavy set, by BF desc, top 12)
+    card                          vlvl     BF   predK9  obsK9  resid   pred wOBAA  obs wOBAA  resid   obs RA9  release     class
+    Dock Ellis                    v0  37162    6.89   6.38    0.51      0.3228     0.3087   0.0141     4.02  2026-06-11  JUNE
+    Old Hoss Radbourn             v0  13836    7.26   7.10    0.16      0.3391     0.3271   0.0120     4.49  2026-03-13  LAUNCH
+    Mark Fidrych                  v0  11881    6.09   4.69    1.40      0.3233     0.3010   0.0223     3.79  2026-07-02  JULY
+    Elmer Rodriguez               v0   8623    7.67   7.46    0.21      0.3331     0.3054   0.0277     3.86  2026-05-09  PRE-JUNE
+    Chris Hammond                 v0   7193    7.00   6.83    0.17      0.3296     0.3163   0.0132     3.96  2026-04-30  PRE-JUNE
+    Tony Watson                   v0   6997    6.88   6.56    0.32      0.3217     0.3329  -0.0112     4.37  2026-05-21  PRE-JUNE
+    Shane Reynolds                v5   6182    7.13   7.17   -0.04      0.3233     0.3033   0.0199     3.74  2026-03-13  LAUNCH
+    Warren Spahn                  v0   3557    6.05   4.51    1.54      0.3337     0.3294   0.0043     4.72  2026-05-27  PRE-JUNE
+    Clay Holmes                   v0   3436    6.81   6.57    0.24      0.3392     0.3260   0.0133     4.62  2026-03-13  LAUNCH
+    Michael Soroka                v0   3265    7.35   7.24    0.11      0.3420     0.3264   0.0156     4.71  2026-03-13  LAUNCH
+    Brandon Sproat                v0   2877    7.51   6.89    0.62      0.3411     0.3452  -0.0041     4.60  2026-04-02  PRE-JUNE
+    Shawn Armstrong               v0   2725    6.71   6.41    0.30      0.3286     0.3076   0.0211     3.51  2026-03-13  LAUNCH
+
+(end of the gold query — measurement only; nothing fitted, no default moved)
+
+
+################################################################################
+READING
+################################################################################
+
+WORLD VERDICT: WEAK-TAIL-DOMINATED. The bar-sensitivity is a support-leverage
+effect, not a new-release censoring effect. 1.63 is the cleaner number of the two.
+NEW-RELEASE-DOMINATED is refuted on its own mechanism; MIXED is not supported —
+the release channel, measured orthogonally to the support channel, contributes
++0.02, i.e. nothing.
+
+--------------------------------------------------------------------------------
+1. THE 2x2 — ARE THE 11 SUB-p05 CARDS THE LIGHTLY-USED ONES?
+--------------------------------------------------------------------------------
+   PLAINLY: NO, not as card sets. YES, where it counts — in variance.
+
+                        LIGHT 600<=BF<1000     HEAVY BF>=1000       row
+     BELOW train p05     n= 5   var 31.5%       n= 6   var 19.3%    n=11  var 50.8%
+     AT/ABOVE p05        n=18   var 11.4%       n=62   var 37.8%    n=80  var 49.2%
+     col                 n=23   var 42.8%       n=68   var 57.2%    n=91  var 100%
+
+   Six of the eleven sub-p05 cards are HEAVILY used and survive the bar, so the two
+   tags are not the same set of cards. The observed overlap (5) is nonetheless
+   ~1.8x what independent margins predict (2.8); odds ratio 2.87. No test is
+   claimed at these counts.
+
+   The variance column is what a slope actually reads. The 5 sub-p05 LIGHT cards
+   hold 31.5% of gold's whole predicted-K variance on 5.5% of its cards, while the
+   18 supported LIGHT cards hold 11.4% on 3.6x the card count. Removing the light
+   cards is therefore NOT removing a random 25% of gold — it is removing, in effect,
+   five cards.
+
+   THIN, stated: all four counts in the sub-p05 row are below 15. Per the standing
+   rule those cells carry no verdict on their own. The verdict below rests on the
+   leave-out slopes (computed over 73-91 cards each) and on the 23-card drop-out
+   set, not on a 5-card cell's internal statistics.
+
+--------------------------------------------------------------------------------
+2. THE DROP-OUT SET (23 cards) — THE HEADLINE
+--------------------------------------------------------------------------------
+   COMPOSITION
+     release : LAUNCH 7 | PRE-JUNE 9 | JUNE 5 | JULY 2
+     support : sub-p05 5 | sub-p10 (excl p05) 1 | supported 17
+     released INSIDE the observation window 2026-07-05..2026-07-19: ONE (Randy Jones,
+       2026-07-15) — and that one card is SUB-p05, observed K9 2.30 against a
+       predicted 5.37. It is a weak-tail card, not a short-lined elite.
+     variant : 16 base v0 / 7 v5
+
+   16 of 23 drop-outs (70%) were released before June, i.e. had a full four to five
+   months of availability before the window opened. Their light usage is a choice
+   the field made, not a physical impossibility.
+
+   THE LEAVE-OUT DECOMPOSITION IS THE CRUX (§2b). Removing one tag at a time from
+   the 91 and re-reading the OLS slope:
+
+     removed                                   n     slope    Δ
+     — (baseline, all 91)                      0      1.78     —
+     ALL lightly used  (= the BF>=1000 bar)   23      1.63   -0.15
+     lightly used AND sub-p05                  5      1.64   -0.14   ← the whole move
+     lightly used AND supported (>=p05)       18      1.80   +0.01   ← nothing
+     sub-p05, both usage levels               11      1.53   -0.25
+     all JULY-released                         7      1.74   -0.04
+     all post-launch (54 of 91)               54      1.76   -0.03
+     released INSIDE the capture window        3      1.74   -0.04
+     lightly used, post-launch, SUPPORTED     12      1.80   +0.02   ← release alone
+     lightly used, LAUNCH-bulk, sub-p05        1      1.78   -0.00
+
+   FIVE CARDS REPRODUCE THE ENTIRE 1.78 -> 1.63 MOVE (-0.14 of -0.15). The other
+   eighteen drop-outs move it the wrong way by +0.01. The five, in full:
+
+     card               v   BF   predK9  obsK9  resid   effStu z  trainPct  release
+     Brad Radke         0  614    6.09    4.67  +1.42     -2.25      0.1%   2026-03-26
+     Randy Jones        0  705    5.37    2.30  +3.07     -3.26      0.0%   2026-07-15  (in window)
+     Hilton Smith       0  788    5.21    2.41  +2.80     -3.50      0.0%   2026-04-15
+     Jesse Barnes       0  791    6.06    4.70  +1.36     -2.29      0.1%   2026-03-13
+     Dan Quisenberry    0  882    5.14    2.55  +2.59     -3.59      0.0%   2026-06-24
+
+   All five sit at effective-stuff z between -2.25 and -3.59, at league training
+   percentile <= 0.1%, and every one of them struck out FEWER batters than predicted
+   by 1.4 to 3.1 per nine. They are the low-support, high-leverage tail step 0 named,
+   and all five are base v0 cards.
+
+   THE RELEASE CHANNEL, ISOLATED, DOES NOTHING. Removing the 12 lightly-used
+   post-launch cards that are NOT sub-p05 gives +0.02. The -0.04 that removing all
+   JULY cards produces is not an independent release effect: 2 of those 7 are
+   sub-p05, and removing the single lightly-used LAUNCH sub-p05 card moves the
+   slope by -0.00 while removing its four post-launch siblings carries the rest.
+   The tags overlap in this small set; the orthogonal rows are why that overlap
+   does not get mistaken for a release effect.
+
+   The drop-out set's own slope is 1.94 (n=23) against the retained set's 1.63
+   (n=68), and its observed-K9 SD is 2.20 against 1.28 — the spread the battery's
+   §4 saw collapse. This artifact says where that spread came from: not from
+   twenty-three cards, from five.
+
+--------------------------------------------------------------------------------
+3. RELEASE CLASS — AND THE JOIN TO OBSERVED USAGE
+--------------------------------------------------------------------------------
+   All 91 well-sampled gold pitchers:
+     LAUNCH   37 (40.7%)  var 22.4%   med BF 2000   share LIGHT 19%
+     PRE-JUNE 34 (37.4%)  var 38.3%   med BF 2263   share LIGHT 26%
+     JUNE     13 (14.3%)  var 26.8%   med BF 1727   share LIGHT 38%   THIN
+     JULY      7 ( 7.7%)  var 12.5%   med BF 1690   share LIGHT 29%   THIN
+
+   Recency and light usage are weakly and NON-monotonically associated (19/26/38/29%),
+   and the two recency cells are THIN. Post-launch cards overall are 30% LIGHT
+   against the launch bulk's 19% — a real but small tilt that the leave-out rows
+   show carries no slope consequence.
+
+   THE JOIN THE TASK ASKED FOR. Fable's catalog-side finding — gold-eligible top-25/50
+   BY STUFF are 20.0% July-new against 5.3% for the rest, 4x enrichment, 3 of 25
+   inside the capture window — DOES NOT SURVIVE THE PASSAGE TO OBSERVED USAGE:
+     · the observed well-sampled set is 7.7% July (7 of 91);
+     · the TOP DECILE BY PREDICTED K9 (n=9, THIN, listed individually in §3) contains
+       ZERO July cards and ZERO in-window cards. LAUNCH 2 / PRE-JUNE 3 / JUNE 4;
+     · only 3 of 91 cards were released inside 2026-07-05..2026-07-19 at all, and
+       TWO OF THOSE THREE ALREADY CLEAR BF>=1000 (C.J. Wilson 1690 BF, Brett Cecil
+       1023 BF, both released 2026-07-09).
+   The censoring story needs new elite high-K cards with short lines. The observed
+   set contains none. The one in-window card that IS short-lined is the weak-tail
+   card with the lowest observed K9 in the tier.
+
+   V5 LIMITATION, RESTATED: a v5 row is its own card with its own ratings and its own
+   usage (7 of the 23 drop-outs are v5), but the catalog dates only the BASE card, so
+   every v5's release class is inherited. If v5 unlocks are themselves a recency
+   event, this measurement cannot see it, and every release count above is a count of
+   BASE-card release dates. It does not change the verdict: the five cards that carry
+   the move are all v0.
+
+--------------------------------------------------------------------------------
+4. COMPANION — LEVEL RESIDUALS OF THE HEAVILY-PLAYED LOW-K CARDS
+--------------------------------------------------------------------------------
+   Performance evidence only.
+
+   Among the 68 heavily-played cards, tertiles by observed K9:
+     low-K   n=23  med BF 2725  resid K9 +0.58  resid wOBAA +0.0121  obs RA9 4.10
+     mid     n=22  med BF 4079  resid K9 -0.09  resid wOBAA +0.0193  obs RA9 3.86
+     high-K  n=23  med BF 2000  resid K9 -0.52  resid wOBAA +0.0190  obs RA9 3.77
+   (identical picture when the tertile is cut on PREDICTED K9 instead.)
+
+   THREE READINGS, IN ORDER OF WHAT THEY SUPPORT:
+   (a) REVEALED PREFERENCE IS REAL AND RUNS TOWARD LOW-K. Gold's field plays the
+       low-K tertile at a HIGHER median BF than the high-K tertile (2725 vs 2000;
+       3265 vs 1981 on the predicted cut). The most-played cards in the tier are
+       low-K: Dock Ellis 37,162 BF, Old Hoss Radbourn 13,836, Mark Fidrych 11,881.
+       Whatever the field is selecting on, it is not strikeouts.
+   (b) THE SPREAD DEFICIT IS VISIBLE INSIDE THE HEAVY SET ALONE. resid K9 runs
+       +0.58 / -0.09 / -0.52 low->high. That is the need (a slope > 1) expressed as
+       a level residual, and it is present at BF>=1000 with the light cards gone. So
+       the bar does not make gold's K problem go away; it makes it smaller.
+   (c) THE OUTPERFORMANCE IS NOT LOW-K-SPECIFIC — SO IT IS NOT A MISVALUATION SIGNAL
+       FOR THIS COHORT. Every tertile allows LESS wOBA than predicted (+0.0121 to
+       +0.0193), i.e. the level offset is a whole-population property of the gold
+       cell, and the low-K tertile outperforms the LEAST of the three. It also
+       allows the most runs in absolute terms (RA9 4.10 vs 3.77). The heavily-played
+       low-K cards are therefore NOT hidden value the model is missing; the field
+       prefers them for something the K channel does not price, and they do not beat
+       their own prediction by more than anyone else. Individually the pattern holds
+       (Mark Fidrych resid K9 +1.40 / wOBAA +0.0223; Warren Spahn +1.54 / +0.0043;
+       Tony Watson +0.32 / -0.0112 — one of only two negatives in the top 12).
+
+--------------------------------------------------------------------------------
+5. WHICH WORLD — AND WHY NOT THE OTHER TWO
+--------------------------------------------------------------------------------
+   WEAK-TAIL-DOMINATED. The support-leverage story stands and 1.63 is the cleaner
+   number. The counts and variance shares that decide it:
+     · the entire 1.78 -> 1.63 move is reproduced by removing 5 cards, all of which
+       sit below the league training 5th percentile in effective stuff, at training
+       percentile <= 0.1%, carrying 31.5% of gold's predicted-K variance;
+     · removing the 18 lightly-used SUPPORTED cards instead moves the slope +0.01;
+     · the release channel isolated from the support channel moves it +0.02.
+
+   NEW-RELEASE-DOMINATED IS REFUTED, on its mechanism rather than by a p-value:
+   the world requires short-lined new elite high-K cards. There are none. Zero July
+   and zero in-window cards in the top predicted-K decile; three in-window cards in
+   the whole 91, two of which already clear BF>=1000; 70% of the drop-out set
+   released before June. It follows that GOLD'S NEED IS NOT ACTIVELY DRIFTING for
+   this reason and a re-pull in 1-2 weeks is NOT the confirmation to reach for — it
+   would move these numbers only by adding play to cards that already have it.
+
+   MIXED IS NOT SUPPORTED. Reporting both tags separately is exactly what §2b does,
+   and one of the two comes back at +0.02. There is nothing to average away.
+
+   WHAT WOULD CHANGE THIS. The verdict attributes a 0.15 slope move to five named,
+   individually listed cards. That is a large, reproducible variance share but a
+   small number of cards, and the cell they occupy is THIN by the standing rule. The
+   attribution would be overturned if those five cards' observed K9 moved materially
+   on a later pull, or if a widened sample (more formats at the same value window)
+   put a different set of cards in the same coordinate and did not reproduce it.
+   Nothing here fits, proposes, or wires a correction for any of it.
+
+   ONE FINDING THE BAR DOES NOT FIX, FOR THE RECORD. BF>=1000 removes 5 of the 11
+   sub-p05 cards; the other 6 stay, carrying 19.3% of the variance. Removing ALL
+   eleven takes gold to 1.53. So the support-leverage problem is attenuated by the
+   usage floor, not solved by it — which is a statement about the K curve's low-end
+   support, not about the bar.
+
+(end of artifact — the gold query, 2026-07-21: WEAK-TAIL-DOMINATED; five sub-p05
+ lightly-used cards reproduce the whole 1.78 -> 1.63 move, the release channel
+ isolated moves it +0.02, and the new-release censoring world has no members)
