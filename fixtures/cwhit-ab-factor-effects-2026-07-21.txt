@@ -1,0 +1,65 @@
+################################################################################
+# FACTOR-EFFECT TABLES — the point of the sequential A/B (Fable session-4, cond. b).
+# A = derived top-100 @ BF/PA>=1000 · B = full depth @ 1000 · C = full depth @ 600/500
+# A->B isolates DEPTH.  B->C isolates the BAR.  50 cells (5 tiers x 2 roles x 5 chans).
+# Parse verified: 50 Section-A OURS rows + 50 Section-B rows in each of the three files.
+################################################################################
+
+== READ THIS FIRST: TWO FACTS THAT GOVERN EVERY DELTA BELOW ==
+
+1. DEPTH WAS STRUCTURALLY NON-BINDING ON 25 OF 50 CELLS. For silver-pit, gold and diamond
+   the Section-B N is byte-identical A->B, because the top-100 cut never bound there — those
+   tiers had fewer than 100 cards above the 1000 bar to begin with. Their Δdepth = 0 is a
+   STRUCTURAL zero, not "measured and found unchanged". Depth genuinely binds on 25 cells
+   (iron pit/hit, bronze pit/hit, silver hit). The bar moves N in ALL 50.
+   ⇒ Any average over all 50 cells UNDERSTATES depth by construction. Both views are given.
+
+2. SECTION-A Δdepth IS CONFOUNDED; use Section B for the clean depth read. In A the
+   projection join is 411 of 991 rows, so Section A is a range-restricted subsample; in B/C
+   it is 2907 of 2907, so Section A IS Section B. The Section-A A->B delta therefore mixes
+   the depth change with the DISAPPEARANCE of the projection-join subsetting.
+   Quantified: Section A vs Section B dcv agreement — snapshot A r=0.804, mean |diff| 0.099,
+   max 0.420; snapshots B and C r=1.000, max |diff| 0.000 across 45-46 numeric cells.
+   That is the Section-A double-selection dissolving, measured.
+
+== ATTRIBUTION, ALL 50 CELLS (Section B unless noted) ==
+
+  metric   mean|Δdepth|  mean|Δbar|   moved more: DEPTH / BAR / tie
+  dcv         0.0104       0.0575            7 / 29 / 12   (48 usable)
+  corr        0.0130       0.0573            6 / 44 /  0
+  rho         0.0130       0.0496            7 / 39 /  4
+  bias        0.0103       0.0519           10 / 34 /  6
+  (bias is unit-mixed across channels — read it structurally, not as a magnitude.)
+
+== THE SAME, RESTRICTED TO THE 25 CELLS WHERE DEPTH ACTUALLY BOUND ==
+
+  metric   mean|Δdepth|  mean|Δbar|   depth>bar / bar>depth / tie
+  dcv         0.0200       0.0332          7 / 10 /  8
+  corr        0.0259       0.0470          6 / 19 /  0
+  rho         0.0260       0.0388          7 / 16 /  2
+  bias        0.0206       0.0252         10 / 12 /  3
+  ⇒ The bar still dominates, but by ~2x rather than 4-6x. For dcv and bias it is near even.
+    The all-50 view overstates the bar's relative importance; this is the honest comparison.
+
+== THE BAR'S COST, WHICH THE HEADLINE N-GAIN HIDES ==
+  ORDERING DEGRADES UNDER THE BAR IN EVERY ONE OF THE 10 CHANNELS — the signed mean Δcorr and
+  Δrho are negative for all ten, no channel improves on average. Heaviest: hit/BABIP -0.112,
+  pit/HR9 -0.092, hit/wOBA -0.073, pit/wOBAA -0.049. Largest single: diamond/hit/BABIP
+  corr -0.289, diamond/pit/K9 dcv -0.400.
+  This is the expected price of admitting less-sampled cards, but it IS a price: the bar buys
+  N (+357) and pays in per-card ordering agreement. dcv by contrast moves both ways by channel
+  (pit/K9 -0.094 and hit/wOBA -0.052 down; hit/HR600 +0.070, pit/wOBAA +0.035 up).
+
+== RELIABILITY ==
+  UNREL cells (Section A): A=12 -> B=5 -> C=4. Both factors retire UNREL cells. The four that
+  never resolve at any config: diamond pit BABIP, diamond pit wOBAA, diamond hit BABIP,
+  diamond hit wOBA.
+  SIGNIFICANCE: only TWO cells change star status across all three snapshots, both at the bar
+  step and both diamond hitters — HR600 +0.77 -> +1.86* (gains), SO%(PA) +0.50* -> +0.16
+  (loses). Everything else is stable. gold/pit/K9 is non-significant in all three.
+
+== MONOTONICITY (do the two factors push the same way?) ==
+  same-sign / opposite-sign / one-or-both-zero:
+    dcv (Sec B)   8 /  7 / 33      corr  17 / 6 / 27
+    rho          15 /  3 / 32      bias   8 / 5 / 37
+  The large zero counts are the structural non-binding depth cut again, not stability.
