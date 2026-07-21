@@ -1,0 +1,163 @@
+################################################################################
+# PROPERTY BATTERY — ITEM 5: WITHIN-TIER HETEROGENEITY. VARIANT-CORRECTED.
+# 2026-07-21. Supersedes cwhit-battery-item5-heterogeneity-2026-07-21.txt and its
+# python tool (private join, row grain only).
+# Tool: tools/battery-item5-heterogeneity.ts. Observed data only; descriptive.
+################################################################################
+
+
+╔═══ BATTERY ITEM 5 — WITHIN-TIER HETEROGENEITY (variant-corrected) ═══╗
+model 'league-42-43' | catalog 'cdmx' | corpus fixtures/cwhit-capture-2026-07-21 | floor BF>=600
+
+
+════════ ROW GRAIN — one unit per matched observed row (base and v5 SEPARATE); reproduces the python's unit ════════
+
+=== (1) WELL-SAMPLED PITCHER SET PER TIER ===
+  tier      need     N  meanK9   sdK9     min    p10    p25    med    p75    p90    max   v5 rows  v5 IP%
+  iron       1.82   142    6.66   1.54  2.31  4.57  5.61  6.80  7.77  8.46 10.17       35   22.6%
+  bronze     1.62   156    6.93   1.44  2.27  5.05  6.15  7.10  7.90  8.66  9.97       47   24.8%
+  silver     1.48   121    6.39   1.36  2.64  4.16  5.67  6.52  7.29  7.97  9.38       44   29.0%
+  gold       1.78    91    7.49   1.62  2.30  4.70  7.06  7.72  8.60  9.15 10.00       22   16.0%
+  diamond    1.04    36    7.18   0.92  4.78  6.13  6.68  7.45  7.83  8.38  8.58        8   17.2%
+
+=== (2) TERCILES OF THE CARD'S OWN OBSERVED K9 — the usage profile ===
+  tier      tercile     N  meanK9   sdK9    meanIP     totIP   v5 share of units
+  iron      low        47    4.94   0.92     637.0     29939      29.8%
+  iron      mid        47    6.76   0.35    1086.4     51063      27.7%
+  iron      high       47    8.28   0.73    1206.6     56710      17.0%
+  bronze    low        52    5.31   0.94    1060.9     55168      26.9%
+  bronze    mid        52    7.05   0.33    1046.3     54408      30.8%
+  bronze    high       52    8.42   0.60    1058.9     55065      32.7%
+  silver    low        40    4.83   0.88     653.0     26119      32.5%
+  silver    mid        40    6.56   0.29     758.9     30357      32.5%
+  silver    high       40    7.78   0.58    1553.4     62137      45.0%
+  gold      low        30    5.72   1.49     930.7     27921      16.7%
+  gold      mid        30    7.74   0.30    1154.3     34630      20.0%
+  gold      high       30    8.98   0.43     554.9     16648      33.3%
+  diamond   low        12    6.17   0.67     279.1      3349       8.3%
+  diamond   mid        12    7.25   0.32     271.2      3254      16.7%
+  diamond   high       12    8.12   0.28     337.2      4046      41.7%
+
+=== (3) SHAPE — largest gap between consecutive K9 in the middle 80% ===
+  iron      N= 142  range   2.31- 10.17  largest mid-80% gap 0.310 at [4.57,4.88]  (sd 1.54)
+  bronze    N= 156  range   2.27-  9.97  largest mid-80% gap 0.190 at [8.06,8.25]  (sd 1.44)
+  silver    N= 121  range   2.64-  9.38  largest mid-80% gap 0.250 at [4.51,4.76]  (sd 1.36)
+  gold      N=  91  range   2.30- 10.00  largest mid-80% gap 0.550 at [5.83,6.38]  (sd 1.62)
+  diamond   N=  36  range   4.78-  8.58  largest mid-80% gap 0.310 at [7.14,7.45]  (sd 0.92)
+
+=== (4/5) STARTER vs RELIEVER (GSper >= 0.5 = starter) ===
+  tier      need  startN%  startIP%   K9 st   K9 rp   st-rp
+  iron       1.82     54.2      67.0    6.35    7.04   -0.68
+  bronze     1.62     53.2      59.8    6.61    7.28   -0.67
+  silver     1.48     50.4      66.8    6.10    6.69   -0.59
+  gold       1.78     49.5      72.3    7.29    7.68   -0.39
+  diamond    1.04     66.7      73.2    7.20    7.15    0.04
+
+=== (6) NESTING — well-sampled units shared with the tier BELOW ===
+  bronze    N= 156   shared with iron:    3
+  silver    N= 121   shared with bronze:    5
+  gold      N=  91   shared with silver:    1
+  diamond   N=  36   shared with gold:    1
+
+
+════════ CARD GRAIN — base and v5 MERGED per card (IP summed, K9 IP-weighted) ════════
+
+=== (1) WELL-SAMPLED PITCHER SET PER TIER ===
+  tier      need     N  meanK9   sdK9     min    p10    p25    med    p75    p90    max   cards w/ v5
+  iron       1.82   120    6.78   1.51  2.35  4.90  5.78  6.84  7.81  8.67 10.17       60   53.9%
+  bronze     1.62   124    6.95   1.43  2.27  5.20  6.23  7.12  7.87  8.69  9.90       73   71.6%
+  silver     1.48    87    6.29   1.35  2.64  4.13  5.54  6.45  7.20  7.79  9.38       56   81.2%
+  gold       1.78    74    7.43   1.67  2.31  4.70  6.86  7.66  8.69  9.28 10.00       44   66.7%
+  diamond    1.04    32    6.98   1.13  3.46  5.45  6.63  7.09  7.81  8.19  8.48       17   62.3%
+
+=== (2) TERCILES OF THE CARD'S OWN OBSERVED K9 — the usage profile ===
+  tier      tercile     N  meanK9   sdK9    meanIP     totIP   v5 share of units
+  iron      low        40    5.08   0.87     804.3     32172      70.0%
+  iron      mid        40    6.89   0.40    1372.4     54896      37.5%
+  iron      high       40    8.37   0.71    1341.7     53667      42.5%
+  bronze    low        41    5.36   1.00    1253.6     51397      73.2%
+  bronze    mid        41    7.06   0.33    1446.6     59313      56.1%
+  bronze    high       41    8.40   0.60    1347.9     55264      48.8%
+  silver    low        29    4.74   0.86     859.6     24928      51.7%
+  silver    mid        29    6.46   0.25    1029.3     29850      62.1%
+  silver    high       29    7.66   0.60    2302.1     66760      79.3%
+  gold      low        24    5.57   1.53    1045.6     25093      58.3%
+  gold      mid        24    7.65   0.28    1351.7     32441      66.7%
+  gold      high       24    9.00   0.45     963.0     23111      58.3%
+  diamond   low        10    5.73   1.04     314.7      3147      50.0%
+  diamond   mid        10    7.02   0.30     338.8      3388      40.0%
+  diamond   high       10    8.07   0.24     466.2      4662      70.0%
+
+=== (3) SHAPE — largest gap between consecutive K9 in the middle 80% ===
+  iron      N= 120  range   2.35- 10.17  largest mid-80% gap 0.200 at [8.21,8.41]  (sd 1.51)
+  bronze    N= 124  range   2.27-  9.90  largest mid-80% gap 0.217 at [6.34,6.55]  (sd 1.43)
+  silver    N=  87  range   2.64-  9.38  largest mid-80% gap 0.309 at [4.45,4.76]  (sd 1.35)
+  gold      N=  74  range   2.31- 10.00  largest mid-80% gap 0.604 at [5.69,6.29]  (sd 1.67)
+  diamond   N=  32  range   3.46-  8.48  largest mid-80% gap 0.540 at [6.05,6.59]  (sd 1.13)
+
+=== (4/5) STARTER vs RELIEVER (GSper >= 0.5 = starter) ===
+  tier      need  startN%  startIP%   K9 st   K9 rp   st-rp
+  iron       1.82     51.7      69.4    6.31    7.28   -0.97
+  bronze     1.62     49.2      67.3    6.54    7.34   -0.81
+  silver     1.48     55.2      71.2    5.96    6.70   -0.74
+  gold       1.78     50.0      73.1    7.02    7.84   -0.82
+  diamond    1.04     68.8      76.2    6.80    7.40   -0.60
+
+=== (6) NESTING — well-sampled units shared with the tier BELOW ===
+  bronze    N= 124   shared with iron:    3
+  silver    N=  87   shared with bronze:    4
+  gold      N=  74   shared with silver:    1
+  diamond   N=  32   shared with gold:    1
+
+(end of battery item 5 — within-tier heterogeneity, variant-corrected)
+
+################################################################################
+# READING — the headline finding is HALF ARTIFACT, and the half that remains is real
+################################################################################
+
+FIRST, THE JOIN. Row-grain N is now 142/156/121/91/36 — the SAME per-tier N both fit
+tools report. The python's 147/94 came from its own key-collision handling; the
+fingerprint join is the program's join and these are the program's numbers.
+
+1. THE INVERTED USAGE FINDING IS ROUGHLY HALF A VARIANT-SPLIT ARTIFACT. Gold's mean IP
+   by K9 tercile, low/mid/high:
+
+     ROW grain  (base and v5 separate)   930.7 / 1154.3 /  554.9    high/mid = 0.48
+     CARD grain (base and v5 merged)    1045.6 / 1351.7 /  963.0    high/mid = 0.71
+
+   The row grain reproduces the original reading (918/1129/549). Merging a card's base
+   and variant rows nearly halves the effect. THE MECHANISM IS VISIBLE IN THE DATA: at
+   row grain gold's high-K tercile is 33.3% v5 rows against 16.7% in its low tercile, so
+   the high-K end was precisely the end whose usage was split across two rows.
+
+   IT DOES NOT VANISH. high/mid by tier at CARD grain: iron 0.98, bronze 0.93, silver
+   2.24, GOLD 0.71, diamond 1.38. Gold is still the only tier where the high-K group is
+   used materially less than its mid group — but "used ~half as much, inverting every
+   other tier" was an overstatement of a real, smaller effect.
+
+2. WHAT SURVIVES UNCHANGED AT BOTH GRAINS:
+   · gold has the widest K9 spread — SD 1.62 (row) / 1.67 (card), against 0.92-1.54 and
+     1.13-1.51 elsewhere
+   · gold has the most dispersed LOW-K subgroup — tercile SD 1.49 / 1.53 vs 0.24-1.04
+   · gold has the largest internal gap in the middle 80% — 0.550 / 0.604, about double
+     the others at row grain (at card grain diamond's 0.540 is comparable, on N=32)
+   · the observed sets are nearly DISJOINT across tiers — 1-5 shared cards per adjacent
+     pair at both grains. The nesting caveat applies to catalog-derived pool statistics,
+     not to these.
+
+3. ONE CLAIM DOES NOT SURVIVE — the role-split control. At row grain gold's
+   starter-minus-reliever K9 gap is -0.39, the smallest of the first four, which is what
+   licensed "role split does not explain it". At CARD grain gold is -0.82, the LARGEST of
+   the five (iron -0.97 aside), and no longer distinctive. That reading was grain-
+   dependent and should not be quoted. The underlying conclusion is untouched — nothing
+   here says the role split explains gold — but the supporting number does not hold.
+
+4. VARIANTS ARE NOT A MARGINAL POPULATION. 54-81% of well-sampled CARDS have a v5 row,
+   and v5 rows carry 16-29% of well-sampled IP. Any observed-side statistic at row grain
+   is a statistic about card-variant-levels, not about cards, and the two differ.
+
+ESTABLISHES NO CAUSE. Gold still differs in KIND — wider, gappier, more dispersed at the
+low end, with its high-K end used less than its middle. Nothing here links that to the
+1.78 K need.
+
+(end of artifact — battery item 5, variant-corrected)
