@@ -1,0 +1,720 @@
+################################################################################
+# ACCEPTANCE-GATE RUN — 2026-07-21. Scorecard on the OLD fixtures/config under
+# the CORRECTED instrument (commit 697cdb2, IP/BF unit fix).
+#
+# THIS IS NOT AN A/B SNAPSHOT. A/B factor (i) runs on the DERIVED top-100 view of
+# the NEW corpus; this run is on the OLD fixtures and exists only to discharge the
+# acceptance gate.
+#
+# GATE RESULT (see the unit's commit message for the full argument):
+#  · HITTER cells reproduce the committed 2026-07-21-live oracle EXACTLY — 21/21
+#    unambiguous hitter channel rows and 35/35 summary rows byte-identical.
+#  · PITCHER cells CANNOT reproduce it and must not: d40287a deliberately moved the
+#    well-sampled bar from IP>=1000 to BF>=1000, and the oracle PREDATES that. Pitcher
+#    well-sampled N: iron 44->98, bronze 52->98, silver 22->69, gold 15->49, diamond 1->28.
+#  · The clean isolation test is pre-fix vs post-fix at an IDENTICAL sample (worktree at
+#    3f6240b): 74 lines differ and in ZERO of them does anything other than the last two
+#    fields (dcv ratio, noise share) move. Level, shape, corr, CIs, spearman and the RAW
+#    spread ratio are bit-identical. The fix moves the deconvolution and nothing else.
+################################################################################
+
+╔════════════════════════════════════════════════════════════════════════════════════════════╗
+║  cwhit BENCHMARK SCORECARD — UNIVERSAL (ours) vs NATIVE (cwhit) vs OBSERVED                 ║
+╚════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-42-43' | catalog 'cdmx' | neutral env (bronze-quick era/park) | own-gap pool transform ON
+join: observed→catalog = name+VAL+VLvl+Hand fingerprint (existing joinCwhit); projected→catalog = FULL //Card Title + VLvl (exact)
+PRODUCTION CORRECTIONS: ON (production default) — BUILD-1 pit K-spread ramp + BUILD-3 pit HR9 spread + BUILD-2 hitter tail (HR/BABIP/SO); pit BABIP scalar HELD (never set). Run with --no-corrections for the pre-correction model.
+  per-tier parameters (computed from pool composition + the live universal constants — no per-tournament fitting):
+  tier       s(K)    K̄_pool   s(HR)   HR̄_pool   hitTail lw: HR      BABIP   SO
+  iron      1.731    120.6   1.265    16.44           1.626   1.097  0.264
+  bronze    1.705    119.9   1.265    16.47           1.049   1.069  0.260
+  silver    1.641    119.6   1.263    16.20           0.683   0.928  0.248
+  gold      1.505    120.5   1.259    15.87           0.440   0.870  0.214
+  diamond   1.335    119.3   1.227    15.49           0.181   0.686  0.152
+
+── FIXTURES DISCOVERED (glob-driven; no tier hard-coded) ──
+  observed  (fixtures/cwhit):  18 tables — Quick tiers used: iron, bronze, silver, gold, diamond
+  projected (fixtures/cwhit-proj): 10 tables — cwhit-bronze-hit-proj.tsv, cwhit-bronze-pit-proj.tsv, cwhit-diamond-hit-proj.tsv, cwhit-diamond-pit-proj.tsv, cwhit-gold-hit-proj.tsv, cwhit-gold-pit-proj.tsv, cwhit-iron-hit-proj.tsv, cwhit-iron-pit-proj.tsv, cwhit-silver-hit-proj.tsv, cwhit-silver-pit-proj.tsv
+  NOTE: only the five QUICK tiers are scored (known VAL caps + neutral env). Daily/Cap formats in fixtures/cwhit carry non-neutral era/park and are out of scope here.
+
+── WINDOW OVERLAP (per projected table) — MUST be read before any ours-vs-cwhit claim ──
+  iron pit:  observed coverage 2026-06-28..2026-07-12 (15d)   |   cwhit model trained 2026-06-30..2026-07-12 (13d)
+      overlap 13d = 87% of the judging window  ⇒  SEMI-IN-SAMPLE for cwhit — he was fit on 87% of the judging window; ours is honest OOS. His edge is BIASED UPWARD by an unknown amount.
+      projections pulled 2026-07-15; source header: "# Iron Quick PROJECTED pitchers (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 800 | model trained 2026-06-30..2026-07-12 (543 card rows | 155,372 IP; fit used cards >=500 IP: 76)"
+      convention: K/BB/HR %-columns read as per-BATTER-FACED (per-PA), converted to per-9 with BF/9=38.7 — the SAME constant our per-600 line uses, so the constant cancels in ours-vs-cwhit and touches only the vs-observed LEVEL
+  iron hit:  observed coverage 2026-06-28..2026-07-12 (15d)   |   cwhit model trained 2026-06-30..2026-07-12 (13d)
+      overlap 13d = 87% of the judging window  ⇒  SEMI-IN-SAMPLE for cwhit — he was fit on 87% of the judging window; ours is honest OOS. His edge is BIASED UPWARD by an unknown amount.
+      projections pulled 2026-07-15; source header: "# Iron Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 1030 | model trained 2026-06-30..2026-07-12 (623 card rows | 692,263 PA; fit used cards >=2,000 PA: 76; sparse rating-tail hitters may enter with >=450 PA)"
+      convention: SO: SOpct → K/AB, converted to K/PA via AB/PA=0.917 (from this row's BB; no AVG/OBP in the projected table)
+      convention: HR: HRpct → per-PA rate ×600 ⇒ HR600 (observed table's unit)
+      convention: XBH: XBHpct → (2B+3B+HR)/H [measured]; HR subtracted to get the non-HR XBH our wOBA weight applies to
+      convention: his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score
+  bronze pit:  observed coverage 2026-06-28..2026-07-12 (15d)   |   cwhit model trained 2026-07-04..2026-07-12 (9d)
+      overlap 9d = 60% of the judging window  ⇒  SEMI-IN-SAMPLE for cwhit — he was fit on 60% of the judging window; ours is honest OOS. His edge is BIASED UPWARD by an unknown amount.
+      projections pulled 2026-07-15; source header: "# Bronze Quick PROJECTED pitchers (cwhit model, projections 2026-07-15) | top 100 by pwOBA | model trained 2026-07-04..07-12"
+      convention: K/BB/HR %-columns read as per-BATTER-FACED (per-PA), converted to per-9 with BF/9=38.7 — the SAME constant our per-600 line uses, so the constant cancels in ours-vs-cwhit and touches only the vs-observed LEVEL
+  bronze hit:  observed coverage 2026-06-28..2026-07-12 (15d)   |   cwhit model trained 2026-07-04..2026-07-12 (9d)
+      overlap 9d = 60% of the judging window  ⇒  SEMI-IN-SAMPLE for cwhit — he was fit on 60% of the judging window; ours is honest OOS. His edge is BIASED UPWARD by an unknown amount.
+      projections pulled 2026-07-15; source header: "# Bronze Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 1850 | model trained 2026-07-04..2026-07-12 (583 card rows | 698,350 PA; fit used cards >=2,000 PA: 70; sparse rating-tail hitters may enter with >=450 PA)"
+      convention: SO: SOpct → K/AB, converted to K/PA via AB/PA=0.877 (from this row's BB; no AVG/OBP in the projected table)
+      convention: HR: HRpct → per-PA rate ×600 ⇒ HR600 (observed table's unit)
+      convention: XBH: XBHpct → (2B+3B+HR)/H [measured]; HR subtracted to get the non-HR XBH our wOBA weight applies to
+      convention: his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score
+  silver pit:  observed coverage 2026-06-28..2026-07-11 (14d)   |   cwhit model trained 2026-06-24..2026-07-11 (18d)
+      overlap 14d = 100% of the judging window  ⇒  FULLY IN-SAMPLE for cwhit — he was fit on the whole judging window; ours is honest OOS. His edge is UPPER-BOUNDED, not measured.
+      projections pulled 2026-07-15; source header: "# Silver Quick PROJECTED pitchers (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 1892 | model trained 2026-06-24..2026-07-11 (503 card rows | 155,377 IP; fit used cards >=400 IP: 78)"
+      convention: K/BB/HR %-columns read as per-BATTER-FACED (per-PA), converted to per-9 with BF/9=38.7 — the SAME constant our per-600 line uses, so the constant cancels in ours-vs-cwhit and touches only the vs-observed LEVEL
+  silver hit:  observed coverage 2026-06-28..2026-07-11 (14d)   |   cwhit model trained 2026-06-24..2026-07-11 (18d)
+      overlap 14d = 100% of the judging window  ⇒  FULLY IN-SAMPLE for cwhit — he was fit on the whole judging window; ours is honest OOS. His edge is UPPER-BOUNDED, not measured.
+      projections pulled 2026-07-15; source header: "# Silver Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 2484 | model trained 2026-06-24..2026-07-11 (556 card rows | 690,778 PA; fit used cards >=2,000 PA: 73; sparse rating-tail hitters may enter with >=450 PA)"
+      convention: SO: SOpct → K/AB, converted to K/PA via AB/PA=0.952 (from this row's BB; no AVG/OBP in the projected table)
+      convention: HR: HRpct → per-PA rate ×600 ⇒ HR600 (observed table's unit)
+      convention: XBH: XBHpct → (2B+3B+HR)/H [measured]; HR subtracted to get the non-HR XBH our wOBA weight applies to
+      convention: his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score
+  gold pit:  observed coverage 2026-06-28..2026-07-05 (8d)   |   cwhit model trained 2026-06-21..2026-07-09 (19d)
+      overlap 8d = 100% of the judging window  ⇒  FULLY IN-SAMPLE for cwhit — he was fit on the whole judging window; ours is honest OOS. His edge is UPPER-BOUNDED, not measured.
+      projections pulled 2026-07-15; source header: "# Gold Quick PROJECTED pitchers (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 2216 | model trained 2026-06-21..2026-07-09 (373 card rows | 155,569 IP; fit used cards >=300 IP: 89)"
+      convention: K/BB/HR %-columns read as per-BATTER-FACED (per-PA), converted to per-9 with BF/9=38.7 — the SAME constant our per-600 line uses, so the constant cancels in ours-vs-cwhit and touches only the vs-observed LEVEL
+  gold hit:  observed coverage 2026-06-28..2026-07-05 (8d)   |   cwhit model trained 2026-06-21..2026-07-09 (19d)
+      overlap 8d = 100% of the judging window  ⇒  FULLY IN-SAMPLE for cwhit — he was fit on the whole judging window; ours is honest OOS. His edge is UPPER-BOUNDED, not measured.
+      projections pulled 2026-07-15; source header: "# Gold Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 2932 | model trained 2026-06-21..2026-07-09 (503 card rows | 688,064 PA; fit used cards >=2,000 PA: 85; sparse rating-tail hitters may enter with >=450 PA)"
+      convention: SO: SOpct → K/AB, converted to K/PA via AB/PA=0.928 (from this row's BB; no AVG/OBP in the projected table)
+      convention: HR: HRpct → per-PA rate ×600 ⇒ HR600 (observed table's unit)
+      convention: XBH: XBHpct → (2B+3B+HR)/H [measured]; HR subtracted to get the non-HR XBH our wOBA weight applies to
+      convention: his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score
+  diamond pit:  observed coverage 2026-06-28..2026-07-11 (14d)   |   cwhit model trained 2026-05-11..2026-07-11 (62d)
+      overlap 14d = 100% of the judging window  ⇒  FULLY IN-SAMPLE for cwhit — he was fit on the whole judging window; ours is honest OOS. His edge is UPPER-BOUNDED, not measured.
+      projections pulled 2026-07-15; source header: "# Diamond Quick PROJECTED pitchers (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 2402 | model trained 2026-05-11..2026-07-11 (435 card rows | 126,739 IP; fit used cards >=300 IP: 82)"
+      convention: K/BB/HR %-columns read as per-BATTER-FACED (per-PA), converted to per-9 with BF/9=38.7 — the SAME constant our per-600 line uses, so the constant cancels in ours-vs-cwhit and touches only the vs-observed LEVEL
+  diamond hit:  observed coverage 2026-06-28..2026-07-11 (14d)   |   cwhit model trained 2026-05-11..2026-07-11 (62d)
+      overlap 14d = 100% of the judging window  ⇒  FULLY IN-SAMPLE for cwhit — he was fit on the whole judging window; ours is honest OOS. His edge is UPPER-BOUNDED, not measured.
+      projections pulled 2026-07-15; source header: "# Diamond Quick PROJECTED hitters (cwhit model, projections last updated 2026-07-15 08:40 PM EDT) | top 100 by pwOBA of 3266 | model trained 2026-05-11..2026-07-11 (495 card rows | 560,668 PA; fit used cards >=2,000 PA: 60; sparse rating-tail hitters may enter with >=450 PA)"
+      convention: SO: SOpct → K/AB, converted to K/PA via AB/PA=0.926 (from this row's BB; no AVG/OBP in the projected table)
+      convention: HR: HRpct → per-PA rate ×600 ⇒ HR600 (observed table's unit)
+      convention: XBH: XBHpct → (2B+3B+HR)/H [measured]; HR subtracted to get the non-HR XBH our wOBA weight applies to
+      convention: his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score
+
+  PROJECTED COVERAGE IS UNEVEN BY ROLE — pitchers: 5/5 tiers (iron, bronze, silver, gold, diamond);  hitters: 5/5 tiers (iron, bronze, silver, gold, diamond).
+  cwhit's OBSERVED hitter SO% is K/AB (ours is K/PA) — converted per-row via the AVG/OBP identity before comparison.
+  (Verified: reconstructing his published BABIP from his own columns gives mean |err| 0.003 under K/AB vs 0.012 under K/PA, across 4 tiers × N=100.)
+
+── N + SAMPLE DEPTH (what is kept, what is dropped) ──
+tier      role  joined   well-sampled (BF≥1000 / PA≥1000)   dropped   median depth (kept)   also has cwhit projection
+iron      pit     98       98                          0         3983                42
+iron      hit    100      100                          0         3811                36
+bronze    pit     98       98                          0         4555                38
+bronze    hit     99       99                          0         6019                35
+silver    pit    100       69                         31         2689                37
+silver    hit    100       78                         22         3144                34
+gold      pit     99       49                         50         2920                28
+gold      hit    100       64                         36         1745                26
+diamond   pit    100       28                         72         1468                15
+diamond   hit    100       17                         83         1746                10
+  596 projected rows did NOT join to an observed+catalog record — excluded, not forced. Per tier×role:
+      iron pit        58 unjoined
+      iron hit        64 unjoined
+      bronze pit      62 unjoined
+      bronze hit      65 unjoined
+      silver pit      55 unjoined
+      silver hit      60 unjoined
+      gold pit        57 unjoined
+      gold hit        64 unjoined
+      diamond pit     58 unjoined
+      diamond hit     53 unjoined
+      CAUSE (structural, not a join defect): his projected table is the top-100 by pwOBA over the WHOLE format pool (e.g. 2402 diamond cards),
+      while the observed table is the top-100 by IP. The two top-100s overlap only partly, so most of his projected rows have no observed line to be judged on.
+
+
+╔═══ A. THREE-WAY SCORECARD — ours vs cwhit-native, judged on observed ═══════════════════════╗
+LEVEL  = mean(pred−obs) ±95%CI. Our known out-of-frame level gaps live in the eval stack by design — a level loss here may restate an ACCEPTED gap, not a defect.
+SHAPE  = per-card agreement AFTER DE-MEANING both series (level removed; scale deliberately NOT rescaled — a full affine fit would absorb the spread defect SPREAD reports separately).
+         The SHAPE VERDICT is read off 'corr' ONLY, because corr is scale-free: it answers "who ORDERS the cards better", which is the M8 question. 'MAE' is a shape+spread composite.
+SPREAD = SD(pred)/SD(obs). Observed SD is noise-inflated ⇒ the raw ratio is LOW-biased against a noiseless predictor; 'dcv' deconvolves the binomial sampling variance (n/a for composites).
+slope  = OLS of de-meaned pred on de-meaned obs; 1.0 = right responsiveness, <1 = we under-react to the rating signal.
+
+─── IRON PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=42 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+K9        OURS     +0.16*   [+0.05, +0.26]                  7.58      0.960  [0.93,0.98]   0.95    0.25   0.92    0.96   0.98     4%
+          cwhit    +0.90*   [+0.77, +1.02]                  7.58      0.958  [0.92,0.98]   0.95    0.30   1.08    1.13   1.15     4%
+          DUEL   Δcorr +0.002 [-0.01,+0.01]   (Δshape-MAE -0.05  = shape+spread composite)  Δ|ln spread| -0.08   Δ|level| -0.74*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: OURS
+BB9       OURS     +0.64*   [+0.57, +0.72]                  2.76      0.939  [0.89,0.97]   0.93    0.20   0.85    0.91   0.93     5%
+          cwhit    +0.03    [-0.04, +0.10]                  2.76      0.949  [0.91,0.97]   0.93    0.18   0.88    0.93   0.95     5%
+          DUEL   Δcorr -0.009 [-0.04,+0.01]   (Δshape-MAE +0.02  = shape+spread composite)  Δ|ln spread| +0.02   Δ|level| +0.62*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+HR9       OURS     +0.20*   [+0.16, +0.24]                  0.81      0.725  [0.54,0.84]   0.74    0.10   0.58    0.80   0.92    24%
+          cwhit    +0.07*   [+0.03, +0.11]                  0.81      0.754  [0.58,0.86]   0.75    0.10   0.74    0.98   1.12    24%
+          DUEL   Δcorr -0.029 [-0.08,+0.02]   (Δshape-MAE -0.00  = shape+spread composite)  Δ|ln spread| +0.19   Δ|level| +0.13*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+BABIP     OURS    +0.011*   [+0.008, +0.014]               0.290      0.701  [0.50,0.83]   0.77   0.007   0.43    0.61   0.78    39%
+          cwhit   -0.000    [-0.003, +0.003]               0.290      0.720  [0.53,0.84]   0.75   0.007   0.47    0.65   0.83    39%
+          DUEL   Δcorr -0.019 [-0.07,+0.04]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| +0.06   Δ|level| +0.011*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+wOBAA     OURS    +0.023*   [+0.019, +0.026]               0.304      0.081  [-0.23,0.38]   0.11   0.008   0.04    0.48  UNREL    49%↑136%
+          cwhit   -0.003    [-0.007, +0.001]               0.304      0.178  [-0.13,0.46]   0.15   0.008   0.08    0.47  UNREL    49%↑136%
+          DUEL   Δcorr -0.098 [-0.23,+0.07]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.03   Δ|level| +0.020*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── IRON HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=36 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+BB%       OURS     +0.78*   [+0.48, +1.08]                  7.98      0.932  [0.87,0.96]   0.91    0.72   0.71    0.76   0.77     4%
+          cwhit    +0.06    [-0.18, +0.30]                  7.98      0.951  [0.90,0.97]   0.94    0.54   0.84    0.89   0.90     4%
+          DUEL   Δcorr -0.019 [-0.04,+0.00]   (Δshape-MAE +0.19* = shape+spread composite)  Δ|ln spread| +0.15*  Δ|level| +0.72*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: CWHIT
+SO%(PA)   OURS     +3.11*   [+2.74, +3.48]                 18.83      0.971  [0.94,0.99]   0.96    0.87   0.90    0.92   0.93     2%
+          cwhit    -0.37*   [-0.68, -0.06]                 18.83      0.979  [0.96,0.99]   0.97    0.72   0.93    0.95   0.96     2%
+          DUEL   Δcorr -0.008 [-0.02,+0.00]   (Δshape-MAE +0.15  = shape+spread composite)  Δ|ln spread| +0.03   Δ|level| +2.74*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+HR600     OURS     +1.94*   [+1.01, +2.87]                 19.87      0.930  [0.87,0.96]   0.94    2.15   0.76    0.82   0.84     6%
+          cwhit    +3.22*   [+2.31, +4.14]                 19.87      0.937  [0.88,0.97]   0.94    2.06   1.01    1.08   1.11     6%
+          DUEL   Δcorr -0.006 [-0.03,+0.01]   (Δshape-MAE +0.09  = shape+spread composite)  Δ|ln spread| +0.13   Δ|level| -1.28*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: OURS
+BABIP     OURS    +0.015*   [+0.012, +0.019]               0.284      0.919  [0.85,0.96]   0.91   0.007   0.76    0.83   0.88    11%
+          cwhit   +0.002    [-0.002, +0.006]               0.284      0.912  [0.83,0.95]   0.91   0.008   0.68    0.74   0.79    11%
+          DUEL   Δcorr +0.007 [-0.01,+0.03]   (Δshape-MAE -0.001  = shape+spread composite)  Δ|ln spread| -0.12   Δ|level| +0.013*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+wOBA      OURS    +0.011*   [+0.007, +0.016]               0.327      0.448  [0.14,0.68]   0.47   0.010   0.27    0.61   0.75    35%
+          cwhit   +0.001    [-0.003, +0.005]               0.327      0.486  [0.19,0.70]   0.52   0.010   0.28    0.58   0.71    35%
+          DUEL   Δcorr -0.037 [-0.19,+0.13]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.06   Δ|level| +0.010*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── BRONZE PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=38 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+K9        OURS     +0.70*   [+0.55, +0.85]                  7.46      0.933  [0.87,0.96]   0.95    0.30   0.86    0.92   0.93     3%
+          cwhit    +1.06*   [+0.91, +1.22]                  7.46      0.932  [0.87,0.96]   0.95    0.33   0.93    1.00   1.02     3%
+          DUEL   Δcorr +0.001 [-0.01,+0.02]   (Δshape-MAE -0.03  = shape+spread composite)  Δ|ln spread| +0.09   Δ|level| -0.36*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: OURS
+BB9       OURS     +0.77*   [+0.68, +0.86]                  2.69      0.922  [0.85,0.96]   0.88    0.18   0.92    1.00   1.02     4%
+          cwhit    +0.07    [-0.01, +0.15]                  2.69      0.936  [0.88,0.97]   0.92    0.17   0.84    0.89   0.91     4%
+          DUEL   Δcorr -0.015 [-0.06,+0.01]   (Δshape-MAE +0.01  = shape+spread composite)  Δ|ln spread| -0.11   Δ|level| +0.70*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+HR9       OURS     +0.21*   [+0.17, +0.25]                  0.82      0.706  [0.50,0.84]   0.66    0.10   0.71    1.01   1.17    25%
+          cwhit    +0.10*   [+0.06, +0.14]                  0.82      0.712  [0.51,0.84]   0.71    0.10   0.69    0.96   1.11    25%
+          DUEL   Δcorr -0.006 [-0.12,+0.08]   (Δshape-MAE +0.00  = shape+spread composite)  Δ|ln spread| -0.03   Δ|level| +0.11*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+BABIP     OURS    +0.011*   [+0.009, +0.014]               0.288      0.780  [0.61,0.88]   0.68   0.005   0.51    0.66   0.99    56%
+          cwhit   +0.001    [-0.001, +0.003]               0.288      0.804  [0.65,0.89]   0.72   0.005   0.73    0.91   1.36    56%
+          DUEL   Δcorr -0.025 [-0.06,+0.01]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| +0.32*  Δ|level| +0.010*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: CWHIT
+wOBAA     OURS    +0.020*   [+0.018, +0.023]               0.303      0.444  [0.15,0.67]   0.40   0.007   0.31    0.70  UNREL    56%↑102%
+          cwhit   -0.002    [-0.004, +0.001]               0.303      0.546  [0.27,0.74]   0.45   0.006   0.26    0.48  UNREL    56%↑102%
+          DUEL   Δcorr -0.102 [-0.31,+0.09]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.37*  Δ|level| +0.019*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): OURS    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── BRONZE HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=35 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+BB%       OURS     +0.69*   [+0.49, +0.90]                  8.09      0.974  [0.95,0.99]   0.98    0.45   0.85    0.87   0.88     2%
+          cwhit    +0.31*   [+0.17, +0.46]                  8.09      0.984  [0.97,0.99]   0.98    0.33   1.00    1.01   1.02     2%
+          DUEL   Δcorr -0.010 [-0.02,+0.01]   (Δshape-MAE +0.12  = shape+spread composite)  Δ|ln spread| +0.12   Δ|level| +0.38*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+SO%(PA)   OURS     +3.19*   [+2.82, +3.57]                 17.35      0.979  [0.96,0.99]   0.98    0.91   0.99    1.01   1.02     1%
+          cwhit    -0.50*   [-0.81, -0.19]                 17.35      0.987  [0.97,0.99]   0.98    0.75   0.94    0.95   0.95     1%
+          DUEL   Δcorr -0.007 [-0.02,+0.00]   (Δshape-MAE +0.16  = shape+spread composite)  Δ|ln spread| -0.04   Δ|level| +2.69*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+HR600     OURS     +2.40*   [+1.69, +3.11]                 15.15      0.963  [0.93,0.98]   0.95    1.72   1.06    1.10   1.12     3%
+          cwhit    +2.25*   [+1.53, +2.97]                 15.15      0.952  [0.91,0.98]   0.94    1.71   0.93    0.98   0.99     3%
+          DUEL   Δcorr +0.011 [+0.00,+0.03]*  (Δshape-MAE +0.01  = shape+spread composite)  Δ|ln spread| +0.08   Δ|level| +0.15 
+                 ⇒  SHAPE(ordering): OURS    SPREAD(scale): TIE    LEVEL: TIE
+BABIP     OURS    +0.018*   [+0.015, +0.021]               0.290      0.901  [0.81,0.95]   0.90   0.008   0.97    1.08   1.15    13%
+          cwhit   +0.003*   [+0.001, +0.005]               0.290      0.948  [0.90,0.97]   0.93   0.005   0.90    0.95   1.02    13%
+          DUEL   Δcorr -0.047 [-0.09,-0.01]*  (Δshape-MAE +0.003* = shape+spread composite)  Δ|ln spread| +0.03   Δ|level| +0.015*
+                 ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): TIE    LEVEL: CWHIT
+wOBA      OURS    +0.013*   [+0.010, +0.016]               0.322      0.631  [0.38,0.80]   0.63   0.007   0.55    0.86   1.08    35%
+          cwhit   +0.002    [-0.001, +0.005]               0.322      0.517  [0.22,0.73]   0.45   0.008   0.35    0.67   0.84    35%
+          DUEL   Δcorr +0.115 [-0.08,+0.30]   (Δshape-MAE -0.001  = shape+spread composite)  Δ|ln spread| -0.25   Δ|level| +0.011*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── SILVER PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=37 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+K9        OURS     +0.87*   [+0.72, +1.02]                  7.18      0.933  [0.87,0.97]   0.91    0.37   1.08    1.15   1.19     6%
+          cwhit    +0.94*   [+0.79, +1.09]                  7.18      0.939  [0.88,0.97]   0.91    0.35   1.09    1.16   1.20     6%
+          DUEL   Δcorr -0.005 [-0.01,+0.01]   (Δshape-MAE +0.02  = shape+spread composite)  Δ|ln spread| -0.01   Δ|level| -0.07*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: OURS
+BB9       OURS     +0.82*   [+0.73, +0.91]                  2.53      0.948  [0.90,0.97]   0.94    0.20   0.86    0.91   0.93     5%
+          cwhit    +0.00    [-0.08, +0.08]                  2.53      0.958  [0.92,0.98]   0.95    0.19   0.82    0.86   0.88     5%
+          DUEL   Δcorr -0.009 [-0.02,+0.00]   (Δshape-MAE +0.02  = shape+spread composite)  Δ|ln spread| -0.06   Δ|level| +0.82*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+HR9       OURS     +0.14*   [+0.10, +0.18]                  0.88      0.832  [0.69,0.91]   0.83    0.09   0.83    1.00   1.16    26%
+          cwhit    +0.04*   [+0.00, +0.09]                  0.88      0.797  [0.64,0.89]   0.82    0.11   0.84    1.06   1.23    26%
+          DUEL   Δcorr +0.035 [-0.02,+0.09]   (Δshape-MAE -0.02  = shape+spread composite)  Δ|ln spread| -0.06   Δ|level| +0.10*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+BABIP     OURS    +0.009*   [+0.006, +0.012]               0.290      0.753  [0.57,0.87]   0.77   0.006   0.45    0.60   0.92    58%
+          cwhit   +0.001    [-0.002, +0.004]               0.290      0.754  [0.57,0.87]   0.77   0.007   0.56    0.74   1.15    58%
+          DUEL   Δcorr -0.000 [-0.03,+0.04]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| +0.21*  Δ|level| +0.008*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: CWHIT
+wOBAA     OURS    +0.015*   [+0.012, +0.017]               0.308      0.562  [0.29,0.75]   0.59   0.006   0.40    0.72  UNREL    89%↑150%
+          cwhit   -0.004*   [-0.007, -0.002]               0.308      0.535  [0.26,0.73]   0.60   0.007   0.30    0.56  UNREL    89%↑150%
+          DUEL   Δcorr +0.027 [-0.12,+0.14]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| -0.25*  Δ|level| +0.010*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): OURS    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── SILVER HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=34 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+BB%       OURS     +1.23*   [+0.99, +1.46]                  6.26      0.964  [0.93,0.98]   0.96    0.55   1.01    1.05   1.07     3%
+          cwhit    +0.20*   [+0.00, +0.39]                  6.26      0.974  [0.95,0.99]   0.97    0.42   0.97    0.99   1.01     3%
+          DUEL   Δcorr -0.010 [-0.02,-0.00]*  (Δshape-MAE +0.13* = shape+spread composite)  Δ|ln spread| +0.04   Δ|level| +1.03*
+                 ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): TIE    LEVEL: CWHIT
+SO%(PA)   OURS     +3.43*   [+3.00, +3.85]                 17.39      0.977  [0.95,0.99]   0.97    0.97   0.95    0.98   0.98     1%
+          cwhit    -0.66*   [-0.97, -0.35]                 17.39      0.988  [0.98,0.99]   0.98    0.71   0.98    0.99   1.00     1%
+          DUEL   Δcorr -0.011 [-0.02,-0.00]*  (Δshape-MAE +0.26* = shape+spread composite)  Δ|ln spread| +0.02   Δ|level| +2.77*
+                 ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): TIE    LEVEL: CWHIT
+HR600     OURS     +0.89*   [+0.10, +1.67]                 18.35      0.943  [0.89,0.97]   0.94    1.95   0.71    0.75   0.79    10%
+          cwhit    +2.76*   [+2.04, +3.47]                 18.35      0.939  [0.88,0.97]   0.95    1.66   0.94    1.00   1.06    10%
+          DUEL   Δcorr +0.004 [-0.01,+0.02]   (Δshape-MAE +0.29  = shape+spread composite)  Δ|ln spread| +0.29*  Δ|level| -1.87*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: OURS
+BABIP     OURS    +0.018*   [+0.014, +0.023]               0.289      0.767  [0.58,0.88]   0.76   0.010   0.66    0.86   1.01    27%
+          cwhit   +0.005*   [+0.001, +0.009]               0.289      0.773  [0.59,0.88]   0.79   0.010   0.63    0.82   0.96    27%
+          DUEL   Δcorr -0.007 [-0.09,+0.08]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.05   Δ|level| +0.013*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+wOBA      OURS    +0.010*   [+0.006, +0.015]               0.323      0.505  [0.20,0.72]   0.55   0.010   0.27    0.53   0.68    39%
+          cwhit   +0.004    [-0.001, +0.008]               0.323      0.497  [0.19,0.72]   0.51   0.011   0.28    0.56   0.72    39%
+          DUEL   Δcorr +0.007 [-0.21,+0.24]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| +0.06   Δ|level| +0.007*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── GOLD PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=28 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+K9        OURS     -0.10    [-0.23, +0.03]                  7.99      0.900  [0.79,0.95]   0.84    0.25   0.93    1.04   1.13    16%
+          cwhit    +1.04*   [+0.90, +1.18]                  7.99      0.894  [0.78,0.95]   0.83    0.27   0.98    1.10   1.20    16%
+          DUEL   Δcorr +0.006 [-0.00,+0.02]   (Δshape-MAE -0.02  = shape+spread composite)  Δ|ln spread| -0.06   Δ|level| -0.94*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: OURS
+BB9       OURS     +0.68*   [+0.57, +0.80]                  2.51      0.920  [0.83,0.96]   0.95    0.25   0.89    0.97   0.99     6%
+          cwhit    +0.09    [-0.01, +0.20]                  2.51      0.940  [0.87,0.97]   0.95    0.21   0.80    0.85   0.87     6%
+          DUEL   Δcorr -0.019 [-0.04,+0.00]   (Δshape-MAE +0.04  = shape+spread composite)  Δ|ln spread| -0.13   Δ|level| +0.59*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+HR9       OURS     +0.19*   [+0.15, +0.24]                  0.83      0.795  [0.60,0.90]   0.78    0.08   0.88    1.11   1.40    37%
+          cwhit    +0.11*   [+0.06, +0.15]                  0.83      0.781  [0.58,0.89]   0.78    0.09   0.77    0.98   1.24    37%
+          DUEL   Δcorr +0.014 [-0.02,+0.05]   (Δshape-MAE -0.00  = shape+spread composite)  Δ|ln spread| +0.08   Δ|level| +0.08*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+BABIP     OURS    +0.004    [-0.001, +0.008]               0.299      0.624  [0.33,0.81]   0.73   0.009   0.33    0.53   0.71    45%
+          cwhit   -0.005*   [-0.009, -0.000]               0.299      0.667  [0.39,0.83]   0.74   0.008   0.40    0.60   0.82    45%
+          DUEL   Δcorr -0.043 [-0.10,+0.02]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| +0.14*  Δ|level| -0.001 
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: TIE
+wOBAA     OURS    +0.019*   [+0.015, +0.023]               0.306      0.292  [-0.09,0.60]   0.38   0.009   0.13    0.44  UNREL    66%↑134%
+          cwhit   -0.005*   [-0.009, -0.001]               0.306      0.390  [0.02,0.67]   0.52   0.008   0.14    0.35  UNREL    66%↑134%
+          DUEL   Δcorr -0.098 [-0.27,+0.05]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.23   Δ|level| +0.014*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── GOLD HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=26 ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+BB%       OURS     +1.54*   [+1.26, +1.83]                  6.67      0.946  [0.88,0.98]   0.96    0.51   1.10    1.16   1.22     9%
+          cwhit    +0.15    [-0.08, +0.37]                  6.67      0.952  [0.89,0.98]   0.96    0.44   0.96    1.01   1.06     9%
+          DUEL   Δcorr -0.005 [-0.02,+0.01]   (Δshape-MAE +0.07  = shape+spread composite)  Δ|ln spread| +0.14   Δ|level| +1.40*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+SO%(PA)   OURS     +1.37*   [+1.05, +1.70]                 18.26      0.990  [0.98,1.00]   0.97    0.65   0.92    0.93   0.94     3%
+          cwhit    -0.61*   [-0.90, -0.33]                 18.26      0.991  [0.98,1.00]   0.98    0.53   0.97    0.98   0.99     3%
+          DUEL   Δcorr -0.001 [-0.01,+0.01]   (Δshape-MAE +0.12  = shape+spread composite)  Δ|ln spread| +0.05*  Δ|level| +0.76*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): CWHIT    LEVEL: CWHIT
+HR600     OURS     -0.12    [-1.29, +1.06]                 18.24      0.906  [0.80,0.96]   0.88    2.71   0.72    0.79   0.85    13%
+          cwhit    +2.30*   [+1.15, +3.44]                 18.24      0.912  [0.81,0.96]   0.87    2.17   0.94    1.03   1.11    13%
+          DUEL   Δcorr -0.006 [-0.03,+0.01]   (Δshape-MAE +0.55  = shape+spread composite)  Δ|ln spread| +0.20   Δ|level| -2.18 
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
+BABIP     OURS    +0.014*   [+0.011, +0.018]               0.292      0.905  [0.80,0.96]   0.88   0.007   0.84    0.93   1.17    37%
+          cwhit   +0.000    [-0.003, +0.004]               0.292      0.891  [0.77,0.95]   0.90   0.007   0.81    0.90   1.14    37%
+          DUEL   Δcorr +0.013 [-0.02,+0.04]   (Δshape-MAE +0.000  = shape+spread composite)  Δ|ln spread| -0.03   Δ|level| +0.014*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+wOBA      OURS    +0.012*   [+0.008, +0.016]               0.324      0.459  [0.09,0.72]   0.34   0.009   0.29    0.63  UNREL   106%↑207%
+          cwhit   -0.002    [-0.006, +0.003]               0.324      0.395  [0.01,0.68]   0.19   0.010   0.22    0.55  UNREL   106%↑207%
+          DUEL   Δcorr +0.064 [-0.05,+0.22]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| -0.14   Δ|level| +0.010*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── DIAMOND PITCHERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=15  ⚠THIN (no absolute-spread weight) ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+K9        OURS     +0.57*   [+0.38, +0.76]                  7.57      0.910  [0.74,0.97]   0.89    0.26   1.08    1.19   1.40    28%
+          cwhit    +1.52*   [+1.33, +1.71]                  7.57      0.925  [0.79,0.98]   0.89    0.26   1.16    1.25   1.47    28%
+          DUEL   Δcorr -0.016 [-0.03,-0.00]*  (Δshape-MAE +0.01  = shape+spread composite)  Δ|ln spread| -0.05   Δ|level| -0.95*
+                 ⇒  SHAPE(ordering): CWHIT    SPREAD(scale): TIE    LEVEL: OURS
+BB9       OURS     +0.91*   [+0.74, +1.08]                  2.27      0.863  [0.63,0.95]   0.85    0.28   0.84    0.97   1.05    14%
+          cwhit    +0.29*   [+0.14, +0.44]                  2.27      0.893  [0.70,0.96]   0.87    0.21   0.72    0.80   0.87    14%
+          DUEL   Δcorr -0.030 [-0.07,+0.01]   (Δshape-MAE +0.06  = shape+spread composite)  Δ|ln spread| -0.19   Δ|level| +0.62*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+HR9       OURS     +0.20*   [+0.15, +0.25]                  0.78      0.730  [0.35,0.90]   0.70    0.08   0.56    0.77  UNREL    90%↑182%
+          cwhit    +0.16*   [+0.10, +0.21]                  0.78      0.685  [0.27,0.89]   0.72    0.09   0.49    0.71  UNREL    90%↑182%
+          DUEL   Δcorr +0.045 [-0.02,+0.10]   (Δshape-MAE -0.01  = shape+spread composite)  Δ|ln spread| -0.08   Δ|level| +0.04*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+BABIP     OURS    +0.009*   [+0.001, +0.017]               0.293      0.437  [-0.10,0.78]   0.30   0.012   0.15    0.34  UNREL    65%↑177%
+          cwhit   -0.001    [-0.009, +0.007]               0.293      0.447  [-0.09,0.78]   0.28   0.013   0.15    0.33  UNREL    65%↑177%
+          DUEL   Δcorr -0.009 [-0.12,+0.10]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| -0.04   Δ|level| +0.009 
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
+wOBAA     OURS    +0.021*   [+0.014, +0.028]               0.300      -0.033  [-0.54,0.49]   0.14   0.011  -0.02    0.50  UNREL    98%↑223%
+          cwhit   -0.002    [-0.009, +0.006]               0.300      -0.017  [-0.52,0.50]   0.05   0.010  -0.01    0.43  UNREL    98%↑223%
+          DUEL   Δcorr -0.016 [-0.23,+0.15]   (Δshape-MAE +0.001  = shape+spread composite)  Δ|ln spread| -0.15   Δ|level| +0.019*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+─── DIAMOND HITTERS — SECTION A: PROJECTION-JOINED SUBSAMPLE, N=10  ⚠THIN (no absolute-spread weight) ───
+     POPULATION: only cards carrying a cwhit PROJECTION ⇒ RANGE-RESTRICTED. This is NOT the general read.
+     For the full-sample figure on any channel below, read the SAME channel in SECTION B (observed-only).
+                 ┌──────────── LEVEL: mean(pred−obs) ─────────────┐ ┌─────────── SHAPE (de-meaned) ────────────┐ ┌────── SPREAD SD(pred)/SD(obs) ──────┐
+channel   who    bias        95% CI              obs mean          corr   [95% CI]      rho    MAE     slope    raw    dcv    noise%
+BB%       OURS     +1.06*   [+0.58, +1.55]                  5.91      0.948  [0.79,0.99]   0.92    0.63   1.24    1.31   1.41    14%
+          cwhit    +0.18    [-0.18, +0.54]                  5.91      0.949  [0.79,0.99]   0.94    0.44   1.04    1.10   1.19    14%
+          DUEL   Δcorr -0.001 [-0.01,+0.01]   (Δshape-MAE +0.19  = shape+spread composite)  Δ|ln spread| +0.17   Δ|level| +0.88*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+SO%(PA)   OURS     +0.49    [-0.04, +1.02]                 15.53      0.979  [0.91,1.00]   0.98    0.76   0.93    0.95   0.98     5%
+          cwhit    -0.69*   [-1.31, -0.06]                 15.53      0.980  [0.91,1.00]   0.98    0.78   1.09    1.12   1.15     5%
+          DUEL   Δcorr -0.001 [-0.02,+0.01]   (Δshape-MAE -0.02  = shape+spread composite)  Δ|ln spread| -0.06   Δ|level| -0.20 
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
+HR600     OURS     +0.63    [-1.56, +2.81]                 14.60      0.859  [0.50,0.97]   0.84    2.35   0.60    0.69   0.75    14%
+          cwhit    +1.90    [-0.21, +4.01]                 14.60      0.858  [0.50,0.97]   0.85    2.16   0.67    0.78   0.84    14%
+          DUEL   Δcorr +0.000 [-0.02,+0.01]   (Δshape-MAE +0.19  = shape+spread composite)  Δ|ln spread| +0.11   Δ|level| -1.27 
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
+BABIP     OURS    +0.013*   [+0.007, +0.018]               0.291      0.955  [0.82,0.99]   0.98   0.006   0.69    0.72  UNREL    34%↑215%
+          cwhit   +0.002    [-0.004, +0.008]               0.291      0.955  [0.82,0.99]   0.92   0.007   0.63    0.66  UNREL    34%↑215%
+          DUEL   Δcorr -0.001 [-0.05,+0.08]   (Δshape-MAE -0.000  = shape+spread composite)  Δ|ln spread| -0.08   Δ|level| +0.011*
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: CWHIT
+wOBA      OURS    +0.014*   [+0.006, +0.022]               0.321      0.799  [0.34,0.95]   0.42   0.011   0.42    0.53  UNREL    44%↑454%
+          cwhit   +0.001    [-0.007, +0.009]               0.321      0.908  [0.65,0.98]   0.87   0.009   0.40    0.44  UNREL    44%↑454%
+          DUEL   Δcorr -0.110 [-0.98,+0.03]   (Δshape-MAE +0.003  = shape+spread composite)  Δ|ln spread| -0.17   Δ|level| +0.013 
+                 ⇒  SHAPE(ordering): TIE    SPREAD(scale): TIE    LEVEL: TIE
+  (* = 95% CI excludes 0. DUEL CIs are a 2000-rep PAIRED bootstrap over cards — paired because both models are scored on the SAME cards, so shared card difficulty cancels.)
+  (UNREL in the dcv column = the noise-share CI upper crosses 100% (printed as ↑x%), i.e. sampling noise may exceed TOTAL observed variance ⇒ the deconvolved SD collapses and dcv is
+   NOT a measurement. The RAW ratio beside it is still readable. ⚠THIN = N < 20. Neither marker invalidates the DUEL verdict: duels score both models on the SAME observed
+   series, so noise cancels BETWEEN them — what these markers bound is the ABSOLUTE "are we at 1.0×" read, which is exactly the read that produced a retracted finding. See plan §15.8.)
+
+
+╔═══ B. OBSERVED-ONLY AXIS — ours vs observed, EVERY tier (no cwhit projection needed) ═══════╗
+IRON GATE: our levels/spread/concordance at iron have never been tested (frame gaps k≈1.6–2.2). Iron appears here whether or not a projected table exists.
+
+─── PITCHERS ───
+tier      chan       N    LEVEL bias [95% CI]              corr    rho    SHAPE MAE   SPREAD raw / dcv
+iron      K9         98      +0.21* [+0.13, +0.29]                0.969   0.96      0.29     0.91 / 0.92
+iron      BB9        98      +0.63* [+0.58, +0.68]                0.945   0.91      0.21     0.87 / 0.89
+iron      HR9        98      +0.20* [+0.18, +0.23]                0.845   0.81      0.10     0.85 / 0.94
+iron      BABIP      98     +0.010* [+0.008, +0.012]              0.611   0.63     0.008     0.54 / 0.73
+iron      wOBAA      98     +0.022* [+0.019, +0.024]              0.586   0.63     0.009     0.61 / 0.73
+bronze    K9         98      +0.61* [+0.52, +0.69]                0.960   0.96      0.30     1.00 / 1.01
+bronze    BB9        98      +0.78* [+0.73, +0.82]                0.960   0.94      0.15     0.96 / 0.98
+bronze    HR9        98      +0.22* [+0.20, +0.25]                0.866   0.85      0.10     0.98 / 1.06
+bronze    BABIP      98     +0.011* [+0.009, +0.012]              0.738   0.71     0.007     0.57 / 0.76
+bronze    wOBAA      98     +0.021* [+0.019, +0.023]              0.683   0.64     0.008     0.80 / 0.99
+silver    K9         69      +0.81* [+0.70, +0.91]                0.952   0.95      0.36     1.10 / 1.13
+silver    BB9        69      +0.86* [+0.80, +0.92]                0.957   0.95      0.19     0.99 / 1.02
+silver    HR9        69      +0.16* [+0.13, +0.20]                0.861   0.88      0.10     0.92 / 1.04
+silver    BABIP      69     +0.008* [+0.005, +0.011]              0.600   0.64     0.009     0.46 / 0.68
+silver    wOBAA      69     +0.016* [+0.013, +0.019]              0.627   0.60     0.009     0.72 / 0.97
+gold      K9         49      -0.06  [-0.17, +0.05]                0.951   0.91      0.29     0.89 / 0.93
+gold      BB9        49      +0.66* [+0.58, +0.74]                0.943   0.96      0.21     0.95 / 0.98
+gold      HR9        49      +0.18* [+0.14, +0.22]                0.826   0.82      0.10     0.95 / 1.09
+gold      BABIP      49     +0.006* [+0.002, +0.009]              0.692   0.74     0.009     0.52 / 0.71
+gold      wOBAA      49     +0.020* [+0.017, +0.023]              0.515   0.54     0.009     0.66 / 1.05
+diamond   K9         28      +0.54* [+0.39, +0.68]                0.930   0.92      0.30     1.10 / 1.21
+diamond   BB9        28      +0.89* [+0.76, +1.02]                0.887   0.88      0.29     1.10 / 1.18
+diamond   HR9        28      +0.18* [+0.13, +0.23]                0.737   0.58      0.10     0.77 / 1.13
+diamond   BABIP      28     +0.008* [+0.003, +0.013]              0.470   0.38     0.010     0.46 / 1.88
+diamond   wOBAA      28     +0.019* [+0.014, +0.024]              0.337   0.37     0.011     0.64 / 2.95
+
+─── HITTERS ───
+tier      chan       N    LEVEL bias [95% CI]              corr    rho    SHAPE MAE   SPREAD raw / dcv
+iron      BB%       100      +0.92* [+0.75, +1.10]                0.939   0.95      0.71     0.80 / 0.82
+iron      SO%(PA)   100      +3.02* [+2.80, +3.24]                0.970   0.97      0.83     0.96 / 0.97
+iron      HR600     100      +1.54* [+0.92, +2.15]                0.934   0.95      2.38     0.96 / 0.98
+iron      BABIP     100     +0.015* [+0.013, +0.017]              0.931   0.94     0.008     0.86 / 0.91
+iron      wOBA      100     +0.011* [+0.008, +0.014]              0.737   0.76     0.011     0.88 / 0.96
+bronze    BB%        99      +0.73* [+0.58, +0.87]                0.960   0.97      0.58     0.88 / 0.89
+bronze    SO%(PA)    99      +3.19* [+2.97, +3.41]                0.982   0.98      0.86     1.00 / 1.01
+bronze    HR600      99      +1.78* [+1.29, +2.27]                0.950   0.95      1.99     1.10 / 1.12
+bronze    BABIP      99     +0.016* [+0.014, +0.018]              0.889   0.88     0.008     0.99 / 1.05
+bronze    wOBA       99     +0.011* [+0.008, +0.013]              0.746   0.71     0.010     0.92 / 1.00
+silver    BB%        78      +1.23* [+1.06, +1.41]                0.952   0.97      0.57     1.07 / 1.09
+silver    SO%(PA)    78      +3.63* [+3.31, +3.94]                0.968   0.96      1.03     0.93 / 0.94
+silver    HR600      78      +0.70* [+0.21, +1.18]                0.947   0.96      1.82     0.94 / 0.98
+silver    BABIP      78     +0.019* [+0.016, +0.022]              0.806   0.79     0.010     0.83 / 0.94
+silver    wOBA       78     +0.010* [+0.007, +0.013]              0.793   0.73     0.011     0.76 / 0.84
+gold      BB%        64      +1.57* [+1.39, +1.74]                0.950   0.95      0.55     1.14 / 1.19
+gold      SO%(PA)    64      +1.23* [+0.97, +1.50]                0.982   0.97      0.84     0.91 / 0.92
+gold      HR600      64      +0.03  [-0.59, +0.66]                0.935   0.92      2.13     0.84 / 0.90
+gold      BABIP      64     +0.015* [+0.011, +0.018]              0.837   0.83     0.010     0.86 / 1.01
+gold      wOBA       64     +0.013* [+0.010, +0.016]              0.707   0.72     0.009     0.79 / 1.18
+diamond   BB%        17      +0.91* [+0.53, +1.28]                0.918   0.94      0.64     1.06 / 1.11
+diamond   SO%(PA)    17      +0.56* [+0.13, +0.99]                0.980   0.98      0.79     0.94 / 0.96
+diamond   HR600      17      +1.18  [-0.23, +2.60]                0.861   0.89      2.03     0.76 / 0.82
+diamond   BABIP      17     +0.014* [+0.010, +0.019]              0.877   0.80     0.007     0.75 / 1.08
+diamond   wOBA       17     +0.016* [+0.010, +0.022]              0.804   0.58     0.010     0.58 / 0.75
+
+
+╔═══ C. WHERE UNIVERSAL (ours) BEATS NATIVE (cwhit), AND WHERE IT DOES NOT ═══════════════════╗
+
+  ── ON SHAPE / ORDERING (the M8-relevant axis: per-card discrimination after level alignment; scale-free) ──
+
+  WE WIN on shape (CI-clear):
+    bronze    hit  HR600    Δcorr +0.011*  Δ|ln spread| +0.08   Δ|level| +0.152 
+
+  WE LOSE on shape (CI-clear) — the M8 case, IF it survives the window caveat:
+    bronze    hit  BABIP    Δcorr -0.047*  Δ|ln spread| +0.03   Δ|level| +0.015*
+    silver    hit  BB%      Δcorr -0.010*  Δ|ln spread| +0.04   Δ|level| +1.028*
+    silver    hit  SO%(PA)  Δcorr -0.011*  Δ|ln spread| +0.02   Δ|level| +2.766*
+    diamond   pit  K9       Δcorr -0.016*  Δ|ln spread| -0.05   Δ|level| -0.952*
+
+  TIE on shape (CI includes 0) — no evidence either model discriminates better:
+    iron      pit  K9       Δcorr +0.002   Δ|ln spread| -0.08   Δ|level| -0.741*
+    iron      pit  BB9      Δcorr -0.009   Δ|ln spread| +0.02   Δ|level| +0.617*
+    iron      pit  HR9      Δcorr -0.029   Δ|ln spread| +0.19   Δ|level| +0.131*
+    iron      pit  BABIP    Δcorr -0.019   Δ|ln spread| +0.06   Δ|level| +0.011*
+    iron      pit  wOBAA    Δcorr -0.098   Δ|ln spread| -0.03   Δ|level| +0.020*
+    iron      hit  BB%      Δcorr -0.019   Δ|ln spread| +0.15*  Δ|level| +0.720*
+    iron      hit  SO%(PA)  Δcorr -0.008   Δ|ln spread| +0.03   Δ|level| +2.739*
+    iron      hit  HR600    Δcorr -0.006   Δ|ln spread| +0.13   Δ|level| -1.283*
+    iron      hit  BABIP    Δcorr +0.007   Δ|ln spread| -0.12   Δ|level| +0.013*
+    iron      hit  wOBA     Δcorr -0.037   Δ|ln spread| -0.06   Δ|level| +0.010*
+    bronze    pit  K9       Δcorr +0.001   Δ|ln spread| +0.09   Δ|level| -0.363*
+    bronze    pit  BB9      Δcorr -0.015   Δ|ln spread| -0.11   Δ|level| +0.701*
+    bronze    pit  HR9      Δcorr -0.006   Δ|ln spread| -0.03   Δ|level| +0.111*
+    bronze    pit  BABIP    Δcorr -0.025   Δ|ln spread| +0.32*  Δ|level| +0.010*
+    bronze    pit  wOBAA    Δcorr -0.102   Δ|ln spread| -0.37*  Δ|level| +0.019*
+    bronze    hit  BB%      Δcorr -0.010   Δ|ln spread| +0.12   Δ|level| +0.382*
+    bronze    hit  SO%(PA)  Δcorr -0.007   Δ|ln spread| -0.04   Δ|level| +2.694*
+    bronze    hit  wOBA     Δcorr +0.115   Δ|ln spread| -0.25   Δ|level| +0.011*
+    silver    pit  K9       Δcorr -0.005   Δ|ln spread| -0.01   Δ|level| -0.074*
+    silver    pit  BB9      Δcorr -0.009   Δ|ln spread| -0.06   Δ|level| +0.821*
+    silver    pit  HR9      Δcorr +0.035   Δ|ln spread| -0.06   Δ|level| +0.097*
+    silver    pit  BABIP    Δcorr -0.000   Δ|ln spread| +0.21*  Δ|level| +0.008*
+    silver    pit  wOBAA    Δcorr +0.027   Δ|ln spread| -0.25*  Δ|level| +0.010*
+    silver    hit  HR600    Δcorr +0.004   Δ|ln spread| +0.29*  Δ|level| -1.870*
+    silver    hit  BABIP    Δcorr -0.007   Δ|ln spread| -0.05   Δ|level| +0.013*
+    silver    hit  wOBA     Δcorr +0.007   Δ|ln spread| +0.06   Δ|level| +0.007*
+    gold      pit  K9       Δcorr +0.006   Δ|ln spread| -0.06   Δ|level| -0.937*
+    gold      pit  BB9      Δcorr -0.019   Δ|ln spread| -0.13   Δ|level| +0.591*
+    gold      pit  HR9      Δcorr +0.014   Δ|ln spread| +0.08   Δ|level| +0.084*
+    gold      pit  BABIP    Δcorr -0.043   Δ|ln spread| +0.14*  Δ|level| -0.001 
+    gold      pit  wOBAA    Δcorr -0.098   Δ|ln spread| -0.23   Δ|level| +0.014*
+    gold      hit  BB%      Δcorr -0.005   Δ|ln spread| +0.14   Δ|level| +1.397*
+    gold      hit  SO%(PA)  Δcorr -0.001   Δ|ln spread| +0.05*  Δ|level| +0.759*
+    gold      hit  HR600    Δcorr -0.006   Δ|ln spread| +0.20   Δ|level| -2.181 
+    gold      hit  BABIP    Δcorr +0.013   Δ|ln spread| -0.03   Δ|level| +0.014*
+    gold      hit  wOBA     Δcorr +0.064   Δ|ln spread| -0.14   Δ|level| +0.010*
+    diamond   pit  BB9      Δcorr -0.030   Δ|ln spread| -0.19   Δ|level| +0.617*
+    diamond   pit  HR9      Δcorr +0.045   Δ|ln spread| -0.08   Δ|level| +0.043*
+    diamond   pit  BABIP    Δcorr -0.009   Δ|ln spread| -0.04   Δ|level| +0.009 
+    diamond   pit  wOBAA    Δcorr -0.016   Δ|ln spread| -0.15   Δ|level| +0.019*
+    diamond   hit  BB%      Δcorr -0.001   Δ|ln spread| +0.17   Δ|level| +0.885*
+    diamond   hit  SO%(PA)  Δcorr -0.001   Δ|ln spread| -0.06   Δ|level| -0.196 
+    diamond   hit  HR600    Δcorr +0.000   Δ|ln spread| +0.11   Δ|level| -1.274 
+    diamond   hit  BABIP    Δcorr -0.001   Δ|ln spread| -0.08   Δ|level| +0.011*
+    diamond   hit  wOBA     Δcorr -0.110   Δ|ln spread| -0.17   Δ|level| +0.013 
+
+  ── ON SPREAD / SCALE (who sits closer to 1.0× the observed card-to-card spread) ──
+
+  WE WIN on spread:
+    bronze    pit  wOBAA    Δcorr -0.102   Δ|ln spread| -0.37*  Δ|level| +0.019*
+    silver    pit  wOBAA    Δcorr +0.027   Δ|ln spread| -0.25*  Δ|level| +0.010*
+
+  WE LOSE on spread:
+    iron      hit  BB%      Δcorr -0.019   Δ|ln spread| +0.15*  Δ|level| +0.720*
+    bronze    pit  BABIP    Δcorr -0.025   Δ|ln spread| +0.32*  Δ|level| +0.010*
+    silver    pit  BABIP    Δcorr -0.000   Δ|ln spread| +0.21*  Δ|level| +0.008*
+    silver    hit  HR600    Δcorr +0.004   Δ|ln spread| +0.29*  Δ|level| -1.870*
+    gold      pit  BABIP    Δcorr -0.043   Δ|ln spread| +0.14*  Δ|level| -0.001 
+    gold      hit  SO%(PA)  Δcorr -0.001   Δ|ln spread| +0.05*  Δ|level| +0.759*
+
+  TIE on spread:
+    iron      pit  K9       Δcorr +0.002   Δ|ln spread| -0.08   Δ|level| -0.741*
+    iron      pit  BB9      Δcorr -0.009   Δ|ln spread| +0.02   Δ|level| +0.617*
+    iron      pit  HR9      Δcorr -0.029   Δ|ln spread| +0.19   Δ|level| +0.131*
+    iron      pit  BABIP    Δcorr -0.019   Δ|ln spread| +0.06   Δ|level| +0.011*
+    iron      pit  wOBAA    Δcorr -0.098   Δ|ln spread| -0.03   Δ|level| +0.020*
+    iron      hit  SO%(PA)  Δcorr -0.008   Δ|ln spread| +0.03   Δ|level| +2.739*
+    iron      hit  HR600    Δcorr -0.006   Δ|ln spread| +0.13   Δ|level| -1.283*
+    iron      hit  BABIP    Δcorr +0.007   Δ|ln spread| -0.12   Δ|level| +0.013*
+    iron      hit  wOBA     Δcorr -0.037   Δ|ln spread| -0.06   Δ|level| +0.010*
+    bronze    pit  K9       Δcorr +0.001   Δ|ln spread| +0.09   Δ|level| -0.363*
+    bronze    pit  BB9      Δcorr -0.015   Δ|ln spread| -0.11   Δ|level| +0.701*
+    bronze    pit  HR9      Δcorr -0.006   Δ|ln spread| -0.03   Δ|level| +0.111*
+    bronze    hit  BB%      Δcorr -0.010   Δ|ln spread| +0.12   Δ|level| +0.382*
+    bronze    hit  SO%(PA)  Δcorr -0.007   Δ|ln spread| -0.04   Δ|level| +2.694*
+    bronze    hit  HR600    Δcorr +0.011*  Δ|ln spread| +0.08   Δ|level| +0.152 
+    bronze    hit  BABIP    Δcorr -0.047*  Δ|ln spread| +0.03   Δ|level| +0.015*
+    bronze    hit  wOBA     Δcorr +0.115   Δ|ln spread| -0.25   Δ|level| +0.011*
+    silver    pit  K9       Δcorr -0.005   Δ|ln spread| -0.01   Δ|level| -0.074*
+    silver    pit  BB9      Δcorr -0.009   Δ|ln spread| -0.06   Δ|level| +0.821*
+    silver    pit  HR9      Δcorr +0.035   Δ|ln spread| -0.06   Δ|level| +0.097*
+    silver    hit  BB%      Δcorr -0.010*  Δ|ln spread| +0.04   Δ|level| +1.028*
+    silver    hit  SO%(PA)  Δcorr -0.011*  Δ|ln spread| +0.02   Δ|level| +2.766*
+    silver    hit  BABIP    Δcorr -0.007   Δ|ln spread| -0.05   Δ|level| +0.013*
+    silver    hit  wOBA     Δcorr +0.007   Δ|ln spread| +0.06   Δ|level| +0.007*
+    gold      pit  K9       Δcorr +0.006   Δ|ln spread| -0.06   Δ|level| -0.937*
+    gold      pit  BB9      Δcorr -0.019   Δ|ln spread| -0.13   Δ|level| +0.591*
+    gold      pit  HR9      Δcorr +0.014   Δ|ln spread| +0.08   Δ|level| +0.084*
+    gold      pit  wOBAA    Δcorr -0.098   Δ|ln spread| -0.23   Δ|level| +0.014*
+    gold      hit  BB%      Δcorr -0.005   Δ|ln spread| +0.14   Δ|level| +1.397*
+    gold      hit  HR600    Δcorr -0.006   Δ|ln spread| +0.20   Δ|level| -2.181 
+    gold      hit  BABIP    Δcorr +0.013   Δ|ln spread| -0.03   Δ|level| +0.014*
+    gold      hit  wOBA     Δcorr +0.064   Δ|ln spread| -0.14   Δ|level| +0.010*
+    diamond   pit  K9       Δcorr -0.016*  Δ|ln spread| -0.05   Δ|level| -0.952*
+    diamond   pit  BB9      Δcorr -0.030   Δ|ln spread| -0.19   Δ|level| +0.617*
+    diamond   pit  HR9      Δcorr +0.045   Δ|ln spread| -0.08   Δ|level| +0.043*
+    diamond   pit  BABIP    Δcorr -0.009   Δ|ln spread| -0.04   Δ|level| +0.009 
+    diamond   pit  wOBAA    Δcorr -0.016   Δ|ln spread| -0.15   Δ|level| +0.019*
+    diamond   hit  BB%      Δcorr -0.001   Δ|ln spread| +0.17   Δ|level| +0.885*
+    diamond   hit  SO%(PA)  Δcorr -0.001   Δ|ln spread| -0.06   Δ|level| -0.196 
+    diamond   hit  HR600    Δcorr +0.000   Δ|ln spread| +0.11   Δ|level| -1.274 
+    diamond   hit  BABIP    Δcorr -0.001   Δ|ln spread| -0.08   Δ|level| +0.011*
+    diamond   hit  wOBA     Δcorr -0.110   Δ|ln spread| -0.17   Δ|level| +0.013 
+
+  ── ON LEVEL (may restate a KNOWN, ACCEPTED out-of-frame gap — not automatically a defect) ──
+
+  WE WIN on level:
+    iron      pit  K9       Δcorr +0.002   Δ|ln spread| -0.08   Δ|level| -0.741*
+    iron      hit  HR600    Δcorr -0.006   Δ|ln spread| +0.13   Δ|level| -1.283*
+    bronze    pit  K9       Δcorr +0.001   Δ|ln spread| +0.09   Δ|level| -0.363*
+    silver    pit  K9       Δcorr -0.005   Δ|ln spread| -0.01   Δ|level| -0.074*
+    silver    hit  HR600    Δcorr +0.004   Δ|ln spread| +0.29*  Δ|level| -1.870*
+    gold      pit  K9       Δcorr +0.006   Δ|ln spread| -0.06   Δ|level| -0.937*
+    diamond   pit  K9       Δcorr -0.016*  Δ|ln spread| -0.05   Δ|level| -0.952*
+
+  WE LOSE on level:
+    iron      pit  BB9      Δcorr -0.009   Δ|ln spread| +0.02   Δ|level| +0.617*
+    iron      pit  HR9      Δcorr -0.029   Δ|ln spread| +0.19   Δ|level| +0.131*
+    iron      pit  BABIP    Δcorr -0.019   Δ|ln spread| +0.06   Δ|level| +0.011*
+    iron      pit  wOBAA    Δcorr -0.098   Δ|ln spread| -0.03   Δ|level| +0.020*
+    iron      hit  BB%      Δcorr -0.019   Δ|ln spread| +0.15*  Δ|level| +0.720*
+    iron      hit  SO%(PA)  Δcorr -0.008   Δ|ln spread| +0.03   Δ|level| +2.739*
+    iron      hit  BABIP    Δcorr +0.007   Δ|ln spread| -0.12   Δ|level| +0.013*
+    iron      hit  wOBA     Δcorr -0.037   Δ|ln spread| -0.06   Δ|level| +0.010*
+    bronze    pit  BB9      Δcorr -0.015   Δ|ln spread| -0.11   Δ|level| +0.701*
+    bronze    pit  HR9      Δcorr -0.006   Δ|ln spread| -0.03   Δ|level| +0.111*
+    bronze    pit  BABIP    Δcorr -0.025   Δ|ln spread| +0.32*  Δ|level| +0.010*
+    bronze    pit  wOBAA    Δcorr -0.102   Δ|ln spread| -0.37*  Δ|level| +0.019*
+    bronze    hit  BB%      Δcorr -0.010   Δ|ln spread| +0.12   Δ|level| +0.382*
+    bronze    hit  SO%(PA)  Δcorr -0.007   Δ|ln spread| -0.04   Δ|level| +2.694*
+    bronze    hit  BABIP    Δcorr -0.047*  Δ|ln spread| +0.03   Δ|level| +0.015*
+    bronze    hit  wOBA     Δcorr +0.115   Δ|ln spread| -0.25   Δ|level| +0.011*
+    silver    pit  BB9      Δcorr -0.009   Δ|ln spread| -0.06   Δ|level| +0.821*
+    silver    pit  HR9      Δcorr +0.035   Δ|ln spread| -0.06   Δ|level| +0.097*
+    silver    pit  BABIP    Δcorr -0.000   Δ|ln spread| +0.21*  Δ|level| +0.008*
+    silver    pit  wOBAA    Δcorr +0.027   Δ|ln spread| -0.25*  Δ|level| +0.010*
+    silver    hit  BB%      Δcorr -0.010*  Δ|ln spread| +0.04   Δ|level| +1.028*
+    silver    hit  SO%(PA)  Δcorr -0.011*  Δ|ln spread| +0.02   Δ|level| +2.766*
+    silver    hit  BABIP    Δcorr -0.007   Δ|ln spread| -0.05   Δ|level| +0.013*
+    silver    hit  wOBA     Δcorr +0.007   Δ|ln spread| +0.06   Δ|level| +0.007*
+    gold      pit  BB9      Δcorr -0.019   Δ|ln spread| -0.13   Δ|level| +0.591*
+    gold      pit  HR9      Δcorr +0.014   Δ|ln spread| +0.08   Δ|level| +0.084*
+    gold      pit  wOBAA    Δcorr -0.098   Δ|ln spread| -0.23   Δ|level| +0.014*
+    gold      hit  BB%      Δcorr -0.005   Δ|ln spread| +0.14   Δ|level| +1.397*
+    gold      hit  SO%(PA)  Δcorr -0.001   Δ|ln spread| +0.05*  Δ|level| +0.759*
+    gold      hit  BABIP    Δcorr +0.013   Δ|ln spread| -0.03   Δ|level| +0.014*
+    gold      hit  wOBA     Δcorr +0.064   Δ|ln spread| -0.14   Δ|level| +0.010*
+    diamond   pit  BB9      Δcorr -0.030   Δ|ln spread| -0.19   Δ|level| +0.617*
+    diamond   pit  HR9      Δcorr +0.045   Δ|ln spread| -0.08   Δ|level| +0.043*
+    diamond   pit  wOBAA    Δcorr -0.016   Δ|ln spread| -0.15   Δ|level| +0.019*
+    diamond   hit  BB%      Δcorr -0.001   Δ|ln spread| +0.17   Δ|level| +0.885*
+    diamond   hit  BABIP    Δcorr -0.001   Δ|ln spread| -0.08   Δ|level| +0.011*
+
+  TIE on level:
+    bronze    hit  HR600    Δcorr +0.011*  Δ|ln spread| +0.08   Δ|level| +0.152 
+    gold      pit  BABIP    Δcorr -0.043   Δ|ln spread| +0.14*  Δ|level| -0.001 
+    gold      hit  HR600    Δcorr -0.006   Δ|ln spread| +0.20   Δ|level| -2.181 
+    diamond   pit  BABIP    Δcorr -0.009   Δ|ln spread| -0.04   Δ|level| +0.009 
+    diamond   hit  SO%(PA)  Δcorr -0.001   Δ|ln spread| -0.06   Δ|level| -0.196 
+    diamond   hit  HR600    Δcorr +0.000   Δ|ln spread| +0.11   Δ|level| -1.274 
+    diamond   hit  wOBA     Δcorr -0.110   Δ|ln spread| -0.17   Δ|level| +0.013 
+
+  ⚠ READ EVERY "WE LOSE" ROW AGAINST THE WINDOW OVERLAP ABOVE: cwhit's model saw part of the judging window; ours did not. His wins are an UPPER BOUND on his true edge; our wins are, if anything, understated.
+
+
+╔═══ D. OVERLAP-CONFOUND PROBE — does cwhit's edge scale with how much of the judging window he was fit on? ═══╗
+If his edge is an artifact of semi-in-sample fitting, it must RISE with overlap%. A flat/absent gradient falsifies the confound as the primary cause.
+
+
+  ══ PITCHERS — tiers ordered by overlap% (LEAST in-sample first). Confound prediction: his edge RISES left→right. ══
+
+  ── HIS LEVEL EDGE, Δ|level| = |ours| − |cwhit| (POSITIVE = we lose = his edge) ──
+channel      bronze(60%)     iron(87%)  silver(100%)    gold(100%) diamond(100%)     corr w/ overlap%
+K9                 -0.36         -0.74         -0.07         -0.94         -0.95      -0.31
+BB9                +0.70         +0.62         +0.82         +0.59         +0.62      -0.09
+HR9                +0.11         +0.13         +0.10         +0.08         +0.04      -0.54
+BABIP             +0.010        +0.011        +0.008        -0.001        +0.009      -0.47
+wOBAA             +0.019        +0.020        +0.010        +0.014        +0.019      -0.49
+
+  ── HIS SHAPE EDGE, −Δcorr (POSITIVE = we lose = his edge; the M8 axis) ──
+channel      bronze(60%)     iron(87%)  silver(100%)    gold(100%) diamond(100%)     corr w/ overlap%
+K9                -0.001        -0.002        +0.005        -0.006        +0.016       0.34
+BB9               +0.015        +0.009        +0.009        +0.019        +0.030       0.28
+HR9               +0.006        +0.029        -0.035        -0.014        -0.045      -0.60
+BABIP             +0.025        +0.019        +0.000        +0.043        +0.009      -0.19
+wOBAA             +0.102        +0.098        -0.027        +0.098        +0.016      -0.56
+
+
+  ══ HITTERS — tiers ordered by overlap% (LEAST in-sample first). Confound prediction: his edge RISES left→right. ══
+
+  ── HIS LEVEL EDGE, Δ|level| = |ours| − |cwhit| (POSITIVE = we lose = his edge) ──
+channel      bronze(60%)     iron(87%)  silver(100%)    gold(100%) diamond(100%)     corr w/ overlap%
+BB%                +0.38         +0.72         +1.03         +1.40         +0.88       0.85
+SO%(PA)            +2.69         +2.74         +2.77         +0.76         -0.20      -0.53
+HR600              +0.15         -1.28         -1.87         -2.18         -1.27      -0.93
+BABIP             +0.015        +0.013        +0.013        +0.014        +0.011      -0.68
+wOBA              +0.011        +0.010        +0.007        +0.010        +0.013      -0.24
+
+  ── HIS SHAPE EDGE, −Δcorr (POSITIVE = we lose = his edge; the M8 axis) ──
+channel      bronze(60%)     iron(87%)  silver(100%)    gold(100%) diamond(100%)     corr w/ overlap%
+BB%               +0.010        +0.019        +0.010        +0.005        +0.001      -0.37
+SO%(PA)           +0.007        +0.008        +0.011        +0.001        +0.001      -0.29
+HR600             -0.011        +0.006        -0.004        +0.006        -0.000       0.65
+BABIP             +0.047        -0.007        +0.007        -0.013        +0.001      -0.86
+wOBA              -0.115        +0.037        -0.007        -0.064        +0.110       0.61
+
+  READ: a STRONGLY POSITIVE 'corr w/ overlap%' means his edge on that channel grows the more of the judging window he was fit on ⇒ CONFOUND REAL for that channel.
+        Near-zero or NEGATIVE ⇒ in-sample fitting does NOT explain his edge there; the edge is a genuine FRAME effect (he fits tournament data, we fit league data).
+        Bronze is the key cell (LEAST in-sample at 60%): an edge there as large as at the 100% tiers is, by itself, evidence against the confound.
+        CAVEAT: only a handful of tiers, overlap is nearly constant (87–100%) outside bronze, and tier ALSO varies pool strength — this is a directional probe, NOT a controlled test or a significance claim.
+

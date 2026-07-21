@@ -1,0 +1,56 @@
+################################################################################
+# §15.8 THIRD EXHIBIT — corrected vs biased noise-deconvolved spread ratios.
+# Fable ruling (3), 2026-07-21. Instrument defect: d40287a left seven pitcher noise
+# call sites handing BF to a parameter named `ip`, so noise variance was UNDERSTATED
+# 4.3x. Fixed in 697cdb2. Both columns are the SAME cards, same model, same sample
+# (worktree at 3f6240b vs HEAD); the ONLY difference is the instrument.
+#
+# MECHANISM: too little noise subtracted => "true" observed SD too large => ratio LOW.
+# Measured on a synthetic control and pinned: 0.8165 correct vs 0.7286 understated.
+#
+# tier     chan     N     dcv BIASED -> CORRECTED   delta
+  iron     K9       98         0.91 ->   0.92       +0.01
+  iron     BB9      98         0.88 ->   0.89       +0.01
+  iron     HR9      98         0.87 ->   0.94       +0.07
+  iron     BABIP    98         0.57 ->   0.73       +0.16
+  iron     wOBAA    98         0.63 ->   0.73       +0.10
+  bronze   BB9      98         0.97 ->   0.98       +0.01
+  bronze   HR9      98         1.00 ->   1.06       +0.06
+  bronze   BABIP    98         0.61 ->   0.76       +0.15
+  bronze   wOBAA    98         0.83 ->   0.99       +0.16
+  silver   K9       69         1.11 ->   1.13       +0.02
+  silver   BB9      69         1.00 ->   1.02       +0.02
+  silver   HR9      69         0.94 ->   1.04       +0.10
+  silver   BABIP    69         0.50 ->   0.68       +0.18
+  silver   wOBAA    69         0.76 ->   0.97       +0.21
+  gold     K9       49         0.90 ->   0.93       +0.03
+  gold     BB9      49         0.96 ->   0.98       +0.02
+  gold     HR9      49         0.98 ->   1.09       +0.11
+  gold     BABIP    49         0.55 ->   0.71       +0.16
+  gold     wOBAA    49         0.71 ->   1.05       +0.34
+  diamond  K9       28         1.12 ->   1.21       +0.09
+  diamond  BB9      28         1.12 ->   1.18       +0.06
+  diamond  HR9      28         0.82 ->   1.13       +0.31
+  diamond  BABIP    28         0.52 ->   1.88       +1.36
+  diamond  wOBAA    28         0.73 ->   2.95       +2.22
+#
+# READING IT — every cell moves UP, uniformly signed, and the magnitude tracks NOISE
+# SHARE, which is the signature of exactly this defect rather than of a model change:
+#   · K9 / BB9 (low noise share): +0.01..+0.09. Negligible.
+#   · HR9: +0.06..+0.31.  BABIP: +0.15..+1.36.  wOBAA: +0.10..+2.22.
+#   · The thin, high-noise cells (diamond BABIP 1.88, diamond wOBAA 2.95) are now
+#     OVER-deconvolved — noise variance approaching observed variance. Those are not
+#     "spread is fine now"; they are INSUFFICIENT DATA and the instrument says so:
+#     UNREL flags go 16 -> 30 across the report.
+#
+# CAUTION FOR THE ADJUDICATION (do not over-read this exhibit):
+# The motivating G1 cells (iron 1.09 / silver 0.88 / diamond 0.85 from 479c9ee) are
+# SLOPE gates, and slope is provably UNCHANGED by this fix — the isolation test found
+# zero movement outside the dcv-ratio and noise-share columns. So this defect does NOT
+# directly move those G1 slopes IN THE SCORECARD.
+# It DOES move them in the FIT: fit-kspread-pit.ts:25 fits the ramp PRECISION-WEIGHTED
+# (inverse-variance), so `nv` weights the regression and corrected noise reweights every
+# point — iron/bronze dominance included. That is why 479c9ee is dead as an adoptable
+# artifact and why the refit must be fresh, not rescaled.
+# Whether the low-gap pattern dissolves, persists, or INVERTS is therefore an open
+# question to be settled by the fresh refit at the final config, not by this table.
