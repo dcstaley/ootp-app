@@ -1,0 +1,114 @@
+################################################################################
+# BATTERY ITEM 1 — REALIZED-USAGE WEIGHTING (ruling 3). 2026-07-21.
+# Same construction; opponents weighted by realized usage (PA/IP) instead of
+# uniformly. Default path verified BIT-IDENTICAL to the eligible-uniform artifact.
+# Measurement only. Nothing fitted, nothing shipped.
+################################################################################
+
+╔═══ BATTERY ITEM 1 — COMPUTED-DEFICIT COORDINATE (per-opponent integration) ═══╗
+model 'league-42-43' | catalog 'cdmx' | REALIZED-USAGE weighting (--realized): opponents weighted by observed PA/IP
+opponent field = the REALIZED one: eligible cards with no observed VLvl-0 row carry weight 0.
+  … iron done (541 pit × 659 hit)
+  … bronze done (940 pit × 1156 hit)
+  … silver done (1230 pit × 1518 hit)
+  … gold done (1420 pit × 1772 hit)
+  … diamond done (1534 pit × 1964 hit)
+
+── REALIZED-WEIGHT COVERAGE (join: Name+VAL+Hand, observed VLvl==0 only) ──
+   VLvl-5 VARIANT rows are EXCLUDED: variants are runtime-generated and absent from the catalog CSV,
+   so their observed usage is MISSING from the realized weighting entirely.
+   opp = the OPPOSING role being weighted (pitchers integrate over 'hit', hitters over 'pit').
+
+  tier      opp  nonzero/eligible   top10%  share   obsV0  obsV5(dropped)  dupObs  dupCat  obsUnmatched
+  iron      hit    256/659        26   65.5%     258       170           0       0             2
+  iron      pit    221/541        23   56.7%     223       119           0       0             2
+  bronze    hit    297/1156       30   68.6%     299       141           0       0             2
+  bronze    pit    236/940        24   65.4%     240       117           1       1             1
+  silver    hit    251/1518       26   67.1%     252       108           0       0             1
+  silver    pit    192/1230       20   65.9%     196        97           1       1             1
+  gold      hit    233/1772       24   58.6%     234       104           0       0             1
+  gold      pit    147/1420       15   60.5%     148        73           0       2             1
+  diamond   hit    125/1964       13   46.0%     125        52           0       0             0
+  diamond   pit     93/1534       10   45.1%      93        29           0       2             0
+
+   dupObs / dupCat = join keys dropped for being NON-UNIQUE on the observed / catalog side
+     (dupObs also covers 6 observed rows; dupCat 16 catalog cards).
+   obsUnmatched = surviving observed keys with NO eligible catalog opponent (their usage is not carried).
+   top10% share = usage held by the heaviest ceil(10%) of the NONZERO-weight opponents.
+   NOTE ON THE SCALAR CONTROL: it is unchanged (uniform-mean collapse) and is therefore the SAME
+   column in both runs — it is a held-fixed control here, not the degenerate case of this integration.
+
+── CANDIDATE NEED = SD(frame conditions) / SD(pool conditions) ──
+   >1 ⇒ the pool COMPRESSES predicted spread relative to the training frame, i.e. a correction is needed.
+
+  PITCHERS  cards/opp   │       k9      bb9      hr9    babip
+  iron       541/659   │    1.091    1.760    2.200    1.470  │ scalar    1.104    1.856    3.135    1.565
+  bronze     940/1156  │    1.086    1.311    1.918    1.217  │ scalar    1.101    1.716    2.967    1.529
+  silver    1230/1518  │    1.087    1.319    1.754    1.177  │ scalar    1.099    1.652    2.846    1.495
+  gold      1420/1772  │    1.073    1.142    1.562    1.162  │ scalar    1.097    1.595    2.755    1.476
+  diamond   1534/1964  │    1.043    1.248    1.277    1.141  │ scalar    1.096    1.564    2.616    1.455
+
+  HITTERS   cards/opp   │       so       bb       hr    babip
+  iron       659/541   │    1.612    1.500    1.151    1.448
+  bronze    1156/940   │    1.536    1.356    1.135    1.633
+  silver    1518/1230  │    1.374    1.320    1.110    1.382
+  gold      1772/1420  │    1.432    1.188    1.097    1.174
+  diamond   1964/1534  │    1.281    1.121    1.077    1.256
+
+── THE MEASURED NEEDS THIS MUST REPRODUCE (cwhit-battery-targets-2026-07-21.txt) ──
+   K      iron 1.82  bronze 1.62  silver 1.48  gold 1.78  diamond 1.04   ← non-monotone; gold is the break
+   HR     iron 1.17  bronze 1.13  silver 1.19  gold 1.27  diamond 1.32   ← measured gap-FLAT
+   BABIP  iron 1.26  bronze 1.34  silver 1.40  gold 1.01  diamond 0.91   ← rises then falls; only sub-1.0 cells
+
+   Validation is MULTI-CHANNEL WITH ZERO PER-CHANNEL TUNING: one construction, all three shapes, or the
+   miss pattern localises which curve or distribution assumption is wrong. Do not tune to fix a miss.
+
+(end of battery item 1 — REALIZED-usage weighting)
+
+################################################################################
+# VERDICT — the weighting matters a great deal, and it does NOT rescue K
+################################################################################
+
+MEAN ABSOLUTE ERROR vs the measured needs, uniform -> realized:
+    K      0.469 -> 0.473    materially unchanged, marginally worse
+    HR     1.405 -> 0.543    closer at EVERY tier; error falls to 39% of uniform
+    BABIP  0.301 -> 0.188    closer overall; further at silver only
+
+1. THE K MISS STANDS, AND IT IS THE CHANNEL THAT MATTERS. The candidate stays flat —
+   1.091 / 1.086 / 1.087 / 1.073 / 1.043 against needs spanning 1.04 to 1.82. Four of five
+   tiers move very slightly FURTHER away. Gold, the anomaly the whole property hunt exists
+   for, sits at 1.073 against a need of 1.78. Re-weighting the opponents to the field
+   actually faced does not begin to close that.
+
+2. BUT THE WEIGHTING IS NOT A DETAIL. HR improves at every tier and its mean error drops
+   to 39% of the uniform value; diamond lands at 1.277 against a need of 1.32. BABIP
+   improves overall. So the eligible-pool assumption WAS materially wrong — item 4 measured
+   it at 0.18-1.36 pool-SD and this is that error propagating into predicted spread. Two of
+   three channels care.
+
+3. THE CHANNEL-SELECTIVE PATTERN IS THE INFORMATIVE PART. A defect in the opponent
+   distribution moves HR and BABIP substantially and K almost not at all. K's insensitivity
+   to the opponent field is itself a finding: whatever drives the K need, it is not the
+   composition of the opposing field, under either weighting.
+
+4. HR STILL SLOPES THE WRONG WAY. Realized HR runs 2.200 -> 1.277, monotone FALLING, against
+   a need of ~1.19 that is flat-to-slightly-rising. It is much closer in level and still
+   wrong in shape.
+
+WHAT THIS SETTLES ABOUT THE EARLIER MISS. The item-1 verdict was computed on eligible-uniform
+opponents, and I flagged that it might therefore be a verdict on the wrong field. It is not,
+for K: correcting the field leaves K essentially where it was. For HR and BABIP the original
+numbers WERE materially distorted by the weighting and should not be quoted from the
+eligible-uniform run.
+
+LIMITATIONS
+ · VLvl-5 VARIANTS ARE EXCLUDED — 785 of 3078 observed rows (25.5%), 104 hit + 73 pit at gold.
+   Variants are runtime-generated and absent from the catalog CSV, so their usage cannot enter
+   the weights at all. This is the largest hole in the realized figures.
+ · Coverage is thin and concentrated: nonzero-weight opponents run 256/659 (iron hit) down to
+   93/1534 (diamond pit), with the heaviest 10% holding 45-69% of usage.
+ · The SCALAR CONTROL column relates to the UNIFORM integration only (it collapses opponents to
+   their uniform mean). It is NOT the degenerate limit of the realized run, and the pinned
+   identity in tests/battery-deficit.test.ts does not cover the realized path.
+ · Realized usage is NOT ex-ante computable, so nothing here is a shippable coordinate; it is a
+   diagnostic on whether the opponent field is the right one.
