@@ -1,0 +1,112 @@
+################################################################################
+# PROPERTY BATTERY — ITEM 4: REALIZED vs ELIGIBLE OPPOSITION. VARIANT-CORRECTED.
+# 2026-07-21. Supersedes cwhit-battery-item4-realized-vs-eligible-2026-07-21.txt
+# (VLvl-0-only weights, hitter field only, no tool committed).
+# Tool: tools/battery-item4-realized-vs-eligible.ts. Descriptive; nothing fitted.
+################################################################################
+
+
+╔═══ BATTERY ITEM 4 — REALIZED vs ELIGIBLE OPPOSITION (variant-corrected) ═══╗
+model 'league-42-43' | catalog 'cdmx' | corpus fixtures/cwhit-capture-2026-07-21
+  [builder] projection join: 2905 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+
+── COVERAGE — how much of the "eligible opposition" ever plays ──
+   base = VLvl 0, v5 = variant. The eligible column counts BASE cards (production's basePool);
+   variants are not part of the eligible pool but ARE part of the realized field.
+
+  tier      role   eligible   played base   played v5   usage base    usage v5   v5 share   base cover
+  iron      pit       541         221          79      484995      145536      23.1%       40.9%
+  iron      hit       659         254         132      458814      168473      26.9%       38.5%
+  bronze    pit       940         237         100      558705      188821      25.3%       25.2%
+  bronze    hit      1156         294         125      643532      153983      19.3%       25.4%
+  silver    pit      1230         191          85      391808      157032      28.6%       15.5%
+  silver    hit      1518         249         101      414434      136292      24.7%       16.4%
+  gold      pit      1420         146          68      305748       65590      17.7%       10.3%
+  gold      hit      1772         231          95      293764       74257      20.2%       13.0%
+  diamond   pit      1534          93          29       49502       12128      19.7%        6.1%
+  diamond   hit      1964         124          51       50367        8765      14.8%        6.3%
+
+── DIVERGENCE in eligible-pool SD units: (realized usage-weighted mean) − (eligible uniform mean) ──
+   THE HITTER FIELD — the opposition PITCHERS face
+
+  channel      iron   bronze   silver     GOLD  diamond   │  same, VLvl-0-only (the old, wrong convention)
+  Eye          0.272    0.540    0.410    0.817    0.490   │    0.183    0.488    0.341    0.769    0.468
+  Power        0.524    0.556    0.738    0.941    1.124   │    0.427    0.513    0.636    0.813    1.057
+  AvoidK       0.323    0.505    0.380    0.389    0.950   │    0.278    0.490    0.275    0.389    0.963
+  BABIP        0.538    0.985    1.400    1.278    1.340   │    0.458    0.968    1.336    1.239    1.306
+  Gap          0.531    0.872    1.050    0.875    1.368   │    0.380    0.787    1.034    0.789    1.347
+
+── DIVERGENCE in eligible-pool SD units: (realized usage-weighted mean) − (eligible uniform mean) ──
+   THE PITCHER FIELD — the opposition HITTERS face
+
+  channel      iron   bronze   silver     GOLD  diamond   │  same, VLvl-0-only (the old, wrong convention)
+  Control     -0.203    0.177    0.179    0.701    0.990   │   -0.346    0.159    0.070    0.573    1.040
+  Stuff        0.470    0.585    1.075    0.774    1.232   │    0.525    0.455    0.986    0.699    1.102
+  pHR          0.702    1.314    1.263    1.624    1.502   │    0.639    1.379    1.122    1.622    1.422
+  pBABIP       0.756    0.453    0.835    1.003    0.767   │    0.649    0.363    0.806    1.076    0.661
+
+── USAGE CONCENTRATION of the realized field (nonzero weights, variants included) ──
+
+  tier      role      N   total usage    Gini    top10%    top25%    top50%
+  iron      pit    300        630530   0.720     56.9%     81.5%     94.8%
+  iron      hit    386        627287   0.725     59.9%     81.3%     94.3%
+  bronze    pit    337        747527   0.755     64.1%     84.4%     95.6%
+  bronze    hit    419        797515   0.774     66.2%     86.9%     96.4%
+  silver    pit    276        548840   0.750     63.4%     84.2%     95.6%
+  silver    hit    350        550726   0.748     60.9%     85.1%     95.8%
+  gold      pit    214        371338   0.724     60.0%     82.3%     94.2%
+  gold      hit    326        368021   0.712     56.5%     81.4%     94.8%
+  diamond   pit    122         61629   0.582     42.0%     68.8%     89.1%
+  diamond   hit    175         59132   0.606     46.5%     71.3%     89.5%
+
+   SIGN is expected on every channel that measures quality: cards that get played are better
+   than the average eligible card. The MAGNITUDE and the ORDERING ACROSS TIERS are the finding.
+
+(end of battery item 4 — realized vs eligible opposition, variant-corrected)
+
+################################################################################
+# READING — descriptive
+################################################################################
+
+THE REPLICATION CHECK COMES FIRST. The right-hand column of each divergence table
+recomputes the OLD VLvl-0-only convention on the new join. It reproduces the first run
+to within a few thousandths at iron through gold (e.g. Eye 0.183 vs 0.180, Power 0.427
+vs 0.427, BABIP 1.239 vs 1.238 at gold). Diamond moves more (Eye 0.468 vs 0.411, Gap
+1.347 vs 1.279) — the thinnest cell, 124 played cards, where the stricter fingerprint
+join and a couple of dropped ambiguous names matter most. So the first run's arithmetic
+was sound; what was wrong with it was the field it was computed over.
+
+1. THE ELIGIBLE-POOL ASSUMPTION IS OFF BY 0.27 TO 1.37 SD ON THE HITTER FIELD, and the
+   variant correction makes it WORSE everywhere it moves it — as it must, since a v5 row
+   is a strictly better card than its base and the old convention gave it weight 0. Eye
+   at iron 0.18 -> 0.27, Power at gold 0.81 -> 0.94, Gap at iron 0.38 -> 0.53.
+
+2. THE PITCHER FIELD IS OFF BY MORE, AND IT HAD NEVER BEEN MEASURED. Up to 1.62 SD
+   (pHR at gold). Pools are complete environments; this is the opposition hitters face
+   and it diverges from its eligible pool harder than the hitter field does.
+
+3. ONE SIGN REVERSAL, AT IRON, ON CONTROL: -0.20 SD. The pitchers that actually get
+   played at iron have WORSE control than the average eligible iron pitcher, while every
+   other tier runs positive and diamond reaches +0.99. Every other channel on both sides
+   is positive at every tier. Whatever selects iron pitchers into play, it is not control.
+
+4. GOLD STILL BREAKS THE ORDER, NOW ON BOTH SIDES. Hitter field: Eye PEAKS at gold
+   (0.817, above diamond's 0.490); BABIP and Gap sit BELOW silver. Pitcher field: pHR
+   peaks at gold (1.624 vs diamond 1.502) while Stuff sits below silver (0.774 vs 1.075).
+   Gold's realized opposition is off in a different PATTERN from its neighbours, not
+   merely off by more, and the variant correction does not dissolve that.
+
+5. COVERAGE COLLAPSES WITH WINDOW WIDTH, unchanged: the share of eligible base cards
+   that ever play runs 40.9% (iron) down to 6.1% (diamond) on the pitcher side. A wider
+   value window admits far more cards than it causes to be used.
+
+6. CONCENTRATION IS SLIGHTLY LOWER THAN FIRST REPORTED once variants carry their own
+   weight (Gini 0.58-0.77 against 0.62-0.80; top 10% take 42-66% against 44-69%) — the
+   v5 rows split usage that the old convention either dropped or implicitly attributed.
+
+WHAT THIS IS NOT. Realized usage is not ex-ante computable, so none of this is a
+candidate coordinate. It measures the size of an assumption's error. The eligible side
+is quoted exactly as production computes it (basePool, uniform, non-variant) on purpose:
+it is the thing under test.
+
+(end of artifact — battery item 4, variant-corrected)
