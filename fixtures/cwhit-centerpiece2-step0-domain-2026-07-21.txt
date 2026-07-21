@@ -1,0 +1,132 @@
+################################################################################
+# CENTERPIECE #2, STEP 0 — the pre-registered structural precondition. 2026-07-21.
+# Pre-registration: docs/CWHIT_CENTERPIECE2_PREREG_2026-07-21.md section 2.
+# Tool: tools/centerpiece2-step0-domain.ts. Measurement only; NOTHING fitted.
+# VERDICT: MIXED against the three pre-committed readings — reported, not resolved.
+################################################################################
+
+
+╔═══ CENTERPIECE #2 STEP 0 — EFFECTIVE STUFF vs THE K CURVE'S FIT DOMAIN ═══╗
+model 'league-42-43' | catalog 'cdmx' | corpus fixtures/cwhit-capture-2026-07-21 | floor BF>=600
+
+DEPLOYED pit.k curve: rawpoly-2  mu=120.83  sd=21.05
+FIT DOMAIN z=[-2.415, 3.144]  ⇒  stuff rating [70.0, 187.0]
+training mean stuff = 129.46 (z=0.41)   ratingEnvelope.pit.stu = 187
+
+NOTE ON WHAT THE DOMAIN IS AND IS NOT: [uMin,uMax] is the SPAN of the fit, not its density.
+Training DENSITY is not recoverable from the artifact (ratingEnvelope carries the max only),
+so "sparse low tail" cannot be settled here — it needs the league exports, stated separately.
+
+── EFFECTIVE STUFF in z units of the K curve (own-gap applied, exposure-blended) ──
+   'realized' = well-sampled matched pitchers, i.e. the exact cards the needs are measured over.
+
+  tier      set            N       min      p10     p50      p90      max   │  below uMin   below z=-1   raw stu p50
+  iron      full pool     541    -3.92  -2.07  -0.59   0.75   3.04   │       5.5%       34.4%        68.2
+  iron      realized      142    -3.31  -2.03  -0.39   1.20   3.04   │       6.3%       29.6%        71.0
+  bronze    full pool     940    -3.94  -1.97  -0.43   0.97   3.23   │       4.5%       30.2%        71.0
+  bronze    realized      156    -3.84  -1.57   0.02   1.89   3.23   │       2.6%       21.8%        77.3
+  silver    full pool    1230    -4.19  -2.44  -0.95   0.40   2.97   │      10.8%       47.9%        73.4
+  silver    realized      121    -3.42  -1.94  -0.30   1.85   3.03   │       3.3%       29.8%        83.5
+  gold      full pool    1420    -4.30  -2.52  -0.98   0.40   2.79   │      11.8%       49.4%        75.3
+  gold      realized       91    -3.59  -1.94   0.24   1.84   2.57   │       4.4%       20.9%        95.3
+  diamond   full pool    1534    -4.37  -2.64  -1.14   0.32   2.91   │      14.2%       55.7%        76.6
+  diamond   realized       36    -2.16  -1.15  -0.02   2.07   2.51   │       0.0%       16.7%        95.8
+
+── LEAGUE TRAINING SUPPORT for the K curve (root 'League Files', window [2042,2043], BF>=1000, weights BF^0.75) ──
+   N obs = 149 (vL and vR counted separately, as the trainer counts them)
+   training z quantiles:  p01 -2.18   p05 -1.75   p10 -1.46   p25 -0.56   p50 0.01   p90 1.15
+   share of training weight below z=-1: 17.6%   below z=-2: 2.0%   below uMin: 0.0%
+
+── THE COMPARISON THAT DECIDES STEP 0 ──
+   For each tier's REALIZED cards: how much LEAGUE TRAINING WEIGHT sits below that card's z.
+   A card at a z where the training percentile is tiny is a card the curve was barely fitted for.
+
+  tier      realized p10 z  → train pctile │ realized p50 z → train pctile │ % of realized cards below train p05
+  iron        -2.03           2.0%   │   -0.39         27.8%   │   15.5%
+  bronze      -1.57           7.9%   │    0.02         53.1%   │    8.3%
+  silver      -1.94           2.0%   │   -0.30         31.4%   │   13.2%
+  gold        -1.94           2.0%   │    0.24         59.5%   │   12.1%
+  diamond     -1.15          16.3%   │   -0.02         47.0%   │    5.6%
+
+── VARIANCE LEVERAGE OF THE THINLY-SUPPORTED REGION ──
+   Share of each tier's realized SUM (pred_k9 - mean)^2 contributed by cards below the
+   league training p05 / p10 in effective stuff. This bounds what a low-region curve
+   error could contribute to that tier's calibration slope.
+
+  tier      N    cards<p05   VARIANCE share <p05   cards<p10   VARIANCE share <p10
+  iron      142        22             41.2%        31             47.2%
+  bronze    156        13             30.7%        20             37.5%
+  silver    121        16             34.2%        20             38.0%
+  gold       91        11             50.8%        12             52.8%
+  diamond    36         2             20.3%         3             27.0%
+
+── HOW MUCH OF THE DOMAIN'S LOW END IS OCCUPIED ──
+   The curve was fitted from z=-2.41 (stuff 70). A card at z=-1 sits at stuff 100.
+   The training MEAN sits at z=0.41, so anything materially below 0 is
+   below the centre of the fit even when it is inside the span.
+
+(end of centerpiece #2 step 0 — domain occupancy, measurement only)
+
+################################################################################
+# READING — the pre-registered trichotomy does not cover what was found
+################################################################################
+
+The prereg committed to three readings: cards OUTSIDE the fitted domain (literal
+extrapolation live), cards INSIDE but in the sparse low tail (weaker rating-local form),
+or cards in the WELL-SUPPORTED INTERIOR (stop, for BUILD-2's reason). The measurement
+returns the first and third simultaneously, at different points of the same distribution,
+so the reading is escalated rather than chosen.
+
+1. LITERAL EXTRAPOLATION IS DEAD. Only 2.6-6.3% of realized cards fall below uMin, and
+   diamond's realized set is 0.0% below it. The own-gap lift does carry tournament cards
+   back inside the span the curve was fitted over. The tangent-linear extension is not
+   the mechanism.
+
+2. THE TYPICAL CARD IS WELL SUPPORTED. Realized median effective stuff sits at league
+   training percentile 27.8 / 53.1 / 31.4 / 59.5 / 47.0 (iron -> diamond). The median
+   gold pitcher sits ABOVE the league training median. On the median card, this is
+   BUILD-2's situation exactly, and BUILD-2's structural argument would apply.
+
+3. BUT THE VARIANCE DOES NOT LIVE AT THE MEDIAN. A calibration slope is variance-
+   weighted — a card's influence goes as (pred - mean)^2 — and the thinly-supported low
+   region carries far more leverage than its card count suggests:
+
+     tier      cards below train p05     share of predicted-K VARIANCE     measured need
+     iron       22 of 142  (15.5%)                41.2%                        1.82
+     bronze     13 of 156   (8.3%)                30.7%                        1.62
+     silver     16 of 121  (13.2%)                34.2%                        1.48
+     GOLD       11 of  91  (12.1%)                50.8%                        1.78
+     diamond     2 of  36   (5.6%)                20.3%                        1.04
+
+   ELEVEN GOLD CARDS CARRY HALF OF GOLD'S PREDICTED-K VARIANCE, and they sit below the
+   5th percentile of the league training support. Diamond, the tier whose need is ~1.0,
+   has the least leverage in that region (20.3%). The leverage ordering puts GOLD FIRST
+   and DIAMOND LAST — Spearman ~0.8 against the needs, with gold, the tier that broke the
+   gap curve, at the top.
+
+   n = 5 nested tiers. This is a pattern to CARRY, not a result. It cannot separate a
+   real support-leverage dependence from the mechanical fact that any pool's extreme low
+   tail is both high-leverage and low-support.
+
+4. WHAT THIS DOES TO THE HYPOTHESIS. It is not falsified and it is not confirmed. The
+   version that survives is narrower and more testable than the one pre-registered: not
+   "the curve is extrapolating", but "a small, thinly-supported, high-leverage low tail
+   is where the slope deficiency would have to live". That is a sharper claim, because it
+   predicts the need should be sensitive to exactly those cards.
+
+5. AND IT COLLIDES WITH THE SAME DAY'S OTHER RESULT. The needs-vs-bar measurement
+   (fixtures/cwhit-battery-needs-vs-bar-2026-07-21.txt) found gold's need falls 1.78 ->
+   1.63 when lightly-used cards are dropped, while iron/bronze/silver hold. Gold is also
+   the tier whose low-support tail carries the most variance. WHETHER THOSE ARE THE SAME
+   ELEVEN CARDS IS NOT MEASURED HERE and is the single sharpest next question: if the
+   high-leverage low-support cards are also the lightly-used ones, then support-leverage
+   and selection-on-outcome are confounded at gold and neither reading stands alone.
+
+CAVEAT ON THE SUPPORT COMPARISON. Tournament-side z is EFFECTIVE stuff (own-gap applied,
+the argument the curve is evaluated at); league-side z is the raw training rating (the
+argument it was fitted at). That is the correct pairing. The K curve is a 1-D function of
+stuff alone, so the marginal density IS the right support measure for it — no joint-
+support caveat is needed for this channel. League training support is thin in absolute
+terms: 149 observations at BF>=1000, vL/vR counted separately.
+
+(end of artifact — centerpiece #2 step 0, verdict MIXED, escalated)
