@@ -1,0 +1,582 @@
+################################################################################
+### ITEM B — THE COHORT-DEFINITION INVENTORY (static half)
+###
+### date     : 2026-07-21
+### commit   : 58e7da5 (main, at start of audit)
+### model    : league-42-43 (active); catalog 'cdmx', 3669 base cards
+### tool     : tools/itemB-cohort-envfree-probe.ts  (READ-ONLY; run: node tools/itemB-cohort-envfree-probe.ts)
+### scope    : every COHORT SELECTION on the scoring path — the population it is drawn FROM,
+###            the RANKING that orders it, the N and the constant that supplies it, its VARIANT
+###            POLICY, its class (BASELINE vs FIELD per Fable ruling (c)), and WHICH OTHER
+###            COHORT IT IS COMPARED AGAINST. Plus questions 2-5 of the brief.
+###
+### NOTHING IN src/ WAS CHANGED. No production behaviour, default or constant moved. The one
+### new file is a read-only probe under tools/. `npm run typecheck` clean.
+###
+### ALREADY ESTABLISHED, not re-derived here (fixtures/cwhit-itemA-variant-sizing-2026-07-21.txt):
+###   · train-vs-pool  (buildFrameShift)   INCONSISTENT today — trainingMeans variant-INCLUSIVE
+###                                        vs basePool variant-FREE.
+###   · ref-vs-pool    (buildPoolTransform) CONSISTENT today — both variant-free.
+###   · arm C (ref AND pool inclusive) is the ruled destination.
+### THIS REPORT LOOKS FOR THE PAIRS NOBODY HAS LOOKED AT. It found three more mismatches, on
+### axes other than the variant policy.
+################################################################################
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  0. HEADLINE — THE FOUR NEW FINDINGS, IN ORDER OF CONSEQUENCE                                ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  F1. THE FIELD-SELECTION BASIS IS **NOT** ENVIRONMENT-FREE FOR HITTERS. It carries the era.
+      `assembleRawHittingWoba` (src/scoring-core/woba.ts:43-49) adds `baserunningWoba(...)`, which
+      reads adv_speed / adv_run / adv_steal / adv_stealRate / adv_stealInt (woba.ts:35-38), and
+      `resolveCoeffs` SCALES all five by the era's runVal and sbFreq
+      (src/config/coeff-resolve.ts:136-141). Therefore the era is a live term in WHICH CARDS WIN
+      THE TOP-50 HITTER FIELD. The pitcher leg is genuinely env-free (assembleRawPitchingWoba,
+      woba.ts:51-55, reads wOBA weights + adv_hbp only — both model-scoped). MEASURED, §4.
+      ⇒ `referenceFieldStats`' cache key `${activeModelId}|${catalogSource}` (server.ts:282) is
+        stale-by-construction for the hitter half. Same for `leagueExposureBaseline` (server.ts:786).
+
+  F2. A THIRD INCONSISTENT PAIR, structurally identical to the train-vs-pool one, in the PLATOON
+      EXPOSURE path: `deployment = logit(realized) − logit(leagueBaseline)` (server.ts:818) where
+      `realized` comes from `computePlatoon(obs)` over VARIANT-INCLUSIVE obs (server.ts:1447 +
+      1531, includeVariants defaults true at 1429) and `leagueBaseline` is
+      `catalog.cards.filter(isBaseCard)` — VARIANT-FREE (server.ts:788). One subtraction, two
+      populations. Nobody has looked at this one; item A did not cover it.
+
+  F3. THE FRAME GAP HAS **TWO MORE** LEG MISMATCHES BESIDES THE VARIANT ONE.
+      `buildFrameShift(trainingMeans, poolField)` subtracts legs that also differ in:
+        (a) USAGE FILTER — the train leg requires maxPA ≥ minPA (default 1000) for hitters and
+            maxBF ≥ minPA for pitchers (server.ts:1513-1514, 1428). The pool leg has NO usage
+            filter at all (buildEligiblePool, src/config/eligibility.ts:87-97 — `ownedOnly`
+            defaults false and there is no PA concept in the catalog).
+        (b) ERA OF SELECTION — the train leg was selected under era-2010 + a NEUTRAL park
+            (server.ts:1496-1497), frozen into the artifact. The pool leg is selected under the
+            TOURNAMENT's era. By F1 that is a real difference for the hitter channels — and the
+            two shipped ramps read PITCHER channels, which are HITTER-field gaps under the §10.2
+            crossing (pool-stats.ts:143-148). Measured effect on the ramp input: §4.
+
+  F4. FIELD_N AND ANCHOR_N ARE **NOT** THE SAME KIND OF OBJECT AND THE SHARED 50 IS COINCIDENTAL.
+      No quantity anywhere compares a FIELD_N cohort to an ANCHOR_N cohort — every gap has
+      FIELD_N on both legs, and the anchor is compared only to the constants TARGET_WOBA /
+      TARGET_BASIC. They do not even rank on the same basis (§5). Moving them apart is safe in
+      one direction and dangerous in the other, and the asymmetry is large.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  1. THE INVENTORY                                                                            ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  Class per Fable ruling (c): BASELINE = defines the rating-scaling CONVENTION the model was
+  fit/anchored against.  FIELD = estimates a population cards actually meet.
+  "compared against" is the point of the exercise: the hard invariant is SAME POLICY ON BOTH
+  SIDES of any gap or comparison — on EVERY axis the two legs could differ on, not just variants.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ A. REFERENCE FIELD                                       server.ts:358 (also 1985 scorecard)
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   catalog.cards.filter(isBaseCard) — the FULL catalog. isBaseCard = server.ts:238.
+   ranking      raw predicted wOBA, sspFree=true (pool-stats.ts:98-110 → cardRec 32-48).
+                Hitters: per-side top-N by that side's wOBA, then BOTH cohorts' deployment-side
+                values pooled. Pitchers: top-N by COMBINED allowed wOBA, both sides pooled.
+   N            FIELD_N = 50 (src/scoring-core/pool-stats.ts:79)
+   variants     EXCLUDES v5  (EXPLICIT at server.ts:233-238)
+   class        BASELINE — the "league" leg
+   compared to  · B (pool field) in buildPoolTransform (pool-stats.ts:115-121) — ratio k = refμ/poolμ
+                · B again in computeHitTail's gaps g = refμ/poolμ − 1 (hit-tail.ts:150-154)
+   POLICY MATCH variants CONSISTENT with B.  **ERA: MISMATCH POSSIBLE** — A is CACHED without a
+                tournament in the key (server.ts:281-287) while B is recomputed per tournament.
+                See F1/§4/§6.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ B. POOL FIELD                                            server.ts:342 (also 1981 scorecard)
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard)
+                (server.ts:301-302; eligibility.ts:87-97 = card-value window + rowEligible)
+   ranking      identical to A
+   N            FIELD_N
+   variants     EXCLUDES v5 (INHERITED from basePool)
+   class        FIELD
+   compared to  A (above) and C (below, via buildFrameShift)
+   NOTE         ONE cohort produces BOTH the hit and the pit stats (one call, pool-stats.ts:98).
+                The train side does NOT (see C) — its two legs come from two populations.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ C. TRAINING MEANS (frozen into the model artifact)              server.ts:1513-1514
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   training-league cards reconstructed from the window's obs (server.ts:1502-1512),
+                keyed `${cid}|${variant ? "V" : "B"}` ⇒ VARIANT-INCLUSIVE (server.ts:1447, 1429).
+                THEN split into two DIFFERENT populations:
+                  hit leg: tmAll.filter(maxPA ≥ minPA)   (server.ts:1513)
+                  pit leg: tmAll.filter(maxBF ≥ minPA)   (server.ts:1514)   minPA default 1000 (1428)
+   ranking      the SAME computeUnifiedFieldStats, sspFree=true — but under tmCoeffs =
+                resolveCoeffs(models[0], **era-2010**, **neutral park**, tournaments[0].softcaps)
+                (server.ts:1496-1497)
+   N            FIELD_N
+   variants     INCLUDES v5
+   class        BASELINE — the frame the model was fit in
+   compared to  B, via buildFrameShift (pool-stats.ts:130-150). train.hit → pit channels,
+                train.pit → hit channels (the §10.2 crossing).
+   POLICY MATCH **variants: MISMATCH** (item A, established)
+                **usage filter: MISMATCH** (F3a — NEW; C requires ≥1000 PA/BF, B has none)
+                **era of selection: MISMATCH** (F3b — NEW; C at era-2010, B at the tournament's)
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ D. THE CENTERING PIVOTS  K̄ / HR̄ / BABIP̄        server.ts:373 (own-gap) · 348 (frame-v2)
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   basePool
+   ranking      raw wOBA on **RE-BASED** ratings — poolPitMeansOwn applies the PoolTransform
+                (pool-stats.ts:209-211, 217-219), poolMeanK applies the FrameShift (200-203).
+                ssp is hard-1 here (pool-stats.ts:163, 172). Hitter leg includes baserunning
+                (163) ⇒ era-dependent, same as A/B.
+   N            FIELD_N
+   variants     EXCLUDES v5 (INHERITED)
+   class        FIELD — a pivot, not a gap leg
+   compared to  nothing directly. But note the ASYMMETRY: the ramp's gap INPUT (B vs C) is
+                selected on RAW ratings while the pivot it rescales ABOUT is selected on
+                RE-BASED ratings. Deliberate and documented (pool-stats.ts:152-155, 205-211),
+                but it means the two cohorts are not the same 50 cards. Recorded, not a defect.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ E. THE wOBA ANCHOR                                    server.ts:397 → calibrate.ts:90-92
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   basePool
+   ranking      raw wOBA over RE-BASED events (poolTransform/frameShift/kSpread/hitTail all
+                applied — calibrate.ts:40-69, mirroring score-card). Hitters: **BATTING-ONLY** —
+                the baserunning args are passed as ZEROS (calibrate.ts:57, with the stated reason
+                that toggling baserunning must not move the top-50 or sFinal). Pitchers: combined.
+   N            ANCHOR_N = 50 (src/scoring-core/calibrate.ts:27)
+   variants     EXCLUDES v5
+   class        BASELINE — a CONVENTION (readable scale + the cap optimiser's budget unit)
+   compared to  nothing — normalised to the constant TARGET_WOBA = 0.320 (calibrate.ts:25)
+   NOTE         Because baserunning is zeroed, THE ANCHOR'S HITTER RANKING IS ENV-FREE while the
+                FIELD'S HITTER RANKING IS NOT. Two "top-50 hitters" on the same pool, ordered by
+                two different quantities. This is the clearest evidence for F4.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ F. THE BASIC ANCHOR                              server.ts:400 → calibrate.ts:158-165
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   basePool
+   ranking      the BASIC score itself (basic_vR / basic_vL / basic_ovr), filtered x > 0 —
+                a THIRD ranking criterion sharing the same constant
+   N            ANCHOR_N
+   variants     EXCLUDES v5
+   class        BASELINE (normalised to TARGET_BASIC = 100)
+   compared to  nothing
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ G. HIT-TAIL CHANNEL MOMENTS                    server.ts:389-390 → hit-tail.ts:155-174
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   basePool.filter(NOT a pitcher) — server.ts:389. **THE ONLY ROLE-GATED COHORT ON
+                THE SCORING PATH.** Every other cohort here is role-agnostic by construction
+                (top-N by rating; role never gates).
+   ranking      NONE — all members, no top-N
+   N            all
+   variants     EXCLUDES v5 (INHERITED)
+   class        FIELD (moments)
+   compared to  nothing directly. Its STRENGTH comes from the A-vs-B ratio gaps
+                (hit-tail.ts:150-154) — the only place ref-vs-pool is read as a RATIO rather
+                than a difference.
+   DEPENDS ON   the exposure cohort: the moments are exposure-blended with coeffs.r/l/s_hit_split
+                (hit-tail.ts:158-159), which scoreTournament sets from H (server.ts:306-310).
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ H. EXPOSURE BASELINE (pool leg)                            server.ts:817 → exposure.ts:69-93
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   basePool
+   ranking      cardSideWobas raw, sspFree=true (server.ts:776). Hitters = UNION of top-X by vR
+                and top-X by vL; pitchers = top-X by −(pitVR + pitVL). Weighted: hitWeight 1,
+                pitWeight = Stamina (server.ts:779).
+   N            EXPOSURE_N = 100 (server.ts:773) — a THIRD size constant, and note it is a
+                MODULE constant, NOT t.topHitters (see §3)
+   variants     EXCLUDES v5 (INHERITED)
+   class        FIELD
+   compared to  I, via `effective = applyDeployment(H, realized − I)` (server.ts:818-820)
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ I. EXPOSURE LEAGUE BASELINE                                       server.ts:788
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   catalog.cards.filter(isBaseCard) — the FULL catalog
+   ranking      identical to H
+   N            EXPOSURE_N
+   variants     EXCLUDES v5
+   class        BASELINE
+   compared to  the model's REALIZED splits, in `deploymentFrom` (server.ts:818)
+   POLICY MATCH vs H: variants CONSISTENT.  **ERA: MISMATCH POSSIBLE** — I is CACHED on
+                `${activeModelId}|${catalogSource}` (server.ts:786), H is per-tournament. Same
+                defect as A.
+                **vs REALIZED: VARIANT MISMATCH (F2)** — realized = computePlatoon(obs)
+                (server.ts:1531) over obs that INCLUDE variants (1447/1429); I EXCLUDES them.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ J. CONSISTENCY REPORT (diagnostic, off the scoring path)  server.ts:1886 → consistency.ts:137-156
+──────────────────────────────────────────────────────────────────────────────────────────────
+   two cohorts: implied-event means at topX (default 100, consistency.ts:141) and the field gaps
+   at fieldN (default 50, consistency.ts:142). ref = catalog.cards.filter(isBaseCard),
+   pool = basePool ⇒ both legs variant-free, CONSISTENT.
+   FLAG: consistency.ts:141-142 carry LITERAL defaults (`?? 100`, `?? 50`). The one-copy pin
+   scans for `const|let|var` DECLARATIONS only (tests/one-copy-constants.test.ts:32-35), so a
+   literal in a default expression is invisible to it. Production is safe today only because
+   server.ts:1886 passes FIELD_N explicitly.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ K. POSITION POOL STATS (optimizer constraint + display)          server.ts:551-581
+──────────────────────────────────────────────────────────────────────────────────────────────
+   population   catalog.cards filtered isBaseCard && ctx.isEligible (server.ts:560)
+   ranking      hitter VALUE vL / vR — i.e. fully CALIBRATED post-transform scores (561-566)
+   N            xH = t.topHitters ?? 100 (server.ts:553) — **THE ONLY N SOURCED FROM CONFIG**
+   variants     EXCLUDES v5 (EXPLICIT, server.ts:554-557)
+   class        NEITHER — it is an optimizer-constraint input (rank→min thresholds, 696-698)
+                and a display payload. It CONSUMES ctx.config; it writes nothing back.
+   compared to  nothing on the scoring path
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ L. OPTIMIZER CARD POOL                                       server.ts:658-677
+──────────────────────────────────────────────────────────────────────────────────────────────
+   N = xH/xP from t.topHitters/topPitchers, or HARD_POOL_CAP in budgeted modes (662-663);
+   xH/xP also set the two-way overlap cutoff (676-677). Optimizer only. Not a scaling cohort.
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ M. DIAGNOSTIC COHORTS (no scoring effect)
+──────────────────────────────────────────────────────────────────────────────────────────────
+   server.ts:1700-1713 transform debug · 1725 SP-candidate scan · 1742 rank debug ·
+   1980-2002 tournament scorecard (rebuilds A/B/C/D from the same primitives — its ownGapPt at
+   1985 goes through the SAME cached referenceFieldStats, so F1 reaches the scorecard too).
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+ N. EVAL MIRRORS — sample.ts:530-540 / 587, realized.ts:47 — enumerated in item A §1; unchanged.
+──────────────────────────────────────────────────────────────────────────────────────────────
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  2. THE INCONSISTENT-PAIR LIST (the deliverable)                                             ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  pair                                       axis            status         source
+  ────────────────────────────────────────── ─────────────── ────────────── ──────────────────────
+  C train  vs  B pool   (buildFrameShift)    variant policy  INCONSISTENT   item A (established)
+  C train  vs  B pool   (buildFrameShift)    usage filter    INCONSISTENT   NEW — F3a
+  C train  vs  B pool   (buildFrameShift)    era of select.  INCONSISTENT   NEW — F3b
+  realized vs  I league (deploymentFrom)     variant policy  INCONSISTENT   NEW — F2
+  A ref    vs  B pool   (buildPoolTransform) variant policy  consistent     item A (established)
+  A ref    vs  B pool   (buildPoolTransform) era of select.  AT RISK        NEW — F1 (cache key)
+  A ref    vs  B pool   (computeHitTail g)   variant policy  consistent     —
+  A ref    vs  B pool   (computeHitTail g)   era of select.  AT RISK        NEW — F1 (same cache)
+  H pool   vs  I league (applyDeployment)    variant policy  consistent     —
+  H pool   vs  I league (applyDeployment)    era of select.  AT RISK        NEW — F1 (2nd cache)
+  J ref    vs  J pool   (consistency)        variant policy  consistent     item A
+  E/F anchors                                 —              no counterparty (normalised to a constant)
+  D pivots                                    —              no counterparty (a pivot, not a leg)
+
+  "AT RISK" = the two legs SHOULD be selected under the same era and would be, except that one
+  leg is served from a cache whose key omits the tournament. Whether they actually differ on any
+  given boot depends on WHICH TOURNAMENT WAS SCORED FIRST. Measured magnitude in §4.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  3. QUESTION 2 — DOES THE PER-TOURNAMENT top-X OVERRIDE REACH A SCALING COHORT?              ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  ANSWER: **NO.** `Tournament.topHitters` / `topPitchers` (src/config/tournament.ts:133-134) reach
+  the optimizer's card pool, the optimizer's position-rank thresholds, and display — and nothing
+  else. They never reach a distribution, an anchor, a gap or a ramp input. Every consumer, traced
+  to its terminal use:
+
+   consumer                     traced to                                              terminal use
+   ──────────────────────────── ────────────────────────────────────────────────────── ─────────────
+   server.ts:553  (xH)          positionPoolStats slices its candidate set at 569-572,
+                                emits RatingDist per (position, rating) at 573-579;
+                                read at 689-701 (rankStats → effMins → merged position
+                                mins) and at 708+ (qualifiedPositions)                 OPTIMIZER
+                                                                                       CONSTRAINT
+   server.ts:660-661 (xH, xP)   poolH/poolP at 662-663 → unionTopHit/topPit 671-677
+                                → hitterPool / pitcherPool / twHit / twPit             OPTIMIZER
+                                                                                       CARD POOL
+   server.ts:2280 (xH)          echoed as `topX` in the /api/position-metrics response DISPLAY
+
+  EVIDENCE THAT NO SCALING COHORT CAN SEE IT — every N on the scoring path is a module constant:
+    · FIELD_N   = 50  src/scoring-core/pool-stats.ts:79   (A, B, C, D)
+    · ANCHOR_N  = 50  src/scoring-core/calibrate.ts:27    (E, F)
+    · EXPOSURE_N= 100 src/server/server.ts:773            (H, I)
+  None is read from `t.*` at any call site (server.ts:284, 342, 348, 358, 373, 397, 400, 788, 817,
+  1513-1514, 1886, 1981-2002). `positionPoolStats` is a pure CONSUMER of `ctx.config`
+  (server.ts:561) and writes nothing back into it. The invariant is also asserted in code, in the
+  right place: src/scoring-core/calibrate.ts:9-10 — "topHitters/HARD_POOL_CAP narrow the
+  OPTIMIZATION pool — M4 — not the calibration anchor."
+
+  ⇒ The separation the brief asks about HOLDS TODAY. There is no scoring input hiding in this UI
+    field. NOTHING SHOULD BE CHANGED on account of question 2.
+
+  ONE ADJACENT CAVEAT, and it is NOT about top-X. `/api/position-metrics` (server.ts:2270-2281)
+  calls `scoreTournament(t)` at 2274 on a POSSIBLY-UNSAVED DRAFT merged over its stored record
+  (2272-2273). That is a full scoring run, and its side effect is to populate `refFieldCache`
+  (2274 → 358 → 281-287). So while an editor field cannot change a cohort's N, an unsaved draft's
+  ERA can become the era under which the process-global reference field gets selected. That is
+  finding F1's blast radius, not a top-X defect. See §6.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  4. QUESTION 4 — IS THE CACHED REFERENCE FIELD'S SELECTION GENUINELY ENV-FREE TODAY?         ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  VERIFIED BY READING, THEN MEASURED. The answer is SPLIT:
+
+   leg      env-free?   why
+   ──────── ─────────── ──────────────────────────────────────────────────────────────────────
+   pitcher  YES         assembleRawPitchingWoba (woba.ts:51-55) reads only wobaWeightsFromCoeffs
+                        (model-scoped, applied at server.ts:298) and adv_hbp (model `extras`,
+                        coeff-resolve.ts:120 — NOT era, NOT park, NOT softcaps).
+   hitter   **NO**      assembleRawHittingWoba (woba.ts:43-49) adds baserunningWoba(...), which
+                        reads adv_speed / adv_run / adv_steal / adv_stealRate / adv_stealInt
+                        (woba.ts:35-38). resolveCoeffs SETS all five from the era:
+                        coeff-resolve.ts:136-141 — `runVal = era.runVal`, `sbFreq = era.sbFreq`.
+
+  The two other candidate channels are clean, and that is worth stating because they are what the
+  "env-free" claim was resting on:
+    · the event model ignores coeffs entirely — makeRawPolyModel's predictHitting/predictPitching
+      both take `_c` and never read it (src/model/raw-poly.ts:27, 43).
+    · softcaps never reach this path — `softcap()` is imported only by src/scoring-core/basic.ts
+      (lines 16-20, 42-46) and read on the retired log path (woba.ts:87); the raw-poly wOBA path
+      is softcap-free by design (raw-poly.ts:9-10).
+  ⇒ ERA IS THE ONLY per-tournament term in the selection basis. Park and softcaps genuinely are not.
+
+  ── MEASURED (tools/itemB-cohort-envfree-probe.ts, model league-42-43, catalog cdmx 3669 base
+     cards, FIELD_N=50, park + softcaps HELD at gold-quick so only the era varies) ──
+
+  4a. the era-scaled coefficients themselves
+      era          runVal     sbFreq     adv_speed    adv_run      adv_stealRate  adv_stealInt
+      era-2010     1.000000   1.000000   3.6875e-5    1.3542e-4    -9.5958e-5     1.0646e-4
+      era-1920     1.002288   1.241998   3.6959e-5    1.3573e-4    -1.1945e-4     1.3252e-4
+      era-1939     0.903093   0.698152   3.3302e-5    1.2229e-4    -6.0501e-5     6.7122e-5
+      era-1998     0.914405   1.099491   3.3719e-5    1.2383e-4    -9.6475e-5     1.0703e-4
+      Spread on the steal terms is ~2.2x across the corpus eras; on UBR ~1.11x.
+
+  4b. THE CACHED REFERENCE FIELD (A), recomputed under each era — full catalog
+      era          hit top-50 ∩ 2010   pit top-50 ∩ 2010   hitter field μ, Δ vs era-2010
+      era-2010     50/50               50/50               eye 122.58 · pow 117.55 · kRat 122.40 · babip 125.13 · gap 106.61
+      era-1920     49/50               50/50               eye −0.770 · pow +0.750 · kRat +0.080 · babip −0.830 · gap +0.240
+      era-1939     50/50               50/50               all 0.000
+      era-1998     50/50               50/50               all 0.000
+      PITCHER field μ: Δ = 0.0000 on con / stu / pbabip / hrr at EVERY era — the pitcher leg is
+      env-free EXACTLY, as read. That zero row is the control that makes the hitter row readable.
+
+      READ THIS CAREFULLY: era-1939 and era-1998 show 0.000 on the FULL catalog. That is a
+      coincidence of this catalog's top-50, NOT structural invariance — the same eras DO move the
+      field on the tournament-sized pools below (up to 3/50 members). Do not generalise the zeros.
+
+  4c. THE RAMP INPUT — same pool, varied era. The shipped ramps read PITCHER channels, which are
+      HITTER-field gaps under the §10.2 crossing (pool-stats.ts:143-148), so F1 reaches them.
+      pool          era        hit top-50 ∩ 2010   gap pit.stu    s_K       gap pit.hrr   s_HR
+      iron          era-2010   50/50               23.640         1.7305    52.280        1.2648
+      iron          era-1920   48/50               24.340 (+0.70) 1.7505    52.930        1.2648
+      iron          era-1939   49/50               23.270 (−0.37) 1.7199    52.100        1.2648
+      iron          era-1998   49/50               24.310 (+0.67) 1.7496    51.830        1.2648
+      bronze        era-2010   50/50               22.760         1.7053    40.280        1.2645
+      bronze        era-1920   49/50               23.360 (+0.60) 1.7225    40.530        1.2646
+      bronze        era-1939   47/50               23.070 (+0.31) 1.7142    39.880        1.2645
+      bronze        era-1998   48/50               22.190 (−0.57) 1.6889    40.560        1.2646
+      silver        era-1920   49/50               20.470 (−0.08) 1.6390    30.190        1.2633
+      silver        era-1939   49/50               20.490 (−0.06) 1.6396    29.690        1.2632
+      silver        era-1998   49/50               20.490 (−0.06) 1.6396    29.690        1.2632
+      gold          era-2010   50/50               15.950         1.5052    21.930        1.2588
+      gold          era-1920   50/50               15.950 (0.00)  1.5052    21.930        1.2588
+      gold          era-1939   50/50               16.060 (+0.11) 1.5085    22.120        1.2590
+      gold          era-1998   50/50               15.980 (+0.03) 1.5061    22.200        1.2590
+      diamond       era-2010   50/50               10.380         1.3347    11.280        1.2269
+      diamond       era-1920   49/50               10.230 (−0.15) 1.3301    11.380        1.2276
+      diamond       era-1939   49/50               11.120 (+0.74) 1.3577    11.340        1.2273
+      diamond       era-1998   49/50                9.880 (−0.50) 1.3191    11.300        1.2271
+
+  4d. SIZE, HONESTLY. The era channel moves the stu gap by −0.57 to +0.74 points and s_K by up to
+      ±0.023. That is ONE TO TWO ORDERS OF MAGNITUDE SMALLER than the variant-policy defect item A
+      sized (−4.6 to −10.5 gap points, s_K down 0.13 to 0.33). It is not a competing priority.
+      What makes it worth writing down is that it is SILENT and ORDER-DEPENDENT, not that it is big.
+
+  4e. WHAT WOULD SILENTLY BREAK IT FURTHER — the brief's actual question. Any of these makes the
+      omitted-tournament cache key wrong by a LOT rather than a little, with no error:
+        · reading era_bb / era_k / era_effective_hr / park factors in a raw-wOBA assembly
+          (today they enter only downstream, in hittingComponents/pitchingComponents, woba.ts:65+);
+        · restoring softcaps to the raw-poly path (would make tournaments[0].softcaps at
+          server.ts:1492 load-bearing too — see §6.6);
+        · flipping any production call site's `sspFree` to false (cardRec, pool-stats.ts:32-48,
+          would then read coeffs.ssp_* — model-scoped today, but the flag is the guard);
+        · adding a park- or era-conditional term to the wOBA WEIGHTS (they are model-scoped today,
+          applied once at server.ts:298);
+        · anything that makes hit-tail / kSpread / the PoolTransform feed BACK into selection —
+          selection is deliberately pre-transform (pool-stats.ts:8-9); D already ranks post-rebasing
+          and is correctly kept out of the cache.
+      NONE of these would raise an error. The failure mode is a stale reference field for every
+      tournament after the first, and it is invisible because the numbers stay plausible.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  5. QUESTION 3 — FIELD_N vs ANCHOR_N: SAME KIND OF OBJECT?                                   ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  NO. They differ on all four cohort facts except the value.
+
+   fact              FIELD_N (pool-stats.ts:79)              ANCHOR_N (calibrate.ts:27)
+   ───────────────── ────────────────────────────────────── ──────────────────────────────────────
+   selected FROM     full catalog (A) OR basePool (B/D)      basePool ONLY
+   RANKED BY         raw wOBA, PRE-transform (A/B);          raw wOBA over RE-BASED events, and
+                     re-based for the pivots (D).            **batting-only** for hitters
+                     Hitter ranking INCLUDES baserunning     (baserunning zeroed, calibrate.ts:57)
+                     (woba.ts:47-48) ⇒ era-dependent          ⇒ era-INDEPENDENT.
+                                                             calibrateBasic ranks on the BASIC
+                                                             score instead (calibrate.ts:160).
+   HOW MANY          50                                      50
+   VARIANT POLICY    excludes v5                             excludes v5   (the one axis they agree on)
+   CLASS             FIELD for B/D, BASELINE for A           BASELINE, always — a CONVENTION
+   ITS JOB           estimate the population a card MEETS,   set the readable SCALE (0.320 / 100)
+                     to form a GAP against another cohort    and the cap optimiser's budget unit
+
+  IS THE SHARED VALUE LOAD-BEARING? **NO — it is coincidental.** Nothing computes a difference,
+  ratio or gap between a FIELD_N cohort and an ANCHOR_N cohort. Every gap on the path has FIELD_N
+  on BOTH legs (A vs B; C vs B; and the hit-tail ratio A vs B). The anchor's only counterparty is
+  a constant (TARGET_WOBA 0.320, calibrate.ts:25; TARGET_BASIC 100, calibrate.ts:26). The two
+  cohorts COMPOSE — the anchor is computed on events already re-based by a transform built from
+  FIELD_N fields — but composition is not comparison, and composition does not require equal N.
+
+  WHAT BREAKS IF ONE MOVES AND THE OTHER DOES NOT — the asymmetry is large:
+
+   MOVING **FIELD_N** ALONE — DANGEROUS, and the danger is not where it looks.
+     moves immediately: A and B field μ/σ ⇒ the PoolTransform mean-scalars (pool-stats.ts:115-121)
+     ⇒ every re-based rating ⇒ every wOBA score; the frame gaps (130-150) ⇒ s_K and s_HR
+     (pool-transform.ts:233, 263); the D pivots K̄/HR̄/BABIP̄ (209-219); computeHitTail's three gaps
+     (hit-tail.ts:150-154) ⇒ the hitter tail strengths; and, downstream of all of that, the anchor
+     and therefore every displayed number.
+     ALSO INVALIDATES FITTED CONSTANTS: K_SPREAD_PIT {A 5.0871, G 152.5} and PIT_SPREAD_HR
+     {A 0.2648, G 5.8} were fit AT gaps measured with FIELD_N=50; PINNED_HIT_TAIL's λs likewise.
+     THE REAL TRAP: **FIELD_N IS BAKED INTO EVERY SAVED MODEL ARTIFACT.** trainingMeans is a
+     top-FIELD_N field computed at TRAIN time (server.ts:1513-1514). Change FIELD_N and every
+     pre-existing artifact's trainingMeans is a top-50 mean being subtracted from a top-K pool
+     mean — the matched-legs property that server.ts:1478-1483 was written to establish silently
+     un-does itself for every model trained before the change. No error, no warning, and the
+     symptom is a gap that has drifted for no visible reason.
+
+   MOVING **ANCHOR_N** ALONE — CONTAINED.
+     moves: hitScaleVR/VL, pitchScale (calibrate.ts:113-115) and the basic anchors (166-168).
+     Those multiply the assembled composite only. Every card's score moves by ONE common factor
+     per (role, side); no RANKING changes, no gap changes, no ramp input changes, no fitted
+     constant depends on it, and nothing is frozen into any artifact. Downstream it shifts the
+     cap/slots budget unit (values are signed distances from TARGET_WOBA, calibrate.ts:142-144),
+     so cap-mode roster composition can move — that is the one non-cosmetic consequence.
+
+  ⇒ RECOMMENDATION: none, per the brief. The finding is that the pin in
+    tests/one-copy-constants.test.ts:51-57 ("a SEPARATE constant that merely shares the value") is
+    CORRECT, and that the asymmetry above is the reason it matters: collapsing them would couple a
+    contained scale knob to a constant that is frozen inside every trained artifact.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  6. QUESTION 5 — OTHER SILENT-STALENESS / SHARED-STATE HAZARDS FOUND WHILE READING           ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  6.1  ORDER-DEPENDENT REFERENCE FIELD (the F1 consequence, ranked first).
+       `refFieldCache` (server.ts:280-287) and `leagueBaselineCache` (server.ts:784-791) are both
+       keyed `${activeModelId}|${catalogSource}` and both cleared only by `invalidateDerivedCaches`
+       (server.ts:471-476), which fires on catalog refresh and model (de)activation — NOT on a
+       tournament era edit (server.ts:2243 deletes only that tournament's score cache) and NOT on
+       tournament switch. Since the hitter selection carries the era (§4), THE REFERENCE FIELD A
+       TOURNAMENT IS SCORED AGAINST DEPENDS ON WHICH TOURNAMENT WAS SCORED FIRST AFTER THE LAST
+       INVALIDATION. Same process, same config, different request order ⇒ different hitter scores.
+       That is a determinism defect, independent of its (small) magnitude. It reaches: the
+       PoolTransform hit affines, computeHitTail's gPow/gBab/gK, the /api/tournament/scorecard
+       own-gap column (server.ts:1985), and the exposure deployment shift.
+
+  6.2  AN UNSAVED DRAFT CAN SEED THE PROCESS-GLOBAL REFERENCE FIELD.
+       `/api/position-metrics` (server.ts:2270-2281) scores a merged draft at 2274. If the ref
+       cache is cold, THAT DRAFT'S ERA selects the reference field for every subsequent
+       tournament. The draft is never saved and leaves no trace. Strictly a consequence of 6.1,
+       but it is the most surprising path into it.
+
+  6.3  `refDCache` IS NOT KEYED BY ACCOUNT (server.ts:873-887). Self-documented at 873-874: the
+       .500 win-expectancy anchor is "computed from the FIRST request's pool — which may be
+       owned-scoped by the active account", yet the cache key is the tournament id alone. Switching
+       the active account does not invalidate it. Same class as 6.1 (order + shared state), already
+       known to the author, recorded here for completeness.
+
+  6.4  THE ONE-COPY PIN HAS A BLIND SPOT FOR LITERALS IN DEFAULTS.
+       `tests/one-copy-constants.test.ts:32-35` matches `(export )?(const|let|var) NAME =`. It
+       therefore cannot see `opts.fieldN ?? 50` / `opts.topX ?? 100` (src/eval/consistency.ts:141-142),
+       which are exactly the class of second definition ruling (d) was about — equal today,
+       silently divergent tomorrow. Production is unaffected only because server.ts:1886 passes
+       FIELD_N explicitly.
+
+  6.5  THE TRAIN LEG'S TWO CHANNELS COME FROM TWO POPULATIONS (server.ts:1513-1514): the hit field
+       is `maxPA ≥ minPA`, the pit field is `maxBF ≥ minPA`. The pool side (B) produces both from
+       ONE cohort (pool-stats.ts:98). Each gap channel is still leg-matched pairwise, so this is
+       not a subtraction defect — but "the training field" is two different fields, and the
+       inventory should say so rather than let the singular noun imply one.
+
+  6.6  `tmCoeffs` READS `tournaments[0].softcaps` (server.ts:1492, 1496-1497) — i.e. whichever
+       tournament the repository happens to list first decides the softcaps the model's own frame
+       is selected under. Benign TODAY, and only because softcaps provably do not reach the
+       selection basis (§4). It is a live tripwire under any change that puts softcaps back on the
+       raw-wOBA path. The hardcoded `era-2010` + neutral park in the same expression is the F3b
+       mismatch and is deliberate (documented at 1483-1485) — but the DOCUMENTED REASON ("the
+       top-50 SELECTION is env/softcap-independent") is the claim §4 partially refutes.
+
+  6.7  DEAD PER-ERA DATA THAT LOOKS LIVE: every era file carries an `hbp` factor (e.g.
+       data/eras/era-1920.json `"hbp": 0.778802`), but `eraFactors` (coeff-resolve.ts:29-32) never
+       reads it, and the `adv_hbp` that woba.ts:47/54 actually uses comes from the MODEL's
+       `extras` (coeff-resolve.ts:120). Nobody should assume HBP is era-scaled; today it is not.
+       Not a hazard — a trap.
+
+  6.8  ONE ROLE-GATED COHORT ON AN OTHERWISE ROLE-AGNOSTIC PATH: the hit-tail moment population
+       (server.ts:389) filters on `Pitcher Role > 0 || Position === "1"`. Every other cohort here
+       is role-agnostic by construction (top-N by rating; role never gates). It is defensible —
+       these are channel MOMENTS over hitters, not a competitive field — but it is the single
+       place the standing principle does not apply, and it should be recorded so it is not
+       "tidied" into consistency in either direction.
+
+  6.9  UNVERIFIED, stated as such: whether the era-driven top-50 membership swaps in §4c change
+       any card's DISPLAYED score enough to matter, and whether the F3a usage filter (≥1000 PA/BF)
+       materially changes the train leg's μ. Both are measurable and neither was measured here —
+       this half of item B is the static inventory.
+
+
+################################################################################
+# READING
+################################################################################
+
+1. THE VARIANT POLICY IS STILL THE BIG ONE. Nothing here displaces item A. The three new
+   mismatches (F2, F3a, F3b) and the cache defect (F1) are all one to two orders of
+   magnitude smaller than the −4.6 to −10.5 gap points item A sized. Prioritise accordingly.
+
+2. BUT THE INVENTORY DID ITS JOB: it found that "same variant policy on both sides" is not
+   the whole invariant. The frame gap's two legs differ on THREE axes, not one — variants,
+   usage qualification, and the era the selection was performed under. Any repair that fixes
+   only the variant axis will leave a subtraction whose legs still come from different
+   populations, and will do so with the appearance of having been fixed.
+
+3. THE EXPOSURE PATH HAS THE SAME DEFECT AS THE FRAME PATH AND NOBODY HAD LOOKED (F2).
+   `deployment = logit(realized) − logit(leagueBaseline)` subtracts a variant-INCLUSIVE
+   realized measurement from a variant-FREE league field. It is the identical shape to the
+   train-vs-pool defect, in a different subsystem, and it should be repaired under the same
+   ruling rather than discovered separately later.
+
+4. "ENV-FREE SELECTION" IS TRUE FOR PITCHERS AND FALSE FOR HITTERS. The pitcher zero-row in
+   §4b is exact and is the control that makes the hitter row readable. The channel is
+   baserunning: era.runVal and era.sbFreq scale five adv_* coefficients that sit inside the
+   hitter's raw wOBA and therefore inside the field's sort key. The cached reference field is
+   consequently order-dependent (6.1) and can be seeded by an unsaved editor draft (6.2).
+
+5. THE ANSWER TO QUESTION 2 IS CLEAN AND NEGATIVE. topHitters/topPitchers reach the optimizer
+   pool, the position-rank thresholds and the display, and stop there. All three scaling-cohort
+   sizes are module constants (FIELD_N, ANCHOR_N, EXPOSURE_N) and no call site reads `t.*`.
+   There is no scoring input hiding in that UI field. Nothing to separate.
+
+6. FIELD_N AND ANCHOR_N SHARE ONLY THE NUMBER. Different population, different ranking
+   (the anchor deliberately zeroes baserunning; the field does not), different class, no
+   comparison between them anywhere. The shared 50 is coincidental. The asymmetry that
+   matters: ANCHOR_N is a contained scale knob, while FIELD_N is FROZEN INTO EVERY TRAINED
+   ARTIFACT via trainingMeans — moving it silently un-matches the frame gap's legs for every
+   model trained before the change.
+
+7. WHAT THIS DOES NOT DO. It decides nothing, changes nothing, fits nothing, and moves no
+   default or constant. It is the four facts per cohort, written down for the first time,
+   plus the pairs those facts show to disagree.
+
+(end of artifact — item B cohort inventory; the frame gap's legs disagree on THREE axes, and
+ hitter field selection is era-dependent, so the tournament-less reference cache is order-dependent)
