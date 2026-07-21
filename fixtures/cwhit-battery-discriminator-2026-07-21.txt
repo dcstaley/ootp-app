@@ -1,0 +1,100 @@
+################################################################################
+# PRE-REGISTERED DISCRIMINATOR — triggered by the item-1 miss. 2026-07-21.
+# Question: do HIGH-K pitchers' K rates move MORE than LOW-K pitchers' when the
+# opposition changes? If so, that is interaction the one-sided core cannot express.
+# OBSERVED DATA ONLY (cwhit raw events). Script: tools/battery-discriminator.py
+# VERDICT: UNDERPOWERED — the corpus cannot separate the hypotheses. See below.
+################################################################################
+SEED 20260721 | BF floor 600 (IP >= 139.5)
+excluded colliding-key rows: 24 across 9 formats {'bronzecapweekly': 2, 'bronzeheart': 3, 'bronzequick': 3, 'diamondcapdaily': 2, 'earlygold': 2, 'goldcapdaily': 3, 'goldslotsdaily': 3, 'latebronze': 3, 'silverquick': 3}
+cards in >=2 formats: 239 | total (card,format) obs used: 685
+formats-per-card: {2: 128, 3: 53, 4: 34, 5: 15, 6: 5, 7: 3, 8: 1}
+paired contrasts: 385  (env-matched: 93)
+
+(3) HEADLINE — all pairs, dK9  (N=385)
+  pooled  dK9 ~ dOpp :  slope +0.0589   intercept +0.2333   R2 0.002
+  low ownK  N= 128  meanOwnK  4.49  slope +0.1907  R2 0.020
+  mid ownK  N= 128  meanOwnK  6.77  slope +0.1120  R2 0.006
+  high ownK N= 128  meanOwnK  8.27  slope -0.0983  R2 0.006
+  HIGH minus LOW slope: -0.2890   boot95 [-0.6393, -0.0048]  (2000 reps)  -> EXCLUDES 0
+
+(6) ENV-MATCHED pairs only, dK9  (N=93)
+  pooled  dK9 ~ dOpp :  slope -0.3337   intercept +0.8667   R2 0.188
+  low ownK  N=  31  meanOwnK  4.73  slope -0.3302  R2 0.199
+  mid ownK  N=  31  meanOwnK  7.29  slope -0.2107  R2 0.105
+  high ownK N=  31  meanOwnK  8.58  slope -0.5043  R2 0.284
+  HIGH minus LOW slope: -0.1741   boot95 [-0.7206, +0.1528]  (2000 reps)  -> includes 0
+
+(5) CONTROL — all pairs, dBB9 (should be far weaker)  (N=385)
+  pooled  dBB9 ~ dOpp :  slope +0.0672   intercept +0.1910   R2 0.027
+  low ownK  N= 128  meanOwnK  4.49  slope +0.0451  R2 0.017
+  mid ownK  N= 128  meanOwnK  6.77  slope +0.1617  R2 0.148
+  high ownK N= 128  meanOwnK  8.27  slope -0.0127  R2 0.001
+  HIGH minus LOW slope: -0.0578   boot95 [-0.1411, +0.0323]  (2000 reps)  -> includes 0
+
+(2) opposing hitter field per format (Avoid K vR, eligible by value window):
+   ironquick         n=659   mean  81.36  sd 24.18  era-2010/park-1
+   bronzequick       n=1156  mean  83.80  sd 24.46  era-2010/park-1
+   bronzeheart       n=1156  mean  83.80  sd 24.46  era-1939/park-191   EXTRA RULE NOT APPLIED: Year 1930-1989
+   latebronze        n=1156  mean  83.80  sd 24.46  era-1979/park-114
+   bronzecapweekly   n=1156  mean  83.80  sd 24.46  era-2010/park-1
+   silverquick       n=1518  mean  85.38  sd 25.23  era-2010/park-1
+   goldquick         n=1772  mean  86.60  sd 25.62  era-2010/park-1
+   earlygold         n=1772  mean  86.60  sd 25.62  era-1920/park-169
+   goldcapdaily      n=1772  mean  86.60  sd 25.62  era-2010/park-156
+   goldslotsdaily    n=1772  mean  86.60  sd 25.62  era-2010/park-1
+   diamondquick      n=1964  mean  87.63  sd 26.04  era-2010/park-1
+   diamondheart      n=1964  mean  87.63  sd 26.04  era-1958/park-156   EXTRA RULE NOT APPLIED: Year 1930-1980
+   diamondcapdaily   n=1964  mean  87.63  sd 26.04  era-1998/park-101
+   liveopendaily     n=2058  mean  88.75  sd 26.67  era-2010/park-1   EXTRA RULE NOT APPLIED: Card Type = live
+
+################################################################################
+# VERDICT — INSUFFICIENT LEVER, not "no interaction"
+################################################################################
+
+THE HEADLINE LOOKS POSITIVE AND IS CONFOUNDED. All-pairs gives HIGH-minus-LOW slope
+-0.289 with boot95 [-0.639, -0.005], nominally excluding zero. Three controls say do not
+believe it:
+
+1. THE POOLED SLOPE FLIPS SIGN between the two samples: +0.059 over all pairs, -0.334 over
+   env-matched pairs only. A relationship that reverses when era/park are held fixed is
+   reporting the environment, not the opposition.
+
+2. THE BB9 FALSIFICATION CONTROL MOVES AS MUCH AS K9. Pooled dBB9~dOpp slope is +0.067
+   against dK9's +0.059 — BB9 should be near-inert to a change in the opposing AVOID-K
+   field. Equal response means the all-pairs signal is not K-specific.
+
+3. R-SQUARED IS ~0.002-0.02 across the all-pairs fits. The line explains essentially none
+   of the variance.
+
+THE CLEAN TEST IS NULL AND UNDERPOWERED. Env-matched pairs (N=93): HIGH-minus-LOW slope
+-0.174, boot95 [-0.721, +0.153] — INCLUDES ZERO. The CI is 0.87 wide against an effect
+plausibly of order 0.1-0.3, so this neither detects nor excludes interaction.
+
+THE ROOT CAUSE IS THE LEVER, AND IT IS STRUCTURAL. Across all 14 formats the opposing
+Avoid-K field mean spans only 81.36 -> 88.75, a 7.4-point range on the rating scale. Worse,
+that range is almost entirely a function of the VALUE WINDOW: every format sharing a window
+has an IDENTICAL opposition measure (bronzequick / bronzeheart / latebronze /
+bronzecapweekly all 83.80), so those pairs contribute NO contrast at all and are dropped.
+The surviving pairs are exactly the ones that also change era, park and pool size. The
+opposition lever and the environment lever are the same lever in this corpus.
+
+WHAT THIS MEANS FOR THE ITEM-1 MISS. The pre-registered discriminator was to separate
+WRONG-CURVATURE from MISSING-INTERACTION. It cannot do that here. The miss remains
+ambiguous, and the ambiguity is now a measured property of the available data rather than
+an open analysis step.
+
+WHAT WOULD ACTUALLY SEPARATE THEM (not run, not proposed as a plan):
+  - A contrast where opposition moves WITHOUT the value window moving. Within-format
+    opponent variation across instances would do it; the per-format aggregates cannot.
+  - The eligibility windows are NESTED, so a wider window is a superset. Any cross-window
+    contrast therefore changes the pool's composition and its size together.
+
+CAVEATS ON THIS RUN
+  - Opposition is computed on the VALUE WINDOW only. bronze-heart (Year 1930-1989),
+    diamond-heart (Year 1930-1980) and live-open (Card Type) carry extra eligibility rules
+    NOT applied, so their opposition figures are approximations and are flagged in the table.
+  - 24 rows across 9 formats were dropped for colliding (Name,VAL,VLvl,Hand) keys.
+  - BF floor 600 (IP >= 139.5). Seed 20260721, 2000 bootstrap resamples over PAIRS.
+  - Pairs from the same card are not independent; the bootstrap resamples pairs, not cards,
+    so its CI is optimistic where one card contributes many pairs (up to 28 for one card).
