@@ -221,7 +221,11 @@ function setBaseline(key: string, snap: BaselineSnap) {
 // #2 is being verified). Refreshed at boot + on activate/delete; changing it clears
 // the per-tournament scoring cache so scores recompute.
 let activeEventForm: EventForm | null = null;
-let activePlatoon: PlatoonExposure | null = null; // active model's measured platoon exposure → new-tournament defaults
+// Active model's measured platoon exposure. Used ONLY at SCORING time (resolveExposure) and for the
+// /api/libraries display default. It is deliberately NOT seeded into new tournaments — see the
+// tournament-save handler: freezing a model snapshot into config made a tournament's splits depend on
+// its creation date rather than its own properties (Derek, 2026-07-21).
+let activePlatoon: PlatoonExposure | null = null;
 let activeWobaWeights: WobaWeights | null = null; // active model's wRAA-derived wOBA weights → folded into coeffs
 let activeEnvelope: RatingEnvelope | null = null; // active model's per-rating training maxima → pool-transform saturation ceilings
 let activeTrainingMeans: TrainingMeans | null = null; // active model's per-channel training-opponent means → frame-v2 opp-gap reference (absent ⇒ own-gap)
@@ -2204,19 +2208,26 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       softcaps: body.softcaps ?? base.softcaps,
       eligibility: body.eligibility ?? base.eligibility,
     };
-    // New tournaments inherit the ACTIVE model's measured platoon exposure as their default
-    // (existing tournaments keep their stored values — seed only on create).
-    if (!existing && activePlatoon) {
-      if (body.platoon === undefined) {
-        const rs = activePlatoon.pitchRoleSplits;
-        t.platoon = {
-          r_hit_split: activePlatoon.r_hit_split, l_hit_split: activePlatoon.l_hit_split, s_hit_split: activePlatoon.s_hit_split,
-          r_pitch_split: activePlatoon.r_pitch_split, l_pitch_split: activePlatoon.l_pitch_split,
-          ...(rs ? { r_pitch_split_sp: rs.sp.r, l_pitch_split_sp: rs.sp.l, r_pitch_split_rp: rs.rp.r, l_pitch_split_rp: rs.rp.l } : {}),
-        };
-      }
-      if (body.platoonVR === undefined) t.platoonVR = activePlatoon.teamVR;
-      if (body.platoonVL === undefined) t.platoonVL = activePlatoon.teamVL;
+    // PLATOON IS NEVER SEEDED INTO A TOURNAMENT (Derek, 2026-07-21). Nothing in tournament modelling
+    // may depend on WHEN the tournament was created or WHICH model happened to be active then.
+    //
+    // This previously seeded t.platoon / platoonVR / platoonVL from the ACTIVE model on create. That
+    // froze a snapshot of a moving quantity into config: 38 of 42 configs ended up carrying one of
+    // only FOUR distinct payloads — one per model vintage — so creation DATE, not the tournament's
+    // own properties, determined its stored splits. Stripped in f7b00fa; the tap is removed here so
+    // it cannot recur.
+    //
+    // Correct behaviour: platoon exposure resolves AT SCORING TIME from the active model
+    // (resolveExposure), falling back to `t.platoon` only when no #2 model is loaded, then to the
+    // 0.62/0.38 constants (server.ts ~840). An ABSENT block is the right state.
+    //
+    // SECOND PATH, guarded below: a new tournament is built as `{...base, ...body}` where `base` is
+    // the DEFAULT tournament — so any platoon left on default-neutral would be inherited by every
+    // tournament created afterwards. Explicitly dropped unless the request body supplies one.
+    if (!existing) {
+      if (body.platoon === undefined) delete (t as Partial<Tournament>).platoon;
+      if (body.platoonVR === undefined) delete (t as Partial<Tournament>).platoonVR;
+      if (body.platoonVL === undefined) delete (t as Partial<Tournament>).platoonVL;
     }
     // Rename: drop the stale file/entry and repoint the active-tournament pointer.
     if (oldId && oldId !== id) {

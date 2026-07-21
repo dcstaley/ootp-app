@@ -119,6 +119,28 @@ describe.skipIf(!HAVE_DATA)("Q-2 — server hardening smoke", () => {
     expect(body.tournament).toBe(before.tournament);
   });
 
+  // Regression pin (Derek, 2026-07-21): NOTHING in tournament modelling may depend on when the
+  // tournament was created or which model was active then. The save handler used to seed
+  // t.platoon/platoonVR/VL from the ACTIVE model on create, freezing a snapshot of a moving
+  // quantity into config — 38 of 42 configs ended up with one of only four payloads, one per model
+  // vintage. There is also a second path: a new tournament is built as {...base, ...body} where
+  // base is the DEFAULT tournament, so a platoon left on default-neutral would propagate to every
+  // tournament created after it. Both are closed; this pin covers both.
+  it("creating a tournament NEVER seeds a platoon block (no create-time model snapshot)", async () => {
+    const r = await fetch(`${base}/api/tournaments/save`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Platoon Seed Pin", card_value_max: 69, eraId: "era-2010", parkId: "park-1" }),
+    });
+    expect(r.status).toBe(200);
+    const list = await (await fetch(`${base}/api/tournaments`)).json() as { tournaments?: Record<string, unknown>[] } | Record<string, unknown>[];
+    const arr = Array.isArray(list) ? list : (list.tournaments ?? []);
+    const made = arr.find((t) => (t as { id?: string }).id === "platoon-seed-pin") as Record<string, unknown> | undefined;
+    expect(made, "created tournament should be returned by /api/tournaments").toBeTruthy();
+    expect(made!.platoon).toBeUndefined();
+    expect(made!.platoonVR).toBeUndefined();
+    expect(made!.platoonVL).toBeUndefined();
+  }, 60_000);
+
   // Regression: a delete-then-retrain cycle used to land with a saved artifact and
   // `activeModelId: null` (delete correctly nulls the pointer; save never set it), so the app
   // scored through the log-linear fallback and every tool resolving the active model threw.
