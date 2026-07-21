@@ -78,3 +78,46 @@ a pattern worth carrying, NOT a result. It is descriptive support for looking be
 mean gap; it does not identify a coordinate, does not rank candidates, and cannot on its
 own distinguish a real second-moment dependence from nesting artefacts. Items 1, 4 and 5
 are what would settle that.
+
+################################################################################
+# RETRACTION — 2026-07-21, same day, on evidence from battery item 2.
+################################################################################
+
+THE DISPERSION READING ABOVE IS A TOP-50 SELECTION ARTEFACT. RETRACTED.
+
+Item 2 recomputed per-channel rating SD over the FULL pool rather than the top-50 field.
+In that view gold is a local extremum on ZERO of the 9 channels — every channel's SD rises
+MONOTONICALLY iron -> bronze -> silver -> gold -> diamond:
+
+  chan        iron   bronze  silver   GOLD   diamond
+  hit.eye    17.23   19.88   21.23   23.05   24.46
+  hit.pow    23.81   24.44   25.18   26.59   28.20
+  hit.kRat   24.18   24.46   25.23   25.62   26.04
+  hit.babip  16.98   18.20   19.63   20.63   21.72
+  hit.gap    16.61   17.11   18.23   19.19   20.04
+  pit.con    14.06   16.37   17.30   18.74   19.71
+  pit.stu    16.22   17.33   18.55   19.77   20.90
+  pit.pbabip 18.68   18.66   19.17   20.34   21.40
+  pit.phr    12.37   14.56   16.04   17.66   19.21
+
+Neither the four claimed minima (hit.eye, hit.pow, hit.kRat, pit.stu) nor the two claimed
+maxima (hit.gap, pit.pbabip) survive. The only non-monotone step anywhere is pit.pbabip
+iron->bronze (-0.020), which does not involve gold.
+
+WHY THE TWO DISAGREE. The table above this retraction is computed from
+computeUnifiedFieldStats(pool, ..., FIELD_N=50) — the TOP-50 field, selected by the MODEL's
+own predicted wOBA. Its SDs run 24-45% larger than the full-pool ones. So what was reported
+as "gold's pool is unusually dispersed" is a property of (pool x MODEL SELECTION), not of
+the pool. It is the same cohort-dependence already queued as cohort arbitration: a top-N
+cohort chosen by the model's own ranking is not a neutral description of the pool.
+
+CONSEQUENCES, stated plainly:
+ · Item 3's ANSWER TO ITS POSED QUESTION STANDS: gap LEVEL does not decouple at gold. That
+   part used means, is monotone in both views, and is unaffected.
+ · Item 3's SECOND-MOMENT reading does NOT stand and must not be carried forward.
+ · The item-1 centerpiece is UNAFFECTED IN ITS RESULT but better explained by this: it
+   integrated over the FULL pool, whose dispersion is monotone, so it could not have
+   produced a non-monotone need. The miss was structural, not a tuning failure.
+ · This is the second time a model-selected top-N cohort has produced an apparent pool
+   property. Any future "pool shape" claim must state whether it is full-pool or top-N,
+   because the two disagree in SHAPE and not merely in scale.
