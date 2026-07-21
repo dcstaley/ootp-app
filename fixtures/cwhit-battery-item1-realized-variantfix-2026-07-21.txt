@@ -1,0 +1,127 @@
+################################################################################
+# PROPERTY BATTERY — ITEM 1 REALIZED-USAGE RUN, VARIANT-CORRECTED. 2026-07-21.
+# Supersedes fixtures/cwhit-battery-item1-realized-2026-07-21.txt, whose weights
+# were built from a private join restricted to observed VLvl == 0 and therefore
+# discarded 15-29% of each cell's realized opposition usage.
+# Measurement only — nothing fitted, nothing proposed, nothing shipped.
+################################################################################
+
+  [builder] projection join: 2905 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+
+╔═══ BATTERY ITEM 1 — COMPUTED-DEFICIT COORDINATE (per-opponent integration) ═══╗
+model 'league-42-43' | catalog 'cdmx' | REALIZED-USAGE weighting (--realized): opponents weighted by observed PA/IP
+opponent field = the REALIZED one: eligible cards with no observed VLvl-0 row carry weight 0.
+  … iron done (541 pit × 659 hit)
+  … bronze done (940 pit × 1156 hit)
+  … silver done (1230 pit × 1518 hit)
+  … gold done (1420 pit × 1772 hit)
+  … diamond done (1534 pit × 1964 hit)
+
+── REALIZED-WEIGHT COVERAGE (weights read off the BUILDER's join, keyed by cid = CardID|VLvl) ──
+   VARIANTS ARE INCLUDED: base (VLvl 0) and v5 are SEPARATE opponents with their own ratings and
+   their own usage. The previous version of this run joined observed VLvl==0 only and discarded
+   the v5 share printed below — that share is the size of the error it made.
+   opp = the OPPOSING role being weighted (pitchers integrate over 'hit', hitters over 'pit').
+
+  tier      opp   played/eligible base   played/eligible v5      usage base       usage v5   v5 share  orphan
+  iron      pit     221/541              79/541             484995         145536     23.1%       0
+  iron      hit     254/659             132/659             458814         168473     26.9%       0
+  bronze    pit     237/940             100/940             558705         188821     25.3%       0
+  bronze    hit     294/1156            125/1156            643532         153983     19.3%       0
+  silver    pit     191/1230             85/1230            391808         157032     28.6%       0
+  silver    hit     249/1518            101/1518            414434         136292     24.7%       0
+  gold      pit     146/1420             68/1420            305748          65590     17.7%       0
+  gold      hit     231/1772             95/1772            293764          74257     20.2%       0
+  diamond   pit      93/1534             29/1534             49502          12128     19.7%       0
+  diamond   hit     124/1964             51/1964             50367           8765     14.8%       0
+
+   v5 share = fraction of this cell's REALIZED opposition usage carried by variant rows.
+   orphan   = joined observed rows with no card in the opponent set (must be 0; pinned in tests/cwhit-realized.test.ts).
+   NOTE ON THE SCALAR CONTROL: it is unchanged (uniform-mean collapse over the BASE pool) and is
+   therefore the SAME column in both runs — a held-fixed control, not the degenerate case of this
+   integration. The degenerate identity pinned in tests relates the scalar to the UNIFORM run only.
+
+── CANDIDATE NEED = SD(frame conditions) / SD(pool conditions) ──
+   >1 ⇒ the pool COMPRESSES predicted spread relative to the training frame, i.e. a correction is needed.
+
+  PITCHERS  cards/opp   │       k9      bb9      hr9    babip
+  iron       541/659   │    1.087    1.725    2.100    1.453  │ scalar    1.104    1.856    3.135    1.565
+  bronze     940/1156  │    1.084    1.311    1.891    1.221  │ scalar    1.101    1.716    2.967    1.529
+  silver    1230/1518  │    1.082    1.291    1.669    1.165  │ scalar    1.099    1.652    2.846    1.495
+  gold      1420/1772  │    1.074    1.111    1.469    1.143  │ scalar    1.097    1.595    2.755    1.476
+  diamond   1534/1964  │    1.040    1.199    1.262    1.128  │ scalar    1.096    1.564    2.616    1.455
+
+  HITTERS   cards/opp   │       so       bb       hr    babip
+  iron       659/541   │    1.630    1.470    1.145    1.474
+  bronze    1156/940   │    1.502    1.351    1.134    1.599
+  silver    1518/1230  │    1.350    1.293    1.102    1.359
+  gold      1772/1420  │    1.411    1.177    1.096    1.168
+  diamond   1964/1534  │    1.237    1.122    1.070    1.190
+
+── THE MEASURED NEEDS THIS MUST REPRODUCE (cwhit-battery-targets-2026-07-21.txt) ──
+   K      iron 1.82  bronze 1.62  silver 1.48  gold 1.78  diamond 1.04   ← non-monotone; gold is the break
+   HR     iron 1.17  bronze 1.13  silver 1.19  gold 1.27  diamond 1.32   ← measured gap-FLAT
+   BABIP  iron 1.26  bronze 1.34  silver 1.40  gold 1.01  diamond 0.91   ← rises then falls; only sub-1.0 cells
+
+   Validation is MULTI-CHANNEL WITH ZERO PER-CHANNEL TUNING: one construction, all three shapes, or the
+   miss pattern localises which curve or distribution assumption is wrong. Do not tune to fix a miss.
+
+(end of battery item 1 — REALIZED-usage weighting)
+
+################################################################################
+# READING — the correction changes the numbers, not the verdict
+################################################################################
+
+WHAT WAS WRONG. The realized weighting joined observed rows to the catalog on
+Name+VAL+Hand and kept only observed VLvl == 0. Variants are generated at runtime and
+absent from the catalog CSV, so every v5 row was unmatchable and was dropped. The
+coverage table above measures what that cost: v5 rows carry 14.8-28.6% of each cell's
+realized opposition usage, so the "field actually faced" was reconstructed with a
+fifth to a quarter of it missing — and missing non-randomly, since a v5 row is a
+strictly better card than its base.
+
+Weights now come from the program's ONE sample builder via Rec.cid (CardID|VLvl), so
+base and v5 are separate opponents with separate ratings and separate usage. Orphan
+count is 0 in all ten cells: every joined observed row has a card in the opponent set.
+
+MEAN |CANDIDATE - NEED| ACROSS THE FIVE TIERS, all three weightings:
+
+  channel   eligible-uniform   realized (VLvl-0 only)   realized (VARIANT-CORRECTED)
+  K                  0.469              0.473                    0.475
+  HR                 1.404              0.543                    0.485
+  BABIP              0.301              0.188                    0.180
+
+  per-tier signed error, variant-corrected (candidate MINUS need), iron -> diamond
+  K       -0.733  -0.536  -0.398  -0.706  +0.000
+  HR      +0.930  +0.761  +0.479  +0.199  -0.058
+  BABIP   +0.193  -0.119  -0.235  +0.133  +0.218
+
+1. THE K MISS IS UNCHANGED AND IS NOW MEASURED ON THE RIGHT FIELD. The candidate stays
+   flat at 1.087/1.084/1.082/1.074/1.040 against needs of 1.04-1.82. Gold sits at 1.074
+   against 1.78. Three weightings of the opposing field — uniform, realized-without-
+   variants, realized-with-variants — move the K candidate by less than 0.01 anywhere.
+   The battery's central finding survives the correction intact: whatever drives the K
+   need, it is not the composition of the opposing field.
+
+2. THE CHANNEL-SELECTIVE PATTERN STRENGTHENS. Fixing the weights improves HR by a
+   further 11% (0.543 -> 0.485) and BABIP slightly (0.188 -> 0.180) while K moves
+   0.002 the wrong way. The same perturbation that two channels respond to, the third
+   ignores. That contrast is the finding, and it now rests on a correctly weighted field.
+
+3. HR STILL SLOPES THE WRONG WAY. Variant-corrected 2.100 -> 1.262, monotone falling,
+   against a need measured as flat-to-rising ~1.19. Better in level at every tier, wrong
+   in shape. The weighting error was real but was not the whole HR story.
+
+WHAT THIS DOES NOT DO. It does not make the realized weighting shippable — realized
+usage is not ex-ante computable, so this remains a diagnostic. The production candidate
+is still the eligible-side coordinate, and the eligible side is deliberately left
+non-variant because it mirrors what production computes (basePool sets the distribution;
+variants are scored but do not set it).
+
+JOIN NOTE. The corrected base-level counts run 1-3 cards BELOW the old private join in
+every cell (e.g. iron hit 254 vs 256). The builder disambiguates name collisions on an
+event-space fingerprint and refuses ambiguous pairs; name equality accepted some of them.
+The old run also reported 1-2 unmatched observed keys and a few duplicate-key drops per
+cell, which the cid join does not produce at all.
+
+(end of artifact — battery item 1 realized, variant-corrected)

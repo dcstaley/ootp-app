@@ -35,18 +35,18 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, applyWobaWeights, computeDerived,
-  type EventForm, type RatingEnvelope, type WobaWeights, type TrainingMeans,
+  makeRawPolyModel, applyWobaWeights, computeDerived, computeUnifiedFieldStats,
+  type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
-import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
-import { QUICK, inValueWindow, isPit, n_, cardName, handLetter } from "../src/eval/cwhit/sample.ts";
-import { formatByLegacySlug, captureObsPath, CAPTURE_DIR_2026_07_21 } from "../src/eval/cwhit/corpus.ts";
-import { unescapeName } from "../src/eval/cwhit/scorecard.ts";
+import { parseCatalogCsv } from "../src/data/catalog.ts";
+import { QUICK, inValueWindow, isPit, n_, buildCwhitSample, FIELD_N, type SampleDeps } from "../src/eval/cwhit/sample.ts";
+import { opponentSet, realizedUsage, coverage, weightsFor, cellKey, type Opponent } from "../src/eval/cwhit/realized.ts";
 
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
 const state = (await repo.load<{ activeModelId?: string; catalogSourceId?: string }>("state", "app")) ?? {};
-type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans };
+type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans;
+  platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
 const trained = (await repo.loadAll<TM_>("trained-models")).find((x) => x.id === state.activeModelId);
 if (!trained?.eventForm || !trained.wobaWeights) throw new Error("active model missing eventForm/wobaWeights");
 if (!trained.trainingMeans) throw new Error("active model has NO trainingMeans — the gap convention needs the artifact frame");
@@ -59,7 +59,7 @@ const tournaments = await repo.loadAll<Tournament>("tournaments");
 const bq = tournaments.find((t) => t.id === "bronze-quick")!;
 const coeffs = resolveCoeffs(model, eras.get(bq.eraId)!, parks.get(bq.parkId)!, bq.softcaps);
 applyWobaWeights(coeffs, trained.wobaWeights);
-computeDerived(coeffs);
+const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards
   .filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
@@ -82,77 +82,34 @@ const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf
 // shift) relates the scalar to the UNIFORM integration only, not to the realized one. That is a
 // reporting caveat, not a defect: the control is deliberately held fixed across the two weightings.
 //
-// VLvl-5 VARIANT ROWS ARE EXCLUDED. Variants are generated at runtime (`makeVariant`) and are absent
-// from the catalog CSV this tool reads, so they cannot be opponents here; their observed usage is
-// simply missing from the realized weighting. The per-tier drop counts are printed below.
+// VARIANTS ARE IN (fixed 2026-07-21 — this is the blocking battery correction). The first version of
+// this flag read the capture tables with a private parse restricted to observed `VLvl == 0`, which
+// discarded 25.5% of all observed play, concentrated in the best cards: the "realized field" it
+// integrated over was itself materially wrong. Weights now come from `src/eval/cwhit/realized.ts`,
+// which reads them off the BUILDER's join (`Rec.cid`) — so base and v5 are separate opponents with
+// their own ratings and their own usage, exactly as they are on the field. See that file's header for
+// why the ELIGIBLE side is deliberately left non-variant (it mirrors production's `basePool`).
 const REALIZED = process.argv.includes("--realized");
 
-const wKey = (name: string, val: number, hand: string) => `${name}|${val}|${hand}`;
-
-interface WeightStats {
-  tier: string; oppRole: "pit" | "hit";
-  nEligible: number; nNonzero: number; top10Share: number; top10Count: number;
-  obsRowsV0: number; obsRowsV5: number;
-  dupObsKeys: number; dupObsRows: number; dupCatKeys: number; dupCatCards: number;
-  obsKeysUnmatched: number; usageJoined: number; usageV0Total: number;
-}
-const wStats: WeightStats[] = [];
-
-/** Realized-usage weight for each card in `cards` (aligned by index), joined on (Name, VAL, Hand)
- *  against the tier's observed capture table, restricted to observed VLvl == 0. Keys that are
- *  non-unique on EITHER side are dropped (weight 0) and counted. */
-function realizedWeights(cards: Card[], oppRole: "pit" | "hit", tier: string): number[] {
-  const f = formatByLegacySlug(tier);
-  if (!f) throw new Error(`no capture format registered for tier '${tier}'`);
-  const path = captureObsPath(CAPTURE_DIR_2026_07_21, f, oppRole);
-  const lines = readFileSync(path, "utf8").split(/\r?\n/).filter((l) => l.trim().length > 0);
-  const cols = lines[1]!.split("\t").map((s) => s.trim());
-  const iName = cols.indexOf("Name"), iVal = cols.indexOf("VAL"), iVlvl = cols.indexOf("VLvl"),
-    iHand = cols.indexOf("Hand"), iUse = cols.indexOf(oppRole === "pit" ? "IP" : "PA");
-  if ([iName, iVal, iVlvl, iHand, iUse].some((i) => i < 0))
-    throw new Error(`capture ${path}: missing one of Name/VAL/VLvl/Hand/${oppRole === "pit" ? "IP" : "PA"}`);
-
-  // OBSERVED side. Names are HTML-ESCAPED in the captures; unescaping is load-bearing (skipping it
-  // silently drops rows rather than failing).
-  let obsRowsV0 = 0, obsRowsV5 = 0, usageV0Total = 0;
-  const acc = new Map<string, { use: number; rows: number }>();
-  for (let li = 2; li < lines.length; li++) {
-    const r = lines[li]!.split("\t");
-    if (String(r[iVlvl] ?? "").trim() !== "0") { obsRowsV5++; continue; }
-    obsRowsV0++;
-    const use = n_(r[iUse]); usageV0Total += use;
-    const k = wKey(unescapeName(String(r[iName] ?? "").trim()), n_(r[iVal]), String(r[iHand] ?? "").trim());
-    const a = acc.get(k); if (a) { a.use += use; a.rows++; } else acc.set(k, { use, rows: 1 });
-  }
-  let dupObsKeys = 0, dupObsRows = 0;
-  for (const [k, a] of acc) if (a.rows > 1) { dupObsKeys++; dupObsRows += a.rows; acc.delete(k); }
-
-  // CATALOG side.
-  const catKeys = cards.map((c) =>
-    wKey(cardName(c), n_(c["Card Value"]), handLetter(n_(c[oppRole === "pit" ? "Throws" : "Bats"]))));
-  const catCount = new Map<string, number>();
-  for (const k of catKeys) catCount.set(k, (catCount.get(k) ?? 0) + 1);
-  let dupCatKeys = 0, dupCatCards = 0;
-  for (const n of catCount.values()) if (n > 1) { dupCatKeys++; dupCatCards += n; }
-
-  const matched = new Set<string>();
-  const w = catKeys.map((k) => {
-    if ((catCount.get(k) ?? 0) > 1) return 0;      // non-unique on the CATALOG side → dropped
-    const a = acc.get(k); if (!a) return 0;         // eligible but never played → weight 0
-    matched.add(k); return a.use;
-  });
-
-  const nz = w.filter((x) => x > 0).sort((a, b) => b - a);
-  const usageJoined = nz.reduce((a, b) => a + b, 0);
-  const top10Count = nz.length ? Math.max(1, Math.ceil(0.10 * nz.length)) : 0;
-  const top10Share = usageJoined > 0 ? nz.slice(0, top10Count).reduce((a, b) => a + b, 0) / usageJoined : NaN;
-  wStats.push({
-    tier, oppRole, nEligible: cards.length, nNonzero: nz.length, top10Share, top10Count,
-    obsRowsV0, obsRowsV5, dupObsKeys, dupObsRows, dupCatKeys, dupCatCards,
-    obsKeysUnmatched: acc.size - matched.size, usageJoined, usageV0Total,
-  });
-  if (!nz.length) throw new Error(`${tier} ${oppRole}: realized weighting has ZERO opponents with usage — refusing to integrate`);
-  return w;
+// Built ONLY under --realized, so the default path does no extra work and stays bit-identical.
+// `buildCwhitSample` is the program's one sample builder: it joins base and v5 separately on the
+// event-space fingerprint (from the UNCORRECTED line, ruling B) and hands back `Rec.cid` identities.
+let usage: Map<string, Map<string, number>> | null = null;
+const oppSets = new Map<string, Opponent[]>();
+if (REALIZED) {
+  if (!trained.platoon) throw new Error("active model has no platoon exposures — buildCwhitSample cannot run");
+  const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+  const deps: SampleDeps = {
+    baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W: trained.wobaWeights, ref,
+    envelope: trained.ratingEnvelope,
+    pitExp: new Map(trained.platoon.pit.map((p) => [p.hand, { wR: p.vsRHB, wL: p.vsLHB }])),
+    hitExp: new Map(trained.platoon.hit.map((p) => [p.hand, { wR: p.vsRHP, wL: p.vsLHP }])),
+  };
+  const res = buildCwhitSample(deps);
+  for (const n of res.notices) console.log(`  [builder] ${n}`);
+  usage = realizedUsage(res);
+  for (const win of QUICK) for (const role of ["pit", "hit"] as const)
+    oppSets.set(cellKey(win.tier, role), opponentSet(baseCards, win, role));
 }
 
 console.log(`\n╔═══ BATTERY ITEM 1 — COMPUTED-DEFICIT COORDINATE (per-opponent integration) ═══╗`);
@@ -178,14 +135,23 @@ for (const win of QUICK) {
 
   // ---- PITCHERS integrated over this pool's hitters ----
   {
-    const opp = hits.map((h) => ({ eye: n_(h[HIT_COL.eye]), kRat: n_(h[HIT_COL.kRat]), pow: n_(h[HIT_COL.pow]), babip: n_(h[HIT_COL.babip]) }));
+    // THE OPPONENT LIST. Uniform: the eligible BASE pool — production's `basePool`, where variants are
+    // scored but do not set the distribution. Realized: every eligible card at BOTH variant levels,
+    // because a v5 that played is a distinct opponent carrying distinct (boosted) ratings.
+    const oppE: Opponent[] = REALIZED
+      ? oppSets.get(cellKey(win.tier, "hit"))!
+      : hits.map((c) => ({ cid: "", card: c, vlvl: 0 }));
+    const rateH = (h: Record<string, unknown>) => ({ eye: n_(h[HIT_COL.eye]), kRat: n_(h[HIT_COL.kRat]), pow: n_(h[HIT_COL.pow]), babip: n_(h[HIT_COL.babip]) });
+    const opp = oppE.map((e) => rateH(e.card));
     // Aligned by index with `opp`. `null` ⇒ the uniform default path, which is left literally untouched
     // below so it stays bit-identical rather than "1×-identical".
-    const oppW = REALIZED ? realizedWeights(hits, "hit", win.tier) : null;
+    const oppW = REALIZED ? weightsFor(oppE, usage!.get(cellKey(win.tier, "hit"))) : null;
     // THE CONTROL: the SCALAR path — opponents collapsed to their mean, one prediction per card.
     // The difference between this and the per-opponent integration IS the curvature term, and it is
     // the only thing that distinguishes item 1 from machinery the program already had.
-    const mu = (k: keyof typeof opp[0]) => opp.reduce((a, o) => a + o[k], 0) / (opp.length || 1);
+    // Computed over the BASE pool in BOTH runs: it is a control, held fixed across the weightings.
+    const oppCtl = REALIZED ? hits.map(rateH) : opp;
+    const mu = (k: keyof typeof opp[0]) => oppCtl.reduce((a, o) => a + o[k], 0) / (oppCtl.length || 1);
     const muO = { eye: mu("eye"), kRat: mu("kRat"), pow: mu("pow"), babip: mu("babip") };
     const poolCh: Record<string, number[]> = { k9: [], bb9: [], hr9: [], babip: [] };
     const frameCh: Record<string, number[]> = { k9: [], bb9: [], hr9: [], babip: [] };
@@ -230,8 +196,11 @@ for (const win of QUICK) {
 
   // ---- HITTERS integrated over this pool's pitchers ----
   {
-    const opp = pits.map((p) => ({ con: n_(p[PIT_COL.con]), stu: n_(p[PIT_COL.stu]), hrr: n_(p[PIT_COL.hrr]), pbabip: n_(p[PIT_COL.pbabip]) }));
-    const oppW = REALIZED ? realizedWeights(pits, "pit", win.tier) : null;
+    const oppE: Opponent[] = REALIZED
+      ? oppSets.get(cellKey(win.tier, "pit"))!
+      : pits.map((c) => ({ cid: "", card: c, vlvl: 0 }));
+    const opp = oppE.map((e) => ({ con: n_(e.card[PIT_COL.con]), stu: n_(e.card[PIT_COL.stu]), hrr: n_(e.card[PIT_COL.hrr]), pbabip: n_(e.card[PIT_COL.pbabip]) }));
+    const oppW = REALIZED ? weightsFor(oppE, usage!.get(cellKey(win.tier, "pit"))) : null;
     const poolCh: Record<string, number[]> = { so: [], bb: [], hr: [], babip: [] };
     const frameCh: Record<string, number[]> = { so: [], bb: [], hr: [], babip: [] };
     for (const h of hits) {
@@ -272,19 +241,19 @@ for (const win of QUICK) {
 
 const f3 = (x: number) => (Number.isFinite(x) ? x.toFixed(3).padStart(8) : "     n/a");
 if (REALIZED) {
-  console.log(`\n── REALIZED-WEIGHT COVERAGE (join: Name+VAL+Hand, observed VLvl==0 only) ──`);
-  console.log(`   VLvl-5 VARIANT rows are EXCLUDED: variants are runtime-generated and absent from the catalog CSV,`);
-  console.log(`   so their observed usage is MISSING from the realized weighting entirely.`);
+  console.log(`\n── REALIZED-WEIGHT COVERAGE (weights read off the BUILDER's join, keyed by cid = CardID|VLvl) ──`);
+  console.log(`   VARIANTS ARE INCLUDED: base (VLvl 0) and v5 are SEPARATE opponents with their own ratings and`);
+  console.log(`   their own usage. The previous version of this run joined observed VLvl==0 only and discarded`);
+  console.log(`   the v5 share printed below — that share is the size of the error it made.`);
   console.log(`   opp = the OPPOSING role being weighted (pitchers integrate over 'hit', hitters over 'pit').`);
-  console.log(`\n  tier      opp  nonzero/eligible   top10%  share   obsV0  obsV5(dropped)  dupObs  dupCat  obsUnmatched`);
-  for (const s of wStats)
-    console.log(`  ${s.tier.padEnd(9)} ${s.oppRole}  ${String(s.nNonzero).padStart(5)}/${String(s.nEligible).padEnd(6)} ${String(s.top10Count).padStart(6)} ${(Number.isFinite(s.top10Share) ? (100 * s.top10Share).toFixed(1) + "%" : "n/a").padStart(7)}  ${String(s.obsRowsV0).padStart(6)} ${String(s.obsRowsV5).padStart(9)}      ${String(s.dupObsKeys).padStart(6)}  ${String(s.dupCatKeys).padStart(6)}  ${String(s.obsKeysUnmatched).padStart(12)}`);
-  console.log(`\n   dupObs / dupCat = join keys dropped for being NON-UNIQUE on the observed / catalog side`);
-  console.log(`     (dupObs also covers ${wStats.reduce((a, s) => a + s.dupObsRows, 0)} observed rows; dupCat ${wStats.reduce((a, s) => a + s.dupCatCards, 0)} catalog cards).`);
-  console.log(`   obsUnmatched = surviving observed keys with NO eligible catalog opponent (their usage is not carried).`);
-  console.log(`   top10% share = usage held by the heaviest ceil(10%) of the NONZERO-weight opponents.`);
-  console.log(`   NOTE ON THE SCALAR CONTROL: it is unchanged (uniform-mean collapse) and is therefore the SAME`);
-  console.log(`   column in both runs — it is a held-fixed control here, not the degenerate case of this integration.`);
+  console.log(`\n  tier      opp   played/eligible base   played/eligible v5      usage base       usage v5   v5 share  orphan`);
+  for (const s of coverage(usage!, oppSets))
+    console.log(`  ${s.tier.padEnd(9)} ${s.role}   ${String(s.playedBase).padStart(5)}/${String(s.nBase).padEnd(6)}        ${String(s.playedVar).padStart(5)}/${String(s.nVar).padEnd(6)}   ${s.usageBase.toFixed(0).padStart(13)}  ${s.usageVar.toFixed(0).padStart(13)}   ${(100 * s.varShare).toFixed(1).padStart(6)}%  ${String(s.orphanCids).padStart(6)}`);
+  console.log(`\n   v5 share = fraction of this cell's REALIZED opposition usage carried by variant rows.`);
+  console.log(`   orphan   = joined observed rows with no card in the opponent set (must be 0; pinned in tests/cwhit-realized.test.ts).`);
+  console.log(`   NOTE ON THE SCALAR CONTROL: it is unchanged (uniform-mean collapse over the BASE pool) and is`);
+  console.log(`   therefore the SAME column in both runs — a held-fixed control, not the degenerate case of this`);
+  console.log(`   integration. The degenerate identity pinned in tests relates the scalar to the UNIFORM run only.`);
 }
 console.log(`\n── CANDIDATE NEED = SD(frame conditions) / SD(pool conditions) ──`);
 console.log(`   >1 ⇒ the pool COMPRESSES predicted spread relative to the training frame, i.e. a correction is needed.`);
