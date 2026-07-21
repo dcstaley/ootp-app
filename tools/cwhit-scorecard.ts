@@ -126,7 +126,7 @@ if (CORRECTIONS) {
 // The judged sample — built by the ONE shared builder (src/eval/cwhit/sample.ts), so this tool and
 // tools/cwhit-two-ledger.ts necessarily score the identical cards with the identical predicted lines.
 const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap, source: SOURCE, minBf: MIN_BF_RUN, minPa: MIN_PA_RUN };
-const { recs, windows, notices, projUnjoined, obsFiles, projFiles } = buildCwhitSample(deps);
+const { recs, windows, notices, projUnjoined, obsFiles, projFiles, source, floors, projJoin } = buildCwhitSample(deps);
 const hasObs = (tier: string, role: "pit" | "hit") => obsFiles.includes(`cwhit-${tier}-${role}.tsv`);
 const projFile = (tier: string, role: "pit" | "hit") => (projFiles.includes(`cwhit-${tier}-${role}-proj.tsv`) ? `${PROJ}/cwhit-${tier}-${role}-proj.tsv` : null);
 
@@ -176,10 +176,24 @@ if (CORRECTIONS) {
 }
 console.log(``);
 
-console.log(`── FIXTURES DISCOVERED (glob-driven; no tier hard-coded) ──`);
-console.log(`  observed  (${OBS}):  ${obsFiles.filter((x) => x.endsWith(".tsv")).length} tables — Quick tiers used: ${QUICK.filter((q) => hasObs(q.tier, "pit") || hasObs(q.tier, "hit")).map((q) => q.tier).join(", ")}`);
-console.log(`  projected (${PROJ}): ${projFiles.filter((x) => x.endsWith(".tsv")).length} tables — ${projFiles.filter((x) => x.endsWith(".tsv")).join(", ") || "(none)"}`);
-console.log(`  NOTE: only the five QUICK tiers are scored (known VAL caps + neutral env). Daily/Cap formats in ${OBS} carry non-neutral era/park and are out of scope here.`);
+// PROVENANCE FROM THE SAMPLE ITSELF. This block used to re-derive the corpus by globbing the LEGACY
+// dirs for `.tsv` and re-implementing sample.ts's filename template. Under a capture source (files are
+// `.txt`, in a dated directory) every one of those probes came back empty and the run printed
+// "0 tables — Quick tiers used: " while thousands of rows were in fact scored — provenance that
+// actively misleads, in a committed artifact. It now reports what the builder actually read.
+const srcDesc = source.kind === "legacy"
+  ? `LEGACY top-100 fixtures (${OBS} + ${PROJ})`
+  : `FULL-DEPTH capture ${source.dir}${source.topN === undefined ? " at FULL DEPTH" : ` cut to a DERIVED top-${source.topN} view`}`;
+const tiersUsed = [...new Set(recs.map((r) => r.tier))];
+console.log(`── CORPUS ──`);
+console.log(`  source: ${srcDesc}`);
+// readdir yields the `proj/` SUBDIRECTORY too, so count data files by extension rather than entries.
+const dataFiles = (xs: string[]) => xs.filter((x) => /\.(tsv|txt)$/i.test(x)).length;
+console.log(`  tables: ${dataFiles(obsFiles)} observed / ${dataFiles(projFiles)} projected files present`);
+console.log(`  tiers scored: ${tiersUsed.join(", ") || "(none)"}  |  rows judged: ${recs.length}`);
+console.log(`  well-sampled floors (READ TIME): BF≥${floors.minBf} (pit) / PA≥${floors.minPa} (hit)`);
+console.log(`  projection join: ${projJoin.viaCid} via CID, ${projJoin.viaTitle} via title fallback`);
+console.log(`  NOTE: only the five QUICK tiers are scored (known VAL caps + neutral env). Daily/Cap formats carry non-neutral era/park and are out of scope here.`);
 for (const s of notices) console.log(`  · ${s}`);
 
 console.log(`\n── WINDOW OVERLAP (per projected table) — MUST be read before any ours-vs-cwhit claim ──`);

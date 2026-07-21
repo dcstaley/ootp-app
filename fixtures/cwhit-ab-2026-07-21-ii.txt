@@ -1,10 +1,12 @@
 ################################################################################
 # THREE-FACTOR A/B SNAPSHOT (ii) — 2026-07-21. factor (ii) — FULL DEPTH, BF/PA>=1000
-# cmd: tools/cwhit-scorecard.ts --corpus=fixtures/cwhit-capture-2026-07-21
+# cmd: tools/cwhit-scorecard.ts --corpus=fixtures/cwhit-capture-2026-07-21  (needs --stack-size=16000 at full depth)
 # Model league-42-43 + K_SPREAD_PIT {A:5.0871,G:152.5}. Instrument: CORRECTED
-# (697cdb2 IP/BF unit fix) — pitcher noise is in BF, dcv ratios are comparable
+# (697cdb2 IP/BF unit fix) — pitcher noise is in BF, so dcv ratios are comparable
 # ACROSS these three snapshots but NOT against any pre-697cdb2 run.
-# Projection join is by CID (b173aeb); title-key would have dropped ~577 Quick rows.
+# Projection join is by CID (b173aeb); the title key would have dropped ~577 Quick rows.
+# COMPLETENESS: verified to end at the Section-C caveat line. The scorecard segfaults
+# INTERMITTENTLY at full depth and a truncated run still looks like a valid report.
 ################################################################################
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════╗
@@ -21,10 +23,13 @@ PRODUCTION CORRECTIONS: ON (production default) — BUILD-1 pit K-spread ramp + 
   gold      1.505    120.5   1.259    15.87           0.440   0.870  0.214
   diamond   1.335    119.3   1.227    15.49           0.181   0.686  0.152
 
-── FIXTURES DISCOVERED (glob-driven; no tier hard-coded) ──
-  observed  (fixtures/cwhit):  0 tables — Quick tiers used: 
-  projected (fixtures/cwhit-proj): 0 tables — (none)
-  NOTE: only the five QUICK tiers are scored (known VAL caps + neutral env). Daily/Cap formats in fixtures/cwhit carry non-neutral era/park and are out of scope here.
+── CORPUS ──
+  source: FULL-DEPTH capture fixtures/cwhit-capture-2026-07-21 at FULL DEPTH
+  tables: 28 observed / 28 projected files present
+  tiers scored: iron, bronze, silver, gold, diamond  |  rows judged: 2907
+  well-sampled floors (READ TIME): BF≥1000 (pit) / PA≥1000 (hit)
+  projection join: 2907 via CID, 0 via title fallback
+  NOTE: only the five QUICK tiers are scored (known VAL caps + neutral env). Daily/Cap formats carry non-neutral era/park and are out of scope here.
   · projection join: 2907 via CID, 0 via title fallback, 0 observed rows with no projection
 
 ── WINDOW OVERLAP (per projected table) — MUST be read before any ours-vs-cwhit claim ──
