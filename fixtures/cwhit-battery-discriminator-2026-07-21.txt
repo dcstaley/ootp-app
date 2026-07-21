@@ -98,3 +98,45 @@ CAVEATS ON THIS RUN
   - BF floor 600 (IP >= 139.5). Seed 20260721, 2000 bootstrap resamples over PAIRS.
   - Pairs from the same card are not independent; the bootstrap resamples pairs, not cards,
     so its CI is optimistic where one card contributes many pairs (up to 28 for one card).
+
+################################################################################
+# INDEPENDENT REPLICATION — same question, different sample construction.
+# Strengthens the verdict and corrects one control framing above.
+################################################################################
+
+A second run built the pairs differently: it KEPT the pairs where dOpp is exactly zero
+(both formats share a value window), giving 807 pairs against the 385 used above.
+
+1. THE SIGN REVERSES WITH THAT CHOICE.
+     all 807 pairs      : interaction +0.0143 [-0.0285, +0.0575]  -> includes 0
+                          tercile HIGH-LOW +0.1195 [-0.1567, +0.3209] -> includes 0
+     385 nonzero-exposure: interaction -0.0722 [-0.1386, -0.0157]  -> excludes 0
+                          tercile HIGH-LOW -0.2943 [-0.6480, -0.0123] -> excludes 0
+   Same data, same question, opposite sign and opposite significance depending on whether
+   422 zero-exposure pairs are included. A result that flips on an analyst choice of that
+   kind is not a result.
+
+2. THE BB9 CONTROL IS WORSE THAN I STATED. Above I compared SLOPES (+0.067 vs +0.059) and
+   called them comparable. On explained variance the control is far STRONGER than the
+   target: pooled R^2 is 0.105 for dBB9 against 0.022 for dK9 on the identical regressor —
+   4.7x. The channel that should be near-inert to an opposing AVOID-K field tracks it
+   better than the K channel does. That is a decisive argument against reading any of this
+   causally, and it is a stronger statement than the one made above.
+
+3. THE EXPOSURE VARIABLE IS DEGENERATE BY CONSTRUCTION. Every config has
+   card_value_min = null, so the opposition measure is a deterministic function of
+   card_value_max ALONE. Across all 14 formats there are only SIX distinct opposition
+   levels, and 422 of 807 pairs (52.3%) have dOpp EXACTLY zero. The windows are perfectly
+   nested, so a wider window's opposing field is the narrower one's field plus higher-VAL
+   cards: dOpp is monotone in tier and cannot be varied independently of pool composition,
+   of which pitchers are eligible, or of era/park.
+
+4. THE ARBITRATING SUBSAMPLE IS TOO SMALL, CONFIRMED. Env-matched AND nonzero exposure:
+   N=93, 31 per tercile, HIGH-LOW -0.1666 [-0.7069, +0.1619]. The CI half-width (~0.43)
+   exceeds any effect the pooled estimate suggests. Its exposure comes from a handful of
+   format pairs, the largest being silverquick->goldslotsdaily (34 pairs).
+
+VERDICT UNCHANGED AND NOW BETTER EVIDENCED: the discriminator cannot separate
+wrong-curvature from missing-interaction on this corpus. The obstruction is structural —
+opposition is a deterministic function of the value window, and the value window is the
+same lever as pool composition and environment.
