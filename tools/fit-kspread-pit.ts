@@ -54,7 +54,7 @@ import { formatByLegacySlug } from "../src/eval/cwhit/corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
-  QUICK, inValueWindow, MIN_BF, FIELD_N, OBS_DIR,
+  QUICK, inValueWindow, MIN_BF, FIELD_N, OBS_DIR, type ValueWindow,
   type Rec, type SampleDeps, type KSpreadPit, obsTablePath,} from "../src/eval/cwhit/sample.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
@@ -149,7 +149,7 @@ for (const win of QUICK) {
   const pt = buildPoolTransform(ref, poolField, deps.envelope);
   const kbar = poolMeanKOwn(basePool, coeffs, rp, pt, FIELD_N).pit;
   const rows = pre.recs
-    .filter((r) => r.tier === tier && r.role === "pit" && wellSampled(r) && Number.isFinite(r.ours.k9) && Number.isFinite(r.obs.k9))
+    .filter((r) => r.tier === tier && r.role === "pit" && wellSampled(r) && Number.isFinite(r.ours.k9) && Number.isFinite(r.obs.k9!))
     .map((r) => ({ pred: r.ours.k9!, obs: r.obs.k9!, nv: k9Noise(r.obs.k9!, r.sample), rec: r }));
   if (rows.length < 5) { console.log(`\n[${tier}] N=${rows.length} < 5 — excluded from the fit entirely (diamond pit is the known dead cell)`); continue; }
   cells.push({ tier, gap, kbar, rows, m: mmse(rows.map((r) => r.pred), rows.map((r) => r.obs), rows.map((r) => r.nv)) });
@@ -454,51 +454,49 @@ for (const [di, D] of DAILY.entries()) {
   const calPre = calibrate(basePool, { coeffs: coeffsF, derived: derivedF, eventForm: trained.eventForm!, poolTransform: pt });
   const calPost = calibrate(basePool, { coeffs: coeffsF, derived: derivedF, eventForm: trained.eventForm!, poolTransform: pt, kSpread: { sHit: 1, sPit: s, meanHit: 0, meanPit: kbar } });
 
-  // our side: base + v5, pit only, format-eligible; fingerprint from the DEPLOYED line (env-matched).
-  const cards: JoinCard[] = [];
-  const byCid = new Map<string, { title: string; vlvl: number; pre: Record<string, number>; post: Record<string, number> }>();
-  for (const bc of baseCards) {
-    for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as const) {
-      if (!inV(c) || !rowEligible(c as any, t) || !isPit(c)) continue;
-      const cid = `${bc["Card ID"]}|${vlvl}`;
-      const pPre = ourPit(c, pt, depsF, calPre);
-      const pPost = ourPit(c, pt, depsF, calPost, ks);
-      cards.push({
-        cid, name: cardName(c), val: n_(c["Card Value"]), vlvl, hand: handLetter(n_(c["Throws"])),
-        primary: [Math.max(0, Math.min(1, (n_(c["Stamina"]) - 20) / 40)), pPre.dep.babip!],
-        validate: [pPre.dep.k9!, pPre.dep.bb9!, pPre.dep.hr9!],
-      });
-      byCid.set(cid, { title: String(bc["//Card Title"]), vlvl, pre: pPre.dep, post: pPost.dep });
-    }
-  }
-  // Same corpus as the Quick leg above, by construction — see obsTablePath. Hand-building a legacy
-  // path here made this battery compare tiers and dailies across two different capture windows.
-  const dPath = obsTablePath(D.fmt, "pit");
-  if (!dPath) throw new Error(`format "${D.fmt}" is not in the cwhit corpus registry — cannot resolve its observed table`);
-  const { rows: obsRows } = parseCwhitPit(readFileSync(dPath, "utf8"));
-  const obs: JoinObs<typeof obsRows[0]>[] = obsRows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.ip, row: r }));
-  const j = joinCwhit(obs, cards);
-  const paired = j.matched
-    .filter((m) => m.obs.row.bf >= MIN_BF)
-    .map((m) => {
-      const our = byCid.get(m.card.cid)!, o = m.obs.row;
-      return {
-        pre: our.pre, post: our.post,
-        obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) },
-        nv: k9Noise(o.k9, o.bf),
-      };
+  // NO PRIVATE JOIN (ruling B). This leg used to parse the observed table, build its own fingerprints
+  // and call joinCwhit itself. That bypassed the ONE builder — and therefore bypassed the fix that
+  // makes the fingerprint independent of the correction state, which is exactly why this tool and
+  // fit-pitspread-hrbab disagreed on the daily joins (gold-cap 504 vs 505): this leg fingerprinted on
+  // an UNcorrected line, hrbab's on a K-corrected one.
+  //
+  // `eligible` carries the format's OWN rules into the builder (bronze-heart's Year 1930-1989 is the
+  // only non-empty rule set among these four); without it, routing through the builder would silently
+  // widen that pool. `ref: refF` keeps the env-matched field the manual path used — deps.ref is the
+  // NEUTRAL field, and the old code computed refF separately for its own pool transform.
+  const win: ValueWindow = {
+    tier: D.fmt,
+    valueMin: t.card_value_min ?? undefined,
+    valueMax: t.card_value_max ?? Infinity,
+    eligible: (c: Record<string, unknown>) => rowEligible(c as unknown as Card, t),
+  };
+  const depsDaily: SampleDeps = { ...depsF, ref: refF, formats: [win] };
+  const preDaily = buildCwhitSample(depsDaily);
+  const postDaily = buildCwhitSample({ ...depsDaily, kSpreadPit: new Map([[D.fmt, ks]]) });
+  const postBy = new Map(postDaily.recs.filter((r) => r.role === "pit").map((r) => [`${r.title}|${r.vlvl}`, r]));
+  const paired = preDaily.recs
+    .filter((r) => r.role === "pit" && wellSampled(r) && postBy.has(`${r.title}|${r.vlvl}`))
+    .map((r) => {
+      const post = postBy.get(`${r.title}|${r.vlvl}`)!;
+      // DEPLOYED line on both sides — these formats carry a real era/park, so the judged line is the
+      // env-applied one, as before.
+      return { pre: r.oursDep, post: post.oursDep, obs: r.obs, nv: k9Noise(r.obs.k9!, r.sample) };
     });
+  const joinedN = preDaily.recs.filter((r) => r.role === "pit").length;
+
   // Label composed from the CONFIG rather than retyped: the old hardcoded strings duplicated
   // era/park/window/cap text that could silently drift from the config it described.
   const envDesc = `${t.eraId} / ${t.parkId}, VAL≤${t.card_value_max ?? "—"}${t.total_cap ? `, cap ${t.total_cap}` : ""}`;
   console.log(`\n  ── ${D.label} — ${envDesc} ──`);
-  console.log(`  pool ${basePool.length} cards | joined ${j.matched.length}/${obs.length} (unique ${j.stats.matchedUnique} + fp ${j.stats.matchedFingerprint}), well-sampled (BF≥${MIN_BF}) ${paired.length} | gap ${f(gap, 1)}  K̄_pool ${f(kbar, 1)}/600  s(gap) = ${f(s, 2)}  era_k ${f(coeffsF.era_k, 3)}`);
+  // The unique/fingerprint split and the observed-row denominator came from the private join's own
+  // stats object; the shared builder does not surface join stats, so they are no longer printed here.
+  console.log(`  pool ${basePool.length} cards | joined ${joinedN}, well-sampled (BF≥${MIN_BF}) ${paired.length} | gap ${f(gap, 1)}  K̄_pool ${f(kbar, 1)}/600  s(gap) = ${f(s, 2)}  era_k ${f(coeffsF.era_k, 3)}`);
   if (paired.length < 8) { console.log(`  N too thin for a slope verdict — reporting nothing (never a number from noise)`); continue; }
-  const preP = paired.map((r) => r.pre.k9!), postP = paired.map((r) => r.post.k9!), o9 = paired.map((r) => r.obs.k9), nv = paired.map((r) => r.nv);
+  const preP = paired.map((r) => r.pre.k9!), postP = paired.map((r) => r.post.k9!), o9 = paired.map((r) => r.obs.k9!), nv = paired.map((r) => r.nv);
   const preM = mmse(preP, o9, nv), postM = mmse(postP, o9, nv);
   const preW = paired.map((r) => pitWobaFromChannels(r.pre.k9!, r.pre.bb9!, r.pre.hr9!, r.pre.babip!, W));
   const postW = paired.map((r) => pitWobaFromChannels(r.post.k9!, r.post.bb9!, r.post.hr9!, r.post.babip!, W));
-  const obsW = paired.map((r) => r.obs.woba);
+  const obsW = paired.map((r) => r.obs.woba!);
   const r3 = rng(SEED + 100 + di);
   const preS: number[] = [], postS: number[] = [], dC: number[] = [];
   for (let b = 0; b < B; b++) {
@@ -508,7 +506,7 @@ for (const [di, D] of DAILY.entries()) {
     dC.push(pearson(idx.map((i) => postW[i]!), idx.map((i) => obsW[i]!)) - pearson(idx.map((i) => preW[i]!), idx.map((i) => obsW[i]!)));
   }
   const preCI = ci(preS.filter(Number.isFinite)), postCI = ci(postS.filter(Number.isFinite)), dCI = ci(dC.filter(Number.isFinite));
-  const lvPre = meanEst(paired.map((r) => r.pre.k9! - r.obs.k9)), lvPost = meanEst(paired.map((r) => r.post.k9! - r.obs.k9));
+  const lvPre = meanEst(paired.map((r) => r.pre.k9! - r.obs.k9!)), lvPost = meanEst(paired.map((r) => r.post.k9! - r.obs.k9!));
   const g1 = postCI.lo <= 1 && 1 <= postCI.hi;
   const cPre = pearson(preW, obsW), cPost = pearson(postW, obsW);
   const g2 = cPost >= cPre || (dCI.lo <= 0 && 0 <= dCI.hi);

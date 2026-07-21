@@ -54,7 +54,7 @@ import { formatByLegacySlug } from "../src/eval/cwhit/corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.ts";
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
-  QUICK, inValueWindow, MIN_BF, FIELD_N, OBS_DIR,
+  QUICK, inValueWindow, MIN_BF, FIELD_N, OBS_DIR, type ValueWindow,
   type Rec, type SampleDeps, type KSpreadPit, obsTablePath,} from "../src/eval/cwhit/sample.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
@@ -187,9 +187,9 @@ for (const { tier } of QUICK) {
   const g = tierGeom.get(tier)!;
   const rows = pre.recs
     .filter((r) => r.tier === tier && r.role === "pit" && wellSampled(r)
-      && Number.isFinite(r.ours.hr9) && Number.isFinite(r.obs.hr9)
-      && Number.isFinite(r.ours.babip) && Number.isFinite(r.obs.babip)
-      && Number.isFinite(r.ours.k9) && Number.isFinite(r.ours.woba) && Number.isFinite(r.obs.woba))
+      && Number.isFinite(r.ours.hr9) && Number.isFinite(r.obs.hr9!)
+      && Number.isFinite(r.ours.babip) && Number.isFinite(r.obs.babip!)
+      && Number.isFinite(r.ours.k9) && Number.isFinite(r.ours.woba) && Number.isFinite(r.obs.woba!))
     .map((r) => ({
       predHr: r.ours.hr9!, obsHr: r.obs.hr9!, nvHr: hrNoise(r.obs.hr9!, r.sample),
       predBab: r.ours.babip!, obsBab: r.obs.babip!, nvBab: babNoise(r.obs as { k9: number; bb9: number; hr9: number; babip: number }, r.sample),
@@ -543,40 +543,39 @@ for (const [di, D] of DAILY.entries()) {
   const depsF: SampleDeps = { ...deps, coeffs: coeffsF, derived: derivedF };
   const cal = calibrate(basePool, { coeffs: coeffsF, derived: derivedF, eventForm: trained.eventForm!, poolTransform: pt, kSpread: { sHit: 1, sPit: ksPre.s, meanHit: 0, meanPit: kbar } });
 
-  const cards: JoinCard[] = [];
-  const byCid = new Map<string, { pre: Record<string, number>; post: Record<string, number>; postH: Record<string, number> }>();
-  for (const bc of baseCards) {
-    for (const [vlvl, c] of [[0, bc], [5, makeVariant(bc)]] as const) {
-      if (!inV(c) || !rowEligible(c as any, t) || !isPit(c)) continue;
-      const cid = `${bc["Card ID"]}|${vlvl}`;
-      const pPre = ourPit(c, pt, depsF, cal, ksPre);
-      const pPost = ourPit(c, pt, depsF, cal, ksFull);
-      const pPostH = ourPit(c, pt, depsF, cal, ksHrO);
-      cards.push({
-        cid, name: cardName(c), val: n_(c["Card Value"]), vlvl, hand: handLetter(n_(c["Throws"])),
-        primary: [Math.max(0, Math.min(1, (n_(c["Stamina"]) - 20) / 40)), pPre.dep.babip!],
-        validate: [pPre.dep.k9!, pPre.dep.bb9!, pPre.dep.hr9!],
-      });
-      byCid.set(cid, { pre: pPre.dep, post: pPost.dep, postH: pPostH.dep });
-    }
-  }
-  // Same corpus as the Quick leg above, by construction — see obsTablePath.
-  const dPath = obsTablePath(D.fmt, "pit");
-  if (!dPath) throw new Error(`format "${D.fmt}" is not in the cwhit corpus registry — cannot resolve its observed table`);
-  const { rows: obsRows } = parseCwhitPit(readFileSync(dPath, "utf8"));
-  const obs: JoinObs<typeof obsRows[0]>[] = obsRows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.ip, row: r }));
-  const j = joinCwhit(obs, cards);
-  const paired = j.matched
-    .filter((m) => m.obs.row.bf >= MIN_BF)
-    .map((m) => {
-      const our = byCid.get(m.card.cid)!, o = m.obs.row;
-      return { pre: our.pre, post: our.post, postH: our.postH, obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) }, bf: o.bf };
-    });
+  // NO PRIVATE JOIN (ruling B). This leg used to parse, fingerprint and join itself — bypassing the
+  // ONE builder and therefore the fix that makes the fingerprint independent of the correction state.
+  // Its fingerprint rode a K-CORRECTED line (ourPit(..., ksPre)) while fit-kspread-pit's rode an
+  // UNcorrected one, which is exactly why the two tools disagreed on the daily joins (gold-cap 505
+  // vs 504). Through the builder both now resolve identically.
+  //
+  // `eligible` carries the format's own rules (bronze-heart's Year 1930-1989 is the only non-empty
+  // set among these four); `ref: refF` keeps the env-matched field this leg already used for `pt`.
+  const win: ValueWindow = {
+    tier: D.fmt,
+    valueMin: t.card_value_min ?? undefined,
+    valueMax: t.card_value_max ?? Infinity,
+    eligible: (c: Record<string, unknown>) => rowEligible(c as unknown as Card, t),
+  };
+  const depsDaily: SampleDeps = { ...depsF, ref: refF, formats: [win] };
+  const sampleWith = (k: KSpreadPit) => buildCwhitSample({ ...depsDaily, kSpreadPit: new Map([[D.fmt, k]]) });
+  const preDaily = sampleWith(ksPre), postDaily = sampleWith(ksFull), postHDaily = sampleWith(ksHrO);
+  const key = (r: { title: string; vlvl: number }) => `${r.title}|${r.vlvl}`;
+  const postBy = new Map(postDaily.recs.filter((r) => r.role === "pit").map((r) => [key(r), r]));
+  const postHBy = new Map(postHDaily.recs.filter((r) => r.role === "pit").map((r) => [key(r), r]));
+  const paired = preDaily.recs
+    .filter((r) => r.role === "pit" && wellSampled(r) && postBy.has(key(r)) && postHBy.has(key(r)))
+    .map((r) => ({
+      pre: r.oursDep, post: postBy.get(key(r))!.oursDep, postH: postHBy.get(key(r))!.oursDep,
+      obs: r.obs, bf: r.sample,
+    }));
+  const joinedN = preDaily.recs.filter((r) => r.role === "pit").length;
+
   // Label composed from the CONFIG rather than retyped: the old hardcoded strings duplicated
   // era/park/window/cap text that could silently drift from the config it described.
   const envDesc = `${t.eraId} / ${t.parkId}, VAL≤${t.card_value_max ?? "—"}${t.total_cap ? `, cap ${t.total_cap}` : ""}`;
   console.log(`\n  ── ${D.label} — ${envDesc} ──`);
-  console.log(`  pool ${basePool.length} | joined ${j.matched.length}/${obs.length}, well-sampled ${paired.length} | g_hr ${f(shift.pit.vR.hrr ?? 0, 1)} s_hr ${f(ksFull.sHr!, 2)}  g_bab ${f(shift.pit.vR.pbabip ?? 0, 1)} s_bab ${f(ksFull.sBab!, 2)} | era_hr(eff) ${f(derivedF.era_effective_hr, 3)}  era_h ${f(derivedF.era_h, 3)}`);
+  console.log(`  pool ${basePool.length} | joined ${joinedN}, well-sampled ${paired.length} | g_hr ${f(shift.pit.vR.hrr ?? 0, 1)} s_hr ${f(ksFull.sHr!, 2)}  g_bab ${f(shift.pit.vR.pbabip ?? 0, 1)} s_bab ${f(ksFull.sBab!, 2)} | era_hr(eff) ${f(derivedF.era_effective_hr, 3)}  era_h ${f(derivedF.era_h, 3)}`);
   if (paired.length < 8) { console.log(`  N too thin for a slope verdict — reporting nothing (never a number from noise)`); continue; }
   const r3 = rng(SEED + 100 + di);
   const chan = (get: (r: typeof paired[0]) => { p0: number; p1: number; o: number; nv: number }, lbl: string, d: number) => {
@@ -594,11 +593,11 @@ for (const [di, D] of DAILY.entries()) {
     console.log(`  ${lbl}: slope pre ${f(preM.slope.est, d)} [${f(preCI.lo, d)},${f(preCI.hi, d)}] → post ${f(postM.slope.est, d)} [${f(postCI.lo, d)},${f(postCI.hi, d)}]   ${g1 ? "PASS (CI covers 1)" : postM.slope.est > 1 ? "RESIDUAL >1 (under-corrected here)" : "OVERSHOOT <1"}   ratioDcv ${f(preM.ratioDeconv, 2)} → ${f(postM.ratioDeconv, 2)}`);
     return { pre: preM.slope.est, post: postM.slope.est, g1 };
   };
-  const hrRes = chan((r) => ({ p0: r.pre.hr9!, p1: r.post.hr9!, o: r.obs.hr9, nv: hrNoise(r.obs.hr9, r.bf) }), "HR9  ", 2);
-  const babRes = chan((r) => ({ p0: r.pre.babip!, p1: r.post.babip!, o: r.obs.babip, nv: babNoise(r.obs, r.bf) }), "BABIP", 2);
+  const hrRes = chan((r) => ({ p0: r.pre.hr9!, p1: r.post.hr9!, o: r.obs.hr9!, nv: hrNoise(r.obs.hr9!, r.bf) }), "HR9  ", 2);
+  const babRes = chan((r) => ({ p0: r.pre.babip!, p1: r.post.babip!, o: r.obs.babip!, nv: babNoise(r.obs as { k9: number; bb9: number; hr9: number; babip: number }, r.bf) }), "BABIP", 2);
   const preW = paired.map((r) => pitWobaFromChannels(r.pre.k9!, r.pre.bb9!, r.pre.hr9!, r.pre.babip!, W));
   const postW = paired.map((r) => pitWobaFromChannels(r.post.k9!, r.post.bb9!, r.post.hr9!, r.post.babip!, W));
-  const obsW = paired.map((r) => r.obs.woba);
+  const obsW = paired.map((r) => r.obs.woba!);
   const dC: number[] = [];
   for (let b = 0; b < B; b++) {
     const idx = paired.map(() => Math.floor(r3() * paired.length));
