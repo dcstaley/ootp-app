@@ -1,0 +1,56 @@
+################################################################################
+# FULL GATE SWEEP AT THE FINAL CONFIG — 2026-07-21 (Fable session-4 condition b).
+# Defaults = full-depth 2026-07-21 capture, floors BF>=600 / PA>=500, CORRECTED
+# noise instrument (697cdb2). Tools run with no flags. Both completed first try.
+# MEASUREMENT ONLY — nothing here ships. Constants stay {5.0871, 152.5}.
+################################################################################
+
+== fit-kspread-pit.ts — 6 FAILs, ALL on G1 (K9 slope). Nothing else fails. ==
+
+  QUICK TIERS          G1 K9 slope post [CI]        verdict
+    iron               1.09 [1.03,1.15]             FAIL (CI excludes 1)
+    bronze             0.98 [0.93,1.03]             PASS
+    silver             0.90 [0.83,0.96]             FAIL
+    gold               1.11 [1.02,1.19]             FAIL
+    diamond            0.69 [0.53,0.84]             FAIL
+  DAILIES (held-out weird-env evaluation legs, never fit points)
+    Early Gold         1.27 [1.14,1.41]             FAIL
+    Bronze Heart       1.36 [1.22,1.49]             FAIL
+    Gold Cap Daily     1.02 [0.95,1.08]             PASS
+    Diamond Cap Daily  1.18 [0.89,1.36]             PASS
+  G2 wOBAA ordering: PASS on every tier and every daily, and POOLED.
+  G3/G4 print numbers without verdict tokens. K9 ordering: 0 rank moves on all 5 tiers.
+
+== fit-pitspread-hrbab.ts — ZERO FAILs. Every gate, every tier, every daily, both channels. ==
+
+== WHY K FAILS AND HR DOES NOT — the gap-only form cannot express the need ==
+
+  tier      gap(stu)   measured slope (the NEED)   ramp s(g)   residual
+  iron        23.6            1.82                   1.66        -0.16
+  bronze      22.8            1.62                   1.66        +0.03
+  silver      20.5            1.48                   1.64        +0.17
+  gold        15.9            1.78                   1.60        -0.18
+  diamond     10.4            1.04                   1.51        +0.47
+
+  Gaps fall monotonically 23.6 -> 10.4. If the need were a function of gap alone it would
+  fall monotonically too. It does not: GOLD at gap 15.9 needs 1.78 — nearly iron's 1.82 at
+  gap 23.6, and far above silver's 1.48 at gap 20.5. Gold is the break.
+
+  The ORACLE-s DIAGNOSTIC settles that this is a FORM problem, not a noise problem: setting
+  s to each tier's OWN measured slope drives G1 to exactly 1.00 [CI covering 1] at every
+  tier, iron through diamond. The per-tier need is well determined. A gap-only ramp simply
+  cannot reach all five points at once.
+
+  HR9 by contrast is gap-FLAT by measurement — the tool reports the saturating form beating
+  linear decisively, s ~ 1.19 at every tier gap, residuals -0.13..+0.06 — which is why a flat
+  correction passes everywhere. Confirms the geometry read: HR-flat holds, K-monotone does not.
+
+== MECHANICAL FLAGS (not interpretation) ==
+  · bronze N differs BETWEEN THE TWO TOOLS on the same corpus and floors: kspread 156,
+    hrbab 158 (and Gold Cap Daily joins 504 vs 505). Same sample should give the same N.
+  · kspread's shipping pin G=8.0 sits exactly AT the lower bound of its own stated
+    identifiability band (G in [8.0, 400.0+]), and its bootstrap CI [0.5, 46.5] extends
+    BELOW that band.
+  · diamond BABIP dcv is n/a in three places (thinnest cells) — slope verdicts still produced.
+  · kspread's daily blocks print no algebraic-expectation term and no ordering line, unlike
+    its own Quick blocks; hrbab prints no ordering gate anywhere. ABSENT, not FAIL.
