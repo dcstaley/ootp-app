@@ -84,8 +84,7 @@ import { HBP_PER_PA } from "../src/eval/cwhit/scorecard.ts";
 import { mmse, meanEst } from "../src/eval/cwhit/two-ledger.ts";
 import {
   buildCwhitSample, ourHit, wellSampled, handLetter, isPit, cardName, n_, FIELD_N, MIN_PA, QUICK, inValueWindow, type ValueWindow,
-  type Rec, type SampleDeps, type Exposure,
-} from "../src/eval/cwhit/sample.ts";
+  type Rec, type SampleDeps, type Exposure, obsTablePath,} from "../src/eval/cwhit/sample.ts";
 import {
   correctChannel, hitTailW, PINNED_HIT_TAIL, HIT_TAIL_SAT_G0,
   type HitTailFamily, type HitTailShape, type HitTailChanStat,
@@ -851,7 +850,10 @@ for (const { key, tid } of FMTS) {
     }
   }
   const stHr = chStat(poolHr), stBab = chStat(poolBab);
-  const { rows: obsRows } = parseCwhitHit(readFileSync(`fixtures/cwhit/cwhit-${key}-hit.tsv`, "utf8"));
+  // Same corpus as the Quick leg above, by construction — see obsTablePath.
+  const hPath = obsTablePath(key, "hit");
+  if (!hPath) throw new Error(`format "${key}" is not in the cwhit corpus registry — cannot resolve its observed table`);
+  const { rows: obsRows } = parseCwhitHit(readFileSync(hPath, "utf8"));
   const obs: JoinObs<typeof obsRows[0]>[] = obsRows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.babip], validate: [r.bbPct, r.soPct, r.hr600], sample: r.pa, row: r }));
   const j = joinCwhit(obs, cards);
   const powXs = basePool.filter((c) => !isPit(c)).map((c) => blendHit(c, "Power")).filter(Number.isFinite).sort((a, b) => a - b);

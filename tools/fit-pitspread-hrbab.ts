@@ -54,8 +54,7 @@ import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/join.t
 import {
   buildCwhitSample, wellSampled, ourPit, cardName, handLetter, isPit, n_,
   QUICK, inValueWindow, MIN_BF, FIELD_N, OBS_DIR,
-  type Rec, type SampleDeps, type KSpreadPit,
-} from "../src/eval/cwhit/sample.ts";
+  type Rec, type SampleDeps, type KSpreadPit, obsTablePath,} from "../src/eval/cwhit/sample.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
 const sgn = (x: number, d = 2) => (Number.isFinite(x) ? `${x >= 0 ? "+" : ""}${x.toFixed(d)}` : "n/a");
@@ -557,7 +556,10 @@ for (const [di, D] of DAILY.entries()) {
       byCid.set(cid, { pre: pPre.dep, post: pPost.dep, postH: pPostH.dep });
     }
   }
-  const { rows: obsRows } = parseCwhitPit(readFileSync(`${OBS_DIR}/cwhit-${D.fmt}-pit.tsv`, "utf8"));
+  // Same corpus as the Quick leg above, by construction — see obsTablePath.
+  const dPath = obsTablePath(D.fmt, "pit");
+  if (!dPath) throw new Error(`format "${D.fmt}" is not in the cwhit corpus registry — cannot resolve its observed table`);
+  const { rows: obsRows } = parseCwhitPit(readFileSync(dPath, "utf8"));
   const obs: JoinObs<typeof obsRows[0]>[] = obsRows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.ip, row: r }));
   const j = joinCwhit(obs, cards);
   const paired = j.matched

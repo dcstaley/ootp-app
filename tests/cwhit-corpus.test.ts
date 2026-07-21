@@ -17,7 +17,7 @@ import {
   CWHIT_CORPUS, CAPTURE_DIR_2026_07_21, LEGACY_TOP_N, topNView, rankKey,
   formatByKey, formatByLegacySlug, captureObsPath, captureProjPath,
 } from "../src/eval/cwhit/corpus.ts";
-import { QUICK, DEFAULT_SOURCE, MIN_BF, MIN_PA } from "../src/eval/cwhit/sample.ts";
+import { QUICK, DEFAULT_SOURCE, MIN_BF, MIN_PA, obsTablePath } from "../src/eval/cwhit/sample.ts";
 import { BF_PER_9, bfFromIp, per9NoiseVar, agreement } from "../src/eval/cwhit/scorecard.ts";
 import { IP_TO_BF, parseCwhitPit } from "../src/eval/cwhit/parse.ts";
 
@@ -225,5 +225,32 @@ describe("re-baseline measurement defaults", () => {
     // Guards the exact confusion that produced the d40287a/697cdb2 defects: a bar named in BF being
     // compared against innings. 600 BF is ~139.5 IP; if someone "restores" IP units this fails.
     expect(MIN_BF / IP_TO_BF).toBeCloseTo(139.53, 2);
+  });
+});
+
+// ── ONE CORPUS DECISION, NOT PER-CALL-SITE (2026-07-21) ─────────────────────
+// Three tools scored Quick tiers through buildCwhitSample but read their daily/weird-env formats by
+// hand-building `fixtures/cwhit/cwhit-<slug>-<role>.tsv`. Harmless while the builder also defaulted to
+// legacy; the instant DEFAULT_SOURCE moved to the capture it became a MIXED-CORPUS comparison —
+// Quick tiers on 2026-07-05..07-19 against dailies on 2026-06-28..07-12, in one table, silently.
+describe("obsTablePath — the single corpus decision", () => {
+  it("follows DEFAULT_SOURCE, so a daily leg lands in the same corpus as the Quick leg", () => {
+    for (const slug of ["earlygolddaily", "bronzeheartdaily", "goldcapdaily", "diamondcapdaily", "bronze"]) {
+      for (const role of ["pit", "hit"] as const) {
+        const p = obsTablePath(slug, role);
+        expect(p, `${slug} ${role}`).toContain(CAPTURE_DIR_2026_07_21);
+        expect(existsSync(abs(p!)), `${slug} ${role} -> ${p}`).toBe(true);
+      }
+    }
+  });
+
+  it("still resolves the legacy corpus when asked explicitly", () => {
+    expect(obsTablePath("earlygolddaily", "pit", { kind: "legacy" })).toBe("fixtures/cwhit/cwhit-earlygolddaily-pit.tsv");
+  });
+
+  it("returns null for a format the registry does not know, rather than an unreadable path", () => {
+    // Callers turn this into "format X is not in the registry", which names the problem. A fabricated
+    // path would surface as ENOENT on a filename nobody recognises.
+    expect(obsTablePath("nosuchformat", "pit")).toBeNull();
   });
 });

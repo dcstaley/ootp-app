@@ -357,6 +357,26 @@ export function ourHit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales
 /** Does this row clear the well-sampled floor? Prefers the flag the builder computed from the RUN's
  *  effective floors, falling back to the module defaults for a `Rec` built before floors were
  *  configurable. Keeping the free-function shape means no caller had to change. */
+/**
+ * THE observed-table path for a format slug, under a given source (default: the run's DEFAULT_SOURCE).
+ *
+ * WHY THIS IS EXPORTED. Three tools score the Quick tiers through `buildCwhitSample` but read their
+ * daily / weird-env formats by hand-building a LEGACY path (`fixtures/cwhit/cwhit-<slug>-<role>.tsv`),
+ * bypassing the builder entirely. That was harmless while the builder also defaulted to legacy. The
+ * moment DEFAULT_SOURCE moved to the capture it became a MIXED-CORPUS comparison: Quick tiers on
+ * 2026-07-05..07-19 against dailies on 2026-06-28..07-12 — two different windows, in one table, with
+ * nothing in the output saying so. Routing every such read through here means the daily leg follows
+ * whatever corpus the Quick leg is using, by construction rather than by remembering.
+ *
+ * Returns null for a slug the registry does not know under a capture source, so the caller can say
+ * which format is missing instead of failing on an unreadable path.
+ */
+export function obsTablePath(legacySlug: string, role: "pit" | "hit", source: CwhitSource = DEFAULT_SOURCE): string | null {
+  if (source.kind === "legacy") return `${OBS_DIR}/cwhit-${legacySlug}-${role}.tsv`;
+  const f = formatByLegacySlug(legacySlug);
+  return f ? captureObsPath(source.dir, f, role) : null;
+}
+
 export const wellSampled = (r: Rec): boolean =>
   r.wellSampled ?? (r.role === "pit" ? r.sample >= MIN_BF : r.sample >= MIN_PA);
 
