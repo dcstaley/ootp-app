@@ -31,7 +31,6 @@ import {
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../src/scoring-core/hit-tail.ts";
 import { parseCatalogCsv } from "../src/data/catalog.ts";
 import { HIT_BIP_ADJ } from "../src/model/curves.ts";
-import { IP_TO_BF } from "../src/eval/cwhit/parse.ts";
 import {
   pitWobaFromChannels, hitWobaFromRates, PER9_TO_PER600, type WobaWeights as WW,
 } from "../src/eval/cwhit/audit.ts";
@@ -177,7 +176,7 @@ function decompose(r: Rec): Cell {
     // Reconstruction is checked against the SHARED composite functions, not against stored numbers.
     const pw = pitWobaFromChannels(r.ours["k9"]!, r.ours["bb9"]!, r.ours["hr9"]!, r.ours["babip"]!, W);
     const ow = pitWobaFromChannels(r.obs["k9"]!, r.obs["bb9"]!, r.obs["hr9"]!, r.obs["babip"]!, W);
-    return { pred, obs, n: r.sample * IP_TO_BF, predWoba: pw, obsWoba: ow, recon: { pred: total(pred) - pw, obs: total(obs) - ow }, inRange: true };
+    return { pred, obs, n: r.sample, predWoba: pw, obsWoba: ow, recon: { pred: total(pred) - pw, obs: total(obs) - ow }, inRange: true };
   }
   const { s: pred, inRange } = hitPredProps(r.ours, r.ours["woba"]!);
   const obs = hitObsProps(r.raw, r.raw["soPctPerPa"]!);

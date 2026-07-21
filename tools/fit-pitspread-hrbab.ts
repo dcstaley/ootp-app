@@ -90,9 +90,8 @@ const deps: SampleDeps = {
 };
 
 // per-card observed sampling variances (the mmse-tool noise model, copied — tools can't import tools)
-const hrNoise = (hr9: number, ip: number) => per9NoiseVar(hr9, ip);
-const babNoise = (o: { k9: number; bb9: number; hr9: number; babip: number }, ip: number) => {
-  const bf = ip * 4.3;
+const hrNoise = (hr9: number, bf: number) => per9NoiseVar(hr9, bf);   // BF, one unit per tool
+const babNoise = (o: { k9: number; bb9: number; hr9: number; babip: number }, bf: number) => {
   const bip = Math.max(bf - (o.k9 + o.bb9 + o.hr9) / BF_PER_9 * bf - 0.009 * bf, 1);
   return babipNoiseVar(o.babip, bip);
 };
@@ -565,7 +564,7 @@ for (const [di, D] of DAILY.entries()) {
     .filter((m) => m.obs.row.bf >= MIN_BF)
     .map((m) => {
       const our = byCid.get(m.card.cid)!, o = m.obs.row;
-      return { pre: our.pre, post: our.post, postH: our.postH, obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) }, ip: o.ip };
+      return { pre: our.pre, post: our.post, postH: our.postH, obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) }, bf: o.bf };
     });
   console.log(`\n  ── ${D.label} ──`);
   console.log(`  pool ${basePool.length} | joined ${j.matched.length}/${obs.length}, well-sampled ${paired.length} | g_hr ${f(shift.pit.vR.hrr ?? 0, 1)} s_hr ${f(ksFull.sHr!, 2)}  g_bab ${f(shift.pit.vR.pbabip ?? 0, 1)} s_bab ${f(ksFull.sBab!, 2)} | era_hr(eff) ${f(derivedF.era_effective_hr, 3)}  era_h ${f(derivedF.era_h, 3)}`);
@@ -586,8 +585,8 @@ for (const [di, D] of DAILY.entries()) {
     console.log(`  ${lbl}: slope pre ${f(preM.slope.est, d)} [${f(preCI.lo, d)},${f(preCI.hi, d)}] → post ${f(postM.slope.est, d)} [${f(postCI.lo, d)},${f(postCI.hi, d)}]   ${g1 ? "PASS (CI covers 1)" : postM.slope.est > 1 ? "RESIDUAL >1 (under-corrected here)" : "OVERSHOOT <1"}   ratioDcv ${f(preM.ratioDeconv, 2)} → ${f(postM.ratioDeconv, 2)}`);
     return { pre: preM.slope.est, post: postM.slope.est, g1 };
   };
-  const hrRes = chan((r) => ({ p0: r.pre.hr9!, p1: r.post.hr9!, o: r.obs.hr9, nv: hrNoise(r.obs.hr9, r.ip) }), "HR9  ", 2);
-  const babRes = chan((r) => ({ p0: r.pre.babip!, p1: r.post.babip!, o: r.obs.babip, nv: babNoise(r.obs, r.ip) }), "BABIP", 2);
+  const hrRes = chan((r) => ({ p0: r.pre.hr9!, p1: r.post.hr9!, o: r.obs.hr9, nv: hrNoise(r.obs.hr9, r.bf) }), "HR9  ", 2);
+  const babRes = chan((r) => ({ p0: r.pre.babip!, p1: r.post.babip!, o: r.obs.babip, nv: babNoise(r.obs, r.bf) }), "BABIP", 2);
   const preW = paired.map((r) => pitWobaFromChannels(r.pre.k9!, r.pre.bb9!, r.pre.hr9!, r.pre.babip!, W));
   const postW = paired.map((r) => pitWobaFromChannels(r.post.k9!, r.post.bb9!, r.post.hr9!, r.post.babip!, W));
   const obsW = paired.map((r) => r.obs.woba);

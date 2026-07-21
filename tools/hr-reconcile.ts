@@ -393,8 +393,9 @@ for (const { tier, dir, valueMax } of QDIRS) {
       const pred = (wR * side("vR") + wL * side("vL")) * per9;
       const obs = (a.pHR * 600 / a.pBF) * per9;
       const axis = wR * R(a.r, "vR", "HRA") + wL * R(a.r, "vL", "HRA");
-      const ip = a.pBF / (BF_PER_9 / 9);
-      return { axis, pred, obs, w: ip, nv: per9NoiseVar(obs, ip) };
+      // pBF is already BF: no round-trip through IP. (`w` scaled by a constant leaves every
+      // weighted mean identical, so this is unit hygiene, not a numeric change.)
+      return { axis, pred, obs, w: a.pBF, nv: per9NoiseVar(obs, a.pBF) };
     });
 
   console.log(`  cells: bias = pred − obs, weighted ± card t half-width (n); quartiles within-pool as in the primary grid`);

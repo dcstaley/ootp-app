@@ -57,7 +57,6 @@ import {
   pearson, spearman, per9NoiseVar, babipNoiseVar, pctNoiseVar, per600NoiseVar, BF_PER_9,
   wobaNoiseCells, wobaNoiseVar, wobaNoiseVarIndep,
 } from "../src/eval/cwhit/scorecard.ts";
-import { IP_TO_BF } from "../src/eval/cwhit/parse.ts";
 import {
   buildCwhitSample, wellSampled, isPit, n_, FIELD_N, MIN_BF, MIN_PA, QUICK, inValueWindow,
   type KSpreadPit, type Rec, type SampleDeps,
@@ -122,7 +121,7 @@ const { recs } = buildCwhitSample(deps);
 // These thin adapters exist only to turn a `Rec` into the shared function's plain-rate input
 // (the shared module cannot import sample.ts, since sample.ts imports it).
 
-const nOf = (r: Rec): number => (r.role === "pit" ? r.sample * IP_TO_BF : r.sample);
+const nOf = (r: Rec): number => r.sample;   // BF (pit) / PA (hit) — already the opponents-faced count
 const cellsOf = (r: Rec, collapseHits: boolean) => wobaNoiseCells(
   r.role === "pit"
     ? { role: "pit", k9: r.obs.k9!, bb9: r.obs.bb9!, hr9: r.obs.hr9!, babip: r.obs.babip! }
@@ -138,7 +137,7 @@ const wobaNoiseVarIndepOf = (r: Rec, collapseHits: boolean): number => wobaNoise
  *  BIP derivations. Composite: the multinomial form above (the cells the scorecard leaves `n/a`). */
 function noiseOf(r: Rec, ch: string): number {
   if (r.role === "pit") {
-    const bf = r.sample * IP_TO_BF;
+    const bf = r.sample;                 // Rec.sample IS BF for pitchers (since d40287a)
     const bip = Math.max(bf - (r.obs.k9! + r.obs.bb9! + r.obs.hr9!) / BF_PER_9 * bf - 0.009 * bf, 1);
     if (ch === "babip") return babipNoiseVar(r.obs.babip!, bip);
     if (ch === "woba") return wobaNoiseVarOf(r, true);

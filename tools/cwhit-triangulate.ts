@@ -15,10 +15,11 @@ import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import { makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, applyAffine, applyWobaWeights, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type WobaWeights, type RatingEnvelope } from "../src/scoring-core/index.ts";
 import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
 import { PIT_BIP_ADJ } from "../src/model/curves.ts";
+import { BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import { parseCwhitPit } from "../src/eval/cwhit/index.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/index.ts";
 
-const BF9 = 4.3 * 9, PER600_TO_9 = BF9 / 600;
+const BF9 = BF_PER_9, PER600_TO_9 = BF9 / 600;
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const handLetter = (c: number) => (c === 2 ? "L" : c === 3 ? "S" : "R");
 const fmt = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");

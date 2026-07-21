@@ -11,11 +11,14 @@
 // The HITTER table carries the full breakdown, so hitter wOBA is reconstructed exactly (the recon
 // that validated at corr 0.986 vs cwhit's column).
 
+import { BF_PER_9 } from "./parse.ts";   // parse.ts imports nothing, so this stays acyclic
+
 export interface WobaWeights { bb: number; hbp: number; b1: number; xbh: number; hr: number }
 
-/** BF per 9 IP (IP_TO_BF × 9) → the per-600-BF ⇄ per-9 bridge. 600/38.7 ≈ 15.5 nine-IP units / 600 BF. */
-export const BF_PER9 = 4.3 * 9;                 // 38.7
-export const PER9_TO_PER600 = 600 / BF_PER9;    // 15.50 — multiply a per-9 rate to get per-600-BF
+/** 600/38.7 ≈ 15.5 nine-IP units per 600 BF. BF_PER_9 is imported, NOT re-derived: this module used
+ *  to carry its own `4.3 * 9` under the near-identical name BF_PER9, so a change to IP_TO_BF would
+ *  have moved one copy and silently left the other. */
+export const PER9_TO_PER600 = 600 / BF_PER_9;   // 15.50 — multiply a per-9 rate to get per-600-BF
 const PIT_HBP_PER600 = 6;                        // model's fixed pitcher HBP allotment (PIT_BIP_ADJ)
 
 /** Proxy wOBA-against from a pitcher's four observed/predicted per-9 channels + BABIP. Same assembly

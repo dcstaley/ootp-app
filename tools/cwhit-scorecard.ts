@@ -122,7 +122,7 @@ const projFile = (tier: string, role: "pit" | "hit") => (projFiles.includes(`cwh
 // retracted findings in one day. Do not reintroduce the shortcut.
 function noiseOf(r: Rec, ch: string): number {
   if (r.role === "pit") {
-    const bf = r.sample * 4.3;
+    const bf = r.sample;                 // Rec.sample IS BF for pitchers (since d40287a)
     const bip = Math.max(bf - (r.obs.k9! + r.obs.bb9! + r.obs.hr9!) / BF_PER_9 * bf - 0.009 * bf, 1);
     if (ch === "babip") return babipNoiseVar(r.obs.babip!, bip);
     // collapseHits=true: cwhit publishes only BABIP for pitchers and the reconstruction splits it

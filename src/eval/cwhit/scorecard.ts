@@ -16,7 +16,10 @@
 // a fitting target. His pwOBA column is never used as truth; wOBA is recomputed from raw events with
 // OUR weights. Nothing in this file feeds the scoring path.
 
-import { IP_TO_BF } from "./parse.ts";
+import { IP_TO_BF, BF_PER_9, bfFromIp } from "./parse.ts";
+// Re-exported so the ~15 tools that import these from here keep working; the DEFINITIONS live in
+// parse.ts (one copy, beside IP_TO_BF itself).
+export { BF_PER_9, bfFromIp };
 // audit.ts imports NOTHING, so this cannot cycle. (sample.ts imports THIS file, so this file must
 // never import sample.ts — hence the composite-noise helpers below take plain rates, not a `Rec`.)
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights } from "./audit.ts";
@@ -261,11 +264,25 @@ export function soPctPerAbToPerPa(soPct: number, avg: number, obp: number, bbPct
 // against a noiseless predictor. Both models are compared to the SAME observed series, so the raw
 // ratio is still fair BETWEEN them — but it is NOT fair as an absolute "are we too flat?" read.
 
-export const BF_PER_9 = IP_TO_BF * 9;   // 38.7
 
-/** Var of an observed per-9 rate: count ~ Binomial(BF, p) with BF = IP × IP_TO_BF, rate9 = p × BF_PER_9. */
-export function per9NoiseVar(rate9: number, ip: number): number {
-  const bf = ip * IP_TO_BF; if (!(bf > 0)) return 0;
+/**
+ * Var of an observed per-9 rate: count ~ Binomial(BF, p), rate9 = p × BF_PER_9.
+ *
+ * TAKES **BF**, NOT IP (changed 2026-07-21). It previously took IP and converted internally, which
+ * made the unit invisible at the call site — and that is exactly how it broke. Commit d40287a changed
+ * `Rec.sample` for pitchers from IP to BF (the correct bar fix) but only renamed constants and display
+ * strings in the consuming tools, so seven call sites silently began handing BF to a parameter named
+ * `ip`. The internal `× IP_TO_BF` then inflated the sample by 4.3×, UNDERSTATING noise variance 4.3×,
+ * which biases every deconvolved spread ratio LOW — the direction of the G1 cell failures the
+ * pre-registered adjudication was about. Two of the affected call sites were the MAIN legs of the
+ * K- and HR-spread FIT tools, whose bypass legs still passed real IP: one tool, two units.
+ *
+ * BF is the unit `Rec.sample` carries and the unit the well-sampled bars are stated in, so taking it
+ * directly means the common path needs no conversion at all and the rare IP-sourced caller must say
+ * `bfFromIp(...)` out loud. See the hand-computed pin in tests/cwhit-corpus.test.ts.
+ */
+export function per9NoiseVar(rate9: number, bf: number): number {
+  if (!(bf > 0)) return 0;
   const p = Math.min(Math.max(rate9 / BF_PER_9, 0), 1);
   return (BF_PER_9 ** 2) * p * (1 - p) / bf;
 }

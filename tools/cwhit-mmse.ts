@@ -96,7 +96,7 @@ const CH: Record<"pit" | "hit", { key: string; lbl: string; d: number; dir: 1 | 
 // tools are entry-point scripts with top-level effects, so a tool cannot import another tool).
 function noiseOf(r: Rec, ch: string): number {
   if (r.role === "pit") {
-    const bf = r.sample * 4.3;
+    const bf = r.sample;                 // Rec.sample IS BF for pitchers (since d40287a)
     const bip = Math.max(bf - (r.obs.k9! + r.obs.bb9! + r.obs.hr9!) / BF_PER_9 * bf - 0.009 * bf, 1);
     if (ch === "babip") return babipNoiseVar(r.obs.babip!, bip);
     if (ch === "woba") return NaN;   // composite; no clean binomial form ⇒ deconv fields read n/a

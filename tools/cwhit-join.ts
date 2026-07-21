@@ -22,12 +22,13 @@ import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
 import { makeVariant } from "../src/data/variants.ts";
 import { PIT_BIP_ADJ, type EventForm } from "../src/model/curves.ts";
 import type { Coeffs } from "../src/config/types.ts";
-import { parseCwhitPit, parseCwhitHit, IP_TO_BF } from "../src/eval/cwhit/index.ts";
+import { parseCwhitPit, parseCwhitHit } from "../src/eval/cwhit/index.ts";
+import { BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/index.ts";
 
 const SCRATCH = "C:/Users/dstal/AppData/Local/Temp/claude/C--dev-ootp-app/3424c376-236e-4105-b460-f5fcc1109c7f/scratchpad";
 const FIX = "fixtures/cwhit";
-const PER600BF_TO_PER9 = (IP_TO_BF * 9) / 600; // per-600-BF rate → per-9-innings
+const PER600BF_TO_PER9 = BF_PER_9 / 600; // per-600-BF rate → per-9-innings
 const n = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 const handLetter = (code: number): string => (code === 2 ? "L" : code === 3 ? "S" : "R"); // catalog 1=R 2=L 3=S

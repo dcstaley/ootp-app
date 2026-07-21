@@ -18,6 +18,8 @@ import {
   formatByKey, formatByLegacySlug, captureObsPath, captureProjPath,
 } from "../src/eval/cwhit/corpus.ts";
 import { QUICK } from "../src/eval/cwhit/sample.ts";
+import { BF_PER_9, bfFromIp, per9NoiseVar, agreement } from "../src/eval/cwhit/scorecard.ts";
+import { IP_TO_BF, parseCwhitPit } from "../src/eval/cwhit/parse.ts";
 
 const ROOT = pjoin(dirname(fileURLToPath(import.meta.url)), "..");
 const abs = (p: string) => pjoin(ROOT, p);
@@ -157,5 +159,46 @@ describe("read-time top-N derived view", () => {
       expect(rows.length, role).toBeGreaterThan(LEGACY_TOP_N);
       expect(topNView(rows, "obs", role, LEGACY_TOP_N)).toEqual(rows.slice(0, LEGACY_TOP_N));
     }
+  });
+});
+
+// ── IP/BF UNIT PIN (2026-07-21) ─────────────────────────────────────────────
+// Why this exists, in one sentence: `per9NoiseVar` used to take IP and convert internally, the
+// pitcher `Rec.sample` changed from IP to BF in d40287a, and seven call sites silently began
+// handing BF to a parameter named `ip` — inflating the sample 4.3x and UNDERSTATING noise variance
+// 4.3x, which biases every deconvolved spread ratio LOW. Nothing failed; the numbers just quietly
+// described a different world. Hand-computed here so the unit is asserted against arithmetic rather
+// than against the implementation's own behaviour.
+describe("pitcher noise is in BF units", () => {
+  it("per9NoiseVar matches the hand-computed binomial variance for BF", () => {
+    // BF_PER_9 = 4.3 x 9 = 38.7. Choose rate9 = 7.74 so p = 7.74/38.7 = 0.2 exactly.
+    //   Var = BF_PER_9^2 * p(1-p) / BF = 1497.69 * 0.16 / 1000 = 0.2396304
+    expect(BF_PER_9).toBeCloseTo(38.7, 10);
+    expect(per9NoiseVar(7.74, 1000)).toBeCloseTo(0.2396304, 10);
+    expect(per9NoiseVar(7.74, 500)).toBeCloseTo(0.4792608, 10);   // Var is inversely proportional to BF
+  });
+
+  it("REGRESSION: passing IP where BF belongs understates noise 4.3x", () => {
+    // This is the defect verbatim. 1000 BF is 232.558... IP; had the helper kept converting
+    // internally, a caller passing BF=1000 would have been charged 4300 BF of sample.
+    const atBf = per9NoiseVar(7.74, 1000);
+    const ifItStillConverted = per9NoiseVar(7.74, bfFromIp(1000));
+    expect(atBf / ifItStillConverted).toBeCloseTo(IP_TO_BF, 10);
+    // ...and the understatement flows straight through to the spread read: deconvolution subtracts
+    // too little, so the "true" observed SD comes out too big and the ratio too small.
+    const pred = [0.30, 0.31, 0.32, 0.33, 0.34], obs = [0.29, 0.32, 0.31, 0.35, 0.33];
+    const right = agreement(pred, obs, obs.map(() => 1e-4)).spread;
+    const wrong = agreement(pred, obs, obs.map(() => 1e-4 / IP_TO_BF)).spread;
+    // Measured: 0.8165 correct vs 0.7286 understated. Deconvolution subtracts too little, the
+    // "true" observed SD comes out too big (0.01732 -> 0.01941), and the ratio reads LOW.
+    expect(right.ratioDeconv).toBeCloseTo(0.8165, 4);
+    expect(wrong.ratioDeconv).toBeCloseTo(0.7286, 4);
+    expect(wrong.ratioDeconv).toBeLessThan(right.ratioDeconv);
+  });
+
+  it("bfFromIp is the ONE conversion and agrees with the parser's own bf column", () => {
+    expect(bfFromIp(100)).toBeCloseTo(430, 10);
+    const { rows } = parseCwhitPit(readFileSync(abs("fixtures/cwhit/cwhit-bronze-pit.tsv"), "utf8"));
+    for (const r of rows.slice(0, 5)) expect(r.bf).toBeCloseTo(bfFromIp(r.ip), 10);
   });
 });

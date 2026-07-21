@@ -10,6 +10,14 @@
  *  ±~5%, immaterial at thousands of IP) — the bridge to our ≥250/≥500 BF eval thresholds. */
 export const IP_TO_BF = 4.3;
 
+/** BF per 9 innings (IP_TO_BF × 9) — the per-600-BF ⇄ per-9 bridge. */
+export const BF_PER_9 = IP_TO_BF * 9;   // 38.7
+
+/** THE one IP→BF conversion. Nothing open-codes `× 4.3` or `× IP_TO_BF` again. Lives HERE, beside
+ *  the constant it uses, so the modules that need it (parse, audit, scorecard) share one copy
+ *  without a cycle — parse.ts imports nothing. */
+export const bfFromIp = (ip: number): number => ip * IP_TO_BF;
+
 export type CwhitRole = "pit" | "hit";
 
 export interface CwhitMeta {
@@ -106,7 +114,7 @@ export function parseCwhitPit(tsv: string): { meta: CwhitMeta; rows: CwhitPitRow
       ip, gsPer: num(cell(r, iGs)), ipPerGame: num(cell(r, iIpg)),
       ra9: num(cell(r, iRa9)), era: num(cell(r, iEra)), wobaa: num(cell(r, iWobaa)),
       k9: num(cell(r, iK9)), bb9: num(cell(r, iBb9)), hr9: num(cell(r, iHr9)), babip: num(cell(r, iBabip)),
-      bf: ip * IP_TO_BF,
+      bf: bfFromIp(ip),
     };
   });
   return { meta, rows };

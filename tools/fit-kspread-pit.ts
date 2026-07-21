@@ -91,7 +91,7 @@ const deps: SampleDeps = {
 
 // per-card observed K9 sampling variance (same noise model as tools/cwhit-mmse.ts; tools are
 // entry-point scripts, so the composition is copied rather than imported from another tool).
-const k9Noise = (k9: number, ip: number) => per9NoiseVar(k9, ip);
+const k9Noise = (k9: number, bf: number) => per9NoiseVar(k9, bf);   // BF, one unit per tool
 
 // ── bootstrap plumbing (seeded/deterministic, same generator as the battery) ──
 function rng(seed: number): () => number {
@@ -466,7 +466,7 @@ for (const [di, D] of DAILY.entries()) {
       return {
         pre: our.pre, post: our.post,
         obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, W) },
-        nv: k9Noise(o.k9, o.ip),
+        nv: k9Noise(o.k9, o.bf),
       };
     });
   console.log(`\n  ── ${D.label} ──`);

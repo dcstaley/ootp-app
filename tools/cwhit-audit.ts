@@ -22,6 +22,7 @@ import type { Coeffs } from "../src/config/types.ts";
 import { wls } from "../src/training/fit.ts";
 import { parseCwhitPit, parseCwhitHit } from "../src/eval/cwhit/index.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "../src/eval/cwhit/index.ts";
+import { bfFromIp } from "../src/eval/cwhit/scorecard.ts";
 import {
   pitWobaFromChannels, hitWobaFromRates, channelBias, biasByBin, bias2D, rankDefects, spread,
   PER9_TO_PER600, type AuditRow, type WobaWeights,
@@ -187,7 +188,7 @@ console.log(`  ${"POOLED".padEnd(9)} ` + axes.map((a) => {
 console.log(`\n═══ (3) IRON GATE — iron-quick levels, spread, concordance ═══`);
 const iron = pitRows.filter((r) => r.tier === "iron");
 if (iron.length) {
-  const deep = iron.filter((r) => r.sample * 4.3 >= 500); // ≥500 BF
+  const deep = iron.filter((r) => bfFromIp(r.sample) >= 500); // ≥500 BF (AuditRow.sample is IP here)
   const mP = (g: (r: AuditRow) => number) => iron.reduce((a, r) => a + g(r), 0) / iron.length;
   console.log(`  N=${iron.length} (${deep.length} ≥500 BF). Mean pred vs obs:`);
   for (const [ch, d] of [["k9", 2], ["bb9", 2], ["hr9", 2], ["babip", 3], ["woba", 3]] as const)
