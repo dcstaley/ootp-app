@@ -542,11 +542,25 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
           if (role === "pit" ? !isPit(c) : isPit(c)) continue;
           const cid = `${bc["Card ID"]}|${vlvl}`;
           const p = role === "pit" ? ourPit(c, pt, d, cal, ks) : ourHit(c, pt, d, cal, ht);
+          // IDENTITY MUST NOT DEPEND ON THE CORRECTION UNDER TEST.
+          // The join fingerprint lives in EVENT space (cwhit publishes no ratings, so our side has to
+          // meet the observed side there), and it used to be built from the CORRECTED line `p.raw`.
+          // That made the matched SAMPLE a function of which corrections were active: applying the
+          // K-spread ramp moves predicted K/BABIP enough to change collision disambiguation, so two
+          // rows that were dropped as ambiguous became separable and joined. Measured: bronze pit
+          // 337 rows uncorrected vs 339 with the ramp — and BOTH extra rows are "Bob Miller", the
+          // exact 3-way name collision join.ts documents. That is how the two fit tools came to
+          // report different N (156 vs 158) over the same corpus and floors: one builds its sample
+          // pre-correction, the other with the shipped ramp.
+          // It is also circular — the sample a correction is measured on must not be selected by that
+          // correction — so the fingerprint is built from the UNCORRECTED line. Reused directly when
+          // no correction is active, so the common path costs nothing.
+          const pFp = (ks || ht) ? (role === "pit" ? ourPit(c, pt, d, cal) : ourHit(c, pt, d, cal)) : p;
           // The JOIN fingerprint rides the same line the audit judges. Immaterial either way: the two
           // lines coincide per-channel on a neutral env (sBB=sHR=1, era/park=1) — the tool proves it.
           const fp = role === "pit"
-            ? { primary: [Math.max(0, Math.min(1, (n_(c["Stamina"]) - 20) / 40)), p.raw.babip!], validate: [p.raw.k9!, p.raw.bb9!, p.raw.hr9!] }
-            : { primary: [p.raw.babip!], validate: [p.raw.bbPct!, p.raw.soPct!, p.raw.hr600!] };
+            ? { primary: [Math.max(0, Math.min(1, (n_(c["Stamina"]) - 20) / 40)), pFp.raw.babip!], validate: [pFp.raw.k9!, pFp.raw.bb9!, pFp.raw.hr9!] }
+            : { primary: [pFp.raw.babip!], validate: [pFp.raw.bbPct!, pFp.raw.soPct!, pFp.raw.hr600!] };
           cards.push({ cid, name: cardName(c), val: n_(c["Card Value"]), vlvl, hand: handLetter(n_(c[role === "pit" ? "Throws" : "Bats"])), ...fp });
           byCid.set(cid, { title: String(bc["//Card Title"]), vlvl, ours: p.raw, oursDep: p.dep, axis: p.axis });
           // POOL reference: VLvl-0 only. cwhit's format pool is the CARD pool, and counting each card
