@@ -128,8 +128,16 @@ console.log(`tier      poolN  │ HITTER side: ${HIT_CH.map((k) => k.padStart(7)
 for (const r of rows)
   console.log(`${r.tier.padEnd(9)} ${String(r.n).padStart(5)}  │              ${HIT_CH.map((k) => F(r.hit[k]!)).join(" ")}  │               ${PIT_CH.map((k) => F(r.pit[k]!)).join(" ")}`);
 
-console.log(`
-── POOL FIELD DISPERSION (SD within the top-${FIELD_N} field) ──`);
+// LABEL CAREFULLY — THIS IS NOT A POOL PROPERTY. The SDs below are over the TOP-${FIELD_N} FIELD,
+  // a cohort selected by the MODEL's own predicted wOBA. Reading them as "the pool's dispersion" was
+  // a live error: on 2026-07-21 this table showed gold as a local extremum on 6 of 9 channels, and
+  // recomputing the same SDs over the FULL pool showed gold is an extremum on ZERO of 9 — every
+  // channel rises monotonically. The top-N SDs run 24-45% larger AND differ in SHAPE, so the
+  // difference is not a scale factor. Whatever this table shows is a property of (pool x MODEL
+  // SELECTION). Any pool-shape claim must say which of the two it is.
+  console.log(`
+── TOP-${FIELD_N} FIELD DISPERSION — a MODEL-SELECTED cohort, NOT the pool ──`);
+  console.log(`   (full-pool SDs are monotone across tiers; this cohort's are not — see the 2026-07-21 retraction)`);
 console.log(`tier            │ HITTER: ${HIT_CH.map((k) => k.padStart(7)).join(" ")}  │ PITCHER: ${PIT_CH.map((k) => k.padStart(7)).join(" ")}`);
 for (const r of rows)
   console.log(`${r.tier.padEnd(15)} │         ${HIT_CH.map((k) => F(r.hitSd[k]!)).join(" ")}  │          ${PIT_CH.map((k) => F(r.pitSd[k]!)).join(" ")}`);
