@@ -11,15 +11,18 @@
 // confirmation pass. Anything flagged is a QUESTION, not a defect — many are legitimate.
 //
 // PROVENANCE CLASSES used below:
-//   TRAINED-IN-CONFIG  a measured/fitted value stored in a config (platoon splits). The resolver
+//   TRAINED-IN-CONFIG  a MODEL-derived value frozen into a config. `platoon`/platoonVR/VL are SEEDED
+//                      FROM THE ACTIVE MODEL AT CREATE TIME (server.ts:2207-2220), so configs created
+//                      under the same model vintage share a value — it is a stale snapshot, not a
+//                      per-tournament measurement. The resolver
 //                      prefers MODEL exposure (server.ts:840 `exp?.x ?? t.x ?? default`), so a
 //                      stored block is dead weight while a model is active — and silently WRONG
 //                      if it was copied from a different tournament.
 //   MISSING-DEFAULT    a field the optimizer reads with no in-config value (falls back to a
 //                      hardcoded default, or to `undefined` which is a real defect).
-//   KNOB-DRIFT         a POOL/OPTIMIZER knob (topHitters/topPitchers/minPlayersPerPosition) differs
-//                      from the factory default. Game-RULE fields (roster counts, stamina, variant
-//                      limits) are NOT flagged — they legitimately vary per tournament.
+//   (KNOB-DRIFT REMOVED 2026-07-21, Derek: topHitters/topPitchers 50s and golden-childhood 30 are
+//    INTENTIONAL user config, as are roster counts. Comparing user config to a factory default is not
+//    a finding. Only genuinely machine-authored or structurally broken values are flagged now.)
 //   STRUCTURAL         budget_mode disagrees with total_cap/slot_counts, or similar.
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -52,18 +55,6 @@ for (const { c } of cfgs) {
     if (c[k] === undefined) add(id, "MISSING-DEFAULT", `\`${k}\` is UNDEFINED (optimizer reads it; no in-config value)`);
   }
 
-  // KNOB-DRIFT vs factory — ONLY for fields that are NOT per-tournament game rules.
-  // Deliberately NOT flagged: roster_size / hitters / pitchers / min_starters / min_starter_stamina /
-  // min_pitch_types / max_variants_on_roster. Those are REAL RULES that legitimately vary per
-  // tournament (cwhit-cap really is 18 hitters / 8 pitchers), so comparing them to a factory default
-  // produces noise, not findings. An earlier version of this sweep flagged 99 of them and buried the
-  // signal. `topHitters`/`topPitchers`/`minPlayersPerPosition` ARE knobs — pool-size and optimizer
-  // settings with no game-rule meaning — so inconsistency there is drift worth confirming.
-  for (const k of ["topHitters", "topPitchers", "minPlayersPerPosition"] as const) {
-    const got = c[k];
-    if (got !== undefined && got !== FACTORY[k]) add(id, "KNOB-DRIFT", `${k}=${JSON.stringify(got)} (factory default ${FACTORY[k]}) — a pool/optimizer knob, not a game rule`);
-  }
-
   // STRUCTURAL — budget_mode vs the fields that back it.
   const mode = c.budget_mode as string | undefined;
   const cap = c.total_cap as number | null | undefined;
@@ -89,7 +80,7 @@ console.log(`Reports only; changes nothing. Every line is a QUESTION for confirm
 const byClass = new Map<string, Finding[]>();
 for (const x of out) { if (!byClass.has(x.cls)) byClass.set(x.cls, []); byClass.get(x.cls)!.push(x); }
 
-for (const cls of ["TRAINED-IN-CONFIG", "MISSING-DEFAULT", "STRUCTURAL", "KNOB-DRIFT"]) {
+for (const cls of ["TRAINED-IN-CONFIG", "MISSING-DEFAULT", "STRUCTURAL"]) {
   const rows = byClass.get(cls) ?? [];
   console.log(`═══ ${cls} — ${rows.length} finding(s) across ${new Set(rows.map((r) => r.id)).size} config(s) ═══`);
   if (!rows.length) { console.log("  (none)\n"); continue; }

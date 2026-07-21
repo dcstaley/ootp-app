@@ -1,21 +1,21 @@
 {
-  "id": "silver-deadball-slots",
-  "name": "Silver Deadball Slots",
+  "id": "nightmare-cap",
+  "name": "Nightmare Cap",
   "kind": "tournament",
-  "card_value_min": null,
-  "card_value_max": null,
-  "total_cap": null,
+  "card_value_min": 50,
+  "card_value_max": 74,
+  "total_cap": 1559,
   "roster_size": 26,
   "hitters": 16,
   "pitchers": 10,
   "min_starters": 4,
-  "min_starter_stamina": 45,
+  "min_starter_stamina": 50,
   "min_pitch_types": 3,
   "dh": false,
-  "variants_allowed": true,
-  "max_variants_on_roster": 9,
-  "eraId": "era-1919",
-  "parkId": "park-228",
+  "variants_allowed": false,
+  "max_variants_on_roster": 0,
+  "eraId": "era-1955",
+  "parkId": "park-182",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -47,76 +47,76 @@
   },
   "eligibility": {
     "mode": "ALL",
-    "rules": [
-      {
-        "id": "r1784046787179-0",
-        "column": "Year",
-        "op": "num_lt",
-        "a": "1920"
-      }
-    ]
+    "rules": []
   },
   "positionRanks": {
     "RF": {
       "starter": {}
     }
   },
-  "budget_mode": "slots",
+  "budget_mode": "cap",
   "topHitters": 100,
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
   "tournamentAdjustment": {
-    "enabled": false,
+    "enabled": true,
     "hr": 1.15,
     "bb": 0.85,
     "k": 1,
     "h": 1,
     "gap": 1
   },
-  "slot_counts": {
-    "perfect": 1,
-    "diamond": 1,
-    "gold": 1,
-    "silver": 12,
-    "bronze": 6,
-    "iron": 5
-  },
   "positionMins": {
+    "C": {
+      "starter": {
+        "ability": 50,
+        "frame": 50,
+        "arm": 45
+      },
+      "backup": {
+        "ability": 50,
+        "frame": 50,
+        "arm": 45
+      }
+    },
     "2B": {
       "starter": {
-        "range": 70
+        "range": 75
       }
     },
     "SS": {
       "starter": {
-        "range": 80
-      }
-    },
-    "CF": {
-      "starter": {
-        "range": 80
-      }
-    },
-    "RF": {
-      "starter": {
-        "range": 60,
-        "arm": 60
+        "range": 85
       }
     },
     "3B": {
       "starter": {
-        "range": 60,
-        "arm": 60
-      }
-    },
-    "C": {
-      "starter": {
-        "ability": 45,
-        "arm": 45
+        "range": 55,
+        "arm": 55
       },
       "backup": {
-        "ability": 45,
-        "arm": 45
+        "range": 50,
+        "arm": 50
+      }
+    },
+    "LF": {
+      "starter": {
+        "range": 40
+      }
+    },
+    "CF": {
+      "starter": {
+        "range": 85
+      }
+    },
+    "RF": {
+      "starter": {
+        "range": 55,
+        "arm": 55
+      },
+      "backup": {
+        "range": 50,
+        "arm": 50
       }
     }
   }
