@@ -1,0 +1,168 @@
+### GOLD CATALOG CHECK — tools/battery-gold-catalog-stu.ts — 2026-07-21
+###
+### Pre-registered queue item: test Derek's stated mechanism EX ANTE, from the catalog alone,
+### with NO usage and NO observed data. Hypothesis (his words, recorded): the current best gold
+### pitchers are LOW-STUFF with heavy secondary ratings; usage tracks quality normally in every
+### tier, but the QUALITY-STUFF CORRELATION FLIPS SIGN in gold's pool, so gold's realized set
+### samples the stuff axis unusually without any tier-identity term being involved.
+###
+### run: node tools/battery-gold-catalog-stu.ts
+
+
+╔═══ GOLD CATALOG CHECK — pitcher stuff axis in the MODEL-SELECTED TOP (rating space, ex ante) ═══╗
+model 'league-42-43' | catalog 'cdmx' | base cards only (no v5 variants), pitchers only
+predicted value = −(raw predicted allowed wOBA vR + vL)/2 via cardSideWobas(sspFree=true) —
+  the EXACT quantity computeUnifiedFieldStats sorts on to select the top-N field. Higher = better.
+ratings are the vR side, RAW catalog values (no pool transform, no frame shift, no calibration).
+NOTE the pools are NESTED (iron ⊂ bronze ⊂ silver ⊂ gold ⊂ diamond) — tier rows are NOT independent.
+NOTE rating space / catalog only. NO usage, NO observed data, NO cwhit tables are read here.
+
+── §1 COMPOSITION — mean (SD) of the vR pitcher ratings ──
+   VIEW LABELS: "FULL POOL" = every eligible pitcher card in the value window.
+                "TOP K"     = the K best by PREDICTED VALUE — a MODEL-SELECTED cohort, not the pool.
+
+iron  (pitchers in pool: 541)
+   view        │        Stuff vR      Control vR          pHR vR       pBABIP vR
+   FULL POOL   │     70.4 (16.2)     69.7 (14.1)     70.7 (12.4)     77.4 (18.7)
+   TOP 25      │     75.1 (24.7)     70.8 (19.4)     89.4 (15.3)     82.3 (24.2)
+   TOP 50      │     76.6 (22.1)     70.7 (17.6)     83.2 (16.9)     84.2 (24.6)
+   TOP 100     │     77.0 (18.6)     70.4 (14.6)     80.7 (14.2)     81.6 (19.1)
+
+bronze  (pitchers in pool: 940)
+   view        │        Stuff vR      Control vR          pHR vR       pBABIP vR
+   FULL POOL   │     73.1 (17.3)     73.4 (16.4)     73.9 (14.6)     79.6 (18.7)
+   TOP 25      │     69.1 (23.9)     88.0 (23.0)    107.0 (27.3)     79.5 (16.7)
+   TOP 50      │     76.1 (22.4)     81.9 (22.7)    100.3 (24.4)     82.2 (18.4)
+   TOP 100     │     76.9 (22.8)     80.3 (21.4)     92.5 (21.8)     83.9 (21.1)
+
+silver  (pitchers in pool: 1230)
+   view        │        Stuff vR      Control vR          pHR vR       pBABIP vR
+   FULL POOL   │     75.8 (18.6)     75.6 (17.3)     75.9 (16.0)     81.3 (19.2)
+   TOP 25      │     85.2 (33.2)     88.8 (27.5)    104.9 (26.1)     89.8 (25.8)
+   TOP 50      │     89.1 (28.6)     83.1 (23.7)    107.7 (24.8)     87.1 (22.1)
+   TOP 100     │     84.3 (25.9)     82.1 (21.3)    101.2 (23.9)     86.4 (23.3)
+
+gold  (pitchers in pool: 1420)
+   view        │        Stuff vR      Control vR          pHR vR       pBABIP vR
+   FULL POOL   │     77.8 (19.8)     77.2 (18.7)     78.0 (17.7)     83.1 (20.3)
+   TOP 25      │     86.0 (24.1)     96.1 (32.0)    116.5 (22.5)    101.4 (32.9)
+   TOP 50      │     91.6 (27.2)     90.7 (30.7)    111.4 (23.5)     97.6 (31.3)
+   TOP 100     │     90.4 (28.6)     89.6 (27.8)    106.6 (24.7)     98.0 (27.8)
+
+diamond  (pitchers in pool: 1534)
+   view        │        Stuff vR      Control vR          pHR vR       pBABIP vR
+   FULL POOL   │     79.6 (20.9)     78.3 (19.7)     79.9 (19.2)     84.4 (21.4)
+   TOP 25      │    100.2 (25.8)     98.7 (34.3)    119.6 (18.2)    106.6 (33.5)
+   TOP 50      │     95.2 (25.9)     99.7 (33.2)    115.4 (19.4)    108.4 (30.5)
+   TOP 100     │     97.9 (25.0)     94.2 (29.1)    111.8 (21.1)    102.0 (29.2)
+
+── §2 HEADLINE — correlation between PREDICTED VALUE and Stuff vR ──
+   The hypothesis predicts: POSITIVE at other tiers, near-zero-or-NEGATIVE at gold.
+   Two views. FULL POOL = over every eligible pitcher. TOP-100 = WITHIN the model-selected top 100.
+tier      │ poolN │  corr(value, stu) FULL POOL │  corr(value, stu) WITHIN TOP-100 (n)
+iron      │   541 │                      +0.349 │               -0.033 (100)
+bronze    │   940 │                      +0.276 │               -0.214 (100)
+silver    │  1230 │                      +0.337 │               +0.065 (100)
+gold      │  1420 │                      +0.383 │               -0.039 (100)
+diamond   │  1534 │                      +0.449 │               -0.025 (100)
+
+── §3 THE OTHER CHANNELS — same two views, so "secondary-heavy" is checkable, not asserted ──
+   (pHR / pBABIP are ratings where HIGHER = better suppression, so a positive corr is the normal sign)
+
+   corr(predicted value, rating) — FULL POOL view
+   tier      │     Stuff vR   Control vR       pHR vR    pBABIP vR
+   iron      │       +0.349       +0.159       +0.465       +0.091
+   bronze    │       +0.276       +0.255       +0.549       +0.114
+   silver    │       +0.337       +0.287       +0.568       +0.166
+   gold      │       +0.383       +0.335       +0.609       +0.262
+   diamond   │       +0.449       +0.368       +0.661       +0.318
+
+   corr(predicted value, rating) — WITHIN TOP-100 view (model-selected cohort)
+   tier      │     Stuff vR   Control vR       pHR vR    pBABIP vR
+   iron      │       -0.033       +0.009       +0.313       +0.005
+   bronze    │       -0.214       +0.274       +0.507       -0.110
+   silver    │       +0.065       +0.163       +0.245       +0.057
+   gold      │       -0.039       +0.156       +0.216       +0.088
+   diamond   │       -0.025       +0.184       +0.232       +0.163
+
+── §4 TOP-25 PROFILE — (mean rating of the TOP 25 by predicted value − FULL-POOL mean) / FULL-POOL SD ──
+   Units are POOL SDs. Positive = the model's top 25 is ABOVE the pool on that channel.
+   tier      │     Stuff vR   Control vR       pHR vR    pBABIP vR
+   iron      │        +0.29        +0.07        +1.51        +0.26
+   bronze    │        -0.23        +0.89        +2.28        -0.01
+   silver    │        +0.50        +0.77        +1.80        +0.45
+   gold      │        +0.41        +1.01        +2.18        +0.90
+   diamond   │        +0.98        +1.04        +2.07        +1.04
+
+   one-line stuff read: iron 0.29sd | bronze -0.23sd | silver 0.50sd | gold 0.41sd | diamond 0.98sd
+
+(end of gold catalog check)
+
+════════════════════════════════════════════════════════════════════════════════
+READING
+════════════════════════════════════════════════════════════════════════════════
+
+VERDICT: the sign flip is ABSENT. The mechanism is NOT confirmed by the catalog.
+
+1. THE HEADLINE (corr between predicted value and Stuff vR).
+   FULL POOL:   iron +0.349 | bronze +0.276 | silver +0.337 | gold +0.383 | diamond +0.449
+   Positive at every tier, gold included, and gold sits exactly where a smooth trend puts it —
+   between silver (+0.337) and diamond (+0.449). Excluding bronze the series is monotone
+   increasing; gold is not a break in it, it is a point on it. There is no sign flip and no
+   gold-specific weakening. The hypothesis predicted near-zero-or-negative at gold and positive
+   elsewhere; the data show positive at gold and gold is the SECOND STRONGEST of the five.
+
+   WITHIN TOP-100: iron -0.033 | bronze -0.214 | silver +0.065 | gold -0.039 | diamond -0.025
+   Inside the model-selected top the stuff correlation collapses to ~0 EVERYWHERE — the expected
+   consequence of conditioning on a near-frontier (once you hold predicted value nearly fixed,
+   the channels trade off against each other, so within-cohort correlations shrink toward 0 and
+   can go slightly negative). Gold's -0.039 is indistinguishable from iron's -0.033 and diamond's
+   -0.025. The one tier that does stand out on this view is BRONZE at -0.214, i.e. the opposite
+   tier from the one the hypothesis named. Gold is unremarkable on both views.
+
+2. IS GOLD'S TOP STUFF-POOR? NO — it is stuff-ABOVE-pool.
+   Top-25 stuff profile, in pool-SD units: iron +0.29 | bronze -0.23 | silver +0.50 |
+   gold +0.41 | diamond +0.98. Gold's top 25 averages Stuff vR 86.0 against a pool mean of 77.8.
+   The only tier whose top 25 is stuff-BELOW its pool is bronze (-0.23sd). "Low-stuff best gold
+   pitchers" is not what the catalog contains.
+
+3. IS GOLD'S TOP SECONDARY-HEAVY? YES — but so is every tier's, and gold is not the extreme.
+   Top-25 profile in pool SDs, gold: stu +0.41, con +1.01, pHR +2.18, pBABIP +0.90. The secondary
+   channels do dominate the selection — pHR is the single strongest lever at every tier (+1.51 to
+   +2.28) and the full-pool corr(value, pHR) runs +0.465..+0.661, always above corr(value, stu).
+   But that is a MODEL-WIDE property, not a gold property: diamond's profile (+0.98/+1.04/+2.07/
+   +1.04) is secondary-heavy in the same shape and more extreme on three of four channels, and
+   bronze is more pHR-tilted than gold (+2.28). Gold is secondary-heavy in absolute terms and
+   ORDINARY in relative terms. "Gold's top is secondary-heavy" is true; "gold's top is secondary-
+   heavy IN A WAY OTHER TIERS ARE NOT" is false.
+
+4. WHAT IS ACTUALLY MONOTONE. Every full-pool correlation rises with tier on all four channels
+   (stu +0.276..+0.449 ex-iron, con +0.159..+0.368, pHR +0.465..+0.661, pBABIP +0.091..+0.318),
+   and pool means and SDs rise with tier on all four. Richer pools give the model more room and
+   every channel's grip on value strengthens together. Gold is an extremum on ZERO of the eight
+   correlation series and on zero of the four top-25 profiles.
+
+5. PARTIAL/NEGATIVE ELEMENTS, stated so nothing is rescued. Iron breaks the monotone full-pool
+   stu series (+0.349, above bronze and silver) and bronze is the within-top-100 outlier
+   (-0.214) and the only negative top-25 stuff profile (-0.23sd). If a tier's pool has an odd
+   stuff axis, the catalog says it is BRONZE, not gold. That is a different claim from the one
+   pre-registered here and this tool was not designed to test it.
+
+CAVEATS THAT BOUND EVERY NUMBER ABOVE
+ · The five pools are NESTED by card value (iron subset of bronze subset of silver subset of
+   gold subset of diamond). Gold's 1420-pitcher pool literally contains silver's 1230. Cross-tier
+   contrasts are therefore NOT independent samples and the apparent smoothness of the tier series
+   is partly mechanical — consecutive tiers share most of their cards. A gold-specific break would
+   have had to be large to show through that sharing; none of any size is present.
+ · RATING SPACE / CATALOG ONLY. Predicted value here is the model's raw predicted allowed wOBA on
+   untransformed catalog ratings — the deployed field-SELECTION basis, not a played outcome. This
+   says nothing about what actually gets used, at what rate, or with what result. It tests only
+   whether the claimed mechanism is present in the catalog the model reads, which is where the
+   hypothesis located it.
+ · Every number is labelled FULL POOL or TOP-K. Nothing in the READING treats a model-selected
+   cohort's moments as the pool's, which was the 2026-07-21 retraction's error.
+
+DESCRIPTIVE ONLY. Nothing fitted, nothing changed, no default moved, nothing proposed.
+
+(end of artifact — gold catalog check, 2026-07-21: sign flip ABSENT, corr(value, stu) positive at
+ every tier and gold second-strongest at +0.383; mechanism NOT confirmed)
