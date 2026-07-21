@@ -181,3 +181,99 @@ A partial pass is a partial pass. The pattern of what reproduces and what does n
   is a function of a card's own rating and is therefore ex-ante by construction.
 
 (end of pre-registration — centerpiece #2)
+
+---
+
+# AMENDMENT 1 — post-step-0, per Fable ruling (a). 2026-07-21.
+
+Appended, not merged into the text above: the original terms stay legible so it is always clear what
+was pre-registered *before* step 0 and what was revised *after* it. Where this amendment and §3–§6
+conflict, this amendment governs. Still written before any fitting.
+
+## A1.1 What step 0 changed
+
+Step 0 (`fixtures/cwhit-centerpiece2-step0-domain-2026-07-21.txt`) killed the literal extrapolation
+reading and showed the typical card is well supported, while the thinly-supported low tail carries
+20–51% of each tier's predicted-K variance. Ruling (a): that **narrows the admissible form** rather
+than blocking the test.
+
+**The error must be LOCALIZED AT LOW SUPPORT — approximately zero in-range.** A global slope
+correction is no longer an admissible candidate: it would contradict step 0's finding that the median
+card sits in well-supported territory where the league fit is in-frame calibrated, and it would
+re-open BUILD-2's structural objection. If the only form that reproduces the needs is a global one,
+that is a **refutation**, not a rescue.
+
+## A1.2 Form — replaces §3's "smooth monotone log m"
+
+Primary, pre-registered and not to be revised after seeing the fit:
+
+    log m(r) = A · max(0, r0 − r)          [one-sided linear hinge]
+
+`r` = effective stuff per side, exactly as §3 defines it. `m ≡ 1` for `r ≥ r0` by construction — the
+localization requirement is structural, not fitted. Two free parameters: knot `r0`, slope `A`.
+
+- **`r0` is constrained to lie at or below the league training MEDIAN.** A knot above it is a global
+  slope wearing a hinge, and is a **kill condition** (§A1.5), not a result.
+- **`A` is free in sign.** The hypothesis predicts the direction that makes low-stuff cards' true K
+  fall below prediction (widening observed spread). Leaving the sign free makes the fitted sign a
+  genuine test; a fitted sign opposite to the prediction is reported as a refutation.
+- **Reported robustness variant, NOT selected on fit:** the same hinge in *training-support
+  percentile* rather than raw `r`. It is a different coordinate for the same claim, so it is run and
+  reported alongside; the primary form stays primary regardless of which fits better. Choosing
+  between them on fit quality after the fact is exactly the move this document exists to prevent.
+
+## A1.3 Fit target — replaces §4's estimand for fitting purposes
+
+**Fit PER-CARD residuals with per-card noise weights.** Target is `obs_k9` vs `pred_k9` at card grain,
+weighted by the inverse noise variance already used by the fit tool (`k9Noise(obs, sample)` in
+`tools/fit-kspread-pit.ts`). No tier aggregate enters the objective.
+
+**The tier needs become summary DIAGNOSTICS, not fit targets.** This is the substantive change: the
+function is never shown the five numbers it has to reproduce, so reproducing them is a genuine
+prediction rather than a curve passing through five points it was handed.
+
+## A1.4 Validation — replaces §5's P1/P2
+
+**BOTH BARS. The bar-sensitivity pattern is itself a prediction target.** `e(r)` evaluated on each
+bar's realized set must reproduce:
+
+    BF>=600     iron 1.82   bronze 1.62   silver 1.48   gold 1.78   diamond 1.04
+    BF>=1000    iron 1.83   bronze 1.64   silver 1.47   gold 1.63   diamond — (N=19, THIN, no verdict)
+
+Diamond is validated at **600 only**, carrying the THIN caveat.
+
+- **P1 (within-sample).** Implied slope inside the measured bootstrap CI for ≥4 of 5 tiers at BF≥600,
+  and ≥3 of 4 readable tiers at BF≥1000.
+- **P2 (held-out tier).** Fitted with **gold excluded entirely**, the implied gold slope lands inside
+  gold's measured CI **at both bars**. Gold remains the held-out tier: it is the observation that
+  killed the ramp family.
+- **P3 (NEW — the differential).** The implied slopes must reproduce the *pattern* of bar sensitivity,
+  not just the levels: **gold moves down materially between bars while iron, bronze and silver hold.**
+  A function that reproduces all nine levels but predicts uniform movement across tiers has not
+  explained the thing that distinguishes gold.
+
+Nulls (N1 constant slope, N2 coordinate = predicted K) and the consistency checks stand as written in
+§5, with the following made explicit per ruling (a): **diamond ≈ 1.0** at BF≥600; **convexity of the
+coherent four** at BF≥600; and **BUILD-1's constant-s recovered as the historical average of the
+implied local slope over the pools BUILD-1 was fitted on**.
+
+## A1.5 Kill conditions — added to §6
+
+7. The fitted knot `r0` lands at or above the league training median ⇒ global slope in disguise ⇒
+   family misfit, and step 0's objection applies unmodified.
+8. `A` fits with the sign opposite to the prediction ⇒ refutation, reported as such.
+9. P3 fails while P1/P2 pass ⇒ the function explains the *levels* but not gold; report that
+   precisely, since it localizes gold to whatever ruling (b)'s classification finds.
+
+## A1.6 Preconditions — this fit does NOT start until both land
+
+- **Ruling (b)'s classification.** If gold's lightly-used cards are new-release-dominated, the
+  bar-sensitivity interpretation inverts and gold's target re-anchors near 1.78@600 — which changes
+  P2 and P3's targets outright. The fit cannot be validated against targets that are still moving.
+- **Item A's sizing.** The variant-policy asymmetry (variant-inclusive training means against a
+  variant-free pool mean) biases the gap by construction and tier-variably. Gaps are the x-axis every
+  consistency check is read on; if they move, so does the reading.
+
+Both are running. Nothing is fitted before they report.
+
+(end of amendment 1)
