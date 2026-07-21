@@ -21,7 +21,7 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
+import { FIELD_N, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT, type VertexPin } from "../training/forms.ts";
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
 import type { KSpread as KSpreadCfg } from "../config/types.ts"; // K + BUILD-3 pitcher per-channel spread fields
@@ -232,8 +232,9 @@ let activeTrainingMeans: TrainingMeans | null = null; // active model's per-chan
 
 // Pool-strength rating transform (#2 only). NON-VARIANT cards set every average/distribution
 // (the field-size diagnostic was no-variants too); variants are scored but never enter the
-// stats. FIELD_N = the validated realistic-field size (tools/field-size.ts).
-const FIELD_N = 50;
+// stats. That variant policy is under review (Fable ruling (c), item A) — it is NOT decided here.
+// FIELD_N is imported, never re-declared: it used to be a second literal at this line, which is
+// the one-copy defect ruling (d) closed. Its definition + rationale live in scoring-core/pool-stats.
 const isBaseCard = (c: Record<string, unknown>) => String(c["Variant"] ?? "").toUpperCase() !== "Y";
 
 // ── Frame-correction v2 (§10.8) — transform-mode selector + K-spread ramp constants ──

@@ -62,6 +62,22 @@ export function cardSideWobas(c: any, coeffs: Coeffs, model: EventModel, sspFree
   return { hitVR: r.hitVR.woba, hitVL: r.hitVL.woba, pitVR: r.pitVR.woba, pitVL: r.pitVL.woba };
 }
 
+/** THE field cohort size — the validated realistic-field size (`tools/field-size.ts`).
+ *
+ *  ONE COPY (Fable ruling (d), 2026-07-21). This was defined twice — `src/server/server.ts` and
+ *  `src/eval/cwhit/sample.ts` — at the same value with nothing holding them together, so the
+ *  production field size and the size every eval tool measured it at could have silently diverged.
+ *  Both now import this. `tests/one-copy-constants.test.ts` pins that no second definition returns.
+ *
+ *  NOT the same constant as `ANCHOR_N` (`calibrate.ts`), which happens to share the value 50 while
+ *  serving a different purpose (the calibration anchor cohort). Whether that coincidence is
+ *  intentional is an open question for the item-B cohort audit; do not collapse them.
+ *
+ *  WHICH CARDS the cohort is selected FROM is a separate decision from HOW MANY, and it is under
+ *  review: production selects from a variant-free pool while training means are variant-inclusive
+ *  (Fable ruling (c), item A). Nothing here decides that — this constant is the size only. */
+export const FIELD_N = 50;
+
 /** Per-(role, side) rating μ/σ of the top-N field by raw predicted wOBA. */
 export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, sspFree = false): FieldStats {
   const recs = cards.map((c) => cardRec(c, coeffs, model, sspFree));

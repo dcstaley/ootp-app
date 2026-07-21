@@ -16,7 +16,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import type { Coeffs, Derived, CalScales } from "../../config/types.ts";
 import {
-  computeUnifiedFieldStats, buildPoolTransform, applyAffine, calibrate,
+  FIELD_N, computeUnifiedFieldStats, buildPoolTransform, applyAffine, calibrate,
   type EventModel, type FieldStats, type PoolTransform, type RatingEnvelope,
 } from "../../scoring-core/index.ts";
 // Reached into directly rather than re-exported from scoring-core/index.ts: these are the SCORING
@@ -43,7 +43,9 @@ import {
 
 export const OBS_DIR = "fixtures/cwhit";
 export const PROJ_DIR = "fixtures/cwhit-proj";
-export const FIELD_N = 50;
+/** Re-exported, NOT re-declared (Fable ruling (d)): the ~50 tools that import FIELD_N from this
+ *  module keep working, but the value now has exactly one definition, in scoring-core/pool-stats. */
+export { FIELD_N };
 /** THE FINAL-CONFIG BARS (re-baseline, 2026-07-21). Lowered from 1000/1000 to 600/500 as A/B factor
  *  (iii). BF600 is the noise-equivalent of the old IP>=150 floor once expressed in the correct unit.
  *
