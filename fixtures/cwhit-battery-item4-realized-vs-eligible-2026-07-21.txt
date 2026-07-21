@@ -1,0 +1,74 @@
+################################################################################
+# PROPERTY BATTERY — ITEM 4: REALIZED vs ELIGIBLE OPPOSITION. 2026-07-21.
+# The scoring machinery treats a tournament's opposition as its ELIGIBLE POOL.
+# How far is that from the field actually faced? Observed usage + catalog.
+# Descriptive. Nothing fitted, nothing proposed.
+################################################################################
+
+== COVERAGE — most of the "eligible opposition" never plays ==
+  tier     cap  eligible  matched  PA>=500   share of eligible pool that EVER played
+  iron      59      659      256      119            38.8%
+  bronze    69     1156      297      118            25.7%
+  silver    79     1518      251      100            16.5%
+  gold      89     1772      233       89            13.1%
+  diamond   99     1964      125       34             6.4%
+  Join was clean: 0 non-unique keys either side, match rate 99.2-100%.
+
+== THE DIVERGENCE, in eligible-pool SD units: (realized PA-weighted) - (eligible uniform) ==
+  channel      iron   bronze   silver    GOLD  diamond   monotone in tier?
+  Eye         0.180    0.488    0.341   0.771    0.411   NO — gold is the PEAK, above diamond
+  Power       0.427    0.514    0.636   0.808    1.099   yes
+  Avoid K     0.276    0.489    0.275   0.391    0.896   NO — silver dips below iron
+  BABIP       0.459    0.967    1.336   1.238    1.356   NO — GOLD BREAKS IT (below silver)
+  Gap         0.380    0.786    1.035   0.793    1.279   NO — GOLD BREAKS IT (below silver)
+
+== USAGE CONCENTRATION (matched hitters) ==
+  tier     N   total PA    Gini   top10% of cards take   top25%   top50%
+  iron    256   459,714   0.761        65.5%              84.6%    95.4%
+  bronze  297   644,344   0.795        68.6%              89.6%    97.4%
+  silver  251   414,612   0.778        66.1%              88.6%    96.7%
+  gold    233   294,499   0.736        57.3%              84.6%    95.7%
+  diamond 125    52,477   0.619        43.8%              71.5%    91.4%
+
+################################################################################
+# READING — descriptive
+################################################################################
+
+THE ELIGIBLE-POOL ASSUMPTION IS OFF BY 0.18 TO 1.36 SD. That is the headline. The
+coordinate the correction is computed on describes a field that, in several cells, sits
+more than a full pool-SD away from the one actually faced.
+
+THE ERROR GROWS AS THE WINDOW WIDENS, because coverage collapses: 38.8% of iron's eligible
+hitters ever play, against 6.4% of diamond's. A wider window admits far more cards than it
+causes to be used, so "eligible" and "faced" diverge fastest exactly where the window is
+widest. Usage is also heavily concentrated — the top 10% of cards take 44-69% of all PA.
+
+THE SIGN IS EXPECTED; THE MAGNITUDE AND THE ORDERING ARE THE FINDING. Cards that get played
+are better than the average eligible card, so a positive divergence everywhere is not
+surprising and is not by itself evidence of anything. What is informative is (i) how large
+it is, and (ii) that it is NOT monotone in tier on four of five channels.
+
+GOLD BREAKS THE ORDER ON TWO CHANNELS AND PEAKS ON A THIRD: BABIP 1.238 (below silver's
+1.336) and Gap 0.793 (below silver's 1.035), while Eye peaks at gold 0.771, above diamond's
+0.411. So gold's realized opposition is not simply "further off" — it is off in a different
+pattern from its neighbours.
+
+RELATION TO ITEM 5, stated as a juxtaposition and NOT as a causal claim: item 5 found gold's
+high-K pitchers are used about half as much as its own mid-K group, inverting the pattern of
+every other tier. Item 4 finds gold's realized opposition diverges most on Eye and breaks the
+tier order on BABIP and Gap. Both are statements that gold's REALIZED play differs in shape
+from what its eligible pool implies. Neither shows that this produces the 1.78 K need, and
+nothing here tests that link.
+
+CAVEATS THAT LIMIT THIS
+ · VLvl-5 VARIANT ROWS ARE EXCLUDED ENTIRELY (104 observed rows at gold, 52-170 per tier).
+   Variants are generated at runtime and are not in the catalog CSV, so their PA is absent
+   from the realized weighting. The realized field is therefore measured on base cards only,
+   and variants are genuinely played. This is the largest single limitation here.
+ · The observed tables carry a site-side minPA=30 floor, so "never played" conflates truly
+   unused with used-below-30-PA, and the concentration figures sit on a left-truncated
+   distribution.
+ · Eligibility is Card Value <= cap only; no positional or roster-feasibility filter.
+ · The eligible POOLS are nested. (Note the contrast with item 5: the well-sampled OBSERVED
+   sets are nearly disjoint, 1-3% shared. Pool-derived statistics like these ARE nested;
+   observed per-tier statistics are not.)
