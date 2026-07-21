@@ -108,11 +108,15 @@ export function windowOverlap(obsFrom?: string, obsTo?: string, trainFrom?: stri
 // ── projected-table parsing (defensive: unknown header ⇒ fail loudly) ────────
 
 export interface CwhitProjPitRow {
+  /** cwhit's real card id, present in the 2026-07-21 full-depth captures and absent from the old
+   *  top-100 fixtures. THE join key when present — see `unescapeName` for why the title is not. */
+  cid?: string;
   title: string; role?: string; val: number; vlvl: number; hand: string;
   pwoba: number;                                   // his model's wOBA — reference ONLY, never truth
   kPerPa: number; bbPerPa: number; hrPerPa: number; babip: number;
 }
 export interface CwhitProjHitRow {
+  cid?: string;
   title: string; pos?: string; val: number; vlvl: number; hand: string;
   pwoba: number;                                   // reference ONLY
   bbPerPa: number; kPerPa: number; hrPer600: number; babip: number;
@@ -153,6 +157,17 @@ function require_(cols: string[], headerLine: string, file: string, aliases: str
   return r;
 }
 
+/** The capture's `Name` column is HTML-ESCAPED; our catalog's `//Card Title` is not. MEASURED, not
+ *  assumed: 107 of 2954 rows in goldquick proj-hit carry `&amp;`/`&#39;`, and across the five Quick
+ *  tiers 101 distinct names (577 rows) fail a raw string compare against the catalog. The OLD top-100
+ *  fixtures contain ZERO entities, so this is new to the 2026-07-21 captures and would have silently
+ *  removed those rows from the projection join the moment the corpus was switched — no error, just a
+ *  smaller Section A. Titles are the FALLBACK key now (CID is primary), but they are normalised
+ *  anyway so the fallback is not quietly lossy. */
+export const unescapeName = (s: string): string =>
+  s.replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+
+const A_CID = ["CID", "Card ID", "cid"];
 const A_TITLE = ["Name", "Card Title", "//Card Title", "Card"];
 const A_VAL = ["VAL", "Value", "Card Value"];
 const A_VLVL = ["VLvl", "VL", "Variant", "Variant Level"];
@@ -167,8 +182,10 @@ export function parseCwhitProjPit(tsv: string, file = "proj-pit"): { meta: Cwhit
   const iTitle = R(A_TITLE), iVal = R(A_VAL), iVlvl = R(A_VLVL), iHand = R(A_HAND), iPw = R(A_PWOBA);
   const iK = R(["Kpct", "K%", "SOpct", "SO%"]), iBb = R(["BBpct", "BB%"]), iHr = R(["HRpct", "HR%"]), iBa = R(A_BABIP);
   const iRole = resolve(cols, ["Role", "POS", "Position"]).i;
+  const iCid = resolve(cols, A_CID).i;
   const out = rows.filter((r) => (r[iTitle] ?? "").trim()).map((r): CwhitProjPitRow => ({
-    title: r[iTitle]!.trim(), role: iRole >= 0 ? (r[iRole] ?? "").trim() : undefined,
+    cid: iCid >= 0 ? (r[iCid] ?? "").trim() || undefined : undefined,
+    title: unescapeName(r[iTitle]!.trim()), role: iRole >= 0 ? (r[iRole] ?? "").trim() : undefined,
     val: num(r[iVal]), vlvl: num(r[iVlvl]), hand: (r[iHand] ?? "").trim(), pwoba: num(r[iPw]),
     // His pitcher %-columns are per-BATTER-FACED (per-PA). Verified by reconstructing his own pwOBA
     // from these four channels: the per-PA reading lands on his published pwOBA (0.2877 vs 0.287 for
@@ -187,6 +204,7 @@ export function parseCwhitProjHit(tsv: string, file = "proj-hit"): { meta: Cwhit
   const so = R(["SOpct", "SO%", "Kpct", "K%"]);
   const hr = R(["HR600", "HRpct", "HR%", "HR/600"]);
   const iPos = resolve(cols, ["POS", "Pos", "Position"]).i;
+  const iCidH = resolve(cols, A_CID).i;
   // AVG/OBP give AB/PA EXACTLY per row. The projected table has neither, so fall back to the
   // BB-derived estimate (still row-specific, and 4.5× tighter than a flat constant — see abPerPaFromBb).
   const iAvg = resolve(cols, ["AVG", "BA"]).i, iObp = resolve(cols, ["OBP"]).i;
@@ -201,7 +219,8 @@ export function parseCwhitProjHit(tsv: string, file = "proj-hit"): { meta: Cwhit
     const bbPerPa = num(r[iBb]) / 100, soRaw = num(r[so.i]) / 100;
     const abPa = exactAb ? abPerPa(num(r[iAvg]), num(r[iObp]), bbPerPa) : abPerPaFromBb(bbPerPa);
     return {
-      title: r[iTitle]!.trim(), pos: iPos >= 0 ? (r[iPos] ?? "").trim() : undefined,
+      cid: iCidH >= 0 ? (r[iCidH] ?? "").trim() || undefined : undefined,
+      title: unescapeName(r[iTitle]!.trim()), pos: iPos >= 0 ? (r[iPos] ?? "").trim() : undefined,
       val: num(r[iVal]), vlvl: num(r[iVlvl]), hand: (r[iHand] ?? "").trim(), pwoba: num(r[iPw]),
       bbPerPa, kPerPa: soIsPerAb ? soRaw * abPa : soRaw,
       hrPer600: hrIsPct ? num(r[hr.i]) / 100 * 600 : num(r[hr.i]),

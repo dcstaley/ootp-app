@@ -41,7 +41,7 @@ import {
 } from "../src/eval/cwhit/scorecard.ts";
 import {
   buildCwhitSample, wellSampled, handLetter, isPit, n_, OBS_DIR as OBS, PROJ_DIR as PROJ, FIELD_N,
-  MIN_BF, MIN_PA, QUICK, inValueWindow, type KSpreadPit, type Rec, type SampleDeps,
+  MIN_BF, MIN_PA, QUICK, inValueWindow, type KSpreadPit, type Rec, type SampleDeps, type CwhitSource,
 } from "../src/eval/cwhit/sample.ts";
 
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
@@ -82,6 +82,24 @@ const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N,
 //   · the hitter tail state from computeHitTail (pool-property gaps + pinned universal λs).
 // The BUILD-3 BABIP scalar is HELD in production — sBab is NEVER set here.
 const CORRECTIONS = !process.argv.includes("--no-corrections");
+
+// ── A/B KNOBS (Track C empirical leg) ───────────────────────────────────────
+// Defaults reproduce the legacy top-100 fixtures exactly, so an unflagged run is the historical
+// one. Each factor is separately switchable BECAUSE THEY ARE NOT INTERCHANGEABLE: depth fattens
+// only iron/bronze (the thin tiers never had 100 cards above the bar), while the BAR is what moves
+// silver/gold/diamond. Reporting a single "full depth" number would hide that.
+//   --corpus=<dir>   read the full-depth capture instead of fixtures/cwhit (+ /proj)
+//   --depth=<N>      cut the capture to a derived top-N view (omit ⇒ full depth)
+//   --min-bf=<N> --min-pa=<N>   read-time well-sampled floors
+const argOf = (k: string): string | undefined =>
+  process.argv.find((a) => a.startsWith(`--${k}=`))?.split("=").slice(1).join("=");
+const CORPUS = argOf("corpus");
+const DEPTH = argOf("depth") ? Number(argOf("depth")) : undefined;
+const SOURCE: CwhitSource = CORPUS ? { kind: "capture", dir: CORPUS, topN: DEPTH } : { kind: "legacy" };
+const MIN_BF_RUN = argOf("min-bf") ? Number(argOf("min-bf")) : MIN_BF;
+const MIN_PA_RUN = argOf("min-pa") ? Number(argOf("min-pa")) : MIN_PA;
+if (DEPTH !== undefined && !CORPUS) throw new Error("--depth only applies to --corpus: the legacy fixtures are ALREADY a top-100 capture, so re-cutting them would be a second silent selection");
+if ([DEPTH, MIN_BF_RUN, MIN_PA_RUN].some((x) => x !== undefined && !Number.isFinite(x))) throw new Error("--depth/--min-bf/--min-pa must be numbers");
 let ksMap: Map<string, KSpreadPit> | undefined;
 let htMap: Map<string, HitTail> | undefined;
 const tierParams: { tier: string; sK: number; kBar: number; sHr: number; hrBar: number; lwHr: number; lwBab: number; lwSo: number }[] = [];
@@ -107,7 +125,7 @@ if (CORRECTIONS) {
 
 // The judged sample — built by the ONE shared builder (src/eval/cwhit/sample.ts), so this tool and
 // tools/cwhit-two-ledger.ts necessarily score the identical cards with the identical predicted lines.
-const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap };
+const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope, pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap, source: SOURCE, minBf: MIN_BF_RUN, minPa: MIN_PA_RUN };
 const { recs, windows, notices, projUnjoined, obsFiles, projFiles } = buildCwhitSample(deps);
 const hasObs = (tier: string, role: "pit" | "hit") => obsFiles.includes(`cwhit-${tier}-${role}.tsv`);
 const projFile = (tier: string, role: "pit" | "hit") => (projFiles.includes(`cwhit-${tier}-${role}-proj.tsv`) ? `${PROJ}/cwhit-${tier}-${role}-proj.tsv` : null);

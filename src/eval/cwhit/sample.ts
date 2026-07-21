@@ -33,6 +33,7 @@ import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/cur
 import { applyPitSpread } from "../../model/pool-transform.ts";
 import { applyHitTail, type HitTail } from "../../scoring-core/hit-tail.ts";
 import { parseCwhitPit, parseCwhitHit } from "./parse.ts";
+import { formatByLegacySlug, captureObsPath, captureProjPath, topNView } from "./corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "./join.ts";
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "./audit.ts";
 import {
@@ -100,6 +101,10 @@ export interface Rec {
   obs: Chan; proj?: Chan;
   /** cwhit's raw observed row, carried through for the ledger's over-identification checks. */
   raw: Record<string, number>;
+  /** Whether this row clears the run's well-sampled floor, decided AT READ TIME against the effective
+   *  `minBf`/`minPa`. Present so the ~16 callers that filter with `wellSampled(r)` automatically honour
+   *  a widened bar instead of silently re-applying the module defaults to a differently-floored sample. */
+  wellSampled?: boolean;
 }
 
 /** The full-pool predicted distribution for one tier×role — the reference the top-100 is selected FROM. */
@@ -149,7 +154,34 @@ export interface SampleDeps {
    *  (`.get(tier)` returns undefined ⇒ the identity legs). `buildCwhitSample` reports any such gap in
    *  `notices` rather than leaving it to be discovered in a number. */
   formats?: ValueWindow[];
+  /** WHERE the cwhit tables come from, and at what depth. Absent ⇒ `{ kind: "legacy" }`, i.e. the
+   *  old top-100 fixtures — every existing caller is unchanged.
+   *
+   *  ONE CORPUS ON DISK (Fable ruling, 2026-07-21): the full-depth capture is the only stored copy
+   *  and the historical top-100 shape is reconstructed AT READ TIME via `topNView`, so the depth
+   *  contrast is a knob rather than a second set of files that could drift from the first. */
+  source?: CwhitSource;
+  /** Read-time well-sampled floors, in OPPONENTS FACED (BF for pitchers, PA for hitters — symmetric
+   *  by construction). Absent ⇒ MIN_BF / MIN_PA. Rows below the floor are NOT dropped: they are
+   *  flagged via `Rec.wellSampled` and remain available, so a caller can widen the bar without
+   *  re-reading the corpus and the thin tail stays inspectable rather than invisible. */
+  minBf?: number;
+  minPa?: number;
 }
+
+/** The corpus a sample is built from.
+ *  · `legacy`  — the 2026-07-20-and-earlier top-100 fixtures in `fixtures/cwhit` + `fixtures/cwhit-proj`.
+ *  · `capture` — a dated full-depth capture directory, optionally cut to a `topN` DERIVED VIEW.
+ *
+ *  These are NOT interchangeable and the difference is not only depth: the legacy fixtures cover
+ *  2026-06-28..07-12 while the 2026-07-21 capture covers 07-05..07-19. Comparing legacy against the
+ *  capture confounds DEPTH with the CAPTURE WINDOW; comparing the capture against its own derived
+ *  top-100 isolates depth cleanly. Use the derived view for the depth contrast. */
+export type CwhitSource =
+  | { kind: "legacy" }
+  | { kind: "capture"; dir: string; topN?: number };
+
+export const DEFAULT_SOURCE: CwhitSource = { kind: "legacy" };
 
 /** A card's two predicted lines. See `ourPit`/`ourHit` for why BOTH exist and what each answers. */
 export interface TwoLines { raw: Chan; dep: Chan; axis: number }
@@ -165,6 +197,13 @@ export interface SampleResult {
   projUnjoined: string[];
   obsFiles: string[];
   projFiles: string[];
+  /** What this sample was actually built from + the floors it was built under — reported so a run's
+   *  provenance line states its corpus and bar instead of assuming the module defaults. */
+  source: CwhitSource;
+  floors: { minBf: number; minPa: number };
+  /** How the PROJECTION join resolved. `viaTitle > 0` on a capture source means CID lookup missed and
+   *  the lossy fallback carried the row — worth knowing, not necessarily wrong. */
+  projJoin: ProjJoinAudit;
 }
 
 // ── THE TWO LINES: RAW (event-model) vs DEPLOYED (calibrated) ────────────────
@@ -297,7 +336,11 @@ export function ourHit(c: Card, pt: PoolTransform, d: SampleDeps, cal: CalScales
   return { raw, dep, axis: n_(c["Power vR"]) };
 }
 
-export const wellSampled = (r: Rec): boolean => (r.role === "pit" ? r.sample >= MIN_BF : r.sample >= MIN_PA);
+/** Does this row clear the well-sampled floor? Prefers the flag the builder computed from the RUN's
+ *  effective floors, falling back to the module defaults for a `Rec` built before floors were
+ *  configurable. Keeping the free-function shape means no caller had to change. */
+export const wellSampled = (r: Rec): boolean =>
+  r.wellSampled ?? (r.role === "pit" ? r.sample >= MIN_BF : r.sample >= MIN_PA);
 
 /**
  * Build the judged sample: for every Quick tier × role with an observed fixture, join cwhit's observed
@@ -305,13 +348,75 @@ export const wellSampled = (r: Rec): boolean => (r.role === "pit" ? r.sample >= 
  * and, when the fixture exists, cwhit's projected line. Also returns the full-pool predicted
  * distribution per tier×role.
  */
-export function buildCwhitSample(d: SampleDeps): SampleResult {
-  const obsFiles = existsSync(OBS_DIR) ? readdirSync(OBS_DIR) : [];
-  const projFiles = existsSync(PROJ_DIR) ? readdirSync(PROJ_DIR) : [];
-  const hasObs = (tier: string, role: "pit" | "hit") => obsFiles.includes(`cwhit-${tier}-${role}.tsv`);
-  const projFile = (tier: string, role: "pit" | "hit") =>
-    (projFiles.includes(`cwhit-${tier}-${role}-proj.tsv`) ? `${PROJ_DIR}/cwhit-${tier}-${role}-proj.tsv` : null);
+/** Projection JOIN KEY. CID when the table has one (the 2026-07-21 captures do), else the title.
+ *  WHY CID IS PRIMARY, measured not assumed: the capture's `Name` column is HTML-escaped where our
+ *  catalog's title is not, so a raw title compare drops 101 distinct names / 577 rows across the five
+ *  Quick tiers — silently, as a smaller Section A rather than an error. `unescapeName` in scorecard.ts
+ *  repairs that for the fallback, but one card (CID 86244) was also RENAMED between the capture and
+ *  the catalog, which no title normalisation can fix and CID handles for free. Verified 1:1 at the
+ *  VARIANT grain: VLvl is exactly {0,5}, (CID,VLvl) is unique in all 28 files, and all 3521 CIDs
+ *  resolve into the 3669-card catalog. */
+const projKey = (r: { cid?: string; title: string; vlvl: number }): string =>
+  r.cid ? `${r.cid}|${r.vlvl}` : `${r.title}|${r.vlvl}`;
 
+export interface ProjJoinAudit { viaCid: number; viaTitle: number; missed: number; used: Set<string> }
+
+/** Our card's `cid` is already `${Card ID}|${vlvl}`, i.e. the CID key shape — so the primary lookup is
+ *  a direct hit. Falls back to the title key for the legacy fixtures, which carry no CID column. */
+function lookupProj(
+  projBy: Map<string, Chan> | null, cardCid: string, title: string, vlvl: number, audit: ProjJoinAudit,
+): Chan | undefined {
+  if (!projBy) return undefined;
+  const byCidHit = projBy.get(cardCid);
+  if (byCidHit) { audit.viaCid++; audit.used.add(cardCid); return byCidHit; }
+  const tk = `${title}|${vlvl}`;
+  const byTitle = projBy.get(tk);
+  if (byTitle) { audit.viaTitle++; audit.used.add(tk); return byTitle; }
+  audit.missed++; return undefined;
+}
+
+/** Projection rows that no observed card consumed. Identified by which keys the join actually USED,
+ *  so it is correct for either key shape (CID on captures, title on the legacy fixtures) instead of
+ *  reconstructing our-side keys and hoping the shapes line up.
+ *
+ *  NOTE for the re-baseline: under FULL-POOL projections most of these are simply cards nobody played,
+ *  which is expected rather than a defect, and the list runs to four figures. Fable has this scheduled
+ *  as a SPLIT + RENAME (projUnjoinedCatalog = defect alarm vs projUnobserved = expected count) at the
+ *  re-baseline; it is deliberately NOT done here, so the reported figure stays the one the current
+ *  display is written against. */
+function recordUnjoined(
+  projBy: Map<string, Chan>, used: Set<string>, tier: string, role: "pit" | "hit", out: string[],
+): void {
+  for (const k of projBy.keys()) if (!used.has(k)) out.push(`${tier} ${role}: ${k}`);
+}
+
+export function buildCwhitSample(d: SampleDeps): SampleResult {
+  const src = d.source ?? DEFAULT_SOURCE;
+  const minBf = d.minBf ?? MIN_BF, minPa = d.minPa ?? MIN_PA;
+  // The derived top-N cut, applied to PARSED rows. `undefined` on the legacy source because those
+  // fixtures are ALREADY a top-100 capture — re-cutting them would be a second, silent selection.
+  const topN = src.kind === "capture" ? src.topN : undefined;
+
+  // Path resolution per source. A capture resolves the tier through the corpus REGISTRY (the tier
+  // string is the legacy slug), so a format the registry does not know is reported rather than
+  // silently reading nothing — an existsSync miss looks identical to "this tier has no data".
+  const obsPathOf = (tier: string, role: "pit" | "hit"): string | null => {
+    if (src.kind === "legacy") return `${OBS_DIR}/cwhit-${tier}-${role}.tsv`;
+    const f = formatByLegacySlug(tier); return f ? captureObsPath(src.dir, f, role) : null;
+  };
+  const projPathOf = (tier: string, role: "pit" | "hit"): string | null => {
+    if (src.kind === "legacy") return `${PROJ_DIR}/cwhit-${tier}-${role}-proj.tsv`;
+    const f = formatByLegacySlug(tier); return f ? captureProjPath(src.dir, f, role) : null;
+  };
+
+  const obsDir = src.kind === "legacy" ? OBS_DIR : src.dir;
+  const projDir = src.kind === "legacy" ? PROJ_DIR : `${src.dir}/proj`;
+  const obsFiles = existsSync(obsDir) ? readdirSync(obsDir) : [];
+  const projFiles = existsSync(projDir) ? readdirSync(projDir) : [];
+  const hasObs = (tier: string, role: "pit" | "hit") => { const p = obsPathOf(tier, role); return !!p && existsSync(p); };
+  const projFile = (tier: string, role: "pit" | "hit") => { const p = projPathOf(tier, role); return p && existsSync(p) ? p : null; };
+
+  const projJoin: ProjJoinAudit = { viaCid: 0, viaTitle: 0, missed: 0, used: new Set() };
   const recs: Rec[] = [];
   const pools: PoolDist[] = [];
   const cals: { tier: string; cal: CalScales }[] = [];
@@ -345,7 +450,15 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
     cals.push({ tier, cal });
 
     for (const role of ["pit", "hit"] as const) {
-      if (!hasObs(tier, role)) { notices.push(`no observed fixture ${OBS_DIR}/cwhit-${tier}-${role}.tsv → tier×role skipped entirely`); continue; }
+      if (!hasObs(tier, role)) {
+        notices.push(obsPathOf(tier, role) === null
+          ? `format "${tier}" is not in the corpus registry (src/eval/cwhit/corpus.ts) → no capture path exists for it, tier×role skipped`
+          : `no observed table at ${obsPathOf(tier, role)} → tier×role skipped entirely`);
+        continue;
+      }
+      // Per-tier×role: the SAME CID appears in several tiers' projection tables, so a global
+      // used-set would let a hit in one tier mark another tier's key as consumed.
+      projJoin.used.clear();
 
       // our side: base (VLvl 0) + v5 variant, keyed by (title, vlvl) — the projected join key.
       const cards: JoinCard[] = [];
@@ -380,11 +493,13 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
         const conv: string[] = [];
         let meta: CwhitProjMeta;
         if (role === "pit") {
-          const p = parseCwhitProjPit(readFileSync(pf, "utf8"), pf); meta = p.meta;
+          const p0 = parseCwhitProjPit(readFileSync(pf, "utf8"), pf); meta = p0.meta;
+          const p = { ...p0, rows: topNView(p0.rows, "proj", "pit", topN) };
           conv.push(`K/BB/HR %-columns read as per-BATTER-FACED (per-PA), converted to per-9 with BF/9=${BF_PER_9.toFixed(1)} — the SAME constant our per-600 line uses, so the constant cancels in ours-vs-cwhit and touches only the vs-observed LEVEL`);
-          for (const r of p.rows) projBy.set(`${r.title}|${r.vlvl}`, { k9: r.kPerPa * BF_PER_9, bb9: r.bbPerPa * BF_PER_9, hr9: r.hrPerPa * BF_PER_9, babip: r.babip, woba: pitWobaFromChannels(r.kPerPa * BF_PER_9, r.bbPerPa * BF_PER_9, r.hrPerPa * BF_PER_9, r.babip, d.W) });
+          for (const r of p.rows) projBy.set(projKey(r), { k9: r.kPerPa * BF_PER_9, bb9: r.bbPerPa * BF_PER_9, hr9: r.hrPerPa * BF_PER_9, babip: r.babip, woba: pitWobaFromChannels(r.kPerPa * BF_PER_9, r.bbPerPa * BF_PER_9, r.hrPerPa * BF_PER_9, r.babip, d.W) });
         } else {
-          const p = parseCwhitProjHit(readFileSync(pf, "utf8"), pf); meta = p.meta;
+          const p0 = parseCwhitProjHit(readFileSync(pf, "utf8"), pf); meta = p0.meta;
+          const p = { ...p0, rows: topNView(p0.rows, "proj", "hit", topN) };
           if (p.rows[0]) { conv.push(`SO: ${p.rows[0].soConvention}`); conv.push(`HR: ${p.rows[0].hrConvention}`); conv.push(`XBH: ${p.rows[0].xbhConvention}`); }
           conv.push(`his pwOBA column NOT used as truth; wOBA recomputed from his projected events with OUR weights, BATTING-ONLY (no BsR) to match his convention and our woba_* metric — never our Offense score`);
           for (const r of p.rows) {
@@ -392,21 +507,20 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
             const bip = Math.max(1 - r.bbPerPa - 0.008 - r.kPerPa - hrPa, 0.01);
             const nonHR = r.babip * bip, H = nonHR + hrPa;
             const xbh = Number.isFinite(r.xbhPct) ? xbhNonHrPerPa(r.xbhPct, H, hrPa) : 0.30 * nonHR;
-            projBy.set(`${r.title}|${r.vlvl}`, {
+            projBy.set(projKey(r), {
               bbPct: r.bbPerPa * 100, soPct: r.kPerPa * 100, hr600: r.hrPer600, babip: r.babip,
               woba: d.W.bb * r.bbPerPa + d.W.hbp * 0.008 + d.W.b1 * Math.max(nonHR - xbh, 0) + d.W.xbh * xbh + d.W.hr * hrPa,
             });
           }
         }
-        const parsed = role === "pit"
-          ? parseCwhitPit(readFileSync(`${OBS_DIR}/cwhit-${tier}-${role}.tsv`, "utf8")).meta
-          : parseCwhitHit(readFileSync(`${OBS_DIR}/cwhit-${tier}-${role}.tsv`, "utf8")).meta;
+        const op = obsPathOf(tier, role)!;
+        const parsed = role === "pit" ? parseCwhitPit(readFileSync(op, "utf8")).meta : parseCwhitHit(readFileSync(op, "utf8")).meta;
         windows.push({ tier, role, meta, conv, w: windowOverlap(parsed.coverageFrom, parsed.coverageTo, meta.trainFrom, meta.trainTo) });
       }
 
       // observed → our cards (the EXISTING fingerprint join; not rebuilt).
       if (role === "pit") {
-        const { rows } = parseCwhitPit(readFileSync(`${OBS_DIR}/cwhit-${tier}-pit.tsv`, "utf8"));
+        const rows = topNView(parseCwhitPit(readFileSync(obsPathOf(tier, "pit")!, "utf8")).rows, "obs", "pit", topN);
         const obs: JoinObs<typeof rows[0]>[] = rows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.gsPer, r.babip], validate: [r.k9, r.bb9, r.hr9], sample: r.bf, row: r }));
         const j = joinCwhit(obs, cards);
         for (const m of j.matched) {
@@ -414,13 +528,13 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
           recs.push({
             tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.bf, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
             obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, d.W) },
-            proj: projBy?.get(`${our.title}|${our.vlvl}`),
+            proj: lookupProj(projBy, m.card.cid, our.title, our.vlvl, projJoin), wellSampled: o.bf >= minBf,
             raw: { ip: o.ip, k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, ra9: o.ra9, era: o.era, gsPer: o.gsPer, ipPerGame: o.ipPerGame },
           });
         }
-        if (projBy) { const seen = new Set(recs.filter((r) => r.tier === tier && r.role === role).map((r) => `${r.title}|${r.vlvl}`)); for (const k of projBy.keys()) if (!seen.has(k)) projUnjoined.push(`${tier} ${role}: ${k}`); }
+        if (projBy) recordUnjoined(projBy, projJoin.used, tier, role, projUnjoined);
       } else {
-        const { rows } = parseCwhitHit(readFileSync(`${OBS_DIR}/cwhit-${tier}-hit.tsv`, "utf8"));
+        const rows = topNView(parseCwhitHit(readFileSync(obsPathOf(tier, "hit")!, "utf8")).rows, "obs", "hit", topN);
         const obs: JoinObs<typeof rows[0]>[] = rows.map((r) => ({ name: r.name, val: r.val, vlvl: r.vlvl, hand: r.hand, primary: [r.babip], validate: [r.bbPct, r.soPct, r.hr600], sample: r.pa, row: r }));
         const j = joinCwhit(obs, cards);
         for (const m of j.matched) {
@@ -430,13 +544,15 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
           recs.push({
             tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.pa, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
             obs: { bbPct: o.bbPct, soPct: soPa, hr600: o.hr600, babip: o.babip, woba: hitWobaFromRates({ ...o, soPct: soPa }, d.W) },
-            proj: projBy?.get(`${our.title}|${our.vlvl}`),
+            proj: lookupProj(projBy, m.card.cid, our.title, our.vlvl, projJoin), wellSampled: o.pa >= minPa,
             raw: { pa: o.pa, avg: o.avg, obp: o.obp, slg: o.slg, bbPct: o.bbPct, soPctPerAb: o.soPct, soPctPerPa: soPa, hr600: o.hr600, babip: o.babip, xbhPct: o.xbhPct, tripleXbh: o.tripleXbh },
           });
         }
-        if (projBy) { const seen = new Set(recs.filter((r) => r.tier === tier && r.role === role).map((r) => `${r.title}|${r.vlvl}`)); for (const k of projBy.keys()) if (!seen.has(k)) projUnjoined.push(`${tier} ${role}: ${k}`); }
+        if (projBy) recordUnjoined(projBy, projJoin.used, tier, role, projUnjoined);
       }
     }
   }
-  return { recs, pools, cals, windows, notices, projUnjoined, obsFiles, projFiles };
+  if (projJoin.viaCid || projJoin.viaTitle)
+    notices.push(`projection join: ${projJoin.viaCid} via CID, ${projJoin.viaTitle} via title fallback, ${projJoin.missed} observed rows with no projection`);
+  return { recs, pools, cals, windows, notices, projUnjoined, obsFiles, projFiles, source: src, floors: { minBf, minPa }, projJoin };
 }

@@ -120,12 +120,14 @@ export function rankKey(table: CwhitTable, role: "pit" | "hit"): { field: string
  * When it DOES truncate, rows with a non-finite rank value lose to every parseable row — a missing IP
  * is a parse problem to surface, not a row to silently promote into the sample.
  */
-export function topNView<R extends Record<string, unknown>>(
-  rows: R[], table: CwhitTable, role: "pit" | "hit", n?: number,
-): R[] {
+// NOTE the bare `R` (no `extends Record<string, unknown>`): the parsed row types are interfaces with
+// declared properties and NO index signature, so they do not satisfy that constraint — with it, TS
+// silently widened every row to Record<string, unknown> at the call sites and the concrete field types
+// were lost downstream. The rank field is read through one local cast instead.
+export function topNView<R>(rows: R[], table: CwhitTable, role: "pit" | "hit", n?: number): R[] {
   if (n === undefined || n >= rows.length) return rows;
   const { field, desc } = rankKey(table, role);
-  const keyed = rows.map((r, i) => ({ r, i, v: Number(r[field]) }));
+  const keyed = rows.map((r, i) => ({ r, i, v: Number((r as Record<string, unknown>)[field]) }));
   keyed.sort((a, b) => {
     const av = Number.isFinite(a.v), bv = Number.isFinite(b.v);
     if (av !== bv) return av ? -1 : 1;          // finite first
