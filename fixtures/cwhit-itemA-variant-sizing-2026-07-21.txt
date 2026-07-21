@@ -1,0 +1,514 @@
+################################################################################
+### ITEM A — VARIANT-POLICY SIZING (Fable ruling (c))
+###
+### tool     : tools/battery-itemA-variant-sizing.ts
+### run      : node tools/battery-itemA-variant-sizing.ts
+### date     : 2026-07-21
+### model    : the active trained model (id, includeVariants and window are printed in the
+###            provenance line at the head of the raw output below)
+### catalog  : data/imports/<state.catalogSourceId>.csv (id + card count in the same line)
+### scope    : 9 formats — the five Quick tiers + four dailies (early-gold, bronze-heart,
+###            gold-cap, diamond-cap-daily), each resolved under ITS OWN era/park/softcaps via
+###            the production resolveCoeffs. The format list is taken from THE corpus registry
+###            (src/eval/cwhit/corpus.ts). bronze-heart's Year 1930-1989 rule is honoured
+###            through rowEligible, not re-implemented.
+###
+### THE QUESTION. Production sets every distribution-setting cohort over a VARIANT-FREE pool
+### (server.ts:301-302), while the model artifact's trainingMeans is VARIANT-INCLUSIVE
+### (server.ts:1504 keys league cards `${cid}|${variant?V:B}`; includeVariants defaults true at
+### server.ts:1429). buildFrameShift computes mu_train_opp - mu_pool_opp across that seam, so the
+### gap subtracts a variant-free pool mean from a variant-inclusive frame mean. Fable's standing
+### invariant: SAME VARIANT POLICY ON BOTH SIDES of any gap or comparison. This run SIZES it.
+###
+### MEASUREMENT ONLY. No production behaviour, default or constant is changed; nothing is wired.
+### No scoring math is written in the tool — every number comes from the shared core
+### (computeUnifiedFieldStats / buildFrameShift / poolMeanKOwn / poolPitMeansOwn / calibrate /
+### computeHitTail / kSpreadPitRamp / pitSpreadHrRamp) and the variant rows come from the same
+### makeVariant loop realized.ts opponentSet uses, reused rather than rebuilt. FIELD_N is
+### imported from src/scoring-core/pool-stats.ts, never re-declared.
+################################################################################
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  ITEM A — VARIANT-POLICY SIZING: what the train-inclusive / pool-free gap actually costs      ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-42-43' | catalog 'cdmx' (3669 base cards, 0 variant rows in the CSV)
+model artifact: includeVariants=true  window=[2042,2043]  ⇒ trainingMeans is VARIANT-INCLUSIVE
+FIELD_N = 50 (imported from src/scoring-core/pool-stats.ts; never re-declared here)
+shipped ramps quoted as they stand: K_SPREAD_PIT = {A:5.0871, G:152.5}  PIT_SPREAD_HR = {A:0.2648, G:5.8}  — NOT refit
+MEASUREMENT ONLY — no production behaviour, default or constant is changed, and nothing is wired.
+
+
+╔═══ 1. INVENTORY — every scoring-path cohort, its variant policy, and its class ═══╗
+  EXPLICIT = the exclusion is stated at the site with a rationale.  INHERITED = the site takes
+  whatever its caller handed it and states no policy of its own.
+  BASELINE = defines the rating-scaling CONVENTION the model was fit/anchored against.
+  FIELD    = estimates a POPULATION cards actually meet or compete in. Fable's ruling: FIELDS
+             go variant-inclusive. Classification only — nothing is changed.
+
+  site                                                        variant policy   how       class
+  ─────────────────────────────────────────────────────────── ──────────────── ───────── ──────────
+  server.ts:238 isBaseCard (the predicate itself)             EXCLUDES v5      EXPLICIT  —
+      The one definition; comment at 233-237 states the policy AND that it is under review (ruling (c)).
+  server.ts:302 basePool = pool.filter(isBaseCard)            EXCLUDES v5      EXPLICIT  —
+      THE root. Everything below inherits from this one line.
+  server.ts:342 computeUnifiedFieldStats(basePool)            EXCLUDES v5      INHERITED FIELD
+      The pool field: μ/σ of the top-50 the pool transform AND the frame gap are built from.
+  server.ts:347/372 buildFrameShift(trainingMeans, poolField) MIXED            INHERITED FIELD
+      THE DEFECT: variant-INCLUSIVE minuend vs variant-FREE subtrahend, in one subtraction.
+  server.ts:348 poolMeanK(basePool, ...) [frame-v2 path]      EXCLUDES v5      INHERITED FIELD
+      Non-default path (transformMode frame-v2/matchup); same cohort defect.
+  server.ts:358 referenceFieldStats(catalog.cards.filter(isBaseCard)) EXCLUDES v5      EXPLICIT  BASELINE
+      The 'league' leg of the own-gap transform. Consistent with the pool leg TODAY.
+  server.ts:373 poolPitMeansOwn(basePool, ...)                EXCLUDES v5      INHERITED FIELD
+      K̄/HR̄/BABIP̄ — the pivots the shipped spread ramps rescale ABOUT.
+  server.ts:389-390 computeHitTail(basePool hitters)          EXCLUDES v5      INHERITED FIELD
+      BUILD-2 channel moments + the ref/pool gaps that set its strength.
+  server.ts:397/400 calibrate/calibrateBasic(basePool)        EXCLUDES v5      INHERITED BASELINE
+      The anchor. A CONVENTION (readable scale + the cap optimiser's budget unit), not a prediction.
+  server.ts:788 exposure baseline (catalog.cards.filter(isBaseCard)) EXCLUDES v5      EXPLICIT  FIELD
+      Platoon-exposure baseline field; same isBaseCard predicate.
+  server.ts:1725 SP-candidate scan / 1885 consistency / 1980 debug EXCLUDES v5      EXPLICIT  mixed
+      Diagnostic + optimiser-input cohorts; same predicate, out of the scoring gap path.
+  server.ts:1504 trainingMeans cards keyed `${cid}|${variant?V:B}` INCLUDES v5      EXPLICIT  BASELINE
+      The frame the model was fit in. `includeVariants` defaults TRUE (server.ts:1429).
+  sample.ts:530-540 eval basePool → field/pt/calibrate        EXCLUDES v5      EXPLICIT  FIELD
+      MIRRORS production deliberately (the eligible side is the assumption under test).
+  sample.ts:558-587 the JUDGED card side (base + makeVariant) INCLUDES v5      EXPLICIT  —
+      Cards are SCORED at both levels; only the DISTRIBUTION-SETTING cohorts exclude v5.
+  sample.ts:587 PoolDist reference (VLvl-0 only)              EXCLUDES v5      EXPLICIT  FIELD
+      Stated reason: counting a card twice would shift the pool mean and fake a selection gap.
+  realized.ts:47 opponentSet (base + makeVariant)             INCLUDES v5      EXPLICIT  FIELD
+      The realized-opposition field; the variant fix landed here 2026-07-21.
+  consistency.ts:155-156 ref/pool field stats                 INHERITED        INHERITED FIELD
+      Both legs come from the caller (server.ts:1886, variant-free) — consistent with each other.
+
+  THE TWO COMPARISONS, and why they disagree about what "consistent" means:
+    · train-vs-pool  (buildFrameShift) — legs: trainingMeans [INCLUDES v5] vs poolField [EXCLUDES v5]
+                                        ⇒ INCONSISTENT TODAY. Repaired by making the pool inclusive.
+    · ref-vs-pool    (buildPoolTransform) — legs: referenceField [EXCLUDES] vs poolField [EXCLUDES]
+                                        ⇒ CONSISTENT TODAY. Repairing the first with a pool-only
+                                           change would BREAK this one. Hence arm C.
+  OBSERVATION, recorded not acted on: referenceFieldStats caches on `${activeModelId}|${catalogSource}`
+  (server.ts:282) with NO tournament in the key, so the league leg is whichever tournament resolved it
+  first. Benign only while raw-wOBA selection is env-free (assembleRaw*Woba uses weights + adv_hbp only,
+  and all nine configs carry identical 500/0 softcaps). Flagged for the item-B cohort audit.
+
+
+╔═══ 2. THE HEADLINE — CURRENT (variant-free pool) vs VARIANT-INCLUSIVE pool, per format ═══╗
+  Arm A = production. Arm B = the ruled fix (POOL gains its v5 rows; ref held at production's).
+  Every number below comes from the shared core; no scoring math is written in this tool.
+
+── 2a. FORMAT RESOLUTION + POOL COMPOSITION ──
+  format         tournament          era        park      window        rules  N base   N var-inc   v5 admitted   share
+  iron          iron-quick          era-2010   park-1    40-59             0    1200        2400          1200    50.0%
+  bronze        bronze-quick        era-2010   park-1    40-69             0    2096        4192          2096    50.0%
+  silver        silver-quick        era-2010   park-1    40-79             0    2748        5496          2748    50.0%
+  gold          gold-quick          era-2010   park-1    40-89             0    3192        6384          3192    50.0%
+  diamond       diamond-quick       era-2010   park-1    40-99             0    3498        6996          3498    50.0%
+  early-gold    early-gold          era-1920   park-169  40-89             0    3192        6384          3192    50.0%
+  bronze-heart  bronze-heart        era-1939   park-191  40-69             1     570        1140           570    50.0%
+  gold-cap      gold-cap            era-2010   park-156  40-89             0    3192        6384          3192    50.0%
+  diamond-cap   diamond-cap-daily   era-1998   park-101  40-99             0    3498        6996          3498    50.0%
+  Every v5 is admitted at every window (share exactly 50.0%): `Card Value` is NOT in
+  VARIANT_RATING_FIELDS, so makeVariant boosts RATINGS and leaves the card's VALUE alone — a v5 sits
+  in the same eligibility window as its base, by construction. The variant row is still tested against
+  the window in its OWN right (inValueWindow on the variant card, exactly as the builder and
+  opponentSet do); it simply always passes.
+  ⇒ THE TIER-VARIABILITY THEREFORE DOES NOT COME FROM ADMISSION. It comes from SELECTION: the field is
+    the top-50 by predicted wOBA, and adding a uniformly-boosted twin of every card rewrites which
+    50 rows win. How far that moves a window's field μ depends on how the boost interacts with that
+    window's rating distribution — a per-window quantity. See the Δ column in 2b: −4.6 to −10.5 on stu.
+
+── 2b. THE GAP: buildFrameShift(trainingMeans, poolField), every channel ──
+  Pitcher channels are re-based by the opposing HITTING gap; hitter channels by the opposing PITCHING
+  gap (the §10.2 crossing). hit.babip and hit.gap are the SAME number by construction (both ← pit.pbabip).
+  The two SHIPPED ramps read pit.stu (K) and pit.hrr (HR9).
+
+  PITCHER-side gaps (the ramp inputs are the first two)
+  format         stu  cur     inc      Δ       hrr  cur     inc      Δ       con  cur     inc      Δ       pbabip  cur     inc      Δ    
+  iron            23.64   19.00   -4.64     52.28   41.50  -10.78     46.02   39.38   -6.64     49.80   43.48   -6.32   
+  bronze          22.76   12.29  -10.47     40.28   30.93   -9.35     30.73   22.36   -8.37     36.18   28.30   -7.88   
+  silver          20.55   12.00   -8.55     30.17   20.95   -9.22     26.93   15.35  -11.58     22.86   14.19   -8.67   
+  gold            15.95    6.79   -9.16     21.93   13.34   -8.59     18.65    9.49   -9.16     20.17   11.26   -8.91   
+  diamond         10.38   -0.04  -10.42     11.28    1.50   -9.78     11.99    3.93   -8.06     14.39    3.89  -10.50   
+  early-gold      15.95    7.10   -8.85     21.93   13.18   -8.75     18.65    9.93   -8.72     20.17   11.15   -9.02   
+  bronze-heart    18.92   11.12   -7.80     48.23   38.11  -10.12     37.30   28.47   -8.83     46.16   37.79   -8.37   
+  gold-cap        15.95    6.79   -9.16     21.93   13.34   -8.59     18.65    9.49   -9.16     20.17   11.26   -8.91   
+  diamond-cap      9.88   -0.85  -10.73     11.30    1.37   -9.93     12.42    4.09   -8.33     14.24    3.83  -10.41   
+
+  HITTER-side gaps
+  format         kRat  cur     inc      Δ      pow  cur     inc      Δ       eye  cur     inc      Δ       babip  cur     inc      Δ     gap  cur     inc      Δ       
+  iron            53.85   46.62   -7.23     35.67   27.77   -7.90     31.91   25.59   -6.32     44.43   38.78   -5.65     44.43   38.78   -5.65   
+  bronze          53.18   49.37   -3.81     20.63    8.84  -11.79     22.08   12.63   -9.45     43.29   36.42   -6.87     43.29   36.42   -6.87   
+  silver          39.37   31.79   -7.58     13.25    4.44   -8.81     22.19   14.16   -8.03     37.64   29.41   -8.23     37.64   29.41   -8.23   
+  gold            36.03   27.84   -8.19      8.93    1.95   -6.98     12.56    3.42   -9.14     27.59   18.09   -9.50     27.59   18.09   -9.50   
+  diamond         30.75   21.67   -9.08      7.43   -1.65   -9.08      2.22   -7.97  -10.19     17.74   11.84   -5.90     17.74   11.84   -5.90   
+  early-gold      36.03   27.84   -8.19      8.93    1.95   -6.98     12.56    3.42   -9.14     27.59   18.09   -9.50     27.59   18.09   -9.50   
+  bronze-heart    53.91   48.56   -5.35     23.23    8.79  -14.44     29.43   23.20   -6.23     46.17   40.15   -6.02     46.17   40.15   -6.02   
+  gold-cap        36.03   27.84   -8.19      8.93    1.95   -6.98     12.56    3.42   -9.14     27.59   18.09   -9.50     27.59   18.09   -9.50   
+  diamond-cap     30.75   21.67   -9.08      7.43   -1.65   -9.08      2.22   -7.97  -10.19     17.74   11.84   -5.90     17.74   11.84   -5.90   
+
+── 2c. THE POOL FIELD MOMENTS that feed buildPoolTransform (μ, and σ) ──
+  These are the top-50 field's per-rating μ/σ. μ is BOTH the pool leg of the frame gap and the
+  denominator of the own-gap mean-scalar k = league μ / pool μ, so it moves two things at once.
+
+  PIT field μ (σ)
+  format         con: cur / inc (Δ)            stu: cur / inc (Δ)            pbabip: cur / inc (Δ)         hrr: cur / inc (Δ)            
+  iron          71.3/77.7 (+6.3)              75.6/82.8 (+7.2)              80.4/86.0 (+5.7)              89.0/96.9 (+7.9)              
+  bronze        81.2/90.6 (+9.5)              76.3/80.1 (+3.8)              81.5/88.4 (+6.9)              104.0/115.8 (+11.8)           
+  silver        81.1/89.1 (+8.0)              90.1/97.7 (+7.6)              87.2/95.4 (+8.2)              111.4/120.2 (+8.8)            
+  gold          90.7/99.8 (+9.1)              93.4/101.6 (+8.2)             97.2/106.7 (+9.5)             115.7/122.7 (+7.0)            
+  diamond       101.0/111.2 (+10.2)           98.7/107.8 (+9.1)             107.1/113.0 (+5.9)            117.2/126.3 (+9.1)            
+  early-gold    90.7/99.8 (+9.1)              93.4/101.6 (+8.2)             97.2/106.7 (+9.5)             115.7/122.7 (+7.0)            
+  bronze-heart  73.8/80.0 (+6.2)              75.5/80.9 (+5.4)              78.6/84.7 (+6.0)              101.4/115.8 (+14.4)           
+  gold-cap      90.7/99.8 (+9.1)              93.4/101.6 (+8.2)             97.2/106.7 (+9.5)             115.7/122.7 (+7.0)            
+  diamond-cap   101.0/111.2 (+10.2)           98.7/107.8 (+9.1)             107.1/113.0 (+5.9)            117.2/126.3 (+9.1)            
+  format         con σ: cur / inc              stu σ: cur / inc              pbabip σ: cur / inc           hrr σ: cur / inc              
+  iron          17.87/18.89                   20.07/21.21                   24.51/24.71                   18.90/18.50                   
+  bronze        22.73/24.97                   25.39/29.16                   21.17/23.12                   24.33/27.00                   
+  silver        23.89/26.52                   27.64/30.16                   26.91/29.22                   25.79/27.65                   
+  gold          29.11/30.80                   26.26/26.65                   33.45/35.97                   24.20/24.52                   
+  diamond       30.38/30.83                   28.65/29.91                   31.02/32.52                   22.18/22.91                   
+  early-gold    29.11/30.80                   26.26/26.65                   33.45/35.97                   24.20/24.52                   
+  bronze-heart  19.14/18.38                   25.49/28.76                   25.21/26.13                   25.19/26.81                   
+  gold-cap      29.11/30.80                   26.26/26.65                   33.45/35.97                   24.20/24.52                   
+  diamond-cap   30.38/30.83                   28.65/29.91                   31.02/32.52                   22.18/22.91                   
+
+  HIT field μ (σ)
+  format         eye: cur / inc (Δ)            pow: cur / inc (Δ)            kRat: cur / inc (Δ)           babip: cur / inc (Δ)          gap: cur / inc (Δ)            
+  iron          76.1/82.8 (+6.6)              67.6/78.4 (+10.8)             101.1/105.7 (+4.6)            78.6/84.9 (+6.3)              83.5/91.7 (+8.2)              
+  bronze        91.4/99.8 (+8.4)              79.6/89.0 (+9.4)              102.0/112.4 (+10.5)           92.2/100.1 (+7.9)             85.3/91.8 (+6.5)              
+  silver        95.2/106.8 (+11.6)            89.7/98.9 (+9.2)              104.2/112.7 (+8.5)            105.5/114.2 (+8.7)            95.1/102.5 (+7.4)             
+  gold          103.5/112.7 (+9.2)            98.0/106.5 (+8.6)             108.8/117.9 (+9.2)            108.2/117.1 (+8.9)            100.1/108.3 (+8.2)            
+  diamond       110.2/118.2 (+8.1)            108.6/118.4 (+9.8)            114.3/124.8 (+10.4)           114.0/124.5 (+10.5)           101.0/109.9 (+8.9)            
+  early-gold    103.5/112.2 (+8.7)            98.0/106.7 (+8.8)             108.8/117.6 (+8.8)            108.2/117.2 (+9.0)            100.1/108.6 (+8.5)            
+  bronze-heart  84.8/93.7 (+8.8)              71.7/81.8 (+10.1)             105.8/113.6 (+7.8)            82.2/90.6 (+8.4)              83.8/89.0 (+5.2)              
+  gold-cap      103.5/112.7 (+9.2)            98.0/106.5 (+8.6)             108.8/117.9 (+9.2)            108.2/117.1 (+8.9)            100.1/108.3 (+8.2)            
+  diamond-cap   109.7/118.1 (+8.3)            108.6/118.5 (+9.9)            114.8/125.6 (+10.7)           114.1/124.5 (+10.4)           101.1/110.4 (+9.3)            
+  format         eye σ: cur / inc              pow σ: cur / inc              kRat σ: cur / inc             babip σ: cur / inc            gap σ: cur / inc              
+  iron          19.16/20.72                   25.91/27.42                   31.19/32.42                   16.48/16.11                   22.75/23.50                   
+  bronze        30.27/34.53                   32.55/32.70                   32.25/35.88                   23.13/24.13                   22.79/23.50                   
+  silver        34.24/39.06                   27.14/28.08                   36.64/39.71                   24.87/25.29                   27.08/29.73                   
+  gold          33.67/36.38                   26.94/26.48                   31.87/33.16                   21.44/22.18                   28.30/30.41                   
+  diamond       33.73/35.48                   27.84/29.15                   33.94/38.21                   20.08/21.84                   24.60/26.05                   
+  early-gold    33.67/36.71                   26.94/26.34                   31.87/33.10                   21.44/22.22                   28.30/30.28                   
+  bronze-heart  24.47/26.59                   29.69/30.11                   32.61/34.17                   21.19/22.88                   22.29/21.92                   
+  gold-cap      33.67/36.38                   26.94/26.48                   31.87/33.16                   21.44/22.18                   28.30/30.41                   
+  diamond-cap   34.28/35.74                   27.83/28.93                   33.88/37.97                   20.12/21.85                   24.55/26.23                   
+
+  own-gap mean-scalar k = league μ / pool μ, per channel (the PoolTransform the pivots are measured in)
+  pit k   format      con: cur / inc          stu: cur / inc          pbabip: cur / inc       hrr: cur / inc          
+           iron          1.4387/1.3217           1.6512/1.5071           1.5117/1.4124           1.3919/1.2784           
+           bronze        1.2645/1.1326           1.6367/1.5589           1.4906/1.3747           1.1907/1.0694           
+           silver        1.2662/1.1521           1.3858/1.2783           1.3939/1.2737           1.1118/1.0303           
+           gold          1.1318/1.0281           1.3363/1.2286           1.2498/1.1386           1.0703/1.0094           
+           diamond       1.0159/0.9229           1.2648/1.1583           1.1349/1.0756           1.0566/0.9806           
+           early-gold    1.1318/1.0281           1.3363/1.2286           1.2498/1.1386           1.0703/1.0094           
+           bronze-heart  1.3904/1.2822           1.6525/1.5433           1.5451/1.4353           1.2212/1.0690           
+           gold-cap      1.1318/1.0281           1.3363/1.2286           1.2498/1.1386           1.0703/1.0094           
+           diamond-cap   1.0159/0.9229           1.2648/1.1583           1.1349/1.0756           1.0566/0.9806           
+  hit k   format      eye: cur / inc          pow: cur / inc          kRat: cur / inc         babip: cur / inc        gap: cur / inc          
+           iron          1.6101/1.4810           1.7389/1.4997           1.2110/1.1579           1.5924/1.4739           1.2766/1.1621           
+           bronze        1.3408/1.2284           1.4768/1.3215           1.2006/1.0888           1.3572/1.2503           1.2497/1.1607           
+           silver        1.2873/1.1478           1.3103/1.1882           1.1751/1.0860           1.1858/1.0958           1.1211/1.0404           
+           gold          1.1843/1.0881           1.2001/1.1033           1.1254/1.0380           1.1564/1.0684           1.0647/0.9840           
+           diamond       1.1127/1.0369           1.0824/0.9930           1.0706/0.9812           1.0977/1.0051           1.0556/0.9704           
+           early-gold    1.1769/1.0855           1.2078/1.1087           1.1261/1.0414           1.1487/1.0603           1.0671/0.9836           
+           bronze-heart  1.4447/1.3085           1.6406/1.4376           1.1570/1.0776           1.5219/1.3813           1.2719/1.1979           
+           gold-cap      1.1843/1.0881           1.2001/1.1033           1.1254/1.0380           1.1564/1.0684           1.0647/0.9840           
+           diamond-cap   1.1171/1.0383           1.0826/0.9919           1.0659/0.9748           1.0963/1.0047           1.0544/0.9659           
+
+── 2d. THE CENTERING PIVOTS: poolMeanKOwn / poolPitMeansOwn ──
+  These are what the shipped spread ramps rescale ABOUT: K_corr = K̄ + s·(K − K̄), likewise HR̄.
+  A pivot move is a LEVEL move for every card in the pool even at a fixed s.
+  format         K̄_pit cur / inc (Δ)        HR̄_pit cur / inc (Δ)      BABIP̄_pit cur / inc (Δ)     K̄_hit cur / inc (Δ)
+  iron          120.57 / 121.16 (+0.59)    16.44 / 16.25 (-0.19)     0.3017 / 0.3012 (-0.0004)   120.36 / 117.13 (-3.23)
+  bronze        119.93 / 122.92 (+2.98)    16.47 / 16.45 (-0.02)     0.3011 / 0.3013 (+0.0001)   118.67 / 118.35 (-0.32)
+  silver        119.64 / 120.14 (+0.50)    16.20 / 16.06 (-0.14)     0.3017 / 0.3017 (-0.0000)   118.77 / 116.41 (-2.36)
+  gold          120.47 / 119.43 (-1.05)    15.87 / 15.61 (-0.26)     0.3011 / 0.3012 (+0.0001)   118.63 / 115.60 (-3.03)
+  diamond       119.28 / 118.22 (-1.07)    15.49 / 15.31 (-0.18)     0.3018 / 0.3016 (-0.0002)   116.94 / 116.04 (-0.91)
+  early-gold    120.47 / 119.43 (-1.05)    15.87 / 15.61 (-0.26)     0.3011 / 0.3012 (+0.0001)   118.57 / 115.58 (-2.99)
+  bronze-heart  115.62 / 117.27 (+1.65)    16.45 / 16.34 (-0.10)     0.3015 / 0.3014 (-0.0001)   117.73 / 116.88 (-0.85)
+  gold-cap      120.47 / 119.43 (-1.05)    15.87 / 15.61 (-0.26)     0.3011 / 0.3012 (+0.0001)   118.63 / 115.60 (-3.03)
+  diamond-cap   119.28 / 118.22 (-1.07)    15.49 / 15.31 (-0.18)     0.3018 / 0.3016 (-0.0002)   117.31 / 116.25 (-1.06)
+
+── 2e. THE ANCHOR: calibrate() outputs ──
+  sFinal = hitScaleVR/VL + pitchScaleVR/VL (multiplies the assembled composite only).
+  Per-event scales are hitBB/hitHR/pBB/pHR; under an eventForm calibrate sets noEvCal, so these
+  are EXACTLY 1 by construction — printed so the claim is checkable rather than trusted.
+  format         hitScaleVR cur/inc (Δ)      hitScaleVL cur/inc (Δ)      pitchScaleVR cur/inc (Δ)    pitchScaleVL cur/inc (Δ)
+  iron          0.9673 / 0.9593 (-0.0080)   0.9535 / 0.9424 (-0.0112)   0.9790 / 0.9843 (+0.0053)   0.9790 / 0.9843 (+0.0053)  
+  bronze        0.9578 / 0.9563 (-0.0015)   0.9387 / 0.9363 (-0.0023)   0.9768 / 0.9788 (+0.0020)   0.9768 / 0.9788 (+0.0020)  
+  silver        0.9533 / 0.9591 (+0.0058)   0.9406 / 0.9441 (+0.0035)   0.9792 / 0.9812 (+0.0020)   0.9792 / 0.9812 (+0.0020)  
+  gold          0.9488 / 0.9581 (+0.0093)   0.9354 / 0.9432 (+0.0078)   0.9813 / 0.9844 (+0.0031)   0.9813 / 0.9844 (+0.0031)  
+  diamond       0.9530 / 0.9727 (+0.0197)   0.9453 / 0.9667 (+0.0214)   0.9851 / 0.9901 (+0.0049)   0.9851 / 0.9901 (+0.0049)  
+  early-gold    1.0021 / 1.0113 (+0.0092)   0.9901 / 0.9991 (+0.0090)   1.0299 / 1.0338 (+0.0039)   1.0299 / 1.0338 (+0.0039)  
+  bronze-heart  0.9770 / 0.9678 (-0.0092)   0.9622 / 0.9518 (-0.0104)   0.9787 / 0.9812 (+0.0024)   0.9787 / 0.9812 (+0.0024)  
+  gold-cap      0.9388 / 0.9481 (+0.0092)   0.9190 / 0.9269 (+0.0078)   0.9683 / 0.9714 (+0.0031)   0.9683 / 0.9714 (+0.0031)  
+  diamond-cap   0.9170 / 0.9357 (+0.0187)   0.9108 / 0.9313 (+0.0205)   0.9485 / 0.9530 (+0.0045)   0.9485 / 0.9530 (+0.0045)  
+  per-event scales (cur / inc), all formats: hitBBScaleVR=1.000/1.000 hitHRScaleVR=1.000/1.000 pBBScaleVR=1.000/1.000 pHRScaleVR=1.000/1.000
+  cross-pool multipliers (cur / inc):
+    iron          hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    bronze        hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    silver        hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    gold          hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    diamond       hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    early-gold    hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    bronze-heart  hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    gold-cap      hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+    diamond-cap   hitter 1.0000 / 1.0000   pitcher 1.0000 / 1.0000
+
+
+╔═══ 3. DOWNSTREAM — the SHIPPED ramps, evaluated at the moved gaps (NOT refit) ═══╗
+  s_K(g)  = 1 + 5.0871·(1 − e^(−g/152.5)),  g = frameShift.pit.vR.stu
+  s_HR(g) = 1 + 0.2648·(1 − e^(−g/5.8)),  g = frameShift.pit.vR.hrr
+  Both are s(g ≤ 0) = 1 EXACTLY (league anchor). Constants quoted from src/model/pool-transform.ts.
+
+  format         gap_stu cur / inc     s_K cur / inc (Δ)          gap_hrr cur / inc     s_HR cur / inc (Δ)
+  iron          23.64 / 19.00        1.7305 / 1.5959 (-0.1346)  52.28 / 41.50        1.2648 / 1.2646 (-0.0002)
+  bronze        22.76 / 12.29        1.7053 / 1.3939 (-0.3114)  40.28 / 30.93        1.2645 / 1.2635 (-0.0010)
+  silver        20.55 / 12.00        1.6413 / 1.3850 (-0.2564)  30.17 / 20.95        1.2633 / 1.2577 (-0.0057)
+  gold          15.95 / 6.79         1.5052 / 1.2215 (-0.2836)  21.93 / 13.34        1.2588 / 1.2383 (-0.0205)
+  diamond       10.38 / -0.04        1.3347 / 1.0000 (-0.3347)  11.28 / 1.50         1.2269 / 1.0603 (-0.1666)
+  early-gold    15.95 / 7.10         1.5052 / 1.2314 (-0.2738)  21.93 / 13.18        1.2588 / 1.2375 (-0.0213)
+  bronze-heart  18.92 / 11.12        1.5936 / 1.3577 (-0.2358)  48.23 / 38.11        1.2647 / 1.2644 (-0.0003)
+  gold-cap      15.95 / 6.79         1.5052 / 1.2215 (-0.2836)  21.93 / 13.34        1.2588 / 1.2383 (-0.0205)
+  diamond-cap   9.88 / -0.85         1.3191 / 1.0000 (-0.3191)  11.30 / 1.37         1.2271 / 1.0557 (-0.1714)
+
+  RELATIVE size of the ramp move, as a share of the correction the ramp delivers (s − 1):
+  format         (s_K,inc − 1)/(s_K,cur − 1)     (s_HR,inc − 1)/(s_HR,cur − 1)
+  iron                          0.8158                     0.9993
+  bronze                        0.5585                     0.9961
+  silver                        0.6002                     0.9784
+  gold                          0.4385                     0.9207
+  diamond                       0.0000                     0.2659
+  early-gold                    0.4581                     0.9179
+  bronze-heart                  0.6027                     0.9988
+  gold-cap                      0.4385                     0.9207
+  diamond-cap                   0.0000                     0.2453
+
+
+╔═══ 4. THE QUESTION THAT MATTERS MOST — need-vs-gap, re-plotted ═══╗
+  The five per-tier pitcher K9 calibration "needs" (obs~pred slopes) are SAMPLE quantities: they are
+  measured from the cwhit observed tables and do NOT depend on the pool's variant policy. The GAP does.
+  ⇒ a variant-policy error moves each tier HORIZONTALLY on this plane and nothing else. That is exactly
+    the geometry under which gold at 1.78 @ 15.9 falsified the saturating one-argument ramp family:
+    it sat off any 1-D monotone curve through the other four.
+
+  needs held fixed at the committed measurement (fixtures/cwhit-battery-needs-vs-bar-2026-07-21.txt,
+  BF ≥ 600): iron 1.82 / bronze 1.62 / silver 1.48 / gold 1.78 / diamond 1.04.
+
+  ── CURRENT gaps (variant-free pool) — the plane the falsification was declared on ──
+     sorted by gap ascending:  diamond 10.38→1.04   gold 15.95→1.78   silver 20.55→1.48   bronze 22.76→1.62   iron 23.64→1.82
+     monotone-increasing in gap? NO — 2 inversion(s): gold(15.9,1.78) > silver(20.5,1.48); gold(15.9,1.78) > bronze(22.8,1.62)
+     Spearman ρ(gap, need) = 0.700   (1.000 = perfectly monotone in gap)
+     GOLD's break, measured model-free: chord diamond(10.4,1.04) → silver(20.5,1.48)
+        predicts 1.281 at gap 15.95;  gold measures 1.78  ⇒  residual +0.499
+     local slopes (need per gap-point), a saturating ramp requires all-positive and concave:
+        gold: +0.133→-0.065 (concave)   silver: -0.065→+0.063 (convex)   bronze: +0.063→+0.227 (convex)
+
+  ── VARIANT-INCLUSIVE gaps (arm B) — the same needs, re-plotted ──
+     sorted by gap ascending:  diamond -0.04→1.04   gold 6.79→1.78   silver 12.00→1.48   bronze 12.29→1.62   iron 19.00→1.82
+     monotone-increasing in gap? NO — 2 inversion(s): gold(6.8,1.78) > silver(12.0,1.48); gold(6.8,1.78) > bronze(12.3,1.62)
+     Spearman ρ(gap, need) = 0.700   (1.000 = perfectly monotone in gap)
+     GOLD's break, measured model-free: chord diamond(-0.0,1.04) → silver(12.0,1.48)
+        predicts 1.290 at gap 6.79;  gold measures 1.78  ⇒  residual +0.490
+     local slopes (need per gap-point), a saturating ramp requires all-positive and concave:
+        gold: +0.108→-0.058 (concave)   silver: -0.058→+0.483 (convex)   bronze: +0.483→+0.030 (concave)
+
+  HORIZONTAL MOVE PER TIER (this is the whole mechanism):
+     tier      gap cur    gap inc     Δgap      need
+     iron        23.64     19.00     -4.64    1.82
+     bronze      22.76     12.29    -10.47    1.62
+     silver      20.55     12.00     -8.55    1.48
+     gold        15.95      6.79     -9.16    1.78
+     diamond     10.38     -0.04    -10.42    1.04
+
+  ── what the SHIPPED ramp would then DELIVER against each need (no refit) ──
+  CAVEAT FIRST, so the table cannot be over-read: K_SPREAD_PIT was FIT at the CURRENT gap coordinate.
+  Evaluating it at systematically smaller gaps must under-deliver — that is arithmetic, not evidence
+  about the ramp's adequacy. What IS readable is the SIGN PATTERN of the residuals, which is
+  coordinate-robust in a way the levels are not.
+     tier      need    s_K cur   resid cur    s_K inc   resid inc
+     iron       1.82    1.7305      -0.089     1.5959      -0.224
+     bronze     1.62    1.7053      +0.085     1.3939      -0.226
+     silver     1.48    1.6413      +0.161     1.3850      -0.095
+     gold       1.78    1.5052      -0.275     1.2215      -0.558
+     diamond    1.04    1.3347      +0.295     1.0000      -0.040
+     SSE 0.2037 (current) vs 0.4239 (inclusive);  residuals negative at 2/5 tiers current, 5/5 inclusive.
+     A uniformly-signed residual set is what a pure COORDINATE shift produces (one scale factor absorbs
+     it); a mixed-sign set is not absorbable by any rescaling of the ramp. Read that, not the SSE.
+
+  ╔═══ VERDICT ON GOLD'S BREAK ═══╗
+  READING RULE (pre-declared): DISAPPEARS = 0 inversions AND ρ ≥ 0.999. SHRINKS = the break persists
+  but |chord residual| falls by more than half. SURVIVES = otherwise. Applied mechanically.
+  gap ORDER of the five tiers under each policy:
+     current   diamond < gold < silver < bronze < iron
+     inclusive diamond < gold < silver < bronze < iron   ⇒ UNCHANGED
+  Every tier moves LEFT (Δgap -4.64 to -10.47) — but not far enough DIFFERENTIALLY to reorder them,
+  and reordering is the ONLY way a purely horizontal move can dissolve an inversion.
+  ⇒ GOLD'S BREAK SURVIVES the variant-inclusive re-plot:
+       chord residual   +0.499 → +0.490   (98.3% retained)
+       inversions       2 → 2   (same pair both times: gold over silver, gold over bronze)
+       Spearman ρ       0.700 → 0.700
+  THE MAJOR-RESULT TEST IS NOT MET: the five points do NOT return to a monotone/convex curve. Had they,
+  it would still not have VALIDATED any ramp family — only removed one falsifier.
+
+  ONE GENUINE COHERENCE GAIN, and it is at the other end of the ladder: diamond's stu gap crosses ZERO
+  (10.38 → -0.04), so s_K(g ≤ 0) = 1 EXACTLY — the ramp switches fully off at diamond, against a
+  measured diamond need of 1.04. Under the current variant-free gap the ramp forces 1.335 on a tier
+  that needs ~1.0. The variant-inclusive frame makes diamond IN-FRAME, which is what a top tier facing
+  a league-strength field should be. That is a real finding about the COORDINATE, not about gold.
+
+
+╔═══ 5. ARM C — the OTHER leg: ref AND pool both variant-inclusive ═══╗
+  Arm B repairs train-vs-pool and breaks ref-vs-pool. Arm C is the only arm where BOTH comparisons
+  obey one policy. The frame GAP is identical in B and C (the gap has no ref leg) — only the own-gap
+  PoolTransform, and therefore the pivots and the anchor, differ. Reported, not recommended.
+
+  format         K̄_pit  A / B / C              HR̄_pit  A / B / C            pitchScaleVR  A / B / C
+  iron          120.57 / 121.16 / 126.45    16.44 / 16.25 / 15.64    0.9790 / 0.9843 / 1.0140
+  bronze        119.93 / 122.92 / 126.69    16.47 / 16.45 / 15.90    0.9768 / 0.9788 / 1.0088
+  silver        119.64 / 120.14 / 127.43    16.20 / 16.06 / 15.59    0.9792 / 0.9812 / 1.0106
+  gold          120.47 / 119.43 / 126.61    15.87 / 15.61 / 14.99    0.9813 / 0.9844 / 1.0139
+  diamond       119.28 / 118.22 / 125.82    15.49 / 15.31 / 14.89    0.9851 / 0.9901 / 1.0191
+  early-gold    120.47 / 119.43 / 126.61    15.87 / 15.61 / 14.99    1.0299 / 1.0338 / 1.0519
+  bronze-heart  115.62 / 117.27 / 122.27    16.45 / 16.34 / 15.73    0.9787 / 0.9812 / 1.0031
+  gold-cap      120.47 / 119.43 / 126.61    15.87 / 15.61 / 14.99    0.9683 / 0.9714 / 1.0004
+  diamond-cap   119.28 / 118.22 / 125.82    15.49 / 15.31 / 14.89    0.9485 / 0.9530 / 0.9796
+
+  gap identity check (arm B stu gap MUST equal arm C stu gap — the gap has no reference leg):
+    iron          |B − C| = 0.0e+0  OK
+    bronze        |B − C| = 0.0e+0  OK
+    silver        |B − C| = 0.0e+0  OK
+    gold          |B − C| = 0.0e+0  OK
+    diamond       |B − C| = 0.0e+0  OK
+    early-gold    |B − C| = 0.0e+0  OK
+    bronze-heart  |B − C| = 0.0e+0  OK
+    gold-cap      |B − C| = 0.0e+0  OK
+    diamond-cap   |B − C| = 0.0e+0  OK
+
+  pivot identity check (poolMeanKOwn(...).pit ≡ poolPitMeansOwn(...).k, one collector):
+    iron          |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    bronze        |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    silver        |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    gold          |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    diamond       |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    early-gold    |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    bronze-heart  |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    gold-cap      |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+    diamond-cap   |poolMeanKOwn.pit − poolPitMeansOwn.k| = 0.0e+0
+
+
+╔═══ 6. OWNERSHIP — recorded, not measured ═══╗
+  A variant is only fieldable if the account OWNS the base card and has created the v5 (D6: `owned` is
+  a quantity; the account overlay carries `variantCardIds`, and buildAccountRows materialises a v5 row
+  only for those). So the ELIGIBLE field and the REALIZED field can differ for a STRUCTURAL reason —
+  scarcity of the variant itself — rather than a usage/selection one, and the two explanations are not
+  separable from the outside: cwhit publishes what was played, not what was ownable. That is a real
+  caveat on any attempt to read the realized-vs-eligible divergence as pure selection-on-quality.
+  IT IS NOT A REASON TO LEAVE THE POLICY MIXED. The defect sized above is arithmetic, not empirical: one
+  subtraction whose two legs are drawn from different populations. Consistency of the variant policy
+  comes first; the ownership question is downstream of having ONE policy to ask it about, and the
+  calibration pool deliberately ignores `owned` already (eligibility.ts: ownedOnly defaults false).
+
+  REPORT-ONLY. Nothing here fits, changes a default, or touches production scoring.
+
+
+################################################################################
+# READING
+################################################################################
+
+0. THE ITEM-4 RE-PLOT VERDICT, FIRST. GOLD'S BREAK SURVIVES. The variant-inclusive
+   gaps move every tier LEFT (Δgap −4.6 to −10.5 on stu) but they do not REORDER the
+   five tiers, and reordering is the only way a purely horizontal move can dissolve an
+   inversion. All three read-outs are unchanged: chord residual +0.499 → +0.490 (98.3%
+   retained), inversions 2 → 2 (the same pair both times — gold over silver and gold
+   over bronze), Spearman ρ(gap, need) 0.700 → 0.700. The five points do NOT return to
+   a monotone/convex curve, so the "major result" branch of the pre-registration is NOT
+   triggered. Note also that even if they had, a re-plot removes a falsifier; it does
+   not validate any ramp family.
+
+1. THE DEFECT IS REAL AND LARGE. The stu gap — the K ramp's own input — falls by 4.6 to
+   10.5 points once the pool obeys the same variant policy as the frame it is subtracted
+   from. That is 20-100% of each tier's entire current gap. Every channel on both sides
+   moves the same way (pit hrr −8.6 to −10.8, hit pow −7.0 to −14.4), because the top-50
+   field is a SELECTION and a uniformly boosted twin of every card rewrites which 50 rows
+   win it. Field μ rises 3.8 to 14.4 rating points per channel.
+
+2. THE BIAS IS TIER-VARIABLE, BUT NOT FOR THE REASON THE RULING ANTICIPATED. Every v5 is
+   admitted at every window — `Card Value` is not in VARIANT_RATING_FIELDS, so makeVariant
+   boosts ratings and leaves value alone, and the variant share is exactly 50.0% in all
+   nine formats. The tier-variability is a pure SELECTION effect: iron loses only 4.64 gap
+   points while bronze loses 10.47. That is worth recording precisely because "the variant
+   share differs by window" would have been the natural (and wrong) mechanism to assume.
+
+3. DOWNSTREAM, THE SHIPPED RAMPS COLLAPSE. Evaluated at the moved gaps with NO refit, the K
+   ramp delivers 44-82% of its current correction (gold 1.5052 → 1.2215; bronze 1.7053 →
+   1.3939) and at diamond it switches OFF ENTIRELY: diamond's stu gap crosses zero (10.38 →
+   −0.04) and s(g ≤ 0) = 1 exactly. The HR9 ramp is near-saturated at every tier except the
+   two diamond formats, where it drops from ~1.23 to ~1.06. The pivots those ramps rescale
+   about move much less (K̄_pit −1.07 to +2.98, HR̄_pit −0.02 to −0.26), so the ramp output
+   is the dominant channel, not the pivot.
+
+4. THE ANCHOR MOVES LEAST, AND ITS DIRECTION IS TIER-DEPENDENT. sFinal shifts by −0.011 to
+   +0.021 on hitters and +0.002 to +0.005 on pitchers, sign-flipping across the ladder (iron
+   and bronze-heart down, silver through diamond up). The per-event scales are exactly 1 at
+   every format under both policies, as calibrate's noEvCal guarantees under an eventForm —
+   printed rather than asserted.
+
+5. ONE GENUINE COHERENCE GAIN, AT THE OTHER END OF THE LADDER. Diamond's measured K need is
+   1.04, i.e. essentially none. Under the current variant-free gap the shipped ramp forces
+   1.335 on it; under the variant-inclusive gap the tier becomes IN-FRAME and the ramp
+   delivers exactly 1.000. A top tier facing a league-strength field ought to be in-frame,
+   and only the variant-inclusive coordinate says so. This is a finding about the COORDINATE,
+   not about gold.
+
+6. THE RESIDUAL SIGN PATTERN FLIPS FROM MIXED TO UNIFORM. Against the five needs the current
+   ramp is over on three tiers and under on two (−0.089/+0.085/+0.161/−0.275/+0.295); under
+   the variant-inclusive gaps it is under on all five (−0.224/−0.226/−0.095/−0.558/−0.040).
+   SSE rises (0.204 → 0.424), but SSE is not the readable quantity here: the ramp constants
+   were fit AT the current coordinate, so evaluating them at systematically smaller gaps must
+   under-deliver by arithmetic. What is readable is that a uniformly-signed residual set is
+   the signature of a pure coordinate shift — one scale factor absorbs it — whereas the
+   current mixed-sign set is not absorbable by any rescaling. Gold remains the worst residual
+   under both coordinates (−0.275 → −0.558).
+
+7. THE INVENTORY FOUND A SECOND, OPPOSITE CONSISTENCY PROBLEM. There are TWO comparisons on
+   this path, and they disagree about what "consistent" means:
+     · train-vs-pool (buildFrameShift): trainingMeans INCLUDES v5, poolField EXCLUDES ⇒
+       INCONSISTENT today; repaired by making the pool inclusive.
+     · ref-vs-pool (buildPoolTransform): referenceField EXCLUDES, poolField EXCLUDES ⇒
+       CONSISTENT today; a pool-only change would BREAK it.
+   Hence arm C (ref and pool both inclusive) is reported: it is the only arm in which both
+   comparisons obey one policy. It moves K̄_pit up by ~6-8 and pushes pitchScaleVR above 1.0
+   at eight of nine formats. It is reported, not recommended — the choice between B and C is
+   a decision, not a measurement.
+
+8. FORMAT WINDOWS COINCIDE MORE THAN THE FORMAT LIST SUGGESTS. gold-quick, early-gold and
+   gold-cap all resolve to value window 40-89 with no extra rules, and diamond-quick and
+   diamond-cap-daily both to 40-99, so their pools — and therefore their gaps — are identical
+   under the variant-free policy (15.95 and ~9.9-10.4 respectively). This independently
+   corroborates the standing note in PIT_SPREAD_HR that "gold-quick (1.31) and gold-cap (0.97)
+   disagree at the SAME gap 15.9". Under the variant-inclusive policy early-gold separates
+   slightly from gold-quick (7.10 vs 6.79) because era-1920 coeffs reshuffle the top-50 among
+   the enlarged candidate set.
+
+9. WHAT THIS DOES NOT DECIDE. It does not decide the variant policy, does not refit either
+   ramp, and does not adjudicate the ramp family. The needs are held at their committed
+   BF ≥ 600 measurement throughout; they are sample quantities and cannot move with the
+   pool's variant policy, which is exactly why the re-plot is purely horizontal and why the
+   verdict above is as clean as it is.
+
+10. OWNERSHIP, RECORDED NOT MEASURED. A variant is only fieldable if the account owns the base
+    card and has created the v5, so the eligible field and the realized field can differ for a
+    STRUCTURAL reason (scarcity of the variant) rather than a usage one — and the two are not
+    separable from outside, since cwhit publishes what was played, not what was ownable. That
+    is a real caveat on reading realized-vs-eligible divergence as pure selection-on-quality.
+    It is NOT a reason to leave the policy mixed: the defect sized here is arithmetic, one
+    subtraction whose two legs are drawn from different populations. Consistency of the variant
+    policy comes first; the ownership question is downstream of having one policy to ask it
+    about, and the calibration pool already ignores `owned` by design.
+
+(end of artifact — item A variant-policy sizing; gold's break SURVIVES the variant-inclusive re-plot)
