@@ -168,6 +168,20 @@ function noiseOf(r: Rec, ch: string): number {
   return pctNoiseVar(r.obs[ch]!, r.sample);
 }
 
+/**
+ * THE dcv cell — one reliability rule, one format, used by BOTH sections.
+ *
+ * Sections A and B previously applied DIFFERENT rules to the SAME numbers: A suppressed to UNREL when
+ * the noise-share CI upper bound crossed 100%, while B printed `ratioDeconv` with no reliability test
+ * at all. Measured on the 2026-07-21 snapshots: 9 cells where A read UNREL and B printed a value
+ * (diamond pit HR9 — A: UNREL, B: 1.16). A reader comparing the two sections was comparing two
+ * conventions, not two populations. §15.8's "one-copy applies to eval instruments" is exactly this.
+ */
+function dcvCell(a: Agreement, nsHi: number): { text: string; unrel: boolean } {
+  const unrel = Number.isFinite(nsHi) && nsHi >= 1;
+  return { text: unrel ? "UNREL" : f(a.spread.ratioDeconv, 2), unrel };
+}
+
 const CH: Record<"pit" | "hit", { key: string; lbl: string; d: number }[]> = {
   pit: [{ key: "k9", lbl: "K9", d: 2 }, { key: "bb9", lbl: "BB9", d: 2 }, { key: "hr9", lbl: "HR9", d: 2 }, { key: "babip", lbl: "BABIP", d: 3 }, { key: "woba", lbl: "wOBAA", d: 3 }],
   hit: [{ key: "bbPct", lbl: "BB%", d: 2 }, { key: "soPct", lbl: "SO%(PA)", d: 2 }, { key: "hr600", lbl: "HR600", d: 2 }, { key: "babip", lbl: "BABIP", d: 3 }, { key: "woba", lbl: "wOBA", d: 3 }],
@@ -323,7 +337,7 @@ for (const { tier, role, rows } of threeWay) {
         `${(who === "OURS" ? lbl : "").padEnd(9)} ${who.padEnd(6)} ${sgn(a.level.bias, d).padStart(7)}${a.level.sig ? "*" : " "}   [${sgn(a.level.ciLo, d)}, ${sgn(a.level.ciHi, d)}]`.padEnd(58) +
         `${f(rows.reduce((s, r) => s + r.obs[key]!, 0) / rows.length, d).padStart(6)}      ` +
         `${f(a.shape.corr, 3).padStart(5)}  [${f(a.shape.corrLo, 2)},${f(a.shape.corrHi, 2)}]  ${f(a.shape.spearman, 2).padStart(5)}  ${f(a.shape.mae, d).padStart(6)}  ${f(a.shape.slope, 2).padStart(5)}   ` +
-        `${f(a.spread.ratio, 2).padStart(5)}  ${(dcvBad ? "UNREL" : f(a.spread.ratioDeconv, 2)).padStart(5)}  ${(Number.isFinite(a.spread.noiseShare) ? `${f(a.spread.noiseShare * 100, 0)}%` : "n/a").padStart(5)}${dcvBad ? `↑${f(nsHi * 100, 0)}%` : ""}`,
+        `${f(a.spread.ratio, 2).padStart(5)}  ${dcvCell(a, nsHi).text.padStart(5)}  ${(Number.isFinite(a.spread.noiseShare) ? `${f(a.spread.noiseShare * 100, 0)}%` : "n/a").padStart(5)}${dcvBad ? `↑${f(nsHi * 100, 0)}%` : ""}`,
       );
     }
     // The DUEL — paired bootstrap on the ours-minus-cwhit gap (the only defensible "who wins").
@@ -360,8 +374,12 @@ for (const role of ["pit", "hit"] as const) {
     if (rows.length < 5) { if (rows.length) console.log(`${tier.padEnd(9)} (N=${rows.length} well-sampled — too few to report)`); continue; }
     for (const { key, lbl, d } of CH[role]) {
       const obs = rows.map((r) => r.obs[key]!), nv = rows.map((r) => noiseOf(r, key));
-      const a = agreement(rows.map((r) => r.ours[key]!), obs, nv.every((x) => Number.isFinite(x)) ? nv : undefined);
-      console.log(`${tier.padEnd(9)} ${lbl.padEnd(9)} ${String(a.n).padStart(3)}    ${sgn(a.level.bias, d).padStart(7)}${a.level.sig ? "*" : " "} [${sgn(a.level.ciLo, d)}, ${sgn(a.level.ciHi, d)}]`.padEnd(66) + `${f(a.shape.corr, 3).padStart(5)}  ${f(a.shape.spearman, 2).padStart(5)}   ${f(a.shape.mae, d).padStart(7)}     ${f(a.spread.ratio, 2)} / ${f(a.spread.ratioDeconv, 2)}`);
+      const useNvB = nv.every((x) => Number.isFinite(x)) ? nv : undefined;
+      const a = agreement(rows.map((r) => r.ours[key]!), obs, useNvB);
+      // SAME reliability rule as Section A — this line used to print ratioDeconv unconditionally.
+      const nsHiB = useNvB ? noiseShareCiUpper(obs, useNvB) : NaN;
+      const cellB = dcvCell(a, nsHiB);
+      console.log(`${tier.padEnd(9)} ${lbl.padEnd(9)} ${String(a.n).padStart(3)}    ${sgn(a.level.bias, d).padStart(7)}${a.level.sig ? "*" : " "} [${sgn(a.level.ciLo, d)}, ${sgn(a.level.ciHi, d)}]`.padEnd(66) + `${f(a.shape.corr, 3).padStart(5)}  ${f(a.shape.spearman, 2).padStart(5)}   ${f(a.shape.mae, d).padStart(7)}     ${f(a.spread.ratio, 2)} / ${cellB.text}${cellB.unrel ? `  (noise-share CI upper ${f(nsHiB * 100, 0)}%)` : ""}`);
     }
   }
 }
