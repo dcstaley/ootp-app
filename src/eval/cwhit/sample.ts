@@ -106,6 +106,12 @@ export type Exposure = Map<string, { wR: number; wL: number }>;
 /** One judged card: our line, cwhit's observed line, optionally cwhit's projected line. */
 export interface Rec {
   tier: string; role: "pit" | "hit";
+  /** EXACT card identity, `${Card ID}|${vlvl}` — the same key the builder joins on. Carried so a
+   *  consumer can map a matched row back to the catalog card (base) or its v5 variant WITHOUT
+   *  re-deriving identity from the name, which is exactly the collision-prone step the fingerprint
+   *  join exists to avoid. Load-bearing for variant-aware work: `title` is the BASE title for both
+   *  variant levels, so (title) alone cannot distinguish a card from its v5. */
+  cid: string;
   title: string; name: string; vlvl: number;
   sample: number;          // BF (pit) or PA (hit) — 'opponents faced', symmetric across roles
   axis: number;            // the headline rating axis (Stuff vR / Power vR) — reported, never joined on
@@ -623,7 +629,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
         for (const m of j.matched) {
           const our = byCid.get(m.card.cid)!, o = m.obs.row;
           recs.push({
-            tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.bf, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
+            tier, role, cid: m.card.cid, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.bf, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
             obs: { k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, woba: pitWobaFromChannels(o.k9, o.bb9, o.hr9, o.babip, d.W) },
             proj: lookupProj(projBy, m.card.cid, our.title, our.vlvl, projJoin), wellSampled: o.bf >= minBf,
             raw: { ip: o.ip, k9: o.k9, bb9: o.bb9, hr9: o.hr9, babip: o.babip, ra9: o.ra9, era: o.era, gsPer: o.gsPer, ipPerGame: o.ipPerGame },
@@ -639,7 +645,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
           // cwhit's observed SO% is K/AB → convert to our K/PA convention before ANY comparison.
           const soPa = soPctPerAbToPerPa(o.soPct, o.avg, o.obp, o.bbPct);
           recs.push({
-            tier, role, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.pa, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
+            tier, role, cid: m.card.cid, title: our.title, name: o.name, vlvl: our.vlvl, sample: o.pa, axis: our.axis, ours: our.ours, oursDep: our.oursDep,
             obs: { bbPct: o.bbPct, soPct: soPa, hr600: o.hr600, babip: o.babip, woba: hitWobaFromRates({ ...o, soPct: soPa }, d.W) },
             proj: lookupProj(projBy, m.card.cid, our.title, our.vlvl, projJoin), wellSampled: o.pa >= minPa,
             raw: { pa: o.pa, avg: o.avg, obp: o.obp, slg: o.slg, bbPct: o.bbPct, soPctPerAb: o.soPct, soPctPerPa: soPa, hr600: o.hr600, babip: o.babip, xbhPct: o.xbhPct, tripleXbh: o.tripleXbh },
