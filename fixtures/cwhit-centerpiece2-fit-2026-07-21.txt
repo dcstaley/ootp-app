@@ -1,0 +1,178 @@
+################################################################################
+# CENTERPIECE #2 — THE FIT. VERDICT: REFUTED at the pre-registered bar. 2026-07-21.
+# Pre-registration: docs/CWHIT_CENTERPIECE2_PREREG_2026-07-21.md + AMENDMENT 1.
+# Tool: tools/centerpiece2-fit.ts. Dual-policy per ruling (h). NOTHING WIRED.
+################################################################################
+
+
+╔═══ CENTERPIECE #2 — THE FIT (pre-registered; amendment 1) ═══╗
+model 'league-42-43' | catalog 'cdmx' | seed 20260716 | B 2000
+league training support: N 149 obs (BF>=1000, BF^0.75 weights)
+REGISTERED KNOT CONSTRAINT r0 <= training median = 121.0 (stuff rating)
+
+INSTRUMENT CHECK — tool-side per-side reconstruction vs the builder's own raw K9 line,
+current policy: max |diff| = 0.00e+0
+  ✓ identical to the deployed raw line; the correction is applied to the real curve.
+
+── MEASURED NEEDS, re-measured per policy (the committed values are the cross-check) ──
+  policy   bar                iron          bronze          silver            gold         diamond
+  current  600       1.82 (n=142)    1.62 (n=156)    1.48 (n=121)     1.78 (n=91)     1.04 (n=36)
+  current  1000      1.83 (n=112)    1.64 (n=122)     1.47 (n=96)     1.63 (n=68)     0.85 (n=19)
+  armC     600       1.81 (n=142)    1.62 (n=156)    1.47 (n=121)     1.77 (n=91)     1.04 (n=36)
+  armC     1000      1.82 (n=112)    1.63 (n=122)     1.47 (n=96)     1.63 (n=68)     0.86 (n=19)
+  committed @600 / @1000 : iron 1.82/1.83  bronze 1.62/1.64  silver 1.48/1.47  gold 1.78/1.63  diamond 1.04/—
+
+
+════════ POLICY: CURRENT COORDINATE (production, variant-free ref+pool) ════════
+
+── PRIMARY  hinge on effective stuff ──
+   fitted  A = -8.000e-3   r0 = 121.00   weighted SSE 2729.9
+   sign: A < 0 — AS PREDICTED (low-stuff true K below prediction)
+   ⚠ knot BOUNDARY-PINNED at the UPPER grid edge — standing rule: boundary-pinned optimum = family misfit
+   ⚠ KILL CONDITION A1.5(7): knot at the training median ⇒ global slope wearing a hinge
+   implied @600      1.82*    1.68*    1.72     1.73*    1.60    (3 inside CI; * = inside)
+   implied @1000     1.81*    1.68*    1.71     1.72*    1.49    (3 inside CI; * = inside)
+
+── ROBUST   hinge on training-support percentile ──
+   fitted  A = -1.333e-2   r0 = 30.84   weighted SSE 3180.1
+   sign: A < 0 — AS PREDICTED (low-stuff true K below prediction)
+   implied @600      1.81*    1.66*    1.72     1.69*    1.58    (3 inside CI; * = inside)
+   implied @1000     1.80*    1.67*    1.74     1.74*    1.46    (3 inside CI; * = inside)
+
+── NULL N2  hinge on PREDICTED K (not a rating) ──
+   fitted  A = -2.100e-1   r0 = 7.77   weighted SSE 2737.9
+   sign: A < 0 — AS PREDICTED (low-stuff true K below prediction)
+   implied @600      1.80*    1.68*    1.71     1.71*    1.64    (3 inside CI; * = inside)
+   implied @1000     1.78*    1.68*    1.71     1.72*    1.55    (3 inside CI; * = inside)
+
+── P2 HELD-OUT GOLD (primary form, gold excluded from the fit entirely) ──
+   fitted  A = -8.500e-3   r0 = 121.00
+   @600: implied gold 1.770   measured 1.783 [1.64, 1.90]   INSIDE CI — P2 leg PASS
+   @1000: implied gold 1.761   measured 1.634 [1.50, 1.74]   OUTSIDE CI — P2 leg FAIL
+
+── P3 THE DIFFERENTIAL (implied @1000 minus implied @600; measured beside it) ──
+   tier      implied Δ    measured Δ
+   iron          -0.010         0.009
+   bronze         0.003         0.015
+   silver        -0.005        -0.006
+   gold          -0.010        -0.149
+   diamond       -0.116        -0.192
+
+── N1 CONSTANT NULL: c = 0.9090, weighted SSE 7334.0 (primary hinge SSE 2729.9)
+   a constant multiplies every prediction equally ⇒ implied slope = 0.909 at EVERY tier, by construction.
+
+
+════════ POLICY: ARM C COORDINATE (ref AND pool variant-inclusive — the ruled destination) ════════
+
+── PRIMARY  hinge on effective stuff ──
+   fitted  A = -9.500e-3   r0 = 121.00   weighted SSE 3462.6
+   sign: A < 0 — AS PREDICTED (low-stuff true K below prediction)
+   ⚠ knot BOUNDARY-PINNED at the UPPER grid edge — standing rule: boundary-pinned optimum = family misfit
+   ⚠ KILL CONDITION A1.5(7): knot at the training median ⇒ global slope wearing a hinge
+   implied @600      1.92     1.70     1.77     1.80*    1.63    (1 inside CI; * = inside)
+   implied @1000     1.91*    1.70*    1.76     1.78     1.48    (2 inside CI; * = inside)
+
+── ROBUST   hinge on training-support percentile ──
+   fitted  A = -1.000e-2   r0 = 41.52   weighted SSE 3809.3
+   sign: A < 0 — AS PREDICTED (low-stuff true K below prediction)
+   implied @600      1.85*    1.69*    1.75     1.73*    1.66    (3 inside CI; * = inside)
+   implied @1000     1.84*    1.69*    1.77     1.80     1.59    (2 inside CI; * = inside)
+
+── NULL N2  hinge on PREDICTED K (not a rating) ──
+   fitted  A = -1.950e-1   r0 = 8.03   weighted SSE 3168.8
+   sign: A < 0 — AS PREDICTED (low-stuff true K below prediction)
+   implied @600      1.80*    1.70     1.74     1.74*    1.71    (2 inside CI; * = inside)
+   implied @1000     1.79*    1.71*    1.75     1.77     1.65    (2 inside CI; * = inside)
+
+── P2 HELD-OUT GOLD (primary form, gold excluded from the fit entirely) ──
+   fitted  A = -1.000e-2   r0 = 121.00
+   @600: implied gold 1.832   measured 1.771 [1.63, 1.89]   INSIDE CI — P2 leg PASS
+   @1000: implied gold 1.810   measured 1.629 [1.50, 1.74]   OUTSIDE CI — P2 leg FAIL
+
+── P3 THE DIFFERENTIAL (implied @1000 minus implied @600; measured beside it) ──
+   tier      implied Δ    measured Δ
+   iron          -0.009         0.010
+   bronze         0.004         0.015
+   silver        -0.012        -0.005
+   gold          -0.024        -0.142
+   diamond       -0.151        -0.188
+
+── N1 CONSTANT NULL: c = 0.8950, weighted SSE 7461.8 (primary hinge SSE 3462.6)
+   a constant multiplies every prediction equally ⇒ implied slope = 0.895 at EVERY tier, by construction.
+
+
+(end of centerpiece #2 fit — measurement only; nothing wired, no constants exported)
+
+################################################################################
+# READING — the direction was right, the LOCALIZATION is wrong, and that is fatal
+################################################################################
+
+INSTRUMENT FIRST. The tool-side per-side reconstruction matches the builder's own raw K9
+line to max |diff| = 0.00e+0 across every row, so the correction is being applied to the
+deployed curve and not to a lookalike. The re-measured needs reproduce the committed
+values exactly at both bars (1.82/1.62/1.48/1.78/1.04 and 1.83/1.64/1.47/1.63/0.85), and
+they barely move under arm C (1.81/1.62/1.47/1.77/1.04) — confirming the ruling's premise
+that the per-tier slopes are coordinate-free targets.
+
+THE KILL CONDITION FIRES FIRST, AND IT FIRES UNDER BOTH POLICIES.
+
+  A1.5(7): the knot fits at r0 = 121.00 — EXACTLY the league training median, which is the
+  upper edge of its own constrained grid. Boundary-pinned under both the current coordinate
+  and arm C's. By the standing rule a boundary-pinned optimum is a family misfit; by the
+  registered kill condition a knot at the training median is "a global slope wearing a
+  hinge". The data does not want a correction localized at low support. It wants one that
+  acts everywhere it is allowed to act, and it pushes the knot as high as the constraint
+  permits. That is precisely the shape step 0 ruled inadmissible.
+
+EVERY PRIMARY GATE FAILS, INDEPENDENTLY.
+
+  P1 (>=4 of 5 inside CI @600): 3 of 5 on the current coordinate, 1 of 5 under arm C. FAIL.
+  P2 (held-out gold, BOTH bars): @600 implied 1.770 vs measured 1.783 [1.64,1.90] INSIDE;
+     @1000 implied 1.761 vs measured 1.634 [1.50,1.74] OUTSIDE. Same pattern under arm C
+     (1.832 inside, 1.810 outside). FAIL — and the failure is diagnostic: held-out gold is
+     reproduced at the bar where gold looks anomalous and missed at the bar where it does
+     not, because the function cannot move between bars at all.
+  P3 (the differential): gold implied -0.010 against measured -0.149 on the current
+     coordinate; -0.024 against -0.142 under arm C. The function reproduces 7-17% of the
+     one movement that distinguishes gold. FAIL.
+
+  THE SINGLE CLEAREST NUMBER IS DIAMOND: implied 1.60 against a measured need of 1.04. A
+  hinge knotted at the median produces a near-uniform slope of 1.6-1.8 at EVERY tier, so it
+  cannot deliver a tier that needs ~1.0 while another needs ~1.8. Producing five different
+  local slopes was the whole test.
+
+THE COORDINATE IS NOT DISTINGUISHED — the pre-registered N2 finding, stated rather than
+buried. The same hinge on PREDICTED K rather than on a rating scores weighted SSE 2737.9
+against the primary's 2729.9 on the current coordinate (0.3% apart), and under arm C it is
+outright BETTER: 3168.8 against 3462.6. So the data does not identify a RATING-LOCAL error
+at all; what it identifies is curvature in the prediction-to-observation mapping, which a
+pure calibration coordinate captures at least as well. The "rating-local" clause of the
+hypothesis has no support in this measurement.
+
+WHAT DOES SURVIVE, and it is not nothing:
+
+  · THE SIGN IS AS PREDICTED, everywhere: A < 0 in all six fits (three coordinates x two
+    policies). The model over-predicts K where the correction bites, exactly as the five
+    named sub-p05 cards in the gold query showed at card grain.
+  · THE CONSTANT NULL LOSES BADLY: N1 c = 0.909 at weighted SSE 7334 against the hinge's
+    2730. There IS a real, large, systematic curvature in the K channel. It is simply not
+    localized, and not rating-indexed.
+  · Taken together those say the residual is a broad spread/calibration defect in K — much
+    closer in character to the original spread-scalar story than to a curve error confined
+    to a thin, poorly-supported tail.
+
+NO POLICY FLIP. Every gate fails the same way under both coordinates, so ruling (h)'s
+STOP-on-flip condition is not triggered; this is one consistent refutation rather than a
+coordinate-dependent artefact. Arm C is uniformly slightly worse for this family, which is
+a fact about this family and NOT an argument against arm C — arm C's case rests on the
+invariant and on diamond's in-frame gain, neither of which this measurement touches.
+
+WHAT THIS COSTS AND WHAT IT LEAVES. The rating-local extrapolation hypothesis — the prime
+candidate since the battery — is refuted on its own pre-registered terms, under both
+policies, on three independent gates plus a kill condition. Gold's residual break is now
+unexplained by: the opponent field, opponent dispersion, card design, new releases, and
+rating-local curve error. What remains on the table is the five-card low-support tail as a
+DESCRIPTION (it is where the variance sits) without a mechanism that reproduces the needs,
+and the parked interaction hypothesis that this corpus structurally cannot test.
+
+(end of artifact — centerpiece #2 fit, REFUTED)
