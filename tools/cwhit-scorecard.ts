@@ -95,10 +95,17 @@ const argOf = (k: string): string | undefined =>
   process.argv.find((a) => a.startsWith(`--${k}=`))?.split("=").slice(1).join("=");
 const CORPUS = argOf("corpus");
 const DEPTH = argOf("depth") ? Number(argOf("depth")) : undefined;
-const SOURCE: CwhitSource = CORPUS ? { kind: "capture", dir: CORPUS, topN: DEPTH } : { kind: "legacy" };
+// DEFER to sample.ts's DEFAULT_SOURCE when no flag is given. This line used to hardcode
+// `{ kind: "legacy" }` as its own default, which silently OVERRODE the re-baseline default and made a
+// plain run keep reading the old fixtures — a second copy of a default is a second thing to forget.
+// `--legacy` still reaches the old corpus explicitly, for historical reproduction.
+const SOURCE: CwhitSource | undefined = CORPUS
+  ? { kind: "capture", dir: CORPUS, topN: DEPTH }
+  : process.argv.includes("--legacy") ? { kind: "legacy" } : undefined;
 const MIN_BF_RUN = argOf("min-bf") ? Number(argOf("min-bf")) : MIN_BF;
 const MIN_PA_RUN = argOf("min-pa") ? Number(argOf("min-pa")) : MIN_PA;
 if (DEPTH !== undefined && !CORPUS) throw new Error("--depth only applies to --corpus: the legacy fixtures are ALREADY a top-100 capture, so re-cutting them would be a second silent selection");
+if (CORPUS && process.argv.includes("--legacy")) throw new Error("--legacy and --corpus are mutually exclusive");
 if ([DEPTH, MIN_BF_RUN, MIN_PA_RUN].some((x) => x !== undefined && !Number.isFinite(x))) throw new Error("--depth/--min-bf/--min-pa must be numbers");
 let ksMap: Map<string, KSpreadPit> | undefined;
 let htMap: Map<string, HitTail> | undefined;
@@ -223,7 +230,10 @@ console.log(`  (Verified: reconstructing his published BABIP from his own column
 
 // ── sample-depth accounting (no silent caps) ────────────────────────────────
 console.log(`\n── N + SAMPLE DEPTH (what is kept, what is dropped) ──`);
-console.log(`tier      role  joined   well-sampled (BF≥${MIN_BF} / PA≥${MIN_PA})   dropped   median depth (kept)   also has cwhit projection`);
+// `floors` = the RUN's effective bars, not the module constants. With --min-bf/--min-pa this header
+// used to print the compiled-in defaults while the run applied something else: snapshot (iii) was
+// generated at 600/500 and its own header claimed BF>=1000 / PA>=1000.
+console.log(`tier      role  joined   well-sampled (BF≥${floors.minBf} / PA≥${floors.minPa})   dropped   median depth (kept)   also has cwhit projection`);
 for (const { tier } of QUICK) for (const role of ["pit", "hit"] as const) {
   const all = recs.filter((r) => r.tier === tier && r.role === role); if (!all.length) continue;
   const kept = all.filter(wellSampled), med = kept.length ? [...kept.map((r) => r.sample)].sort((a, b) => a - b)[Math.floor(kept.length / 2)]! : NaN;

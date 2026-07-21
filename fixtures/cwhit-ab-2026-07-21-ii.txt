@@ -1,12 +1,11 @@
 ################################################################################
 # THREE-FACTOR A/B SNAPSHOT (ii) — 2026-07-21. factor (ii) — FULL DEPTH, BF/PA>=1000
-# cmd: tools/cwhit-scorecard.ts --corpus=fixtures/cwhit-capture-2026-07-21   (needs --stack-size=16000 at full depth)
-# Model league-42-43 + K_SPREAD_PIT {A:5.0871,G:152.5}. Instrument: CORRECTED
-# (697cdb2 IP/BF unit fix) — dcv ratios are comparable ACROSS these three snapshots
-# and against NO pre-697cdb2 run. Projection join by CID+VLvl (b173aeb).
-# COMPLETENESS: verified to end at the Section-C caveat line. The scorecard segfaults
-# INTERMITTENTLY at full depth (3 of 6 attempts on this regeneration) and a truncated
-# run still looks like a valid report, so generation retries until the marker is present.
+# cmd: tools/cwhit-scorecard.ts --corpus=fixtures/cwhit-capture-2026-07-21 --min-bf=1000 --min-pa=1000   (needs --stack-size=16000)
+# Model league-42-43 + K_SPREAD_PIT {A:5.0871,G:152.5}. CORRECTED instrument (697cdb2);
+# projection join by CID+VLvl. dcv comparable ACROSS these three, and to NO earlier run.
+# HEADER FIX: an earlier cut of (iii) printed 'BF>=1000 / PA>=1000' in its own summary header
+# while running at 600/500 — the line used the compiled-in constants, not the run's floors.
+# COMPLETENESS: verified to end at the Section-C caveat line (the tool segfaults intermittently).
 ################################################################################
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════╗

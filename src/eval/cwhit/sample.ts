@@ -33,7 +33,7 @@ import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/cur
 import { applyPitSpread } from "../../model/pool-transform.ts";
 import { applyHitTail, type HitTail } from "../../scoring-core/hit-tail.ts";
 import { parseCwhitPit, parseCwhitHit } from "./parse.ts";
-import { formatByLegacySlug, captureObsPath, captureProjPath, topNView } from "./corpus.ts";
+import { formatByLegacySlug, captureObsPath, captureProjPath, topNView, CAPTURE_DIR_2026_07_21 } from "./corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "./join.ts";
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "./audit.ts";
 import {
@@ -44,14 +44,21 @@ import {
 export const OBS_DIR = "fixtures/cwhit";
 export const PROJ_DIR = "fixtures/cwhit-proj";
 export const FIELD_N = 50;
-/** "Well-sampled" bars — 1000 OPPONENTS FACED on each side: BF≥1000 for pitchers, PA≥1000 for
- *  hitters. These are symmetric by construction (a pitcher's BF is the plate-appearance analogue).
- *  BUGFIX 2026-07-21 (Derek): the pitcher bar was previously MIN_IP=1000 compared against IP, i.e.
- *  BF≥4300 — ~4.3x too strict and asymmetric with the hitter PA bar, shrinking pitcher N to ~1/3
- *  (bronze: 41 vs the correct 125, hitters 130). It also silently fed the K/HR-spread FITS
- *  (fit-*.ts filtered on row.ip>=MIN_IP). Now BF-based, matching tournament-eval.ts and the ~10
- *  analysis tools that always floored pitchers on o.bf. */
-export const MIN_BF = 1000, MIN_PA = 1000;
+/** THE FINAL-CONFIG BARS (re-baseline, 2026-07-21). Lowered from 1000/1000 to 600/500 as A/B factor
+ *  (iii). BF600 is the noise-equivalent of the old IP>=150 floor once expressed in the correct unit.
+ *
+ *  WHY THE LEVEL MATTERS MORE THAN THE DEPTH: the A/B measured that going top-100 -> full depth at the
+ *  1000 bar adds N only at iron and bronze (+14..+28) and NOTHING at silver/gold/diamond, because those
+ *  tiers never had 100 cards above 1000 in the first place. The bar is what reaches them — it roughly
+ *  doubles the two thinnest cells (diamond pit 19->36, diamond hit 13->35). Two pre-registered
+ *  conditions were written against "deeper data"; their power comes from here, not from depth.
+ *
+ *  Both bars count OPPONENTS FACED and are symmetric by construction (a pitcher's BF is the
+ *  plate-appearance analogue). HISTORY: the pitcher bar was once MIN_IP=1000 compared against IP,
+ *  i.e. BF>=4300 — 4.3x too strict and asymmetric with the hitter bar — and it silently fed the
+ *  K/HR-spread fits. Fixed 2026-07-21 (d40287a); see also 697cdb2, where the same IP/BF confusion
+ *  was found to have survived in every noise call site. */
+export const MIN_BF = 600, MIN_PA = 500;
 /** The five Quick tiers: known VAL caps + neutral era/park. Daily/Cap formats are out of scope. */
 // ── ELIGIBILITY WINDOW (Derek's terminology ruling, 2026-07-20) ──────────────
 // "CAP" MEANS SALARY CAP IN OOTP AND NOTHING ELSE. These are card-VALUE tier cutoffs, which is
@@ -181,7 +188,18 @@ export type CwhitSource =
   | { kind: "legacy" }
   | { kind: "capture"; dir: string; topN?: number };
 
-export const DEFAULT_SOURCE: CwhitSource = { kind: "legacy" };
+/** THE DEFAULT CORPUS (re-baseline, 2026-07-21). Every tool that does not pass `source` explicitly
+ *  now reads the FULL-DEPTH 2026-07-21 capture rather than the legacy top-100 fixtures.
+ *
+ *  This is a MEASUREMENT-CHANGING default, landed deliberately as one event rather than tool by tool:
+ *  ~18 tools consume through buildCwhitSample, and a staggered switch would have left them comparing
+ *  numbers drawn from two different corpora with nothing in the output saying so. The legacy fixtures
+ *  remain readable via `{ kind: "legacy" }` for historical reproduction, and every run prints which
+ *  corpus it used.
+ *
+ *  The legacy fixtures are NOT merely shallower — they cover 2026-06-28..07-12 against the capture's
+ *  07-05..07-19, and for gold that is a ONE-DAY overlap. They are a different sample, not a subset. */
+export const DEFAULT_SOURCE: CwhitSource = { kind: "capture", dir: CAPTURE_DIR_2026_07_21 };
 
 /** A card's two predicted lines. See `ourPit`/`ourHit` for why BOTH exist and what each answers. */
 export interface TwoLines { raw: Chan; dep: Chan; axis: number }

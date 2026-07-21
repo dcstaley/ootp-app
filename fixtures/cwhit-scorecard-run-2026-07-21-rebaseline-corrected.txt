@@ -1,11 +1,17 @@
 ################################################################################
-# THREE-FACTOR A/B SNAPSHOT (iii) — 2026-07-21. factor (iii) — FULL DEPTH, BF>=600 / PA>=500 (THE FINAL CONFIG = the new DEFAULTS)
-# cmd: tools/cwhit-scorecard.ts (no flags — the re-baseline defaults)   (needs --stack-size=16000)
-# Model league-42-43 + K_SPREAD_PIT {A:5.0871,G:152.5}. CORRECTED instrument (697cdb2);
-# projection join by CID+VLvl. dcv comparable ACROSS these three, and to NO earlier run.
-# HEADER FIX: an earlier cut of (iii) printed 'BF>=1000 / PA>=1000' in its own summary header
-# while running at 600/500 — the line used the compiled-in constants, not the run's floors.
-# COMPLETENESS: verified to end at the Section-C caveat line (the tool segfaults intermittently).
+# CURRENT BASELINE — 2026-07-21 RE-BASELINE. Corrections: ON (production default)
+#
+# THIS SUPERSEDES cwhit-scorecard-run-2026-07-21-live-*. Those predate three changes
+# and MUST NOT be diffed against this for anything forward-looking:
+#   1. the IP/BF noise unit fix (697cdb2) — every pitcher dcv in the old runs is biased LOW;
+#   2. the corpus swap — full-depth 2026-07-21 capture, not the legacy top-100 fixtures,
+#      which also cover a DIFFERENT window (06-28..07-12 vs 07-05..07-19; gold overlaps by 1 day);
+#   3. the well-sampled bars — BF>=600 / PA>=500, was 1000/1000.
+#
+# Model league-42-43 + K_SPREAD_PIT {A:5.0871,G:152.5} (UNCHANGED — the fresh refit under the
+# corrected instrument has NOT been run yet; 479c9ee is dead per ruling 2).
+# Projection join by CID+VLvl. Section A double-selection is DISSOLVED: 0 observed rows lack a
+# projection, so Section A == Section B on all 50 cells.
 ################################################################################
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════╗

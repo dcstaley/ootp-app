@@ -17,7 +17,7 @@ import {
   CWHIT_CORPUS, CAPTURE_DIR_2026_07_21, LEGACY_TOP_N, topNView, rankKey,
   formatByKey, formatByLegacySlug, captureObsPath, captureProjPath,
 } from "../src/eval/cwhit/corpus.ts";
-import { QUICK } from "../src/eval/cwhit/sample.ts";
+import { QUICK, DEFAULT_SOURCE, MIN_BF, MIN_PA } from "../src/eval/cwhit/sample.ts";
 import { BF_PER_9, bfFromIp, per9NoiseVar, agreement } from "../src/eval/cwhit/scorecard.ts";
 import { IP_TO_BF, parseCwhitPit } from "../src/eval/cwhit/parse.ts";
 
@@ -200,5 +200,30 @@ describe("pitcher noise is in BF units", () => {
     expect(bfFromIp(100)).toBeCloseTo(430, 10);
     const { rows } = parseCwhitPit(readFileSync(abs("fixtures/cwhit/cwhit-bronze-pit.tsv"), "utf8"));
     for (const r of rows.slice(0, 5)) expect(r.bf).toBeCloseTo(bfFromIp(r.ip), 10);
+  });
+});
+
+// ── RE-BASELINE DEFAULTS (2026-07-21) ───────────────────────────────────────
+// The default corpus and the well-sampled bars ARE the measurement configuration: ~18 tools read them
+// implicitly, and changing either silently changes every number those tools print. Before this pin the
+// whole suite passed with the defaults flipped from legacy/1000/1000 to capture/600/500 — nothing
+// noticed. A default that no test asserts is a constant waiting to drift.
+describe("re-baseline measurement defaults", () => {
+  it("defaults to the FULL-DEPTH capture, not the legacy fixtures", () => {
+    expect(DEFAULT_SOURCE.kind).toBe("capture");
+    expect((DEFAULT_SOURCE as { dir: string }).dir).toBe(CAPTURE_DIR_2026_07_21);
+    // Full depth: no topN. A derived view must be asked for explicitly.
+    expect((DEFAULT_SOURCE as { topN?: number }).topN).toBeUndefined();
+  });
+
+  it("well-sampled bars are the FINAL CONFIG, BF>=600 / PA>=500", () => {
+    expect(MIN_BF).toBe(600);
+    expect(MIN_PA).toBe(500);
+  });
+
+  it("the bars are stated in OPPONENTS FACED, so BF600 is IP≈140 — not IP600", () => {
+    // Guards the exact confusion that produced the d40287a/697cdb2 defects: a bar named in BF being
+    // compared against innings. 600 BF is ~139.5 IP; if someone "restores" IP units this fails.
+    expect(MIN_BF / IP_TO_BF).toBeCloseTo(139.53, 2);
   });
 });
