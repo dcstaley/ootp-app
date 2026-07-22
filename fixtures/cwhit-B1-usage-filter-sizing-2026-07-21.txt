@@ -1,0 +1,520 @@
+################################################################################
+### ITEM B1 — USAGE-FILTER SIZING (Fable ruling, pre-event sizing)
+###
+### tool     : tools/battery-B1-usage-filter-sizing.ts
+### run      : node tools/battery-B1-usage-filter-sizing.ts
+### date     : 2026-07-21 (artifact date; run executed 2026-07-22)
+### commit   : dec0029 (main, at run time)
+### model    : the active trained model — 'league-42-43', trainedAt 2026-07-20T14:07:36.569Z,
+###            window [2042,2043], minPA 1000, includeVariants true, datasetRoot 'League Files'.
+###            Its trainingMeans are FROZEN in data/trained-models/league-42-43.json.
+### catalog  : data/imports/cdmx.csv (3669 base cards)
+### scope    : 9 formats — the five Quick tiers + four dailies (early-gold, bronze-heart,
+###            gold-cap, diamond-cap-daily), taken from THE corpus registry
+###            (src/eval/cwhit/corpus.ts). Each daily is resolved under ITS OWN era/park/softcaps
+###            via the production resolveCoeffs; bronze-heart's Year 1930-1989 rule arrives
+###            through rowEligible, not re-implemented.
+### floors   : {0, 250, 500, 1000 (production), 2000} applied exactly as production applies its
+###            floor — maxPA >= f (hitters) / maxBF >= f (pitchers) on the reconstructed league
+###            cards, BEFORE the FIELD_N top-N cut (server.ts:1517-1518).
+###
+### THE DEFECT BEING SIZED (established by the item-B static audit; not re-derived here).
+### buildFrameShift(trainingMeans, poolField) computes mu_train_opp - mu_pool_opp and its two legs
+### disagree on three axes. Item A sized the VARIANT axis; the item-B empirical run sized the
+### COHORT-SIZE axis. This is the USAGE-FILTER axis:
+###   TRAIN leg — trainingMeans is the top-50 field of a training population pre-filtered by a
+###               1000-PA/BF usage floor (server.ts:1517-1518; minPA defaults at server.ts:1432).
+###   POOL  leg — buildEligiblePool (src/config/eligibility.ts:87-97) has NO usage concept at all.
+###
+### MEASUREMENT ONLY. No production behaviour, default or constant is changed. Nothing is fitted.
+### Nothing is wired. No scoring math is written in the tool — every number comes from the shared
+### core (loadWindow / computeUnifiedFieldStats / buildFrameShift / kSpreadPitRamp /
+### pitSpreadHrRamp), and FIELD_N is imported from src/scoring-core/pool-stats.ts.
+###
+### COHORT LABELS: every N is marked FULL-POOL (the population a cut is taken from) or TOP-N
+### (the FIELD_N = 50 field cut from it). The train leg is TWO populations (maxPA-qualified and
+### maxBF-qualified) where the pool leg is one.
+################################################################################
+
+### RAW OUTPUT — node tools/battery-B1-usage-filter-sizing.ts
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  ITEM B1 — USAGE-FILTER SIZING: what the 1000-PA/BF training floor costs the frame gap        ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-42-43' (trainedAt 2026-07-20T14:07:36.569Z) | catalog 'cdmx' (3669 base cards)
+artifact: window=[2042,2043]  minPA=1000  includeVariants=true  datasetRoot='League Files'
+training dir resolved here: 'League Files'  (matches the artifact)
+FIELD_N = 50 (imported from src/scoring-core/pool-stats.ts; never re-declared here)
+training coeffs pinned as the trainer pins them: era-2010 + NEUTRAL park literal + softcaps from tournaments[0] ('bronze-cap')
+shipped ramps quoted as they stand: K_SPREAD_PIT = {A:5.0871, G:152.5}  PIT_SPREAD_HR = {A:0.2648, G:5.8}  — NOT refit
+MEASUREMENT ONLY — no production behaviour, default or constant is changed; nothing is fitted; nothing is wired.
+
+
+╔═══ 0. THE SEAM — what each leg of `mu_train_opp − mu_pool_opp` is a mean OVER ═══╗
+  leg     population                                                    usage concept   cohort cut
+  ─────── ───────────────────────────────────────────────────────────── ─────────────── ──────────────
+  TRAIN   league cards, window [2042,2043], reconstructed from the training      maxPA/maxBF ≥   TOP-50 by model
+          CSVs (server.ts:1506-1515), variant-INCLUSIVE                  minPA (=1000  ) wOBA
+  POOL    catalog cards passing card_value_min/max + rowEligible         NONE            TOP-50 by model
+          (eligibility.ts:87-97), variant-FREE                                           wOBA
+
+  Both legs take a TOP-50 cut, so the cohort SIZE matches (that is the §11.13 matched-legs fix).
+  What does NOT match is the POPULATION the top-50 is selected FROM: the train leg pre-filters that
+  population by realized playing time, the pool leg does not. Every N below is labelled FULL-POOL
+  (the population) or TOP-N (the 50-card field cut from it).
+
+  ONE-DIRECTIONALITY, stated as a PREDICTION before the numbers: a usage floor can only DELETE
+  members of the training population, never add them, and the deleted members are the ones that
+  could not earn playing time. If playing time correlates with model-predicted quality at all, a
+  higher floor can only raise (or leave) each channel's top-50 mean ⇒ only inflate (or leave) the
+  gap. A NEGATIVE mean-vs-floor slope on any channel would falsify that. Checked in §1c.
+
+
+╔═══ 1. THE SIZING — trainingMeans recomputed at each usage floor ═══╗
+
+── 1a. COHORT SURVIVAL (FULL-POOL counts — the population the TOP-50 is cut from) ──
+  The train leg is TWO populations where the pool leg is one: the hitter field is cut from cards
+  clearing the floor on maxPA, the pitcher field from cards clearing it on maxBF. They are different
+  card sets and they shrink at different rates. Card-level counts are of the 391 reconstructed
+  league cards (both sides present); obs-level counts are of the 782 (cid,variant,side) observations,
+  via HITTER.qualifies / PITCHER.qualifies — the same predicates the fit uses.
+
+  floor    cards maxPA≥f   cards maxBF≥f   obs PA≥f   obs BF≥f   hit field    pit field
+      0            391             391        782        782   top 50       top 50    
+    250            152             122        278        233   top 50       top 50    
+    500            125             112        225        205   top 50       top 50    
+   1000*            97              81        173        149   top 50       top 50     ← PRODUCTION
+   2000             68              63        121        110   top 50       top 50    
+  A "hit field / pit field" reading of ALL n means the surviving population is at or below FIELD_N, so
+  the top-50 cut is vacuous there and the "field mean" is just the cohort mean — a different estimator.
+
+── 1b. THE TRAINING MEANS (TOP-50 field μ, per channel) ──
+  Reference row = the SHIPPED artifact's frozen trainingMeans, printed so the reproduction is checkable
+  rather than trusted: the floor-1000 row must reproduce it (Δ column vs shipped).
+
+  PIT training μ
+  floor            con        stu     pbabip        hrr
+  shipped       103.25     129.46     124.81     124.64   ← FROZEN in the model file
+  0             108.98     134.26     126.64     126.90
+  250           106.73     131.50     126.61     126.71
+  500           106.73     131.50     126.61     126.71
+  1000*         103.25     129.46     124.81     124.64
+  2000          102.28     126.90     122.13     122.14
+  Δ vs floor-1000 (production)
+  0              +5.73      +4.80      +1.83      +2.26
+  250            +3.48      +2.04      +1.80      +2.07
+  500            +3.48      +2.04      +1.80      +2.07
+  1000*          +0.00      +0.00      +0.00      +0.00
+  2000           -0.97      -2.56      -2.68      -2.50
+  reproduction check vs the shipped artifact (floor 1000): con +0.0000  stu +0.0000  pbabip +0.0000  hrr +0.0000
+
+  HIT training μ
+  floor            eye        pow       kRat      babip        gap
+  shipped       122.15     119.88     124.71     128.38     111.33   ← FROZEN in the model file
+  0             129.27     127.14     128.14     130.87     111.05
+  250           121.83     124.19     129.15     129.82     111.77
+  500           122.67     122.80     126.33     128.15     110.97
+  1000*         122.15     119.88     124.71     128.38     111.33
+  2000          115.34     117.14     123.32     127.76     109.45
+  Δ vs floor-1000 (production)
+  0              +7.12      +7.26      +3.43      +2.49      -0.28
+  250            -0.32      +4.31      +4.44      +1.44      +0.44
+  500            +0.52      +2.92      +1.62      -0.23      -0.36
+  1000*          +0.00      +0.00      +0.00      +0.00      +0.00
+  2000           -6.81      -2.74      -1.39      -0.62      -1.88
+  reproduction check vs the shipped artifact (floor 1000): eye +0.0000  pow +0.0000  kRat +0.0000  babip +0.0000  gap +0.0000
+
+── 1c. EVALUABILITY + DIRECTION CHECK ──
+  A floor is only reportable if its cohort is a real top-50 field and its members are cards that
+  actually played. Degeneracy probes below; membership comes from a probe that ranks on the core's own
+  cardSideWobas and is cross-checked against computeUnifiedFieldStats (max |Δμ| must be ~0).
+
+  floor   probe |Δμ|max   zero-PA cards in hit top-50   zero-BF in pit top-50   min maxPA in hit top   min maxBF in pit top
+  0              0.0e+0                          0                       0                     23                     40
+  250            0.0e+0                          0                       0                    371                    534
+  500            0.0e+0                          0                       0                    523                    534
+  1000*          0.0e+0                          0                       0                   1020                   1086
+  2000           0.0e+0                          0                       0                   2007                   2027
+
+  DIRECTION: per channel, is the mean monotone NON-DECREASING in the floor over the evaluable floors?
+    pit.con       109.0 →  106.7 →  106.7 →  103.3 →  102.3    NON-MONOTONE at 0→250 -2.25, 500→1000 -3.48, 1000→2000 -0.97
+    pit.stu       134.3 →  131.5 →  131.5 →  129.5 →  126.9    NON-MONOTONE at 0→250 -2.76, 500→1000 -2.04, 1000→2000 -2.56
+    pit.pbabip    126.6 →  126.6 →  126.6 →  124.8 →  122.1    NON-MONOTONE at 0→250 -0.03, 500→1000 -1.80, 1000→2000 -2.68
+    pit.hrr       126.9 →  126.7 →  126.7 →  124.6 →  122.1    NON-MONOTONE at 0→250 -0.19, 500→1000 -2.07, 1000→2000 -2.50
+    hit.eye       129.3 →  121.8 →  122.7 →  122.2 →  115.3    NON-MONOTONE at 0→250 -7.44, 500→1000 -0.52, 1000→2000 -6.81
+    hit.pow       127.1 →  124.2 →  122.8 →  119.9 →  117.1    NON-MONOTONE at 0→250 -2.95, 250→500 -1.39, 500→1000 -2.92, 1000→2000 -2.74
+    hit.kRat      128.1 →  129.2 →  126.3 →  124.7 →  123.3    NON-MONOTONE at 250→500 -2.82, 500→1000 -1.62, 1000→2000 -1.39
+    hit.babip     130.9 →  129.8 →  128.2 →  128.4 →  127.8    NON-MONOTONE at 0→250 -1.05, 250→500 -1.67, 1000→2000 -0.62
+    hit.gap       111.0 →  111.8 →  111.0 →  111.3 →  109.5    NON-MONOTONE at 250→500 -0.80, 1000→2000 -1.88
+
+── 1d. THE MECHANISM — why the direction comes out the way it does ──
+  The prediction in §0 reasons about a POPULATION mean: a usage floor keeps the strong and drops the
+  weak, so the surviving mean rises. That reasoning is correct for a FULL-POOL mean. The train leg is
+  NOT a full-pool mean — it is the TOP-50 field cut from the surviving population, and the floor is
+  applied BEFORE that cut. Top-50-of-a-subset can never beat top-50-of-the-superset in the selection
+  metric, so on the metric the field is SELECTED BY, the floor can only make the field WEAKER.
+  It removes CANDIDATES from a competition the strong were already winning.
+
+  (a) the SELECTION metric of the chosen field, by floor
+      floor    hitter field mean wOBA (higher = stronger)   pitcher field mean allowed wOBA (LOWER = stronger)
+      0                                         0.35376                                            0.31550
+      250                                       0.35148                                            0.31695
+      500                                       0.34969                                            0.31695
+      1000*                                     0.34813                                            0.31914
+      2000                                      0.34388                                            0.32159
+      hitter field weakens monotonically as the floor rises?  YES
+      pitcher field weakens monotonically as the floor rises? YES
+      ⇒ the ONE-DIRECTIONALITY is real, but it runs on the SELECTION metric and in the OPPOSITE
+        direction to the §0 prediction. Per-CHANNEL means are NOT individually monotone (see §1c):
+        the composite ranking trades channels against each other, so a weaker field can still be
+        higher on one rating. The channel a ramp reads is therefore not guaranteed the sign the
+        composite has — which is why the ramp table in §3 is non-monotone in the floor.
+
+  (b) HOW MANY of the best-50 the floor DELETES — members of the f=0 field that each floor removes
+      from the candidate set entirely (they are league cards, they simply did not play that much).
+      NOTE the hitter field is the UNION of the vR and vL top-50 cohorts (computeUnifiedFieldStats pools
+      each cohort's deployment side), so its distinct-card count exceeds 50; the pitcher field is one
+      combined-wOBA top-50, so its count is exactly 50.
+      floor    hit field members with maxPA < floor      pit field members with maxBF < floor
+      0                                     0 of 71                              0 of 50
+      250                                  10 of 71                              4 of 50
+      500                                  16 of 71                              4 of 50
+      1000*                                23 of 71                             15 of 50
+      2000                                 36 of 71                             22 of 50
+      Retained membership at each floor vs the f=0 field (the same set, intersected):
+      0        hit 71/71 shared with the f=0 field   pit 50/50 shared
+      250      hit 61/69 shared with the f=0 field   pit 46/50 shared
+      500      hit 55/67 shared with the f=0 field   pit 46/50 shared
+      1000*    hit 48/65 shared with the f=0 field   pit 35/50 shared
+      2000     hit 35/58 shared with the f=0 field   pit 28/50 shared
+
+
+╔═══ 2. THE GAP CONSEQUENCE — buildFrameShift(trainingMeans@floor, poolField) per format ═══╗
+  The POOL leg is held at PRODUCTION exactly (variant-free eligible pool, TOP-50 field, each format
+  under its OWN resolved coeffs). Only the TRAIN leg moves, so every Δ below has one cause: the floor.
+  Channel crossing (§10.2): pit.stu ← train.hit.kRat − pool.hit.kRat;  hit.kRat ← train.pit.stu − pool.pit.stu.
+  The two SHIPPED ramps read pit.vR.stu (K) and pit.vR.hrr (HR9).
+
+── 2a. FORMAT RESOLUTION (pool leg — FULL-POOL counts; the field is TOP-50 of these) ──
+  format         tournament          era        park      window        rules   N pool   of which pit
+  iron          iron-quick          era-2010   park-1    40-59             0     1200            541
+  bronze        bronze-quick        era-2010   park-1    40-69             0     2096            940
+  silver        silver-quick        era-2010   park-1    40-79             0     2748           1230
+  gold          gold-quick          era-2010   park-1    40-89             0     3192           1420
+  diamond       diamond-quick       era-2010   park-1    40-99             0     3498           1534
+  early-gold    early-gold          era-1920   park-169  40-89             0     3192           1420
+  bronze-heart  bronze-heart        era-1939   park-191  40-69             1      570            251
+  gold-cap      gold-cap            era-2010   park-156  40-89             0     3192           1420
+  diamond-cap   diamond-cap-daily   era-1998   park-101  40-99             0     3498           1534
+
+── 2b. THE HEADLINE CHANNEL: gap pit.vR.stu (the K-ramp input) ──
+  format               f=0      f=250      f=500    f=1000*     f=2000      │     Δ vs 0   Δ vs 250   Δ vs 500  Δ vs 2000
+  iron              27.07      28.08      25.26      23.64      22.25      │      +3.43      +4.44      +1.62      -1.39
+  bronze            26.19      27.20      24.38      22.76      21.37      │      +3.43      +4.44      +1.62      -1.39
+  silver            23.98      24.99      22.17      20.55      19.16      │      +3.43      +4.44      +1.62      -1.39
+  gold              19.38      20.39      17.57      15.95      14.56      │      +3.43      +4.44      +1.62      -1.39
+  diamond           13.81      14.82      12.00      10.38       8.99      │      +3.43      +4.44      +1.62      -1.39
+  early-gold        19.38      20.39      17.57      15.95      14.56      │      +3.43      +4.44      +1.62      -1.39
+  bronze-heart      22.35      23.36      20.54      18.92      17.53      │      +3.43      +4.44      +1.62      -1.39
+  gold-cap          19.38      20.39      17.57      15.95      14.56      │      +3.43      +4.44      +1.62      -1.39
+  diamond-cap       13.31      14.32      11.50       9.88       8.49      │      +3.43      +4.44      +1.62      -1.39
+  (Δ is stated as floor-f MINUS production, i.e. what moving OFF the production floor would do.)
+
+── 2c. THE HITTER COUNTERPART: gap hit.vR.kRat (the crossing partner of pit.vR.stu) ──
+  format               f=0      f=250      f=500    f=1000*     f=2000      │     Δ vs 0   Δ vs 250   Δ vs 500  Δ vs 2000
+  iron              58.65      55.89      55.89      53.85      51.29      │      +4.80      +2.04      +2.04      -2.56
+  bronze            57.98      55.22      55.22      53.18      50.62      │      +4.80      +2.04      +2.04      -2.56
+  silver            44.17      41.41      41.41      39.37      36.81      │      +4.80      +2.04      +2.04      -2.56
+  gold              40.83      38.07      38.07      36.03      33.47      │      +4.80      +2.04      +2.04      -2.56
+  diamond           35.55      32.79      32.79      30.75      28.19      │      +4.80      +2.04      +2.04      -2.56
+  early-gold        40.83      38.07      38.07      36.03      33.47      │      +4.80      +2.04      +2.04      -2.56
+  bronze-heart      58.71      55.95      55.95      53.91      51.35      │      +4.80      +2.04      +2.04      -2.56
+  gold-cap          40.83      38.07      38.07      36.03      33.47      │      +4.80      +2.04      +2.04      -2.56
+  diamond-cap       35.55      32.79      32.79      30.75      28.19      │      +4.80      +2.04      +2.04      -2.56
+
+── 2d. EVERY CHANNEL, production floor vs each other floor (Δgap) ──
+  A gap Δ is the SAME for every format on a given channel+floor (the pool leg is held, so the move is
+  purely the training-mean move) — printed once per channel, with the per-format production level for scale.
+
+  PIT channels — Δgap vs production, by floor (identical across all nine formats)
+  channel            f=0       f=250       f=500      f=2000      │  production gap range across the nine formats
+  stu              +3.43       +4.44       +1.62       -1.39      │  9.88 .. 23.64
+  hrr              +7.26       +4.31       +2.92       -2.74      │  11.28 .. 52.28
+  con              +7.12       -0.32       +0.52       -6.81      │  11.99 .. 46.02
+  pbabip           +2.49       +1.44       -0.23       -0.62      │  14.24 .. 49.80
+
+  HIT channels — Δgap vs production, by floor (identical across all nine formats)
+  channel            f=0       f=250       f=500      f=2000      │  production gap range across the nine formats
+  kRat             +4.80       +2.04       +2.04       -2.56      │  30.75 .. 53.91
+  pow              +2.26       +2.07       +2.07       -2.50      │  7.43 .. 35.67
+  eye              +5.73       +3.48       +3.48       -0.97      │  2.22 .. 31.91
+  babip            +1.83       +1.80       +1.80       -2.68      │  17.74 .. 46.17
+  gap              +1.83       +1.80       +1.80       -2.68      │  17.74 .. 46.17
+
+
+╔═══ 3. THE RAMP CONSEQUENCE — the SHIPPED ramps evaluated at each floor's gap (NOT refit) ═══╗
+  s_K(g)  = 1 + 5.0871·(1 − e^(−g/152.5)),  g = frameShift.pit.vR.stu
+  s_HR(g) = 1 + 0.2648·(1 − e^(−g/5.8)),  g = frameShift.pit.vR.hrr
+  Both are s(g ≤ 0) = 1 EXACTLY (league anchor). Constants quoted from src/model/pool-transform.ts.
+  CAVEAT, stated first: K_SPREAD_PIT and PIT_SPREAD_HR were FIT at the PRODUCTION-floor gap coordinate.
+  Evaluating them at another floor's gaps is not evidence about the ramps' adequacy — it measures how
+  much of the correction they currently deliver is a function of the floor choice, which is the question.
+
+  s_K by floor
+  format               f=0      f=250      f=500    f=1000*     f=2000   │  (s−1) as a share of the production (s−1)
+  iron             1.8274     1.8555     1.7765     1.7305     1.6906   │    113%   117%   106%   100%    95%
+  bronze           1.8027     1.8310     1.7516     1.7053     1.6652   │    114%   118%   107%   100%    94%
+  silver           1.7402     1.7689     1.6883     1.6413     1.6006   │    115%   120%   107%   100%    94%
+  gold             1.6071     1.6367     1.5536     1.5052     1.4632   │    120%   126%   110%   100%    92%
+  diamond          1.4404     1.4711     1.3850     1.3347     1.2912   │    132%   141%   115%   100%    87%
+  early-gold       1.6071     1.6367     1.5536     1.5052     1.4632   │    120%   126%   110%   100%    92%
+  bronze-heart     1.6935     1.7225     1.6410     1.5936     1.5524   │    117%   122%   108%   100%    93%
+  gold-cap         1.6071     1.6367     1.5536     1.5052     1.4632   │    120%   126%   110%   100%    92%
+  diamond-cap      1.4252     1.4559     1.3695     1.3191     1.2755   │    133%   143%   116%   100%    86%
+
+  s_HR by floor
+  format               f=0      f=250      f=500    f=1000*     f=2000   │  (s−1) as a share of the production (s−1)
+  iron             1.2648     1.2648     1.2648     1.2648     1.2647   │    100%   100%   100%   100%   100%
+  bronze           1.2647     1.2647     1.2646     1.2645     1.2644   │    100%   100%   100%   100%   100%
+  silver           1.2644     1.2641     1.2639     1.2633     1.2625   │    100%   100%   100%   100%   100%
+  gold             1.2631     1.2619     1.2612     1.2588     1.2551   │    102%   101%   101%   100%    99%
+  diamond          1.2540     1.2468     1.2419     1.2269     1.2041   │    112%   109%   107%   100%    90%
+  early-gold       1.2631     1.2619     1.2612     1.2588     1.2551   │    102%   101%   101%   100%    99%
+  bronze-heart     1.2648     1.2648     1.2648     1.2647     1.2647   │    100%   100%   100%   100%   100%
+  gold-cap         1.2631     1.2619     1.2612     1.2588     1.2551   │    102%   101%   101%   100%    99%
+  diamond-cap      1.2540     1.2468     1.2420     1.2271     1.2043   │    112%   109%   107%   100%    90%
+
+  ATTRIBUTABLE SHARE — how much of the correction each ramp ships today is the floor's doing:
+      floor share = (s_prod − s_0) / (s_prod − 1)
+  POSITIVE would mean the floor CREATES correction the no-floor frame would not ask for. NEGATIVE
+  means the floor SUPPRESSES correction the no-floor frame WOULD ask for — the ramp under-delivers
+  relative to its own no-floor coordinate. Read the sign first; it is the whole finding.
+  format         s_K prod   s_K f=0    floor share of the K correction   s_HR prod  s_HR f=0   floor share of the HR correction
+  iron            1.7305     1.8274                             -13.3%      1.2648     1.2648                              -0.0%
+  bronze          1.7053     1.8027                             -13.8%      1.2645     1.2647                              -0.1%
+  silver          1.6413     1.7402                             -15.4%      1.2633     1.2644                              -0.4%
+  gold            1.5052     1.6071                             -20.2%      1.2588     1.2631                              -1.7%
+  diamond         1.3347     1.4404                             -31.6%      1.2269     1.2540                             -11.9%
+  early-gold      1.5052     1.6071                             -20.2%      1.2588     1.2631                              -1.7%
+  bronze-heart    1.5936     1.6935                             -16.8%      1.2647     1.2648                              -0.0%
+  gold-cap        1.5052     1.6071                             -20.2%      1.2588     1.2631                              -1.7%
+  diamond-cap     1.3191     1.4252                             -33.2%      1.2271     1.2540                             -11.9%
+  Envelope across all FIVE floors (the full span the floor choice can move the shipped correction):
+    iron          s_K ∈ [1.6906, 1.8555] ⇒ floor share ∈ [-17.1%, +5.5%]   s_HR ∈ [1.2647, 1.2648] ⇒ [-0.0%, +0.0%]
+    bronze        s_K ∈ [1.6652, 1.8310] ⇒ floor share ∈ [-17.8%, +5.7%]   s_HR ∈ [1.2644, 1.2647] ⇒ [-0.1%, +0.1%]
+    silver        s_K ∈ [1.6006, 1.7689] ⇒ floor share ∈ [-19.9%, +6.3%]   s_HR ∈ [1.2625, 1.2644] ⇒ [-0.4%, +0.3%]
+    gold          s_K ∈ [1.4632, 1.6367] ⇒ floor share ∈ [-26.0%, +8.3%]   s_HR ∈ [1.2551, 1.2631] ⇒ [-1.7%, +1.4%]
+    diamond       s_K ∈ [1.2912, 1.4711] ⇒ floor share ∈ [-40.7%, +13.0%]   s_HR ∈ [1.2041, 1.2540] ⇒ [-11.9%, +10.1%]
+    early-gold    s_K ∈ [1.4632, 1.6367] ⇒ floor share ∈ [-26.0%, +8.3%]   s_HR ∈ [1.2551, 1.2631] ⇒ [-1.7%, +1.4%]
+    bronze-heart  s_K ∈ [1.5524, 1.7225] ⇒ floor share ∈ [-21.7%, +6.9%]   s_HR ∈ [1.2647, 1.2648] ⇒ [-0.0%, +0.0%]
+    gold-cap      s_K ∈ [1.4632, 1.6367] ⇒ floor share ∈ [-26.0%, +8.3%]   s_HR ∈ [1.2551, 1.2631] ⇒ [-1.7%, +1.4%]
+    diamond-cap   s_K ∈ [1.2755, 1.4559] ⇒ floor share ∈ [-42.9%, +13.7%]   s_HR ∈ [1.2043, 1.2540] ⇒ [-11.9%, +10.0%]
+
+
+╔═══ 4. RANKING THE THREE MISMATCHES on ONE ruler: Δ(gap pit.vR.stu) ═══╗
+  All three axes move the SAME number — the pit.vR.stu gap that feeds the K ramp — so they are directly
+  comparable in gap points and in ramp-correction share. The other two are quoted from their committed
+  artifacts, not recomputed here.
+
+    axis                 source                                             Δ gap pit.vR.stu       direction
+    ──────────────────── ────────────────────────────────────────────────── ────────────────────── ─────────────
+    VARIANT   (item A)   fixtures/cwhit-itemA-variant-sizing-2026-07-21.txt  −4.6 .. −10.5          one-directional (−)
+    COHORT-N  (item B)   fixtures/cwhit-itemB-cohort-arbitration-2026-07-21  spans 57–117% of the   both (± by N)
+                         .txt (N ∈ {25..200}, production N=50)                N=50 value
+    USAGE-FLOOR (B1)     THIS TOOL, floors {0,250,500,1000,2000}                 -1.39 .. +4.44         BOTH SIGNS
+                         of which the f=0 (no-floor) arm alone:                +3.43 .. +3.43        
+
+  Same ruler, expressed as ramp-correction share so the axes are comparable to the item-B figure:
+    axis                  s_K − 1 as % of its production value      max deviation from 100%
+    USAGE-FLOOR (B1)      86–143% (9 formats × 5 floors)           43%
+    COHORT-N   (item B)   53–110% (N ∈ {25..200})                  47%   [quoted]
+    VARIANT    (item A)   0–82% (variant-inclusive pool, arm B)    100%   [quoted, §3 of that artifact]
+    ⇒ ORDER, largest mismatch first: VARIANT ≫ COHORT-N ≳ USAGE-FLOOR. The variant axis can erase
+      the K correction entirely at diamond (0%); the other two move it by at most ~half.
+
+  REPORT-ONLY. Nothing here fits, changes a default, or touches production scoring. The deployed
+  artifact's trainingMeans is FROZEN at the production floor: every counterfactual frame above is
+  reachable only by RETRAINING, not by any config knob a running server exposes.
+
+  corpus registry: 14 formats captured; 9 measured here (the five Quick tiers + four dailies).
+
+
+################################################################################
+### READING
+################################################################################
+
+── HEADLINE ────────────────────────────────────────────────────────────────────
+The pull is ONE-DIRECTIONAL, and it runs the OPPOSITE WAY to the prediction. The audit predicted
+that the 1000-PA/BF floor INFLATES the training mean and so inflates the gap. Measured: the floor
+DEFLATES it. Removing the floor entirely raises gap pit.vR.stu by +3.43 in every one of the nine
+formats and raises the shipped K correction by 13-33% of its current magnitude; raising the floor
+to 2000 lowers the gap by -1.39 and cuts the correction by 5-14%. The size of the whole axis, on the
+one ruler all three mismatches share: s_K - 1 spans 86-143% of its production value, max deviation
+43%. That places this axis THIRD of the three — the smallest — but only barely behind the
+cohort-size axis, and not small in absolute terms.
+
+── (1) THE SIZING ──────────────────────────────────────────────────────────────
+Reproduction is exact: the floor-1000 arm reproduces the frozen artifact's trainingMeans to
++0.0000 on all nine channels (see the raw output, section 1b). The tool is therefore measuring
+production's own construction, not a lookalike.
+
+FULL-POOL survival, of 391 reconstructed league cards (both sides present) / 782 (cid,variant,side)
+observations — TWO populations, shrinking at different rates:
+
+    floor        cards maxPA>=f   cards maxBF>=f   obs PA>=f   obs BF>=f
+    0                       391              391         782         782
+    250                     152              122         278         233
+    500                     125              112         225         205
+    1000 (production)        97               81         173         149
+    2000                     68               63         121         110
+
+Every floor is EVALUABLE and all five are reported. The population never falls below FIELD_N = 50
+(smallest is 63 pitchers at f=2000), so every field is a genuine TOP-50 cut and not a vacuous one.
+Floor 0 admits nothing degenerate: no zero-PA card reaches the hitter field and no zero-BF card
+reaches the pitcher field at any floor (section 1c); the minimum maxPA inside the f=0 hitter field
+is 23 and the minimum maxBF inside the f=0 pitcher field is 40. That is structural rather than
+lucky — computeUnifiedFieldStats selects and averages RATINGS, so an observed-rate degeneracy has
+no path into the estimator at all. The membership probe agrees with computeUnifiedFieldStats to
+0.0e+0 on every channel at every floor, so the membership diagnostics below describe the real cohort.
+
+TOP-50 training means, production floor vs the endpoints (full tables in section 1b):
+
+    pit      con     stu  pbabip     hrr       hit      eye     pow    kRat   babip     gap
+    f=0     108.98  134.26  126.64  126.90     f=0     129.27  127.14  128.14  130.87  111.05
+    f=1000  103.25  129.46  124.81  124.64     f=1000  122.15  119.88  124.71  128.38  111.33
+    f=2000  102.28  126.90  122.13  122.14     f=2000  115.34  117.14  123.32  127.76  109.45
+
+Note floors 250 and 500 produce IDENTICAL pitcher means (106.73 / 131.50 / 126.61 / 126.71): the ten
+cards between those floors are all outside the pitcher top-50, so the pitcher frame is flat across
+that range while the hitter frame is not. The two legs of the train side do not even move together.
+
+── (2) THE MECHANISM, and why the predicted direction is wrong ─────────────────
+The prediction reasons about a POPULATION mean, and it is correct about one: cards that clear
+1000 PA/BF in a real league are strength-selected relative to the league. But the train leg is NOT a
+population mean. It is the TOP-50 FIELD cut from the surviving population, and the floor is applied
+BEFORE that cut. Top-50-of-a-subset can never beat top-50-of-the-superset on the metric it is
+selected by, so on that metric the floor can only make the field WEAKER. Confirmed monotonically in
+both roles (section 1d(a)):
+
+    floor    hitter field mean wOBA (higher=stronger)   pitcher field mean allowed wOBA (lower=stronger)
+    0                                        0.35376                                           0.31550
+    250                                      0.35148                                           0.31695
+    500                                      0.34969                                           0.31695
+    1000                                     0.34813                                           0.31914
+    2000                                     0.34388                                           0.32159
+
+The floor is not acting as a strength filter on this path. It acts as a CANDIDATE filter, deleting
+high-rated, low-usage league cards from a competition whose weak end the top-50 cut had already
+removed. At the production floor, 23 of the 71 distinct members of the no-floor hitter field and 15
+of the 50 members of the no-floor pitcher field are removed from the candidate set outright; only
+48/65 of the production hitter field and 35/50 of the production pitcher field are shared with the
+no-floor field (section 1d(b)). The audit's premise about the population is true; it is simply not a
+premise about the ESTIMATOR, because the top-N cut already does the strength selection, and does it
+on the model's own quality metric rather than on realized playing time.
+
+CAUTION FOR ANY READER WHO WANTS TO GENERALISE THIS: the composite direction does NOT transfer to
+individual channels. Every one of the nine channels is non-monotone in the floor somewhere (section
+1c), because the composite ranking trades channels against each other, so a weaker field can be
+higher on a given rating. The consequence lands directly on the ramp inputs — gap pit.vR.stu moves
++3.43 at f=0, +4.44 at f=250, +1.62 at f=500 and -1.39 at f=2000: neither monotone nor one-signed.
+So the axis is one-directional in FIELD STRENGTH and NOT one-directional in any number a ramp reads.
+
+── (2b) THE GAP CONSEQUENCE, per format ────────────────────────────────────────
+Delta-gap is IDENTICAL across all nine formats on any channel+floor. That is not robustness to be
+read into — it is arithmetic: the pool leg is held at production, so the only thing moving is the
+training mean, which is a single number per channel. The format enters ONLY through where its
+production gap sits on the saturating ramp.
+
+    gap pit.vR.stu (the K-ramp input), production level -> f=0 / f=2000
+      iron          23.64 -> 27.07 / 22.25        gold          15.95 -> 19.38 / 14.56
+      bronze        22.76 -> 26.19 / 21.37        early-gold    15.95 -> 19.38 / 14.56
+      silver        20.55 -> 23.98 / 19.16        gold-cap      15.95 -> 19.38 / 14.56
+      bronze-heart  18.92 -> 22.35 / 17.53        diamond       10.38 -> 13.81 /  8.99
+                                                  diamond-cap    9.88 -> 13.31 /  8.49
+    delta vs production, every format: f=0 +3.43   f=250 +4.44   f=500 +1.62   f=2000 -1.39
+
+    gap hit.vR.kRat (the crossing partner), delta vs production, every format:
+      f=0 +4.80   f=250 +2.04   f=500 +2.04   f=2000 -2.56
+      levels run 30.75 (diamond / diamond-cap) to 53.91 (bronze-heart) at the production floor.
+
+Other channels (section 2d), f=0 / f=2000: pit.hrr +7.26 / -2.74, pit.con +7.12 / -6.81,
+pit.pbabip +2.49 / -0.62. pit.con is the widest-swinging channel on this axis and it feeds nothing
+that ships.
+
+── (3) THE RAMP CONSEQUENCE ────────────────────────────────────────────────────
+Both ramps evaluated AS SHIPPED, not refit. K_SPREAD_PIT = {A 5.0871, G 152.5} and
+PIT_SPREAD_HR = {A 0.2648, G 5.8} were both FIT at the production-floor coordinate, so these numbers
+measure how much of today's correction is a function of the floor choice — not whether the ramps are
+adequate.
+
+    s_K (K-spread), production value -> f=0 -> f=2000, with (s-1) as % of production
+      iron         1.7305 -> 1.8274 (113%) -> 1.6906 (95%)
+      bronze       1.7053 -> 1.8027 (114%) -> 1.6652 (94%)
+      silver       1.6413 -> 1.7402 (115%) -> 1.6006 (94%)
+      bronze-heart 1.5936 -> 1.6935 (117%) -> 1.5524 (93%)
+      gold         1.5052 -> 1.6071 (120%) -> 1.4632 (92%)
+      diamond      1.3347 -> 1.4404 (132%) -> 1.2912 (87%)
+      diamond-cap  1.3191 -> 1.4252 (133%) -> 1.2755 (86%)
+      (early-gold and gold-cap sit on gold's gap exactly)
+    Peak is at f=250, not f=0 (the stu channel's non-monotonicity): diamond-cap reaches 143%.
+
+    FLOOR SHARE of the shipped K correction = (s_prod - s_0) / (s_prod - 1):
+      iron -13.3%, bronze -13.8%, silver -15.4%, bronze-heart -16.8%, gold / early-gold / gold-cap
+      -20.2%, diamond -31.6%, diamond-cap -33.2%.
+    NEGATIVE throughout: the production floor SUPPRESSES correction the no-floor frame would ask
+    for. It does not manufacture correction; it withholds it, and it withholds most at the top tiers.
+
+    s_HR (HR9 spread) is nearly inert on this axis — iron / bronze / bronze-heart move by <=0.1%,
+    gold-class by ~1.7%, and only diamond (1.2269 -> 1.2540, +11.9%) and diamond-cap (+11.9%) move
+    materially. The cause is the ramp's own shape, not the frame: G = 5.8 saturates by gap ~18, and
+    every format's production hrr gap except diamond's (11.28) is already past saturation. The floor
+    question is therefore almost entirely a K-channel question.
+
+── (4) WHERE THIS AXIS RANKS ───────────────────────────────────────────────────
+On the one ruler all three share — s_K - 1 as a percentage of its production value:
+
+    axis                  span                                    max deviation from 100%
+    VARIANT   (item A)    0-82%   (variant-inclusive pool, arm B)         100%
+    COHORT-N  (item B)    53-110% (N in {25..200}, production 50)          47%
+    USAGE-FLOOR (B1)      86-143% (9 formats x 5 floors)                   43%
+
+    ORDER, largest first: VARIANT >> COHORT-N >~ USAGE-FLOOR.
+
+In gap points on pit.vR.stu the same order holds: variant moves it -4.6 to -10.5 (one-signed);
+cohort-N spans 57-117% of a 9.88-23.64 base, i.e. roughly -10 to +4 points, sign-mixed; the usage
+floor moves it -1.39 to +4.44, sign-mixed. THE USAGE FILTER IS THE SMALLEST OF THE THREE — but the
+margin over cohort-size is inside the noise of how each sweep was bounded, and a 43% swing in the
+shipped K correction is not a rounding error. The honest summary: variant is in a class of its own
+(it can erase the K correction entirely at diamond, to 0%); the other two are comparable
+second-order terms of similar size.
+
+── (5) WHAT BOUNDS ANY USE OF THESE NUMBERS ────────────────────────────────────
+THE DEPLOYED trainingMeans IS FROZEN. It was computed once, at train time, at the production floor,
+and is baked into data/trained-models/league-42-43.json. saveTrainedModel derives it from
+body.minPA; nothing at scoring time can reach it. A FLOOR CHANGE IS THEREFORE A RETRAIN-COUPLED
+DECISION, NOT A CONFIG KNOB — and a retrain re-fits eventForm, ratingEnvelope, platoon and
+wobaWeights alongside it, so a floor change would never arrive alone. It would also silently
+re-coordinate both shipped ramps, which were fit against the production-floor gap; the precedent is
+on record (the 2026-07-21 refresh paid a +5.4% "coordinate tax" on K_SPREAD_PIT for exactly this
+kind of frame move, src/model/pool-transform.ts).
+
+RECORDED, NOT RECOMMENDED — one observation any decision would need. minPA does DOUBLE DUTY. It
+gates which observations the model FITS on (server.ts:1452, hitQual / pitQual) and, separately, it
+gates the population the frame cohort is cut from (server.ts:1517-1518). Those are two different
+jobs sharing one number. Matching the frame legs on this axis means matching on "no usage concept",
+since the pool leg has none and cannot acquire one — but that is a statement about the SECOND use
+only, and does not require touching the fit floor. Nothing here decides that; it is noted because a
+reader who took the -13% to -33% figure as a call to lower the floor would otherwise be proposing to
+change the fit as well, which this tool did not measure.
+
+WHAT THIS TOOL DOES NOT CLAIM: that any floor is correct. It measures the sensitivity and the
+mechanism. Notably f=0 is not self-evidently better on quality grounds — its field is selected
+purely on ratings over 391 league cards with no evidence any of them were ever deployed — but it IS
+the arm under which both legs of the gap share one rule, which is the same consistency argument that
+motivated matching the cohort SIZE at section 11.13.
+
+(end of artifact — item B1 usage-filter sizing: the pull is one-directional in field strength and
+runs OPPOSITE to the prediction (the floor DEFLATES the frame, it does not inflate it), worth
+-13% to -33% of the shipped K correction; smallest of the three mismatch axes, marginally behind
+cohort-size and far behind variant; retrain-coupled, since trainingMeans is frozen in the artifact.)
