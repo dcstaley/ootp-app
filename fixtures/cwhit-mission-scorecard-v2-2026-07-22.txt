@@ -1,0 +1,807 @@
+################################################################################
+### MISSION SCORECARD v2 — ALL 14 CAPTURED FORMATS. 2026-07-22.
+###
+### Tool     : tools/cwhit-mission-scorecard-v2.ts   (run: node tools/cwhit-mission-scorecard-v2.ts)
+### Model    : league-42-43 (deployed raw-poly event model), corrections ON = production default
+### Catalog  : cdmx, 3669 base cards
+### Commit   : main @ c7e8baa (the run's tree; this artifact + the tool land on top of it)
+### Corpus   : fixtures/cwhit-capture-2026-07-21 at FULL DEPTH — the corpus registry's default
+###            source. Observed window 2026-07-05..2026-07-19 for all 14 formats.
+###
+### THIS IS A **PRE-EVENT BASELINE**. The 2026-07-22 constants event changes scoring AFTER this
+### run. Nothing here is fitted, no default is flipped, no production behaviour is touched. Re-run
+### the same tool post-event against the same corpus to get the SHIPPING scoreboard; the two runs
+### are comparable because the corpus, the floors, the reading rules and the seeds are all fixed.
+###
+### WHAT IT ANSWERS: "are we beating cwhit where I actually play." v1 (tools/cwhit-scorecard.ts)
+### covered the five QUICK tiers only and reported statistical parity there. The other NINE
+### captured formats had never been dueled. This runs every format under ITS OWN resolved config.
+###
+### SELF-CHECK: with --raw-line (v1's convention) the 50 Quick cells reproduce a LIVE v1 run's
+### LEVEL and SHAPE verdicts exactly, 0/50 mismatches, at this commit. v2 is v1 plus nine formats
+### and the environment layer, not a different instrument.
+################################################################################
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════════╗
+║  MISSION SCORECARD v2 — ALL 14 CAPTURED FORMATS: ours vs cwhit-native vs OBSERVED                 ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-42-43' | catalog 'cdmx' (3669 base cards) | FIELD_N = 50 (imported from src/scoring-core/pool-stats.ts, never re-declared)
+corpus: fixtures/cwhit-capture-2026-07-21 at FULL DEPTH (the registry default source; no derived top-N cut)
+corrections: ON (production default) — BUILD-1 pit K-spread + BUILD-3 pit HR9 spread + BUILD-2 hitter tail; pit BABIP scalar HELD
+OUR JUDGED LINE: DEPLOYED (the line scoreCard ships: era + park + per-event scales + the trusted assembly). This is the ONE thing v2 cannot
+  inherit from v1: six of the nine non-quick formats carry a real era/park, and the environment exists only on this line.
+SELF-CHECK vs v1: run with --raw-line and the 50 Quick-tier cells reproduce tools/cwhit-scorecard.ts's LEVEL and SHAPE
+  verdicts EXACTLY, cell for cell (verified 2026-07-22, 0/50 mismatches). v2 is v1 plus nine formats and the env layer,
+  not a different instrument. NOTE the committed v1 artifact fixtures/cwhit-scorecard-run-2026-07-21-rebaseline-corrected.txt
+  is now STALE against a live v1 run — scoring moved after it was written — so compare against a fresh run, not that file.
+EACH FORMAT IS RESOLVED AND SCORED SEPARATELY: era + park + softcaps + eligibility from data/tournaments/<id>.json,
+  ONE coeffs bag per format via the production resolveCoeffs, ONE pool/transform/anchor per format, ONE builder call per format.
+GRAIN: every OBSERVED statistic is at CARD grain — one row per (CID, VLvl), pooled by cwhit over every instance of the
+  format inside the capture window. There is no per-game or per-instance row anywhere in this corpus, so nothing here is
+  a ROW-grain (per-appearance) statistic. Our predicted line is the same grain by construction: one line per (card, VLvl).
+MEASUREMENT ONLY — nothing is fit, no default is flipped, no production behaviour is touched.
+
+
+╔═══ 0. FORMAT RESOLUTION — the config each duel is run under ═══════════════════════════════════════╗
+  format             type    tournament          era        park      value window   rules  eligible pool   s_K      s_HR
+  ironquick          Quick   iron-quick          era-2010   park-1    40-59              0         1200   1.7629  1.2647
+  bronzequick        Quick   bronze-quick        era-2010   park-1    40-69              0         2096   1.7393  1.2643
+  silverquick        Quick   silver-quick        era-2010   park-1    40-79              0         2748   1.6402  1.2628
+  goldquick          Quick   gold-quick          era-2010   park-1    40-89              0         3192   1.5903  1.2550
+  diamondquick       Quick   diamond-quick       era-2010   park-1    40-99              0         3498   1.4178  1.1875
+  bronzeheart        Daily   bronze-heart        era-1939   park-191  40-69              1          570   1.5738  1.2647
+  earlygold          Daily   early-gold          era-1920   park-169  40-89              0         3192   1.5903  1.2550
+  diamondheart       Daily   diamond-heart       era-1958   park-156  40-99              1          879   1.4666  1.2450
+  latebronze         Daily   late-bronze         era-1979   park-114  40-69              0         2096   1.7393  1.2643
+  diamondcapdaily    Daily   diamond-cap-daily   era-1998   park-101  40-99              0         3498   1.4178  1.1875
+  goldcapdaily       Daily   gold-cap            era-2010   park-156  40-89              0         3192   1.5903  1.2550
+  bronzecapweekly    Weekly  bronze-cap-weekly   era-2010   park-1    40-69              0         2096   1.7393  1.2643
+  goldslotsdaily     Daily   gold-slots          era-2010   park-1    40-89              0         3192   1.5903  1.2550
+  liveopendaily      Daily   live-open-daily     era-2010   park-1    40-∞               1         1274   2.2875  1.2591
+  Value windows are the CONFIG's card_value_min/max — never a capture's obsval, which records who happened to PLAY.
+  'rules' = extra eligibility rules honoured via the production rowEligible (bronze-heart Year 1930-1989, diamond-heart
+  Year 1930-1980, live-open Card Type). s_K / s_HR are the SHIPPED ramps evaluated at THIS format's own frame gap.
+
+
+╔═══ 0b. RAW vs DEPLOYED — the environment's footprint, measured per format ═════════════════════════╗
+  Zero means the two lines agree exactly on that channel, i.e. the environment layer is the identity there.
+
+  PITCHERS   (max |dep − raw| / |raw| over the judged rows, per channel, %)
+  format             neutral   K9         BB9        HR9        BABIP      wOBAA       sFinal
+  ironquick          yes       0.000      0.000      0.000      0.000      2.106       0.9789
+  bronzequick        yes       0.000      0.000      0.000      0.000      2.329       0.9767
+  silverquick        yes       0.000      0.000      0.000      0.000      2.085       0.9791
+  goldquick          yes       0.000      0.000      0.000      0.000      1.870       0.9813
+  diamondquick       yes       0.000      0.000      0.000      0.000      1.481       0.9852
+  bronzeheart        NO        58.897     3.002      45.444     6.314      8.537       0.9787
+  earlygold          NO        64.841     14.116     74.640     4.814      12.346      1.0299
+  diamondheart       NO        29.795     1.364      3.603      6.785      4.976       0.9762
+  latebronze         NO        32.507     0.412      16.283     5.151      5.901       0.9813
+  diamondcapdaily    NO        8.354      2.576      8.763      2.090      2.451       0.9483
+  goldcapdaily       NO        0.000      0.000      4.620      1.332      2.179       0.9683
+  bronzecapweekly    yes       0.000      0.000      0.000      0.000      2.329       0.9767
+  goldslotsdaily     yes       0.000      0.000      0.000      0.000      1.870       0.9813
+  liveopendaily      yes       0.000      0.000      0.000      0.000      0.654       0.9935
+
+  HITTERS   (max |dep − raw| / |raw| over the judged rows, per channel, %)
+  format             neutral   BB%        SO%(PA)    HR600      BABIP      wOBA        sFinal
+  ironquick          yes       0.000      0.000      0.000      3.049      4.589       0.9687
+  bronzequick        yes       0.000      0.000      0.000      1.108      5.253       0.9603
+  silverquick        yes       0.000      0.000      0.000      1.363      6.000       0.9517
+  goldquick          yes       0.000      0.000      0.000      0.704      5.687       0.9515
+  diamondquick       yes       0.000      0.000      0.000      0.136      4.849       0.9556
+  bronzeheart        NO        3.002      58.897     46.779     6.722      8.683       0.9762
+  earlygold          NO        14.116     64.841     74.685     4.653      10.881      1.0045
+  diamondheart       NO        1.364      29.795     4.976      6.891      7.533       0.9542
+  latebronze         NO        0.412      32.507     16.330     5.452      7.439       0.9626
+  diamondcapdaily    NO        2.576      8.354      8.901      2.577      5.860       0.9192
+  goldcapdaily       NO        0.000      0.000      5.181      1.419      6.044       0.9414
+  bronzecapweekly    yes       0.000      0.000      0.000      3.574      6.226       0.9603
+  goldslotsdaily     yes       0.000      0.000      0.000      1.035      5.933       0.9515
+  liveopendaily      yes       0.000      0.000      0.000      0.428      5.467       0.9463
+
+  READ:
+  · PITCHERS, neutral formats: 0.000 on all four channels — the identity v1 relies on, confirmed rather than assumed.
+  · PITCHERS, env formats: up to ~75% on a channel. THAT is what the raw line throws away, and it is why every
+    non-quick number in this run had to move to the deployed line.
+  · The COMPOSITE is non-zero everywhere, neutral included: sFinal (0.92-1.03 here) multiplies the assembled
+    composite and nothing else. It is a UNIT convention, so it shifts composite LEVEL and cannot touch composite
+    SHAPE (a positive scalar leaves Pearson r unchanged). Read composite level verdicts with that in mind.
+  · HITTERS, neutral formats: BB%/SO%/HR600 are exactly 0 like the pitchers, but BABIP is NOT (0.1-3.6%). That
+    single non-identical channel is a real asymmetry in the two lines' plumbing, recorded here and NOT acted on:
+    the BUILD-2 hitter tail reaches the raw line as
+    corrected oneB/GAP read directly, and the deployed line as the e.hMul carrier through hittingComponents
+    (sample.ts states both routes). Two routes for one correction; the pitcher path has only one. It is small,
+    it is not the environment, and sizing it is a separate job — flagged, not fixed, and not fitted around.
+
+
+╔═══ A. COVERAGE — which formats can actually be dueled, and at what N ══════════════════════════════╗
+  joined     = observed rows matched to a catalog card by the existing fingerprint join (no private join is written here).
+  wellSampl. = clears the read-time floor BF>=600 (pit) / PA>=500 (hit) — opponents faced, symmetric across roles.
+  dueled     = well-sampled AND carrying a cwhit projection. THAT is the N every duel below is computed on.
+  status     : OK = N > 20;  THIN = 5..20 (prints, carries NO verdict, counted in NEITHER scoreboard);  DEAD = N < 5 (no statistics).
+
+  format             role   capture rows   joined   well-sampled   dueled   median depth   status
+  ironquick          pit             342      300            142      142           2334   OK
+                     hit             428      386            193      193           1385   OK
+  bronzequick        pit             357      337            156      156           1955   OK
+                     hit             440      419            176      176           1653   OK
+  silverquick        pit             293      276            121      121           2008   OK
+                     hit             360      350            150      150           1899   OK
+  goldquick          pit             221      214             91       91           1923   OK
+                     hit             338      326            130      130           1493   OK
+  diamondquick       pit             122      122             36       36           1042   OK
+                     hit             177      175             35       35            786   OK
+  bronzeheart        pit             127      121             48       48           1953   OK
+                     hit             249      180             72       72           1140   OK
+  earlygold          pit             250      242             99       99           1581   OK
+                     hit             516      394            162      162           1247   OK
+  diamondheart       pit             158      133             67       67           3962   OK
+                     hit             336      231            116      116           2293   OK
+  latebronze         pit             200      195             34       34           1358   OK
+                     hit             252      249             52       52            980   OK
+  diamondcapdaily    pit             228      215             26       26           1049   OK
+                     hit             525      438             76       76            745   OK
+  goldcapdaily       pit             547      504            114      114           1277   OK
+                     hit             648      618            169      169           1011   OK
+  bronzecapweekly    pit             357      346             42       42            873   OK
+                     hit             427      407             48       48            731   OK
+  goldslotsdaily     pit             479      454            109      109           1415   OK
+                     hit             578      555            159      159           1141   OK
+  liveopendaily      pit              82       80             42       42           3328   OK
+                     hit             101      100             51       51           3379   OK
+
+  capture windows + observed VAL ranges (provenance only — obsval is who PLAYED, never a rule):
+    ironquick          2026-07-05..2026-07-19   obsval pit 40-59    hit 40-59      projection rows: pit   800 / hit  1030
+    bronzequick        2026-07-05..2026-07-19   obsval pit 40-69    hit 40-69      projection rows: pit  1424 / hit  1858
+    silverquick        2026-07-05..2026-07-19   obsval pit 45-79    hit 49-79      projection rows: pit  1894 / hit  2500
+    goldquick          2026-07-05..2026-07-19   obsval pit 40-89    hit 40-89      projection rows: pit  2218 / hit  2954
+    diamondquick       2026-07-05..2026-07-19   obsval pit 62-99    hit 55-99      projection rows: pit  2406 / hit  3299
+    bronzeheart        2026-07-05..2026-07-19   obsval pit 46-69    hit 40-69      projection rows: pit   486 / hit   629
+    earlygold          2026-07-05..2026-07-19   obsval pit 55-89    hit 47-89      projection rows: pit  2218 / hit  2954
+    diamondheart       2026-07-05..2026-07-19   obsval pit 48-99    hit 47-99      projection rows: pit   813 / hit  1166
+    latebronze         2026-07-05..2026-07-19   obsval pit 51-69    hit 41-69      projection rows: pit  1424 / hit  1858
+    diamondcapdaily    2026-07-05..2026-07-19   obsval pit 40-99    hit 40-99      projection rows: pit  2406 / hit  3299
+    goldcapdaily       2026-07-05..2026-07-19   obsval pit 40-89    hit 40-89      projection rows: pit  2218 / hit  2954
+    bronzecapweekly    2026-07-05..2026-07-19   obsval pit 40-69    hit 40-69      projection rows: pit  1424 / hit  1858
+    goldslotsdaily     2026-07-05..2026-07-19   obsval pit 43-89    hit 41-89      projection rows: pit  2218 / hit  2954
+    liveopendaily      2026-07-05..2026-07-19   obsval pit 51-100   hit 56-100     projection rows: pit   675 / hit   620
+
+  PROJECTION COVERAGE: cwhit projects the FULL eligible pool, so a duel loses a card only if its observed row
+  found no projection at all. Formats where that happened: NONE — every observed card in every format carries a projection.
+  builder notices:
+    · projection join: 686 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 756 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 626 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 540 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 297 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 301 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 636 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 364 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 444 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 653 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 1122 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 753 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 1009 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+    · projection join: 180 via CID+VLvl, 0 via title fallback, 0 observed rows with no projection
+
+  WINDOW-OVERLAP CAVEAT, STATED ONCE AND APPLYING TO EVERY CELL BELOW. The 2026-07-21 captures do NOT carry
+  cwhit's MODEL-TRAINING window (the old top-100 fixtures did), so the semi-in-sample check CANNOT be run on this
+  corpus and is not faked. On the legacy corpus his training window overlapped 60-100% of the judging window while
+  ours was honest out-of-sample. Unless that changed, every cwhit win below is an UPPER BOUND on his true edge and
+  every one of ours is, if anything, understated. It cannot be quantified here — it is a direction, not a correction.
+
+
+╔═══ B. THE DUEL — per format x role x channel, LEVEL and SHAPE kept SEPARATE ═══════════════════════╗
+LEVEL  = mean(pred) vs mean(obs). Verdict = D|bias| (paired bootstrap): NEGATIVE means OUR bias is smaller.
+         A level loss can restate a KNOWN, ACCEPTED out-of-frame gap — our level corrections live in the eval stack by design.
+SHAPE  = per-card agreement AFTER DE-MEANING. Verdict = Dcorr ONLY, because corr is SCALE-FREE: it answers "who ORDERS
+         the cards better", and a spread defect cannot masquerade as a discrimination defect. MAE is NOT a verdict input.
+SPREAD = SD(pred)/SD(obs), raw and noise-DECONVOLVED (dcv). Reported as a diagnostic, NOT as one of the two axes.
+* = 95% CI excludes 0. Duel CIs are a 2000-rep PAIRED bootstrap over cards (paired: both models are scored on the
+SAME cards, so shared card difficulty cancels and the CI is on the DIFFERENCE). UNREL = noise-share CI upper >= 100%
+⇒ dcv is not a measurement (the raw ratio beside it still is). THIN cells print but carry NO verdict on either axis.
+
+─── Iron Quick — PITCHERS — N=142 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             6.66 |     6.90 (+0.24*) |     7.51 (+0.85*)     -0.61*  OURS       |  0.954 /  0.955    -0.002   TIE        | 0.93/1.09   0.95/1.12     5%
+  BB9            2.58 |     3.24 (+0.66*) |     2.57 (-0.00 )     +0.66*  CWHIT      |  0.920 /  0.932    -0.012   TIE        | 0.95/0.88   0.99/0.92     8%
+  HR9            0.92 |     1.14 (+0.22*) |     1.01 (+0.08*)     +0.13*  CWHIT      |  0.733 /  0.736    -0.003   TIE        | 0.79/0.86   0.92/1.00    26%
+  BABIP         0.291 |    0.301 (+0.010*) |    0.291 (-0.001 )    +0.009*  CWHIT      |  0.475 /  0.499    -0.025   TIE        | 0.38/0.43   0.54/0.61    50%
+  wOBAA         0.315 |    0.330 (+0.015*) |    0.312 (-0.003*)    +0.012*  CWHIT      |  0.535 /  0.544    -0.009   TIE        | 0.54/0.59   0.73/0.79    45%
+
+─── Iron Quick — HITTERS — N=193 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.19 |     8.38 (+1.18*) |     7.43 (+0.24*)     +0.95*  CWHIT      |  0.904 /  0.928    -0.024*  CWHIT      | 0.74/0.89   0.78/0.93     9%
+  SO%(PA)       18.41 |    21.33 (+2.92*) |    17.90 (-0.51*)     +2.41*  CWHIT      |  0.966 /  0.966    -0.000   TIE        | 0.92/0.92   0.94/0.94     5%
+  HR600         14.35 |    16.27 (+1.91*) |    16.84 (+2.49*)     -0.58*  OURS       |  0.906 /  0.913    -0.007   TIE        | 0.91/1.00   0.96/1.06    10%
+  BABIP         0.278 |    0.296 (+0.018*) |    0.284 (+0.005*)    +0.013*  CWHIT      |  0.822 /  0.827    -0.005   TIE        | 0.78/0.72   0.94/0.87    32%
+  wOBA          0.303 |    0.307 (+0.004*) |    0.308 (+0.005*)    -0.001*  OURS       |  0.643 /  0.694    -0.051   TIE        | 0.70/0.70   0.89/0.89    38%
+
+─── Bronze Quick — PITCHERS — N=156 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             6.93 |     7.46 (+0.53*) |     7.78 (+0.85*)     -0.32*  OURS       |  0.952 /  0.951    +0.000   TIE        | 1.02/1.09   1.05/1.13     6%
+  BB9            2.68 |     3.42 (+0.74*) |     2.67 (-0.01 )     +0.73*  CWHIT      |  0.923 /  0.927    -0.003   TIE        | 0.92/0.90   0.97/0.94    10%
+  HR9            0.95 |     1.17 (+0.22*) |     1.04 (+0.08*)     +0.13*  CWHIT      |  0.739 /  0.724    +0.015   TIE        | 0.83/0.84   1.00/1.01    31%
+  BABIP         0.290 |    0.299 (+0.009*) |    0.289 (-0.001 )    +0.008*  CWHIT      |  0.513 /  0.543    -0.030   TIE        | 0.38/0.59   0.61/0.93    60%
+  wOBAA         0.315 |    0.327 (+0.012*) |    0.311 (-0.003*)    +0.009*  CWHIT      |  0.560 /  0.610    -0.050   TIE        | 0.60/0.55   0.87/0.81    53%
+
+─── Bronze Quick — HITTERS — N=176 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.26 |     8.14 (+0.88*) |     7.47 (+0.20*)     +0.68*  CWHIT      |  0.931 /  0.947    -0.016*  CWHIT      | 0.86/0.92   0.89/0.95     8%
+  SO%(PA)       17.90 |    20.99 (+3.09*) |    17.43 (-0.48*)     +2.61*  CWHIT      |  0.960 /  0.966    -0.006*  CWHIT      | 0.99/0.95   1.01/0.97     4%
+  HR600         12.93 |    14.65 (+1.71*) |    14.73 (+1.80*)     -0.08   TIE        |  0.919 /  0.915    +0.004   TIE        | 1.06/0.97   1.12/1.02    11%
+  BABIP         0.279 |    0.298 (+0.020*) |    0.283 (+0.004*)    +0.016*  CWHIT      |  0.783 /  0.792    -0.009   TIE        | 0.87/0.87   1.04/1.04    30%
+  wOBA          0.301 |    0.301 (-0.001 ) |    0.304 (+0.003*)    -0.002   TIE        |  0.709 /  0.712    -0.002   TIE        | 0.70/0.69   0.85/0.84    33%
+
+─── Silver Quick — PITCHERS — N=121 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             6.39 |     7.25 (+0.86*) |     7.27 (+0.88*)     -0.02   TIE        |  0.938 /  0.951    -0.013*  CWHIT      | 1.04/1.06   1.08/1.10     7%
+  BB9            2.31 |     3.17 (+0.86*) |     2.31 (+0.00 )     +0.86*  CWHIT      |  0.930 /  0.932    -0.002   TIE        | 1.01/0.96   1.07/1.02    11%
+  HR9            1.00 |     1.17 (+0.18*) |     1.07 (+0.07*)     +0.11*  CWHIT      |  0.791 /  0.781    +0.010   TIE        | 0.84/0.87   1.01/1.04    30%
+  BABIP         0.292 |    0.299 (+0.007*) |    0.292 (+0.001 )    +0.007*  CWHIT      |  0.554 /  0.537    +0.017   TIE        | 0.40/0.49   0.67/0.83    65%
+  wOBAA         0.318 |    0.327 (+0.009*) |    0.315 (-0.003*)    +0.006*  CWHIT      |  0.658 /  0.699    -0.041*  CWHIT      | 0.71/0.68   1.07/1.03    56%
+
+─── Silver Quick — HITTERS — N=150 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            6.28 |     7.75 (+1.46*) |     6.40 (+0.12 )     +1.34*  CWHIT      |  0.918 /  0.928    -0.010*  CWHIT      | 1.03/0.93   1.08/0.98     9%
+  SO%(PA)       16.60 |    20.78 (+4.17*) |    16.52 (-0.09 )     +4.08*  CWHIT      |  0.965 /  0.966    -0.001   TIE        | 0.96/0.97   0.98/0.99     4%
+  HR600         14.35 |    15.11 (+0.77*) |    15.93 (+1.58*)     -0.82*  OURS       |  0.927 /  0.933    -0.006   TIE        | 0.97/1.04   1.04/1.11    13%
+  BABIP         0.282 |    0.302 (+0.020*) |    0.287 (+0.006*)    +0.015*  CWHIT      |  0.710 /  0.717    -0.007   TIE        | 0.89/0.77   1.22/1.06    47%
+  wOBA          0.307 |    0.302 (-0.006*) |    0.308 (+0.001 )    +0.005*  CWHIT      |  0.740 /  0.721    +0.020   TIE        | 0.71/0.72   0.90/0.91    38%
+
+─── Gold Quick — PITCHERS — N=91 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             7.49 |     7.51 (+0.02 ) |     8.55 (+1.06*)     -1.04*  OURS       |  0.961 /  0.970    -0.009*  CWHIT      | 0.86/1.05   0.88/1.08     5%
+  BB9            2.58 |     3.17 (+0.59*) |     2.57 (-0.01 )     +0.57*  CWHIT      |  0.932 /  0.935    -0.004   TIE        | 1.00/0.92   1.06/0.98    11%
+  HR9            0.96 |     1.13 (+0.17*) |     1.05 (+0.09*)     +0.07*  CWHIT      |  0.832 /  0.816    +0.016   TIE        | 0.82/0.77   0.96/0.90    26%
+  BABIP         0.296 |    0.301 (+0.005*) |    0.295 (-0.001 )    +0.004   TIE        |  0.503 /  0.497    +0.006   TIE        | 0.50/0.53   0.89/0.95    68%
+  wOBAA         0.314 |    0.325 (+0.011*) |    0.309 (-0.005*)    +0.006*  CWHIT      |  0.578 /  0.582    -0.004   TIE        | 0.60/0.64   0.88/0.94    54%
+
+─── Gold Quick — HITTERS — N=130 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            6.59 |     8.06 (+1.47*) |     6.67 (+0.08 )     +1.39*  CWHIT      |  0.924 /  0.930    -0.006   TIE        | 1.13/0.97   1.20/1.02    11%
+  SO%(PA)       19.42 |    20.86 (+1.44*) |    19.20 (-0.22 )     +1.22*  CWHIT      |  0.966 /  0.961    +0.005   TIE        | 0.95/1.00   0.97/1.02     4%
+  HR600         15.18 |    16.11 (+0.92*) |    17.97 (+2.79*)     -1.87*  OURS       |  0.890 /  0.891    -0.001   TIE        | 0.86/1.06   0.93/1.15    15%
+  BABIP         0.287 |    0.301 (+0.014*) |    0.290 (+0.003*)    +0.011*  CWHIT      |  0.798 /  0.814    -0.015   TIE        | 0.86/0.76   1.07/0.95    35%
+  wOBA          0.306 |    0.304 (-0.002 ) |    0.309 (+0.002 )    +0.000   TIE        |  0.651 /  0.632    +0.019   TIE        | 0.71/0.69   0.96/0.93    46%
+
+─── Diamond Quick — PITCHERS — N=36 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             7.18 |     7.69 (+0.51*) |     8.54 (+1.36*)     -0.85*  OURS       |  0.877 /  0.899    -0.022   TIE        | 1.19/1.30   1.40/1.52    27%
+  BB9            2.30 |     3.23 (+0.93*) |     2.59 (+0.29*)     +0.64*  CWHIT      |  0.863 /  0.882    -0.020   TIE        | 1.00/0.85   1.08/0.92    15%
+  HR9            0.83 |     0.99 (+0.16*) |     0.94 (+0.11*)     +0.05*  CWHIT      |  0.712 /  0.714    -0.002   TIE        | 0.64/0.67   1.04/1.08    62%
+  BABIP         0.293 |    0.303 (+0.009*) |    0.293 (-0.000 )    +0.009*  CWHIT      |  0.407 /  0.441    -0.034   TIE        | 0.45/0.39   UNREL/UNREL   112%↑220%
+  wOBAA         0.306 |    0.320 (+0.015*) |    0.303 (-0.002 )    +0.013*  CWHIT      |  0.283 /  0.289    -0.005   TIE        | 0.59/0.57   UNREL/UNREL   122%↑219%
+
+─── Diamond Quick — HITTERS — N=35 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            6.16 |     7.10 (+0.94*) |     6.34 (+0.18 )     +0.76*  CWHIT      |  0.919 /  0.921    -0.002   TIE        | 1.09/0.91   1.18/0.99    14%
+  SO%(PA)       18.76 |    18.86 (+0.10 ) |    18.15 (-0.61*)     -0.51   TIE        |  0.936 /  0.932    +0.004   TIE        | 0.86/0.95   0.90/1.00     9%
+  HR600         14.09 |    15.76 (+1.67*) |    17.25 (+3.15*)     -1.48*  OURS       |  0.763 /  0.773    -0.010   TIE        | 0.78/0.87   1.00/1.12    40%
+  BABIP         0.284 |    0.301 (+0.017*) |    0.290 (+0.005 )    +0.012*  CWHIT      |  0.610 /  0.623    -0.013   TIE        | 0.67/0.63   UNREL/UNREL    61%↑104%
+  wOBA          0.304 |    0.308 (+0.004 ) |    0.310 (+0.006*)    -0.001   TIE        |  0.702 /  0.742    -0.040   TIE        | 0.46/0.51   UNREL/UNREL    56%↑166%
+
+─── Bronze Heart — PITCHERS — N=48 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             3.56 |     2.93 (-0.64*) |     4.17 (+0.61*)     +0.03   TIE        |  0.917 /  0.920    -0.003   TIE        | 0.63/1.06   0.67/1.12    10%
+  BB9            2.62 |     3.14 (+0.52*) |     2.54 (-0.08 )     +0.44*  CWHIT      |  0.838 /  0.808    +0.030   TIE        | 0.78/0.82   0.84/0.89    15%
+  HR9            0.44 |     0.63 (+0.19*) |     0.45 (+0.01 )     +0.18*  CWHIT      |  0.818 /  0.789    +0.029   TIE        | 0.85/0.87   1.06/1.09    36%
+  BABIP         0.286 |    0.281 (-0.006*) |    0.286 (-0.000 )    +0.006   TIE        |  0.498 /  0.411    +0.088   TIE        | 0.34/0.87   UNREL/UNREL    71%↑112%
+  wOBAA         0.313 |    0.317 (+0.004*) |    0.308 (-0.005*)    -0.001   TIE        |  0.578 /  0.446    +0.132   TIE        | 0.40/0.60   UNREL/UNREL    60%↑100%
+
+─── Bronze Heart — HITTERS — N=72 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.41 |     8.83 (+1.41*) |     7.45 (+0.04 )     +1.37*  CWHIT      |  0.911 /  0.923    -0.012   TIE        | 0.76/0.88   0.80/0.92    10%
+  SO%(PA)        8.42 |     8.72 (+0.30*) |     8.36 (-0.06 )     +0.24   TIE        |  0.932 /  0.929    +0.003   TIE        | 0.81/0.90   0.85/0.95    11%
+  HR600          7.89 |     8.45 (+0.55 ) |     8.74 (+0.85*)     -0.29   TIE        |  0.807 /  0.895    -0.088*  CWHIT      | 0.83/1.12   0.92/1.24    18%
+  BABIP         0.277 |    0.284 (+0.007*) |    0.282 (+0.005*)    +0.002*  CWHIT      |  0.746 /  0.739    +0.008   TIE        | 0.74/1.00   0.96/1.29    40%
+  wOBA          0.312 |    0.313 (+0.001 ) |    0.314 (+0.002 )    -0.001   TIE        |  0.563 /  0.639    -0.075   TIE        | 0.55/0.74   0.73/0.96    42%
+
+─── Early Gold — PITCHERS — N=99 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             3.26 |     2.52 (-0.74*) |     3.52 (+0.26*)     +0.48*  CWHIT      |  0.880 /  0.900    -0.020*  CWHIT      | 0.69/0.99   0.75/1.08    17%
+  BB9            2.44 |     2.65 (+0.21*) |     2.37 (-0.07*)     +0.14*  CWHIT      |  0.834 /  0.844    -0.010   TIE        | 0.94/0.81   1.03/0.89    17%
+  HR9            0.23 |     0.32 (+0.10*) |     0.24 (+0.01 )     +0.08*  CWHIT      |  0.690 /  0.732    -0.042   TIE        | 0.61/0.63   0.84/0.86    47%
+  BABIP         0.302 |    0.290 (-0.012*) |    0.299 (-0.003*)    +0.009*  CWHIT      |  0.605 /  0.645    -0.040   TIE        | 0.39/0.61   0.58/0.91    56%
+  wOBAA         0.316 |    0.320 (+0.004*) |    0.312 (-0.005*)    -0.001   TIE        |  0.563 /  0.661    -0.098*  CWHIT      | 0.49/0.55   0.77/0.86    59%
+
+─── Early Gold — HITTERS — N=162 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            6.42 |     6.99 (+0.57*) |     6.41 (-0.01 )     +0.56*  CWHIT      |  0.899 /  0.906    -0.006   TIE        | 0.95/0.93   1.02/1.01    14%
+  SO%(PA)        7.26 |     7.27 (+0.01 ) |     7.11 (-0.15 )     -0.14   TIE        |  0.891 /  0.899    -0.008   TIE        | 0.77/0.88   0.83/0.94    12%
+  HR600          4.02 |     3.41 (-0.61*) |     4.89 (+0.86*)     -0.25   TIE        |  0.790 /  0.797    -0.007   TIE        | 0.68/0.98   0.87/1.27    40%
+  BABIP         0.284 |    0.293 (+0.009*) |    0.285 (+0.001 )    +0.008*  CWHIT      |  0.775 /  0.765    +0.010   TIE        | 0.73/0.84   0.95/1.10    41%
+  wOBA          0.305 |    0.307 (+0.002 ) |    0.306 (+0.001 )    +0.001   TIE        |  0.688 /  0.694    -0.005   TIE        | 0.61/0.69   0.80/0.91    42%
+
+─── Diamond Heart — PITCHERS — N=67 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             5.43 |     5.33 (-0.10*) |     6.14 (+0.71*)     -0.61*  OURS       |  0.938 /  0.956    -0.019*  CWHIT      | 0.92/1.12   0.96/1.17     9%
+  BB9            2.73 |     3.27 (+0.54*) |     2.75 (+0.02 )     +0.52*  CWHIT      |  0.957 /  0.963    -0.006   TIE        | 1.09/0.85   1.11/0.87     4%
+  HR9            1.03 |     1.06 (+0.03*) |     1.13 (+0.10*)     -0.06*  OURS       |  0.861 /  0.863    -0.002   TIE        | 0.95/1.02   1.11/1.19    26%
+  BABIP         0.279 |    0.283 (+0.004*) |    0.279 (-0.000 )    +0.004   TIE        |  0.492 /  0.390    +0.102*  OURS       | 0.44/0.51   0.66/0.76    56%
+  wOBAA         0.322 |    0.323 (+0.001 ) |    0.321 (-0.001 )    +0.000   TIE        |  0.698 /  0.632    +0.066   TIE        | 0.68/0.69   0.84/0.85    34%
+
+─── Diamond Heart — HITTERS — N=116 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.30 |     8.45 (+1.15*) |     7.18 (-0.12 )     +1.02*  CWHIT      |  0.916 /  0.911    +0.006   TIE        | 1.06/1.01   1.11/1.06     9%
+  SO%(PA)       12.99 |    14.60 (+1.61*) |    12.88 (-0.11 )     +1.50*  CWHIT      |  0.855 /  0.887    -0.032*  CWHIT      | 0.87/0.85   0.90/0.88     7%
+  HR600         15.95 |    15.80 (-0.15 ) |    17.64 (+1.69*)     -1.55*  OURS       |  0.885 /  0.909    -0.024*  CWHIT      | 0.90/1.08   0.98/1.17    15%
+  BABIP         0.274 |    0.283 (+0.009*) |    0.274 (+0.000 )    +0.009*  CWHIT      |  0.803 /  0.795    +0.008   TIE        | 0.85/1.01   1.07/1.27    37%
+  wOBA          0.320 |    0.308 (-0.011*) |    0.315 (-0.005*)    +0.007*  CWHIT      |  0.772 /  0.746    +0.026   TIE        | 0.79/0.90   0.95/1.08    31%
+
+─── Late Bronze — PITCHERS — N=34 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             4.72 |     5.03 (+0.31*) |     5.30 (+0.57*)     -0.27*  OURS       |  0.935 /  0.924    +0.010   TIE        | 0.97/1.07   1.04/1.15    13%
+  BB9            2.77 |     3.44 (+0.67*) |     2.75 (-0.02 )     +0.65*  CWHIT      |  0.902 /  0.885    +0.017   TIE        | 0.70/0.75   0.76/0.81    16%
+  HR9            0.67 |     0.90 (+0.23*) |     0.68 (+0.01 )     +0.21*  CWHIT      |  0.565 /  0.627    -0.062   TIE        | 0.68/0.68   0.87/0.87    38%
+  BABIP         0.279 |    0.285 (+0.007 ) |    0.281 (+0.002 )    +0.005   TIE        |  0.486 /  0.432    +0.054   TIE        | 0.24/0.46   UNREL/UNREL    44%↑106%
+  wOBAA         0.310 |    0.322 (+0.012*) |    0.308 (-0.002 )    +0.010   TIE        |  0.261 /  0.451    -0.190   TIE        | 0.31/0.33   0.40/0.43    41%
+
+─── Late Bronze — HITTERS — N=52 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.28 |     8.09 (+0.81*) |     7.28 (+0.00 )     +0.80*  CWHIT      |  0.930 /  0.948    -0.019*  CWHIT      | 0.91/0.96   0.98/1.04    14%
+  SO%(PA)       10.88 |    13.59 (+2.71*) |    10.80 (-0.08 )     +2.63*  CWHIT      |  0.974 /  0.977    -0.003   TIE        | 0.97/0.97   1.00/1.00     6%
+  HR600         10.08 |    11.90 (+1.82*) |    11.62 (+1.54*)     +0.28   TIE        |  0.874 /  0.886    -0.011   TIE        | 1.05/1.00   1.16/1.10    18%
+  BABIP         0.276 |    0.289 (+0.014*) |    0.279 (+0.003 )    +0.010*  CWHIT      |  0.661 /  0.714    -0.053   TIE        | 0.61/0.65   0.74/0.78    32%
+  wOBA          0.311 |    0.307 (-0.005 ) |    0.311 (+0.000 )    +0.004   TIE        |  0.512 /  0.558    -0.046   TIE        | 0.56/0.63   0.81/0.91    52%
+
+─── Diamond Cap Daily (from 2026-05-27) — PITCHERS — N=26 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             7.04 |     6.45 (-0.59*) |     8.32 (+1.28*)     -0.69*  OURS       |  0.940 /  0.964    -0.024*  CWHIT      | 0.75/1.13   0.78/1.17     7%
+  BB9            2.84 |     3.76 (+0.92*) |     2.81 (-0.03 )     +0.90*  CWHIT      |  0.921 /  0.939    -0.018   TIE        | 0.93/0.90   0.99/0.96    12%
+  HR9            0.78 |     1.22 (+0.44*) |     0.93 (+0.15*)     +0.28*  CWHIT      |  0.671 /  0.676    -0.005   TIE        | 0.89/0.97   1.17/1.27    42%
+  BABIP         0.293 |    0.311 (+0.018*) |    0.292 (-0.001 )    +0.017*  CWHIT      |  0.596 /  0.630    -0.035   TIE        | 0.65/0.90   UNREL/UNREL   130%↑235%
+  wOBAA         0.310 |    0.338 (+0.028*) |    0.306 (-0.004 )    +0.024*  CWHIT      |  0.655 /  0.688    -0.034   TIE        | 0.67/0.83   UNREL/UNREL   102%↑206%
+
+─── Diamond Cap Daily (from 2026-05-27) — HITTERS — N=76 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            8.23 |     7.15 (-1.08*) |     8.46 (+0.23*)     +0.85*  CWHIT      |  0.921 /  0.935    -0.014*  CWHIT      | 0.93/0.94   1.00/1.01    14%
+  SO%(PA)       16.01 |    18.43 (+2.41*) |    16.01 (-0.00 )     +2.41*  CWHIT      |  0.894 /  0.898    -0.003   TIE        | 1.10/1.06   1.17/1.13    12%
+  HR600         15.37 |    13.53 (-1.84*) |    17.42 (+2.05*)     -0.21   TIE        |  0.898 /  0.900    -0.002   TIE        | 0.88/1.09   1.00/1.23    22%
+  BABIP         0.296 |    0.306 (+0.011*) |    0.298 (+0.002 )    +0.008*  CWHIT      |  0.633 /  0.644    -0.011   TIE        | 0.72/0.72   1.24/1.24    66%
+  wOBA          0.330 |    0.294 (-0.036*) |    0.329 (-0.001 )    +0.035*  CWHIT      |  0.808 /  0.820    -0.012   TIE        | 0.81/0.89   0.96/1.05    28%
+
+─── Gold Cap Daily — PITCHERS — N=114 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             7.14 |     6.74 (-0.40*) |     8.16 (+1.02*)     -0.62*  OURS       |  0.953 /  0.963    -0.010*  CWHIT      | 0.93/1.18   0.96/1.22     6%
+  BB9            2.95 |     3.67 (+0.72*) |     2.81 (-0.14*)     +0.58*  CWHIT      |  0.931 /  0.943    -0.012*  CWHIT      | 0.99/0.88   1.03/0.92     8%
+  HR9            1.08 |     1.35 (+0.27*) |     1.12 (+0.04*)     +0.23*  CWHIT      |  0.830 /  0.833    -0.002   TIE        | 0.92/0.81   1.06/0.94    25%
+  BABIP         0.293 |    0.310 (+0.017*) |    0.293 (-0.000 )    +0.016*  CWHIT      |  0.599 /  0.595    +0.004   TIE        | 0.50/0.55   0.78/0.87    60%
+  wOBAA         0.324 |    0.348 (+0.024*) |    0.317 (-0.007*)    +0.017*  CWHIT      |  0.866 /  0.871    -0.005   TIE        | 0.85/0.84   0.95/0.94    20%
+
+─── Gold Cap Daily — HITTERS — N=169 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.97 |     7.26 (-0.71*) |     7.94 (-0.03 )     +0.68*  CWHIT      |  0.918 /  0.941    -0.023*  CWHIT      | 0.86/0.87   0.91/0.92    10%
+  SO%(PA)       19.27 |    22.35 (+3.07*) |    18.77 (-0.50*)     +2.57*  CWHIT      |  0.956 /  0.963    -0.007   TIE        | 0.99/0.93   1.02/0.95     5%
+  HR600         16.49 |    14.12 (-2.37*) |    19.76 (+3.26*)     -0.89   TIE        |  0.920 /  0.948    -0.029*  CWHIT      | 0.78/1.12   0.83/1.18    10%
+  BABIP         0.289 |    0.298 (+0.009*) |    0.295 (+0.005*)    +0.004*  CWHIT      |  0.744 /  0.764    -0.020   TIE        | 0.83/0.74   1.06/0.94    39%
+  wOBA          0.319 |    0.285 (-0.034*) |    0.324 (+0.005*)    +0.029*  CWHIT      |  0.880 /  0.903    -0.023*  CWHIT      | 0.80/0.92   0.88/1.02    18%
+
+─── Saturday Bronze Cap — PITCHERS — N=42 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             6.70 |     6.68 (-0.03 ) |     7.94 (+1.23*)     -1.21*  OURS       |  0.967 /  0.973    -0.006   TIE        | 0.96/1.22   0.99/1.25     6%
+  BB9            2.85 |     3.68 (+0.82*) |     2.79 (-0.06 )     +0.76*  CWHIT      |  0.896 /  0.906    -0.010   TIE        | 0.84/0.88   0.89/0.93    11%
+  HR9            0.72 |     1.18 (+0.46*) |     0.73 (+0.01 )     +0.45*  CWHIT      |  0.788 /  0.774    +0.014   TIE        | 0.80/0.59   0.99/0.74    35%
+  BABIP         0.287 |    0.301 (+0.015*) |    0.284 (-0.003 )    +0.012   TIE        |  0.391 /  0.410    -0.020   TIE        | 0.42/0.60   0.59/0.85    49%
+  wOBAA         0.305 |    0.338 (+0.032*) |    0.294 (-0.011*)    +0.021*  CWHIT      |  0.772 /  0.790    -0.018   TIE        | 0.75/0.75   0.89/0.89    29%
+
+─── Saturday Bronze Cap — HITTERS — N=48 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.26 |     7.32 (+0.06 ) |     7.58 (+0.32 )     -0.26   TIE        |  0.876 /  0.911    -0.035*  CWHIT      | 0.83/0.99   0.88/1.06    12%
+  SO%(PA)       18.95 |    22.77 (+3.83*) |    18.05 (-0.89*)     +2.93*  CWHIT      |  0.949 /  0.965    -0.016   TIE        | 1.12/1.00   1.16/1.03     6%
+  HR600         16.35 |    14.44 (-1.90*) |    17.51 (+1.17 )     +0.74   TIE        |  0.880 /  0.863    +0.017   TIE        | 0.81/0.93   0.86/0.98    11%
+  BABIP         0.292 |    0.301 (+0.009*) |    0.301 (+0.009*)    -0.000   TIE        |  0.567 /  0.695    -0.128*  CWHIT      | 0.70/0.81   0.90/1.05    40%
+  wOBA          0.318 |    0.294 (-0.024*) |    0.323 (+0.005 )    +0.019*  CWHIT      |  0.421 /  0.478    -0.057   TIE        | 0.76/0.84   0.93/1.03    34%
+
+─── Gold Slots Daily — PITCHERS — N=109 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             7.30 |     7.28 (-0.02 ) |     8.33 (+1.04*)     -1.02*  OURS       |  0.944 /  0.960    -0.016*  CWHIT      | 0.92/1.19   0.96/1.24     7%
+  BB9            2.87 |     3.44 (+0.57*) |     2.84 (-0.03 )     +0.54*  CWHIT      |  0.920 /  0.940    -0.020*  CWHIT      | 0.89/0.89   0.93/0.93     9%
+  HR9            0.95 |     1.13 (+0.18*) |     1.03 (+0.08*)     +0.10*  CWHIT      |  0.795 /  0.786    +0.009   TIE        | 0.82/0.79   0.98/0.95    30%
+  BABIP         0.289 |    0.301 (+0.012*) |    0.287 (-0.002 )    +0.011*  CWHIT      |  0.585 /  0.591    -0.006   TIE        | 0.43/0.49   0.67/0.76    59%
+  wOBAA         0.313 |    0.330 (+0.017*) |    0.308 (-0.005*)    +0.012*  CWHIT      |  0.569 /  0.591    -0.022   TIE        | 0.64/0.66   0.88/0.91    47%
+
+─── Gold Slots Daily — HITTERS — N=159 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            7.61 |     7.85 (+0.24*) |     7.69 (+0.08 )     +0.16*  CWHIT      |  0.919 /  0.930    -0.011*  CWHIT      | 0.96/0.99   1.02/1.05    11%
+  SO%(PA)       19.21 |    21.18 (+1.97*) |    18.72 (-0.50*)     +1.47*  CWHIT      |  0.965 /  0.968    -0.003   TIE        | 0.99/0.98   1.02/1.00     5%
+  HR600         14.83 |    15.74 (+0.90*) |    17.80 (+2.97*)     -2.06*  OURS       |  0.879 /  0.894    -0.016*  CWHIT      | 0.88/1.01   0.97/1.11    17%
+  BABIP         0.282 |    0.298 (+0.016*) |    0.286 (+0.004*)    +0.012*  CWHIT      |  0.758 /  0.786    -0.028*  CWHIT      | 0.81/0.70   1.04/0.90    39%
+  wOBA          0.307 |    0.300 (-0.007*) |    0.311 (+0.004*)    +0.003   TIE        |  0.710 /  0.724    -0.014   TIE        | 0.71/0.71   0.89/0.89    37%
+
+─── Live Open Daily — PITCHERS — N=42 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  K9             8.00 |     7.80 (-0.20 ) |     8.73 (+0.74*)     -0.54*  OURS       |  0.821 /  0.850    -0.029*  CWHIT      | 2.07/1.13   2.40/1.31    26%
+  BB9            2.63 |     2.97 (+0.35*) |     2.69 (+0.06 )     +0.29*  CWHIT      |  0.871 /  0.871    -0.000   TIE        | 0.73/0.86   0.79/0.93    15%
+  HR9            1.05 |     1.06 (+0.01 ) |     1.14 (+0.09*)     -0.08   TIE        |  0.814 /  0.788    +0.026   TIE        | 0.61/0.59   0.73/0.71    30%
+  BABIP         0.300 |    0.301 (+0.001 ) |    0.301 (+0.001 )    -0.001   TIE        |  0.635 /  0.587    +0.048   TIE        | 0.37/0.11   UNREL/UNREL    88%↑130%
+  wOBAA         0.317 |    0.322 (+0.004 ) |    0.317 (-0.000 )    +0.004   TIE        |  0.576 /  0.686    -0.110   TIE        | 0.73/0.51   1.00/0.69    46%
+
+─── Live Open Daily — HITTERS — N=51 ───
+  channel     obs mean |  ours mean  (bias)         | cwhit mean (bias)         D|level|          LEVEL   |  corr ours / cwhit    Dcorr             SHAPE   |  SD raw o/c   dcv o/c      noise%
+  BB%            6.07 |     8.87 (+2.81*) |     6.27 (+0.21*)     +2.60*  CWHIT      |  0.930 /  0.932    -0.002   TIE        | 1.02/0.89   1.10/0.97    15%
+  SO%(PA)       20.76 |    19.80 (-0.96*) |    20.68 (-0.08 )     +0.88*  CWHIT      |  0.977 /  0.978    -0.002   TIE        | 0.71/0.86   0.73/0.87     4%
+  HR600         14.43 |    17.52 (+3.09*) |    15.21 (+0.78*)     +2.31*  CWHIT      |  0.876 /  0.883    -0.007   TIE        | 0.87/0.90   1.00/1.04    24%
+  BABIP         0.286 |    0.306 (+0.019*) |    0.287 (+0.000 )    +0.019*  CWHIT      |  0.705 /  0.743    -0.038   TIE        | 1.02/0.85   1.40/1.17    47%
+  wOBA          0.297 |    0.318 (+0.021*) |    0.292 (-0.005*)    +0.015*  CWHIT      |  0.670 /  0.775    -0.105*  CWHIT      | 0.85/0.82   UNREL/UNREL    63%↑118%
+
+
+╔═══ C. THE SCOREBOARD — CI-clear wins / ties / losses, LEVEL and SHAPE counted SEPARATELY ══════════╗
+  Counted cells only: a THIN cell (N<=20) carries no verdict and is excluded from every count below.
+  140 cells measured, 140 counted, 0 thin.
+
+  population                         cells       LEVEL  we/tie/cwhit        SHAPE  we/tie/cwhit
+  ---------------------------------- -----   ----------------------      ----------------------
+  ALL 14 FORMATS                       140     19 /   33 /    88         1 /  109 /    30
+    QUICK (5 formats)                   50      9 /    7 /    34         0 /   43 /     7
+    NON-QUICK (9 formats)               90     10 /   26 /    54         1 /   66 /    23
+
+  PITCHERS — all                        70     12 /   14 /    44         1 /   57 /    12
+    pitchers, quick                     25      4 /    2 /    19         0 /   22 /     3
+    pitchers, non-quick                 45      8 /   12 /    25         1 /   35 /     9
+  HITTERS — all                         70      7 /   19 /    44         0 /   52 /    18
+    hitters, quick                      25      5 /    5 /    15         0 /   21 /     4
+    hitters, non-quick                  45      2 /   14 /    29         0 /   31 /    14
+
+  ── BY CHANNEL (all 14 formats, both roles pooled where a label is shared) ──
+  role  channel                      cells       LEVEL  we/tie/cwhit        SHAPE  we/tie/cwhit
+  pit   K9                              14     11 /    2 /     1         0 /    6 /     8
+  pit   BB9                             14      0 /    0 /    14         0 /   12 /     2
+  pit   HR9                             14      1 /    1 /    12         0 /   14 /     0
+  pit   BABIP                           14      0 /    6 /     8         1 /   13 /     0
+  pit   wOBAA                           14      0 /    5 /     9         0 /   12 /     2
+  hit   BB%                             14      0 /    1 /    13         0 /    6 /     8
+  hit   SO%(PA)                         14      0 /    3 /    11         0 /   12 /     2
+  hit   HR600                           14      6 /    7 /     1         0 /   10 /     4
+  hit   BABIP                           14      0 /    1 /    13         0 /   12 /     2
+  hit   wOBA                            14      1 /    7 /     6         0 /   12 /     2
+
+  ── BY FORMAT (both roles, all five channels) ──
+  format                             cells       LEVEL  we/tie/cwhit        SHAPE  we/tie/cwhit
+  Q ironquick                           10      3 /    0 /     7         0 /    9 /     1
+  Q bronzequick                         10      1 /    2 /     7         0 /    8 /     2
+  Q silverquick                         10      1 /    1 /     8         0 /    7 /     3
+  Q goldquick                           10      2 /    2 /     6         0 /    9 /     1
+  Q diamondquick                        10      2 /    2 /     6         0 /   10 /     0
+    bronzeheart                         10      0 /    6 /     4         0 /    9 /     1
+    earlygold                           10      0 /    4 /     6         0 /    8 /     2
+    diamondheart                        10      3 /    2 /     5         1 /    6 /     3
+    latebronze                          10      1 /    4 /     5         0 /    9 /     1
+    diamondcapdaily                     10      1 /    1 /     8         0 /    8 /     2
+    goldcapdaily                        10      1 /    1 /     8         0 /    5 /     5
+    bronzecapweekly                     10      1 /    4 /     5         0 /    8 /     2
+    goldslotsdaily                      10      2 /    1 /     7         0 /    5 /     5
+    liveopendaily                       10      1 /    3 /     6         0 /    8 /     2
+
+
+╔═══ D. QUICK vs NON-QUICK — the 9 non-quick formats are the NEW information ════════════════════════╗
+  The five Quick tiers are the PRIOR (v1's corrected result: statistical parity). The nine non-quick formats have
+  never been dueled. The question this section answers, and the only one it answers, is: DOES PARITY HOLD THERE?
+
+  LEVEL
+    QUICK      n= 50   ours   9 (18%)   tie   7 (14%)   cwhit  34 (68%)
+    NON-QUICK  n= 90   ours  10 (11%)   tie  26 (29%)   cwhit  54 (60%)
+    ⇒ QUICK:      NOT PARITY — cwhit takes more CI-clear cells than we do.
+    ⇒ NON-QUICK:  NOT PARITY — cwhit takes more CI-clear cells than we do.
+    CONTRAST (the part that is new information): his CI-clear share goes 68% → 60% (0.88×), ours 18% → 11%, ties 14% → 29%.
+    (Reading rule, declared before the numbers: 'parity' = ties are the plurality AND his CI-clear wins do not
+     exceed ours. A shift in EITHER direction is only claimed off the CI-clear counts, never off the tie share alone.)
+
+  SHAPE
+    QUICK      n= 50   ours   0 (0%)   tie  43 (86%)   cwhit   7 (14%)
+    NON-QUICK  n= 90   ours   1 (1%)   tie  66 (73%)   cwhit  23 (26%)
+    ⇒ QUICK:      NOT PARITY — cwhit takes more CI-clear cells than we do.
+    ⇒ NON-QUICK:  NOT PARITY — cwhit takes more CI-clear cells than we do.
+    CONTRAST (the part that is new information): his CI-clear share goes 14% → 26% (1.83×), ours 0% → 1%, ties 86% → 73%.
+    (Reading rule, declared before the numbers: 'parity' = ties are the plurality AND his CI-clear wins do not
+     exceed ours. A shift in EITHER direction is only claimed off the CI-clear counts, never off the tie share alone.)
+
+  THE COMPOSITION CAVEAT, so the contrast is not over-read: the two groups differ in more than "quick vs not".
+  All five Quick tiers run on the NEUTRAL env (era-2010 / park-1); six of the nine non-quick formats do not, and
+  three carry a budget (cap/slots) or an extra eligibility rule. A non-quick shift is therefore a shift in the
+  UNION of {non-neutral env, extra rules, budget, pool composition, capture depth} — this section localises WHERE
+  we stand, not WHY. The env-vs-rest decomposition needs a separate instrument.
+
+  ONE CUT OF IT, free because the registry already records neutralEnv:
+  population                         cells       LEVEL  we/tie/cwhit        SHAPE  we/tie/cwhit
+    non-quick, NEUTRAL env (3 fmts)     30      4 /    8 /    18         0 /   21 /     9
+    non-quick, own era/park (6 fmts)    60      6 /   18 /    36         1 /   45 /    14
+
+
+╔═══ E. THE CELL LISTS — where we win, where he does, where we cannot tell ══════════════════════════╗
+
+  ── SHAPE / ORDERING (scale-free; the axis that says who picks the better card) ──
+
+  WE WIN on shape, CI-clear:  (1)
+    diamondheart       pit  BABIP     N=  67   bias ours +0.004 / cwhit -0.000   corr ours 0.492 / cwhit 0.390   D|level| +0.004   Dcorr +0.102*
+
+  WE LOSE on shape, CI-clear:  (30)
+    ironquick          hit  BB%       N= 193   bias ours +1.18 / cwhit +0.24   corr ours 0.904 / cwhit 0.928   D|level| +0.95*  Dcorr -0.024*
+    bronzequick        hit  BB%       N= 176   bias ours +0.88 / cwhit +0.20   corr ours 0.931 / cwhit 0.947   D|level| +0.68*  Dcorr -0.016*
+    bronzequick        hit  SO%(PA)   N= 176   bias ours +3.09 / cwhit -0.48   corr ours 0.960 / cwhit 0.966   D|level| +2.61*  Dcorr -0.006*
+    silverquick        pit  K9        N= 121   bias ours +0.86 / cwhit +0.88   corr ours 0.938 / cwhit 0.951   D|level| -0.02   Dcorr -0.013*
+    silverquick        pit  wOBAA     N= 121   bias ours +0.009 / cwhit -0.003   corr ours 0.658 / cwhit 0.699   D|level| +0.006*  Dcorr -0.041*
+    silverquick        hit  BB%       N= 150   bias ours +1.46 / cwhit +0.12   corr ours 0.918 / cwhit 0.928   D|level| +1.34*  Dcorr -0.010*
+    goldquick          pit  K9        N=  91   bias ours +0.02 / cwhit +1.06   corr ours 0.961 / cwhit 0.970   D|level| -1.04*  Dcorr -0.009*
+    bronzeheart        hit  HR600     N=  72   bias ours +0.55 / cwhit +0.85   corr ours 0.807 / cwhit 0.895   D|level| -0.29   Dcorr -0.088*
+    earlygold          pit  K9        N=  99   bias ours -0.74 / cwhit +0.26   corr ours 0.880 / cwhit 0.900   D|level| +0.48*  Dcorr -0.020*
+    earlygold          pit  wOBAA     N=  99   bias ours +0.004 / cwhit -0.005   corr ours 0.563 / cwhit 0.661   D|level| -0.001   Dcorr -0.098*
+    diamondheart       pit  K9        N=  67   bias ours -0.10 / cwhit +0.71   corr ours 0.938 / cwhit 0.956   D|level| -0.61*  Dcorr -0.019*
+    diamondheart       hit  SO%(PA)   N= 116   bias ours +1.61 / cwhit -0.11   corr ours 0.855 / cwhit 0.887   D|level| +1.50*  Dcorr -0.032*
+    diamondheart       hit  HR600     N= 116   bias ours -0.15 / cwhit +1.69   corr ours 0.885 / cwhit 0.909   D|level| -1.55*  Dcorr -0.024*
+    latebronze         hit  BB%       N=  52   bias ours +0.81 / cwhit +0.00   corr ours 0.930 / cwhit 0.948   D|level| +0.80*  Dcorr -0.019*
+    diamondcapdaily    pit  K9        N=  26   bias ours -0.59 / cwhit +1.28   corr ours 0.940 / cwhit 0.964   D|level| -0.69*  Dcorr -0.024*
+    diamondcapdaily    hit  BB%       N=  76   bias ours -1.08 / cwhit +0.23   corr ours 0.921 / cwhit 0.935   D|level| +0.85*  Dcorr -0.014*
+    goldcapdaily       pit  K9        N= 114   bias ours -0.40 / cwhit +1.02   corr ours 0.953 / cwhit 0.963   D|level| -0.62*  Dcorr -0.010*
+    goldcapdaily       pit  BB9       N= 114   bias ours +0.72 / cwhit -0.14   corr ours 0.931 / cwhit 0.943   D|level| +0.58*  Dcorr -0.012*
+    goldcapdaily       hit  BB%       N= 169   bias ours -0.71 / cwhit -0.03   corr ours 0.918 / cwhit 0.941   D|level| +0.68*  Dcorr -0.023*
+    goldcapdaily       hit  HR600     N= 169   bias ours -2.37 / cwhit +3.26   corr ours 0.920 / cwhit 0.948   D|level| -0.89   Dcorr -0.029*
+    goldcapdaily       hit  wOBA      N= 169   bias ours -0.034 / cwhit +0.005   corr ours 0.880 / cwhit 0.903   D|level| +0.029*  Dcorr -0.023*
+    bronzecapweekly    hit  BB%       N=  48   bias ours +0.06 / cwhit +0.32   corr ours 0.876 / cwhit 0.911   D|level| -0.26   Dcorr -0.035*
+    bronzecapweekly    hit  BABIP     N=  48   bias ours +0.009 / cwhit +0.009   corr ours 0.567 / cwhit 0.695   D|level| -0.000   Dcorr -0.128*
+    goldslotsdaily     pit  K9        N= 109   bias ours -0.02 / cwhit +1.04   corr ours 0.944 / cwhit 0.960   D|level| -1.02*  Dcorr -0.016*
+    goldslotsdaily     pit  BB9       N= 109   bias ours +0.57 / cwhit -0.03   corr ours 0.920 / cwhit 0.940   D|level| +0.54*  Dcorr -0.020*
+    goldslotsdaily     hit  BB%       N= 159   bias ours +0.24 / cwhit +0.08   corr ours 0.919 / cwhit 0.930   D|level| +0.16*  Dcorr -0.011*
+    goldslotsdaily     hit  HR600     N= 159   bias ours +0.90 / cwhit +2.97   corr ours 0.879 / cwhit 0.894   D|level| -2.06*  Dcorr -0.016*
+    goldslotsdaily     hit  BABIP     N= 159   bias ours +0.016 / cwhit +0.004   corr ours 0.758 / cwhit 0.786   D|level| +0.012*  Dcorr -0.028*
+    liveopendaily      pit  K9        N=  42   bias ours -0.20 / cwhit +0.74   corr ours 0.821 / cwhit 0.850   D|level| -0.54*  Dcorr -0.029*
+    liveopendaily      hit  wOBA      N=  51   bias ours +0.021 / cwhit -0.005   corr ours 0.670 / cwhit 0.775   D|level| +0.015*  Dcorr -0.105*
+
+  TIE on shape (CI includes 0 — no evidence either model orders better): 109 cells, not listed individually.
+
+  ── LEVEL (may restate a KNOWN, ACCEPTED out-of-frame gap — not automatically a defect) ──
+
+  WE WIN on level, CI-clear:  (19)
+    ironquick          pit  K9        N= 142   bias ours +0.24 / cwhit +0.85   corr ours 0.954 / cwhit 0.955   D|level| -0.61*  Dcorr -0.002 
+    ironquick          hit  HR600     N= 193   bias ours +1.91 / cwhit +2.49   corr ours 0.906 / cwhit 0.913   D|level| -0.58*  Dcorr -0.007 
+    ironquick          hit  wOBA      N= 193   bias ours +0.004 / cwhit +0.005   corr ours 0.643 / cwhit 0.694   D|level| -0.001*  Dcorr -0.051 
+    bronzequick        pit  K9        N= 156   bias ours +0.53 / cwhit +0.85   corr ours 0.952 / cwhit 0.951   D|level| -0.32*  Dcorr +0.000 
+    silverquick        hit  HR600     N= 150   bias ours +0.77 / cwhit +1.58   corr ours 0.927 / cwhit 0.933   D|level| -0.82*  Dcorr -0.006 
+    goldquick          pit  K9        N=  91   bias ours +0.02 / cwhit +1.06   corr ours 0.961 / cwhit 0.970   D|level| -1.04*  Dcorr -0.009*
+    goldquick          hit  HR600     N= 130   bias ours +0.92 / cwhit +2.79   corr ours 0.890 / cwhit 0.891   D|level| -1.87*  Dcorr -0.001 
+    diamondquick       pit  K9        N=  36   bias ours +0.51 / cwhit +1.36   corr ours 0.877 / cwhit 0.899   D|level| -0.85*  Dcorr -0.022 
+    diamondquick       hit  HR600     N=  35   bias ours +1.67 / cwhit +3.15   corr ours 0.763 / cwhit 0.773   D|level| -1.48*  Dcorr -0.010 
+    diamondheart       pit  K9        N=  67   bias ours -0.10 / cwhit +0.71   corr ours 0.938 / cwhit 0.956   D|level| -0.61*  Dcorr -0.019*
+    diamondheart       pit  HR9       N=  67   bias ours +0.03 / cwhit +0.10   corr ours 0.861 / cwhit 0.863   D|level| -0.06*  Dcorr -0.002 
+    diamondheart       hit  HR600     N= 116   bias ours -0.15 / cwhit +1.69   corr ours 0.885 / cwhit 0.909   D|level| -1.55*  Dcorr -0.024*
+    latebronze         pit  K9        N=  34   bias ours +0.31 / cwhit +0.57   corr ours 0.935 / cwhit 0.924   D|level| -0.27*  Dcorr +0.010 
+    diamondcapdaily    pit  K9        N=  26   bias ours -0.59 / cwhit +1.28   corr ours 0.940 / cwhit 0.964   D|level| -0.69*  Dcorr -0.024*
+    goldcapdaily       pit  K9        N= 114   bias ours -0.40 / cwhit +1.02   corr ours 0.953 / cwhit 0.963   D|level| -0.62*  Dcorr -0.010*
+    bronzecapweekly    pit  K9        N=  42   bias ours -0.03 / cwhit +1.23   corr ours 0.967 / cwhit 0.973   D|level| -1.21*  Dcorr -0.006 
+    goldslotsdaily     pit  K9        N= 109   bias ours -0.02 / cwhit +1.04   corr ours 0.944 / cwhit 0.960   D|level| -1.02*  Dcorr -0.016*
+    goldslotsdaily     hit  HR600     N= 159   bias ours +0.90 / cwhit +2.97   corr ours 0.879 / cwhit 0.894   D|level| -2.06*  Dcorr -0.016*
+    liveopendaily      pit  K9        N=  42   bias ours -0.20 / cwhit +0.74   corr ours 0.821 / cwhit 0.850   D|level| -0.54*  Dcorr -0.029*
+
+  WE LOSE on level, CI-clear:  (88)
+    ironquick          pit  BB9       N= 142   bias ours +0.66 / cwhit -0.00   corr ours 0.920 / cwhit 0.932   D|level| +0.66*  Dcorr -0.012 
+    ironquick          pit  HR9       N= 142   bias ours +0.22 / cwhit +0.08   corr ours 0.733 / cwhit 0.736   D|level| +0.13*  Dcorr -0.003 
+    ironquick          pit  BABIP     N= 142   bias ours +0.010 / cwhit -0.001   corr ours 0.475 / cwhit 0.499   D|level| +0.009*  Dcorr -0.025 
+    ironquick          pit  wOBAA     N= 142   bias ours +0.015 / cwhit -0.003   corr ours 0.535 / cwhit 0.544   D|level| +0.012*  Dcorr -0.009 
+    ironquick          hit  BB%       N= 193   bias ours +1.18 / cwhit +0.24   corr ours 0.904 / cwhit 0.928   D|level| +0.95*  Dcorr -0.024*
+    ironquick          hit  SO%(PA)   N= 193   bias ours +2.92 / cwhit -0.51   corr ours 0.966 / cwhit 0.966   D|level| +2.41*  Dcorr -0.000 
+    ironquick          hit  BABIP     N= 193   bias ours +0.018 / cwhit +0.005   corr ours 0.822 / cwhit 0.827   D|level| +0.013*  Dcorr -0.005 
+    bronzequick        pit  BB9       N= 156   bias ours +0.74 / cwhit -0.01   corr ours 0.923 / cwhit 0.927   D|level| +0.73*  Dcorr -0.003 
+    bronzequick        pit  HR9       N= 156   bias ours +0.22 / cwhit +0.08   corr ours 0.739 / cwhit 0.724   D|level| +0.13*  Dcorr +0.015 
+    bronzequick        pit  BABIP     N= 156   bias ours +0.009 / cwhit -0.001   corr ours 0.513 / cwhit 0.543   D|level| +0.008*  Dcorr -0.030 
+    bronzequick        pit  wOBAA     N= 156   bias ours +0.012 / cwhit -0.003   corr ours 0.560 / cwhit 0.610   D|level| +0.009*  Dcorr -0.050 
+    bronzequick        hit  BB%       N= 176   bias ours +0.88 / cwhit +0.20   corr ours 0.931 / cwhit 0.947   D|level| +0.68*  Dcorr -0.016*
+    bronzequick        hit  SO%(PA)   N= 176   bias ours +3.09 / cwhit -0.48   corr ours 0.960 / cwhit 0.966   D|level| +2.61*  Dcorr -0.006*
+    bronzequick        hit  BABIP     N= 176   bias ours +0.020 / cwhit +0.004   corr ours 0.783 / cwhit 0.792   D|level| +0.016*  Dcorr -0.009 
+    silverquick        pit  BB9       N= 121   bias ours +0.86 / cwhit +0.00   corr ours 0.930 / cwhit 0.932   D|level| +0.86*  Dcorr -0.002 
+    silverquick        pit  HR9       N= 121   bias ours +0.18 / cwhit +0.07   corr ours 0.791 / cwhit 0.781   D|level| +0.11*  Dcorr +0.010 
+    silverquick        pit  BABIP     N= 121   bias ours +0.007 / cwhit +0.001   corr ours 0.554 / cwhit 0.537   D|level| +0.007*  Dcorr +0.017 
+    silverquick        pit  wOBAA     N= 121   bias ours +0.009 / cwhit -0.003   corr ours 0.658 / cwhit 0.699   D|level| +0.006*  Dcorr -0.041*
+    silverquick        hit  BB%       N= 150   bias ours +1.46 / cwhit +0.12   corr ours 0.918 / cwhit 0.928   D|level| +1.34*  Dcorr -0.010*
+    silverquick        hit  SO%(PA)   N= 150   bias ours +4.17 / cwhit -0.09   corr ours 0.965 / cwhit 0.966   D|level| +4.08*  Dcorr -0.001 
+    silverquick        hit  BABIP     N= 150   bias ours +0.020 / cwhit +0.006   corr ours 0.710 / cwhit 0.717   D|level| +0.015*  Dcorr -0.007 
+    silverquick        hit  wOBA      N= 150   bias ours -0.006 / cwhit +0.001   corr ours 0.740 / cwhit 0.721   D|level| +0.005*  Dcorr +0.020 
+    goldquick          pit  BB9       N=  91   bias ours +0.59 / cwhit -0.01   corr ours 0.932 / cwhit 0.935   D|level| +0.57*  Dcorr -0.004 
+    goldquick          pit  HR9       N=  91   bias ours +0.17 / cwhit +0.09   corr ours 0.832 / cwhit 0.816   D|level| +0.07*  Dcorr +0.016 
+    goldquick          pit  wOBAA     N=  91   bias ours +0.011 / cwhit -0.005   corr ours 0.578 / cwhit 0.582   D|level| +0.006*  Dcorr -0.004 
+    goldquick          hit  BB%       N= 130   bias ours +1.47 / cwhit +0.08   corr ours 0.924 / cwhit 0.930   D|level| +1.39*  Dcorr -0.006 
+    goldquick          hit  SO%(PA)   N= 130   bias ours +1.44 / cwhit -0.22   corr ours 0.966 / cwhit 0.961   D|level| +1.22*  Dcorr +0.005 
+    goldquick          hit  BABIP     N= 130   bias ours +0.014 / cwhit +0.003   corr ours 0.798 / cwhit 0.814   D|level| +0.011*  Dcorr -0.015 
+    diamondquick       pit  BB9       N=  36   bias ours +0.93 / cwhit +0.29   corr ours 0.863 / cwhit 0.882   D|level| +0.64*  Dcorr -0.020 
+    diamondquick       pit  HR9       N=  36   bias ours +0.16 / cwhit +0.11   corr ours 0.712 / cwhit 0.714   D|level| +0.05*  Dcorr -0.002 
+    diamondquick       pit  BABIP     N=  36   bias ours +0.009 / cwhit -0.000   corr ours 0.407 / cwhit 0.441   D|level| +0.009*  Dcorr -0.034 
+    diamondquick       pit  wOBAA     N=  36   bias ours +0.015 / cwhit -0.002   corr ours 0.283 / cwhit 0.289   D|level| +0.013*  Dcorr -0.005 
+    diamondquick       hit  BB%       N=  35   bias ours +0.94 / cwhit +0.18   corr ours 0.919 / cwhit 0.921   D|level| +0.76*  Dcorr -0.002 
+    diamondquick       hit  BABIP     N=  35   bias ours +0.017 / cwhit +0.005   corr ours 0.610 / cwhit 0.623   D|level| +0.012*  Dcorr -0.013 
+    bronzeheart        pit  BB9       N=  48   bias ours +0.52 / cwhit -0.08   corr ours 0.838 / cwhit 0.808   D|level| +0.44*  Dcorr +0.030 
+    bronzeheart        pit  HR9       N=  48   bias ours +0.19 / cwhit +0.01   corr ours 0.818 / cwhit 0.789   D|level| +0.18*  Dcorr +0.029 
+    bronzeheart        hit  BB%       N=  72   bias ours +1.41 / cwhit +0.04   corr ours 0.911 / cwhit 0.923   D|level| +1.37*  Dcorr -0.012 
+    bronzeheart        hit  BABIP     N=  72   bias ours +0.007 / cwhit +0.005   corr ours 0.746 / cwhit 0.739   D|level| +0.002*  Dcorr +0.008 
+    earlygold          pit  K9        N=  99   bias ours -0.74 / cwhit +0.26   corr ours 0.880 / cwhit 0.900   D|level| +0.48*  Dcorr -0.020*
+    earlygold          pit  BB9       N=  99   bias ours +0.21 / cwhit -0.07   corr ours 0.834 / cwhit 0.844   D|level| +0.14*  Dcorr -0.010 
+    earlygold          pit  HR9       N=  99   bias ours +0.10 / cwhit +0.01   corr ours 0.690 / cwhit 0.732   D|level| +0.08*  Dcorr -0.042 
+    earlygold          pit  BABIP     N=  99   bias ours -0.012 / cwhit -0.003   corr ours 0.605 / cwhit 0.645   D|level| +0.009*  Dcorr -0.040 
+    earlygold          hit  BB%       N= 162   bias ours +0.57 / cwhit -0.01   corr ours 0.899 / cwhit 0.906   D|level| +0.56*  Dcorr -0.006 
+    earlygold          hit  BABIP     N= 162   bias ours +0.009 / cwhit +0.001   corr ours 0.775 / cwhit 0.765   D|level| +0.008*  Dcorr +0.010 
+    diamondheart       pit  BB9       N=  67   bias ours +0.54 / cwhit +0.02   corr ours 0.957 / cwhit 0.963   D|level| +0.52*  Dcorr -0.006 
+    diamondheart       hit  BB%       N= 116   bias ours +1.15 / cwhit -0.12   corr ours 0.916 / cwhit 0.911   D|level| +1.02*  Dcorr +0.006 
+    diamondheart       hit  SO%(PA)   N= 116   bias ours +1.61 / cwhit -0.11   corr ours 0.855 / cwhit 0.887   D|level| +1.50*  Dcorr -0.032*
+    diamondheart       hit  BABIP     N= 116   bias ours +0.009 / cwhit +0.000   corr ours 0.803 / cwhit 0.795   D|level| +0.009*  Dcorr +0.008 
+    diamondheart       hit  wOBA      N= 116   bias ours -0.011 / cwhit -0.005   corr ours 0.772 / cwhit 0.746   D|level| +0.007*  Dcorr +0.026 
+    latebronze         pit  BB9       N=  34   bias ours +0.67 / cwhit -0.02   corr ours 0.902 / cwhit 0.885   D|level| +0.65*  Dcorr +0.017 
+    latebronze         pit  HR9       N=  34   bias ours +0.23 / cwhit +0.01   corr ours 0.565 / cwhit 0.627   D|level| +0.21*  Dcorr -0.062 
+    latebronze         hit  BB%       N=  52   bias ours +0.81 / cwhit +0.00   corr ours 0.930 / cwhit 0.948   D|level| +0.80*  Dcorr -0.019*
+    latebronze         hit  SO%(PA)   N=  52   bias ours +2.71 / cwhit -0.08   corr ours 0.974 / cwhit 0.977   D|level| +2.63*  Dcorr -0.003 
+    latebronze         hit  BABIP     N=  52   bias ours +0.014 / cwhit +0.003   corr ours 0.661 / cwhit 0.714   D|level| +0.010*  Dcorr -0.053 
+    diamondcapdaily    pit  BB9       N=  26   bias ours +0.92 / cwhit -0.03   corr ours 0.921 / cwhit 0.939   D|level| +0.90*  Dcorr -0.018 
+    diamondcapdaily    pit  HR9       N=  26   bias ours +0.44 / cwhit +0.15   corr ours 0.671 / cwhit 0.676   D|level| +0.28*  Dcorr -0.005 
+    diamondcapdaily    pit  BABIP     N=  26   bias ours +0.018 / cwhit -0.001   corr ours 0.596 / cwhit 0.630   D|level| +0.017*  Dcorr -0.035 
+    diamondcapdaily    pit  wOBAA     N=  26   bias ours +0.028 / cwhit -0.004   corr ours 0.655 / cwhit 0.688   D|level| +0.024*  Dcorr -0.034 
+    diamondcapdaily    hit  BB%       N=  76   bias ours -1.08 / cwhit +0.23   corr ours 0.921 / cwhit 0.935   D|level| +0.85*  Dcorr -0.014*
+    diamondcapdaily    hit  SO%(PA)   N=  76   bias ours +2.41 / cwhit -0.00   corr ours 0.894 / cwhit 0.898   D|level| +2.41*  Dcorr -0.003 
+    diamondcapdaily    hit  BABIP     N=  76   bias ours +0.011 / cwhit +0.002   corr ours 0.633 / cwhit 0.644   D|level| +0.008*  Dcorr -0.011 
+    diamondcapdaily    hit  wOBA      N=  76   bias ours -0.036 / cwhit -0.001   corr ours 0.808 / cwhit 0.820   D|level| +0.035*  Dcorr -0.012 
+    goldcapdaily       pit  BB9       N= 114   bias ours +0.72 / cwhit -0.14   corr ours 0.931 / cwhit 0.943   D|level| +0.58*  Dcorr -0.012*
+    goldcapdaily       pit  HR9       N= 114   bias ours +0.27 / cwhit +0.04   corr ours 0.830 / cwhit 0.833   D|level| +0.23*  Dcorr -0.002 
+    goldcapdaily       pit  BABIP     N= 114   bias ours +0.017 / cwhit -0.000   corr ours 0.599 / cwhit 0.595   D|level| +0.016*  Dcorr +0.004 
+    goldcapdaily       pit  wOBAA     N= 114   bias ours +0.024 / cwhit -0.007   corr ours 0.866 / cwhit 0.871   D|level| +0.017*  Dcorr -0.005 
+    goldcapdaily       hit  BB%       N= 169   bias ours -0.71 / cwhit -0.03   corr ours 0.918 / cwhit 0.941   D|level| +0.68*  Dcorr -0.023*
+    goldcapdaily       hit  SO%(PA)   N= 169   bias ours +3.07 / cwhit -0.50   corr ours 0.956 / cwhit 0.963   D|level| +2.57*  Dcorr -0.007 
+    goldcapdaily       hit  BABIP     N= 169   bias ours +0.009 / cwhit +0.005   corr ours 0.744 / cwhit 0.764   D|level| +0.004*  Dcorr -0.020 
+    goldcapdaily       hit  wOBA      N= 169   bias ours -0.034 / cwhit +0.005   corr ours 0.880 / cwhit 0.903   D|level| +0.029*  Dcorr -0.023*
+    bronzecapweekly    pit  BB9       N=  42   bias ours +0.82 / cwhit -0.06   corr ours 0.896 / cwhit 0.906   D|level| +0.76*  Dcorr -0.010 
+    bronzecapweekly    pit  HR9       N=  42   bias ours +0.46 / cwhit +0.01   corr ours 0.788 / cwhit 0.774   D|level| +0.45*  Dcorr +0.014 
+    bronzecapweekly    pit  wOBAA     N=  42   bias ours +0.032 / cwhit -0.011   corr ours 0.772 / cwhit 0.790   D|level| +0.021*  Dcorr -0.018 
+    bronzecapweekly    hit  SO%(PA)   N=  48   bias ours +3.83 / cwhit -0.89   corr ours 0.949 / cwhit 0.965   D|level| +2.93*  Dcorr -0.016 
+    bronzecapweekly    hit  wOBA      N=  48   bias ours -0.024 / cwhit +0.005   corr ours 0.421 / cwhit 0.478   D|level| +0.019*  Dcorr -0.057 
+    goldslotsdaily     pit  BB9       N= 109   bias ours +0.57 / cwhit -0.03   corr ours 0.920 / cwhit 0.940   D|level| +0.54*  Dcorr -0.020*
+    goldslotsdaily     pit  HR9       N= 109   bias ours +0.18 / cwhit +0.08   corr ours 0.795 / cwhit 0.786   D|level| +0.10*  Dcorr +0.009 
+    goldslotsdaily     pit  BABIP     N= 109   bias ours +0.012 / cwhit -0.002   corr ours 0.585 / cwhit 0.591   D|level| +0.011*  Dcorr -0.006 
+    goldslotsdaily     pit  wOBAA     N= 109   bias ours +0.017 / cwhit -0.005   corr ours 0.569 / cwhit 0.591   D|level| +0.012*  Dcorr -0.022 
+    goldslotsdaily     hit  BB%       N= 159   bias ours +0.24 / cwhit +0.08   corr ours 0.919 / cwhit 0.930   D|level| +0.16*  Dcorr -0.011*
+    goldslotsdaily     hit  SO%(PA)   N= 159   bias ours +1.97 / cwhit -0.50   corr ours 0.965 / cwhit 0.968   D|level| +1.47*  Dcorr -0.003 
+    goldslotsdaily     hit  BABIP     N= 159   bias ours +0.016 / cwhit +0.004   corr ours 0.758 / cwhit 0.786   D|level| +0.012*  Dcorr -0.028*
+    liveopendaily      pit  BB9       N=  42   bias ours +0.35 / cwhit +0.06   corr ours 0.871 / cwhit 0.871   D|level| +0.29*  Dcorr -0.000 
+    liveopendaily      hit  BB%       N=  51   bias ours +2.81 / cwhit +0.21   corr ours 0.930 / cwhit 0.932   D|level| +2.60*  Dcorr -0.002 
+    liveopendaily      hit  SO%(PA)   N=  51   bias ours -0.96 / cwhit -0.08   corr ours 0.977 / cwhit 0.978   D|level| +0.88*  Dcorr -0.002 
+    liveopendaily      hit  HR600     N=  51   bias ours +3.09 / cwhit +0.78   corr ours 0.876 / cwhit 0.883   D|level| +2.31*  Dcorr -0.007 
+    liveopendaily      hit  BABIP     N=  51   bias ours +0.019 / cwhit +0.000   corr ours 0.705 / cwhit 0.743   D|level| +0.019*  Dcorr -0.038 
+    liveopendaily      hit  wOBA      N=  51   bias ours +0.021 / cwhit -0.005   corr ours 0.670 / cwhit 0.775   D|level| +0.015*  Dcorr -0.105*
+
+  TIE on level: 33 cells, not listed individually.
+
+  ── WHERE WE CANNOT TELL ──
+
+  THIN cells (N<=20) — measured, printed above, NO verdict, in NO count:  (0)
+    (none)
+
+  DEAD cells (N<5 dueled — no statistics at all):  (0)
+    (none)
+
+  UNREL spread cells (noise-share CI upper >= 100% ⇒ dcv is not a measurement; LEVEL and SHAPE verdicts stand,
+  because a duel scores both models on the SAME observed series and sampling noise cancels BETWEEN them):  (11)
+    diamondquick       pit  BABIP     N=  36  noise share point 112% CI-upper 220%
+    diamondquick       pit  wOBAA     N=  36  noise share point 122% CI-upper 219%
+    diamondquick       hit  BABIP     N=  35  noise share point 61% CI-upper 104%
+    diamondquick       hit  wOBA      N=  35  noise share point 56% CI-upper 166%
+    bronzeheart        pit  BABIP     N=  48  noise share point 71% CI-upper 112%
+    bronzeheart        pit  wOBAA     N=  48  noise share point 60% CI-upper 100%
+    latebronze         pit  BABIP     N=  34  noise share point 44% CI-upper 106%
+    diamondcapdaily    pit  BABIP     N=  26  noise share point 130% CI-upper 235%
+    diamondcapdaily    pit  wOBAA     N=  26  noise share point 102% CI-upper 206%
+    liveopendaily      pit  BABIP     N=  42  noise share point 88% CI-upper 130%
+    liveopendaily      hit  wOBA      N=  51  noise share point 63% CI-upper 118%
+
+
+── WHAT THIS RUN DOES NOT SAY ──
+  · It does not measure a TOURNAMENT-STRENGTH or exposure effect: the duel is per-card rate agreement, not roster value.
+  · It does not adjudicate WHY a format behaves differently — env, rules, budget and pool composition are confounded here.
+  · It cannot bound cwhit's semi-in-sample advantage: this corpus carries no training window (see the caveat in A).
+  · A CI-clear cell is not on its own a finding. 140 cells were tested; read the SHAPE of the counts, not one cell.
+
+
+
+################################################################################
+### THE READING
+################################################################################
+
+(a) COVERAGE — all 14, and none of them thin.
+
+    Every one of the 14 registry formats has BOTH a usable observed table and full-pool projections,
+    for BOTH roles. 28 format×role cells, all status OK — the smallest is diamond-cap-daily pitchers
+    at N=26 and the largest iron-quick hitters at N=193. ZERO THIN cells (N<=20), ZERO DEAD cells
+    (N<5). Every observed card in every format carried a cwhit projection, all 8367 joins via
+    CID+VLvl with zero title fallbacks. So no verdict in this run is suppressed for want of data,
+    and the THIN/DEAD machinery — declared before the numbers — never had to fire.
+
+    GRAIN: every observed statistic is at CARD grain — one row per (CID, VLvl), pooled by cwhit over
+    every instance of the format inside 2026-07-05..07-19. The capture contains no per-game or
+    per-instance row, so no ROW-grain statistic appears anywhere here. Our predicted line is the
+    same grain by construction. The well-sampled floor (BF>=600 / PA>=500) is in opponents faced,
+    symmetric across roles.
+
+    ONE METHOD CHANGE v2 COULD NOT INHERIT FROM v1, and it is the difference between a valid and an
+    invalid run: v1 judges the RAW event-model line, which carries NO era and NO park. That is fine
+    on an all-neutral Quick ladder — section 0b measures the raw-vs-deployed gap at exactly 0.000%
+    on every pitcher channel of every era-2010/park-1 format. It is NOT fine on the six formats that
+    carry a real environment, where the same gap reaches 75%. Judged on the raw line, early-gold
+    hitters read as an SO% of 20.7 against an observed 7.3 — a unit mismatch reported as a model
+    defect. v2 therefore judges the DEPLOYED line (the one scoreCard ships) throughout.
+
+(b) THE SCOREBOARD — 140 cells, LEVEL and SHAPE counted separately, CI-clear only.
+
+        axis     ours   tie   cwhit
+        LEVEL      19    33      88
+        SHAPE       1   109      30
+
+    SHAPE (who ORDERS the cards better — the scale-free axis, and the one that decides which card
+    you field): 109 of 140 cells are ties. We are CI-clear ahead in exactly ONE cell in the whole
+    corpus (diamond-heart pitcher BABIP, Dcorr +0.102). He is CI-clear ahead in 30. So the honest
+    shape statement is: MOSTLY INDISTINGUISHABLE, AND WHERE IT IS DISTINGUISHABLE IT IS HIS.
+
+    LEVEL: he wins 88 of 140. Ours are concentrated and legible — pitcher K9 (11 wins / 2 ties /
+    1 loss across the 14 formats) and hitter HR600 (6/7/1). His are equally legible: pitcher BB9
+    (0/0/14 — he wins every format), hitter BB% (0/1/13), hitter BABIP (0/1/13), pitcher HR9
+    (1/1/12). A level loss can restate a KNOWN, ACCEPTED out-of-frame gap, so these are not
+    automatically defects — but BB and BABIP losing 27 of 28 cells is a pattern, not a scatter.
+
+(c) QUICK vs NON-QUICK — the nine new formats.
+
+        LEVEL   quick 9/7/34   (his share 68%)      non-quick 10/26/54   (his share 60%)
+        SHAPE   quick 0/43/7   (his share 14%)      non-quick  1/66/23   (his share 26%)
+
+    SAY IT PLAINLY: on SHAPE, PARITY DOES NOT HOLD OUTSIDE THE QUICK LADDER. His CI-clear share
+    nearly doubles, 14% -> 26% (1.83×), and ours stays at ~0. The mechanical parity rule (declared
+    before the numbers) actually fails for BOTH groups on this corpus — he takes more CI-clear cells
+    than we do in the Quicks too — so the "quicks are parity" prior is itself the weaker reading of
+    v1, and the new information is the RATE, which gets worse, not the sign, which never changed.
+
+    ON LEVEL THE DIRECTION IS THE OPPOSITE, and this is the run's most encouraging number: outside
+    the Quicks his share FALLS (68% -> 60%) and ties roughly DOUBLE (14% -> 29%). The environment
+    layer — era, park, per-format pool, per-format ramps — is doing real work. We do not lose
+    because a format has an era; six of the nine non-quick formats carry one, and those are the
+    cells where ties are most common. What we lose to is channel-shaped (BB, BABIP, pitcher HR9),
+    and that is invariant across the corpus.
+
+    THE CONTRAST IS CONFOUNDED, deliberately reported as such: "non-quick" bundles non-neutral env,
+    extra eligibility rules, budgets (cap/slots) and different pool composition. The one free cut —
+    the registry's own neutralEnv flag — puts the three neutral non-quick formats at 0/21/9 on shape
+    and the six env-bearing ones at 1/45/14, i.e. his shape edge is present in BOTH, so it is not
+    an environment artifact. Localising WHY needs a separate instrument.
+
+(d) THE HEADLINE.
+
+    THERE IS NOT ONE FORMAT, ON EITHER AXIS, WHERE WE TAKE MORE CI-CLEAR CELLS THAN HE DOES — and
+    outside the Quick ladder the shape gap is roughly twice as wide. We do win cells (19 on level,
+    1 on shape); we are never ahead on balance anywhere. Read precisely:
+
+    · WHERE WE WIN: pitcher K9 LEVEL (11/14 formats) and hitter HR600 LEVEL (6/14, 7 more tied).
+      One single shape cell, out of 140.
+    · WHERE HE WINS: LEVEL on walks and balls-in-play, universally — pitcher BB9 in 14/14 formats,
+      hitter BB% 13/14, hitter BABIP 13/14, pitcher HR9 12/14. SHAPE on 30 cells, led by hitter BB%
+      (8/14) and pitcher K9 (8/14) — note K9 is the channel where our LEVEL is best and our ORDERING
+      is worst, which is a real and specific finding, not an average.
+    · WHERE WE CANNOT TELL: 109 of 140 shape cells and 33 of 140 level cells are ties — the single
+      largest category by far, and it is honest information, not a hedge. Additionally: 11 cells
+      carry an UNREL deconvolved spread (sampling noise may exceed total observed variance, so the
+      absolute "are we at 1.0×" read is unavailable there; the duels stand, because noise cancels
+      between two models scored on the same series). The composite level (wOBA/wOBAA) carries the
+      anchor scalar sFinal, 0.92-1.03, which is a unit convention rather than a prediction — it
+      moves composite LEVEL and cannot move composite SHAPE.
+    · AND ONE THING NOTHING HERE CAN BOUND: the 2026-07-21 captures carry no cwhit MODEL-TRAINING
+      window, so the semi-in-sample confound cannot be quantified on this corpus and is not faked.
+      On the legacy corpus he was fit on 60-100% of the judging window while we were honest OOS. If
+      that still holds, every one of his 30 shape wins is an UPPER BOUND on his true edge, and our
+      one is understated. That is a direction, not a correction.
+
+    FOR THE EVENT: the two axes point at different work. LEVEL is channel-shaped and the environment
+    layer already helps — BB, BABIP and pitcher HR9 are where the level deficit lives. SHAPE is not
+    a level problem and cannot be fixed by any rescaling: 30 CI-clear ordering losses, concentrated
+    in hitter BB% and pitcher K9, are a discrimination gap in those channels. Re-run this tool after
+    the event; the scoreboard's three numbers per axis are the ship/no-ship read.
+
+ONE FLAG, RECORDED NOT ACTED ON: section 0b shows hitter BABIP is the one channel where our raw and
+deployed lines DISAGREE on a neutral env (0.1-3.6%) while every other channel and the whole pitcher
+side agree exactly. The BUILD-2 hitter tail reaches the two lines by two different routes (corrected
+oneB/GAP read directly vs the e.hMul carrier through hittingComponents); the pitcher path has one
+route. Small, not the environment, and a separate job — flagged here so it is not rediscovered as a
+mystery later, and deliberately not fitted around.
+
+(end of artifact — mission scorecard v2, PRE-EVENT baseline: no format on either axis where we take
+more CI-clear cells than cwhit, and the non-quick shape gap is ~2x the Quick one)

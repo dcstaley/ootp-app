@@ -33,7 +33,7 @@ import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/cur
 import { applyPitSpread } from "../../model/pool-transform.ts";
 import { applyHitTail, type HitTail } from "../../scoring-core/hit-tail.ts";
 import { parseCwhitPit, parseCwhitHit } from "./parse.ts";
-import { formatByLegacySlug, captureObsPath, captureProjPath, topNView, CAPTURE_DIR_2026_07_21 } from "./corpus.ts";
+import { formatByKey, formatByLegacySlug, captureObsPath, captureProjPath, topNView, CAPTURE_DIR_2026_07_21 } from "./corpus.ts";
 import { joinCwhit, type JoinCard, type JoinObs } from "./join.ts";
 import { hitWobaFromRates, pitWobaFromChannels, type WobaWeights as WW } from "./audit.ts";
 import {
@@ -487,16 +487,27 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   // fixtures are ALREADY a top-100 capture — re-cutting them would be a second, silent selection.
   const topN = src.kind === "capture" ? src.topN : undefined;
 
-  // Path resolution per source. A capture resolves the tier through the corpus REGISTRY (the tier
-  // string is the legacy slug), so a format the registry does not know is reported rather than
-  // silently reading nothing — an existsSync miss looks identical to "this tier has no data".
+  // Path resolution per source. A capture resolves the tier through the corpus REGISTRY, so a format
+  // the registry does not know is reported rather than silently reading nothing — an existsSync miss
+  // looks identical to "this tier has no data".
+  //
+  // THE TIER STRING IS THE LEGACY SLUG *OR* THE REGISTRY KEY. It used to be the legacy slug ONLY,
+  // which made FIVE of the fourteen captured formats unreachable through this builder: `legacySlug`
+  // is optional by design (it records the slug a format carried in the OLD top-100 fixtures, and
+  // diamond-heart / late-bronze / bronze-cap-weekly / gold-slots / live-open-daily never had one).
+  // A caller naming those formats got `null` and a "not in the corpus registry" notice for a format
+  // that IS in the registry and DOES have a capture on disk. Falling back to `formatByKey` costs
+  // nothing for existing callers (a key lookup only runs when the slug lookup misses) and cannot
+  // collide: the only two strings that are both a key and a legacy slug — `goldcapdaily` and
+  // `diamondcapdaily` — belong to the same format under either lookup.
+  const registryFor = (tier: string) => formatByLegacySlug(tier) ?? formatByKey(tier);
   const obsPathOf = (tier: string, role: "pit" | "hit"): string | null => {
     if (src.kind === "legacy") return `${OBS_DIR}/cwhit-${tier}-${role}.tsv`;
-    const f = formatByLegacySlug(tier); return f ? captureObsPath(src.dir, f, role) : null;
+    const f = registryFor(tier); return f ? captureObsPath(src.dir, f, role) : null;
   };
   const projPathOf = (tier: string, role: "pit" | "hit"): string | null => {
     if (src.kind === "legacy") return `${PROJ_DIR}/cwhit-${tier}-${role}-proj.tsv`;
-    const f = formatByLegacySlug(tier); return f ? captureProjPath(src.dir, f, role) : null;
+    const f = registryFor(tier); return f ? captureProjPath(src.dir, f, role) : null;
   };
 
   const obsDir = src.kind === "legacy" ? OBS_DIR : src.dir;
@@ -592,7 +603,9 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
       // projected side (optional): (title|vlvl) → his channels, in OUR units.
       const pf = projFile(tier, role);
       let projBy: Map<string, Chan> | null = null;
-      if (!pf) { notices.push(`no projected fixture ${PROJ_DIR}/cwhit-${tier}-${role}-proj.tsv → ${tier} ${role} runs on the OBSERVED-ONLY axis (ours vs observed)`); }
+      // The path is asked for, not re-templated: this message used to hard-code the LEGACY template
+      // and so named a file that does not exist under a capture source.
+      if (!pf) { notices.push(`no projected fixture ${projPathOf(tier, role) ?? "(unresolvable path)"} → ${tier} ${role} runs on the OBSERVED-ONLY axis (ours vs observed)`); }
       else {
         projBy = new Map();
         const conv: string[] = [];
