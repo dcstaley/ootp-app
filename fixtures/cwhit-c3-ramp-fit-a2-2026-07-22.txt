@@ -1,0 +1,642 @@
+################################################################################
+# C3 — THE RE-DERIVED PITCHER K-SPREAD RAMP. VERDICT: PASS — every gate and the acceptance bar hold at p=0.30 AND across the 0.25/0.35 band
+# Pre-registration: docs/CWHIT_C3_RAMP_PREREG_2026-07-22.md + AMENDMENT 1 + AMENDMENT 2.
+# Tool: tools/fit-kspread-c3.ts. FIT AND REPORT ONLY — this tool wires nothing. If the verdict
+# is PASS the constants are shipped by a SEPARATE, dated commit that quotes this artifact.
+################################################################################
+
+### WHAT THIS RUN CONCLUDES (the detail is below; nothing here is tuned)
+
+  1. GATE (w)1 IDENTIFIABILITY PASSES — unchanged by amendment 2, because it is a property of
+     the COORDINATE and not of the objective. Ordering strictly descending at every p in the band;
+     coherent-four span retention 102.0% at the shipped p (0.25: 96.0%, 0.30: 102.0%, 0.35: 96.6%) against a 60% floor.
+  2. RULING (z) IS CONFIRMED BY MEASUREMENT, not assumed. Diagnostic D2: the amendment-1 objective's
+     estimand (the pivot slope) sits +0.18 above the free slope in every tier, same sign; the
+     amendment-2 objective's estimand (the weighted free slope) sits +0.03 from it. Giving the
+     objective a per-tier free level removes the systematic offset, leaving only weighting.
+  3. GATE (w)2 PASSES under the new selection rule: the equivalence set q ∈ [1.76, 3.04] (129 of 796 grid points, contiguous) is interior to [0.05, 8.00]; the minimax centre sits 1.00 need-SEs from the furthest member, on a set 1.99 SEs wide
+  4. GATE (w)3 PASSES in deliverable space: no single tier determines the delivered s(g).
+  5. ACCEPTANCE PASSES: 4 of the 4 coherent tiers inside their measured CI,
+     DIAMOND INSIDE ✓ — the standing G1 diamond failure is resolved.
+     Fitted form: A = 0.6668, q = 2.40 (CONVEX), monotone: YES ✓.
+  6. GOLD, FITTED OUT PER RULING (y), CARRIES A PUBLISHED RESIDUAL of +0.45 [0.24, 0.63]
+     (need 1.78 vs s(15.02) = 1.34), assigned to the COMPOSITION/COHORT axis. Gold at gap
+     15.02 needs 1.78, ABOVE silver's 1.47 at the HIGHER gap 17.53: its need is
+     NON-MONOTONE in the coordinate, so no monotone s(g) can carry it and the coherent four at
+     once. It is published, not absorbed, and not silently dropped.
+  7. THE BAND RE-CHECK (p = 0.25 / 0.35) REPRODUCES the verdict — see §5. Property-conditioning is
+     NOT reopened by this run.
+  8. THE HELD-OUT BUDGET LEGS ARE DIAGNOSTICS, NOT GATES (A2.4). All three read REAL DATA,
+     including gold-slots (454 joined / 109 judged), which no tool had ever evaluated. Their
+     elevation is the EXPECTED stratum-C composition signal and is read as such.
+
+### HEADER
+  tool        tools/fit-kspread-c3.ts
+  date        2026-07-22
+  model       'league-42-43'   (raw-poly event model, own-gap path, no anchor on the judged line)
+  catalog     'cdmx'   (3669 base cards, variant rows excluded from the catalog read)
+  commit      cee1a32 (HEAD at generation — "C3 prereg AMENDMENT 2: the free-slope estimand, equivalence in deliverable space, gold fitted out")
+  coordinate  gap = buildFrameShift(trainingMeans, productionFieldStats(pool)).pit.vR.stu — post-C1 + post-C2'
+  fit-N       FIELD_N = 50   (cohort size; scaled by PRESENCE_M = 20 on the replicated mixture)
+  fit-p       PRESENCE_P = 0.3   (presence prior; sensitivity legs at 0.25 / 0.35)
+  corpus      full-depth capture 2026-07-21 (buildCwhitSample DEFAULT_SOURCE) — ONE sample builder, no private joins
+  bars        primary BF ≥ 600; sensitivity BF ≥ 1000 (REPORT, not a gate — see acceptance B)
+  bootstrap   B = 2000, SEED = 20260716; needs = mmse() slope of obs~pred, resample cards within tier
+  grain       observed statistics at ROW grain = (card × variant level); pool constants at CARD grain
+  era_k       1.0000 on the neutral Quick env (so raw ≡ deployed per-channel there)
+
+### THE DECLARED FORM (declared before the numbers, per pre-registration §3)
+
+    s(g) = 1 + A·(g/20)^q      for g > 0;      s(g ≤ 0) = 1 EXACTLY
+
+  · G0 = 20 is a FIXED reference gap (mid observed range), not a parameter: it only fixes the
+    units of A, so A = s(20) − 1 reads directly off the constant.
+  · TWO fitted parameters: A (amplitude) and q (curvature). q > 1 CONVEX, q = 1 the LINEAR
+    LIMIT, q < 1 concave/saturating. Monotone increasing for A > 0, q > 0.
+  · s(0) = 1 is exact by construction — the league anchor, not a fitted quantity.
+  · WHY NOT THE OLD FAMILY: 1 + A(1 − e^(−g/G)) is concave for EVERY (A,G) and was falsified for
+    being unable to bend convexly. The power law is the minimal one-extra-parameter monotone
+    family that contains the linear limit as an INTERIOR point and can bend either way.
+  · OBJECTIVE (amendment A2.1, ruling (z)): per-card residuals, per-card noise weights
+    w_i = 1/per9NoiseVar(obs_i, BF_i), and A PER-TIER FREE LEVEL. Profiling the level out leaves
+    residual_i = (obs_i − ō_t) − s(g_t)·(K_i − p̄_t) at the noise-weighted within-tier means, so
+    K̄_t drops out of the objective: with a free level the pivot is unidentified and s is a PURE
+    SPREAD RESPONSE. NO tier aggregate enters it. NO per-tier freedom in s: one function of gap.
+    Production still applies s about K̄_pool — the level lives in the ANCHOR layer, not in s.
+  · FITTED SET (amendment A2.3, ruling (y)): THE COHERENT FOUR — iron, bronze, silver, diamond.
+    Gold is FITTED OUT because its need is NON-MONOTONE in the coordinate, and ships as a
+    published quantified residual with a CI, assigned to the composition/cohort axis.
+  · SELECTION (amendment A2.2, ruling (x)): DELIVERABLE-SPACE EQUIVALENCE. Two candidates are
+    equal iff max over fitted tiers |s₁(g_t) − s₂(g_t)|/se_t ≤ 1, se_t = the per-tier NEED's SE.
+    The equivalence set is published in full and the shipped point is its MINIMAX CENTRE in that
+    same SE-scaled sup-norm. The retired 5%-of-linear SSE band was calibrated on a TIER-AGGREGATE
+    SSE and spanned the whole grid against a per-card one. Cross-fit comparisons are made on s(g)
+    over the observed range, NEVER on raw {A, q}. Grid q ∈ [0.05, 8.00] step 0.01, A closed-form at each q.
+
+### 1. THE COORDINATE + GATE (w)1 IDENTIFIABILITY (prong 1)
+
+  INSTRUMENT CHECK — productionFieldStats(pool) vs the same call with p stated explicitly at
+  p = 0.3: max |Δgap| = 0.0e+0  ✓ bit-identical (the p knob is default-identity)
+
+  gap pit.stu          iron   bronze   silver     gold  diamond
+  p = 0.00            24.78    23.95    20.51    18.81    13.07
+  p = 0.25            22.13    19.18    18.08    15.52    10.89
+  p = 0.30            22.25    19.69    17.53    15.02    10.31
+  p = 0.35            21.37    19.61    16.52    14.49    10.06
+
+  coherent four = iron, bronze, silver, diamond — this is BOTH the span measure and, per ruling (y)
+  and amendment A2.3, THE FITTED SET. Gold is fitted OUT and published as a residual in §4.
+    p        ordering strictly descending    coherent-four span   retention vs p=0
+    0.00     YES ✓                           11.71                    —
+    0.25     YES ✓                           11.24               96.0%
+    0.30     YES ✓                           11.94               102.0%
+    0.35     YES ✓                           11.31               96.6%
+
+  REQUIREMENT: ordering at the fitted p matches p=0's, AND coherent-four span retention ≥ 60%.
+  GATE (w)1: PASS
+
+### 2. THE PRIMARY FIT — p = 0.30, BF ≥ 600
+
+── PRIMARY LEG  p = 0.3, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  "fit" = in the fitted set (the coherent four); "OUT" = gold, reported and never fitted (A2.3).
+  tier      set    N   gap(stu)   K̄_pool/600   K̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     fit  142     22.25       121.1       7.81    1.80   [1.70,1.90]   0.048    2.05
+  bronze   fit  156     19.69       120.1       7.75    1.62   [1.54,1.69]   0.042    1.82
+  silver   fit  121     17.53       123.2       7.94    1.47   [1.37,1.56]   0.049    1.83
+  gold     OUT   91     15.02       120.7       7.78    1.78   [1.63,1.91]   0.054    1.72
+  diamond  fit   36     10.31       120.4       7.77    1.04   [0.80,1.27]   0.098    1.21
+  pivot-s = the per-tier estimand of the RETIRED amendment-1 objective (regression through the
+  K̄_pool pivot). Kept in the table so ruling (z)'s effect is visible, never a candidate.
+
+  THE FIT  (fitted set: iron, bronze, silver, diamond — gold OUT)
+    wide-grid SSE optimum:   q* = 2.40   A* = 0.6668   SSE 1399.8
+    LINEAR LIMIT (q = 1):    A  = 0.6750   SSE 1454.8   ⇒ β = A/20 = 0.03375 per gap unit
+    SELECTED (minimax centre of the equivalence set):  A = 0.6668  [boot 95% CI 0.5812, 0.7332]
+                                                       q = 2.40  [boot 95% CI 1.22, 3.84]
+    curvature: CONVEX (q > 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(5)=1.024  s(10)=1.126  s(15)=1.334  s(20)=1.667  s(25)=2.139  s(30)=2.765
+
+  THE EQUIVALENCE SET, PUBLISHED IN FULL (amendment A2.2 — this IS the deliverable's precision)
+    Members are candidates the acceptance instrument CANNOT distinguish from the SSE optimum:
+    max over fitted tiers |s_cand(g_t) − s_opt(g_t)| / se_t ≤ 1.
+    set:  q ∈ [1.76, 3.04]   129 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: NO ✓
+    the set's deliverable envelope, and where the shipped centre sits inside it:
+      tier        se     set s-range          centre    (centre − range mid) / se
+      iron       0.048        1.814 – 1.903      1.862  +0.061
+      bronze     0.042        1.623 – 1.657      1.642  +0.067
+      silver     0.049        1.437 – 1.535      1.486  -0.004
+      diamond    0.098        1.087 – 1.210      1.136  -0.130
+    set width 1.99 need-SEs; the centre reaches 1.00 SEs to the furthest member.
+
+  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: PASS
+    the equivalence set q ∈ [1.76, 3.04] (129 of 796 grid points, contiguous) is interior to [0.05, 8.00]; the minimax centre sits 1.00 need-SEs from the furthest member, on a set 1.99 SEs wide
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE (A2.5)
+    Each refit drops one FITTED tier; its implied s(g_t) must lie inside the full fit's bootstrap
+    s-CI at every FITTED gap. Raw {A,q} are printed but NOT gated — two selections are two
+    selection outcomes, so comparing them compares the rule rather than the fits.
+    dropped        A        q      s(iron)  s(bronze) s(silver) s(gold)  s(diamond)  inside s-CI?
+    iron          0.6430   1.90       1.79      1.62      1.50      1.37      1.18  YES ✓
+    bronze        0.6845   2.28       1.87      1.66      1.51      1.36      1.15  YES ✓
+    silver        0.6481   2.78       1.87      1.62      1.45      1.29      1.10  YES ✓
+    diamond       0.6671   2.39       1.86      1.64      1.49      1.34      1.14  YES ✓
+    full fit s(g)                        1.86      1.64      1.49      1.34      1.14
+    full fit CI                1.71-1.99 1.56-1.71 1.37-1.58 1.21-1.47 1.05-1.30
+  GATE (w)3: PASS
+
+  ACCEPTANCE — implied s(g_t) vs the measured bootstrap CI, ON THE COHERENT FOUR ONLY
+  (≥3 of 4 inside, DIAMOND MANDATORY. Gold is not scored — it is published in §4.)
+    tier       gap    s(gap)   measured need   [boot 95% CI]    inside?
+    iron      22.25    1.862            1.80   [1.70,1.90]      YES ✓
+    bronze    19.69    1.642            1.62   [1.54,1.69]      YES ✓
+    silver    17.53    1.486            1.47   [1.37,1.56]      YES ✓
+    diamond   10.31    1.136            1.04   [0.80,1.27]      YES ✓
+    gold      15.02    1.335            1.78   [1.63,1.91]      NOT SCORED — fitted out (A2.3)
+    inside: 4 of 4;  DIAMOND INSIDE ✓
+    monotone over the observed range: YES ✓
+  ACCEPTANCE: PASS
+
+  DIAGNOSTIC D2 — RULING (z) MEASURED: HOW MUCH OF THE OLD AMPLITUDE WAS LEVEL, NOT SPREAD?
+    The amendment-1 objective was a residual about K̄_pool, so it priced BOTH the judged sample's
+    offset from the pool mean AND its spread. Its estimand is the pivot slope; the measured need
+    (a FREE slope) is what acceptance scores against. They differ whenever the sample sits off
+    K̄_pool — which it does, because cwhit's tables are the top by USAGE. Amendment 2's objective
+    has a per-tier free level, so ITS estimand is the weighted free slope.
+    tier      K̄_pool/9   wtd mean pred   offset(pred−K̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   free slope (= need)
+    iron        7.81            7.39             -0.42                      -0.77      2.05         1.87   1.80
+    bronze      7.75            7.50             -0.25                      -0.92      1.82         1.62   1.62
+    silver      7.94            7.68             -0.26                      -1.21      1.83         1.51   1.47
+    gold        7.78            7.43             -0.36                      -0.18      1.72         1.77   1.78
+    diamond     7.77            7.63             -0.13                      -0.49      1.21         1.11   1.04
+    pivot-s − need:          +0.25    +0.20    +0.36    -0.07    +0.17  mean +0.18  ⇐ SYSTEMATIC, same sign everywhere
+    wtd free-s − need:       +0.07    +0.00    +0.04    -0.02    +0.07  mean +0.03  ⇐ WEIGHTING ONLY, and inside every need's CI
+    That difference is what ruling (z) removed. The residual weighting difference is reported,
+    not hidden: the fit weights each card by 1/noise, the need does not.
+
+  DIAGNOSTIC D3 — THE RETIRED AMENDMENT-1 OBJECTIVE, SAME FAMILY, SAME SELECTION RULE
+    (pivot residual about K̄_pool, coherent four. NOT a candidate — it prices the effect of (z).)
+    optimum q* = 1.24  A* = 0.8998;  selected A = 0.8998 q = 1.24;  set q ∈ [0.91, 1.65]
+         selected              2.03    1.88    1.76    1.63    1.40  ⇒ 0/4 coherent inside, diamond OUT
+         optimum               2.03    1.88    1.76    1.63    1.40  ⇒ 0/4 coherent inside, diamond OUT
+      amendment 2              1.86    1.64    1.49    1.34    1.14  ⇒ 4/4 coherent inside, diamond IN
+      needs                    1.80    1.62    1.47    1.78    1.04
+    (DIAGNOSTIC — carries no verdict.)
+
+  DIAGNOSTIC D4 — THE FAMILY'S REACH, AND WHAT GOLD COSTS
+    A TIER-AGGREGATE capability probe: fit s(g) straight to the needs, precision-weighted. The
+    pre-registration forbids a tier aggregate in the OBJECTIVE; this is not the objective, it is
+    the cleanest possible statement of family reach, and it is what ruling (y) was decided on.
+         all five, optimum       A*  0.681 q*  1.00      1.76    1.67    1.60    1.51    1.35  ⇒ 2/4 coherent, diamond OUT
+         coherent four, optimum  A*  0.632 q*  2.39      1.82    1.61    1.46    1.32    1.13  ⇒ 4/4 coherent, diamond IN
+      needs                                         1.80    1.62    1.47    1.78    1.04
+    Including gold's off-curve need flattens the family and ejects diamond — one tier bought at
+    the cost of four. That is ruling (y)'s evidence, reproduced here on this coordinate.
+
+### 3. ACCEPTANCE B — THE 1000 BAR IS A SENSITIVITY REPORT, NOT A GATE
+
+  STRUCTURAL REASON, stated up front: a POOL-LEVEL ramp is one function s(g) of a FORMAT'S GAP.
+  The gap is a property of the eligible pool — a catalog property — and is computed identically
+  whatever usage floor the EVALUATION set is drawn at. So s(g_t) returns the SAME scalar at the
+  600 bar and the 1000 bar: it CANNOT move between bars, and demanding it reproduce a bar
+  differential would be demanding the impossible. Gold's bar differential stays a DIAGNOSTIC,
+  attached to the five-card provenance, and is never scored as a pass or a fail.
+
+  tier       s(gap)   need@600  [CI]              need@1000 [CI]             N600→N1000   Δneed
+  iron      1.862       1.80  [1.70,1.90]           1.81 [1.72,1.91]          142→112  +0.01
+  bronze    1.642       1.62  [1.54,1.69]           1.63 [1.56,1.72]          156→122  +0.01
+  silver    1.486       1.47  [1.37,1.56]           1.47 [1.36,1.57]           121→96  -0.00
+  gold      1.335       1.78  [1.63,1.91]           1.63 [1.50,1.75]            91→68  -0.15
+  diamond   1.136       1.04  [0.80,1.27]           0.85 [0.64,1.09]            36→19  -0.19
+
+  1000-bar membership (REPORT ONLY): 3 of the 4 coherent tiers inside, diamond outside.
+  This line is NOT a gate and no decision hangs on it.
+
+### 4. GOLD — FITTED OUT, AND SHIPPING AS A PUBLISHED QUANTIFIED RESIDUAL (ruling (y), A2.3)
+
+  WHY GOLD IS OUT — the structural fact, not a convenience. Gold sits at gap 15.02 and needs
+  1.78; silver sits at the HIGHER gap 17.53 and needs only 1.47. GOLD'S NEED IS
+  NON-MONOTONE IN THE COORDINATE. Monotonicity is a requirement (a non-monotone s(g) would reorder
+  tiers on the very axis it is fitted along), so NO monotone s(g) can carry gold and the coherent
+  four at once — a structural incompatibility, measured, not a tuning failure. D4 prices it:
+  including gold flattens the family and ejects diamond, buying one tier at the cost of four.
+
+  THE PUBLISHED RESIDUAL (this number ships WITH the constant and is not absorbed into it):
+    gold        N = 91 rows      gap 15.02
+    measured need               1.78   [boot 95% CI 1.63, 1.91]
+    shipped s(gap)              1.34
+    RESIDUAL  need − s(gap)   +0.449   [boot 95% CI 0.24, 0.63]
+    The CI differences the need's OWN bootstrap against the fit's, index-wise. That is legitimate
+    precisely BECAUSE gold is fitted out: the two resamples are independent, which they would not
+    be if gold were in the fit.
+
+  ATTRIBUTION: the COMPOSITION / COHORT axis. Gold's break is an identity bump on this coordinate
+  — the gap coordinate does not see whatever distinguishes gold's played population — and the
+  composition layer is task 2's territory and is not built. It is recorded as a standing, sized,
+  CI-bearing residual so that task 2 inherits a NUMBER rather than an anecdote.
+
+  UNDER-CORRECTION, NOT OVER-CORRECTION: the shipped s falls 0.45 SHORT of gold's need, so gold
+  keeps some of the K-spread compression it has today rather than gaining a new error.
+
+  THE FIVE NAMED LIGHT-USAGE SUB-p05 CARDS (they travel with the constant):
+  (ROW grain: a card and its v5 are two observed rows, so a name can appear twice — vlvl says which.)
+    name                      vlvl     BF   pred K9   obs K9   Δ(obs−pred)   var share (unwtd)   var share (NOISE-WTD)
+    Brad Radke                   5   1809      6.32     5.48         -0.84                3.0%   2.0%
+    Dan Quisenberry              0    882      5.14     2.55         -2.59                9.8%   6.4%
+    Jesse Barnes                 0    791      6.06     4.70         -1.36                4.2%   1.4%
+    Hilton Smith                 0    788      5.21     2.41         -2.80                9.3%   5.7%
+    Randy Jones                  0    705      5.37     2.30         -3.07                8.2%   4.7%
+    Brad Radke                   0    614      6.08     4.67         -1.41                4.0%   1.1%
+    TOTAL                                                                                38.5%   21.3%
+
+  6.6% of gold's rows carry 38.5% of its predicted-K variance UNWEIGHTED, but only
+  21.3% of the leverage a noise-weighted objective gives them.
+
+  THIS IS WHY THE FIVE CARDS ARE NOT THE EXPLANATION FOR GOLD, and amendment 1 was wrong to hope
+  they were: down-weighting them by their own evidential mass barely moves gold's need, so gold's
+  break survives the treatment that was supposed to dissolve it. That is the measurement behind
+  ruling (y) reversing A1.2 — the five cards are a real, small, published provenance note about
+  gold's composition, not a cause. Nothing is hidden either way: they are named, sized, and out.
+
+### 5. ACCEPTANCE D — THE GATES RE-CHECKED ACROSS THE PRESENCE BAND
+
+  Each leg is a FULL re-derivation at that p: the pool field, the reference field, the pool
+  transform, K̄ and therefore every predicted line move with p. p is threaded through the ONE
+  productionFieldStats() (default-identity at 0.3) — no field is built any other way.
+
+── SENSITIVITY LEG  p = 0.25, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  "fit" = in the fitted set (the coherent four); "OUT" = gold, reported and never fitted (A2.3).
+  tier      set    N   gap(stu)   K̄_pool/600   K̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     fit  142     22.13       121.1       7.81    1.80   [1.70,1.90]   0.048    2.05
+  bronze   fit  156     19.18       120.9       7.80    1.62   [1.54,1.69]   0.042    1.84
+  silver   fit  121     18.08       122.4       7.89    1.47   [1.37,1.56]   0.049    1.79
+  gold     OUT   91     15.52       120.4       7.77    1.78   [1.63,1.90]   0.054    1.74
+  diamond  fit   36     10.89       120.2       7.75    1.04   [0.79,1.27]   0.098    1.21
+  pivot-s = the per-tier estimand of the RETIRED amendment-1 objective (regression through the
+  K̄_pool pivot). Kept in the table so ruling (z)'s effect is visible, never a candidate.
+
+  THE FIT  (fitted set: iron, bronze, silver, diamond — gold OUT)
+    wide-grid SSE optimum:   q* = 2.57   A* = 0.6763   SSE 1398.3
+    LINEAR LIMIT (q = 1):    A  = 0.6778   SSE 1462.2   ⇒ β = A/20 = 0.03389 per gap unit
+    SELECTED (minimax centre of the equivalence set):  A = 0.6763  [boot 95% CI 0.5919, 0.7408]
+                                                       q = 2.57  [boot 95% CI 1.36, 3.92]
+    curvature: CONVEX (q > 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(5)=1.019  s(10)=1.114  s(15)=1.323  s(20)=1.676  s(25)=2.200  s(30)=2.917
+
+  THE EQUIVALENCE SET, PUBLISHED IN FULL (amendment A2.2 — this IS the deliverable's precision)
+    Members are candidates the acceptance instrument CANNOT distinguish from the SSE optimum:
+    max over fitted tiers |s_cand(g_t) − s_opt(g_t)| / se_t ≤ 1.
+    set:  q ∈ [1.94, 3.29]   136 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: NO ✓
+    the set's deliverable envelope, and where the shipped centre sits inside it:
+      tier        se     set s-range          centre    (centre − range mid) / se
+      iron       0.048        1.830 – 1.925      1.877  -0.003
+      bronze     0.042        1.578 – 1.629      1.608  +0.100
+      silver     0.049        1.476 – 1.560      1.522  +0.075
+      diamond    0.098        1.090 – 1.210      1.142  -0.080
+    set width 1.99 need-SEs; the centre reaches 1.00 SEs to the furthest member.
+
+  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: PASS
+    the equivalence set q ∈ [1.94, 3.29] (136 of 796 grid points, contiguous) is interior to [0.05, 8.00]; the minimax centre sits 1.00 need-SEs from the furthest member, on a set 1.99 SEs wide
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE (A2.5)
+    Each refit drops one FITTED tier; its implied s(g_t) must lie inside the full fit's bootstrap
+    s-CI at every FITTED gap. Raw {A,q} are printed but NOT gated — two selections are two
+    selection outcomes, so comparing them compares the rule rather than the fits.
+    dropped        A        q      s(iron)  s(bronze) s(silver) s(gold)  s(diamond)  inside s-CI?
+    iron          0.7092   3.26       1.99      1.62      1.51      1.31      1.10  YES ✓
+    bronze        0.6658   2.68       1.87      1.60      1.51      1.34      1.13  YES ✓
+    silver        0.6834   2.44       1.87      1.62      1.53      1.37      1.15  YES ✓
+    diamond       0.6767   2.55       1.88      1.61      1.52      1.35      1.14  YES ✓
+    full fit s(g)                        1.88      1.61      1.52      1.35      1.14
+    full fit CI                1.72-2.01 1.52-1.67 1.42-1.60 1.24-1.48 1.06-1.29
+  GATE (w)3: PASS
+
+  ACCEPTANCE — implied s(g_t) vs the measured bootstrap CI, ON THE COHERENT FOUR ONLY
+  (≥3 of 4 inside, DIAMOND MANDATORY. Gold is not scored — it is published in §4.)
+    tier       gap    s(gap)   measured need   [boot 95% CI]    inside?
+    iron      22.13    1.877            1.80   [1.70,1.90]      YES ✓
+    bronze    19.18    1.608            1.62   [1.54,1.69]      YES ✓
+    silver    18.08    1.522            1.47   [1.37,1.56]      YES ✓
+    diamond   10.89    1.142            1.04   [0.79,1.27]      YES ✓
+    gold      15.52    1.353            1.78   [1.63,1.90]      NOT SCORED — fitted out (A2.3)
+    inside: 4 of 4;  DIAMOND INSIDE ✓
+    monotone over the observed range: YES ✓
+  ACCEPTANCE: PASS
+
+  DIAGNOSTIC D2 — RULING (z) MEASURED: HOW MUCH OF THE OLD AMPLITUDE WAS LEVEL, NOT SPREAD?
+    The amendment-1 objective was a residual about K̄_pool, so it priced BOTH the judged sample's
+    offset from the pool mean AND its spread. Its estimand is the pivot slope; the measured need
+    (a FREE slope) is what acceptance scores against. They differ whenever the sample sits off
+    K̄_pool — which it does, because cwhit's tables are the top by USAGE. Amendment 2's objective
+    has a per-tier free level, so ITS estimand is the weighted free slope.
+    tier      K̄_pool/9   wtd mean pred   offset(pred−K̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   free slope (= need)
+    iron        7.81            7.38             -0.43                      -0.76      2.05         1.87   1.80
+    bronze      7.80            7.52             -0.28                      -0.93      1.84         1.62   1.62
+    silver      7.89            7.68             -0.21                      -1.21      1.79         1.51   1.47
+    gold        7.77            7.44             -0.32                      -0.19      1.74         1.76   1.78
+    diamond     7.75            7.61             -0.14                      -0.46      1.21         1.11   1.04
+    pivot-s − need:          +0.24    +0.23    +0.31    -0.04    +0.17  mean +0.18  ⇐ SYSTEMATIC, same sign everywhere
+    wtd free-s − need:       +0.07    +0.00    +0.04    -0.02    +0.07  mean +0.03  ⇐ WEIGHTING ONLY, and inside every need's CI
+    That difference is what ruling (z) removed. The residual weighting difference is reported,
+    not hidden: the fit weights each card by 1/noise, the need does not.
+
+  DIAGNOSTIC D3 — THE RETIRED AMENDMENT-1 OBJECTIVE, SAME FAMILY, SAME SELECTION RULE
+    (pivot residual about K̄_pool, coherent four. NOT a candidate — it prices the effect of (z).)
+    optimum q* = 1.53  A* = 0.9007;  selected A = 0.9007 q = 1.53;  set q ∈ [1.14, 2.04]
+         selected              2.05    1.85    1.77    1.61    1.36  ⇒ 0/4 coherent inside, diamond OUT
+         optimum               2.05    1.85    1.77    1.61    1.36  ⇒ 0/4 coherent inside, diamond OUT
+      amendment 2              1.88    1.61    1.52    1.35    1.14  ⇒ 4/4 coherent inside, diamond IN
+      needs                    1.80    1.62    1.47    1.78    1.04
+    (DIAGNOSTIC — carries no verdict.)
+
+  DIAGNOSTIC D4 — THE FAMILY'S REACH, AND WHAT GOLD COSTS
+    A TIER-AGGREGATE capability probe: fit s(g) straight to the needs, precision-weighted. The
+    pre-registration forbids a tier aggregate in the OBJECTIVE; this is not the objective, it is
+    the cleanest possible statement of family reach, and it is what ruling (y) was decided on.
+         all five, optimum       A*  0.685 q*  1.13      1.77    1.65    1.61    1.51    1.34  ⇒ 2/4 coherent, diamond OUT
+         coherent four, optimum  A*  0.640 q*  2.52      1.83    1.58    1.50    1.34    1.14  ⇒ 4/4 coherent, diamond IN
+      needs                                         1.80    1.62    1.47    1.78    1.04
+    Including gold's off-curve need flattens the family and ejects diamond — one tier bought at
+    the cost of four. That is ruling (y)'s evidence, reproduced here on this coordinate.
+
+── SENSITIVITY LEG  p = 0.35, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  "fit" = in the fitted set (the coherent four); "OUT" = gold, reported and never fitted (A2.3).
+  tier      set    N   gap(stu)   K̄_pool/600   K̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     fit  142     21.37       120.8       7.79    1.80   [1.70,1.90]   0.048    2.05
+  bronze   fit  156     19.61       119.9       7.74    1.62   [1.54,1.69]   0.042    1.82
+  silver   fit  121     16.52       123.5       7.97    1.47   [1.37,1.56]   0.049    1.86
+  gold     OUT   91     14.49       120.9       7.80    1.78   [1.63,1.91]   0.054    1.71
+  diamond  fit   36     10.06       120.9       7.80    1.04   [0.79,1.27]   0.098    1.24
+  pivot-s = the per-tier estimand of the RETIRED amendment-1 objective (regression through the
+  K̄_pool pivot). Kept in the table so ruling (z)'s effect is visible, never a candidate.
+
+  THE FIT  (fitted set: iron, bronze, silver, diamond — gold OUT)
+    wide-grid SSE optimum:   q* = 2.26   A* = 0.7126   SSE 1419.3
+    LINEAR LIMIT (q = 1):    A  = 0.6952   SSE 1461.8   ⇒ β = A/20 = 0.03476 per gap unit
+    SELECTED (minimax centre of the equivalence set):  A = 0.7126  [boot 95% CI 0.6223, 0.7863]
+                                                       q = 2.26  [boot 95% CI 1.00, 4.10]
+    curvature: CONVEX (q > 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(5)=1.031  s(10)=1.149  s(15)=1.372  s(20)=1.713  s(25)=2.180  s(30)=2.782
+
+  THE EQUIVALENCE SET, PUBLISHED IN FULL (amendment A2.2 — this IS the deliverable's precision)
+    Members are candidates the acceptance instrument CANNOT distinguish from the SSE optimum:
+    max over fitted tiers |s_cand(g_t) − s_opt(g_t)| / se_t ≤ 1.
+    set:  q ∈ [1.70, 2.84]   115 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: NO ✓
+    the set's deliverable envelope, and where the shipped centre sits inside it:
+      tier        se     set s-range          centre    (centre − range mid) / se
+      iron       0.048        1.793 – 1.859      1.828  +0.034
+      bronze     0.042        1.674 – 1.685      1.682  +0.058
+      silver     0.049        1.414 – 1.512      1.463  -0.003
+      diamond    0.098        1.101 – 1.220      1.151  -0.101
+    set width 1.99 need-SEs; the centre reaches 1.00 SEs to the furthest member.
+
+  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: PASS
+    the equivalence set q ∈ [1.70, 2.84] (115 of 796 grid points, contiguous) is interior to [0.05, 8.00]; the minimax centre sits 1.00 need-SEs from the furthest member, on a set 1.99 SEs wide
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE (A2.5)
+    Each refit drops one FITTED tier; its implied s(g_t) must lie inside the full fit's bootstrap
+    s-CI at every FITTED gap. Raw {A,q} are printed but NOT gated — two selections are two
+    selection outcomes, so comparing them compares the rule rather than the fits.
+    dropped        A        q      s(iron)  s(bronze) s(silver) s(gold)  s(diamond)  inside s-CI?
+    iron          0.6457   1.41       1.71      1.63      1.49      1.41      1.24  YES ✓
+    bronze        0.7590   2.13       1.87      1.73      1.51      1.38      1.18  YES ✓
+    silver        0.6727   3.90       1.87      1.62      1.32      1.19      1.05  YES ✓
+    diamond       0.7127   2.23       1.83      1.68      1.47      1.35      1.15  YES ✓
+    full fit s(g)                        1.83      1.68      1.46      1.34      1.15
+    full fit CI                1.69-1.96 1.59-1.75 1.31-1.58 1.18-1.50 1.04-1.34
+  GATE (w)3: PASS
+
+  ACCEPTANCE — implied s(g_t) vs the measured bootstrap CI, ON THE COHERENT FOUR ONLY
+  (≥3 of 4 inside, DIAMOND MANDATORY. Gold is not scored — it is published in §4.)
+    tier       gap    s(gap)   measured need   [boot 95% CI]    inside?
+    iron      21.37    1.828            1.80   [1.70,1.90]      YES ✓
+    bronze    19.61    1.682            1.62   [1.54,1.69]      YES ✓
+    silver    16.52    1.463            1.47   [1.37,1.56]      YES ✓
+    diamond   10.06    1.151            1.04   [0.79,1.27]      YES ✓
+    gold      14.49    1.344            1.78   [1.63,1.91]      NOT SCORED — fitted out (A2.3)
+    inside: 4 of 4;  DIAMOND INSIDE ✓
+    monotone over the observed range: YES ✓
+  ACCEPTANCE: PASS
+
+  DIAGNOSTIC D2 — RULING (z) MEASURED: HOW MUCH OF THE OLD AMPLITUDE WAS LEVEL, NOT SPREAD?
+    The amendment-1 objective was a residual about K̄_pool, so it priced BOTH the judged sample's
+    offset from the pool mean AND its spread. Its estimand is the pivot slope; the measured need
+    (a FREE slope) is what acceptance scores against. They differ whenever the sample sits off
+    K̄_pool — which it does, because cwhit's tables are the top by USAGE. Amendment 2's objective
+    has a per-tier free level, so ITS estimand is the weighted free slope.
+    tier      K̄_pool/9   wtd mean pred   offset(pred−K̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   free slope (= need)
+    iron        7.79            7.39             -0.41                      -0.76      2.05         1.87   1.80
+    bronze      7.74            7.49             -0.25                      -0.91      1.82         1.62   1.62
+    silver      7.97            7.67             -0.30                      -1.20      1.86         1.51   1.47
+    gold        7.80            7.43             -0.37                      -0.18      1.71         1.77   1.78
+    diamond     7.80            7.61             -0.19                      -0.46      1.24         1.11   1.04
+    pivot-s − need:          +0.25    +0.20    +0.39    -0.07    +0.20  mean +0.19  ⇐ SYSTEMATIC, same sign everywhere
+    wtd free-s − need:       +0.07    +0.00    +0.04    -0.02    +0.07  mean +0.03  ⇐ WEIGHTING ONLY, and inside every need's CI
+    That difference is what ruling (z) removed. The residual weighting difference is reported,
+    not hidden: the fit weights each card by 1/noise, the need does not.
+
+  DIAGNOSTIC D3 — THE RETIRED AMENDMENT-1 OBJECTIVE, SAME FAMILY, SAME SELECTION RULE
+    (pivot residual about K̄_pool, coherent four. NOT a candidate — it prices the effect of (z).)
+    optimum q* = 0.94  A* = 0.9321;  selected A = 0.9321 q = 0.94;  set q ∈ [0.67, 1.27]
+         selected              1.99    1.92    1.78    1.69    1.49  ⇒ 0/4 coherent inside, diamond OUT
+         optimum               1.99    1.92    1.78    1.69    1.49  ⇒ 0/4 coherent inside, diamond OUT
+      amendment 2              1.83    1.68    1.46    1.34    1.15  ⇒ 4/4 coherent inside, diamond IN
+      needs                    1.80    1.62    1.47    1.78    1.04
+    (DIAGNOSTIC — carries no verdict.)
+
+  DIAGNOSTIC D4 — THE FAMILY'S REACH, AND WHAT GOLD COSTS
+    A TIER-AGGREGATE capability probe: fit s(g) straight to the needs, precision-weighted. The
+    pre-registration forbids a tier aggregate in the OBJECTIVE; this is not the objective, it is
+    the cleanest possible statement of family reach, and it is what ruling (y) was decided on.
+         all five, optimum       A*  0.701 q*  0.96      1.75    1.69    1.58    1.51    1.36  ⇒ 2/4 coherent, diamond OUT
+         coherent four, optimum  A*  0.677 q*  2.36      1.79    1.65    1.43    1.32    1.13  ⇒ 4/4 coherent, diamond IN
+      needs                                         1.80    1.62    1.47    1.78    1.04
+    Including gold's off-curve need flattens the family and ejects diamond — one tier bought at
+    the cost of four. That is ruling (y)'s evidence, reproduced here on this coordinate.
+
+  BAND SUMMARY
+    p        (w)2    (w)3    acceptance (coherent inside/4)       A        q      s(20)
+    0.25     PASS    PASS                      4/4, diamond IN   0.6763   2.57  1.676   gold resid +0.43
+    0.30     PASS    PASS                      4/4, diamond IN   0.6668   2.40  1.667   gold resid +0.45
+    0.35     PASS    PASS                      4/4, diamond IN   0.7126   2.26  1.713   gold resid +0.44
+    Holding across the band retires p's uncertainty. Failing across the band is the ONLY thing
+    that reopens property-conditioning — and that is a ruling, not a fit decision.
+    BAND VERDICT: HOLDS at 0.25 and 0.35
+
+### 6. ACCEPTANCE E — HELD-OUT FORMAT VALIDATION (VALIDATED, NEVER FITTED)
+
+  Formats resolved from the corpus REGISTRY by tournamentId (src/eval/cwhit/corpus.ts) and named
+  to the builder by REGISTRY KEY — not by the optional `legacySlug`. bronze-cap-weekly and
+  gold-slots carry NO legacySlug, which is exactly why the fit tool's hard-coded DAILY list
+  (four of the registry's eight dailies) could never reach them. Each format's gap and K̄ come
+  from ITS OWN eligible pool under ITS OWN resolved coeffs; the judged line is the DEPLOYED one
+  (era/park applied), because the observed lines live in the format's environment.
+
+  format               strat  poolN  joined  judged   gap    K̄dep/9  s(gap)  pre slope [CI]        post slope [CI]       verdict
+  Early Gold           B       3192     242      99   15.0    2.74   1.335      2.04 [1.82,2.26]      1.53 [1.37,1.69]  MISS — post CI excludes 1
+  Bronze Heart         B        570     121      48   15.8    3.13   1.380      2.27 [2.04,2.50]      1.64 [1.48,1.81]  MISS — post CI excludes 1
+  Late Bronze          B       2096     195      34   19.7    5.23   1.642      1.67 [1.42,1.89]      1.01 [0.87,1.15]  PASS — post CI covers 1
+  Diamond Heart        B        879     133      67   13.9    5.44   1.280      1.50 [1.34,1.64]      1.17 [1.04,1.28]  MISS — post CI excludes 1
+  Live Open Daily      A*      1274      80      42   44.5    7.78   5.546      0.91 [0.69,1.08]      0.16 [0.12,0.20]  MISS — post CI excludes 1
+  Saturday Bronze Cap  C       2096     346      42   19.7    7.75   1.642      1.74 [1.60,1.88]      1.06 [0.97,1.14]  PASS — post CI covers 1
+  Gold Slots Daily     C       3192     454     109   15.0    7.78   1.335      1.63 [1.50,1.74]      1.22 [1.12,1.30]  MISS — post CI excludes 1
+  Gold Cap Daily       B+C     3192     504     114   15.0    7.78   1.335      1.63 [1.53,1.74]      1.22 [1.14,1.30]  MISS — post CI excludes 1
+  Diamond Cap Daily    B+C     3498     215      26   10.3    7.12   1.136      1.78 [1.33,2.04]      1.56 [1.17,1.80]  MISS — post CI excludes 1
+  K̄dep/9 is the DEPLOYED-frame pool mean (×era_k) for reading; the correction itself is centred on
+  the RAW pre-era K̄ per 600, which is where production applies it.
+  EXTRAPOLATION WARNING, stated because the table cannot be read without it: the fit spans gaps
+  10.31–22.25 (the Quick ladder). OUTSIDE that range: Live Open Daily g=44.5 — s there is EXTRAPOLATED and the verdict is about the extrapolation, not the fit.
+
+  K9 LEVEL (pred − obs), pre → post:
+    Early Gold            -0.66 → -0.71   [era-1920 / park-169]
+    Bronze Heart          -0.57 → -0.63   [era-1939 / park-191, Year rule]
+    Late Bronze           +0.45 → +0.41   [era-1979 / park-114]
+    Diamond Heart         -0.10 → -0.13   [era-1958 / park-156]
+    Live Open Daily       -0.17 → +0.05   [neutral env, uncapped — non-Quick control]
+    Saturday Bronze Cap   +0.51 → +0.17   [neutral env, cap 1331 — PRE-REGISTERED held-out]
+    Gold Slots Daily      +0.16 → +0.05   [neutral env, slots — PRE-REGISTERED held-out; never before evaluated]
+    Gold Cap Daily        -0.02 → -0.25   [park-156 + cap 1580 — PRE-REGISTERED held-out]
+    Diamond Cap Daily     -0.44 → -0.51   [era-1998 / park-101 + cap 1755]
+
+  GOLD-SLOTS REACHABILITY — the explicit confirmation the pre-registration asks for:
+    gold-slots has NEVER been evaluated by any tool before this run. It resolves to registry key
+    'goldslotsdaily' (label "Gold Slots Daily", legacySlug ABSENT), reads capture files, and joined
+    454 pitcher rows / 109 judged at BF ≥ 600 over a 3192-card eligible pool.
+    ⇒ IT READS REAL DATA — NOT silently empty.
+
+### 7. THE STRATIFIED READ (standing structure, amendment A1.3)
+
+  A defect attributes to the stratum where it FIRST appears. One universal model, stratified
+  diagnosis.
+
+  A — NEUTRAL UNCAPPED QUICKS (the core; this is what was FITTED)
+      4 of the 4 COHERENT tiers inside their measured CI, diamond INSIDE. Gold fitted out, residual +0.45.
+      Residuals s(gap) − need: iron +0.06  bronze +0.02  silver +0.01  gold -0.45 (gold, not fitted)  diamond +0.10
+      Non-Quick neutral control (live-open-daily, no era/park, no budget): judged 42, MISS — post CI excludes 1
+
+  B — ENV-BEARING UNCAPPED DAILIES (+ the era/park layer)
+      Early Gold           judged  99  s 1.335  slope 2.04 → 1.53  MISS — post CI excludes 1
+      Bronze Heart         judged  48  s 1.380  slope 2.27 → 1.64  MISS — post CI excludes 1
+      Late Bronze          judged  34  s 1.642  slope 1.67 → 1.01  PASS — post CI covers 1
+      Diamond Heart        judged  67  s 1.280  slope 1.50 → 1.17  MISS — post CI excludes 1
+      A miss appearing HERE and not in A localises to the era/park layer, not to the core fit.
+
+  C — BUDGET CAP/SLOTS FORMATS (+ the composition layer)
+      Saturday Bronze Cap  judged  42  s 1.642  slope 1.74 → 1.06  PASS — post CI covers 1
+      Gold Slots Daily     judged 109  s 1.335  slope 1.63 → 1.22  MISS — post CI excludes 1
+      Gold Cap Daily       judged 114  s 1.335  slope 1.63 → 1.22  MISS — post CI excludes 1   [also carries env ⇒ B+C, not a clean C read]
+      Diamond Cap Daily    judged  26  s 1.136  slope 1.78 → 1.56  MISS — post CI excludes 1   [also carries env ⇒ B+C, not a clean C read]
+      DIAGNOSTIC, NOT A GATE (amendment A2.4). A stratum-C miss does NOT impugn the core fit: it
+      localises to the COMPOSITION layer, which is task 2's territory and is not built yet. Budget
+      formats force weak cards into play, which is exactly where the weak-card K over-prediction
+      bites — and nothing here models a budget. Scoring these as gates would attribute a
+      composition defect to the core, which is precisely what the stratification forbids.
+      NOTE the convergence with gold: gold's published residual +0.45 is assigned to the SAME
+      composition axis, and the budget legs sit on the same side. Two independent readings of one
+      unbuilt layer — which is evidence for the attribution, not a coincidence to explain away.
+
+### 8. THE CONSTANTS, WITH PROVENANCE STAMPED (acceptance F)
+
+  THE GATES PASS, SO THESE ARE THE CONSTANTS THE PRE-REGISTERED RULE PRODUCED. This tool still
+  wires nothing: shipping is a SEPARATE dated commit that quotes this artifact by name, so the
+  fit and the wiring can never drift into one step where a re-run silently changes production.
+
+  K_SPREAD_PIT = { A: 0.6668, q: 2.40, G0: 20 }
+  s(g) = 1 + 0.6668·(g/20)^2.40;   s(g ≤ 0) = 1 (league-anchored — never compress a
+  stronger-than-training pool).
+  fit-N = 50   (FIELD_N)
+  fit-p = 0.3   (PRESENCE_P)
+  fitted set = iron, bronze, silver, diamond   (gold OUT, residual +0.45 [0.24, 0.63] published)
+  equivalence set = q ∈ [1.76, 3.04], 129 grid points, width 1.99 need-SEs; the shipped
+  point is that set's MINIMAX CENTRE and every member of it delivers an s(g) the acceptance
+  instrument cannot tell apart. The set is the constant's honest precision and travels with it.
+
+  SCORING-SIDE ASSERTION (ships with the constant):
+      assert(FIELD_N === K_SPREAD_PIT.fitN && PRESENCE_P === K_SPREAD_PIT.fitP)
+  at the point production builds the kSpread object, so a ramp fitted at one (N, p) can never be
+  evaluated at another. THE GAP IS NOT MONOTONE IN p — measured across p = 0..1 the iron gap runs
+  23.64 / 21.22 / 22.15 / 21.59 / 19.06 — so a ramp CANNOT be rescaled to another p by any
+  algebraic correction. It can only be RE-DERIVED. The same holds for FIELD_N, which is
+  retrain-coupled and known-defective-but-frozen.
+
+  SHIPPED CONSTANT, QUOTED FOR CONTRAST AND NOT TOUCHED: K_SPREAD_PIT = { A: 5.0871, G: 152.5 }
+  on the FALSIFIED saturating family, fitted at the PRE-C1/C2' coordinate. It is not comparable
+  parameter-for-parameter (two families, two pinning outcomes); compare on s(g) only:
+    g        10      15      20      25      30
+    C3        1.126   1.334   1.667   2.139   2.765
+    shipped   1.323   1.477   1.625   1.769   1.908
+
+### 9. THE EXTRAPOLATION DOMAIN — EVERY CONFIGURED TOURNAMENT (added during this run)
+
+  WHY THIS SECTION EXISTS AND WHY IT WAS NOT IN THE PRE-REGISTRATION: under amendment 1 the
+  fitted s was nearly FLAT, so extrapolating beyond the fitted gap range 10.31–22.25 was
+  harmless and "live-open-daily sits at g = 44.5" was a footnote. Amendment 2's fit is CONVEX
+  and therefore UNBOUNDED above. The footnote is no longer the same fact, so it is re-measured
+  — over PRODUCTION's 46 configured tournaments, not the 14 captured formats, because that is
+  the population a shipped constant actually meets. MEASUREMENT ONLY; no fit was changed.
+
+  fitted gap range: 10.31 – 22.25.  Configured tournaments evaluated: 46 of 46.
+  ABOVE THE FITTED RANGE: 11 of 46.
+
+    tournament                    poolN     gap    s NEW (C3)   s OLD (shipped)   outside fit?
+    live-open-daily                1274    44.50        5.546             2.287   YES — EXTRAPOLATED
+    live-time-slots                1274    44.50        5.546             2.287   YES — EXTRAPOLATED
+    live-weekly                    1274    44.50        5.546             2.287   YES — EXTRAPOLATED
+    ptcs-live                      1274    44.50        5.546             2.287   YES — EXTRAPOLATED
+    live-silver                    1116    44.16        5.463             2.279   YES — EXTRAPOLATED
+    live-diamond                   1251    43.24        5.243             2.256   YES — EXTRAPOLATED
+    live-bronze                     900    42.44        5.057             2.236   YES — EXTRAPOLATED
+    live-gold                      1203    41.25        4.789             2.206   YES — EXTRAPOLATED
+    cwhit-cap                       630    32.26        3.101             1.970   YES — EXTRAPOLATED
+    golden-childhood                480    24.00        2.033             1.741   YES — EXTRAPOLATED
+    wonky-slots                     728    23.00        1.932             1.712   YES — EXTRAPOLATED
+    iron-quick                     1200    22.25        1.862             1.691   no
+    ptcs-bronze                     886    21.93        1.832             1.681   no
+    low-bronze                     1640    21.26        1.772             1.662   no
+    … 32 further tournaments at or below gap 21.26 (inside or below the fitted range).
+
+  THE FINDING, STATED PLAINLY: the C3 family is CONVEX, so above the fitted range it grows
+  faster than anything the fit saw. At the largest configured gap 44.50 it returns
+  s = 5.55, against 2.29 from the currently shipped saturating form, which is bounded
+  above by 1 + A = 6.09 by construction. The measured evidence at that end of the axis says
+  NO correction is wanted there at all: live-open-daily's PRE slope is 0.91 [0.69, 1.08],
+  whose CI COVERS 1 — it is already calibrated uncorrected — and applying s drives it to
+  0.16 [0.12, 0.20]. THE COORDINATE AND THE MEASUREMENT DISAGREE AT LARGE GAP.
+
+  HOW STRONG IS THAT EVIDENCE — stated so it cannot be over-read. The top of the axis is
+  observed through ONE captured format (live-open-daily, 42 judged rows). That clears the
+  program's own THIN_N = 15 bar and so carries a verdict, but it is one format, and the eight
+  live-pool tournaments above are inferred to share its gap because they share its pool, not
+  because each was measured. The RANGE FACT is certain (11 of 46 configured tournaments sit
+  above the fitted range, 8 of them near g = 44); the NEED at g = 44 rests on that one read.
+
+  THIS IS NOT A NEW DEFECT — IT IS A PRE-EXISTING ONE THAT THE FORM CHANGE MAGNIFIES. The
+  shipped saturating ramp ALREADY over-corrects there (s = 2.29 where the need is ~1). C3 does not
+  introduce the disagreement; it changes its size, from bounded to unbounded.
+
+  IT IS NOT A GATE AND IT IS NOT SCORED. No pre-registered gate covers it, and inventing one
+  after seeing the numbers is exactly what pre-registration exists to prevent. It is reported
+  as a STOP-class item for Fable: whether the shipped constant carries a DOMAIN RULE (hold s
+  flat above the fitted gap, the way the program already extends curves tangent-linearly outside
+  their fit domain) is a MODELLING decision, and modelling decisions are not this tool's to make.
+
+### 10. RECORDED, NOT ACTED ON (the freeze applies)
+
+  · The neutral leg resolves `computeDerived(coeffs)` (eventForm flag FALSE) while the per-format
+    legs resolve `computeDerived(coeffs, true)`. Copied verbatim from tools/battery-needs-vs-bar.ts
+    and tools/fit-kspread-pit.ts so the needs reproduce rather than approximate. It cannot touch
+    this verdict — the Quick legs are judged on the RAW line, which never reads `derived` — but it
+    is an inconsistency between two tools and production, recorded here.
+  · FIELD_N = 50 is known-defective and frozen until a retrain; nothing here revisits it.
+  · The two `src/` lines this run required are DEFAULT-IDENTITY knobs, not behaviour changes:
+    `productionFieldStats(..., p = PRESENCE_P)` and `SampleDeps.presenceP`. They exist so the
+    pre-registered p = 0.25 / 0.35 re-check could be asked THROUGH the one field definition
+    instead of a tool building its own mixture. The instrument check in §1 pins them identical
+    at the shipped p.
+
+(end of artifact — C3 ramp fit, PASS)
