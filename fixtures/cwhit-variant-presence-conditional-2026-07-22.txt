@@ -1,0 +1,92 @@
+################################################################################
+# CONDITIONAL VARIANT PRESENCE — both legs, like for like. 2026-07-22.
+# Tool: tools/variant-presence-conditional.ts. Fable amendment (from Derek): the
+# presence prior p must be v5 usage / ELIGIBLE-CLASS usage, not the raw share.
+# Measurement only. VERDICT: conditioning WIDENS the spread — no global p.
+################################################################################
+
+
+╔═══ CONDITIONAL VARIANT PRESENCE — both legs, like for like ═══╗
+model 'league-42-43' | catalog 'cdmx'
+eligibility = the landed predicate (7 disjoint classes + dev-override list)
+
+── TOURNAMENT LEG: raw share = eligible-usage share x CONDITIONAL propensity ──
+   usage = BF (pitchers) / PA (hitters); every observed row, no well-sampled floor —
+   presence is about who PLAYED, not about who played enough to judge a rate.
+
+  tier      role    total usage   elig share   v5 usage   RAW share   CONDITIONAL p   identity
+  iron      pit       630531        54.2%     145536       23.1%           42.6%   exact
+  iron      hit       627287        63.5%     168473       26.9%           42.3%   exact
+  bronze    pit       747527        71.9%     188821       25.3%           35.1%   exact
+  bronze    hit       797515        74.5%     153983       19.3%           25.9%   exact
+  silver    pit       548840        80.8%     157032       28.6%           35.4%   exact
+  silver    hit       550726        74.7%     136292       24.7%           33.1%   exact
+  gold      pit       371338        68.8%      65590       17.7%           25.7%   exact
+  gold      hit       368021        63.9%      74257       20.2%           31.6%   exact
+  diamond   pit        61629        68.3%      12128       19.7%           28.8%   exact
+  diamond   hit        59132        67.8%       8765       14.8%           21.8%   exact
+
+  pit: RAW spread 17.7-28.6%  vs  CONDITIONAL spread 25.7-42.6%   (eligible-usage share 54.2-80.8%)
+
+  hit: RAW spread 14.8-26.9%  vs  CONDITIONAL spread 21.8-42.3%   (eligible-usage share 63.5-74.7%)
+
+── LEAGUE LEG, SAME CONDITIONING (the like-for-like asymmetry statement) ──
+  hitters   usage  1876879  elig share  63.2%  RAW  11.0%  CONDITIONAL p  17.4%
+  pitchers  usage  1893198  elig share  47.8%  RAW   2.5%  CONDITIONAL p   5.2%
+
+── WHAT PLAYS IN THE INELIGIBLE CLASSES (why the conditioning matters) ──
+  iron      ineligible-class usage: Live 14.0%  Clubhouse 10.1%  PTCS 8.2%  MissionEdition 4.9%  LE 3.6%  PTMS 0.2%
+  bronze    ineligible-class usage: Clubhouse 10.3%  Live 7.0%  LE 6.8%  MissionEdition 1.4%  PTCS 1.2%  PTMS 0.1%
+  silver    ineligible-class usage: LE 7.5%  Clubhouse 6.1%  Live 4.2%  PTCS 2.5%  MissionEdition 1.7%  PTMS 0.3%
+  gold      ineligible-class usage: MissionEdition 11.7%  Clubhouse 6.9%  PTCS 6.2%  Live 5.3%  LE 3.1%  PTMS 0.4%
+  diamond   ineligible-class usage: MissionEdition 14.0%  Clubhouse 7.8%  Live 4.8%  PTCS 3.4%  LE 1.7%  PTMS 0.3%
+
+(end of conditional variant presence — measurement only)
+
+################################################################################
+# READING
+################################################################################
+
+1. THE AMENDMENT WAS RIGHT, AND IT MATTERS. Conditioning moves the prior a long way:
+   pitchers 17.7-28.6% raw -> 25.7-42.6% conditional; hitters 14.8-26.9% -> 21.8-42.3%.
+   Roughly a 1.5-1.8x lift, because 19-46% of tournament usage is played by cards that
+   CANNOT have a variant and was sitting in the raw denominator. The decomposition
+   (raw = eligible-usage-share x conditional propensity) reproduces every raw share EXACTLY,
+   so the identity is not approximate — it is the definition, and the two factors are
+   separately measurable.
+
+2. THE HOPED-FOR SIMPLIFICATION IS REFUTED. The pre-registered question was whether the
+   15-29% raw spread is mostly ELIGIBILITY-MIX variation, leaving a stable conditional p —
+   which would have licensed one global number. It does not. Conditioning WIDENS the spread:
+
+       pitchers   raw range 10.9 points  ->  conditional range 16.9 points
+       hitters    raw range 12.1 points  ->  conditional range 20.5 points
+
+   Conditional p runs 21.8% to 42.6% across the ten format x role cells — nearly a factor of
+   two. A single global p is not supported by this evidence. The eligibility mix was not the
+   source of the variation; it was partially MASKING variation that is larger underneath.
+
+3. THE ASYMMETRY SURVIVES CONDITIONING, AND IS STARK ON THE PITCHER SIDE. Like for like:
+
+       pitchers   league conditional p  5.2%   vs tournament 25.7-42.6%   -> 5x to 8x
+       hitters    league conditional p 17.4%   vs tournament 21.8-42.3%   -> 1.3x to 2.4x
+
+   So even among cards that CAN have a variant, league play uses them far less than
+   tournament play, and much more so for pitchers. This is the like-for-like version of
+   Derek's original claim, and it holds. The two legs differ for a REAL reason — league play
+   runs on new 100+ cards whose variants are rare — not because of a policy error, which is
+   why equalising the policy was the wrong repair.
+
+4. WHY THE CONDITIONING MATTERS, CONCRETELY: the ineligible-class mix is not stable across
+   formats. Iron's ineligible play is Live-heavy (14.0%); gold and diamond are Mission-Edition-
+   heavy (11.7%, 14.0%); bronze and silver are LE/Clubhouse-heavy. So the raw share's
+   denominator is contaminated by a DIFFERENT population in every window, which is exactly
+   the failure mode the amendment identified.
+
+5. WHAT THIS SETS UP. The pool-leg mixture weights eligible cards only, so p on the
+   conditional scale is the consistent input: ~26-43% (pitchers) / ~22-42% (hitters), not the
+   raw 15-29%. Since p is NOT stable, the sizing sweep matters more than expected — if gaps
+   and s_K are sensitive across that range, a property-conditioned p is required rather than
+   a global constant, per the pre-registered branch.
+
+(end of artifact — conditional presence: no global p is supported)
