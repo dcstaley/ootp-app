@@ -1,0 +1,78 @@
+################################################################################
+# ARM C = A DETERMINISTIC RE-BASING, NOT A NEW POPULATION. 2026-07-22.
+# Tool: tools/armc-variant-composition.ts. Prompted by Derek noting the base->v5
+# formula is implemented in the app. Measurement only; nothing fitted or wired.
+################################################################################
+
+variantBoost magnitude across the rating range:
+  40 -> 45  (+5)
+  60 -> 66  (+6)
+  80 -> 87  (+7)
+  100 -> 108  (+8)
+  120 -> 130  (+10)
+  140 -> 151  (+11)
+  160 -> 172  (+12)
+  180 -> 193  (+13)
+
+Is the ARM-C top-50 field all variants? (pool = base + v5, ranked by predicted wOBA)
+  iron     pit: 48/50 of the top-50 are v5
+  iron     hit: 47/50 of the top-50 are v5
+  bronze   pit: 42/50 of the top-50 are v5
+  bronze   hit: 46/50 of the top-50 are v5
+  silver   pit: 46/50 of the top-50 are v5
+  silver   hit: 46/50 of the top-50 are v5
+  gold     pit: 44/50 of the top-50 are v5
+  gold     hit: 43/50 of the top-50 are v5
+  diamond  pit: 42/50 of the top-50 are v5
+  diamond  hit: 43/50 of the top-50 are v5
+
+Mean boost on the STUFF channel over each pool's base top-50 (the gap's own coordinate):
+  iron     mean stu boost on the base top-50 = +6.86
+  bronze   mean stu boost on the base top-50 = +6.80
+  silver   mean stu boost on the base top-50 = +7.64
+  gold     mean stu boost on the base top-50 = +7.78
+  diamond  mean stu boost on the base top-50 = +7.94
+
+################################################################################
+# READING — one correction to the record, one constraint on the ramp fit
+################################################################################
+
+1. THE ARM-C FIELD IS DOMINANTLY THE SAME CARDS, BOOSTED. 42-48 of every top-50 are v5
+   rows. It is not 50/50 because a strong base card can outrank a weaker card's v5, but the
+   selection is overwhelmingly "each good card's variant". Since variantBoost is
+   deterministic and strictly positive (+5 at rating 40 rising to +13 at 180), the
+   variant-inclusive pool is the base pool plus a KNOWN image of itself. Arm C admits no
+   independent information; it re-bases the field.
+
+   This is what item A saw and did not name: ordering preserved, inversions 2->2, Spearman
+   0.700 unchanged, residual signs flipping from mixed to UNIFORMLY NEGATIVE. Those are
+   level-shift signatures, and now there is a mechanism for them.
+
+2. CORRECTION TO THE RECORD — DIAMOND'S "IN-FRAME" GAIN IS NOT INDEPENDENT CORROBORATION.
+   I previously relayed it as a second argument for arm C alongside the invariant. It is
+   not: the mean stuff boost over each pool's base top-50 is +6.8 to +7.9, and diamond's
+   gap was 10.38. A gap of ~10 minus a re-basing of ~8-10 lands near zero by ARITHMETIC.
+   Diamond's measured need is 1.04 [0.80, 1.27], so s = 1 is consistent with it — but
+   landing at gap -0.04 is the boost magnitude happening to approximate diamond's gap, not
+   the model discovering that diamond is in-frame. THE CASE FOR ARM C RESTS ON THE
+   INVARIANT (both legs of a gap on the same basis), which is what it was ruled on.
+
+3. BUT THE BOOST IS NOT THE WHOLE STORY — there IS a selection component, and it is not
+   uniform. If arm C were purely a re-basing, every gap would fall by about the boost
+   (+6.8..+7.9, a tight range). Item A measured gap deltas of -4.64 (iron), -10.47
+   (bronze), -8.55 (silver), -9.16 (gold), -10.42 (diamond) — a much wider spread, with
+   iron moving LESS than its boost and bronze/diamond moving MORE. So the deterministic
+   re-basing is the dominant term and a genuine per-tier re-selection of ~±3 rating points
+   rides on top of it. Both are real; neither alone explains the deltas.
+
+4. THE CONSTRAINT THIS PUTS ON C3. Under arm C the gap axis COMPRESSES: 19.00 / 12.29 /
+   12.00 / 6.79 / -0.04 against today's 23.64 / 22.76 / 20.55 / 15.95 / 10.38. The coherent
+   tiers now span roughly 12-19 instead of 20-24, and diamond sits at zero where the ramp is
+   the identity by construction. So the re-estimated ramp is fit over a NARROWER gap range
+   with one fewer informative point. G was already only LOWER-BOUNDED in the original fit
+   (SSE flat within 5% across a wide G range, which is why the pinning rule exists); on a
+   compressed axis it will be less identifiable still. C3's pre-registration should say in
+   advance how G is pinned under the new axis and must treat a boundary-pinned optimum as
+   family misfit, per the standing rule.
+
+(end of artifact — arm C is a deterministic re-basing with a per-tier selection rider)
