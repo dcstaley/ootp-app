@@ -141,3 +141,62 @@ export function unexpectedVariantSightings<T extends { cardId: string; source: s
 
 /** The rule names, for reporting and for the pin. */
 export const VARIANT_FORBIDDEN_RULES: readonly string[] = FORBIDDEN.map(([n]) => n);
+
+// ═══ PRESENCE-WEIGHTED POOL CONSTRUCTION (C2' of the 2026-07-22 constants event) ══
+//
+// Fable ruling (o)/(t): arm C — "fields variant-inclusive everywhere" — was REFUTED and replaced by
+// EMPIRICAL COMPARABILITY. Both legs of a comparison must be unbiased estimates of real populations
+// in the same units. Arm C failed that: it gave every eligible card a v5, so the pool field came out
+// 84-96% variant against a training leg that is 2.5% variant by qualifying pitcher usage — an ~85
+// point mismatch where the status quo's was ~2.5.
+//
+// The replacement weights an eligible card's v5 at `p` and its base at `1-p`, with p the measured
+// CONDITIONAL presence (v5 usage / ELIGIBLE-CLASS usage, so ineligible-class play cannot sit in the
+// denominator). Ineligible cards contribute their base at weight 1 — they have no v5 to weight.
+//
+// EXACT, NOT APPROXIMATED. A mixture cannot be handed to `computeUnifiedFieldStats`, which takes a
+// plain card array and an integer top-N. For rational p = k/m it is exactly representable by INTEGER
+// REPLICATION: emit each ineligible card m times, and each eligible card as (m-k) base copies plus k
+// v5 copies, then ask for top-N × m. Duplicates carry identical predicted value, so the top-(N·m) of
+// the replicated population IS the weighted top-N of the mixture and its moments ARE the weighted
+// moments. The shared core computes all of it — no weighted-moment variant exists anywhere, which
+// would have been a second copy of scoring maths.
+
+/** Replication denominator. 10 resolves p to 0.1 steps, which covers the ruled 0.30 and its
+ *  0.25/0.35 sensitivity re-checks exactly (0.25 needs m=20; see `presenceMixture`). */
+export const PRESENCE_M = 20;
+
+/** THE SHIPPED PRESENCE PRIOR — the fraction of an eligible card's field weight carried by its v5.
+ *
+ *  0.30 is the centre of the MEASURED conditional band (pitchers 25.7-42.6%, hitters 21.8-42.3%
+ *  across the ten format×role cells; league 5.2%/17.4%), recorded by Fable ruling (t) as a
+ *  DELIBERATE SIMPLIFICATION of a proxy coordinate rather than a claim that p is constant — it is
+ *  not: conditioning WIDENED the spread rather than collapsing it. The justification is the proxy
+ *  principle: the gap is an x-axis needing CONSISTENCY, SPREAD and EX-ANTE COMPUTABILITY, not truth,
+ *  and the empirical fit absorbs the level and scale of any consistent coordinate.
+ *
+ *  Property-conditioning was REJECTED: the natural conditioner (a format's eligible-usage share) is
+ *  REALIZED, so conditioning on it would put a non-ex-ante quantity into a coordinate that must be
+ *  computable before a tournament is played.
+ *
+ *  UNDER A STANDING TRIPWIRE (drift doctrine): every capture re-pull recomputes realized conditional
+ *  presence and compares it here. Inside 0.25-0.35 ⇒ no action. Outside ⇒ a p-update is flagged for
+ *  the next refit event, retrain-coupled exactly like FIELD_N, because the ramp is fit AT this p and
+ *  the gap is NOT monotone in it (measured: iron 23.64/21.22/22.15/21.59/19.06 across p=0..1). A
+ *  ramp may never be rescaled from another p — it must be re-derived. */
+export const PRESENCE_P = 0.30;
+
+/** The mixture population at presence `p`, exact by integer replication. Pass `topN * PRESENCE_M`
+ *  to any top-N consumer, or the cohort silently shrinks by a factor of m. */
+export function presenceMixture(pool: Card[], p: number = PRESENCE_P, m: number = PRESENCE_M): Card[] {
+  const k = Math.round(p * m);
+  if (Math.abs(p * m - k) > 1e-9) throw new Error(`presence p=${p} is not representable at m=${m} — it would be silently rounded`);
+  const out: Card[] = [];
+  for (const c of pool) {
+    if (!canHaveVariant(c)) { for (let i = 0; i < m; i++) out.push(c); continue; }
+    const v = k > 0 ? makeVariant(c) : null;
+    for (let i = 0; i < m - k; i++) out.push(c);
+    for (let i = 0; i < k; i++) out.push(v!);
+  }
+  return out;
+}

@@ -37,11 +37,11 @@ import {
   FIELD_N, type EventForm, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
 import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
-import { canHaveVariant, makeVariant } from "../src/data/variants.ts";
+import { presenceMixture, PRESENCE_M } from "../src/data/variants.ts";
 import { QUICK, inValueWindow } from "../src/eval/cwhit/sample.ts";
 import { kSpreadPitRamp, pitSpreadHrRamp } from "../src/model/pool-transform.ts";
 
-const M = 10;                                    // replication denominator ⇒ p resolvable to 1/10
+const M = PRESENCE_M;   // the SHIPPED replication denominator — imported, never redeclared
 const PS = [0, 0.2, 0.3, 0.4, 1.0] as const;     // brackets the measured conditional range 0.22-0.43
 
 const repo = new Repository("data");
@@ -63,18 +63,10 @@ const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards
   .filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
 
-/** The mixture population at presence p, by exact integer replication (see header). */
-function mixture(pool: Card[], p: number): Card[] {
-  const k = Math.round(p * M);
-  const out: Card[] = [];
-  for (const c of pool) {
-    if (!canHaveVariant(c)) { for (let i = 0; i < M; i++) out.push(c); continue; }
-    const v = k > 0 ? makeVariant(c) : null;
-    for (let i = 0; i < M - k; i++) out.push(c);
-    for (let i = 0; i < k; i++) out.push(v!);
-  }
-  return out;
-}
+/** The mixture is now SHIPPED (`presenceMixture`, C2'), so this tool calls it instead of keeping the
+ *  copy it was originally written with — the sizing that chose p must be reproducible against the
+ *  construction that implements p, not against a lookalike. */
+const mixture = (pool: Card[], p: number): Card[] => presenceMixture(pool, p, M);
 
 console.log(`\n╔═══ p-SENSITIVITY SIZING — presence-weighted pool leg ═══╗`);
 console.log(`model '${trained.id}' | catalog '${srcId}' | replication M=${M} (exact for p in 0.1 steps)`);

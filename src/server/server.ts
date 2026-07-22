@@ -18,7 +18,7 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, extname } from "node:path";
 import { parseCatalogCsv, cardId, type Catalog } from "../data/catalog.ts";
 import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
-import { makeVariant } from "../data/variants.ts";
+import { makeVariant, presenceMixture, PRESENCE_M, PRESENCE_P } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
 import { FIELD_N, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
@@ -328,7 +328,9 @@ let refFieldCache: { key: string; stats: FieldStats } | null = null;
 function referenceFieldStats(baseCatalog: any[], coeffs: Coeffs, model: EventModel): FieldStats {
   const key = `${state.activeModelId ?? ""}|${catalogSource}`;
   if (refFieldCache?.key === key) return refFieldCache.stats;
-  const stats = computeUnifiedFieldStats(baseCatalog, coeffs, model, FIELD_N, true); // eventForm-only path ⇒ ssp-free selection
+  // C2' — a FIELD (it estimates a population cards meet), so it is presence-weighted, not
+  // variant-free. topN scales by PRESENCE_M or the cohort silently shrinks by that factor.
+  const stats = computeUnifiedFieldStats(presenceMixture(baseCatalog), coeffs, model, FIELD_N * PRESENCE_M, true); // eventForm-only ⇒ ssp-free selection
   // Only a SAVED configuration may seed this. See src/server/cache-scope.ts: an unsaved draft
   // scored via /api/position-metrics used to be able to win a cold cache and serve every later
   // tournament a reference field that exists in no saved state.
@@ -389,13 +391,13 @@ function scoreTournament(t: Tournament): Scored {
   let matchup: { model: EventModel; shift: FrameShift } | undefined;
   let hitTail: HitTail | undefined;
   if (eventForm) {
-    const poolField = computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true);
+    const poolField = computeUnifiedFieldStats(presenceMixture(basePool), coeffs, evModel, FIELD_N * PRESENCE_M, true); // C2': FIELD ⇒ presence-weighted
     const mode = transformMode();
     if ((mode === "frame-v2" || mode === "matchup") && activeTrainingMeans) {
       // The crossed opponent-gap shift + K spread are shared by both modes. matchup binds the
       // shift into the model; frame-v2 applies it to ratings in score-card. Same numbers.
       const shift = buildFrameShift(activeTrainingMeans, poolField);
-      const kBar = poolMeanK(basePool, coeffs, evModel, shift, FIELD_N);
+      const kBar = poolMeanK(presenceMixture(basePool), coeffs, evModel, shift, FIELD_N * PRESENCE_M);
       // Per-role s ramped by each role's own K-channel opp-gap (hit ← pit.stu, pit ← hit.kRat).
       kSpread = { sHit: kRamp(shift.hit.vR.kRat ?? 0), sPit: kRamp(shift.pit.vR.stu ?? 0), meanHit: kBar.hit, meanPit: kBar.pit };
       if (mode === "matchup") {
@@ -420,7 +422,7 @@ function scoreTournament(t: Tournament): Scored {
       // The BUILD-3 BABIP scalar is HELD (gate record) — sPitBab is never set here.
       if ((kSpreadPitEnabled() || pitSpreadHrEnabled()) && activeTrainingMeans) {
         const shift = buildFrameShift(activeTrainingMeans, poolField);
-        const pm = poolPitMeansOwn(basePool, coeffs, evModel, poolTransform, FIELD_N);
+        const pm = poolPitMeansOwn(presenceMixture(basePool), coeffs, evModel, poolTransform, FIELD_N * PRESENCE_M);
         kSpread = {
           sHit: 1, meanHit: 0,
           sPit: kSpreadPitEnabled() ? kSpreadPitRamp(shift.pit.vR.stu ?? 0) : 1, meanPit: pm.k,
@@ -2025,7 +2027,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const evModel = makeRawPolyModel(ef);
     // Build each available mode's transform config from the SAME primitives scoreTournament uses.
     const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
-    const poolField = computeUnifiedFieldStats(basePool, coeffs, evModel, FIELD_N, true);
+    const poolField = computeUnifiedFieldStats(presenceMixture(basePool), coeffs, evModel, FIELD_N * PRESENCE_M, true); // C2': FIELD ⇒ presence-weighted
     // own-gap mode mirrors STANDARD scoring, which now includes the pitcher K-spread AND the
     // BUILD-3 HR-spread ramps (kill-switch-aware) — same primitives, same centering, so the
     // scorecard evaluates what production actually ships.
@@ -2033,7 +2035,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     let ownGapKs: KSpreadCfg | undefined;
     if ((kSpreadPitEnabled() || pitSpreadHrEnabled()) && activeTrainingMeans) {
       const shiftOwn = buildFrameShift(activeTrainingMeans, poolField);
-      const pmOwn = poolPitMeansOwn(basePool, coeffs, evModel, ownGapPt, FIELD_N);
+      const pmOwn = poolPitMeansOwn(presenceMixture(basePool), coeffs, evModel, ownGapPt, FIELD_N * PRESENCE_M);
       ownGapKs = {
         sHit: 1, meanHit: 0,
         sPit: kSpreadPitEnabled() ? kSpreadPitRamp(shiftOwn.pit.vR.stu ?? 0) : 1, meanPit: pmOwn.k,
@@ -2046,7 +2048,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     ];
     if (activeTrainingMeans) {
       const shift = buildFrameShift(activeTrainingMeans, poolField);
-      const kBar = poolMeanK(basePool, coeffs, evModel, shift, FIELD_N);
+      const kBar = poolMeanK(presenceMixture(basePool), coeffs, evModel, shift, FIELD_N * PRESENCE_M);
       const kSpread = { sHit: kRamp(shift.hit.vR.kRat ?? 0), sPit: kRamp(shift.pit.vR.stu ?? 0), meanHit: kBar.hit, meanPit: kBar.pit };
       modeCfgs.push({ mode: "frame-v2", cfg: { coeffs, eventForm: ef, frameShift: shift, kSpread } });
       // matchup is bit-identical to frame-v2 until the Phase-1 tail is fit → omitted (a redundant
