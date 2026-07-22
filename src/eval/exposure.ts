@@ -1,3 +1,5 @@
+import { cardSideWobas } from "../scoring-core/pool-stats.ts";
+const num = (v: unknown): number => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 // Pool-derived platoon EXPOSURE baseline (ratings-only) + trained DEPLOYMENT shift.
 // See docs/REBUILD_PLATOON_EXPOSURE_PLAN.md Part A.
 //
@@ -123,5 +125,62 @@ export function applyDeployment(base: ExposureBaseline, d: DeploymentShift | nul
     r_pitch_split_sp: r_sp, l_pitch_split_sp: l_sp,
     r_pitch_split_rp: r_rp, l_pitch_split_rp: l_rp,
     r_pitch_split: (r_sp + r_rp) / 2, l_pitch_split: (l_sp + l_rp) / 2,
+  };
+}
+
+// ═══ COHORT SIZE + FIELD CONSTRUCTION — moved out of the server (Fable ruling (r)) ═══
+//
+// These three lived as module-locals in `src/server/server.ts`, which calls `server.listen()` at
+// import. That made them unimportable: the B2 sizing tool had to MIRROR all three to measure the
+// exposure baseline, which is the same one-copy hazard ruling (d) closed for `FIELD_N`, in a second
+// place. A mirrored constant and a mirrored selection rule can drift from production silently, and
+// the tool measuring production would be the last thing to notice.
+//
+// Behaviour is unchanged — this is a move, not a redesign. The server imports them back.
+
+/** The exposure cohort size. NOT the same object as `FIELD_N` (the pool-transform field) or
+ *  `ANCHOR_N` (the calibration anchor); it sizes the role-agnostic top-N field whose usage-weighted
+ *  handedness IS the exposure baseline.
+ *
+ *  100 is load-bearing and sits in a NARROW stable plateau. The B2 sizing measured the
+ *  variant-policy delta on this baseline spanning −513% to +104% of its N=100 value over
+ *  N ∈ {25..300}, CHANGING SIGN — far more cohort-sensitive than the frame gap, which merely spans
+ *  57–117%. {100, 150, 200} is the flat region and the shipped value sits inside it. Moving this
+ *  constant is therefore not a tuning choice; it re-bases a quantity whose sign is not stable
+ *  outside the plateau. Pinned in tests/one-copy-constants.test.ts. */
+export const EXPOSURE_N = 100;
+
+/** The exposure field's members, in the form `computeBaseline` consumes.
+ *  Selection is env-free RAW wOBA (`cardSideWobas(..., sspFree = true)`) — exposure runs only with a
+ *  raw-poly model. `pitVal` is negated because lower allowed wOBA is better and the field sorts
+ *  "higher = better"; `pitWeight` is stamina as an innings/BF proxy, `hitWeight` flat because lineup
+ *  PA is roughly flat. */
+export function exposureFieldMembers(
+  cards: Array<Record<string, unknown>>,
+  coeffs: Parameters<typeof cardSideWobas>[1],
+  model: Parameters<typeof cardSideWobas>[2],
+): FieldMember[] {
+  return cards.map((c) => {
+    const w = cardSideWobas(c as never, coeffs, model, true);
+    return {
+      bats: num(c["Bats"]), throws: num(c["Throws"]),
+      hitVR: w.hitVR, hitVL: w.hitVL, pitVal: -(w.pitVR + w.pitVL),
+      hitWeight: 1, pitWeight: Math.max(num(c["Stamina"]), 1),
+    };
+  });
+}
+
+/** Flatten a trained `PlatoonExposure` artifact into the `RealizedSplits` shape, preferring the
+ *  role-conditional SP/RP pitch splits when the artifact carries them. */
+export function realizedSplitsOf(p: {
+  teamVR: number; r_hit_split: number; l_hit_split: number; s_hit_split: number;
+  r_pitch_split: number; l_pitch_split: number;
+  pitchRoleSplits?: { sp: { r: number; l: number }; rp: { r: number; l: number } };
+}): RealizedSplits {
+  const rs = p.pitchRoleSplits;
+  return {
+    teamVR: p.teamVR, r_hit_split: p.r_hit_split, l_hit_split: p.l_hit_split, s_hit_split: p.s_hit_split,
+    r_pitch_split_sp: rs?.sp.r ?? p.r_pitch_split, l_pitch_split_sp: rs?.sp.l ?? p.l_pitch_split,
+    r_pitch_split_rp: rs?.rp.r ?? p.r_pitch_split, l_pitch_split_rp: rs?.rp.l ?? p.l_pitch_split,
   };
 }

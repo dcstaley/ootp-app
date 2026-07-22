@@ -7,5 +7,6 @@ export { offenseRunsAboveAvg } from "./offense.ts";
 export { setExpectedWins, buildUsage, defenseRunsAboveAvg } from "./set-eval.ts";
 export {
   computeBaseline, deploymentFrom, applyDeployment, logit, expit,
+  EXPOSURE_N, exposureFieldMembers, realizedSplitsOf,
   type FieldMember, type ExposureBaseline, type RealizedSplits, type DeploymentShift, type EffectiveExposure,
 } from "./exposure.ts";

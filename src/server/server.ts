@@ -32,7 +32,7 @@ import { HIT_BIP_ADJ, PIT_BIP_ADJ, formVertexOffenders } from "../model/curves.t
 import { makeMatchupModel, matchupShift } from "../model/matchup.ts";              // Phase-0 matchup reparametrization
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
-import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
+import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, EXPOSURE_N, exposureFieldMembers, realizedSplitsOf, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { resolveTournamentAdjustment } from "../config/tournament.ts";
 import { Repository, isSafeId } from "../persistence/repository.ts";
@@ -774,15 +774,8 @@ function budgetMode(t: Tournament): "none" | "cap" | "slots" {
 // construction; other pools get their own baseline + the shared deployment. Absent a #2
 // model ⇒ null ⇒ callers keep the legacy constants. See
 // docs/REBUILD_PLATOON_EXPOSURE_PLAN.md Part A.
-const EXPOSURE_N = 100;
-function exposureFieldMembers(cards: any[], coeffs: Coeffs, model: EventModel): FieldMember[] {
-  return cards.map((c) => {
-    const w = cardSideWobas(c, coeffs, model, true); // exposure runs only with a #2 model ⇒ ssp-free
-    // pitVal: lower allowed wOBA = better → negate so "higher = better" for the field sort.
-    // pitWeight = stamina (innings/BF proxy); hitWeight flat (lineup PA ≈ flat).
-    return { bats: n(c["Bats"]), throws: n(c["Throws"]), hitVR: w.hitVR, hitVL: w.hitVL, pitVal: -(w.pitVR + w.pitVL), hitWeight: 1, pitWeight: Math.max(n(c["Stamina"]), 1) };
-  });
-}
+// EXPOSURE_N + exposureFieldMembers now live in src/eval/exposure.ts (Fable ruling (r)): they were
+// module-locals in this server-listening file, so tools had to mirror them. Imported, never redeclared.
 // LEAGUE reference baseline = full-catalog field. Env-invariant (RAW wOBA), so any tournament's
 // coeffs+model give the same result → cached globally by model+catalog.
 let leagueBaselineCache: { key: string; base: ExposureBaseline } | null = null;
@@ -793,14 +786,7 @@ function leagueExposureBaseline(coeffs: Coeffs, model: EventModel): ExposureBase
   if (mayCache()) leagueBaselineCache = { key, base };   // same rule as refFieldCache
   return base;
 }
-function realizedSplitsOf(p: PlatoonExposure): RealizedSplits {
-  const rs = p.pitchRoleSplits;
-  return {
-    teamVR: p.teamVR, r_hit_split: p.r_hit_split, l_hit_split: p.l_hit_split, s_hit_split: p.s_hit_split,
-    r_pitch_split_sp: rs?.sp.r ?? p.r_pitch_split, l_pitch_split_sp: rs?.sp.l ?? p.l_pitch_split,
-    r_pitch_split_rp: rs?.rp.r ?? p.r_pitch_split, l_pitch_split_rp: rs?.rp.l ?? p.l_pitch_split,
-  };
-}
+// realizedSplitsOf: same move, same reason — see src/eval/exposure.ts.
 /** LEAGUE pool: the model's realized splits verbatim (this IS the training pool). */
 function realizedEffective(p: PlatoonExposure): EffectiveExposure {
   const r = realizedSplitsOf(p);

@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { FIELD_N } from "../src/scoring-core/index.ts";
 import { FIELD_N as FIELD_N_EVAL } from "../src/eval/cwhit/sample.ts";
 import { ANCHOR_N } from "../src/scoring-core/calibrate.ts";
+import { EXPOSURE_N } from "../src/eval/exposure.ts";
 
 function tsFiles(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir)) {
@@ -65,6 +66,22 @@ describe("one-copy constants", () => {
       });
     }
     expect(offenders, "a cohort size must reference FIELD_N/ANCHOR_N, never a bare number").toEqual([]);
+  });
+
+  it("EXPOSURE_N is declared once, and outside the server-listening file", () => {
+    // Fable ruling (r). It was a module-local in src/server/server.ts, which calls server.listen()
+    // at import -- so the B2 sizing tool had to MIRROR it, along with exposureFieldMembers and
+    // realizedSplitsOf. A mirrored constant drifts from production silently, and the tool measuring
+    // production is the last thing that would notice.
+    const sites = declSites("EXPOSURE_N");
+    expect(sites.map((x) => x.split("\\").join("/"))).toEqual(["src/eval/exposure.ts"]);
+    expect(EXPOSURE_N).toBe(100);
+    // 100 is not a free tuning choice: B2 measured the variant delta on this baseline spanning
+    // -513% to +104% of its N=100 value over N in {25..300}, CHANGING SIGN. {100,150,200} is the
+    // stable plateau and the shipped value sits inside it.
+    const src = readFileSync("src/server/server.ts", "utf8");
+    expect(/function\s+(exposureFieldMembers|realizedSplitsOf)/.test(src),
+      "these moved to src/eval/exposure.ts; a copy here is the defect ruling (r) closed").toBe(false);
   });
 
   it("ANCHOR_N is a SEPARATE constant that merely shares the value", () => {
