@@ -36,7 +36,23 @@ function cardRec(c: any, coeffs: Coeffs, model: EventModel, sspFree: boolean): C
     const rat: Record<string, number> = { eye: n(c[`Eye ${side}`]), pow: n(c[`Power ${side}`]), kRat: n(c[`Avoid K ${side}`]), babip: n(c[`BABIP ${side}`]), gap: n(c[`Gap ${side}`]) };
     const e = model.predictHitting({ eye: rat.eye!, pow: rat.pow!, kRat: rat.kRat!, babip: rat.babip!, gap: rat.gap!, speed, steal, run }, coeffs);
     const ssp = sspFree ? 1 : sameSidePenaltyHitting(bats, side, coeffs.ssp_adv_hitting);
-    return { rat, woba: assembleRawHittingWoba(e, ssp, speed, stealRate, steal, run, coeffs) };
+    // BATTING-ONLY FOR SELECTION (C1 of the 2026-07-22 constants event) — the four baserunning
+    // arguments are zeroed, exactly as `calibrate`'s anchor already does.
+    //
+    // WHY: the baserunning term's `adv_*` coefficients are ERA-SCALED by `resolveCoeffs`
+    // (era.runVal / era.sbFreq), so including it made this ranking ENV-DEPENDENT — the hitter field
+    // selected under era-1920 differed from the same field under era-2010. That mattered far beyond
+    // ranking, because `referenceFieldStats` and `leagueExposureBaseline` cache on
+    // `${activeModelId}|${catalogSource}` with NO tournament in the key, on the documented assumption
+    // that raw-wOBA selection is env-free. It was env-free on the PITCHER leg exactly (measured
+    // delta 0.0000 across four eras) and NOT on the hitter leg (reference top-50 swapped 1/50 under
+    // era-1920, pool fields up to 3/50, stu gap -0.57..+0.74, s_K +/-0.023) — so whichever tournament
+    // resolved a cold cache first set the field every other tournament then read.
+    //
+    // Zeroing here makes the cache keys valid BY CONSTRUCTION rather than by assumption. It is a
+    // change to WHO IS IN THE COHORT, never to what a card scores: `trustedHittingWoba` still adds
+    // baserunning additively on the scoring path, pool-centred, exactly as before.
+    return { rat, woba: assembleRawHittingWoba(e, ssp, 0, 0, 0, 0, coeffs) };
   };
   const pit = (side: "vR" | "vL"): SideRec => {
     const rat: Record<string, number> = { con: n(c[`Control ${side}`]), stu: n(c[`Stuff ${side}`]), pbabip: n(c[`pBABIP ${side}`]), hrr: n(c[`pHR ${side}`]) };
