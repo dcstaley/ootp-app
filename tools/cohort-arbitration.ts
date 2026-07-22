@@ -169,7 +169,7 @@ console.log(`
 ╔═══ ITEM B — COHORT ARBITRATION (empirical half): how much of the shipped number is the choice of 50? ═══╗`);
 console.log(`model '${trained.id}' | catalog '${srcId}' | production FIELD_N = ${FIELD_N} | calibrate ANCHOR_N = ${ANCHOR_N}`);
 console.log(`variant policy: PRODUCTION CURRENT — cohorts selected from a VARIANT-FREE catalog (${baseCards.length} cards). Arm C is not a variable here.`);
-console.log(`shipped ramp constants (NOT refitted): K_SPREAD_PIT = {A ${K_SPREAD_PIT.A}, G ${K_SPREAD_PIT.G}} | PIT_SPREAD_HR = {A ${PIT_SPREAD_HR.A}, G ${PIT_SPREAD_HR.G}}`);
+console.log(`shipped ramp constants (NOT refitted): K_SPREAD_PIT = {A ${K_SPREAD_PIT.A}, q ${K_SPREAD_PIT.q}, gMax ${K_SPREAD_PIT.gMax}} | PIT_SPREAD_HR = {A ${PIT_SPREAD_HR.A}, G ${PIT_SPREAD_HR.G}}`);
 console.log(`N sweep = ${N_GRID.map((x) => x.label).join(", ")} ("full" ⇒ NO selection survives: the cohort IS the pool). Both ENDS move: ref (league) and pool fields are BOTH taken at N.`);
 console.log(`EVERY cohort statistic below is a TOP-N statistic except the "full" row, which is the FULL POOL.`);
 

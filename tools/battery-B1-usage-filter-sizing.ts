@@ -251,7 +251,7 @@ console.log(`artifact: window=[${WINDOW.join(",")}]  minPA=${PROD_FLOOR}  includ
 console.log(`training dir resolved here: '${TRAINING_DIR}'  ${trained.datasetRoot && trained.datasetRoot !== TRAINING_DIR ? "⚠ DIFFERS FROM THE ARTIFACT'S datasetRoot" : "(matches the artifact)"}`);
 console.log(`FIELD_N = ${FIELD_N} (imported from src/scoring-core/pool-stats.ts; never re-declared here)`);
 console.log(`training coeffs pinned as the trainer pins them: era-2010 + NEUTRAL park literal + softcaps from tournaments[0] ('${tmTourney.id}')`);
-console.log(`shipped ramps quoted as they stand: K_SPREAD_PIT = {A:${K_SPREAD_PIT.A}, G:${K_SPREAD_PIT.G}}  PIT_SPREAD_HR = {A:${PIT_SPREAD_HR.A}, G:${PIT_SPREAD_HR.G}}  — NOT refit`);
+console.log(`shipped ramps quoted as they stand: K_SPREAD_PIT = {A:${K_SPREAD_PIT.A}, q:${K_SPREAD_PIT.q}, gMax:${K_SPREAD_PIT.gMax}}  PIT_SPREAD_HR = {A:${PIT_SPREAD_HR.A}, G:${PIT_SPREAD_HR.G}}  — NOT refit`);
 console.log(`MEASUREMENT ONLY — no production behaviour, default or constant is changed; nothing is fitted; nothing is wired.`);
 
 // ═══ 0. THE SEAM, stated once ════════════════════════════════════════════════
@@ -456,7 +456,7 @@ for (const [role, keys] of [["pit", GAP_PIT], ["hit", GAP_HIT]] as const) {
 
 // ═══ 3. THE RAMP CONSEQUENCE ═════════════════════════════════════════════════
 console.log(`\n\n╔═══ 3. THE RAMP CONSEQUENCE — the SHIPPED ramps evaluated at each floor's gap (NOT refit) ═══╗`);
-console.log(`  s_K(g)  = 1 + ${K_SPREAD_PIT.A}·(1 − e^(−g/${K_SPREAD_PIT.G})),  g = frameShift.pit.vR.stu`);
+console.log(`  s_K(g)  = 1 + ${K_SPREAD_PIT.A}·(min(g, ${K_SPREAD_PIT.gMax})/${K_SPREAD_PIT.G0})^${K_SPREAD_PIT.q},  g = frameShift.pit.vR.stu   (flat above gMax)`);
 console.log(`  s_HR(g) = 1 + ${PIT_SPREAD_HR.A}·(1 − e^(−g/${PIT_SPREAD_HR.G})),  g = frameShift.pit.vR.hrr`);
 console.log(`  Both are s(g ≤ 0) = 1 EXACTLY (league anchor). Constants quoted from src/model/pool-transform.ts.`);
 console.log(`  CAVEAT, stated first: K_SPREAD_PIT and PIT_SPREAD_HR were FIT at the PRODUCTION-floor gap coordinate.`);

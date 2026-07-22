@@ -59,7 +59,7 @@ const f = (x: number, d = 3) => (Number.isFinite(x) ? x.toFixed(d) : "n/a");
 const sgn = (x: number, d = 3) => `${x >= 0 ? "+" : ""}${x.toFixed(d)}`;
 
 console.log(`\nK-RAMP GAP TRACE — tier '${TIER}' (eligibility window ${win.valueMin ?? "*"}..${win.valueMax}), catalog '${srcId}'`);
-console.log(`pool size ${pool.length} cards (hitters ${pool.filter((c) => !isPit(c)).length}) | FIELD_N=${FIELD_N} | ramp A=${K_SPREAD_PIT.A} G=${K_SPREAD_PIT.G}`);
+console.log(`pool size ${pool.length} cards (hitters ${pool.filter((c) => !isPit(c)).length}) | FIELD_N=${FIELD_N} | ramp A=${K_SPREAD_PIT.A} q=${K_SPREAD_PIT.q} gMax=${K_SPREAD_PIT.gMax}`);
 console.log(`\nCOORDINATE (pool-stats.ts:129): g = train.hit.kRat − pool.hit.kRat  ⇒ RATING space, opposing-hitter Avoid-K.\n`);
 
 type Row = { id: string; win: string; trainKRat: number; poolKRat: number; g: number; s: number; poolK: number };

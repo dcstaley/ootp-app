@@ -2115,11 +2115,19 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   // bit-identical to frame-v2). frame-v2 AND matchup need a trainingMeans-bearing active model.
   if (method === "GET" && url === "/api/training/transform-mode")
     return json(res, { mode: transformMode(), hasTrainingMeans: !!activeTrainingMeans, sK: S_K, g0K: G0_K });
-  // Pitcher K-spread ramp (own-gap standard scoring, 2026-07-17): status + KILL-SWITCH.
-  // GET → { enabled, hasTrainingMeans, A, G }. POST ?enabled=false disables (rollback to pre-ramp
-  // scores); POST ?enabled=true (or anything else) re-enables. Persisted in state.kSpreadPit.
+  // Pitcher K-spread ramp (own-gap standard scoring, 2026-07-17; family replaced 2026-07-22 by the
+  // C3 constants event): status + KILL-SWITCH.
+  // GET → { enabled, hasTrainingMeans, A, q, G0, gMax, fitN, fitP, sAtGMax }. The whole constant is
+  // reported, not a two-parameter subset, because the ramp's behaviour above gMax is part of what it
+  // IS (flat hold, amendment 3) and a caller reading only {A, q} would mis-describe it.
+  // POST ?enabled=false disables (rollback to pre-ramp scores); POST ?enabled=true (or anything
+  // else) re-enables. Persisted in state.kSpreadPit.
   if (method === "GET" && url === "/api/training/kspread-pit")
-    return json(res, { enabled: kSpreadPitEnabled(), hasTrainingMeans: !!activeTrainingMeans, A: K_SPREAD_PIT.A, G: K_SPREAD_PIT.G });
+    return json(res, {
+      enabled: kSpreadPitEnabled(), hasTrainingMeans: !!activeTrainingMeans,
+      A: K_SPREAD_PIT.A, q: K_SPREAD_PIT.q, G0: K_SPREAD_PIT.G0, gMax: K_SPREAD_PIT.gMax,
+      fitN: K_SPREAD_PIT.fitN, fitP: K_SPREAD_PIT.fitP, sAtGMax: kSpreadPitRamp(K_SPREAD_PIT.gMax),
+    });
   if (method === "POST" && url === "/api/training/kspread-pit") {
     state.kSpreadPit = u.searchParams.get("enabled") === "false" ? "off" : "on";
     await saveState();

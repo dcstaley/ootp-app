@@ -23,7 +23,9 @@ import {
   type Coeffs, type CalScales, type FrameShift, type PoolTransform, type EventForm,
 } from "../src/scoring-core/index.ts";
 import type { FieldStats } from "../src/scoring-core/pool-stats.ts";
-import { applyKSpread, kSpreadPitRamp, K_SPREAD_PIT, type RatingStats } from "../src/model/pool-transform.ts";
+import { applyKSpread, kSpreadPitRamp, K_SPREAD_PIT, assertKSpreadProvenance, type RatingStats } from "../src/model/pool-transform.ts";
+import { FIELD_N } from "../src/scoring-core/pool-stats.ts";
+import { PRESENCE_P } from "../src/data/variants.ts";
 import type { FittedEvent, FittedH } from "../src/model/curves.ts";
 import { ourPit, type SampleDeps, type KSpreadPit } from "../src/eval/cwhit/sample.ts";
 import { DEFAULT_WOBA_WEIGHTS } from "../src/scoring-core/woba-weights.ts";
@@ -54,56 +56,128 @@ function card(over: Record<string, number> = {}): Record<string, unknown> {
   return c;
 }
 
-// ── 0) the production ramp (constants shipped 2026-07-17, Derek's ruling) ───────
-describe("kSpreadPitRamp — fitted constants + league anchor + shape (regression pins)", () => {
-  // REFRESHED 2026-07-21 for the league-42-43 refit (Fable ruling: model + constants ship as ONE
-  // unit). Previous pin was { A: 9.5394, G: 319 }, fitted under league-41-42.
-  // These two pins FAILED on the constant change, which is precisely their job — a ramp constant
-  // must never move without a reviewed refit behind it. Provenance + both gate overrules are in
-  // src/model/pool-transform.ts; run record in fixtures/kspread-refit-run-2026-07-21-league-42-43.txt.
-  it("pins the fit provenance constants exactly (A=5.0871, G=152.5 — 2026-07-21 refit under league-42-43)", () => {
-    expect(K_SPREAD_PIT.A).toBe(5.0871);
-    expect(K_SPREAD_PIT.G).toBe(152.5);
+// ── 0) the production ramp — C3 CONSTANTS EVENT, 2026-07-22 ────────────────────
+describe("kSpreadPitRamp — fitted constants + league anchor + domain rule (regression pins)", () => {
+  // THE FAMILY CHANGED. Previous pins were { A: 5.0871, G: 152.5 } on the saturating form
+  // 1 + A(1 − e^(−g/G)), which is RETIRED AS FALSIFIED: it is concave for every (A,G) while the
+  // coherent tiers' needs are convex, so it over-corrected diamond (1.335 vs a need of ~1.04) —
+  // a standing G1 failure that this event resolves.
+  // Spec: docs/CWHIT_C3_RAMP_PREREG_2026-07-22.md + amendments 1-3.
+  // Fit artifact: fixtures/cwhit-c3-ramp-fit-a2-2026-07-22.txt (tools/fit-kspread-c3.ts).
+  // These pins FAIL on any constant change, which is precisely their job.
+  it("pins the fit constants exactly (A=0.6668, q=2.40, G0=20 — C3, 2026-07-22)", () => {
+    expect(K_SPREAD_PIT.A).toBe(0.6668);
+    expect(K_SPREAD_PIT.q).toBe(2.40);
+    expect(K_SPREAD_PIT.G0).toBe(20);
+  });
+  // PROVENANCE. The ramp is fitted at a (cohort size, presence prior) coordinate and measured out to
+  // a gMax; none of the three can be rescaled, only re-derived — the gap is NOT monotone in p.
+  // These are pinned as VALUES here and asserted against the constants ACTUALLY IN FORCE at scoring
+  // -core load (see the assertKSpreadProvenance block below): a value pin alone cannot catch the
+  // case where FIELD_N moves and the ramp does not.
+  it("pins the fit-derived provenance (fitN=50, fitP=0.30, gMax=22.25)", () => {
+    expect(K_SPREAD_PIT.fitN).toBe(50);
+    expect(K_SPREAD_PIT.fitP).toBe(0.30);
+    expect(K_SPREAD_PIT.gMax).toBe(22.25);
   });
   it("s(0) === 1 EXACTLY, and s(g ≤ 0) === 1 (league anchor; stronger-than-training pools never compressed)", () => {
     expect(kSpreadPitRamp(0)).toBe(1);
     expect(kSpreadPitRamp(-5)).toBe(1);
     expect(kSpreadPitRamp(-100)).toBe(1);
   });
-  it("reproduces the fitted ramp values at the reference gaps (stable gate-run numbers, 2dp)", () => {
-    // 2026-07-21 refit: s(10)=1.32, s(20)=1.63, s(28)=1.85.  (was 1.29 / 1.58 / 1.80)
-    expect(kSpreadPitRamp(10)).toBeCloseTo(1.32, 2);
-    expect(kSpreadPitRamp(20)).toBeCloseTo(1.63, 2);
-    expect(kSpreadPitRamp(28)).toBeCloseTo(1.85, 2);
-    // At the measured Quick-tier gaps. NOTE THE GAPS THEMSELVES MOVED: iron 27.7→23.6,
-    // bronze 25.7→22.8, silver 22.5→20.5, gold 19.3→15.9. That shift is a COORDINATE effect
-    // (both sides of g are model-selected top-N cohorts — see tools/kramp-gap-trace.ts), not a
-    // change in the measured K-spread, whose per-tier slopes moved only −2..−3%.
-    expect(kSpreadPitRamp(23.6)).toBeCloseTo(1.73, 2);
-    expect(kSpreadPitRamp(22.8)).toBeCloseTo(1.71, 2);
-    expect(kSpreadPitRamp(20.5)).toBeCloseTo(1.64, 2);
-    expect(kSpreadPitRamp(15.9)).toBeCloseTo(1.50, 2);
-    // β over the observed range — THE standing comparison for ramp shape (never raw {A,G}, since G
-    // is only lower-bounded and its point value is a pinning-rule outcome).
-    // Local slope over THIS ramp's own observed gaps (15.9–23.6) = 0.0293/pt. The previous shipped
-    // ramp {A:9.5394,G:319} was 0.0278/pt over ITS observed gaps (19.3–27.7) ⇒ +5.4%.
-    // DO NOT compare against the run's LINEAR-LIMIT figure (0.0310): that is a different member of
-    // the within-5%-SSE family (G→∞), not the pinned ramp. Mixing the two is how the first draft of
-    // this pin claimed "+8%".
-    expect((kSpreadPitRamp(23.6) - kSpreadPitRamp(15.9)) / (23.6 - 15.9)).toBeCloseTo(0.0293, 4);
+  it("reproduces the fitted s at each of the four FITTED tier gaps (the acceptance numbers)", () => {
+    // These four ARE the gate: each sits inside its tier's measured bootstrap CI, diamond included.
+    //   iron 22.25 → 1.862 [need 1.80]   bronze 19.69 → 1.642 [1.62]
+    //   silver 17.53 → 1.486 [1.47]      diamond 10.31 → 1.136 [1.04]
+    // 1.8612, not the artifact's displayed 1.862: A ships at the house 4-dp convention while the
+    // fit's closed-form A carries full precision. The difference is 0.016 of ONE need-SE at iron —
+    // 0.8% of the published equivalence set's own width — so it is inside the constant's stated
+    // precision by construction, and the pin records the SHIPPED value, never the displayed one.
+    expect(kSpreadPitRamp(22.25)).toBeCloseTo(1.8612, 4);
+    expect(kSpreadPitRamp(19.69)).toBeCloseTo(1.642, 3);
+    expect(kSpreadPitRamp(17.53)).toBeCloseTo(1.486, 3);
+    expect(kSpreadPitRamp(10.31)).toBeCloseTo(1.136, 3);
+    // Gold is FITTED OUT (its need is non-monotone in the coordinate) and ships as a PUBLISHED
+    // residual: need 1.78 vs s(15.02) = 1.335 ⇒ +0.449 [0.24, 0.63], composition/cohort axis.
+    // Pinned so the published residual can never drift away from the constant it was measured against.
+    expect(kSpreadPitRamp(15.02)).toBeCloseTo(1.335, 3);
+    expect(1.78 - kSpreadPitRamp(15.02)).toBeCloseTo(0.445, 2);
+    // A = s(G0) − 1 exactly, which is the whole point of fixing G0 rather than fitting it.
+    expect(kSpreadPitRamp(K_SPREAD_PIT.G0)).toBeCloseTo(1 + K_SPREAD_PIT.A, 12);
   });
-  it("is monotone non-decreasing in the gap and bounded by the plateau 1 + A", () => {
+  // ── THE DOMAIN RULE (amendment 3). This is the pin that would have caught the section-9 defect. ──
+  // GOAL: the ramp must NEVER assert more correction than the fit observed. A convex form is
+  // unbounded above, and 11 of 46 production tournaments sit above the fitted range — eight
+  // live-pool formats at g ≈ 41-44.5 where the MEASURED need is ~1.0 (live-open-daily pre-slope
+  // 0.91 [0.69,1.08]). Unclamped the ramp returns ≈5.5 there; tangent-linear ≈3.9; both refuted.
+  it("HOLDS FLAT above gMax — s(g > gMax) === s(gMax) exactly, at every gap production can reach", () => {
+    const plateau = kSpreadPitRamp(K_SPREAD_PIT.gMax);
+    expect(plateau).toBeCloseTo(1.8612, 4);
+    for (const g of [22.26, 23, 24, 32.26, 41.25, 42.44, 43.24, 44.16, 44.5, 100, 1e6]) {
+      expect(kSpreadPitRamp(g)).toBe(plateau);
+    }
+  });
+  it("the clamp BINDS where it must: the live-pool gap gets the plateau, not the extrapolation", () => {
+    // The unclamped form at the largest configured gap. If the clamp were ever removed this
+    // number is what production would apply — hence the explicit contrast, not just a bound.
+    const unclamped = 1 + K_SPREAD_PIT.A * Math.pow(44.5 / K_SPREAD_PIT.G0, K_SPREAD_PIT.q);
+    expect(unclamped).toBeGreaterThan(5);
+    expect(kSpreadPitRamp(44.5)).toBeLessThan(2);
+    expect(kSpreadPitRamp(44.5)).toBe(kSpreadPitRamp(K_SPREAD_PIT.gMax));
+  });
+  it("is monotone NON-DECREASING in the gap and bounded above by the plateau s(gMax)", () => {
+    // Non-decreasing, not strictly increasing: the domain rule makes it flat above gMax BY DESIGN.
+    const plateau = kSpreadPitRamp(K_SPREAD_PIT.gMax);
     let prev = kSpreadPitRamp(0);
-    for (let g = 1; g <= 400; g += 1) {
+    for (let g = 0.25; g <= 400; g += 0.25) {
       const s = kSpreadPitRamp(g);
       expect(s).toBeGreaterThanOrEqual(prev);
-      expect(s).toBeLessThan(1 + K_SPREAD_PIT.A);
+      expect(s).toBeLessThanOrEqual(plateau);
       prev = s;
     }
+  });
+  it("is CONVEX over the fitted range (q > 1) — the property the retired saturating family lacked", () => {
+    // Second difference positive across the fitted range. The saturating family was concave for
+    // every (A,G), which is why it could not reach the coherent four and over-corrected diamond.
+    for (let g = 10.5; g <= 21.75; g += 0.25) {
+      const d2 = kSpreadPitRamp(g + 0.25) - 2 * kSpreadPitRamp(g) + kSpreadPitRamp(g - 0.25);
+      expect(d2).toBeGreaterThan(0);
+    }
+    expect(K_SPREAD_PIT.q).toBeGreaterThan(1);
   });
   it("in-frame identity is STRUCTURAL: s(0)=1 hits applyKSpread's exact short-circuit (bit-identical K)", () => {
     const awkwardK = 137.29999999999998, awkwardMean = 121.90000000000003;
     expect(applyKSpread(awkwardK, awkwardMean, kSpreadPitRamp(0))).toBe(awkwardK);
+  });
+});
+
+// ── 0b) THE PROVENANCE ASSERTION ───────────────────────────────────────────────
+// A VALUE pin (above) proves the constant says fitN = 50. It CANNOT prove that FIELD_N is still 50.
+// Those are two different failures and the second is the dangerous one: move a cohort constant, and
+// a ramp fitted at the old coordinate keeps scoring silently at the new one — which cannot be
+// rescaled, because the gap is not monotone in p. This block pins the check itself.
+describe("assertKSpreadProvenance — the ramp cannot be evaluated at a coordinate it was not fitted at", () => {
+  it("PASSES against the cohort constants actually in force (this is the live check, not a mock)", () => {
+    expect(() => assertKSpreadProvenance(FIELD_N, PRESENCE_P)).not.toThrow();
+    expect(() => assertKSpreadProvenance(FIELD_N, PRESENCE_P, K_SPREAD_PIT.gMax)).not.toThrow();
+  });
+  it("THROWS — not warns — on a cohort-size mismatch, and names the quantity", () => {
+    expect(() => assertKSpreadProvenance(75, PRESENCE_P)).toThrow(/FIELD_N is 75.*fitN = 50/s);
+  });
+  it("THROWS on a presence-prior mismatch, and names the quantity", () => {
+    expect(() => assertKSpreadProvenance(FIELD_N, 0.25)).toThrow(/PRESENCE_P is 0\.25.*fitP = 0\.3/s);
+  });
+  it("THROWS on a fitted-range mismatch (gMax is fit-derived, in the same class as fitN/fitP)", () => {
+    expect(() => assertKSpreadProvenance(FIELD_N, PRESENCE_P, 30)).toThrow(/fitted gap max is 30.*gMax = 22\.25/s);
+  });
+  it("reports EVERY mismatch at once rather than stopping at the first", () => {
+    // A caller who moved two constants should be told about both; fixing one and re-running to
+    // discover the other is how a half-corrected coordinate ships.
+    let msg = "";
+    try { assertKSpreadProvenance(75, 0.25, 30); } catch (e) { msg = String(e); }
+    expect(msg).toMatch(/FIELD_N is 75/);
+    expect(msg).toMatch(/PRESENCE_P is 0\.25/);
+    expect(msg).toMatch(/fitted gap max is 30/);
   });
 });
 

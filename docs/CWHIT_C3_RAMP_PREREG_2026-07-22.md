@@ -322,3 +322,69 @@ re-derived. Auditing every rule in this document against that test:
 A partial pass stays a partial pass. Anything on this list = STOP and report; overrules are not mine.
 
 (end of amendment 2 — C3)
+
+---
+
+# AMENDMENT 3 — the domain ruling. 2026-07-22.
+
+Appended after the amendment-2 fit PASSED every gate and its §9 raised a STOP the pre-registration
+did not cover. This governs the shipped constant's behaviour outside the fitted gap range.
+
+## A3.1 What §9 found
+
+The amendment-2 fit is CONVEX (`q = 2.40`) and therefore **unbounded above**. Amendment 1's fit was
+nearly flat, so extrapolating it past the fitted range was harmless and "live-open-daily sits at
+g = 44.5" was a footnote. **A footnote about a flat function is not a footnote about a convex one** —
+an assessment inherited across a FORM change, which A2.5's clause-4 audit exists to catch, and it was
+caught by running that audit rather than by a gate.
+
+Re-derived over PRODUCTION's 46 configured tournaments rather than the 14 captured formats:
+
+    11 of 46 sit ABOVE the fitted range 10.31 – 22.25.
+    8 are live-pool formats at g = 41 – 44.5, where the unclamped fit returns s = 4.8 – 5.5.
+    THE MEASURED NEED THERE IS ~1: live-open-daily's PRE slope is 0.91 [0.69, 1.08] — CI covering
+    1, i.e. already calibrated UNCORRECTED — and applying the unclamped s drives it to 0.16.
+
+## A3.2 The ruling: FLAT HOLD above the fitted range
+
+    s(g) = 1 + A·(g/G0)^q   for 0 < g <= gMax        gMax = 22.25
+    s(g) = s(gMax) = 1.862  for g > gMax
+    s(g) = 1 exactly        for g <= 0
+
+**GOAL, stated with the rule (clause 5):** the ramp must never assert more correction than the fit
+observed. `gMax` is not a tuning knob and not a safety margin — it is *the largest gap the fit was
+measured at*, and beyond it the constant is extrapolating a curvature no data supports.
+
+Rejected alternatives, on measurement rather than taste:
+- **Unclamped** (s ≈ 5.5 at g ≈ 44) — fails the live-open measurement by the widest margin.
+- **Tangent-linear extension** (s ≈ 3.9 at g ≈ 44) — the program's usual out-of-domain extension, and
+  still refuted by the same measurement. Its precedent comes from extending a curve inside a channel
+  whose data continue past the fit; here the data say the opposite direction entirely.
+- **Re-fit inside a bounded family** — would reopen the fit, and the fitted range is not where the
+  problem is. The four fitted tiers are all inside their CIs.
+
+## A3.3 What flat hold does and does not fix
+
+It **improves** the live-pool formats from today's s = 2.29 to s = 1.862 against a need of ~1.0. That
+is better and still wrong. **It is not presented as a fix**, and it ships as the SECOND PUBLISHED
+RESIDUAL: **≈ +0.86 at g ≈ 44** (from live-open-daily's measured pre-slope), assigned — like gold's
++0.449 — to the **composition/cohort axis**.
+
+**THE STANDING DEFECT THIS EXPOSED, recorded as its own finding:** today's shipped ramp has been
+over-correcting live-pool K spread ALL ALONG (s = 2.29 where the need is ~1). C3 did not introduce
+this; C3's domain diagnostic found it. Shipping flat hold reduces a live production error rather
+than creating one, which is why the ruling is to ship rather than to hold the event.
+
+**EVIDENCE STRENGTH, stated so it cannot be over-read:** the RANGE fact is certain (11 of 46, from
+the catalog). The NEED at g ≈ 44 rests on ONE captured format at 42 judged rows — over `THIN_N`, so
+it carries a verdict, but the other seven live formats are inferred from a shared pool, not measured.
+
+## A3.4 Provenance: gMax joins fit-N and fit-p
+
+`gMax` is **fit-derived and coordinate-dependent**: it is the largest fitted tier gap at the fitted
+`(N, p)`. If the coordinate moves — a retrain, a cohort-rule change, a presence change — `gMax` is as
+stale as `A` and `q`, and must be re-derived with them, never carried. It therefore gets the same
+treatment: **stamped on the constant and ASSERTED at scoring time**, alongside `fit-N = 50` and
+`fit-p = 0.30`. A mismatch is a thrown assertion, never a silent difference.
+
+(end of amendment 3 — C3)

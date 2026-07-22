@@ -223,15 +223,136 @@ export function applyPitSpread(
 //    silver/gold captures land — a CI-clear overshoot on deeper data RE-OPENS the ramp's tier response.
 //  · EG / Bronze-Heart weird-env K9 FAILs (post 1.51 / 1.46) remain the RECORDED TASK-1 RESIDUAL
 //    (era_k over-compresses at extreme eras) — not a defect of this ramp.
-export const K_SPREAD_PIT = { A: 5.0871, G: 152.5 } as const;
+//
+// ══ 2026-07-22 CONSTANTS EVENT — C3. THE FAMILY CHANGED; EVERYTHING ABOVE IS SUPERSEDED. ══
+// Spec: docs/CWHIT_C3_RAMP_PREREG_2026-07-22.md + amendments 1, 2, 3 (all approved pre-fit except
+// amendment 3, which rules on a STOP the fit itself raised). Fit artifact, quoted by name because a
+// constant with no reproducible run behind it is the defect this program keeps paying for:
+// fixtures/cwhit-c3-ramp-fit-a2-2026-07-22.txt (tools/fit-kspread-c3.ts).
+//
+// THE SATURATING FAMILY 1 + A(1 − e^(−g/G)) IS RETIRED AS FALSIFIED. It is concave for every (A, G)
+// and the coherent tiers' needs are CONVEX in gap, so it could not reach them: at its last fit it
+// over-corrected diamond (s 1.335 against a need of ~1.04) and that was a standing G1 failure, not
+// noise. The replacement is the minimal convex-CAPABLE monotone form, with the linear limit as an
+// interior point:
+//         s(g) = 1 + A·(g/G0)^q       q > 1 convex · q = 1 linear · q < 1 saturating
+// G0 = 20 is a FIXED reference gap, not a parameter — it only fixes the units of A, so A = s(20) − 1.
+//
+// WHAT THE FIT ESTIMATES, AND WHY THE PREVIOUS ONE DID NOT (ruling (z)). The objective is per-card
+// residuals, per-card noise weights, and A PER-TIER FREE LEVEL. The previous objective took its
+// residual about K̄_pool, and because the judged sample sits off K̄_pool it priced LEVEL as well as
+// SPREAD: its estimand sat +0.18 above the free slope the gates score against, in every tier, same
+// sign. Level belongs to the ANCHOR layer, never to s. With a free level the pivot is unidentified
+// and s is a pure spread response; the remaining fit-vs-gate difference is weighting only (+0.03,
+// inside every need's own CI). Under the retired objective this same family and selection rule
+// deliver 0 of 4 tiers inside CI with diamond out — the level conflation WAS the defect.
+//
+// GATES (all on the post-C1/C2' coordinate, at fit-p = 0.30, re-checked at 0.25 and 0.35):
+//   iron    s 1.862 vs need 1.80 [1.70,1.90]   IN      bronze  1.642 vs 1.62 [1.54,1.69]   IN
+//   silver  s 1.486 vs need 1.47 [1.37,1.56]   IN      diamond 1.136 vs 1.04 [0.80,1.27]   IN
+//   4 of 4 coherent tiers inside, DIAMOND IN — the standing G1 diamond failure is RESOLVED.
+//   Identifiability PASS · equivalence set interior PASS · leave-one-tier-out (deliverable space)
+//   PASS · monotone PASS · whole verdict reproduces at p = 0.25 and 0.35.
+//
+// SELECTION IS IN DELIVERABLE SPACE, NOT SSE SPACE (ruling (x)). The old "most-saturating member
+// within 5% of the linear-limit SSE" rule was calibrated on a TIER-AGGREGATE SSE; against a per-card
+// SSE dominated by sampling noise its band spanned the whole grid and ran to the edge. Two
+// candidates are now equal iff the acceptance instrument cannot tell them apart —
+// max over fitted tiers |s₁(g_t) − s₂(g_t)|/se_t ≤ 1 — and the shipped point is that set's MINIMAX
+// CENTRE. THE EQUIVALENCE SET TRAVELS WITH THE CONSTANT AS ITS HONEST PRECISION:
+//         q ∈ [1.76, 3.04]   129 of 796 grid points   contiguous, interior   1.99 need-SEs wide
+// Compare ramps on s(g) over the observed range, NEVER on raw {A, q} — those are selection outcomes.
+//
+// GOLD IS FITTED OUT, AND ITS RESIDUAL IS PUBLISHED (ruling (y)). Gold at gap 15.02 needs 1.78,
+// ABOVE silver's 1.47 at the HIGHER gap 17.53: gold's need is NON-MONOTONE in this coordinate, so no
+// monotone s(g) can carry gold and the coherent four at once. Including it flattens the family to
+// q = 1.00 and ejects diamond — one tier bought at the cost of four.
+//   PUBLISHED RESIDUAL #1 — gold: need 1.78 vs s(15.02) = 1.34 ⇒ +0.449 [0.24, 0.63].
+// Assigned to the COMPOSITION/COHORT axis (task 2). The five named light-usage gold cards (Radke,
+// Randy Jones, Hilton Smith, Barnes, Quisenberry) are PROVENANCE, NOT CAUSE: noise-weighting them
+// down by their own evidential mass barely moves gold's need.
+//
+// ══ THE DOMAIN RULE (amendment 3) — WHY THIS RAMP IS FLAT ABOVE gMax ══
+// A convex form is UNBOUNDED above, and the fit was measured over gaps 10.31–22.25 only. Re-derived
+// over PRODUCTION's 46 configured tournaments (not the 14 captured formats): 11 sit ABOVE that
+// range, 8 of them live-pool formats at g = 41–44.5 where the unclamped fit returns s = 4.8–5.5.
+// THE MEASURED NEED THERE IS ~1 — live-open-daily's PRE slope is 0.91 [0.69,1.08], CI covering 1,
+// i.e. already calibrated UNCORRECTED, and the unclamped s drives it to 0.16. Tangent-linear
+// extension (s ≈ 3.9) is refuted by the same measurement.
+// GOAL OF THE RULE, stated with it: THE RAMP MUST NEVER ASSERT MORE CORRECTION THAN THE FIT
+// OBSERVED. gMax is not a safety margin — it is the largest gap the fit was measured at.
+//   PUBLISHED RESIDUAL #2 — live pools: flat hold gives s = 1.862 at g ≈ 44 against a need of ~1.0
+//   ⇒ ≈ +0.86. Also COMPOSITION/COHORT axis. Better than today, still wrong, and not called a fix.
+// STANDING DEFECT EXPOSED, not created: the retired ramp already gave s = 2.29 there. Live-pool K
+// spread has been OVER-CORRECTED all along; this event reduces that error, it does not introduce it.
+// Evidence strength: the RANGE fact is certain; the NEED at g ≈ 44 rests on ONE captured format at
+// 42 judged rows (over THIN_N, so it carries a verdict) with the other seven inferred by shared pool.
+//
+// WHY LIVE POOLS READ A HUGE GAP AT ALL (recorded so the number is never misread as pool weakness):
+// the gap coordinate reads ONE channel — opposing-hitter avoid-K. Live cards are NOT weak; their
+// top-50 beats iron's on every channel EXCEPT avoid-K, which sits low because live card design bakes
+// in the modern strikeout meta. The coordinate conflates CHANNEL META with POOL WEAKNESS. Quick
+// tiers correlate the two, which is why the ramp works there; live pools decouple them.
+//
+// PROVENANCE IS STAMPED AND ASSERTED, NEVER ASSUMED (amendment A2.4 / A3.4). fitN, fitP and gMax are
+// all fit-derived and coordinate-dependent: the gap is NOT monotone in p (measured across p = 0..1
+// the iron gap runs 23.64/21.22/22.15/21.59/19.06), so a ramp can never be RESCALED to another
+// (N, p) — only RE-DERIVED. assertKSpreadProvenance() below is the one check, and it throws.
+//
+// STILL OPEN AND DELIBERATELY NOT ADDRESSED HERE: both published residuals sit on the composition
+// axis, which is task 2 and is not built. The lead pre-registrable hypothesis is CHANNEL DECOUPLING
+// — the divergence between a pool's gap-channel position and its overall-quality position, computable
+// ex-ante from the catalog — which would unify both residuals under one measurable property.
+export const K_SPREAD_PIT = {
+  A: 0.6668,
+  q: 2.40,
+  /** FIXED reference gap. Not fitted — it only sets the units of A, so A = s(G0) − 1. */
+  G0: 20,
+  /** The largest gap the fit was MEASURED at. Above it s is held flat (amendment 3). */
+  gMax: 22.25,
+  /** Fit-derived provenance, asserted against the values actually in force. Never rescale. */
+  fitN: 50,
+  fitP: 0.30,
+} as const;
 
-/** s(gap) for the pitcher K-spread on the own-gap path: 1 + A·(1 − e^(−g/G)), with s(g ≤ 0) = 1
- *  EXACTLY (league anchor; a stronger-than-training pool is never compressed). The caller applies
- *  it via applyKSpread to the raw model K, PRE-BIP PRE-ERA (score-card.ts), so hits re-derive from
- *  the corrected BIP and era_k applies once. gap = the own-K-channel stu gap,
+/** s(gap) for the pitcher K-spread on the own-gap path:
+ *
+ *      s(g) = 1                         g <= 0    EXACTLY (league anchor — a stronger-than-training
+ *                                                 pool is never compressed)
+ *      s(g) = 1 + A·(g/G0)^q            0 < g <= gMax
+ *      s(g) = s(gMax) = 1.862           g > gMax  (amendment 3: never assert more correction than
+ *                                                 the fit observed)
+ *
+ *  The caller applies it via applyKSpread to the raw model K, PRE-BIP PRE-ERA (score-card.ts), so
+ *  hits re-derive from the corrected BIP and era_k applies once. gap = the own-K-channel stu gap,
  *  buildFrameShift(trainingMeans, poolField).pit.vR.stu. */
-export const kSpreadPitRamp = (gap: number): number =>
-  (gap > 0 ? 1 + K_SPREAD_PIT.A * (1 - Math.exp(-gap / K_SPREAD_PIT.G)) : 1);
+export const kSpreadPitRamp = (gap: number): number => {
+  if (!(gap > 0)) return 1;
+  const g = Math.min(gap, K_SPREAD_PIT.gMax);
+  return 1 + K_SPREAD_PIT.A * Math.pow(g / K_SPREAD_PIT.G0, K_SPREAD_PIT.q);
+};
+
+/** THE ONE PROVENANCE CHECK. A ramp fitted at one (cohort size, presence prior) and evaluated at
+ *  another is meaningless, and because the gap is NOT monotone in p it cannot be rescaled — only
+ *  re-derived. gMax is in the same class: it is the largest FITTED gap at that (N, p), so a
+ *  coordinate move makes it stale exactly as it makes A and q stale.
+ *
+ *  THROWS rather than warns. A mismatch means someone moved a cohort constant without re-deriving
+ *  the ramp, which is precisely the failure a warning would let through. */
+export function assertKSpreadProvenance(fieldN: number, presenceP: number, gMaxFitted?: number): void {
+  const bad: string[] = [];
+  if (fieldN !== K_SPREAD_PIT.fitN) bad.push(`FIELD_N is ${fieldN} but K_SPREAD_PIT was fitted at fitN = ${K_SPREAD_PIT.fitN}`);
+  if (presenceP !== K_SPREAD_PIT.fitP) bad.push(`PRESENCE_P is ${presenceP} but K_SPREAD_PIT was fitted at fitP = ${K_SPREAD_PIT.fitP}`);
+  if (gMaxFitted !== undefined && gMaxFitted !== K_SPREAD_PIT.gMax) bad.push(`the fitted gap max is ${gMaxFitted} but K_SPREAD_PIT carries gMax = ${K_SPREAD_PIT.gMax}`);
+  if (bad.length) {
+    throw new Error(
+      `K_SPREAD_PIT PROVENANCE MISMATCH — the pitcher K-spread ramp is being evaluated at a different `
+      + `coordinate from the one it was fitted at, and it CANNOT be rescaled to fit:\n  - ${bad.join("\n  - ")}\n`
+      + `Re-derive the ramp (tools/fit-kspread-c3.ts, spec docs/CWHIT_C3_RAMP_PREREG_2026-07-22.md) `
+      + `and update A, q AND gMax together. See src/model/pool-transform.ts.`,
+    );
+  }
+}
 
 // ── Pitcher HR9 spread ramp (BUILD-3, own-gap path; PRODUCTION, on by default) ──
 // FIT PROVENANCE (2026-07-17, tools/fit-pitspread-hrbab.ts; snapshot
