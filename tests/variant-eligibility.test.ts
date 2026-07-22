@@ -93,8 +93,20 @@ import { unexpectedVariantSightings } from "../src/data/variants.ts";
 const byId = new Map(cards.map((c) => [cardId(c), c]));
 const lookup = (id: string) => byId.get(id);
 
-/** Every league export row flagged `VAR`, as (cardId, source). The league is where high-value cards
- *  live, so it sees overrides the tournament windows structurally cannot — Tris Speaker is VAL 100. */
+// THE THREE SOURCES, AND WHY IT TAKES THREE (Derek, 2026-07-22). No single corpus can see every
+// override, and the gaps are STRUCTURAL rather than incidental:
+//   · LEAGUE exports see the top of the catalog — league play runs on new 100+ cards. Tris Speaker
+//     (VAL 100) is visible ONLY here. But a gold Mission-Edition variant would never be played in
+//     league at all, so the league corpus is blind to exactly the range tournaments live in.
+//   · CWHIT CAPTURES are that complement: the Quick windows cap at VAL 59-99, so a low- or mid-value
+//     override shows up here and nowhere else.
+//   · DEREK'S ACCOUNTS are direct ownership evidence, independent of whether a card was ever PLAYED.
+//     Not guaranteed — he may never own a given override — but when it fires it is unambiguous.
+// Together they cover the value range end to end. The residual blind spot is stated in the test
+// below rather than left implicit: a variant that is never played in league, never played in a
+// captured tournament, and never owned is undetectable by us, and no amount of care changes that.
+
+/** Every league export row flagged `VAR`, as (cardId, source). Sees the high-value end. */
 function leagueSightings(dir: string, out: { cardId: string; source: string }[] = []) {
   for (const e of readdirSync(dir)) {
     const p = join(dir, e);
@@ -112,11 +124,71 @@ function leagueSightings(dir: string, out: { cardId: string; source: string }[] 
   return out;
 }
 
+/** Every cwhit capture row at VLvl 5. Captures publish Name+VAL only, so identity is resolved by
+ *  (name, Card Value) and AMBIGUOUS KEYS ARE DROPPED — a detector must never invent a sighting. The
+ *  count of dropped keys is asserted to stay small, because a growing ambiguous set would quietly
+ *  shrink the detector's reach. */
+function captureSightings(dir: string) {
+  const out: { cardId: string; source: string }[] = [];
+  const byName = new Map<string, string[]>();
+  for (const c of cards) {
+    const k = `${String(c["FirstName"] ?? "").trim()} ${String(c["LastName"] ?? "").trim()}`.trim().toLowerCase() + "|" + String(c["Card Value"] ?? "").trim();
+    byName.set(k, [...(byName.get(k) ?? []), cardId(c)]);
+  }
+  let ambiguous = 0;
+  for (const e of readdirSync(dir)) {
+    if (!/\.txt$/i.test(e)) continue;
+    const lines = readFileSync(join(dir, e), "utf8").split(String.fromCharCode(10)).map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 3) continue;
+    const cols = lines[1]!.split(String.fromCharCode(9)).map((x) => x.trim());
+    const iN = cols.indexOf("Name"), iV = cols.indexOf("VAL"), iL = cols.indexOf("VLvl");
+    if (iN < 0 || iV < 0 || iL < 0) continue;
+    for (let i = 2; i < lines.length; i++) {
+      const f = lines[i]!.split(String.fromCharCode(9));
+      if ((f[iL] ?? "").trim() !== "5") continue;
+      const nm = (f[iN] ?? "").trim().replace(/&#39;/g, "'").replace(/&amp;/g, "&").toLowerCase();
+      const ids = byName.get(`${nm}|${(f[iV] ?? "").trim()}`);
+      if (!ids) continue;
+      if (ids.length > 1) { ambiguous++; continue; }
+      out.push({ cardId: ids[0]!, source: e });
+    }
+  }
+  return { out, ambiguous };
+}
+
+/** Variants Derek has DECLARED owning, across every account overlay. Ownership is evidence
+ *  independent of play — it fires for a card nobody has ever fielded. */
+function accountSightings(dir: string) {
+  const out: { cardId: string; source: string }[] = [];
+  for (const e of readdirSync(dir)) {
+    if (!/\.json$/i.test(e)) continue;
+    const j = JSON.parse(readFileSync(join(dir, e), "utf8")) as { variantCardIds?: unknown[] };
+    for (const id of j.variantCardIds ?? []) out.push({ cardId: String(id), source: `account:${e}` });
+  }
+  return out;
+}
+
 describe("standing variant-override detector", () => {
   it("no league-observed variant contradicts the class rule", () => {
     const found = unexpectedVariantSightings(leagueSightings("League Files"), lookup);
     expect(found.map((f) => `${f.cardId} ${f.forbiddenClass} ${f.title} [${f.source}]`),
       "an observed variant on a forbidden class: add it to VARIANT_OVERRIDES, or fix the rule").toEqual([]);
+  });
+
+  it("no TOURNAMENT-observed variant contradicts the class rule", () => {
+    // The complement to the league leg: this is the only source that can see a low- or mid-value
+    // override, e.g. a gold Mission Edition, which league play would never field.
+    const { out, ambiguous } = captureSightings("fixtures/cwhit-capture-2026-07-21");
+    expect(out.length, "no v5 rows resolved — the capture join has broken, and the leg is blind").toBeGreaterThan(100);
+    expect(ambiguous, "ambiguous (name,VAL) keys are skipped; a growing count silently shrinks reach").toBeLessThan(60);
+    const found = unexpectedVariantSightings(out, lookup);
+    expect(found.map((f) => `${f.cardId} ${f.forbiddenClass} ${f.title} [${f.source}]`)).toEqual([]);
+  });
+
+  it("no OWNED variant contradicts the class rule", () => {
+    // Ownership evidence, independent of play entirely.
+    const found = unexpectedVariantSightings(accountSightings("data/accounts"), lookup);
+    expect(found.map((f) => `${f.cardId} ${f.forbiddenClass} ${f.title} [${f.source}]`)).toEqual([]);
   });
 
   it("the detector actually fires — it is not vacuously green", () => {
