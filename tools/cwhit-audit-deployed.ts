@@ -15,7 +15,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, applyAffine, applyWobaWeights,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, buildPoolTransform, applyAffine, applyWobaWeights,
   type EventForm, type FieldStats, type PoolTransform, type RatingEnvelope, type Coeffs, type WobaWeights,
 } from "../src/scoring-core/index.ts";
 import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
@@ -55,7 +55,7 @@ const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
 const isPitcher = (c: Card) => n(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1";
 const cardName = (c: Card) => `${(c["FirstName"] ?? "").trim()} ${(c["LastName"] ?? "").trim()}`.trim();
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 console.log(`[deployed-audit] model '${trained.id}', own-gap ON, Quick tiers (neutral env). ${baseCards.length} cards.\n`);
 
 /** Combined pitcher line with a PoolTransform applied to ratings first (deployed own-gap path). */
@@ -79,7 +79,7 @@ for (const win of QUICK) {
   const f = `cwhit-${tier}-pit.tsv`;
   if (!readdirSync(FIX).includes(f)) continue;
   const basePool = baseCards.filter((c) => inValueWindow(c, win));
-  const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+  const poolField = productionFieldStats(basePool, coeffs, rp);
   const pt = buildPoolTransform(ref, poolField, envelope);
   // our-side cards eligible at this tier, predicted with the tier transform (own-gap) and without (raw).
   const mkCards = (mode: "raw" | "owngap"): { cards: JoinCard[]; byId: Map<string, { ratings: Record<string, number>; pred: Record<string, number> }> } => {

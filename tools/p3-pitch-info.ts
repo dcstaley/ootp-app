@@ -14,7 +14,7 @@ import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
-import { applyWobaWeights, makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform } from "../src/scoring-core/index.ts";
+import { applyWobaWeights, makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, productionFieldStats,} from "../src/scoring-core/index.ts";
 import { loadTournamentOutcomes, tournamentExposure, tournamentCardValues, type TournamentObs } from "../src/training/tournament-eval.ts";
 import { loadWindow, type TrainObs } from "../src/training/loader.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, STUFFAUG_PIT, type PitForm } from "../src/training/forms.ts";
@@ -89,7 +89,7 @@ for (const [fname, ef2] of FORMS) {
     const inV = (c: any) => { const v = Number(c["Card Value"]) || 0; return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
     const basePool = cat.cards.filter((c: any) => isB(c) && inV(c) && rowEligible(c as any, t));
     const refField = computeUnifiedFieldStats(cat.cards.filter(isB), coeffs, rp2, FIELD_N, true);
-    const poolField = computeUnifiedFieldStats(basePool, coeffs, rp2, FIELD_N, true);
+    const poolField = productionFieldStats(basePool, coeffs, rp2);
     const own = { poolTransform: buildPoolTransform(refField, poolField, trained.ratingEnvelope ?? undefined) };
     const obs = loadTournamentOutcomes(dir, { clean: (rows2) => cleanTournamentRows(rows2).cleaned });
     const exposure = tournamentExposure(obs);

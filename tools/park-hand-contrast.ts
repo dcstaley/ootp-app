@@ -28,7 +28,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolPitMeansOwn, kSpreadPitRamp, pitSpreadHrRamp,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -104,7 +104,7 @@ function runFormat(fm: Fmt): { recs: Rec[]; coeffsHrL: number; coeffsHrR: number
   const coeffs = resolveCoeffs(model, era, park, t.softcaps);
   applyWobaWeights(coeffs, trained!.wobaWeights!);
   const derived = computeDerived(coeffs);
-  const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 
   let ksMap: Map<string, KSpreadPit> | undefined;
   let htMap: Map<string, HitTail> | undefined;
@@ -115,7 +115,7 @@ function runFormat(fm: Fmt): { recs: Rec[]; coeffsHrL: number; coeffsHrR: number
     for (const win of fm.tiers) {
       const { tier } = win;
       const basePool = baseCards.filter((c: Card) => inValueWindow(c, win));
-      const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+      const poolField = productionFieldStats(basePool, coeffs, rp);
       const pt = buildPoolTransform(ref, poolField, envelope);
       const shift = buildFrameShift(TMeans, poolField);
       const pm = poolPitMeansOwn(basePool, coeffs, rp, pt, FIELD_N);

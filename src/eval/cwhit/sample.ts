@@ -16,7 +16,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import type { Coeffs, Derived, CalScales } from "../../config/types.ts";
 import {
-  FIELD_N, computeUnifiedFieldStats, buildPoolTransform, applyAffine, calibrate,
+  FIELD_N, computeUnifiedFieldStats, productionFieldStats, buildPoolTransform, applyAffine, calibrate,
   type EventModel, type FieldStats, type PoolTransform, type RatingEnvelope,
 } from "../../scoring-core/index.ts";
 // Reached into directly rather than re-exported from scoring-core/index.ts: these are the SCORING
@@ -539,7 +539,11 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   for (const win of formats) {
     const { tier } = win;
     const basePool = d.baseCards.filter((c) => inValueWindow(c, win));
-    const pt = buildPoolTransform(d.ref, computeUnifiedFieldStats(basePool, d.coeffs, d.model, FIELD_N, true), d.envelope);
+    // MIRRORS PRODUCTION EXACTLY (2026-07-22 instrument correction). This used to build a
+    // variant-free field at an unscaled FIELD_N while production had moved to the presence-weighted
+    // construction, so the eval instrument measured a different coordinate from the one production
+    // scored on. `productionFieldStats` is now the single definition both call.
+    const pt = buildPoolTransform(d.ref, productionFieldStats(basePool, d.coeffs, d.model), d.envelope);
     // Optional pitcher spread + hitter tail for this tier — threaded into calibrate too (production
     // computes the anchor on the SAME corrected events the scores use). sHit=1 ⇒ the hitter K leg is
     // untouched (applyKSpread short-circuits s===1 to the exact raw K); the BUILD-3 HR/BABIP fields

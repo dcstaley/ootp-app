@@ -28,7 +28,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, applyWobaWeights, computeDerived, computeUnifiedFieldStats, buildPoolTransform,
+  makeRawPolyModel, productionFieldStats, applyWobaWeights, computeDerived, computeUnifiedFieldStats, buildPoolTransform,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
 import { effectiveStuff } from "../src/model/k-support.ts"; // the ONE copy of the effective-stuff construction
@@ -56,7 +56,7 @@ const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards
   .filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 const deps: SampleDeps = {
   baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W: trained.wobaWeights, ref,
   envelope: trained.ratingEnvelope,
@@ -93,7 +93,7 @@ const rows: Row[] = [];
 
 for (const win of QUICK) {
   const basePool = baseCards.filter((c) => inValueWindow(c, win));
-  const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+  const poolField = productionFieldStats(basePool, coeffs, rp);
   const pt = buildPoolTransform(ref, poolField, deps.envelope);
   const byCid = new Map(opponentSet(baseCards, win, "pit").map((o) => [o.cid, o.card]));
 
@@ -187,7 +187,7 @@ for (const r of rows) {
   const t05 = wq(.05), t10 = wq(.10);
   for (const win of QUICK) {
     const basePool = baseCards.filter((c) => inValueWindow(c, win));
-    const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+    const poolField = productionFieldStats(basePool, coeffs, rp);
     const pt = buildPoolTransform(ref, poolField, deps.envelope);
     const byCid = new Map(opponentSet(baseCards, win, "pit").map((o) => [o.cid, o.card]));
     const pts: { z: number; k: number }[] = [];

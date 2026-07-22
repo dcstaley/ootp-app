@@ -39,7 +39,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived, calibrate,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, applyWobaWeights, computeDerived, calibrate,
   buildPoolTransform, buildFrameShift, poolMeanKOwn,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -82,7 +82,7 @@ applyWobaWeights(coeffs, trained.wobaWeights);
 const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 const deps: SampleDeps = {
   baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope: trained.ratingEnvelope,
   pitExp: new Map(trained.platoon.pit.map((p) => [p.hand, { wR: p.vsRHB, wL: p.vsLHB }])),
@@ -112,7 +112,7 @@ interface Row { tier: string; n: number; hit: Record<string, number>; pit: Recor
 const rows: Row[] = [];
 for (const win of QUICK) {
   const basePool = deps.baseCards.filter((c) => inValueWindow(c, win));
-  const pf = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+  const pf = productionFieldStats(basePool, coeffs, rp);
   const g = (mu: number | undefined, s: { mu: number } | undefined) => (mu != null && s ? mu - s.mu : NaN);
   const hit: Record<string, number> = {}, pit: Record<string, number> = {};
   const hitSd: Record<string, number> = {}, pitSd: Record<string, number> = {};

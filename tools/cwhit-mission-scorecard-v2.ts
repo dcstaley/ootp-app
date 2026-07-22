@@ -37,7 +37,7 @@ import { rowEligible } from "../src/config/eligibility.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import type { CalScales, Coeffs, Derived } from "../src/config/types.ts";
 import {
-  FIELD_N, makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
+  FIELD_N, makeRawPolyModel, computeUnifiedFieldStats, productionFieldStats, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolPitMeansOwn, kSpreadPitRamp, pitSpreadHrRamp,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -165,7 +165,7 @@ const FORMATS: Fmt[] = CWHIT_CORPUS.map((reg) => {
  *  neutral bag. This is the piece v1 could not do. */
 function runFormat(fm: Fmt): { recs: Rec[]; notices: string[]; missedProj: number; cal: CalScales } {
   const { coeffs, derived, win } = fm;
-  const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);   // env-MATCHED reference
+  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);   // env-MATCHED reference
   const basePool = baseCards.filter((c) => inValueWindow(c, win));
   fm.nPool = basePool.length;
 
@@ -174,7 +174,7 @@ function runFormat(fm: Fmt): { recs: Rec[]; notices: string[]; missedProj: numbe
   if (CORRECTIONS) {
     const TMeans = trained!.trainingMeans;
     if (!TMeans) throw new Error("corrections ON needs the active model's trainingMeans — or run with --no-corrections");
-    const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+    const poolField = productionFieldStats(basePool, coeffs, rp);
     const pt = buildPoolTransform(ref, poolField, envelope);
     const shift = buildFrameShift(TMeans, poolField);
     const pm = poolPitMeansOwn(basePool, coeffs, rp, pt, FIELD_N);

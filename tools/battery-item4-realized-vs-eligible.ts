@@ -31,7 +31,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, applyWobaWeights, computeDerived, computeUnifiedFieldStats,
+  makeRawPolyModel, productionFieldStats, applyWobaWeights, computeDerived, computeUnifiedFieldStats,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights,
 } from "../src/scoring-core/index.ts";
 import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
@@ -58,7 +58,7 @@ const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards
   .filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
 
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 const deps: SampleDeps = {
   baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W: trained.wobaWeights, ref,
   envelope: trained.ratingEnvelope,

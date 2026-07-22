@@ -11,7 +11,7 @@ import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
-import { applyWobaWeights, makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK } from "../src/scoring-core/index.ts";
+import { applyWobaWeights, makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, productionFieldStats,} from "../src/scoring-core/index.ts";
 import { loadTournamentOutcomes, tournamentExposure, tournamentScorecard, evaluateTournamentLevels } from "../src/training/tournament-eval.ts";
 import { cleanTournamentRows } from "../src/eval/tournament-clean.ts";
 import { parseCatalogCsv } from "../src/data/catalog.ts";
@@ -53,7 +53,7 @@ for (const [name, dir, TID] of [
   const inV = (c: any) => { const v = Number(c["Card Value"]) || 0; return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const basePool = cat.cards.filter((c: any) => isB(c) && inV(c) && rowEligible(c as any, t));
   const refField = computeUnifiedFieldStats(cat.cards.filter(isB), coeffs, rp, FIELD_N, true);
-  const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+  const poolField = productionFieldStats(basePool, coeffs, rp);
   const fs = buildFrameShift(trained.trainingMeans, poolField);
   const kb = poolMeanK(basePool, coeffs, rp, fs, FIELD_N);
   const gapHit = fs.hit.vR.kRat ?? 0, gapPit = fs.pit.vR.stu ?? 0;

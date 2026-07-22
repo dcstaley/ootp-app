@@ -12,7 +12,8 @@ import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
-import { makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, applyAffine, applyWobaWeights, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type WobaWeights, type RatingEnvelope } from "../src/scoring-core/index.ts";
+import { makeRawPolyModel, computeUnifiedFieldStats, buildPoolTransform, applyAffine, applyWobaWeights, type EventForm, type FieldStats, type PoolTransform, type Coeffs, type WobaWeights, type RatingEnvelope, productionFieldStats,
+} from "../src/scoring-core/index.ts";
 import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
 import { PIT_BIP_ADJ } from "../src/model/curves.ts";
 import { BF_PER_9 } from "../src/eval/cwhit/scorecard.ts";
@@ -44,9 +45,9 @@ const baseCards = catalog.cards.filter((c) => String(c["Variant"] ?? "").toUpper
 const isPit = (c: Card) => n(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1";
 const cardName = (c: Card) => `${(c["FirstName"] ?? "").trim()} ${(c["LastName"] ?? "").trim()}`.trim();
 const pr = (c: Card, k: string, s: "R" | "L") => n(c[`${k} v${s}`]);
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 const basePool = baseCards.filter((c) => n(c["Card Value"]) <= CAP);
-const pt: PoolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), trained.ratingEnvelope);
+const pt: PoolTransform = buildPoolTransform(ref, productionFieldStats(basePool, coeffs, rp), trained.ratingEnvelope);
 
 /** Combined own-gap pitcher line → per-9 channels for a card (deployed path). */
 function combinedPit(c: Card) {

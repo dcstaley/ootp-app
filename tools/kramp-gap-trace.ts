@@ -25,7 +25,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolPitMeansOwn,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -69,7 +69,7 @@ for (const a of arts) {
   const rp = makeRawPolyModel(a.eventForm!);
   const coeffs = resolveCoeffs(model, eras.get(bq.eraId)!, parks.get(bq.parkId)!, bq.softcaps);
   applyWobaWeights(coeffs, a.wobaWeights!);
-  const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
   const poolField = computeUnifiedFieldStats(pool, coeffs, rp, FIELD_N, true);
   const pt = buildPoolTransform(ref, poolField, a.ratingEnvelope);
   const shift = buildFrameShift(a.trainingMeans!, poolField);

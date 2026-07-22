@@ -68,7 +68,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived, buildPoolTransform, calibrate,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, applyWobaWeights, computeDerived, buildPoolTransform, calibrate,
   type EventForm, type RatingEnvelope, type WobaWeights,
 } from "../src/scoring-core/index.ts";
 import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
@@ -796,7 +796,7 @@ if (winner.cfg) {
 // ═══ 6. LEAGUE IDENTITY (A) ═══════════════════════════════════════════════════════════════════════
 console.log(`\n\n╔═══ 6. LEAGUE IDENTITY — candidate A at gap→0 ═══╗`);
 {
-  const fsFull = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+  const fsFull = productionFieldStats(baseCards, coeffs, rp);
   const kPow = deps0.ref.hit.vR.pow!.mu / fsFull.hit.vR.pow!.mu;
   const kBab = deps0.ref.hit.vR.babip!.mu / fsFull.hit.vR.babip!.mu;
   console.log(`full-catalog pool vs reference: k(POW) = ${f(kPow, 6)}, k(BABIP) = ${f(kBab, 6)} ⇒ g = ${f(Math.max(kPow - 1, 0), 6)}/${f(Math.max(kBab - 1, 0), 6)}`);
@@ -833,7 +833,7 @@ for (const { key, tid } of FMTS) {
   const refF = computeUnifiedFieldStats(baseCards, cf, rp, FIELD_N, true);
   const depsF: SampleDeps = { baseCards, coeffs: cf, derived: dv, eventForm: trained.eventForm, model: rp, W, ref: refF, envelope, pitExp, hitExp };
   const basePool = baseCards.filter((c) => inValueWindow(c, winF));
-  const fsF = computeUnifiedFieldStats(basePool, cf, rp, FIELD_N, true);
+  const fsF = productionFieldStats(basePool, cf, rp);
   const pt = buildPoolTransform(refF, fsF, envelope);
   const cal = calibrate(basePool, { coeffs: cf, derived: dv, eventForm: trained.eventForm, poolTransform: pt });
   const gPow = Math.max(refF.hit.vR.pow!.mu / Math.max(fsF.hit.vR.pow!.mu, 1e-9) - 1, 0);

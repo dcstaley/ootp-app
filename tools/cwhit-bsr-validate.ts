@@ -14,7 +14,7 @@ import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
   scoreCard, calibrate, computeDerived, makeRawPolyModel, applyWobaWeights, applyAffine,
-  computeUnifiedFieldStats, buildPoolTransform,
+  computeUnifiedFieldStats, productionFieldStats, buildPoolTransform,
   type EventForm, type FieldStats, type PoolTransform, type RatingEnvelope, type WobaWeights,
 } from "../src/scoring-core/index.ts";
 import { HIT_BIP_ADJ } from "../src/model/curves.ts";
@@ -52,7 +52,7 @@ const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
 const isHitter = (c: Card) => String(c["Position"]).trim() !== "1";
 const cardName = (c: Card) => `${(c["FirstName"] ?? "").trim()} ${(c["LastName"] ?? "").trim()}`.trim();
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 
 // Fingerprint (bbPct/soPct/hr600/babip) for the join ONLY — mirrors cwhit-audit-deployed-hit's
 // combinedHit (own-gap path). NOT the validated quantity; bsr600 comes straight from scoreCard.
@@ -78,7 +78,7 @@ for (const win of QUICK) {
   // Per-tier deployed config: own-gap PoolTransform (tier pool vs full-catalog ref) + calibration
   // (calScales carries brCenterHit, the per-pool baserunning centering that bsr600 subtracts).
   const basePool = baseCards.filter((c) => inValueWindow(c, win));
-  const pt = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), envelope);
+  const pt = buildPoolTransform(ref, productionFieldStats(basePool, coeffs, rp), envelope);
   const calScales = calibrate(basePool, { coeffs, derived, eventForm: ef, poolTransform: pt });
   const cfg = { coeffs, derived, calScales, eventForm: ef, poolTransform: pt };
 

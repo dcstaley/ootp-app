@@ -13,7 +13,7 @@ import { seedDefaults, seedEras } from "../src/config/seed.ts";
 import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
-import { applyWobaWeights, makeRawPolyModel, computeUnifiedFieldStats, buildFrameShift, poolMeanK } from "../src/scoring-core/index.ts";
+import { applyWobaWeights, makeRawPolyModel, computeUnifiedFieldStats, buildFrameShift, poolMeanK, productionFieldStats,} from "../src/scoring-core/index.ts";
 import { loadTournamentOutcomes, tournamentExposure, tournamentCardValues, type TournamentObs, type CardValues } from "../src/training/tournament-eval.ts";
 import { wobaWeightsFromCoeffs } from "../src/scoring-core/woba-weights.ts";
 import { loadWindow, type TrainObs } from "../src/training/loader.ts";
@@ -58,7 +58,7 @@ for (const [name, dir, TID] of [
   const ww = wobaWeightsFromCoeffs(coeffs);
   const inV = (c: any) => { const v = Number(c["Card Value"]) || 0; return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const basePool = cat.cards.filter((c: any) => isB(c) && inV(c) && rowEligible(c as any, t));
-  const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+  const poolField = productionFieldStats(basePool, coeffs, rp);
   const fs = buildFrameShift(trained.trainingMeans, poolField);
   const kb = poolMeanK(basePool, coeffs, rp, fs, FIELD_N);
   const obs = loadTournamentOutcomes(dir, { clean: (rows) => cleanTournamentRows(rows).cleaned });

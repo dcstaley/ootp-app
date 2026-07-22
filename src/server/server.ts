@@ -21,7 +21,7 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant, presenceMixture, PRESENCE_M, PRESENCE_P } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { FIELD_N, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
+import { FIELD_N, productionFieldStats, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT, type VertexPin } from "../training/forms.ts";
 import { inEphemeralScope, mayCache } from "./cache-scope.ts"; // draft scoring must not seed process-global caches
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
@@ -330,7 +330,7 @@ function referenceFieldStats(baseCatalog: any[], coeffs: Coeffs, model: EventMod
   if (refFieldCache?.key === key) return refFieldCache.stats;
   // C2' — a FIELD (it estimates a population cards meet), so it is presence-weighted, not
   // variant-free. topN scales by PRESENCE_M or the cohort silently shrinks by that factor.
-  const stats = computeUnifiedFieldStats(presenceMixture(baseCatalog), coeffs, model, FIELD_N * PRESENCE_M, true); // eventForm-only ⇒ ssp-free selection
+  const stats = productionFieldStats(baseCatalog, coeffs, model); // eventForm-only ⇒ ssp-free selection
   // Only a SAVED configuration may seed this. See src/server/cache-scope.ts: an unsaved draft
   // scored via /api/position-metrics used to be able to win a cold cache and serve every later
   // tournament a reference field that exists in no saved state.
@@ -391,7 +391,7 @@ function scoreTournament(t: Tournament): Scored {
   let matchup: { model: EventModel; shift: FrameShift } | undefined;
   let hitTail: HitTail | undefined;
   if (eventForm) {
-    const poolField = computeUnifiedFieldStats(presenceMixture(basePool), coeffs, evModel, FIELD_N * PRESENCE_M, true); // C2': FIELD ⇒ presence-weighted
+    const poolField = productionFieldStats(basePool, coeffs, evModel); // C2': FIELD ⇒ presence-weighted
     const mode = transformMode();
     if ((mode === "frame-v2" || mode === "matchup") && activeTrainingMeans) {
       // The crossed opponent-gap shift + K spread are shared by both modes. matchup binds the
@@ -2047,7 +2047,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const evModel = makeRawPolyModel(ef);
     // Build each available mode's transform config from the SAME primitives scoreTournament uses.
     const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
-    const poolField = computeUnifiedFieldStats(presenceMixture(basePool), coeffs, evModel, FIELD_N * PRESENCE_M, true); // C2': FIELD ⇒ presence-weighted
+    const poolField = productionFieldStats(basePool, coeffs, evModel); // C2': FIELD ⇒ presence-weighted
     // own-gap mode mirrors STANDARD scoring, which now includes the pitcher K-spread AND the
     // BUILD-3 HR-spread ramps (kill-switch-aware) — same primitives, same centering, so the
     // scorecard evaluates what production actually ships.

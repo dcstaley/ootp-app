@@ -9,6 +9,8 @@
 // uses RAW wOBA (no transform, no calibration) so it's a stable quality ranking.
 
 import type { Coeffs } from "../config/types.ts";
+import { presenceMixture, PRESENCE_M } from "../data/variants.ts";
+import type { Card } from "../data/catalog.ts";
 import type { EventModel } from "../model/types.ts";
 import { PIT_BIP_ADJ } from "../model/curves.ts";
 import {
@@ -78,6 +80,24 @@ export function cardSideWobas(c: any, coeffs: Coeffs, model: EventModel, sspFree
   return { hitVR: r.hitVR.woba, hitVL: r.hitVL.woba, pitVR: r.pitVR.woba, pitVL: r.pitVL.woba };
 }
 
+/** THE ONE WAY PRODUCTION BUILDS A FIELD (C2' + the 2026-07-22 instrument correction).
+ *
+ *  A "field" is presence-weighted and eligibility-gated: an eligible card contributes its v5 at
+ *  weight PRESENCE_P and its base at 1-PRESENCE_P, represented exactly by integer replication, which
+ *  is why the top-N must be scaled by PRESENCE_M. Getting either half wrong silently shrinks the
+ *  cohort by a factor of m or reverts it to the refuted variant-free construction.
+ *
+ *  THIS EXISTS BECAUSE THE TWO HALVES DRIFTED APART. C2' changed production's pool field but not
+ *  `buildCwhitSample`'s, so for a few hours the EVAL instrument measured a different coordinate from
+ *  the one production scored on (gap pit.stu 24.78 vs 22.25 at iron). Every gate would have passed,
+ *  because the gates were computed with the same stale instrument. One function now defines it, and
+ *  production, the eval builder and every tool call THAT.
+ *
+ *  Callers that need an env-matched reference (the per-format daily legs) still resolve their own
+ *  coeffs — only the CONSTRUCTION is shared, not the environment. */
+export const productionFieldStats = (cards: any[], coeffs: Coeffs, model: EventModel, sspFree = true): FieldStats =>
+  computeUnifiedFieldStats(presenceMixture(cards as Card[]), coeffs, model, FIELD_N * PRESENCE_M, sspFree);
+
 /** THE field cohort size — the validated realistic-field size (`tools/field-size.ts`).
  *
  *  ONE COPY (Fable ruling (d), 2026-07-21). This was defined twice — `src/server/server.ts` and
@@ -112,7 +132,22 @@ export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventMode
  *     platoon specialist counts on the side he actually plays and his rarely-used bad side
  *     doesn't define the frame. */
 export function computeUnifiedFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, sspFree = false): FieldStats {
-  const recs = cards.map((c) => cardRec(c, coeffs, model, sspFree));
+  // DEDUPE BY OBJECT IDENTITY BEFORE PREDICTING. `presenceMixture` represents a weighted mixture by
+  // emitting the SAME card reference m times (and one shared v5 reference k times), so a replicated
+  // population contains ~m× as many entries as distinct cards. Predicting each entry separately made
+  // every field computation ~20× more expensive and pushed a server smoke test past its 5s budget —
+  // a real regression, since production builds these per tournament.
+  //
+  // The result is UNCHANGED, not approximated: identical references have identical predictions by
+  // construction, so computing once per distinct reference and reusing the record is exactly what the
+  // naive map produced. Duplicates still occupy their slots in the sort and the top-N cut, which is
+  // what carries the weighting.
+  const memo = new Map<any, CardRec>();
+  const recs = cards.map((c) => {
+    let r = memo.get(c);
+    if (!r) { r = cardRec(c, coeffs, model, sspFree); memo.set(c, r); }
+    return r;
+  });
   // Pitchers: top-N by combined allowed wOBA (lower = better), both-side values pooled.
   const pitTop = [...recs].sort((a, b) => (a.pitVR.woba + a.pitVL.woba) - (b.pitVR.woba + b.pitVL.woba)).slice(0, topN);
   const pit: Record<string, RatingStats> = {};
@@ -171,7 +206,16 @@ export function buildFrameShift(train: TrainingMeans, pool: FieldStats): FrameSh
 type KRatingMapper = (role: "hit" | "pit", side: "vR" | "vL", key: string, raw: number) => number;
 
 function poolChanBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, map: KRatingMapper): { hit: { k: number }; pit: { k: number; hr: number; bab: number } } {
-  const recs = cards.map((c) => {
+  // Same reference-dedupe as computeUnifiedFieldStats, and for the same reason: these centering
+  // means are computed over the PRESENCE MIXTURE, where each distinct card appears m times as the
+  // same object. Without this the pivots dominated tournament scoring at ~1.3s per call. Values are
+  // unchanged — identical references predict identically — and duplicates still fill their slots in
+  // the sort and the top-N cut, which is what carries the weighting.
+  const memo = new Map<any, { hVR: { woba: number; k: number }; hVL: { woba: number; k: number }; pVR: { woba: number; k: number; hr: number; bab: number }; pVL: { woba: number; k: number; hr: number; bab: number } }>();
+  const recs = cards.map((c0) => {
+    const hit0 = memo.get(c0);
+    if (hit0) return hit0;
+    return ((c) => {
     const speed = n(c["Speed"]), steal = n(c["Stealing"]), run = n(c["Baserunning"]), stealRate = n(c["Steal Rate"]);
     const hitK = (side: "vR" | "vL") => {
       const g = (key: string, col: string) => map("hit", side, key, n(c[`${col} ${side}`]));
@@ -187,7 +231,10 @@ function poolChanBy(cards: any[], coeffs: Coeffs, model: EventModel, topN: numbe
       const bip = Math.max(600 - e.BB - e.K - e.HR - PIT_BIP_ADJ, 1);
       return { woba: assembleRawPitchingWoba(e, 1, coeffs), k: e.K, hr: e.HR, bab: e.nHH / bip };
     };
-    return { hVR: hitK("vR"), hVL: hitK("vL"), pVR: pitK("vR"), pVL: pitK("vL") };
+      const rec = { hVR: hitK("vR"), hVL: hitK("vL"), pVR: pitK("vR"), pVL: pitK("vL") };
+      memo.set(c0, rec);
+      return rec;
+    })(c0);
   });
   const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
   // Hitters: top-N per-side cohort by raw wOBA, deployment-side K pooled.

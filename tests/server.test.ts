@@ -10,7 +10,7 @@
 // The server is heavy to boot (loads the catalog + scores the default tournament), so
 // one instance is shared across the file. Skipped if the seed fixtures aren't present.
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer } from "node:net";
 import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
@@ -51,6 +51,14 @@ async function boot(port: number, dataRoot: string): Promise<void> {
     child!.on("exit", (code) => { clearTimeout(to); reject(new Error(`server exited early (${code})`)); });
   });
 }
+
+// BUDGET RAISED 2026-07-22, deliberately. C2' made every field a PRESENCE MIXTURE, so a COLD field
+// build costs materially more than when the 5s default was chosen — the heaviest endpoint here
+// measures ~4.2s ISOLATED and failed only under parallel suite contention. Reference-dedupe in
+// computeUnifiedFieldStats and poolChanBy already reclaimed the worst of it (poolMeanKOwn alone cost
+// 1282ms before it). What remains is real work, not a leak, and trimming the model to fit a budget
+// calibrated for the old workload would be the wrong repair.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 60_000 });
 
 describe.skipIf(!HAVE_DATA)("Q-2 — server hardening smoke", () => {
   beforeAll(async () => {
@@ -108,6 +116,13 @@ describe.skipIf(!HAVE_DATA)("Q-2 — server hardening smoke", () => {
     expect(summary.accounts.find((a) => a.id === "smokeacct")?.variantCount).toBe(1);
   });
 
+  // TIMEOUT RAISED 2026-07-22, deliberately and with a reason. C2' made every field a PRESENCE
+  // MIXTURE, so a COLD field build now costs materially more than it did (measured: ~4.2s for this
+  // endpoint isolated, against the old 5s budget it used to clear easily; it failed only under
+  // parallel suite contention). Reference-dedupe in computeUnifiedFieldStats/poolChanBy already took
+  // the worst of it back — poolMeanKOwn alone was 1282ms before that and is the reason this is not
+  // simply a bigger number. The remaining cost is real work, not a leak, and shaving the model to
+  // fit a budget calibrated for the old workload would be the wrong repair.
   it("a same-catalog re-upload succeeds and derived endpoints stay serviceable", async () => {
     const csv = readCatalog();
     const before = await (await fetch(`${base}/api/debug/scaling?t=gold-quick`)).json() as { tournament: string };

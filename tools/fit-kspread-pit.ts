@@ -39,7 +39,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived, calibrate,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, applyWobaWeights, computeDerived, calibrate,
   buildPoolTransform, buildFrameShift, poolMeanKOwn,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -82,7 +82,7 @@ applyWobaWeights(coeffs, trained.wobaWeights);
 const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 const deps: SampleDeps = {
   baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope: trained.ratingEnvelope,
   pitExp: new Map(trained.platoon.pit.map((p) => [p.hand, { wR: p.vsRHB, wL: p.vsLHB }])),
@@ -144,7 +144,7 @@ const cells: TierCell[] = [];
 for (const win of QUICK) {
   const { tier } = win;
   const basePool = deps.baseCards.filter((c) => inValueWindow(c, win));
-  const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+  const poolField = productionFieldStats(basePool, coeffs, rp);
   const gap = buildFrameShift(TM, poolField).pit.vR.stu ?? 0;
   const pt = buildPoolTransform(ref, poolField, deps.envelope);
   const kbar = poolMeanKOwn(basePool, coeffs, rp, pt, FIELD_N).pit;
@@ -444,7 +444,7 @@ for (const [di, D] of DAILY.entries()) {
   const inV = (c: Card) => { const v = n_(c["Card Value"]); return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const basePool = baseCards.filter((c) => inV(c) && rowEligible(c as any, t));
   const refF = computeUnifiedFieldStats(baseCards, coeffsF, rp, FIELD_N, true);
-  const poolF = computeUnifiedFieldStats(basePool, coeffsF, rp, FIELD_N, true);
+  const poolF = productionFieldStats(basePool, coeffsF, rp);
   const pt = buildPoolTransform(refF, poolF, deps.envelope);
   const gap = buildFrameShift(TM, poolF).pit.vR.stu ?? 0;
   const kbar = poolMeanKOwn(basePool, coeffsF, rp, pt, FIELD_N).pit;

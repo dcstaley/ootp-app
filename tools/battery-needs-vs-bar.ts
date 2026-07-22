@@ -36,7 +36,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolMeanKOwn,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -74,7 +74,7 @@ applyWobaWeights(coeffs, trained.wobaWeights);
 const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 const deps: SampleDeps = {
   baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope: trained.ratingEnvelope,
   pitExp: new Map(trained.platoon.pit.map((p) => [p.hand, { wR: p.vsRHB, wL: p.vsLHB }])),
@@ -130,7 +130,7 @@ const gapOf = new Map<string, number>(), kbarOf = new Map<string, number>();
 // computed once and printed once, so the table below carries only what the floor can move.
 for (const win of QUICK) {
   const basePool = deps.baseCards.filter((c) => inValueWindow(c, win));
-  const poolField = computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true);
+  const poolField = productionFieldStats(basePool, coeffs, rp);
   gapOf.set(win.tier, buildFrameShift(TM, poolField).pit.vR.stu ?? 0);
   const pt = buildPoolTransform(ref, poolField, deps.envelope);
   kbarOf.set(win.tier, poolMeanKOwn(basePool, coeffs, rp, pt, FIELD_N).pit);

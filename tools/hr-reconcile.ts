@@ -55,7 +55,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
+  makeRawPolyModel, productionFieldStats, computeUnifiedFieldStats, applyWobaWeights, computeDerived,
   buildPoolTransform, applyAffine,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type PoolTransform,
 } from "../src/scoring-core/index.ts";
@@ -92,7 +92,7 @@ applyWobaWeights(coeffs, trained.wobaWeights);
 const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
-const ref: FieldStats = computeUnifiedFieldStats(baseCards, coeffs, rp, FIELD_N, true);
+const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);
 const pitExp = new Map(trained.platoon.pit.map((p) => [p.hand, { wR: p.vsRHB, wL: p.vsLHB }]));
 const hitExp = new Map(trained.platoon.hit.map((p) => [p.hand, { wR: p.vsRHP, wL: p.vsLHP }]));
 const deps: SampleDeps = { baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W, ref, envelope: trained.ratingEnvelope, pitExp, hitExp };
@@ -180,7 +180,7 @@ const xbhPred = new Map<Rec, number>();
   for (const win of QUICK) {
     const { tier } = win;
     const basePool = baseCards.filter((c) => inValueWindow(c, win));
-    const pt = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), trained.ratingEnvelope);
+    const pt = buildPoolTransform(ref, productionFieldStats(basePool, coeffs, rp), trained.ratingEnvelope);
     for (const r of recs.filter((x) => x.tier === tier && x.role === "hit")) {
       const c = cardOf(r); if (!c) continue;
       const { wR, wL } = hitExp.get(handLetter(n_(c["Bats"]))) ?? { wR: 0.5, wL: 0.5 };
@@ -340,7 +340,7 @@ function quicksTable(label: string, rows: QRow[], pool: number[], unit: number, 
 for (const { tier, dir, valueMax } of QDIRS) {
   if (!existsSync(dir)) { console.log(`\n  ${tier.toUpperCase()}: directory "${dir}" not found — skipped.`); continue; }
   const basePool = baseCards.filter((c) => inValueWindow(c, { tier, valueMax }));
-  const pt: PoolTransform = buildPoolTransform(ref, computeUnifiedFieldStats(basePool, coeffs, rp, FIELD_N, true), trained.ratingEnvelope);
+  const pt: PoolTransform = buildPoolTransform(ref, productionFieldStats(basePool, coeffs, rp), trained.ratingEnvelope);
 
   const agg = new Map<string, QAgg>();
   console.log(`\n─── QUICKS ${tier.toUpperCase()} (value ≤ ${Number.isFinite(valueMax) ? valueMax : "none"}) — per-running ghost-cleaning ──`);
