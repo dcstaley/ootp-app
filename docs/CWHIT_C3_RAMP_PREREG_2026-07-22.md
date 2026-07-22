@@ -117,3 +117,55 @@ A partial pass stays a partial pass. The pattern of what holds and what does not
 and the verdict returns to Fable before anything ships.
 
 (end of pre-registration — C3)
+
+---
+
+# AMENDMENT 1 — Fable's approval clarifications. 2026-07-22.
+
+Appended before the fit. Where this conflicts with §4–§5 above, this governs.
+
+## A1.1 The acceptance bar, stated explicitly
+
+**GATE (600-bar needs):** the implied per-tier slope lies inside the measured bootstrap CI for
+**at least 4 of the 5 tiers, and DIAMOND MUST BE ONE OF THEM.** A diamond miss is **STOP-class** and
+is not tradeable against the other four — ruling (u) makes diamond C3's to own, because it was always
+one of the coherent four and its standing G1 failure is the falsified saturating family
+over-correcting at low gap.
+
+**THE 1000-BAR IS A SENSITIVITY REPORT, NOT A GATE.** This is a structural point, not a leniency: a
+POOL-LEVEL ramp is one function `s(g)` of a format's gap, so it returns the same scalar whatever
+usage floor the evaluation set is drawn at. It CANNOT move between bars, and demanding that it
+reproduce a bar differential would be demanding the impossible — the same reason centerpiece #2's P3
+was decisive there and is inapplicable here. Gold's 1.78→1.63 bar differential therefore stays a
+DIAGNOSTIC, attached to the five-card provenance, and is never scored as a pass or fail.
+
+## A1.2 Why gold is fitted in, on its actual justification
+
+Earlier framing said gold is "fitted, not excluded" and left the justification implicit. The real one
+is technical: **the objective is per-card residuals weighted by per-card noise**, so gold's five
+light-usage sub-p05 cards are downweighted by their own evidential mass — automatically, in
+proportion to how little they are observed. That is the principled form of what excluding them
+approximated by hand. Exclusion would have been a blunt instrument achieving the same end less
+honestly, and would have discarded whatever real signal those cards do carry.
+
+Their residual is still published rather than absorbed, and the five names travel with the constant.
+
+## A1.3 Stratification (new standing structure, adopted)
+
+All scoreboard and defect reporting from here stratifies three ways, and a defect attributes to the
+stratum where it FIRST appears:
+
+    A  neutral uncapped quicks       the core
+    B  env-bearing uncapped dailies  + the era/park layer
+    C  budget cap/slots formats      + the composition layer
+
+One universal model, stratified diagnosis. C3's held-out budget validation is a stratum-C read and is
+reported as such — a stratum-C miss does not impugn the core fit, it localises to the composition
+layer, which is task 2's territory and is not built yet.
+
+## A1.4 Record-keeping (permanent)
+
+Modelling decisions in this document and its results carry TECHNICAL rationale. Derek's domain facts
+are EVIDENCE, never verdicts. Past items recorded as "Derek decided" are revisable on evidence.
+
+(end of amendment 1 — C3)
