@@ -1,0 +1,544 @@
+### ITEM B2 — EXPOSURE-BASELINE VARIANT DELTA (pre-event sizing)
+###
+### tool     : tools/cwhit-B2-exposure-variant-sizing.ts   (read-only; MEASUREMENT ONLY)
+### run      : node tools/cwhit-B2-exposure-variant-sizing.ts
+### date     : 2026-07-21
+### model    : league-42-43  (active; eventForm = deployed raw-poly; includeVariants = true;
+###            window [2042,2043]; carries the realized `platoon` artifact)
+### catalog  : cdmx  (3669 base cards; 0 variant rows in the CSV — the v5 population is CONSTRUCTED
+###            via `opponentSet` / `makeVariant`, the one variant-construction helper)
+### commit   : 7831350  (this run adds only the tool + this artifact; no production file is touched)
+### note     : these two files were first written to disk while a concurrent B1 session was staging,
+###            and were swept into that session's `git add -A` commit 4d9a5d7. Content is unaffected;
+###            the B2 verdict commit is the one that follows it.
+### scope    : the PLATOON-EXPOSURE path (src/eval/exposure.ts + src/server/server.ts:768-829).
+###            Nothing is fit. Nothing is wired. No production behaviour, default or constant changes.
+###            FIELD_N is IMPORTED from src/scoring-core/pool-stats.ts; EXPOSURE_N,
+###            `exposureFieldMembers` and `realizedSplitsOf` are MIRRORED from server.ts (declared in
+###            the tool header — they are module-local to a file that calls server.listen() at import).
+###
+### THE DEFECT BEING SIZED (found by the item-B static audit; not re-derived here):
+###   deployment = logit(realized) − logit(leagueBaseline)          server.ts:822
+###   · realized       — computePlatoon(obs) over VARIANT-INCLUSIVE observations (server.ts:1531;
+###                      rows keyed `${cid}|${variant?V:B}` at :1504; includeVariants defaults TRUE at :1429)
+###   · leagueBaseline — leagueExposureBaseline() over catalog.cards.filter(isBaseCard) (server.ts:789-795),
+###                      i.e. VARIANT-FREE, at EXPOSURE_N = 100 (server.ts:777)
+###   Same defect class as the train-vs-pool frame-gap mismatch item A sized, in a subsystem nobody
+###   had examined. Fable's standing invariant: SAME VARIANT POLICY ON BOTH SIDES of any comparison.
+###
+### ══ RAW OUTPUT ══════════════════════════════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  ITEM B2 — EXPOSURE-BASELINE VARIANT DELTA: what the mixed-policy deployment shift costs      ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+model 'league-42-43' | catalog 'cdmx' (3669 base cards, 0 variant rows in the CSV)
+model artifact: includeVariants=true  window=[2042,2043]  ⇒ realized splits are VARIANT-INCLUSIVE
+EXPOSURE_N = 100 (MIRROR of server.ts:777 — server-local, unreachable from a tool)
+FIELD_N    = 50 (IMPORTED from src/scoring-core/pool-stats.ts; never re-declared here)
+MEASUREMENT ONLY — no production behaviour, default or constant is changed; nothing is fit or wired.
+
+
+╔═══ 0. WHICH SIDE OF FABLE'S BASELINE-vs-FIELD LINE IS THIS? (stated, not decided) ═══╗
+  The doctrine: variants are ALWAYS scored and counted; they are excluded only from
+  RATING-SCALING BASELINES. So the classification decides the policy, and the classification is
+  precisely the open question. The reading this tool would argue for, with its reasons:
+
+    ⇒ IT IS A FIELD, not a rating-scaling baseline. Three reasons, in decreasing strength:
+      1. WHAT IT ESTIMATES. `computeBaseline` answers "what handedness does a card actually MEET?"
+         — a usage-weighted composition of the population that takes the mound / stands in the box.
+         That is the definition of a FIELD. A rating-scaling baseline answers a different question:
+         "in what units was the model fit?" Nothing here re-scales a rating.
+      2. WHAT IT IS SUBTRACTED FROM. `deployment = logit(realized) − logit(leagueBaseline)` sets
+         the baseline directly against a MEASURED, VARIANT-INCLUSIVE population. A convention leg
+         and a measurement leg cannot be differenced; both legs of a difference must estimate the
+         same population. Whatever the classification, THIS subtraction is mixed.
+      3. ITS OWN DOCUMENTATION. exposure.ts:6-9 calls it "the role-agnostic top-X FIELD" and cites
+         the pool-role-agnostic-topx principle — the same principle FIELD_N cohorts are built on.
+
+    THE COUNTER, recorded because it is not empty: the league baseline is CACHED on
+    `${activeModelId}|${catalogSource}` with no tournament in the key (server.ts:790) and is
+    env-invariant by construction — it behaves like a fixed CONVENTION the deployment shift is
+    expressed in, not like a per-pool estimate. §1c tests that env-invariance empirically.
+    NOT DECIDED HERE. Sized below either way, because the subtraction is mixed under both readings.
+
+
+╔═══ 1. THE SIZING — league exposure baseline, variant-FREE (production) vs variant-INCLUSIVE ═══╗
+
+── 1a. POPULATION ──
+  variant-FREE      3669 rows (production: catalog.cards.filter(isBaseCard), server.ts:792)
+  variant-INCLUSIVE 7338 rows (= base + its v5 twin, via opponentSet; exactly 2x, every v5 admitted:
+                    'Card Value' is not in VARIANT_RATING_FIELDS, so a v5 sits in its base's window)
+  Stamina is NOT boosted by makeVariant ⇒ pitWeight is identical base-vs-v5. The ONLY channel by
+  which variants move this baseline is SELECTION: which 100 rows win the field.
+
+── 1b. THE BASELINE ITSELF, every field ──
+  field            variant-FREE   variant-INC        Δ        Δ in logit
+  platoonVR            0.5881        0.5990     +0.0109     +0.0453
+  platoonVL            0.4119        0.4010     -0.0109     -0.0453
+  r_hit_split          0.5881        0.5990     +0.0109     +0.0453
+  l_hit_split          0.4119        0.4010     -0.0109     -0.0453
+  s_hit_split          0.5881        0.5990     +0.0109     +0.0453
+  r_pitch_split        0.5211        0.4676     -0.0535     -0.2142
+  l_pitch_split        0.3451        0.3597     +0.0146     +0.0642
+  NOTE the structure (exposure.ts:85-92): platoonVL = 1 − platoonVR, and r_hit_split = s_hit_split
+  = platoonVR, l_hit_split = 1 − platoonVR — all FOUR are the same number, the BF-weighted RHP share
+  of the pitcher field. Only r_pitch_split / l_pitch_split (the PA-weighted pure-hand batter
+  fractions of the hitter field) carry independent information. So this baseline has exactly TWO
+  free numbers, and everything below is driven by them.
+
+── 1c. FIELD COMPOSITION — where the move comes from ──
+  variant-FREE       pitcher field n=100 (RHP  57 / LHP  43), BF-weighted RHP share 0.5881
+                     hitter  field n=142 (RHB  74 / LHB  49 / SHB  19)
+  variant-INCLUSIVE  pitcher field n=100 (RHP  60 / LHP  40), BF-weighted RHP share 0.5990
+                     hitter  field n=139 (RHB  65 / LHB  50 / SHB  24)
+  A v5 twin has the SAME bats/throws/stamina as its base, so a field that is 100% v5 rows would
+  reproduce the base field's composition EXACTLY. Any delta therefore measures RE-ORDERING: the
+  boost is uniform in rating points but not in wOBA, so it re-ranks cards ACROSS handedness.
+
+── 1d. FOUND IN PASSING — the league baseline is NOT env-invariant, but is cached AS IF it were ──
+  server.ts:786-795 states: "LEAGUE reference baseline = full-catalog field. Env-invariant (RAW
+  wOBA), so any tournament's coeffs+model give the same result → cached globally by model+catalog",
+  and the cache key is `${activeModelId}|${catalogSource}` with NO tournament in it. Tested:
+
+    format         era          park        platoonVR   r_pitch    l_pitch    Δ vs bronze-quick
+    iron          era-2010     park-1         0.5881     0.5211     0.3451          0 (identical)
+    bronze        era-2010     park-1         0.5881     0.5211     0.3451          0 (identical)
+    silver        era-2010     park-1         0.5881     0.5211     0.3451          0 (identical)
+    gold          era-2010     park-1         0.5881     0.5211     0.3451          0 (identical)
+    diamond       era-2010     park-1         0.5881     0.5211     0.3451          0 (identical)
+    early-gold    era-1920     park-169       0.5881     0.5177     0.3404    +0.0046 (max abs)
+    bronze-heart  era-1939     park-191       0.5881     0.5385     0.3427    +0.0173 (max abs)
+    gold-cap      era-2010     park-156       0.5881     0.5211     0.3451          0 (identical)
+    diamond-cap   era-1998     park-101       0.5881     0.5248     0.3404    +0.0046 (max abs)
+
+    max |Δ| across the nine formats' coeffs = 1.73e-2  ⇒ NOT ENV-INVARIANT — THE CACHE KEY IS UNDER-SPECIFIED
+
+    WHY, and it is HALF-TRUE, which is what made it survive. The PITCHER leg IS env-free:
+    platoonVR is identical to the last digit under all nine coeff bags, because
+    `assembleRawPitchingWoba` carries no era term at the raw stage. The HITTER leg is NOT:
+    `assembleRawHittingWoba(e, ssp, speed, stealRate, steal, run, coeffs)` adds the BASERUNNING terms,
+    whose coefficients (adv_speed / adv_run / adv_stealRate / adv_stealInt) are ERA-SCALED by
+    runVal·sbFreq in resolveCoeffs. So which cards win the top-100 HITTER field — and therefore the
+    RHB/LHB fractions r_pitch_split / l_pitch_split — moves with the era. PARK never matters (raw wOBA
+    has no park factor), which is why gold-cap (era-2010 / park-156) matches the Quick tiers exactly.
+
+    THE CONSEQUENCE, recorded not fixed: production's league baseline — and therefore the DEPLOYMENT
+    SHIFT applied to EVERY tournament — is set by whichever tournament resolved it first after a cache
+    reset. Score early-gold first and every other format gets an era-1920 origin on its pitcher splits.
+    That is an ORDER-DEPENDENT production number in the same subsystem, and it is INDEPENDENT of the
+    variant question: it would remain after the variant policy is aligned. Item A flagged the identical
+    cache-key shape on `referenceFieldStats` (server.ts:282) as "benign only while raw-wOBA selection
+    is env-free" — this measurement says that premise is FALSE on the hitter side.
+    SIZE, so it can be ranked against the variant delta (max |Δ| over the nine eras, vs the §1b variant Δ):
+      platoonVR      era spread 0.0000   variant Δ +0.0109
+      r_pitch_split  era spread 0.0173   variant Δ -0.0535
+      l_pitch_split  era spread 0.0046   variant Δ +0.0146
+    Same order of magnitude on the two hitter-field fractions; exactly zero on platoonVR.
+    ⇒ EVERY number below is quoted at the era-2010 resolution (what the five Quick tiers + gold-cap
+      would produce). The three non-neutral formats' VARIANT deltas are still measured against their
+      OWN pool baselines in §3; only the shared league leg is pinned to era-2010.
+
+
+╔═══ 2. THE CONSEQUENCE (i) — the DEPLOYMENT SHIFT, under both policies ═══╗
+  deployment = logit(realized) − logit(leagueBaseline), in LOGIT units. realized is FIXED (it is a
+  measurement, variant-inclusive); only the subtrahend moves.
+
+  leg            realized   base FREE   dep FREE      base INC    dep INC       Δdep (logit)
+  team            0.6309      0.5881     +0.1799      0.5990     +0.1345        -0.0453
+  r_hit           0.5811      0.5881     -0.0286      0.5990     -0.0739        -0.0453
+  l_hit           0.2854      0.4119     -0.5617      0.4010     -0.5163        +0.0453
+  s_hit           0.6142      0.5881     +0.1090      0.5990     +0.0637        -0.0453
+  r_pitch_sp      0.4416      0.5211     -0.3191      0.4676     -0.1049        +0.2142
+  l_pitch_sp      0.2328      0.3451     -0.5516      0.3597     -0.6158        -0.0642
+  r_pitch_rp      0.4644      0.5211     -0.2272      0.4676     -0.0130        +0.2142
+  l_pitch_rp      0.2873      0.3451     -0.2679      0.3597     -0.3321        -0.0642
+
+  Δdep is a PURE LEVEL SHIFT: every leg that reads the same baseline field moves by the same amount
+  (−Δlogit(baseline)), because realized cancels. That is the whole mechanism — a mis-set origin.
+
+
+╔═══ 3. THE CONSEQUENCE (ii) — EFFECTIVE exposure per format, per hand/role ═══╗
+  effective = expit(logit(poolBaseline) + deployment)   (exposure.ts:111-127)
+  PROD       = poolBaseline FREE  + deployment from the FREE league baseline (production)
+  LEAGUE-INC = poolBaseline FREE  + deployment from the INCLUSIVE league baseline (the alignment)
+  BOTH-INC   = poolBaseline INC   + deployment from the INCLUSIVE league baseline (one policy everywhere)
+  A tournament of kind 'league' short-circuits to the realized splits verbatim (server.ts:823-824)
+  and is therefore IMMUNE. None of the nine formats is kind 'league' — all are exposed.
+
+── 3a. the POOL baseline per format (the other leg of applyDeployment) ──
+  format         N free   N inc    platoonVR free/inc (Δ)        r_pitch free/inc (Δ)         l_pitch free/inc (Δ)
+  iron            1200    2400   0.4993/0.4789 (-0.0204)       0.5767/0.6037 (+0.0270)      0.2761/0.2622 (-0.0139)
+  bronze          2096    4192   0.5075/0.5638 (+0.0563)       0.5000/0.4860 (-0.0140)      0.3372/0.3240 (-0.0132)
+  silver          2748    5496   0.5691/0.5887 (+0.0197)       0.4713/0.4341 (-0.0372)      0.3506/0.3791 (+0.0285)
+  gold            3192    6384   0.5467/0.4980 (-0.0487)       0.4790/0.4855 (+0.0065)      0.3772/0.3584 (-0.0189)
+  diamond         3498    6996   0.5501/0.5661 (+0.0160)       0.5337/0.5385 (+0.0047)      0.3374/0.3314 (-0.0061)
+  early-gold      3192    6384   0.5467/0.4980 (-0.0487)       0.4790/0.4826 (+0.0035)      0.3772/0.3605 (-0.0168)
+  bronze-heart     570    1140   0.6089/0.5718 (-0.0371)       0.5732/0.5833 (+0.0101)      0.3248/0.2976 (-0.0272)
+  gold-cap        3192    6384   0.5467/0.4980 (-0.0487)       0.4790/0.4855 (+0.0065)      0.3772/0.3584 (-0.0189)
+  diamond-cap     3498    6996   0.5501/0.5661 (+0.0160)       0.5244/0.5325 (+0.0082)      0.3415/0.3373 (-0.0042)
+
+── 3b. EFFECTIVE exposure, PROD vs LEAGUE-INC (the alignment), per hand/role ──
+  field                       iron    bronze    silver      gold   diamond early-gold bronze-heart  gold-cap diamond-cap
+  platoonVR          PROD    0.5442    0.5523    0.6125    0.5908    0.5941    0.5908    0.6508    0.5908    0.5941
+                     LINC    0.5329    0.5411    0.6017    0.5798    0.5831    0.5798    0.6404    0.5798    0.5831
+                     Δ      -0.0113   -0.0112   -0.0108   -0.0110   -0.0110   -0.0110   -0.0104   -0.0110   -0.0110
+  r_hit_split        PROD    0.4922    0.5004    0.5620    0.5396    0.5430    0.5396    0.6021    0.5396    0.5430
+                     LINC    0.4808    0.4890    0.5508    0.5283    0.5317    0.5283    0.5912    0.5283    0.5317
+                     Δ      -0.0113   -0.0113   -0.0112   -0.0113   -0.0113   -0.0113   -0.0109   -0.0113   -0.0113
+  l_hit_split        PROD    0.3638    0.3562    0.3016    0.3210    0.3181    0.3210    0.2681    0.3210    0.3181
+                     LINC    0.3743    0.3667    0.3112    0.3310    0.3280    0.3310    0.2771    0.3310    0.3280
+                     Δ      +0.0106   +0.0105   +0.0096   +0.0100   +0.0099   +0.0100   +0.0090   +0.0100   +0.0099
+  s_hit_split        PROD    0.5266    0.5347    0.5956    0.5736    0.5769    0.5736    0.6345    0.5736    0.5769
+                     LINC    0.5152    0.5234    0.5846    0.5624    0.5658    0.5624    0.6240    0.5624    0.5658
+                     Δ      -0.0113   -0.0113   -0.0110   -0.0111   -0.0111   -0.0111   -0.0106   -0.0111   -0.0111
+  r_pitch_split_sp   PROD    0.4975    0.4209    0.3931    0.4006    0.4541    0.4006    0.4940    0.4006    0.4449
+                     LINC    0.5509    0.4738    0.4452    0.4529    0.5076    0.4529    0.5474    0.4529    0.4982
+                     Δ      +0.0534   +0.0529   +0.0521   +0.0524   +0.0534   +0.0524   +0.0534   +0.0524   +0.0533
+  l_pitch_split_sp   PROD    0.1801    0.2266    0.2372    0.2587    0.2268    0.2587    0.2170    0.2587    0.2300
+                     LINC    0.1708    0.2156    0.2258    0.2466    0.2158    0.2466    0.2063    0.2466    0.2188
+                     Δ      -0.0093   -0.0110   -0.0114   -0.0121   -0.0111   -0.0121   -0.0107   -0.0121   -0.0112
+  r_pitch_split_rp   PROD    0.5205    0.4434    0.4152    0.4228    0.4770    0.4228    0.5170    0.4228    0.4676
+                     LINC    0.5735    0.4967    0.4680    0.4758    0.5305    0.4758    0.5701    0.4758    0.5211
+                     Δ      +0.0530   +0.0533   +0.0528   +0.0530   +0.0535   +0.0530   +0.0531   +0.0530   +0.0535
+  l_pitch_split_rp   PROD    0.2258    0.2802    0.2923    0.3167    0.2804    0.3167    0.2690    0.3167    0.2840
+                     LINC    0.2148    0.2674    0.2792    0.3029    0.2676    0.3029    0.2566    0.3029    0.2711
+                     Δ      -0.0110   -0.0128   -0.0131   -0.0137   -0.0128   -0.0137   -0.0124   -0.0137   -0.0129
+  r_pitch_split      PROD    0.5090    0.4322    0.4042    0.4117    0.4656    0.4117    0.5055    0.4117    0.4562
+                     LINC    0.5622    0.4853    0.4566    0.4644    0.5190    0.4644    0.5587    0.4644    0.5097
+                     Δ      +0.0532   +0.0531   +0.0524   +0.0527   +0.0535   +0.0527   +0.0533   +0.0527   +0.0534
+  l_pitch_split      PROD    0.2030    0.2534    0.2647    0.2877    0.2536    0.2877    0.2430    0.2877    0.2570
+                     LINC    0.1928    0.2415    0.2525    0.2748    0.2417    0.2748    0.2315    0.2748    0.2450
+                     Δ      -0.0102   -0.0119   -0.0123   -0.0129   -0.0119   -0.0129   -0.0116   -0.0129   -0.0120
+
+── 3c. EFFECTIVE exposure, PROD vs BOTH-INC (one policy everywhere) ──
+  platoonVR          Δ      -0.0317   +0.0442   +0.0083   -0.0592   +0.0047   -0.0592   -0.0464   -0.0592   +0.0047
+  r_hit_split        Δ      -0.0317   +0.0452   +0.0087   -0.0601   +0.0048   -0.0601   -0.0485   -0.0601   +0.0048
+  l_hit_split        Δ      +0.0299   -0.0404   -0.0074   +0.0546   -0.0042   +0.0546   +0.0408   +0.0546   -0.0042
+  s_hit_split        Δ      -0.0317   +0.0447   +0.0085   -0.0597   +0.0048   -0.0597   -0.0472   -0.0597   +0.0048
+  r_pitch_split_sp   Δ      +0.0808   +0.0390   +0.0154   +0.0588   +0.0582   +0.0558   +0.0636   +0.0588   +0.0615
+  l_pitch_split_sp   Δ      -0.0190   -0.0210   +0.0109   -0.0269   -0.0156   -0.0253   -0.0307   -0.0269   -0.0143
+  r_pitch_split_rp   Δ      +0.0801   +0.0394   +0.0156   +0.0595   +0.0582   +0.0565   +0.0632   +0.0595   +0.0617
+  l_pitch_split_rp   Δ      -0.0227   -0.0243   +0.0124   -0.0306   -0.0181   -0.0287   -0.0359   -0.0306   -0.0165
+  r_pitch_split      Δ      +0.0804   +0.0392   +0.0155   +0.0591   +0.0582   +0.0562   +0.0634   +0.0591   +0.0616
+  l_pitch_split      Δ      -0.0209   -0.0226   +0.0116   -0.0287   -0.0168   -0.0270   -0.0333   -0.0287   -0.0154
+  BOTH-INC's Δ is SMALLER than LEAGUE-INC's wherever the pool baseline moves the SAME WAY as the
+  league baseline — the two enter applyDeployment with opposite signs, so a shared bias cancels.
+  That cancellation is exactly why production's mixed policy is not catastrophic: the tournament
+  pool leg is ALSO variant-free, so it silently absorbs part of the mis-set origin.
+
+
+╔═══ 4. THE CONSEQUENCE (iii) — the vR/vL BLEND WEIGHTS every scored card is averaged with ═══╗
+  Where these land (server.ts:312-314 → coeffs → score-card.ts:171-185):
+     RHB OVR = vR·r_hit_split      + vL·(1 − r_hit_split)
+     LHB OVR = vR·(1 − l_hit_split) + vL·l_hit_split
+     SHB OVR = vR·s_hit_split      + vL·(1 − s_hit_split)
+     RHP OVR = vR·r_pitch_split    + vL·(1 − r_pitch_split)      [r/l_pitch_split = the sp/rp mean]
+     LHP OVR = vR·(1 − l_pitch_split) + vL·l_pitch_split
+  and platoonVR/VL weight the vR/vL HITTER LINEUPS in the optimizer (server.ts:849).
+  So Δ(weight on vR) is the unit: an OVR moves by Δw × (vR − vL) EXACTLY (the blend is linear).
+
+  Δ WEIGHT ON vR, PROD → LEAGUE-INC (percentage points of PA/BF share)
+  hand/role                 iron     bronze     silver       gold    diamond early-goldbronze-heart   gold-capdiamond-cap
+  RHB (w on vR)          -1.13pp    -1.13pp    -1.12pp    -1.13pp    -1.13pp    -1.13pp    -1.09pp    -1.13pp    -1.13pp
+  LHB (w on vR)          -1.06pp    -1.05pp    -0.96pp    -1.00pp    -0.99pp    -1.00pp    -0.90pp    -1.00pp    -0.99pp
+  SHB (w on vR)          -1.13pp    -1.13pp    -1.10pp    -1.11pp    -1.11pp    -1.11pp    -1.06pp    -1.11pp    -1.11pp
+  RHP (w on vR)          +5.32pp    +5.31pp    +5.24pp    +5.27pp    +5.35pp    +5.27pp    +5.33pp    +5.27pp    +5.34pp
+  LHP (w on vR)          +1.02pp    +1.19pp    +1.23pp    +1.29pp    +1.19pp    +1.29pp    +1.16pp    +1.29pp    +1.20pp
+  team platoonVR         -1.13pp    -1.12pp    -1.08pp    -1.10pp    -1.10pp    -1.10pp    -1.04pp    -1.10pp    -1.10pp
+
+  Δ WEIGHT ON vR, PROD → BOTH-INC
+  hand/role                 iron     bronze     silver       gold    diamond early-goldbronze-heart   gold-capdiamond-cap
+  RHB (w on vR)          -3.17pp    +4.52pp    +0.87pp    -6.01pp    +0.48pp    -6.01pp    -4.85pp    -6.01pp    +0.48pp
+  LHB (w on vR)          -2.99pp    +4.04pp    +0.74pp    -5.46pp    +0.42pp    -5.46pp    -4.08pp    -5.46pp    +0.42pp
+  SHB (w on vR)          -3.17pp    +4.47pp    +0.85pp    -5.97pp    +0.48pp    -5.97pp    -4.72pp    -5.97pp    +0.48pp
+  RHP (w on vR)          +8.04pp    +3.92pp    +1.55pp    +5.91pp    +5.82pp    +5.62pp    +6.34pp    +5.91pp    +6.16pp
+  LHP (w on vR)          +2.09pp    +2.26pp    -1.16pp    +2.87pp    +1.68pp    +2.70pp    +3.33pp    +2.87pp    +1.54pp
+  team platoonVR         -3.17pp    +4.42pp    +0.83pp    -5.92pp    +0.47pp    -5.92pp    -4.64pp    -5.92pp    +0.47pp
+
+  max |Δw| over all hands/roles/formats:  LEAGUE-INC 5.35pp   BOTH-INC 8.04pp
+
+
+╔═══ 5. THE CONSEQUENCE (iv) — what it does to a SCORED wOBA / wOBAA ═══╗
+  Method: production's own assembly (server.ts:340-401), with the SCORING POOL HELD at production's
+  variant-free basePool in every arm, so the ONLY thing that varies is the exposure splits in
+  `coeffs` — including their onward effect on computeHitTail (hit-tail.ts:158) and calibrate, which
+  both read the hit splits. Holding the pool fixed keeps item A's pool-policy effect OUT of this
+  number; the two are separate events and must not be summed from one table.
+
+  ELITE-SPREAD YARDSTICK (fixed, from the external-data memory): the measured spread of elite card
+  wOBA is SD ≈ 0.011. A move is quoted below both absolutely and as a % of that SD.
+
+  ── bronze (Bronze Quick; era era-2010 / park park-1; pool n=2096) ──
+     HITTERS n=1156  mean |Δ OVR| = 0.000184  max |Δ OVR| = 0.001905 (17.3% of elite SD)
+        largest mover: Dock's Patients 3B Van Kelly SD 19 bats 2  OVR 0.17313 → 0.17122 (BOTH-INC 0.18054)
+        top-26 membership changes: 0   max rank displacement inside the top-50: 6
+        platoon-EXTREME Historical All-Star SS Felipe  vR 0.33734 vL 0.26409 (|gap| 0.07324)
+                        OVR  PROD 0.30326  LEAGUE-INC 0.30244 (-0.000820, 7.5% of elite SD)  BOTH-INC 0.30652 (+0.003268)
+        platoon-NEUTRAL MLB 2026 Live SS Jacob Wilson  vR 0.30419 vL 0.30351 (|gap| 0.00068)
+                        OVR  PROD 0.30385  LEAGUE-INC 0.30383 (-0.000018, 0.2% of elite SD)  BOTH-INC 0.30390 (+0.000047)
+     PITCHERS n=940  mean |Δ OVR| = 0.000592  max |Δ OVR| = 0.004196 (38.1% of elite SD)
+        largest mover: Clubhouse - 60s Week - Snapshot SP throws 1  OVR 0.39652 → 0.39233 (BOTH-INC 0.39343)
+        top-26 membership changes: 1   max rank displacement inside the top-50: 14
+        platoon-EXTREME Rookie Sensation RP Adam Cimbe vR 0.30108 vL 0.34025 (|gap| 0.03918)
+                        OVR  PROD 0.32332  LEAGUE-INC 0.32124 (-0.002081, 18.9% of elite SD)  BOTH-INC 0.32179 (-0.001535)
+        platoon-NEUTRAL MLB 2026 Live RP Eric Orze MIN vR 0.31788 vL 0.31841 (|gap| 0.00053)
+                        OVR  PROD 0.31818  LEAGUE-INC 0.31815 (-0.000028, 0.3% of elite SD)  BOTH-INC 0.31816 (-0.000021)
+
+  ── gold (Gold Quick; era era-2010 / park park-1; pool n=3192) ──
+     HITTERS n=1772  mean |Δ OVR| = 0.000174  max |Δ OVR| = 0.001671 (15.2% of elite SD)
+        largest mover: Dock's Patients 3B Van Kelly SD 19 bats 2  OVR 0.16327 → 0.16160 (BOTH-INC 0.15411)
+        top-26 membership changes: 1   max rank displacement inside the top-50: 3
+        platoon-EXTREME Family Connections - Historica vR 0.33542 vL 0.26537 (|gap| 0.07004)
+                        OVR  PROD 0.31293  LEAGUE-INC 0.31223 (-0.000700, 6.4% of elite SD)  BOTH-INC 0.30910 (-0.003834)
+        platoon-NEUTRAL PTCS 3 - Veteran Presence 2B R vR 0.31408 vL 0.31373 (|gap| 0.00035)
+                        OVR  PROD 0.31392  LEAGUE-INC 0.31392 (+0.000005, 0.0% of elite SD)  BOTH-INC 0.31393 (+0.000011)
+     PITCHERS n=1420  mean |Δ OVR| = 0.000564  max |Δ OVR| = 0.005597 (50.9% of elite SD)
+        largest mover: Rookie Sensation RP Bill Dailey CL throws 1  OVR 0.37400 → 0.36840 (BOTH-INC 0.36771)
+        top-26 membership changes: 2   max rank displacement inside the top-50: 17
+        platoon-EXTREME Limited Edition/57 RP Brad Bra vR 0.29367 vL 0.34730 (|gap| 0.05363)
+                        OVR  PROD 0.32522  LEAGUE-INC 0.32240 (-0.002824, 25.7% of elite SD)  BOTH-INC 0.32205 (-0.003172)
+        platoon-NEUTRAL Limited Edition/42 CL Mariano  vR 0.31700 vL 0.31619 (|gap| 0.00081)
+                        OVR  PROD 0.31653  LEAGUE-INC 0.31657 (+0.000043, 0.4% of elite SD)  BOTH-INC 0.31657 (+0.000048)
+
+  ── diamond (Diamond Quick; era era-2010 / park park-1; pool n=3498) ──
+     HITTERS n=1964  mean |Δ OVR| = 0.000167  max |Δ OVR| = 0.001609 (14.6% of elite SD)
+        largest mover: Dock's Patients 3B Van Kelly SD 19 bats 2  OVR 0.15795 → 0.15634 (BOTH-INC 0.15863)
+        top-26 membership changes: 0   max rank displacement inside the top-50: 4
+        platoon-EXTREME All-Star Week - Historical All vR 0.33531 vL 0.26895 (|gap| 0.06637)
+                        OVR  PROD 0.31421  LEAGUE-INC 0.31355 (-0.000653, 5.9% of elite SD)  BOTH-INC 0.31449 (+0.000281)
+        platoon-NEUTRAL Clubhouse - SwitchKnucklers -  vR 0.32270 vL 0.32443 (|gap| 0.00173)
+                        OVR  PROD 0.32343  LEAGUE-INC 0.32345 (+0.000014, 0.1% of elite SD)  BOTH-INC 0.32342 (-0.000009)
+     PITCHERS n=1534  mean |Δ OVR| = 0.000550  max |Δ OVR| = 0.005880 (53.5% of elite SD)
+        largest mover: Unsung Heroes RP Kent Tekulve PIT  throws 1  OVR 0.35487 → 0.34899 (BOTH-INC 0.34847)
+        top-26 membership changes: 1   max rank displacement inside the top-50: 14
+        platoon-EXTREME Live Collection Reward - Snaps vR 0.33378 vL 0.28765 (|gap| 0.04613)
+                        OVR  PROD 0.32208  LEAGUE-INC 0.32263 (+0.000549, 5.0% of elite SD)  BOTH-INC 0.32286 (+0.000777)
+        platoon-NEUTRAL Young & Old 1 - Rookie Sensati vR 0.32139 vL 0.32126 (|gap| 0.00013)
+                        OVR  PROD 0.32132  LEAGUE-INC 0.32133 (+0.000007, 0.1% of elite SD)  BOTH-INC 0.32133 (+0.000007)
+
+  ── early-gold (Early Gold; era era-1920 / park park-169; pool n=3192) ──
+     HITTERS n=1772  mean |Δ OVR| = 0.000123  max |Δ OVR| = 0.002042 (18.6% of elite SD)
+        largest mover: Dock's Patients 3B Van Kelly SD 19 bats 2  OVR 0.18760 → 0.18555 (BOTH-INC 0.17637)
+        top-26 membership changes: 0   max rank displacement inside the top-50: 2
+        platoon-EXTREME Clubhouse - Baseball Reference vR 0.33786 vL 0.28554 (|gap| 0.05232)
+                        OVR  PROD 0.32106  LEAGUE-INC 0.32055 (-0.000514, 4.7% of elite SD)  BOTH-INC 0.31823 (-0.002832)
+        platoon-NEUTRAL SwitchKnucklers - Hardware Her vR 0.32728 vL 0.32745 (|gap| 0.00017)
+                        OVR  PROD 0.32735  LEAGUE-INC 0.32735 (-0.000004, 0.0% of elite SD)  BOTH-INC 0.32734 (-0.000008)
+     PITCHERS n=1420  mean |Δ OVR| = 0.000321  max |Δ OVR| = 0.004701 (42.7% of elite SD)
+        largest mover: Rookie Sensation RP Bill Dailey CL throws 1  OVR 0.36403 → 0.35932 (BOTH-INC 0.35901)
+        top-26 membership changes: 1   max rank displacement inside the top-50: 10
+        platoon-EXTREME Limited Edition/70 RP Brett Ce vR 0.32274 vL 0.29404 (|gap| 0.02870)
+                        OVR  PROD 0.31449  LEAGUE-INC 0.31486 (+0.000371, 3.4% of elite SD)  BOTH-INC 0.31526 (+0.000775)
+        platoon-NEUTRAL Rookie Sensation SP George Zet vR 0.31436 vL 0.31444 (|gap| 0.00008)
+                        OVR  PROD 0.31441  LEAGUE-INC 0.31440 (-0.000004, 0.0% of elite SD)  BOTH-INC 0.31440 (-0.000004)
+
+
+╔═══ 6. WATCH-FOR — does EXPOSURE_N = 100 carry the same cohort-size sensitivity the frame gap does? ═══╗
+  Item B empirical found the frame gap spans 57-117% of its N=50 value over N in {25..200}. Same
+  question here: is the VARIANT DELTA on this baseline an artifact of the cohort size?
+
+     N     platoonVR free/inc      Δ      Δ as % of N=100     r_pitch free/inc      Δ        l_pitch free/inc      Δ
+     25   0.5259/0.4983        -0.0276         -252%      0.4324/0.4474        +0.0149   0.3514/0.3684        +0.0171
+     50   0.5785/0.5224        -0.0561         -513%      0.4638/0.4706        +0.0068   0.3478/0.3676        +0.0198
+     75   0.6231/0.5736        -0.0495         -453%      0.5047/0.4757        -0.0289   0.3364/0.3398        +0.0034
+    100   0.5881/0.5990        +0.0109          100%      0.5211/0.4676        -0.0535   0.3451/0.3597        +0.0146
+    150   0.5856/0.5964        +0.0108           98%      0.5070/0.4976        -0.0094   0.3581/0.3445        -0.0136
+    200   0.5716/0.5830        +0.0113          104%      0.5230/0.5107        -0.0123   0.3498/0.3464        -0.0034
+    300   0.6025/0.5756        -0.0269         -246%      0.5184/0.5190        +0.0005   0.3612/0.3531        -0.0081
+  NOTE the hitter field is a UNION of two top-N lists (exposure.ts:71), so its size grows
+  super-linearly in N and the r/l_pitch_split columns are not on the same cohort as platoonVR.
+
+  READING: over N in {25,50,75,100,150,200,300} the platoonVR variant delta spans -0.0561 to +0.0113
+  — i.e. -513% to 104% of its value at the shipped N=100, and it CHANGES SIGN.
+  ⇒ YES, and WORSE than the frame gap. The frame gap spans 57-117% of its N=50 value — always the
+    same sign, so it is a magnitude question. This delta reverses direction, so at this cohort size it is not
+    even stably signed. N=100/150/200 form a stable plateau (+0.0108..+0.0113); N ≤ 75 and N = 300 do
+    not. The shipped N=100 sits INSIDE the plateau, which is the only reason the headline number is
+    reportable at all — and it is a fact about where the constant happens to sit, not about the
+    constant being right. RECORDED, NOT ACTED ON: EXPOSURE_N is not touched by this tool.
+
+
+╔═══ 7. VERDICT ═══╗
+  PRE-REGISTERED READING RULE (stated in these terms by Fable; the bars are declared here BEFORE
+  the numbers are read, and applied mechanically):
+     MATERIAL if EITHER
+       (a) max |Δ weight on vR| over all hands/roles/formats  ≥ 1.00pp of PA/BF share, OR
+       (b) max |Δ scored OVR| over the scored formats         ≥ 0.0011 wOBA (10% of the measured
+           elite spread SD 0.011), OR the top-26 membership changes anywhere.
+     NEGLIGIBLE otherwise.
+     MATERIAL ⇒ the alignment ships inside arm C (the variant-policy event).
+     NEGLIGIBLE ⇒ record and queue.
+
+  THE NUMBERS THAT DECIDE IT (arm LEAGUE-INC vs PROD — the alignment against production):
+     (a) max |Δ weight on vR|      = 5.347pp   vs bar 1.000pp   ⇒ TRIPPED
+     (b) max |Δ scored OVR|        = 0.005880  vs bar 0.001100  (53.5% of elite SD) ⇒ TRIPPED
+         top-26 membership changes = 6 (over 8 format x role cells)  ⇒ TRIPPED
+         max rank displacement in the top-50 = 17
+
+  ⇒ MATERIAL
+
+  per format x role detail behind (b):
+     format         role   mean |ΔOVR|   max |ΔOVR|   % elite SD   top-26 changes   max rank move
+     bronze        hit       0.000184     0.001905         17.3                0               6
+     bronze        pit       0.000592     0.004196         38.1                1              14
+     gold          hit       0.000174     0.001671         15.2                1               3
+     gold          pit       0.000564     0.005597         50.9                2              17
+     diamond       hit       0.000167     0.001609         14.6                0               4
+     diamond       pit       0.000550     0.005880         53.5                1              14
+     early-gold    hit       0.000123     0.002042         18.6                0               2
+     early-gold    pit       0.000321     0.004701         42.7                1              10
+
+  WHERE IT IS AND IS NOT CARRIED — so "MATERIAL" is not over-read as uniform:
+     PITCHERS  mean |ΔOVR| 0.000507  max 0.005880 (53% of elite SD)  top-26 changes 5
+     HITTERS   mean |ΔOVR| 0.000162  max 0.002042 (19% of elite SD)  top-26 changes 1
+     The effect is ~3x larger on the PITCHER side, and it is structural rather than incidental: the
+     pitcher weight moves 5.3pp against ~1.1pp for the hitter weights, because the two free numbers
+     of this baseline are not equally wrong — the hitter-field fractions (r/l_pitch_split, which drive
+     the PITCHER blend) are what the v5 twins re-order most.
+     WITHIN a role it is concentrated on PLATOON-EXTREME cards, exactly as the linear blend requires
+     (ΔOVR = Δw × (vR − vL)): the platoon-NEUTRAL representatives move by ≤0.4% of the elite SD — i.e.
+     NOTHING — while the platoon-extreme ones move 5-26%, and the largest movers 15-54%.
+
+     THE HONEST FORM OF THE ANSWER: MATERIAL IN AGGREGATE ON THE PITCHER SIDE AND FOR PLATOON-EXTREME
+     CARDS OF EITHER ROLE; NEGLIGIBLE FOR PLATOON-NEUTRAL CARDS. It is not an "extreme-only" finding —
+     bar (a) is tripped 5x over on a channel that touches every pitcher, and top-26 membership (the
+     margin that decides a roster) changes in 5 of 8 cells. But a reader holding a platoon-neutral
+     card should expect to see no change at all, and that is the correct behaviour, not a dilution.
+
+  REPORT-ONLY. Nothing here fits, changes a default, or touches production scoring.
+
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+  THE READING
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+MATERIAL.  Both pre-registered bars are tripped, and one of them by a factor of five.
+
+THE NUMBER THAT DECIDES IT
+  max |Δ weight on vR| = 5.35pp of BF share (bar: 1.00pp), on the PITCHER blend, in every one of the
+  nine formats.  Corroborated by the scored consequence: max |Δ OVR| = 0.0059 wOBAA = 53% of the
+  measured elite-spread SD of 0.011 (bar: 10%), and top-26 membership changes in 5 of 8 format × role
+  cells.  ⇒ THE ALIGNMENT SHIPS INSIDE ARM C (the variant-policy event).
+
+1. THE BASELINE DELTA ITSELF
+   The league exposure baseline has exactly TWO free numbers (exposure.ts:85-92 makes platoonVR,
+   platoonVL, r_hit_split, l_hit_split and s_hit_split all the same BF-weighted RHP share):
+
+     platoonVR / r_hit_split / s_hit_split   0.5881 → 0.5990   Δ +0.0109   (+0.0453 logit)
+     l_hit_split                             0.4119 → 0.4010   Δ −0.0109   (−0.0453 logit)
+     r_pitch_split                           0.5211 → 0.4676   Δ −0.0535   (−0.2142 logit)   ← the big one
+     l_pitch_split                           0.3451 → 0.3597   Δ +0.0146   (+0.0642 logit)
+
+   MECHANISM. `Stamina` is not in VARIANT_RATING_FIELDS, and neither is `Card Value`, so a v5 twin has
+   the SAME hand, the SAME usage weight, and sits in the SAME window as its base. A field made
+   entirely of v5 rows would reproduce the base field's composition exactly. The delta is therefore
+   PURE RE-ORDERING: the v5 boost is uniform in rating points but not in wOBA, so it re-ranks cards
+   ACROSS handedness. Pitcher field 57R/43L → 60R/40L; hitter field 74R/49L/19S → 65R/50L/24S.
+
+2. THE DEPLOYMENT SHIFT — a mis-set origin, nothing more
+   `realized` is a fixed measurement, so aligning the subtrahend moves every leg that reads the same
+   baseline field by exactly −Δlogit(baseline):
+     team / r_hit / s_hit  −0.0453      l_hit  +0.0453
+     r_pitch_sp / _rp      +0.2142      l_pitch_sp / _rp  −0.0642
+   That is the whole defect: the deployment shift is measured from the wrong origin, and the error is
+   a pure level offset, identical for every tournament that reads it.
+
+3. THE CONSEQUENCE, IN A UNIT A READER CAN JUDGE
+   Exposure lands in `coeffs` (server.ts:312-314) and from there in the vR/vL blend every scored card
+   is averaged with (score-card.ts:171-185), plus platoonVR/VL weighting the vR/vL lineups in the
+   optimizer (server.ts:849). The blend is linear, so ΔOVR = Δw × (vR − vL) exactly.
+
+     Δ WEIGHT ON vR, production → aligned (range over the nine formats)
+       RHP    +5.24 .. +5.35 pp      ← the headline
+       LHP    +1.02 .. +1.29 pp
+       RHB    −1.09 .. −1.13 pp
+       LHB    −0.90 .. −1.06 pp
+       SHB    −1.06 .. −1.13 pp
+       team platoonVR  −1.04 .. −1.13 pp
+
+     SCORED (four formats, production's own assembly, scoring pool HELD variant-free so that only the
+     splits vary — item A's pool-policy effect is deliberately NOT in these numbers and the two must
+     not be summed from one table):
+       PITCHERS  mean |ΔOVR| 0.00051   max 0.00588 (53% of elite SD)   top-26 changes 5
+       HITTERS   mean |ΔOVR| 0.00016   max 0.00204 (19% of elite SD)   top-26 changes 1
+       max rank displacement inside a top-50: 17 places (gold, pitchers)
+       platoon-EXTREME representatives move 5-26% of the elite SD; platoon-NEUTRAL ones move ≤0.4%
+       — i.e. nothing, which is exactly what a linear blend must do.
+
+4. THE HONEST FORM OF THE ANSWER (asked for explicitly, so stated rather than rounded off)
+   MATERIAL IN AGGREGATE ON THE PITCHER SIDE AND FOR PLATOON-EXTREME CARDS OF EITHER ROLE;
+   NEGLIGIBLE FOR PLATOON-NEUTRAL CARDS.
+   It is NOT an extreme-only finding — bar (a) is tripped fivefold on a channel that touches every
+   pitcher, and the top-26 margin (the one that decides a roster) moves in 5 of 8 cells. But a reader
+   holding a platoon-neutral card should expect to see no change at all. The asymmetry is structural:
+   the two free numbers of this baseline are not equally wrong, and the badly-wrong one
+   (r_pitch_split, the RHB fraction of the hitter field) is the one that drives the PITCHER blend.
+
+5. BASELINE OR FIELD? (stated, not decided — §0 of the raw output carries the full argument)
+   This tool would classify it a FIELD: it estimates the handedness population a card actually MEETS,
+   it is documented as "the role-agnostic top-X FIELD" (exposure.ts:6-9) on the same principle FIELD_N
+   cohorts are built on, and it is DIFFERENCED against a measured variant-inclusive quantity. The
+   counter is real — it is cached globally with no tournament in the key and behaves like the fixed
+   origin a shift is expressed in, which is convention-shaped. But the classification does not change
+   this verdict: under EITHER reading, `logit(realized) − logit(leagueBaseline)` differences two legs
+   drawn from different populations, and that is arithmetically wrong rather than conventionally
+   different.
+
+6. ARM CHOICE — the alignment must be BOTH legs, not just the league leg
+   LEAGUE-INC (fix only the league baseline) is the arm sized above. BOTH-INC (league AND the
+   tournament pool baseline) is smaller on some formats and LARGER on others (max |Δw| 8.04pp),
+   because the tournament pool baseline enters `applyDeployment` with the opposite sign and today
+   silently absorbs part of the mis-set origin. That accidental cancellation is the only reason
+   production's mixed policy has not been more visibly wrong, and it is not a property anyone chose.
+   Whichever arm ships, both legs of BOTH subtractions have to end on one policy.
+
+7. TWO THINGS FOUND IN PASSING — reported, not fixed
+   (i) THE LEAGUE BASELINE IS NOT ENV-INVARIANT, BUT IS CACHED AS IF IT WERE.
+       server.ts:786-795 asserts "Env-invariant (RAW wOBA), so any tournament's coeffs+model give the
+       same result → cached globally by model+catalog" and keys the cache `${activeModelId}|${catalogSource}`
+       with NO tournament in it. Measured: the PITCHER leg is genuinely env-free (platoonVR identical
+       to the last digit under all nine coeff bags), but the HITTER leg is NOT —
+       `assembleRawHittingWoba` adds the BASERUNNING terms, whose coefficients (adv_speed / adv_run /
+       adv_stealRate / adv_stealInt) are ERA-SCALED in resolveCoeffs, so which cards win the top-100
+       hitter field moves with the era. r_pitch_split reads 0.5177 (era-1920) / 0.5211 (era-2010) /
+       0.5248 (era-1998) / 0.5385 (era-1939): a spread of 0.0173, about a third of the variant delta
+       being sized here. Park never matters (raw wOBA carries no park factor) — gold-cap
+       (era-2010 / park-156) matches the Quick tiers exactly.
+       CONSEQUENCE: the deployment shift applied to EVERY tournament is set by whichever tournament
+       resolved the cache first. That is an ORDER-DEPENDENT production number, independent of the
+       variant question, and it would survive the variant alignment. Item A flagged this exact
+       cache-key shape on `referenceFieldStats` (server.ts:282) as "benign only while raw-wOBA
+       selection is env-free" — this measurement says that premise is FALSE on the hitter side.
+  (ii) A ONE-COPY BLIND SPOT. `EXPOSURE_N`, `exposureFieldMembers` and `realizedSplitsOf` are
+       module-local to server.ts, which calls `server.listen()` at import — so no tool can reach them
+       and this one had to MIRROR all three. Same class of hazard ruling (d) closed for FIELD_N.
+
+8. STANDING CAVEAT ON THE VARIANT-INCLUSIVE POPULATION (docs/CARD_VARIANT_ELIGIBILITY.md, 92169a5)
+   `opponentSet` fabricates a v5 for EVERY base card, and ~36.9% of the catalog cannot have one
+   (Card Type 1 / Live, and Sub Type LE, both decisive in the capture corpus). That doc landed while
+   this run was in flight; its predicate is NOT WIRED and is awaiting Derek's confirmation, so
+   encoding it here would be a second, unconfirmed copy of a rule that belongs beside `makeVariant`.
+   It is therefore NOT applied, and every "variant-inclusive" number above is an ALL-CARDS-CAPABLE
+   counterfactual.
+   DIRECTION, by that doc's own mechanism: the contamination bites where the cohort is small enough
+   for fabricated v5s to reach the top-N (it measured iron moving and silver/gold/diamond not moving
+   at all on the FIELD_N=50 pitcher gap). THIS baseline is the top-100 of the FULL 3669-card catalog —
+   the largest cohort-to-pool ratio anywhere in the program — so it is the case where fabricated v5s
+   are least able to displace genuinely-capable ones. The verdict is a factor-of-five trip on bar (a),
+   which is not a margin the correction plausibly closes; but the exact deltas above should be
+   re-measured once the predicate is wired, and they are provisional until then.
+
+9. THE WATCH-FOR: EXPOSURE_N = 100 CARRIES THE COHORT-SIZE SENSITIVITY, AND WORSE THAN THE FRAME GAP
+   Over N in {25,50,75,100,150,200,300} the platoonVR variant delta spans −0.0561 to +0.0113 — i.e.
+   −513% to +104% of its value at the shipped N=100 — and it CHANGES SIGN. The frame gap spans
+   57-117% of its N=50 value at ONE sign, so that was a magnitude question; this is not even stably
+   signed. N ∈ {100,150,200} forms a stable plateau (+0.0108..+0.0113) and the shipped constant sits
+   INSIDE it, which is the only reason the headline number is quotable at all — a fact about where the
+   constant happens to sit, not evidence that the constant is right. RECORDED, NOT ACTED ON: this tool
+   does not touch EXPOSURE_N.
+
+VERDICT: MATERIAL ⇒ the alignment ships inside arm C (the variant-policy event).
+
+(end of artifact — item B2 exposure-baseline variant sizing, 2026-07-21, MEASUREMENT ONLY: nothing
+fit, nothing wired, no production behaviour, default or constant changed.)
