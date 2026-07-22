@@ -1,0 +1,84 @@
+################################################################################
+# p-SENSITIVITY SIZING (Fable ruling (o), SIZE FIRST). 2026-07-22.
+# Tool: tools/variant-presence-sizing.ts. Eligibility-gated, presence-weighted
+# pool leg; p on the CONDITIONAL scale. Measurement only; nothing wired.
+################################################################################
+
+
+╔═══ p-SENSITIVITY SIZING — presence-weighted pool leg ═══╗
+model 'league-42-43' | catalog 'cdmx' | replication M=10 (exact for p in 0.1 steps)
+p is CONDITIONAL (v5 usage / eligible-class usage); measured 0.26-0.43 pit, 0.22-0.42 hit
+p=0 reproduces production exactly; p=1 is the ELIGIBILITY-GATED full-inclusion endpoint
+
+  tier      quantity            p=0.0    p=0.2    p=0.3    p=0.4    p=1.0   span over measured p (0.2-0.4)
+  iron      gap pit.stu        23.64    21.22    22.15    21.59    19.06     -0.370
+            shipped s_K        1.731    1.661    1.688    1.672    1.598     -0.011
+            shipped s_HR       1.265    1.265    1.265    1.265    1.265
+  bronze    gap pit.stu        22.76    20.41    20.02    19.45    15.39      0.962
+            shipped s_K        1.705    1.637    1.626    1.609    1.488      0.028
+            shipped s_HR       1.265    1.264    1.264    1.264    1.264
+  silver    gap pit.stu        20.55    16.99    15.64    15.38    13.68      1.608
+            shipped s_K        1.641    1.536    1.496    1.488    1.436      0.048
+            shipped s_HR       1.263    1.263    1.263    1.263    1.261
+  gold      gap pit.stu        15.95    14.10    13.69    12.28     7.34      1.820
+            shipped s_K        1.505    1.449    1.437    1.393    1.239      0.056
+            shipped s_HR       1.259    1.258    1.257    1.255    1.245
+  diamond   gap pit.stu        10.38    10.89    10.18     9.06     7.04      1.826
+            shipped s_K        1.335    1.351    1.329    1.293    1.230      0.057
+            shipped s_HR       1.227    1.197    1.184    1.183    1.166
+
+── THE PRE-REGISTERED QUESTION: is s_K insensitive across the measured p band? ──
+   Comparator: the correction's own magnitude at p=0 (production today), s_K − 1.
+
+  tier      s_K(0.2)  s_K(0.4)   swing   correction at p=0   swing as % of correction
+  iron         1.661     1.672   0.011               0.731                      1.5%
+  bronze       1.637     1.609   0.028               0.705                      4.0%
+  silver       1.536     1.488   0.048               0.641                      7.5%
+  gold         1.449     1.393   0.056               0.505                     11.0%
+  diamond      1.351     1.293   0.057               0.335                     17.0%
+
+(end of p-sensitivity sizing — measurement only)
+
+################################################################################
+# READING — the answer is MIXED, and the two framings disagree on purpose
+################################################################################
+
+THE PRE-REGISTERED BRANCH was: insensitive across the plausible p band ⇒ a global p ships;
+sensitive ⇒ a property-conditioned p comes back as a proposal. The measurement does not land
+cleanly on either side, and the reason is worth stating rather than rounding away.
+
+AS A SHARE OF EACH TIER'S OWN CORRECTION, sensitivity rises monotonically and reaches a level
+that would matter:  iron 1.5% · bronze 4.0% · silver 7.5% · gold 11.0% · diamond 17.0%.
+
+IN ABSOLUTE TERMS THE SWING IS SMALL AND NEARLY FLAT:  0.011 · 0.028 · 0.048 · 0.056 · 0.057
+in s_K. The percentage grows almost entirely because the DENOMINATOR shrinks — the correction
+itself falls from 0.731 at iron to 0.335 at diamond — not because the choice of p bites
+harder at the top tiers.
+
+Which framing governs is a decision, not a measurement, and it is the difference between
+"a global p is fine" and "diamond needs its own". Both numbers are above so neither can be
+quoted without the other.
+
+TWO THINGS WORTH CARRYING BEYOND THE HEADLINE:
+
+· THE GAP IS NOT MONOTONE IN p. Iron runs 23.64 / 21.22 / 22.15 / 21.59 / 19.06 across
+  p = 0 / 0.2 / 0.3 / 0.4 / 1.0, and diamond RISES before falling (10.38 / 10.89 / 10.18 /
+  9.06 / 7.04). A pure re-basing would be monotone; this is selection churn — which cards win
+  top-50 seats changes non-smoothly as the mixture weight moves. It means p cannot be reasoned
+  about by interpolating between the endpoints, and any fitted ramp must be re-derived at the
+  chosen p rather than scaled from p = 0.
+
+· p DOES NOT RESCUE DIAMOND. Its measured need is 1.04; s_K runs 1.335 at p = 0 and 1.293 at
+  p = 0.4. Production over-corrects diamond at every p on this sweep, so the standing diamond
+  G1 failure is not a variant-policy artefact and will not be fixed by choosing p well. That
+  also retires the last remnant of the "diamond becomes in-frame" expectation: it depended on
+  the ungated arm-C construction, which is refuted, and it does not survive eligibility gating.
+
+METHOD NOTE. The mixture is exact, not approximated: for rational p = k/m each ineligible card
+is emitted m times and each eligible card as (m-k) base copies plus k v5 copies, with top-N
+scaled to N x m. Duplicates carry identical predicted value, so the top-(N·m) of the replicated
+population IS the weighted top-N of the mixture and its moments ARE the weighted moments. The
+shared core computes all of it — no weighted-moment variant was written, which would have been
+a second copy of scoring maths.
+
+(end of artifact — p-sensitivity sizing, mixed verdict)
