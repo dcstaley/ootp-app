@@ -186,6 +186,96 @@ export const PRESENCE_M = 20;
  *  ramp may never be rescaled from another p — it must be re-derived. */
 export const PRESENCE_P = 0.30;
 
+/** The tripwire band around `PRESENCE_P`. Inside ⇒ no action; outside ⇒ a p-update is FLAGGED for
+ *  the next refit event. These are the two sensitivity points C3's gates were re-checked at, which
+ *  is what makes the band meaningful rather than arbitrary: the shipped ramp is known to hold its
+ *  verdict across exactly this interval, so drift inside it is covered evidence and drift outside
+ *  it is not. */
+export const PRESENCE_BAND = { lo: 0.25, hi: 0.35 } as const;
+
+/** Minimum eligible-class usage before a presence reading carries a verdict. Below it the answer is
+ *  "insufficient data" — never "in band", and never "out of band". */
+export const PRESENCE_MIN_USAGE = 5000;
+
+/** One observed usage row for the presence measurement. `usage` is BF (pitchers) or PA (hitters) —
+ *  opponents faced, symmetric across roles. NO well-sampled floor applies: presence is about who
+ *  PLAYED, not about who played enough to judge a rate. */
+export interface PresenceRow { usage: number; variant: boolean; eligible: boolean }
+
+export interface PresenceReading {
+  rows: number; totalUsage: number; eligibleUsage: number; variantUsage: number;
+  /** v5 usage over ALL usage. NOT the quantity the mixture needs — reported for the identity below. */
+  rawShare: number;
+  eligibleShare: number;
+  /** THE QUANTITY: v5 usage over ELIGIBLE-CLASS usage. NaN when there is no eligible usage. */
+  conditionalP: number;
+}
+
+/** REALIZED CONDITIONAL PRESENCE — the quantity the pool-leg mixture is parameterised by.
+ *
+ *  WHY CONDITIONAL AND NOT THE RAW SHARE: 44% of the catalog cannot have a variant at all (Live, LE,
+ *  PTMS, Clubhouse, Mission Edition, PTCS, PTWC, Icon Pre-Orders). Their play sits in a raw share's
+ *  denominator while being structurally incapable of contributing to its numerator, so the raw share
+ *  understates the propensity wherever play concentrates in ineligible cards. `presenceMixture`
+ *  weights ELIGIBLE cards only, so the conditional quantity is the consistent one BY CONSTRUCTION.
+ *
+ *  The decomposition is exact, because every v5 row belongs to an eligible card:
+ *      raw share = eligible-usage share x conditional propensity
+ *  and callers can assert it as an instrument check. */
+export function conditionalPresence(rows: Iterable<PresenceRow>): PresenceReading {
+  let n = 0, tot = 0, elig = 0, v5 = 0;
+  for (const r of rows) {
+    if (!Number.isFinite(r.usage) || r.usage <= 0) continue;
+    n++; tot += r.usage;
+    if (r.eligible) elig += r.usage;
+    if (r.variant) v5 += r.usage;
+  }
+  return {
+    rows: n, totalUsage: tot, eligibleUsage: elig, variantUsage: v5,
+    rawShare: tot > 0 ? v5 / tot : NaN,
+    eligibleShare: tot > 0 ? elig / tot : NaN,
+    conditionalP: elig > 0 ? v5 / elig : NaN,
+  };
+}
+
+export type PresenceVerdict = "in-band" | "OUT-OF-BAND" | "insufficient data";
+
+/** THE STANDING TRIPWIRE (drift doctrine). Every capture re-pull compares realized conditional
+ *  presence against the shipped `PRESENCE_P`.
+ *
+ *  GOAL, stated with the rule: `p` is an ECOSYSTEM PRIOR and WILL drift — the defence is never to
+ *  deny that, but to make drift DETECTABLE and repaired on cadence. Inside the band the shipped
+ *  ramp's verdict is known to hold (its gates were re-checked at exactly 0.25 and 0.35), so no
+ *  action is warranted. Outside it, the ramp is being evaluated on evidence its sensitivity legs
+ *  never covered, and a p-update is flagged for the NEXT REFIT EVENT — retrain-coupled, never a live
+ *  knob, because a ramp fitted at one p can only be RE-DERIVED at another, never rescaled.
+ *
+ *  A thin reading returns "insufficient data" and is NEVER reported as either a pass or a breach. */
+export function presenceTripwire(reading: PresenceReading, shipped: number = PRESENCE_P): {
+  verdict: PresenceVerdict; ok: boolean; p: number; shipped: number; message: string;
+} {
+  const p = reading.conditionalP;
+  if (!Number.isFinite(p) || reading.eligibleUsage < PRESENCE_MIN_USAGE) {
+    return {
+      verdict: "insufficient data", ok: true, p, shipped,
+      message: `presence tripwire: INSUFFICIENT DATA — eligible-class usage ${reading.eligibleUsage.toFixed(0)} `
+        + `is below the ${PRESENCE_MIN_USAGE} bar over ${reading.rows} rows, so no presence verdict is issued (not a pass).`,
+    };
+  }
+  const inBand = p >= PRESENCE_BAND.lo && p <= PRESENCE_BAND.hi;
+  return {
+    verdict: inBand ? "in-band" : "OUT-OF-BAND", ok: inBand, p, shipped,
+    message: inBand
+      ? `presence tripwire: realized conditional presence ${(100 * p).toFixed(1)}% is inside the `
+        + `${(100 * PRESENCE_BAND.lo).toFixed(0)}-${(100 * PRESENCE_BAND.hi).toFixed(0)}% band around the shipped p = ${shipped} — no action.`
+      : `⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence ${(100 * p).toFixed(1)}% is OUTSIDE the `
+        + `${(100 * PRESENCE_BAND.lo).toFixed(0)}-${(100 * PRESENCE_BAND.hi).toFixed(0)}% band around the shipped p = ${shipped}. `
+        + `The shipped K-spread ramp was fitted AT p = ${shipped} and its sensitivity legs cover only that band, so this is `
+        + `outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. `
+        + `Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.`,
+  };
+}
+
 /** The mixture population at presence `p`, exact by integer replication. Pass `topN * PRESENCE_M`
  *  to any top-N consumer, or the cohort silently shrinks by a factor of m. */
 export function presenceMixture(pool: Card[], p: number = PRESENCE_P, m: number = PRESENCE_M): Card[] {

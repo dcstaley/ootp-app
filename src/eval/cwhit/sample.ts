@@ -28,7 +28,7 @@ import {
   hittingBsr, assembleRawHittingWoba, assembleRawPitchingWoba,
 } from "../../scoring-core/woba.ts";
 import type { Card } from "../../data/catalog.ts";
-import { makeVariant } from "../../data/variants.ts";
+import { makeVariant, canHaveVariant, conditionalPresence, presenceTripwire, type PresenceReading, type PresenceVerdict } from "../../data/variants.ts";
 import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/curves.ts";
 import { applyPitSpread } from "../../model/pool-transform.ts";
 import { applyHitTail, type HitTail } from "../../scoring-core/hit-tail.ts";
@@ -248,6 +248,11 @@ export interface SampleResult {
   projUnobserved: { tier: string; role: string; n: number }[];
   obsFiles: string[];
   projFiles: string[];
+  /** REALIZED conditional variant presence over every observed row of this read (see the tripwire
+   *  at the end of `buildCwhitSample`). Always present, so a tool can PRINT the reading even when
+   *  it is in band and therefore silent in `notices`. */
+  presence: PresenceReading;
+  presenceTrip: { verdict: PresenceVerdict; ok: boolean; p: number; shipped: number; message: string };
   /** What this sample was actually built from + the floors it was built under — reported so a run's
    *  provenance line states its corpus and bar instead of assuming the module defaults. */
   source: CwhitSource;
@@ -687,5 +692,30 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
   }
   if (projJoin.viaCid || projJoin.viaTitle)
     notices.push(`projection join: ${projJoin.viaCid} via CID+VLvl, ${projJoin.viaTitle} via title fallback, ${projJoin.missed} observed rows with no projection`);
-  return { recs, pools, cals, windows, notices, projUnjoinedCatalog, projUnobserved, obsFiles, projFiles, source: src, floors: { minBf, minPa }, projJoin };
+  // ── THE STANDING PRESENCE TRIPWIRE (drift doctrine) ──────────────────────────────────────────
+  // Every capture re-pull recomputes REALIZED conditional presence and compares it against the
+  // shipped PRESENCE_P. It lives HERE, in the one sample builder, rather than in a tool, because
+  // "every re-pull" has to mean every re-pull: any tool that reads captures reaches them through
+  // this function, so none can read new captures without the comparison happening.
+  //
+  // MEASURED OVER EVERY OBSERVED ROW, WITH NO WELL-SAMPLED FLOOR — presence is about who PLAYED,
+  // not about who played enough to judge a rate. Eligibility is the CARD's class, and a card and
+  // its v5 share one Card ID, so the base card decides for both rows.
+  // GRAIN: ROW = (card x variant level); usage = BF (pit) / PA (hit), symmetric across roles.
+  const eligById = new Map<string, boolean>();
+  for (const c of d.baseCards) eligById.set(String(c["Card ID"]), canHaveVariant(c));
+  const presence = conditionalPresence(recs.map((r) => ({
+    usage: r.sample,
+    variant: r.vlvl === 5,
+    // A cid whose base card is not in this catalog read is counted as INELIGIBLE rather than
+    // guessed: it can only shrink the denominator, so the tripwire errs toward firing, which is
+    // the safe direction for a drift detector.
+    eligible: eligById.get(r.cid.split("|")[0] ?? "") ?? false,
+  })));
+  const presenceTrip = presenceTripwire(presence);
+  // Silent when in band — that is the rule ("inside 0.25-0.35 => no action"). Loud otherwise, and
+  // loud about thinness too, because a thin reading masquerading as a pass is how a tripwire dies.
+  if (presenceTrip.verdict !== "in-band") notices.push(presenceTrip.message);
+
+  return { recs, pools, cals, windows, notices, projUnjoinedCatalog, projUnobserved, obsFiles, projFiles, source: src, floors: { minBf, minPa }, projJoin, presence, presenceTrip };
 }
