@@ -48,9 +48,31 @@ describe("one-copy constants", () => {
     expect(FIELD_N).toBe(50);
   });
 
+  it("no DEFAULTED LITERAL silently stands in for a cohort size", () => {
+    // THE BLIND SPOT THE ITEM-B AUDIT FOUND. The declaration scan above matches `const X =` only, so
+    // `opts.fieldN ?? 50` in src/eval/consistency.ts was invisible to it — a second copy of the
+    // cohort size living as a DEFAULT rather than a declaration. Same defect class as the one ruling
+    // (d) closed, wearing different syntax. That call site now defaults to the imported constant.
+    //
+    // NOT covered here on purpose: `topX ?? 100`. The optimizer-pool size has NO canonical constant
+    // to point at, which is itself an item-B finding rather than something a pin can fix; adding a
+    // constant for it is an arbitration outcome, not a test change.
+    const bare = /\b(fieldN|anchorN)\s*(\?\?|=)\s*\d+/;
+    const offenders: string[] = [];
+    for (const f of tsFiles("src")) {
+      readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+        if (bare.test(line)) offenders.push(`${f.replace(/\\/g, "/")}:${i + 1}  ${line.trim()}`);
+      });
+    }
+    expect(offenders, "a cohort size must reference FIELD_N/ANCHOR_N, never a bare number").toEqual([]);
+  });
+
   it("ANCHOR_N is a SEPARATE constant that merely shares the value", () => {
     // Pinned so nobody 'tidies' them into one. They serve different purposes (field cohort vs
-    // calibration anchor cohort); whether the shared value is intentional is the item-B question.
+    // calibration anchor cohort), and the item-B audit found the shared 50 is COINCIDENTAL: no
+    // quantity compares a FIELD_N cohort against an ANCHOR_N one, and moving FIELD_N would
+    // un-match the frame gap's legs for every already-trained model (it is frozen into
+    // trainingMeans), while ANCHOR_N is a contained scale knob.
     const sites = declSites("ANCHOR_N");
     expect(sites.map((s) => s.replace(/\\/g, "/"))).toEqual(["src/scoring-core/calibrate.ts"]);
     expect(ANCHOR_N).toBe(50);

@@ -26,7 +26,7 @@
 import type { Coeffs } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import { HIT_RATINGS, PIT_RATINGS } from "../model/pool-transform.ts";
-import { cardSideWobas, computeUnifiedFieldStats } from "../scoring-core/pool-stats.ts";
+import { cardSideWobas, computeUnifiedFieldStats, FIELD_N } from "../scoring-core/pool-stats.ts";
 import { n } from "../scoring-core/helpers.ts";
 
 export const CONSISTENCY_EVENTS = ["BB", "K", "HR", "1B", "XBH"] as const;
@@ -61,7 +61,7 @@ export interface ConsistencyReport {
 
 export interface ConsistencyOptions {
   topX?: number;   // default 100 — the optimizer pool convention (top-N by predicted wOBA; role never gates)
-  fieldN?: number; // default 50 — the validated realistic-field size the pool transform uses
+  fieldN?: number; // defaults to FIELD_N — the SAME cohort size the pool transform uses (imported, not repeated)
 }
 
 const r3 = (x: number) => Math.round(x * 1e3) / 1e3;
@@ -139,7 +139,7 @@ export function computeConsistency(
   coeffs: Coeffs, model: EventModel, opts: ConsistencyOptions = {},
 ): ConsistencyReport {
   const topX = opts.topX ?? 100;
-  const fieldN = opts.fieldN ?? 50;
+  const fieldN = opts.fieldN ?? FIELD_N;   // never a literal: this must track the production cohort size
 
   const events = readout(
     impliedMeanEvents(poolCards, "hit", coeffs, model, topX),
