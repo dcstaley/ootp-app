@@ -1,0 +1,65 @@
+################################################################################
+# VARIANT PRESENCE ON BOTH SIDES OF THE FRAME GAP. 2026-07-22.
+# Tool: tools/variant-presence-both-sides.ts. Prompted by Derek: league variants
+# are RARE (100+ new cards), so league data carries fewer than tournament data.
+# Measurement only. Consequence: ARM C AS RULED IS WRONG.
+################################################################################
+
+model 'league-42-43' | datasetRoot 'League Files' | window [2042,2043] | floor 1000
+artifact includeVariants = true  (the train leg DOES admit variants)
+
+all loaded league observations: 782, of which variants 230
+
+THE QUALIFYING COHORT — the population trainingMeans is selected from:
+  hitters (PA>=floor)    N= 173  variants  37 (21.4% of rows)  USAGE-WEIGHTED 11.0%
+  pitchers (BF>=floor)   N= 149  variants  21 (14.1% of rows)  USAGE-WEIGHTED 2.5%
+
+(end of variant-presence measurement)
+
+################################################################################
+# READING — arm C makes the mismatch it was ruled to fix ~35x WORSE
+################################################################################
+
+THE THREE NUMBERS THAT MATTER, all measured, none assumed:
+
+  train leg, pitchers, USAGE-WEIGHTED variant share ......  2.5%   (11.0% hitters)
+  tournament REALIZED variant share of usage (item 4) ....  15-29%
+  arm-C pool FIELD variant share (top-50, measured) ......  84-96%   (42-48 of 50)
+
+Derek's claim is confirmed in direction and is larger than expected: the league genuinely
+carries FEW variants — 2.5% of qualifying pitcher usage — because league play runs on new
+100+ cards whose variants are rare. Tournaments genuinely carry MORE (15-29%). Both are
+EMPIRICAL. The third number is not: it is a construction choice, because arm C manufactures
+a v5 for every eligible card and the boost then wins nearly every top-50 seat.
+
+SO ARM C DOES NOT SATISFY THE INVARIANT — IT INVERTS IT.
+  · today (arm A):  train 2.5% variant  vs  pool 0% variant     → mismatch ~2.5 points
+  · arm C as ruled: train 2.5% variant  vs  pool ~88% variant   → mismatch ~85 points
+The invariant was stated as "same variant policy on both sides", and arm C does apply the
+same policy NAME to both legs. But the legs draw on sources with wildly different variant
+availability, so an identical policy produces wildly different populations. Comparability is
+the thing the invariant exists to protect; the policy label is only a proxy for it, and here
+the proxy and the goal point in opposite directions.
+
+WHY THE PROXY FAILS HERE, PRECISELY. The train leg is EMPIRICAL — it is whatever the league
+actually played, variants included (`includeVariants: true`), and the league's answer happens
+to be "hardly any". The pool leg under arm C is THEORETICAL — every eligible card is given a
+v5 whether or not one exists, can exist (36.9% cannot at all), or is owned by anyone. One leg
+reports reality; the other reports a hypothesis. Making the hypothesis "maximally inclusive"
+moves it further from the reality it is differenced against.
+
+WHAT THIS DOES NOT OVERTURN. The DEFECT arm C was ruled to fix is real: today's legs are
+mismatched (2.5% vs 0%) and mismatched in the same direction the audit found on two other
+axes. The finding is that arm C is the wrong REPAIR, not that there is nothing to repair.
+Note also the sizes: this 2.5-point mismatch is far smaller than the one arm C would create,
+which reframes the whole variant axis as the smallest of the three gap defects rather than
+the largest — the opposite of what item A's sizing (deviation 100%, "in a class of its own")
+implied, because that sizing measured arm C's effect rather than the defect's.
+
+THE REPAIR THIS EVIDENCE POINTS AT, stated as an option and not a recommendation: match the
+pool leg to the tournament's OWN realized variant presence (15-29%) rather than to 0% or to
+100%. That is a FIELD estimating the population actually met — Fable's own baseline-vs-field
+definition — and both legs would then be empirical. It needs the eligibility predicate
+(36.9% of cards cannot have a v5) and a presence rule, both of which are open.
+
+(end of artifact — arm C as ruled inverts the invariant it was meant to satisfy)
