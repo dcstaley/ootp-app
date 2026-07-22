@@ -28,9 +28,10 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, applyWobaWeights, computeDerived, computeUnifiedFieldStats, buildPoolTransform, applyAffine,
+  makeRawPolyModel, applyWobaWeights, computeDerived, computeUnifiedFieldStats, buildPoolTransform,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
+import { effectiveStuff } from "../src/model/k-support.ts"; // the ONE copy of the effective-stuff construction
 import { parseCatalogCsv, type Card } from "../src/data/catalog.ts";
 import { QUICK, inValueWindow, isPit, n_, buildCwhitSample, wellSampled, FIELD_N, type SampleDeps } from "../src/eval/cwhit/sample.ts";
 import { opponentSet } from "../src/eval/cwhit/realized.ts";
@@ -80,6 +81,9 @@ console.log(`\nNOTE ON WHAT THE DOMAIN IS AND IS NOT: [uMin,uMax] is the SPAN of
 console.log(`Training DENSITY is not recoverable from the artifact (ratingEnvelope carries the max only),`);
 console.log(`so "sparse low tail" cannot be settled here — it needs the league exports, stated separately.`);
 
+/** This card's platoon exposure weights (the trained per-hand blend ourPit uses). */
+const sideW = (c: Card) => deps.pitExp.get(n_(c["Throws"]) === 2 ? "L" : n_(c["Throws"]) === 3 ? "S" : "R") ?? { wR: 0.5, wL: 0.5 };
+
 const pctl = (xs: number[], p: number) => { const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.max(0, Math.round(p * (s.length - 1))))]!; };
 const share = (xs: number[], f: (x: number) => boolean) => xs.filter(f).length / (xs.length || 1);
 const f2 = (x: number, w = 7) => x.toFixed(2).padStart(w);
@@ -95,12 +99,10 @@ for (const win of QUICK) {
 
   /** The exposure-weighted effective stuff of one card — per side through applyAffine (the exact
    *  argument ourPit feeds the curve), then blended by the SAME platoon weights ourPit blends with,
-   *  so a single z per card is reported without inventing a second convention. */
-  const effStu = (c: Card): number => {
-    const hand = n_(c["Throws"]) === 2 ? "L" : n_(c["Throws"]) === 3 ? "S" : "R";
-    const { wR, wL } = deps.pitExp.get(hand) ?? { wR: 0.5, wL: 0.5 };
-    return wR * applyAffine(n_(c["Stuff vR"]), pt.pit.vR?.stu) + wL * applyAffine(n_(c["Stuff vL"]), pt.pit.vL?.stu);
-  };
+   *  so a single z per card is reported without inventing a second convention. The construction
+   *  now lives in src/model/k-support.ts (it is shared with the C4 low-support display flag) —
+   *  this tool CALLS it rather than keeping a second copy. */
+  const effStu = (c: Card): number => effectiveStuff(c, pt, sideW(c));
   const rawStu = (c: Card): number => {
     const hand = n_(c["Throws"]) === 2 ? "L" : n_(c["Throws"]) === 3 ? "S" : "R";
     const { wR, wL } = deps.pitExp.get(hand) ?? { wR: 0.5, wL: 0.5 };
@@ -192,9 +194,8 @@ for (const r of rows) {
     for (const r of res.recs) {
       if (r.tier !== win.tier || r.role !== "pit" || !wellSampled(r)) continue;
       const c = byCid.get(r.cid); if (!c || !Number.isFinite(r.ours.k9)) continue;
-      const hand = n_(c["Throws"]) === 2 ? "L" : n_(c["Throws"]) === 3 ? "S" : "R";
-      const { wR, wL } = deps.pitExp.get(hand) ?? { wR: 0.5, wL: 0.5 };
-      pts.push({ z: zOf(wR * applyAffine(n_(c["Stuff vR"]), pt.pit.vR?.stu) + wL * applyAffine(n_(c["Stuff vL"]), pt.pit.vL?.stu)), k: r.ours.k9! });
+      pts.push({ z: zOf(effectiveStuff(c, pt, sideW(c))), k: r.ours.k9! }); // same shared construction
+
     }
     const mk = pts.reduce((a, p) => a + p.k, 0) / (pts.length || 1);
     const tot = pts.reduce((a, p) => a + (p.k - mk) ** 2, 0);

@@ -37,6 +37,12 @@ const COLS: Record<string, Col> = {
   basicPitch: { key: "basicPitch", label: "Basic Pitch", align: "r", get: (c) => c.basicPitch, fmt: "basic" },
   basicPitchVL: { key: "basicPitchVL", label: "Basic Pitch vL", align: "r", get: (c) => c.basicPitchVL, fmt: "basic" },
   basicPitchVR: { key: "basicPitchVR", label: "Basic Pitch vR", align: "r", get: (c) => c.basicPitchVR, fmt: "basic" },
+  // Low-K-support marker (informational, NON-SCORING): the card's effective Stuff sits below the
+  // 5th percentile of the deployed K curve's league training support, so its K — and everything
+  // the BIP chain derives from it — is an extrapolation. Budget/restricted formats force these
+  // cards into play, so it flags exactly the population a cap/slots roster chooses between.
+  lowK: { key: "lowK", label: "K sup", align: "c", get: (c) => (c.lowKSupport ? "LOW" : ""), sort: (c) => (c.lowKSupport ? 1 : 0) },
+  kSupportPct: { key: "kSupportPct", label: "K sup %", align: "r", get: (c) => c.kSupportPct ?? "", sort: (c) => c.kSupportPct ?? -1, fmt: "int" },
   stamina: { key: "stamina", label: "Stam", align: "r", get: (c) => c.stamina, fmt: "int" },
   pitches: { key: "pitches", label: "# Pit", align: "r", get: (c) => c.pitches, fmt: "int" },
   ifR: { key: "ifR", label: "IF Rng", align: "r", get: def("Infield Range"), fmt: "int" },
@@ -60,7 +66,7 @@ for (const p of POSNS) {
 const DEF = ["ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"];
 const PRESETS: Record<string, { cols: string[]; sort: string; dir: 1 | -1 }> = {
   Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitWobaOVR", "hitBsr", "hitVL", "hitVR", "basicHit", "basicHitVL", "basicHitVR", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
-  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR", "stamina", "pitches"], sort: "pitchOVR", dir: 1 },
+  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR", "stamina", "pitches", "lowK", "kSupportPct"], sort: "pitchOVR", dir: 1 },
 };
 
 const isNumeric = (col: Col) => !!col.fmt;
@@ -287,6 +293,9 @@ export function CardsPage() {
                         borderLeft: ci === 0 && role ? `3px solid ${ROSTER_BORDER[role]}` : undefined }}>
                       {col.key === "title" && c.title.startsWith("★")
                         ? <><span style={{ color: C.star }}>★</span>{c.title.slice(1)}</>
+                        : col.key === "lowK" && c.lowKSupport
+                        ? <span title="Effective Stuff is below the 5th percentile of the K curve's league training support — the model is extrapolating for this card (informational; it does not affect any score)."
+                            style={{ color: "#facc15", fontSize: 11, fontWeight: 600 }}>LOW</span>
                         : fmtVal(col, c)}
                     </td>
                   ))}

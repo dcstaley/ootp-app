@@ -30,6 +30,8 @@ import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts";
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
 import { HIT_BIP_ADJ, PIT_BIP_ADJ, formVertexOffenders } from "../model/curves.ts";  // BIP convention, for the trace + the deploy-time vertex gate
 import { makeMatchupModel, matchupShift } from "../model/matchup.ts";              // Phase-0 matchup reparametrization
+// C4 low-K-support DISPLAY FLAG — informational only; never read by scoring/optimizer (see k-support.ts).
+import { computeKSupport, effectiveStuff, isLowKSupport, pitcherSideWeights, supportPercentile, type KSupport } from "../model/k-support.ts";
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
 import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, EXPOSURE_N, exposureFieldMembers, realizedSplitsOf, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
@@ -166,17 +168,31 @@ const PITCH_TYPES = [
   "Splitter", "Forkball", "Screwball", "Circlechange", "Knucklecurve", "Knuckleball",
 ];
 const pitchCount = (c: Record<string, unknown>) => PITCH_TYPES.filter((p) => n(c[p]) > 0).length;
+// Card is a PITCHER (the catalog's own role/position marking) — the one copy of the predicate
+// (the hitter-tail pool below takes its complement, and the C4 display flag only marks pitchers).
+const isPitcherCard = (c: Record<string, unknown>) => n(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1";
 
 type ScoreCtx = {
   config: Parameters<typeof scoreCard>[1];
   basicConfig: Parameters<typeof scoreCard>[1];
   isEligible: (c: Record<string, unknown>) => boolean;
+  // C4 low-K-support DISPLAY reference (model-scoped; null ⇒ the flag is simply not shown).
+  // DISPLAY-ONLY: it is deliberately NOT part of `config`/`basicConfig`, so it cannot reach
+  // scoreCard, valueFor, a pool statistic, a ramp or the optimizer. Do not move it there.
+  kSupport: KSupport | null;
 };
 
 // owned is account-scoped, stamped at serve time — base rows carry 0.
 function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
   const w = scoreCard(c, ctx.config);          // wOBA-anchored
   const b = scoreCard(c, ctx.basicConfig);     // basic-anchored
+  // C4 display flag: this card's effective Stuff (the coordinate the deployed K curve is
+  // evaluated at, per side through the pool transform, exposure-blended) vs the K curve's
+  // league training support. Computed AFTER scoring, consumed by nothing but the payload.
+  // Pitchers only: a position player's Stuff is trivially sub-p05 and marking it says nothing.
+  const effStu = ctx.kSupport && isPitcherCard(c)
+    ? effectiveStuff(c, ctx.config.poolTransform, pitcherSideWeights(w.throws, ctx.config.coeffs))
+    : NaN;
   const learn: Record<string, number> = {};
   for (const [col, pos] of LEARN) learn[pos] = n(c[col]);
   const def: Record<string, number> = {};
@@ -195,6 +211,10 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
     pitchVL: round(w.pitch.woba_vL), pitchVR: round(w.pitch.woba_vR), pitchOVR: round(w.pitch.woba_ovr),
     basicPitch: round(b.pitch.basic_ovr), basicPitchVL: round(b.pitch.basic_vL), basicPitchVR: round(b.pitch.basic_vR),
     def,
+    // C4: informational low-training-support marker + where the card's effective Stuff sits in
+    // that support (whole percent). Never an input to anything — display only.
+    lowKSupport: ctx.kSupport ? isLowKSupport(ctx.kSupport, effStu) : false,
+    kSupportPct: ctx.kSupport && Number.isFinite(effStu) ? supportPercentile(ctx.kSupport, effStu) : null,
   };
 }
 type ScoredRow = ReturnType<typeof toRow>;
@@ -230,6 +250,32 @@ let activePlatoon: PlatoonExposure | null = null;
 let activeWobaWeights: WobaWeights | null = null; // active model's wRAA-derived wOBA weights → folded into coeffs
 let activeEnvelope: RatingEnvelope | null = null; // active model's per-rating training maxima → pool-transform saturation ceilings
 let activeTrainingMeans: TrainingMeans | null = null; // active model's per-channel training-opponent means → frame-v2 opp-gap reference (absent ⇒ own-gap)
+// C4 low-K-support DISPLAY reference (model-scoped, never tournament-scoped). Stamped on
+// artifacts at save time; `activeModelRef` lets a pre-C4 artifact recompute it lazily from its
+// own window. DISPLAY-ONLY — read exclusively by toRow. See src/model/k-support.ts.
+let activeKSupportStamped: KSupport | null = null;
+let activeModelRef: { id: string; window: number[]; minPA: number; includeVariants: boolean } | null = null;
+let kSupportCache: { key: string; ks: KSupport | null } | null = null;
+/** The active model's league training support for the deployed K curve — stamped value when the
+ *  artifact carries one, else computed once from its training window (cached; null when the
+ *  training data isn't on disk, in which case the flag is simply not shown). */
+function activeKSupport(): KSupport | null {
+  if (!activeEventForm || !activeModelRef) return null;
+  if (activeKSupportStamped) return activeKSupportStamped;
+  const ref = activeModelRef;
+  if (kSupportCache?.key === ref.id) return kSupportCache.ks;
+  let ks: KSupport | null = null;
+  try {
+    if (existsSync(TRAINING_DIR)) {
+      const obs = windowObs(ref.window).filter((o) => ref.includeVariants || !o.variant);
+      ks = computeKSupport(obs, ref.minPA, activeEventForm.pit.k);
+    }
+  } catch (e) {
+    console.warn(`[server] low-K-support reference unavailable for model '${ref.id}': ${String(e)}`);
+  }
+  kSupportCache = { key: ref.id, ks };
+  return ks;
+}
 
 // Pool-strength rating transform (#2 only). NON-VARIANT cards set every average/distribution
 // (the field-size diagnostic was no-variants too); variants are scored but never enter the
@@ -390,7 +436,7 @@ function scoreTournament(t: Tournament): Scored {
       // Threads into calibrate/calibrateBasic below so the anchor sees the same corrected events.
       // Own-gap path only (like the pitcher ramp above); pitcher scores are untouched by design.
       if (hitTailEnabled() && t.hitTailCorrection !== false) {
-        const hitPool = basePool.filter((c) => !(n(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1"));
+        const hitPool = basePool.filter((c) => !isPitcherCard(c));
         hitTail = computeHitTail(hitPool, coeffs, evModel, poolTransform, ref, poolField, PINNED_HIT_TAIL);
       }
     }
@@ -408,7 +454,7 @@ function scoreTournament(t: Tournament): Scored {
     return (lo == null || v >= lo) && (hi == null || v <= hi);
   };
   const isEligible = (c: Record<string, unknown>) => inValueRange(c) && rowEligible(c as any, t);
-  const ctx: ScoreCtx = { config, basicConfig, isEligible };
+  const ctx: ScoreCtx = { config, basicConfig, isEligible, kSupport: activeKSupport() };
 
   return { rows: catalog.cards.map((c) => toRow(c, ctx)), ctx, eligibleCount: pool.length, exposure };
 }
@@ -1397,6 +1443,10 @@ interface TrainedModel {
   wobaWeights?: WobaWeights; // wRAA-derived wOBA event weights for this model's leagues (optional; absent ⇒ defaults)
   ratingEnvelope?: RatingEnvelope; // per-rating training maxima → pool-transform saturation ceilings (optional)
   trainingMeans?: TrainingMeans; // per-channel top-50-field training-opponent means (matched to μ_pool) → frame-v2/matchup opp-gap reference (optional)
+  // C4: the deployed K curve's league training support (weighted p05 of fit-window Stuff + a
+  // percentile ladder). DISPLAY-ONLY — feeds the low-support grid flag, never any scoring path.
+  // Absent on pre-C4 artifacts ⇒ the server recomputes it from this artifact's own window.
+  kSupport?: KSupport;
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
 }
@@ -1534,6 +1584,10 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     wobaWeights,
     ratingEnvelope,
     trainingMeans,
+    // C4 low-support display reference: the BF^0.75-weighted p05 of Stuff over `pitQual` — the
+    // EXACT rows the K curve above was fit on — so the threshold ships with the model it
+    // describes instead of being recomputed per request. Non-scoring (see k-support.ts).
+    kSupport: computeKSupport(pitQual, minPA, eventForm.pit.k) ?? undefined,
     diag: { hitPearson: f.wobaDiagHit?.pearson ?? null, pitPearson: f.wobaDiagPit?.pearson ?? null, rowsHit: f.woba_hitting.rowCount, rowsPit: f.woba_pitching.rowCount },
     trainedAt: new Date().toISOString(),
     // The pin note rides on `notes` so the train response + model list SHOW that the fallback fired.
@@ -1565,6 +1619,9 @@ async function refreshActiveModel(): Promise<void> {
   activeWobaWeights = m?.wobaWeights ?? null;
   activeEnvelope = m?.ratingEnvelope ?? null;
   activeTrainingMeans = m?.trainingMeans ?? null;
+  activeKSupportStamped = m?.kSupport ?? null; // C4 display flag reference (stamped at save time)
+  activeModelRef = m ? { id: m.id, window: m.window, minPA: m.minPA, includeVariants: m.includeVariants } : null;
+  kSupportCache = null; // model change moves the training support
   // T-4: an activated artifact whose evaluation semantics predate the current version scores
   // its betas under DIFFERENT math than it was validated with — warn loudly (the UI also
   // surfaces `stale` via modelSummary).

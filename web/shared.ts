@@ -24,6 +24,11 @@ export interface Card {
   hitWobaVL: number; hitWobaVR: number; hitWobaOVR: number; hitBsr: number;
   pitchVL: number; pitchVR: number; pitchOVR: number; basicPitch: number; basicPitchVL: number; basicPitchVR: number;
   def: Record<string, number>;
+  // Low-K-support marker (informational, NON-SCORING): this pitcher's effective Stuff sits below
+  // the 5th percentile of the deployed K curve's league training support — the model is
+  // extrapolating for it. `kSupportPct` = where it sits in that support (whole percent; null =
+  // not a pitcher, or no training support available). Never enters a score or the optimizer.
+  lowKSupport?: boolean; kSupportPct?: number | null;
 }
 export interface Meta {
   configName: string; tournament: string; account: string; accountId: string | null;
