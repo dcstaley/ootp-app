@@ -1,0 +1,293 @@
+################################################################################
+### CWHIT COVERAGE-CLAIM AUDIT — does any committed artifact claim coverage it did not have?
+###
+### date     : 2026-07-22
+### ordered  : Fable, as a pre-C6 requirement (memory cwhit-program-batch-state, 2026-07-22 entry:
+###            "PRE-C6 AUDIT ordered: any artifact claiming 14-format coverage while reaching 9")
+### scope    : every committed `fixtures/*.txt` (48 files), every `docs/*.md` (24 files), and the
+###            running record `~/.claude/projects/C--dev-ootp-app/memory/cwhit-program-batch-state.md`
+### verdict  : TWO genuine overclaims found, both narrow and both in the same phrase ("every daily").
+###            Corrected in place. NO artifact anywhere claims 14-format coverage while reaching 9.
+###
+### THE DEFECT THAT PROMPTS THIS. `src/eval/cwhit/corpus.ts` registers 14 captured formats. Until
+### commit b4dc2ed (2026-07-22 10:59:30 +0100) `buildCwhitSample` resolved capture paths through
+### `formatByLegacySlug` ONLY, and `legacySlug` is OPTIONAL. FIVE registered formats carry no slug —
+###   diamond-heart · late-bronze · bronze-cap-weekly · gold-slots · live-open-daily
+### — so they were UNREACHABLE through the shared sample builder and a caller naming one got "not in
+### the corpus registry" for a format that IS in the registry with a capture on disk. Fixed by
+### `legacySlug ?? key` (sample.ts:503). Every tool run BEFORE b4dc2ed could reach at most 9 of 14.
+###
+### WHAT COUNTS AS AN OVERCLAIM (the distinction this audit is built on):
+###   (a) OVERCLAIM — a universal ("all formats", "the full corpus", "every daily", "the 14-format
+###       corpus") or a per-format table that silently omits formats it implies it covers. CORRECT.
+###   (b) CORRECTLY SCOPED — says "the five Quick tiers", names its formats, or states its own count
+###       against the registry's. NOT an overclaim however small the subset. LEAVE ALONE.
+###   (c) BY-DESIGN SUBSET — a tool that only ever looked at part of the corpus on purpose and says
+###       so. NOT an overclaim. LEAVE ALONE.
+### Only (a) is corrected. This audit did not go looking for something to report; the honest result
+### was very nearly "none", and §4 records the near-misses so the reader can judge the search.
+################################################################################
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  §1. METHOD                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+1. Introduction date per artifact: `git log --diff-filter=A --follow` on each path, compared against
+   b4dc2ed's timestamp (2026-07-22 10:59:30 +0100). NOTE the seven `fixtures/*` files introduced
+   on 2026-07-22 BEFORE the fix (09:15–10:10) — a date-only comparison would have cleared them
+   wrongly, so commit TIMES were used, not dates.
+   ⇒ 47 of 48 fixtures predate the fix. The 48th (`cwhit-mission-scorecard-v2-2026-07-22.txt`) IS
+     the fix commit. So date alone exonerates almost nothing; every artifact was read.
+2. Claim search: case-insensitive grep for universals ("all 14 / fourteen / formats", "full corpus",
+   "entire corpus", "every format", "every daily", "every tier", "coverage", "completeness") plus a
+   read of every artifact header and READING/summary section.
+3. Reachability cross-check: grep for the five slugless format keys across all committed artifacts.
+   Only TWO artifacts mention them at all (§3) — which is itself the strongest single piece of
+   evidence that nothing quietly claimed them.
+4. Where a claim was checkable, it was CHECKED rather than assumed — see §3 for the two artifacts
+   whose full-corpus claims were verified true by independent reproduction, not taken on trust.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  §2. PER-FILE VERDICTS                                                                       ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+VERDICT KEY
+  OK-TRUE     makes a full-corpus / all-formats claim AND genuinely had that coverage (verified)
+  OK-SCOPED   makes a coverage claim that names or counts its own formats — correctly scoped
+  NO-CLAIM    makes no format-coverage claim at all
+  OVERCLAIM   claims coverage it did not have — DATED CORRECTION NOTE APPENDED IN PLACE
+  MINOR       a coverage claim looser than its measurement, on the era axis not the format axis;
+              reported here, NOT corrected in place (see §4 for why)
+
+── fixtures/*.txt ────────────────────────────────────────────────────────────────────────────
+file                                                  introduced        claim made                                                    verdict
+cwhit-B1-usage-filter-sizing-2026-07-21.txt           5d59e59 07-22     "9 formats — the five Quick tiers + four dailies (...)" and    OK-SCOPED
+                                                      09:21 (pre-fix)   "corpus registry: 14 formats captured; 9 measured here"        (exemplary)
+cwhit-B2-exposure-variant-sizing-2026-07-21.txt       f572764 07-22     "the nine formats" throughout; hard-coded 9-key list           OK-SCOPED
+                                                      09:22 (pre-fix)
+cwhit-ab-2026-07-21-i.txt                             8e2b2dc 07-21     "EVERY tier"; "tiers scored: iron, bronze, silver, gold,       OK-SCOPED
+cwhit-ab-2026-07-21-ii.txt                            8e2b2dc 07-21     diamond"; "pitchers: 5/5 tiers; hitters: 5/5 tiers"            OK-SCOPED
+cwhit-ab-2026-07-21-iii.txt                           8e2b2dc 07-21                                                                    OK-SCOPED
+cwhit-ab-factor-effects-2026-07-21.txt                10fa145 07-21     "50 cells (5 tiers x 2 roles x 5 chans)"                       OK-SCOPED
+cwhit-archetypes-run-2026-07-16.txt                   16cc294 07-16     per-tier N printed for 5 tiers, both roles                     OK-SCOPED
+cwhit-armc-variant-composition-2026-07-22.txt         7831350 07-22     catalog-only (variantBoost curve); no format claim             NO-CLAIM
+cwhit-battery-discriminator-2026-07-21.txt            4ba6347 07-21     "Across all 14 formats ..." (twice)                            OK-TRUE
+cwhit-battery-gold-catalog-stu-2026-07-21.txt         2533010 07-21     "every tier" = the 5 Quick tiers, tabulated                    OK-SCOPED
+cwhit-battery-item1-deficit-coordinate-2026-07-21.txt 042d2d8 07-21     5-tier tables, no universal                                    OK-SCOPED
+cwhit-battery-item1-realized-2026-07-21.txt           fcb54c8 07-21     "closer at EVERY tier" = the 5 tabulated tiers                 OK-SCOPED
+cwhit-battery-item1-realized-variantfix-2026-07-21.txt 7e6be1a 07-21    same                                                           OK-SCOPED
+cwhit-battery-item3-gap-profiles-2026-07-21.txt       9c6f689 07-21     5-tier rating-space profiles                                   OK-SCOPED
+cwhit-battery-item4-realized-vs-eligible-2026-07-21.txt e1a21bc 07-21   "COVERAGE" heading is eligible-pool play-share, NOT format     OK-SCOPED
+cwhit-battery-item4-...-variantfix-2026-07-21.txt     c5b2c9b 07-21     coverage; 5 tiers tabulated                                    OK-SCOPED
+cwhit-battery-item5-heterogeneity-2026-07-21.txt      9b9c7ba 07-21     per-tier tables, 5 tiers                                       OK-SCOPED
+cwhit-battery-item5-...-variantfix-2026-07-21.txt     2941e80 07-21     same                                                           OK-SCOPED
+cwhit-battery-needs-vs-bar-2026-07-21.txt             5b86a3f 07-21     "Corpus: ... (full depth, the DEFAULT_SOURCE)" — a DEPTH       OK-SCOPED
+                                                                        statement, not a format count; body is fit-kspread §1 = 5 tiers
+cwhit-battery-targets-2026-07-21.txt                  5698c60 07-21     "ZERO fails — every tier, every daily, both channels"          OVERCLAIM
+cwhit-centerpiece2-fit-2026-07-21.txt                 58e7da5 07-21     "at EVERY tier" = the 5 fitted tiers                           OK-SCOPED
+cwhit-centerpiece2-step0-domain-2026-07-21.txt        59a07d2 07-21     5 Quick tiers, floor stated                                    OK-SCOPED
+cwhit-dcv-bias-exhibit-2026-07-21.txt                 7c18271 07-21     per-tier exhibit rows                                          OK-SCOPED
+cwhit-gate-sweep-2026-07-21-final-config.txt          13e52c8 07-21     "PASS on every tier and every daily, and POOLED" and           OVERCLAIM
+                                                                        "ZERO FAILs. Every gate, every tier, every daily, both channels"
+cwhit-gold-query-2026-07-21.txt                       1c69629 07-21     gold-quick only, stated                                        OK-SCOPED
+cwhit-itemA-variant-sizing-2026-07-21.txt             61c3370 07-21     "9 formats — the five Quick tiers + four dailies (...)"        OK-SCOPED
+cwhit-itemB-cohort-arbitration-2026-07-21.txt         35f7d63 07-22     "FORMATS: the five Quick tiers + the four registry dailies     OK-SCOPED
+                                                      01:00 (pre-fix)   that carry a legacy fixture slug (...)"                        (best-in-class:
+                                                                                                                                       it names the slug
+                                                                                                                                       reason itself)
+cwhit-itemB-cohort-inventory-2026-07-21.txt           82b2313 07-21     "Spread on the steal terms is ~2.2x across the corpus eras"    MINOR (§4.2)
+cwhit-mission-scorecard-v2-2026-07-22.txt             b4dc2ed 07-22     "ALL 14 CAPTURED FORMATS"                                      OK-TRUE
+                                                      10:59 (THE FIX)                                                                  (it is the fix)
+cwhit-pool-drift-2026-07-21.txt                       0e8cf84 07-21     "all ten cells" = 5 tiers x 2 roles, enumerated per tier       OK-SCOPED
+cwhit-scorecard-run-2026-07-20-corrected.txt          35c72e8 07-20     v1 scorecard: "EVERY tier" + "tiers scored: iron, bronze,      OK-SCOPED
+cwhit-scorecard-run-2026-07-20-precorrection.txt      35c72e8 07-20     silver, gold, diamond" printed by the tool in every run.       OK-SCOPED
+cwhit-scorecard-run-2026-07-20-retrain-corrected.txt  35c72e8 07-20     v1 duels the QUICK ladder BY DESIGN and says so.               OK-SCOPED
+cwhit-scorecard-run-2026-07-20-retrain-precorrection.txt 35c72e8 07-20                                                                 OK-SCOPED
+cwhit-scorecard-run-2026-07-21-BFnoise-acceptance.txt 35c72e8 07-20                                                                    OK-SCOPED
+cwhit-scorecard-run-2026-07-21-live-corrected.txt     35c72e8 07-20                                                                    OK-SCOPED
+cwhit-scorecard-run-2026-07-21-live-precorrection.txt 35c72e8 07-20                                                                    OK-SCOPED
+cwhit-scorecard-run-2026-07-21-rebaseline-corrected.txt 8e2b2dc 07-21   as above, + "the corpus swap — full-depth 2026-07-21 capture"  OK-SCOPED
+cwhit-scorecard-run-2026-07-21-rebaseline-precorrection.txt 8e2b2dc     (a DEPTH statement about the source, not a format count)       OK-SCOPED
+cwhit-variant-p-sizing-2026-07-22.txt                 1dfe728 07-22     per-tier table, QUICK loop                                     OK-SCOPED
+                                                      10:10 (pre-fix)
+cwhit-variant-presence-both-sides-2026-07-22.txt      5a3920d 07-22     league-leg only; no tournament-format claim                    NO-CLAIM
+cwhit-variant-presence-conditional-2026-07-22.txt     f1f295c 07-22     per-tier table, QUICK loop                                     OK-SCOPED
+hit-tail-bakeoff-run-2026-07-16.txt                   63b5f9e 07-16     "358 well-sampled (PA>=1000) across 5 tiers"                   OK-SCOPED
+hit-tail-bakeoff-run-2026-07-17-pinned.txt            f48d19a 07-17     same                                                           OK-SCOPED
+kspread-refit-run-2026-07-21-BFbar-diagnostic.txt     479c9ee 07-20     "all tiers" = the 5 fitted tiers; §5 weird-env battery names   OK-SCOPED
+kspread-refit-run-2026-07-21-league-42-43.txt         016517e 07-20     each daily AND states its exclusion in-line                    OK-SCOPED
+pithr-form-bakeoff-run-2026-07-21.txt                 6300711 07-20     league-window form bake-off; no format-coverage claim          NO-CLAIM
+pitspread-fit-run-2026-07-17.txt                      0d2de6a 07-17     §5 names each daily + states the diamondcapdaily exclusion     OK-SCOPED
+
+── docs/*.md ─────────────────────────────────────────────────────────────────────────────────
+file                                        introduced        claim made                                              verdict
+CARD_VARIANT_ELIGIBILITY.md                 92169a5 07-22      "Derived from the 2026-07-21 capture corpus"            OK-TRUE (verified, §3.2)
+                                            09:21 (pre-fix)
+REBUILD_TOURNAMENT_MODEL_PLAN.md §15.6      (amended in place)  "fixtures for all 5 Quick tiers x both roles"          OK-SCOPED
+REBUILD_TOURNAMENT_MODEL_PLAN.md §15.10     (amended in place)  "the re-estimated ramp carries a held-out validation   NO-CLAIM
+                                                                leg on the budget-format captures" — FUTURE TENSE,     (forward plan,
+                                                                a plan, not a coverage report                          not a claim)
+CWHIT_C3_RAMP_PREREG_2026-07-22.md          (pre-registration)  budget held-out leg on bronze-cap-weekly / gold-slots  NO-CLAIM
+                                                                / gold-cap — pre-registered, not yet run               (forward plan)
+CWHIT_CENTERPIECE2_PREREG_2026-07-21.md     —                   "Quicks only for fitting"; dailies named               OK-SCOPED
+CWHIT_KSPREAD_PIT_2026-07-16.md §5          —                   per-format table + a dated SUPERSEDED note on the      OK-SCOPED
+                                                                diamondcapdaily exclusion
+CWHIT_PITSPREAD_BUILD3_2026-07-17.md        —                   per-format table, dailies named                        OK-SCOPED
+CWHIT_HITTAIL_BUILD2_2026-07-17.md          —                   "weird-env (3 dailies, global lambda)" — counts itself OK-SCOPED
+CWHIT_ERA_SPREAD_PREREG_2026-07-20.md       —                   per-format table with era/park/window/ruling columns   OK-SCOPED
+all other docs/*.md                         —                   no format-coverage claim                               NO-CLAIM
+
+── memory ────────────────────────────────────────────────────────────────────────────────────
+file                                        claim made                                                        verdict
+memory/cwhit-program-batch-state.md         Consistently "the four dailies" / "9 formats" / "5 Quick tiers".  NO-CLAIM
+                                            Already carries the correction TWICE, unprompted:                 (already honest —
+                                            · 2026-07-21 (line ~2055): "'beating cwhit' RETRACTED as          NO CORRECTION
+                                              overstated: truth = statistical PARITY, QUICKS ONLY ...          APPENDED)
+                                              9 non-quick formats NEVER dueled"
+                                            · 2026-07-22 (line ~2350): "FIVE OF FOURTEEN FORMATS WERE
+                                              UNREACHABLE THROUGH THE BUILDER" + the five named
+                                            "The capture HAS all four dailies" (line ~1330) is a statement
+                                            about the four the fit tools use, not a corpus census — correct
+                                            in context.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  §3. THE TWO FULL-CORPUS CLAIMS THAT ARE TRUE — VERIFIED, NOT ASSUMED                        ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+These are the only two committed artifacts that assert coverage of the whole corpus. Both were
+checked independently, because an unverified "all 14" written before the fix is exactly the shape
+this audit exists to catch.
+
+3.1 `fixtures/cwhit-battery-discriminator-2026-07-21.txt` — "Across all 14 formats ..."
+    TRUE. Its section (2) table prints FOURTEEN rows, and the five slugless formats are all present
+    by name (latebronze, bronzecapweekly, goldslotsdaily, diamondheart, liveopendaily), each with
+    its own era/park. The producing tool is `tools/battery-discriminator.py` — Python, reading the
+    capture files off disk directly. It never touches `buildCwhitSample`, so the legacySlug defect
+    could not reach it. Its own collision line ("24 across 9 formats") is a count of formats where
+    a colliding key OCCURRED, not a coverage statement — a genuine near-miss for a misreading, and
+    the 14-row table two sections below settles it.
+
+3.2 `docs/CARD_VARIANT_ELIGIBILITY.md` — "Derived from the 2026-07-21 capture corpus"
+    TRUE, and this one was WORTH CHECKING: the doc was committed at 09:21 on 2026-07-22, ninety
+    minutes before the fix, and its table is per-CLASS (not per-format), so a nine-format run would
+    have looked identical in shape and simply reported smaller counts. REPRODUCED both ways —
+    catalog `data/imports/cdmx.csv` joined to the capture files on (name, Card Value):
+
+        run over ALL 14 formats  →  Card Type 1 "played" 712 · Sub Type LE "played" 81
+        run over the 9 reachable →  Card Type 1 "played" 586 · Sub Type LE "played" 80
+        the doc's committed table →  Card Type 1 "played" 717 · Sub Type LE "played" 81
+
+    The doc matches the 14-format run (the 712-vs-717 residual is this audit's cruder name/dedup
+    handling, not a coverage difference — the 9-format run is off by 131, two orders of magnitude
+    more). The "1274 of 3669 are Card Type 1" and "1355 = 36.9%" figures reproduce exactly.
+    ⇒ the variant-eligibility table was built over the full corpus. NOT an overclaim.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  §4. THE OVERCLAIMS, AND THE NEAR-MISSES                                                     ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+4.1 THE TWO GENUINE OVERCLAIMS — "every daily", where "daily" means four of eight. CORRECTED.
+
+    `fixtures/cwhit-gate-sweep-2026-07-21-final-config.txt` (13e52c8, 2026-07-21 12:15)
+      "G2 wOBAA ordering: PASS on every tier and every daily, and POOLED."
+      "== fit-pitspread-hrbab.ts — ZERO FAILs. Every gate, every tier, every daily, both channels. =="
+    `fixtures/cwhit-battery-targets-2026-07-21.txt` (5698c60, 2026-07-21 15:01)
+      "HR/BABIP (fit-pitspread-hrbab): ZERO fails — every tier, every daily, both channels, ..."
+
+    WHAT WAS ACTUALLY COVERED. Both runs come from `tools/fit-kspread-pit.ts` and
+    `tools/fit-pitspread-hrbab.ts`, each of which carries a hard-coded four-entry list:
+      const DAILY = ["earlygolddaily", "bronzeheartdaily", "goldcapdaily", "diamondcapdaily"]
+    The corpus registry types EIGHT formats as Daily. The four never evaluated are
+      diamond-heart · late-bronze · gold-slots · live-open-daily
+    — which are FOUR OF THE FIVE SLUGLESS FORMATS. The blind spot in the wording coincides exactly
+    with the blind spot in the builder, because the tools' own list is keyed by legacy slug too.
+
+    WHY THIS IS (a) AND NOT (b). Each artifact does tabulate its four dailies by name elsewhere in
+    the same file, which is why this is narrow. But "every daily" is a universal over a set the
+    registry defines as eight, and it is the sentence a future reader will quote. The concrete live
+    risk: C3 pre-registers a BUDGET-FORMAT held-out validation leg on bronze-cap-weekly and
+    gold-slots. A reader who takes "hrbab passes on every daily" at face value would believe
+    gold-slots had already been evaluated. It has not been — by any tool, ever.
+
+    WHAT IS *NOT* WRONG, and the correction notes say so explicitly: no measurement is incorrect, no
+    table is missing rows it claimed to have, and no fit was contaminated. Both tools were four-daily
+    tools BY DESIGN (dailies are held-out evaluation legs, never fit points). This is a SCOPE-LANGUAGE
+    correction, not a re-run, and nothing downstream of these two artifacts needs re-deriving.
+
+    ⇒ DATED CORRECTION NOTES APPENDED TO BOTH, 2026-07-22. Original text untouched.
+
+4.2 NEAR-MISS, REPORTED NOT CORRECTED — `fixtures/cwhit-itemB-cohort-inventory-2026-07-21.txt`
+    "Spread on the steal terms is ~2.2x across the corpus eras; on UBR ~1.11x."
+    Its measured set is FOUR eras (era-2010 / 1920 / 1939 / 1998), tabulated immediately above the
+    sentence. Those four are exactly the eras of the NINE reachable formats. The full corpus carries
+    SIX distinct eras — era-1979 (late-bronze) and era-1958 (diamond-heart) are the two missing, and
+    both belong to slugless formats. era-1958's steal factor (runVal x sbFreq = 0.504) sits BELOW the
+    measured minimum (era-1939, 0.630), so the quoted spread is a LOWER BOUND on the corpus: the
+    six-era span is ~2.47x on the steal terms and ~1.13x on UBR.
+    NOT CORRECTED IN PLACE, deliberately: (i) the producing tool
+    `tools/itemB-cohort-envfree-probe.ts` hard-codes its era list and never reads a capture, so this
+    is not in the defect's blast radius; (ii) the four eras are named in the table the sentence sits
+    under; (iii) the claim is on the ERA axis, not the format axis this audit was ordered over.
+    Recorded here so it is on the record if the era span is ever quoted as load-bearing.
+
+4.3 NEAR-MISSES CHECKED AND CLEARED (the search was real)
+    · "the corpus registry" in the B1 and item-A headers — reads like a full-corpus sourcing claim
+      until the same line says "9 formats — the five Quick tiers + four dailies (...)". B1 goes
+      further and prints "corpus registry: 14 formats captured; 9 measured here". Exemplary; this is
+      the standard the other artifacts should be held to.
+    · "EVERY tier" in ten v1-scorecard artifacts — v1 duels the Quick ladder by design, and every run
+      prints "tiers scored: iron, bronze, silver, gold, diamond" in its own CORPUS block.
+    · "tables: 28 observed / 28 projected files present" (v1 scorecard) — a files-ON-DISK census, not
+      a files-READ claim. Correct as written, and it is the one place a pre-fix artifact records the
+      full 14 without claiming to have used it.
+    · "all ten cells" / "all 50 cells" / "140 cells" — cell counts, each with its factorisation
+      printed alongside (5 tiers x 2 roles x 5 channels, 14 formats x 2 x 5). None is a format claim.
+    · memory "The capture HAS all four dailies" — about the four the fit tools use, not a census.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║  §5. SUMMARY                                                                                 ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+
+  files examined                                          48 fixtures + 24 docs + 1 memory record
+  carried a coverage claim of any kind                    41 (39 fixtures, 9 docs, 1 memory — some
+                                                          files carry more than one)
+  claimed FULL-CORPUS coverage                            2  (both TRUE, both verified in §3)
+  GENUINE OVERCLAIMS                                      2
+  corrected in place                                      2
+  reported but not corrected (era axis, out of blast      1
+    radius)
+
+  CORRECTED FILES
+    fixtures/cwhit-gate-sweep-2026-07-21-final-config.txt
+    fixtures/cwhit-battery-targets-2026-07-21.txt
+
+  THE HEADLINE, PLAINLY. No committed artifact and no memory record claims 14-format coverage while
+  having reached 9. The thing the audit was ordered to look for does not exist. The program's habit
+  of naming its formats in its own headers is what prevented it — B1, item A and the item-B cohort
+  work all state their count against the registry's, and the item-B arbitration artifact even names
+  the legacy-slug filter as the reason for its four dailies, six hours before anyone knew the slug
+  was a defect. The running record had already retracted the one real overstatement ("beating
+  cwhit") a day before this audit was ordered, unprompted.
+
+  What DID slip through is smaller and of one shape: the word "daily" hardened into a four-element
+  set in two summary lines while the registry defined it as eight. The four it excluded are four of
+  the five formats the builder could not reach. That is not a coincidence — the fit tools' daily
+  list is keyed by legacy slug, so the same optional field shaped both the code path and the
+  vocabulary. The lesson worth keeping is the narrow one: after the corpus grew from 9 fixtures to
+  14 captures, a collective noun that was accurate at 9 was never re-checked at 14.
+
+  RESIDUAL RISK NOW CLOSED FOR C3. Neither gold-slots nor bronze-cap-weekly has EVER been evaluated
+  by any fit or gate tool. Before b4dc2ed that was impossible; after it, it is merely undone. The C3
+  pre-registration's budget-format held-out leg is therefore genuinely held-out, and the two
+  corrected artifacts no longer suggest otherwise.
+
+  NOT CHANGED BY THIS AUDIT: no production code, no default, no constant, no scoring math, no test.
+  Two artifacts gained an appended dated note; nothing was rewritten, re-run or re-derived.
+
+(end of artifact — cwhit coverage-claim audit, 2026-07-22; 48 fixtures + 24 docs + 1 memory record
+ examined, 2 genuine overclaims found and corrected in place, 0 false full-corpus claims)

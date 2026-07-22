@@ -54,3 +54,35 @@
   · diamond BABIP dcv is n/a in three places (thinnest cells) — slope verdicts still produced.
   · kspread's daily blocks print no algebraic-expectation term and no ordering line, unlike
     its own Quick blocks; hrbab prints no ordering gate anywhere. ABSENT, not FAIL.
+
+################################################################################
+# ⚠ DATED CORRECTION NOTE — 2026-07-22. COVERAGE SCOPE OF "every daily".
+# Appended by the cwhit coverage-claim audit (fixtures/cwhit-coverage-claim-audit-2026-07-22.txt).
+# Nothing above is edited or withdrawn; every number in this artifact stands as measured.
+#
+# WHAT WAS CLAIMED. Two lines above use a universal over the dailies:
+#   · "G2 wOBAA ordering: PASS on every tier and every daily, and POOLED."
+#   · "== fit-pitspread-hrbab.ts — ZERO FAILs. Every gate, every tier, every daily, both channels. =="
+#
+# WHAT WAS ACTUALLY COVERED. FOUR dailies, the ones tabulated in the kspread block above:
+#   Early Gold · Bronze Heart · Gold Cap Daily · Diamond Cap Daily
+# Both tools carry a hard-coded four-entry list (fit-kspread-pit.ts / fit-pitspread-hrbab.ts:
+# DAILY = ["earlygolddaily","bronzeheartdaily","goldcapdaily","diamondcapdaily"]).
+#
+# WHICH FORMATS WERE MISSING. The corpus registry (src/eval/cwhit/corpus.ts) types EIGHT formats
+# as Daily. NOT evaluated by this sweep, on either tool, on any gate:
+#   diamond-heart · late-bronze · gold-slots · live-open-daily
+# Those are four of the FIVE formats that carry no `legacySlug` and were therefore unreachable
+# through buildCwhitSample until commit b4dc2ed (2026-07-22) — the fifth being bronze-cap-weekly
+# (typed Weekly, so outside the "every daily" claim but equally unevaluated). The tools' daily list
+# is keyed by legacy slug too, which is why the wording and the code path share a blind spot.
+#
+# WHAT IS NOT WRONG. No measurement here is incorrect and no table is missing rows it claimed to
+# have. These were four-daily runs BY DESIGN — dailies are held-out weird-env evaluation legs, never
+# fit points — and no constant, fit or downstream reading needs re-deriving. Read "every daily" as
+# "each of the four dailies this sweep runs".
+#
+# LIVE CONSEQUENCE. Read as written, this line would suggest gold-slots had already passed the
+# HR/BABIP gates. It has not been evaluated by any tool. The C3 pre-registration's budget-format
+# held-out leg (bronze-cap-weekly / gold-slots / gold-cap) is genuinely held out.
+################################################################################

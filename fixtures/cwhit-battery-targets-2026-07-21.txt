@@ -56,3 +56,35 @@
   HR_SPREAD_PIT  { A: 0.1912, G: 3.8 }   (was 0.1940 pre-fix)
   BAB_SPREAD_PIT { A: 0.2307, G: 4.8 }   (was 0.2277 pre-fix)
   Production remains {5.0871, 152.5}; none of the above is shipped.
+
+################################################################################
+# ⚠ DATED CORRECTION NOTE — 2026-07-22. COVERAGE SCOPE OF "every daily".
+# Appended by the cwhit coverage-claim audit (fixtures/cwhit-coverage-claim-audit-2026-07-22.txt).
+# Nothing above is edited or withdrawn; every target in this artifact stands as measured.
+#
+# WHAT WAS CLAIMED. In "GATE STATE AT THE CURRENT CONFIG":
+#   "HR/BABIP (fit-pitspread-hrbab): ZERO fails — every tier, every daily, both channels, and
+#    the HR-only variant. G2 passes everywhere including POOLED."
+#
+# WHAT WAS ACTUALLY COVERED. FOUR dailies — the ones named in the SAMPLE block above:
+#   Early Gold · Bronze Heart · Gold Cap · Diamond Cap
+# Both fit tools carry a hard-coded four-entry list (fit-kspread-pit.ts / fit-pitspread-hrbab.ts:
+# DAILY = ["earlygolddaily","bronzeheartdaily","goldcapdaily","diamondcapdaily"]).
+#
+# WHICH FORMATS WERE MISSING. The corpus registry (src/eval/cwhit/corpus.ts) types EIGHT formats
+# as Daily. NOT evaluated here, on either tool, on any gate:
+#   diamond-heart · late-bronze · gold-slots · live-open-daily
+# Those are four of the FIVE formats that carry no `legacySlug` and were therefore unreachable
+# through buildCwhitSample until commit b4dc2ed (2026-07-22); the fifth, bronze-cap-weekly, is
+# typed Weekly and so falls outside this claim while being equally unevaluated. The tools' daily
+# list is keyed by legacy slug too, so the wording and the code path share one blind spot.
+#
+# WHAT IS NOT WRONG. The per-tier NEEDS, CIs, geometry and candidate constants above are unaffected
+# — all are fitted on the five QUICK tiers, and the dailies are held-out evaluation legs that never
+# enter a fit. Read "every daily" as "each of the four dailies both fit tools run". Nothing
+# downstream of this artifact needs re-deriving.
+#
+# LIVE CONSEQUENCE. Read as written, this line would suggest the HR/BABIP gates had already been
+# cleared on gold-slots. They have not been run there. The C3 pre-registration's budget-format
+# held-out leg (bronze-cap-weekly / gold-slots / gold-cap) is genuinely held out.
+################################################################################
