@@ -1,0 +1,532 @@
+################################################################################
+# C3 — THE RE-DERIVED PITCHER K-SPREAD RAMP. VERDICT: STOP — GATE (w)2 BOUNDARY-PINNED OPTIMUM + ACCEPTANCE A — DIAMOND OUTSIDE ITS MEASURED CI (STOP-class)
+# Pre-registration: docs/CWHIT_C3_RAMP_PREREG_2026-07-22.md + AMENDMENT 1 (approved).
+# Tool: tools/fit-kspread-c3.ts. FIT AND REPORT ONLY — NOTHING WIRED, no default flipped,
+# no shipped constant changed. The verdict returns to Fable, who decides what ships.
+################################################################################
+
+### WHAT THIS RUN CONCLUDES (the detail is below; nothing here is tuned)
+
+  1. GATE (w)1 IDENTIFIABILITY PASSES and is re-confirmed: the gap ordering is strictly
+     descending at every p in the band, and coherent-four span retention is 102.0% at the shipped p
+     (0.25: 96.0%, 0.30: 102.0%, 0.35: 96.6%) — the axis carries the information. The coordinate is not the problem.
+  2. GATE (w)2 FAILS, and the diagnostics say WHERE. The wide-grid SSE optimum q* = 1.08 is
+     INTERIOR and barely convex; the curvature parameter buys 0.011% of SSE, so the
+     5%-of-linear equivalence band spans q ∈ [0.05, 3.15] and the pre-registered "most-saturating
+     member" pin runs to the grid edge and returns a NEARLY FLAT s. On a PER-CARD objective the
+     curvature parameter is UNIDENTIFIED — the 5% rule was calibrated against a tier-aggregate
+     SSE, where 5% is a meaningful slice; against a per-card SSE dominated by irreducible
+     sampling noise it is not. That is a pinning-rule failure, NOT evidence about the family.
+  3. GATE (w)3 PASSES at every p: no single tier determines the form.
+  4. ACCEPTANCE A FAILS: 2 of 5 inside, and DIAMOND IS OUTSIDE — STOP-class on its own.
+     Diagnostic D2 shows why the objective cannot reach the acceptance target: the judged sample
+     sits off K̄_pool, so a residual taken ABOUT K̄_pool prices level as well as spread and its
+     per-tier estimand (the pivot slope) sits +0.18 above the free slope acceptance scores against.
+     The objective and the acceptance bar are two different estimands, and the gap between them
+     is systematic in every tier — it is not noise and it cannot be tuned away.
+  5. THE FAMILY ITSELF IS NOT REFUTED. Diagnostic D4(b): asked to hit the needs directly, the
+     power law reaches the coherent four at A* = 0.632, q* = 2.39 — strongly CONVEX — putting
+     4 of 5 inside their CI WITH DIAMOND IN. Include gold's off-curve need and the same probe
+     collapses to q* = 1.00 and 2 of 5 with diamond out. Gold sits at gap 15.02 needing 1.78,
+     ABOVE silver's 1.47 at the HIGHER gap 17.53 — i.e. gold's need is NON-MONOTONE in the
+     coordinate, so no monotone s(g) can carry gold and the coherent four at once. That is the
+     live question this run hands back, and it is a ruling, not a fit decision.
+  6. The band re-check (p = 0.25 / 0.35) reproduces all of the above with almost no movement, so
+     none of it is an artifact of the presence prior. Property-conditioning is NOT reopened by
+     this run: gate (w)1 holds across the whole band.
+  7. All three pre-registered budget formats read REAL DATA, including gold-slots (454 joined /
+     109 judged), which no tool had ever evaluated.
+
+### HEADER
+  tool        tools/fit-kspread-c3.ts
+  date        2026-07-22
+  model       'league-42-43'   (raw-poly event model, own-gap path, no anchor on the judged line)
+  catalog     'cdmx'   (3669 base cards, variant rows excluded from the catalog read)
+  commit      0c7b1f0 (HEAD at generation — "STOP-class instrument correction: the eval builder had diverged from production")
+  coordinate  gap = buildFrameShift(trainingMeans, productionFieldStats(pool)).pit.vR.stu — post-C1 + post-C2'
+  fit-N       FIELD_N = 50   (cohort size; scaled by PRESENCE_M = 20 on the replicated mixture)
+  fit-p       PRESENCE_P = 0.3   (presence prior; sensitivity legs at 0.25 / 0.35)
+  corpus      full-depth capture 2026-07-21 (buildCwhitSample DEFAULT_SOURCE) — ONE sample builder, no private joins
+  bars        primary BF ≥ 600; sensitivity BF ≥ 1000 (REPORT, not a gate — see acceptance B)
+  bootstrap   B = 2000, SEED = 20260716; needs = mmse() slope of obs~pred, resample cards within tier
+  grain       observed statistics at ROW grain = (card × variant level); pool constants at CARD grain
+  era_k       1.0000 on the neutral Quick env (so raw ≡ deployed per-channel there)
+
+### THE DECLARED FORM (declared before the numbers, per pre-registration §3)
+
+    s(g) = 1 + A·(g/20)^q      for g > 0;      s(g ≤ 0) = 1 EXACTLY
+
+  · G0 = 20 is a FIXED reference gap (mid observed range), not a parameter: it only fixes the
+    units of A, so A = s(20) − 1 reads directly off the constant.
+  · TWO fitted parameters: A (amplitude) and q (curvature). q > 1 CONVEX, q = 1 the LINEAR
+    LIMIT, q < 1 concave/saturating. Monotone increasing for A > 0, q > 0.
+  · s(0) = 1 is exact by construction — the league anchor, not a fitted quantity.
+  · WHY NOT THE OLD FAMILY: 1 + A(1 − e^(−g/G)) is concave for EVERY (A,G) and was falsified for
+    being unable to bend convexly. The power law is the minimal one-extra-parameter monotone
+    family that contains the linear limit as an INTERIOR point and can bend either way.
+  · OBJECTIVE: per-card residuals weighted by per-card noise, w_i = 1/per9NoiseVar(obs_i, BF_i).
+    corrected_i = K̄_t + s(g_t)·(K_i − K̄_t), K̄_t = poolPitMeansOwn(presenceMixture(pool)).k — the
+    same pivot and the same presence-mixture population production centres on. NO tier aggregate
+    enters the objective. NO per-tier freedom: one function of gap, five tiers, quicks only.
+  · PINNING RULE (pre-registered, unchanged in form from BUILD-1): the most-saturating member
+    (smallest q) whose SSE is within 5% of the LINEAR-LIMIT SSE, reported with the band and the
+    linear limit. Cross-fit comparisons are made on s(g) over the observed gap range, NEVER on
+    raw {A, q} — those are two pinning outcomes. Grid q ∈ [0.05, 8.00] step 0.01, A closed-form at each q.
+
+### 1. THE COORDINATE + GATE (w)1 IDENTIFIABILITY (prong 1)
+
+  INSTRUMENT CHECK — productionFieldStats(pool) vs the same call with p stated explicitly at
+  p = 0.3: max |Δgap| = 0.0e+0  ✓ bit-identical (the p knob is default-identity)
+
+  gap pit.stu          iron   bronze   silver     gold  diamond
+  p = 0.00            24.78    23.95    20.51    18.81    13.07
+  p = 0.25            22.13    19.18    18.08    15.52    10.89
+  p = 0.30            22.25    19.69    17.53    15.02    10.31
+  p = 0.35            21.37    19.61    16.52    14.49    10.06
+
+  coherent four (span measure) = iron, bronze, silver, diamond — gold is the standing misfit and is
+  excluded from the SPAN only; it is FITTED IN (amendment A1.2).
+    p        ordering strictly descending    coherent-four span   retention vs p=0
+    0.00     YES ✓                           11.71                    —
+    0.25     YES ✓                           11.24               96.0%
+    0.30     YES ✓                           11.94               102.0%
+    0.35     YES ✓                           11.31               96.6%
+
+  REQUIREMENT: ordering at the fitted p matches p=0's, AND coherent-four span retention ≥ 60%.
+  GATE (w)1: PASS
+
+### 2. THE PRIMARY FIT — p = 0.30, BF ≥ 600
+
+── PRIMARY LEG  p = 0.3, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  tier       N   gap(stu)   K̄_pool/600   K̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     142     22.25       121.1       7.81    1.80   [1.70,1.90]   0.048    2.05
+  bronze   156     19.69       120.1       7.75    1.62   [1.54,1.69]   0.042    1.82
+  silver   121     17.53       123.2       7.94    1.47   [1.37,1.56]   0.049    1.83
+  gold      91     15.02       120.7       7.78    1.78   [1.63,1.91]   0.054    1.72
+  diamond   36     10.31       120.4       7.77    1.04   [0.80,1.27]   0.098    1.21
+  pivot-s = the per-tier free s the OBJECTIVE would pick (noise-weighted regression through the
+  pool-mean pivot). DIAGNOSTIC ONLY — per-tier constants are mission-illegal to ship.
+
+  THE FIT
+    wide-grid SSE optimum:   q* = 1.08   A* = 0.9060   SSE 6510.1
+    LINEAR LIMIT (q = 1):    A  = 0.9052   SSE 6510.9   ⇒ β = A/20 = 0.04526 per gap unit
+    identifiability band (SSE ≤ 1.05 × linear-limit SSE): q ∈ [0.05, 3.15]  (311 of 796 grid points)
+    PINNED (most-saturating member of the band):  A = 0.8732  [boot 95% CI 0.7335, 0.9944]
+                                                  q = 0.05  [boot 95% CI 0.05, 0.05]
+    curvature: CONCAVE / saturating (q < 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(5)=1.815  s(10)=1.843  s(15)=1.861  s(20)=1.873  s(25)=1.883  s(30)=1.891
+
+  GATE (w)2 BOUNDARY-PINNED OPTIMUM: FAIL — the PINNED q = 0.05 sits on the grid edge (the 5%-of-linear band reaches it) even though the optimum q* = 1.08 is interior
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT (every refit's parameters must lie inside the full fit's boot CI)
+    dropped        A        inside A-CI     q       inside q-CI    s(iron)  s(bronze) s(silver) s(gold)  s(diamond)
+    iron          0.8018   YES ✓         0.05    YES ✓             1.81      1.80      1.80      1.79      1.78
+    bronze        0.9003   YES ✓         0.05    YES ✓             1.91      1.90      1.89      1.89      1.87
+    silver        0.8838   YES ✓         0.05    YES ✓             1.89      1.88      1.88      1.87      1.85
+    gold          0.8917   YES ✓         0.05    YES ✓             1.90      1.89      1.89      1.88      1.86
+    diamond       0.8817   YES ✓         0.05    YES ✓             1.89      1.88      1.88      1.87      1.85
+    full fit s(g)                                                   1.88      1.87      1.87      1.86      1.84
+    full fit CI                                           1.74-2.00 1.73-1.99 1.73-1.99 1.72-1.98 1.71-1.96
+  GATE (w)3: PASS
+
+  ACCEPTANCE A — implied s(g_t) vs the measured bootstrap CI (≥4 of 5 tiers, DIAMOND MANDATORY)
+    tier       gap    s(gap)   measured need   [boot 95% CI]    inside?
+    iron      22.25    1.878            1.80   [1.70,1.90]      YES ✓
+    bronze    19.69    1.873            1.62   [1.54,1.69]      NO  ✗
+    silver    17.53    1.867            1.47   [1.37,1.56]      NO  ✗
+    gold      15.02    1.861            1.78   [1.63,1.91]      YES ✓
+    diamond   10.31    1.845            1.04   [0.80,1.27]      NO  ✗
+    inside: 2 of 5;  DIAMOND OUTSIDE ✗ (STOP-class — NOT tradeable against the other four)
+  ACCEPTANCE A: FAIL
+
+  DIAGNOSTIC D1 — IS IT THE FAMILY, OR THE PINNING RULE?
+    band vs the LINEAR LIMIT (the pre-registered rule): q ∈ [0.05, 3.15]  (311/796 grid points)
+    band vs the OPTIMUM (5% of SSE*, for reference):    q ∈ [0.05, 3.14]  (310/796 grid points)
+    SSE(linear) / SSE(optimum) = 1.00011 — the curvature parameter buys 0.011% of SSE.
+    Acceptance A scored at three members of the SAME family (same fit, three pinning choices):
+      pinned (rule)            1.88    1.87    1.87    1.86    1.84  ⇒ 2/5 inside, diamond OUT
+      wide-grid optimum        2.02    1.89    1.79    1.66    1.44  ⇒ 1/5 inside, diamond OUT
+      linear limit q=1         2.01    1.89    1.79    1.68    1.47  ⇒ 1/5 inside, diamond OUT
+      needs                    1.80    1.62    1.47    1.78    1.04
+
+  DIAGNOSTIC D2 — HOW MUCH OF THE FITTED AMPLITUDE IS LEVEL, NOT SPREAD?
+    The objective is a residual about K̄_pool, so it prices BOTH the judged sample's offset from
+    the pool mean AND its spread. The pivot slope is what it actually targets; the measured need
+    (a FREE slope) is what acceptance A scores against. They are different estimands whenever the
+    sample sits off K̄_pool — which it does, because cwhit's tables are the top by USAGE.
+    tier      K̄_pool/9   wtd mean pred   offset(pred−K̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   free slope
+    iron        7.81            7.39             -0.42                      -0.77      2.05         1.87   1.80
+    bronze      7.75            7.50             -0.25                      -0.92      1.82         1.62   1.62
+    silver      7.94            7.68             -0.26                      -1.21      1.83         1.51   1.47
+    gold        7.78            7.43             -0.36                      -0.18      1.72         1.77   1.78
+    diamond     7.77            7.63             -0.13                      -0.49      1.21         1.11   1.04
+    pivot-s exceeds the free slope in every tier by 0.18 on average — a systematic offset, not noise.
+
+  DIAGNOSTIC D3 — THE SAME FAMILY AND THE SAME PER-CARD NOISE WEIGHTS, LEVEL REMOVED
+    (pivot moved from K̄_pool to the judged sample's own weighted mean; NOT what production does,
+    NOT a candidate — it isolates the spread signal so the family's reach can be read cleanly.)
+    optimum q* = 1.26  A* = 0.6995;  linear limit A = 0.6969;  band q ∈ [0.05, 2.83]
+      pinned (rule)            1.67    1.67    1.67    1.66    1.65  ⇒ 2/5 inside, diamond OUT
+      wide-grid optimum        1.80    1.69    1.59    1.49    1.30  ⇒ 2/5 inside, diamond OUT
+      linear limit q=1         1.78    1.69    1.61    1.52    1.36  ⇒ 2/5 inside, diamond OUT
+    (DIAGNOSTIC — carries no verdict.)
+
+  DIAGNOSTIC D4 — CAN THE FAMILY REACH THE COHERENT FOUR AT ALL?
+    Two reads, both DIAGNOSTIC. Gold is FITTED IN in the primary (A1.2) and stays so; these
+    isolate whether the convex family can describe the needs, separately from whether the
+    per-card objective aims at them.
+    (a) per-card objective, COHERENT FOUR only (gold dropped): optimum q* = 1.24, pinned A = 0.8917 q = 0.05
+         pinned                1.90    1.89    1.89    1.88    1.86  ⇒ 2/5 inside, diamond OUT
+         optimum               2.03    1.88    1.76    1.63    1.40  ⇒ 0/5 inside, diamond OUT
+         linear q=1            2.00    1.89    1.79    1.68    1.46  ⇒ 1/5 inside, diamond OUT
+    (b) TIER-AGGREGATE capability probe (fit s(g) straight to the needs, precision-weighted):
+         all five, optimum       A*  0.681 q*  1.00      1.76    1.67    1.60    1.51    1.35  ⇒ 2/5, diamond OUT
+         coherent four, optimum  A*  0.632 q*  2.39      1.82    1.61    1.46    1.32    1.13  ⇒ 4/5, diamond IN
+      needs                                         1.80    1.62    1.47    1.78    1.04
+
+### 3. ACCEPTANCE B — THE 1000 BAR IS A SENSITIVITY REPORT, NOT A GATE
+
+  STRUCTURAL REASON, stated up front: a POOL-LEVEL ramp is one function s(g) of a FORMAT'S GAP.
+  The gap is a property of the eligible pool — a catalog property — and is computed identically
+  whatever usage floor the EVALUATION set is drawn at. So s(g_t) returns the SAME scalar at the
+  600 bar and the 1000 bar: it CANNOT move between bars, and demanding it reproduce a bar
+  differential would be demanding the impossible. Gold's bar differential stays a DIAGNOSTIC,
+  attached to the five-card provenance, and is never scored as a pass or a fail.
+
+  tier       s(gap)   need@600  [CI]              need@1000 [CI]             N600→N1000   Δneed
+  iron      1.878       1.80  [1.70,1.90]           1.81 [1.72,1.91]          142→112  +0.01
+  bronze    1.873       1.62  [1.54,1.69]           1.63 [1.56,1.72]          156→122  +0.01
+  silver    1.867       1.47  [1.37,1.56]           1.47 [1.36,1.57]           121→96  -0.00
+  gold      1.861       1.78  [1.63,1.91]           1.63 [1.50,1.75]            91→68  -0.15
+  diamond   1.845       1.04  [0.80,1.27]           0.85 [0.64,1.09]            36→19  -0.19
+
+  1000-bar membership (REPORT ONLY): 1 of 5 inside, diamond outside.
+  This line is NOT a gate and no decision hangs on it.
+
+### 4. ACCEPTANCE C — GOLD IS FITTED IN, AND ITS RESIDUAL IS PUBLISHED
+
+  gold: N = 91 rows, gap 15.02, s(gap) = 1.861, measured need 1.78 [1.63,1.91]
+  residual s(gap) − need = +0.077   (published, not absorbed)
+
+  THE FIVE NAMED LIGHT-USAGE SUB-p05 CARDS (they travel with the constant):
+  (ROW grain: a card and its v5 are two observed rows, so a name can appear twice — vlvl says which.)
+    name                      vlvl     BF   pred K9   obs K9   Δ(obs−pred)   var share (unwtd)   var share (NOISE-WTD)
+    Brad Radke                   5   1809      6.32     5.48         -0.84                3.0%   2.0%
+    Dan Quisenberry              0    882      5.14     2.55         -2.59                9.8%   6.4%
+    Jesse Barnes                 0    791      6.06     4.70         -1.36                4.2%   1.4%
+    Hilton Smith                 0    788      5.21     2.41         -2.80                9.3%   5.7%
+    Randy Jones                  0    705      5.37     2.30         -3.07                8.2%   4.7%
+    Brad Radke                   0    614      6.08     4.67         -1.41                4.0%   1.1%
+    TOTAL                                                                                38.5%   21.3%
+
+  6.6% of gold's rows carry 38.5% of its predicted-K variance UNWEIGHTED, but only
+  21.3% of the leverage the OBJECTIVE actually gives them. That is amendment A1.2 working as
+  designed: per-card noise weighting downweights them in proportion to how little they are
+  observed — the principled form of what hand-exclusion approximated — while keeping whatever
+  real signal they do carry. Nothing was excluded.
+
+### 5. ACCEPTANCE D — THE GATES RE-CHECKED ACROSS THE PRESENCE BAND
+
+  Each leg is a FULL re-derivation at that p: the pool field, the reference field, the pool
+  transform, K̄ and therefore every predicted line move with p. p is threaded through the ONE
+  productionFieldStats() (default-identity at 0.3) — no field is built any other way.
+
+── SENSITIVITY LEG  p = 0.25, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  tier       N   gap(stu)   K̄_pool/600   K̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     142     22.13       121.1       7.81    1.80   [1.70,1.90]   0.048    2.05
+  bronze   156     19.18       120.9       7.80    1.62   [1.54,1.69]   0.042    1.84
+  silver   121     18.08       122.4       7.89    1.47   [1.37,1.56]   0.049    1.79
+  gold      91     15.52       120.4       7.77    1.78   [1.63,1.90]   0.054    1.74
+  diamond   36     10.89       120.2       7.75    1.04   [0.79,1.27]   0.098    1.21
+  pivot-s = the per-tier free s the OBJECTIVE would pick (noise-weighted regression through the
+  pool-mean pivot). DIAGNOSTIC ONLY — per-tier constants are mission-illegal to ship.
+
+  THE FIT
+    wide-grid SSE optimum:   q* = 1.29   A* = 0.9096   SSE 6555.6
+    LINEAR LIMIT (q = 1):    A  = 0.9056   SSE 6562.6   ⇒ β = A/20 = 0.04528 per gap unit
+    identifiability band (SSE ≤ 1.05 × linear-limit SSE): q ∈ [0.05, 3.53]  (349 of 796 grid points)
+    PINNED (most-saturating member of the band):  A = 0.8719  [boot 95% CI 0.7287, 0.9956]
+                                                  q = 0.05  [boot 95% CI 0.05, 0.05]
+    curvature: CONCAVE / saturating (q < 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(5)=1.813  s(10)=1.842  s(15)=1.859  s(20)=1.872  s(25)=1.882  s(30)=1.890
+
+  GATE (w)2 BOUNDARY-PINNED OPTIMUM: FAIL — the PINNED q = 0.05 sits on the grid edge (the 5%-of-linear band reaches it) even though the optimum q* = 1.29 is interior
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT (every refit's parameters must lie inside the full fit's boot CI)
+    dropped        A        inside A-CI     q       inside q-CI    s(iron)  s(bronze) s(silver) s(gold)  s(diamond)
+    iron          0.8011   YES ✓         0.05    YES ✓             1.81      1.80      1.80      1.79      1.78
+    bronze        0.8862   YES ✓         0.05    YES ✓             1.89      1.88      1.88      1.88      1.86
+    silver        0.8962   YES ✓         0.05    YES ✓             1.90      1.89      1.89      1.88      1.87
+    gold          0.8871   YES ✓         0.05    YES ✓             1.89      1.89      1.88      1.88      1.86
+    diamond       0.8804   YES ✓         0.05    YES ✓             1.88      1.88      1.88      1.87      1.85
+    full fit s(g)                                                   1.88      1.87      1.87      1.86      1.85
+    full fit CI                                           1.73-2.00 1.73-1.99 1.73-1.99 1.72-1.98 1.71-1.97
+  GATE (w)3: PASS
+
+  ACCEPTANCE A — implied s(g_t) vs the measured bootstrap CI (≥4 of 5 tiers, DIAMOND MANDATORY)
+    tier       gap    s(gap)   measured need   [boot 95% CI]    inside?
+    iron      22.13    1.876            1.80   [1.70,1.90]      YES ✓
+    bronze    19.18    1.870            1.62   [1.54,1.69]      NO  ✗
+    silver    18.08    1.867            1.47   [1.37,1.56]      NO  ✗
+    gold      15.52    1.861            1.78   [1.63,1.90]      YES ✓
+    diamond   10.89    1.846            1.04   [0.79,1.27]      NO  ✗
+    inside: 2 of 5;  DIAMOND OUTSIDE ✗ (STOP-class — NOT tradeable against the other four)
+  ACCEPTANCE A: FAIL
+
+  DIAGNOSTIC D1 — IS IT THE FAMILY, OR THE PINNING RULE?
+    band vs the LINEAR LIMIT (the pre-registered rule): q ∈ [0.05, 3.53]  (349/796 grid points)
+    band vs the OPTIMUM (5% of SSE*, for reference):    q ∈ [0.05, 3.50]  (346/796 grid points)
+    SSE(linear) / SSE(optimum) = 1.00107 — the curvature parameter buys 0.107% of SSE.
+    Acceptance A scored at three members of the SAME family (same fit, three pinning choices):
+      pinned (rule)            1.88    1.87    1.87    1.86    1.85  ⇒ 2/5 inside, diamond OUT
+      wide-grid optimum        2.04    1.86    1.80    1.66    1.42  ⇒ 1/5 inside, diamond OUT
+      linear limit q=1         2.00    1.87    1.82    1.70    1.49  ⇒ 1/5 inside, diamond OUT
+      needs                    1.80    1.62    1.47    1.78    1.04
+
+  DIAGNOSTIC D2 — HOW MUCH OF THE FITTED AMPLITUDE IS LEVEL, NOT SPREAD?
+    The objective is a residual about K̄_pool, so it prices BOTH the judged sample's offset from
+    the pool mean AND its spread. The pivot slope is what it actually targets; the measured need
+    (a FREE slope) is what acceptance A scores against. They are different estimands whenever the
+    sample sits off K̄_pool — which it does, because cwhit's tables are the top by USAGE.
+    tier      K̄_pool/9   wtd mean pred   offset(pred−K̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   free slope
+    iron        7.81            7.38             -0.43                      -0.76      2.05         1.87   1.80
+    bronze      7.80            7.52             -0.28                      -0.93      1.84         1.62   1.62
+    silver      7.89            7.68             -0.21                      -1.21      1.79         1.51   1.47
+    gold        7.77            7.44             -0.32                      -0.19      1.74         1.76   1.78
+    diamond     7.75            7.61             -0.14                      -0.46      1.21         1.11   1.04
+    pivot-s exceeds the free slope in every tier by 0.18 on average — a systematic offset, not noise.
+
+  DIAGNOSTIC D3 — THE SAME FAMILY AND THE SAME PER-CARD NOISE WEIGHTS, LEVEL REMOVED
+    (pivot moved from K̄_pool to the judged sample's own weighted mean; NOT what production does,
+    NOT a candidate — it isolates the spread signal so the family's reach can be read cleanly.)
+    optimum q* = 1.47  A* = 0.7049;  linear limit A = 0.6987;  band q ∈ [0.05, 3.19]
+      pinned (rule)            1.67    1.67    1.67    1.66    1.65  ⇒ 2/5 inside, diamond OUT
+      wide-grid optimum        1.82    1.66    1.61    1.49    1.29  ⇒ 2/5 inside, diamond OUT
+      linear limit q=1         1.77    1.67    1.63    1.54    1.38  ⇒ 2/5 inside, diamond OUT
+    (DIAGNOSTIC — carries no verdict.)
+
+  DIAGNOSTIC D4 — CAN THE FAMILY REACH THE COHERENT FOUR AT ALL?
+    Two reads, both DIAGNOSTIC. Gold is FITTED IN in the primary (A1.2) and stays so; these
+    isolate whether the convex family can describe the needs, separately from whether the
+    per-card objective aims at them.
+    (a) per-card objective, COHERENT FOUR only (gold dropped): optimum q* = 1.53, pinned A = 0.8871 q = 0.05
+         pinned                1.89    1.89    1.88    1.88    1.86  ⇒ 2/5 inside, diamond OUT
+         optimum               2.05    1.85    1.77    1.61    1.36  ⇒ 0/5 inside, diamond OUT
+         linear q=1            2.00    1.87    1.82    1.70    1.49  ⇒ 1/5 inside, diamond OUT
+    (b) TIER-AGGREGATE capability probe (fit s(g) straight to the needs, precision-weighted):
+         all five, optimum       A*  0.685 q*  1.13      1.77    1.65    1.61    1.51    1.34  ⇒ 2/5, diamond OUT
+         coherent four, optimum  A*  0.640 q*  2.52      1.83    1.58    1.50    1.34    1.14  ⇒ 4/5, diamond IN
+      needs                                         1.80    1.62    1.47    1.78    1.04
+
+── SENSITIVITY LEG  p = 0.35, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  tier       N   gap(stu)   K̄_pool/600   K̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     142     21.37       120.8       7.79    1.80   [1.70,1.90]   0.048    2.05
+  bronze   156     19.61       119.9       7.74    1.62   [1.54,1.69]   0.042    1.82
+  silver   121     16.52       123.5       7.97    1.47   [1.37,1.56]   0.049    1.86
+  gold      91     14.49       120.9       7.80    1.78   [1.63,1.91]   0.054    1.71
+  diamond   36     10.06       120.9       7.80    1.04   [0.79,1.27]   0.098    1.24
+  pivot-s = the per-tier free s the OBJECTIVE would pick (noise-weighted regression through the
+  pool-mean pivot). DIAGNOSTIC ONLY — per-tier constants are mission-illegal to ship.
+
+  THE FIT
+    wide-grid SSE optimum:   q* = 0.90   A* = 0.9327   SSE 6324.9
+    LINEAR LIMIT (q = 1):    A  = 0.9368   SSE 6326.1   ⇒ β = A/20 = 0.04684 per gap unit
+    identifiability band (SSE ≤ 1.05 × linear-limit SSE): q ∈ [0.05, 2.87]  (283 of 796 grid points)
+    PINNED (most-saturating member of the band):  A = 0.8790  [boot 95% CI 0.7409, 0.9989]
+                                                  q = 0.05  [boot 95% CI 0.05, 0.05]
+    curvature: CONCAVE / saturating (q < 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(5)=1.820  s(10)=1.849  s(15)=1.866  s(20)=1.879  s(25)=1.889  s(30)=1.897
+
+  GATE (w)2 BOUNDARY-PINNED OPTIMUM: FAIL — the PINNED q = 0.05 sits on the grid edge (the 5%-of-linear band reaches it) even though the optimum q* = 0.90 is interior
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT (every refit's parameters must lie inside the full fit's boot CI)
+    dropped        A        inside A-CI     q       inside q-CI    s(iron)  s(bronze) s(silver) s(gold)  s(diamond)
+    iron          0.8103   YES ✓         0.05    YES ✓             1.81      1.81      1.80      1.80      1.78
+    bronze        0.9100   YES ✓         0.05    YES ✓             1.91      1.91      1.90      1.90      1.88
+    silver        0.8830   YES ✓         0.05    YES ✓             1.89      1.88      1.87      1.87      1.85
+    gold          0.8985   YES ✓         0.05    YES ✓             1.90      1.90      1.89      1.88      1.87
+    diamond       0.8873   YES ✓         0.05    YES ✓             1.89      1.89      1.88      1.87      1.86
+    full fit s(g)                                                   1.88      1.88      1.87      1.86      1.85
+    full fit CI                                           1.74-2.00 1.74-2.00 1.73-1.99 1.73-1.98 1.72-1.97
+  GATE (w)3: PASS
+
+  ACCEPTANCE A — implied s(g_t) vs the measured bootstrap CI (≥4 of 5 tiers, DIAMOND MANDATORY)
+    tier       gap    s(gap)   measured need   [boot 95% CI]    inside?
+    iron      21.37    1.882            1.80   [1.70,1.90]      YES ✓
+    bronze    19.61    1.878            1.62   [1.54,1.69]      NO  ✗
+    silver    16.52    1.871            1.47   [1.37,1.56]      NO  ✗
+    gold      14.49    1.865            1.78   [1.63,1.91]      YES ✓
+    diamond   10.06    1.849            1.04   [0.79,1.27]      NO  ✗
+    inside: 2 of 5;  DIAMOND OUTSIDE ✗ (STOP-class — NOT tradeable against the other four)
+  ACCEPTANCE A: FAIL
+
+  DIAGNOSTIC D1 — IS IT THE FAMILY, OR THE PINNING RULE?
+    band vs the LINEAR LIMIT (the pre-registered rule): q ∈ [0.05, 2.87]  (283/796 grid points)
+    band vs the OPTIMUM (5% of SSE*, for reference):    q ∈ [0.05, 2.86]  (282/796 grid points)
+    SSE(linear) / SSE(optimum) = 1.00018 — the curvature parameter buys 0.018% of SSE.
+    Acceptance A scored at three members of the SAME family (same fit, three pinning choices):
+      pinned (rule)            1.88    1.88    1.87    1.86    1.85  ⇒ 2/5 inside, diamond OUT
+      wide-grid optimum        1.99    1.92    1.79    1.70    1.50  ⇒ 1/5 inside, diamond OUT
+      linear limit q=1         2.00    1.92    1.77    1.68    1.47  ⇒ 1/5 inside, diamond OUT
+      needs                    1.80    1.62    1.47    1.78    1.04
+
+  DIAGNOSTIC D2 — HOW MUCH OF THE FITTED AMPLITUDE IS LEVEL, NOT SPREAD?
+    The objective is a residual about K̄_pool, so it prices BOTH the judged sample's offset from
+    the pool mean AND its spread. The pivot slope is what it actually targets; the measured need
+    (a FREE slope) is what acceptance A scores against. They are different estimands whenever the
+    sample sits off K̄_pool — which it does, because cwhit's tables are the top by USAGE.
+    tier      K̄_pool/9   wtd mean pred   offset(pred−K̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   free slope
+    iron        7.79            7.39             -0.41                      -0.76      2.05         1.87   1.80
+    bronze      7.74            7.49             -0.25                      -0.91      1.82         1.62   1.62
+    silver      7.97            7.67             -0.30                      -1.20      1.86         1.51   1.47
+    gold        7.80            7.43             -0.37                      -0.18      1.71         1.77   1.78
+    diamond     7.80            7.61             -0.19                      -0.46      1.24         1.11   1.04
+    pivot-s exceeds the free slope in every tier by 0.19 on average — a systematic offset, not noise.
+
+  DIAGNOSTIC D3 — THE SAME FAMILY AND THE SAME PER-CARD NOISE WEIGHTS, LEVEL REMOVED
+    (pivot moved from K̄_pool to the judged sample's own weighted mean; NOT what production does,
+    NOT a candidate — it isolates the spread signal so the family's reach can be read cleanly.)
+    optimum q* = 1.12  A* = 0.7217;  linear limit A = 0.7179;  band q ∈ [0.05, 2.64]
+      pinned (rule)            1.67    1.67    1.66    1.66    1.65  ⇒ 2/5 inside, diamond OUT
+      wide-grid optimum        1.78    1.71    1.58    1.50    1.33  ⇒ 1/5 inside, diamond OUT
+      linear limit q=1         1.77    1.70    1.59    1.52    1.36  ⇒ 1/5 inside, diamond OUT
+    (DIAGNOSTIC — carries no verdict.)
+
+  DIAGNOSTIC D4 — CAN THE FAMILY REACH THE COHERENT FOUR AT ALL?
+    Two reads, both DIAGNOSTIC. Gold is FITTED IN in the primary (A1.2) and stays so; these
+    isolate whether the convex family can describe the needs, separately from whether the
+    per-card objective aims at them.
+    (a) per-card objective, COHERENT FOUR only (gold dropped): optimum q* = 0.94, pinned A = 0.8985 q = 0.05
+         pinned                1.90    1.90    1.89    1.88    1.87  ⇒ 1/5 inside, diamond OUT
+         optimum               1.99    1.92    1.78    1.69    1.49  ⇒ 1/5 inside, diamond OUT
+         linear q=1            2.00    1.92    1.77    1.68    1.47  ⇒ 1/5 inside, diamond OUT
+    (b) TIER-AGGREGATE capability probe (fit s(g) straight to the needs, precision-weighted):
+         all five, optimum       A*  0.701 q*  0.96      1.75    1.69    1.58    1.51    1.36  ⇒ 2/5, diamond OUT
+         coherent four, optimum  A*  0.677 q*  2.36      1.79    1.65    1.43    1.32    1.13  ⇒ 4/5, diamond IN
+      needs                                         1.80    1.62    1.47    1.78    1.04
+
+  BAND SUMMARY
+    p        (w)2    (w)3    acceptance A (inside/5, diamond)     A        q      s(20)
+    0.25     FAIL    PASS                     2/5, diamond OUT   0.8719   0.05  1.872
+    0.30     FAIL    PASS                     2/5, diamond OUT   0.8732   0.05  1.873
+    0.35     FAIL    PASS                     2/5, diamond OUT   0.8790   0.05  1.879
+    Holding across the band retires p's uncertainty. Failing across the band is the ONLY thing
+    that reopens property-conditioning — and that is a ruling, not a fit decision.
+    BAND VERDICT: DOES NOT HOLD across the whole band (see the legs above)
+
+### 6. ACCEPTANCE E — HELD-OUT FORMAT VALIDATION (VALIDATED, NEVER FITTED)
+
+  Formats resolved from the corpus REGISTRY by tournamentId (src/eval/cwhit/corpus.ts) and named
+  to the builder by REGISTRY KEY — not by the optional `legacySlug`. bronze-cap-weekly and
+  gold-slots carry NO legacySlug, which is exactly why the fit tool's hard-coded DAILY list
+  (four of the registry's eight dailies) could never reach them. Each format's gap and K̄ come
+  from ITS OWN eligible pool under ITS OWN resolved coeffs; the judged line is the DEPLOYED one
+  (era/park applied), because the observed lines live in the format's environment.
+
+  format               strat  poolN  joined  judged   gap    K̄dep/9  s(gap)  pre slope [CI]        post slope [CI]       verdict
+  Early Gold           B       3192     242      99   15.0    2.74   1.861      2.04 [1.82,2.26]      1.10 [0.98,1.21]  PASS — post CI covers 1
+  Bronze Heart         B        570     121      48   15.8    3.13   1.863      2.27 [2.04,2.50]      1.22 [1.10,1.34]  MISS — post CI excludes 1
+  Late Bronze          B       2096     195      34   19.7    5.23   1.873      1.67 [1.42,1.89]      0.89 [0.76,1.01]  PASS — post CI covers 1
+  Diamond Heart        B        879     133      67   13.9    5.44   1.858      1.50 [1.34,1.64]      0.81 [0.72,0.88]  MISS — post CI excludes 1
+  Live Open Daily      A*      1274      80      42   44.5    7.78   1.909      0.91 [0.69,1.08]      0.48 [0.36,0.57]  MISS — post CI excludes 1
+  Saturday Bronze Cap  C       2096     346      42   19.7    7.75   1.873      1.74 [1.60,1.88]      0.93 [0.85,1.00]  PASS — post CI covers 1
+  Gold Slots Daily     C       3192     454     109   15.0    7.78   1.861      1.63 [1.50,1.74]      0.87 [0.81,0.93]  MISS — post CI excludes 1
+  Gold Cap Daily       B+C     3192     504     114   15.0    7.78   1.861      1.63 [1.53,1.74]      0.88 [0.82,0.94]  MISS — post CI excludes 1
+  Diamond Cap Daily    B+C     3498     215      26   10.3    7.12   1.845      1.78 [1.33,2.04]      0.96 [0.72,1.11]  PASS — post CI covers 1
+  K̄dep/9 is the DEPLOYED-frame pool mean (×era_k) for reading; the correction itself is centred on
+  the RAW pre-era K̄ per 600, which is where production applies it.
+  EXTRAPOLATION WARNING, stated because the table cannot be read without it: the fit spans gaps
+  10.31–22.25 (the Quick ladder). OUTSIDE that range: Live Open Daily g=44.5 — s there is EXTRAPOLATED and the verdict is about the extrapolation, not the fit.
+
+  K9 LEVEL (pred − obs), pre → post:
+    Early Gold            -0.66 → -0.78   [era-1920 / park-169]
+    Bronze Heart          -0.57 → -0.69   [era-1939 / park-191, Year rule]
+    Late Bronze           +0.45 → +0.40   [era-1979 / park-114]
+    Diamond Heart         -0.10 → -0.20   [era-1958 / park-156]
+    Live Open Daily       -0.17 → -0.12   [neutral env, uncapped — non-Quick control]
+    Saturday Bronze Cap   +0.51 → +0.04   [neutral env, cap 1331 — PRE-REGISTERED held-out]
+    Gold Slots Daily      +0.16 → -0.13   [neutral env, slots — PRE-REGISTERED held-out; never before evaluated]
+    Gold Cap Daily        -0.02 → -0.60   [park-156 + cap 1580 — PRE-REGISTERED held-out]
+    Diamond Cap Daily     -0.44 → -0.88   [era-1998 / park-101 + cap 1755]
+
+  GOLD-SLOTS REACHABILITY — the explicit confirmation the pre-registration asks for:
+    gold-slots has NEVER been evaluated by any tool before this run. It resolves to registry key
+    'goldslotsdaily' (label "Gold Slots Daily", legacySlug ABSENT), reads capture files, and joined
+    454 pitcher rows / 109 judged at BF ≥ 600 over a 3192-card eligible pool.
+    ⇒ IT READS REAL DATA — NOT silently empty.
+
+### 7. THE STRATIFIED READ (standing structure, amendment A1.3)
+
+  A defect attributes to the stratum where it FIRST appears. One universal model, stratified
+  diagnosis.
+
+  A — NEUTRAL UNCAPPED QUICKS (the core; this is what was FITTED)
+      2 of 5 tiers inside their measured CI, diamond OUTSIDE.
+      Residuals s(gap) − need: iron +0.08  bronze +0.25  silver +0.40  gold +0.08  diamond +0.80
+      Non-Quick neutral control (live-open-daily, no era/park, no budget): judged 42, MISS — post CI excludes 1
+
+  B — ENV-BEARING UNCAPPED DAILIES (+ the era/park layer)
+      Early Gold           judged  99  s 1.861  slope 2.04 → 1.10  PASS — post CI covers 1
+      Bronze Heart         judged  48  s 1.863  slope 2.27 → 1.22  MISS — post CI excludes 1
+      Late Bronze          judged  34  s 1.873  slope 1.67 → 0.89  PASS — post CI covers 1
+      Diamond Heart        judged  67  s 1.858  slope 1.50 → 0.81  MISS — post CI excludes 1
+      A miss appearing HERE and not in A localises to the era/park layer, not to the core fit.
+
+  C — BUDGET CAP/SLOTS FORMATS (+ the composition layer)
+      Saturday Bronze Cap  judged  42  s 1.873  slope 1.74 → 0.93  PASS — post CI covers 1
+      Gold Slots Daily     judged 109  s 1.861  slope 1.63 → 0.87  MISS — post CI excludes 1
+      Gold Cap Daily       judged 114  s 1.861  slope 1.63 → 0.88  MISS — post CI excludes 1   [also carries env ⇒ B+C, not a clean C read]
+      Diamond Cap Daily    judged  26  s 1.845  slope 1.78 → 0.96  PASS — post CI covers 1   [also carries env ⇒ B+C, not a clean C read]
+      A stratum-C miss does NOT impugn the core fit: it localises to the COMPOSITION layer, which
+      is task 2's territory and is not built yet. Budget formats force weak cards into play, which
+      is exactly where the weak-card K over-prediction bites — and nothing here models a budget.
+
+### 8. THE CONSTANTS, WITH PROVENANCE STAMPED (acceptance F)
+
+  NO CONSTANT IS PROPOSED FOR SHIPPING. Gates failed; the pre-registration says a partial pass
+  stays a partial pass and the verdict returns to Fable. What follows is what the pre-registered
+  rule PRODUCED, recorded so the record is complete and so the provenance stamp acceptance F asks
+  for exists on it. It is not a recommendation, and it should not be wired.
+
+  what the rule produced: { A: 0.8732, q: 0.05, G0: 20 }
+  s(g) = 1 + 0.8732·(g/20)^0.05;   s(g ≤ 0) = 1 (league-anchored — never compress a
+  stronger-than-training pool).
+  fit-N = 50   (FIELD_N)
+  fit-p = 0.3   (PRESENCE_P)
+
+  PROPOSED SCORING-SIDE ASSERTION (not wired — proposed):
+      assert(FIELD_N === kSpreadPitC3.fitN && PRESENCE_P === kSpreadPitC3.fitP)
+  at the point production builds the kSpread object, so a ramp fitted at one (N, p) can never be
+  evaluated at another. THE GAP IS NOT MONOTONE IN p — measured across p = 0..1 the iron gap runs
+  23.64 / 21.22 / 22.15 / 21.59 / 19.06 — so a ramp CANNOT be rescaled to another p by any
+  algebraic correction. It can only be RE-DERIVED. The same holds for FIELD_N, which is
+  retrain-coupled and known-defective-but-frozen.
+
+  SHIPPED CONSTANT, QUOTED FOR CONTRAST AND NOT TOUCHED: K_SPREAD_PIT = { A: 5.0871, G: 152.5 }
+  on the FALSIFIED saturating family, fitted at the PRE-C1/C2' coordinate. It is not comparable
+  parameter-for-parameter (two families, two pinning outcomes); compare on s(g) only:
+    g        10      15      20      25      30
+    C3        1.843   1.861   1.873   1.883   1.891
+    shipped   1.323   1.477   1.625   1.769   1.908
+
+### 9. RECORDED, NOT ACTED ON (the freeze applies)
+
+  · The neutral leg resolves `computeDerived(coeffs)` (eventForm flag FALSE) while the per-format
+    legs resolve `computeDerived(coeffs, true)`. Copied verbatim from tools/battery-needs-vs-bar.ts
+    and tools/fit-kspread-pit.ts so the needs reproduce rather than approximate. It cannot touch
+    this verdict — the Quick legs are judged on the RAW line, which never reads `derived` — but it
+    is an inconsistency between two tools and production, recorded here.
+  · FIELD_N = 50 is known-defective and frozen until a retrain; nothing here revisits it.
+  · The two `src/` lines this run required are DEFAULT-IDENTITY knobs, not behaviour changes:
+    `productionFieldStats(..., p = PRESENCE_P)` and `SampleDeps.presenceP`. They exist so the
+    pre-registered p = 0.25 / 0.35 re-check could be asked THROUGH the one field definition
+    instead of a tool building its own mixture. The instrument check in §1 pins them identical
+    at the shipped p.
+
+(end of artifact — C3 ramp fit, STOP)

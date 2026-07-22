@@ -9,7 +9,7 @@
 // uses RAW wOBA (no transform, no calibration) so it's a stable quality ranking.
 
 import type { Coeffs } from "../config/types.ts";
-import { presenceMixture, PRESENCE_M } from "../data/variants.ts";
+import { presenceMixture, PRESENCE_M, PRESENCE_P } from "../data/variants.ts";
 import type { Card } from "../data/catalog.ts";
 import type { EventModel } from "../model/types.ts";
 import { PIT_BIP_ADJ } from "../model/curves.ts";
@@ -94,9 +94,16 @@ export function cardSideWobas(c: any, coeffs: Coeffs, model: EventModel, sspFree
  *  production, the eval builder and every tool call THAT.
  *
  *  Callers that need an env-matched reference (the per-format daily legs) still resolve their own
- *  coeffs — only the CONSTRUCTION is shared, not the environment. */
-export const productionFieldStats = (cards: any[], coeffs: Coeffs, model: EventModel, sspFree = true): FieldStats =>
-  computeUnifiedFieldStats(presenceMixture(cards as Card[]), coeffs, model, FIELD_N * PRESENCE_M, sspFree);
+ *  coeffs — only the CONSTRUCTION is shared, not the environment.
+ *
+ *  `p` EXISTS SO A SENSITIVITY RE-CHECK CANNOT FORK THE CONSTRUCTION. It defaults to the shipped
+ *  `PRESENCE_P`, so every existing caller — production included — is bit-identical and no default
+ *  moves. It is threaded ONLY because the C3 pre-registration requires the gates re-checked at
+ *  p = 0.25 / 0.35, and the alternative was a tool assembling its own presence-weighted field, i.e.
+ *  a second definition of the exact thing this function exists to be the only copy of. Production
+ *  never passes it. */
+export const productionFieldStats = (cards: any[], coeffs: Coeffs, model: EventModel, sspFree = true, p: number = PRESENCE_P): FieldStats =>
+  computeUnifiedFieldStats(presenceMixture(cards as Card[], p), coeffs, model, FIELD_N * PRESENCE_M, sspFree);
 
 /** THE field cohort size — the validated realistic-field size (`tools/field-size.ts`).
  *

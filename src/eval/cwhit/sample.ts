@@ -193,6 +193,17 @@ export interface SampleDeps {
    *  re-reading the corpus and the thin tail stays inspectable rather than invisible. */
   minBf?: number;
   minPa?: number;
+  /** The presence prior the POOL FIELD is built at. Absent ⇒ `PRESENCE_P`, i.e. every existing
+   *  caller is bit-identical and production's value is untouched.
+   *
+   *  IT IS A KNOB, NOT A SECOND CONSTRUCTION. The C3 pre-registration requires the identifiability
+   *  and stability gates re-checked at p = 0.25 / 0.35, and p enters the judged sample through the
+   *  pool transform — so a tool cannot ask that question by post-processing, only by rebuilding the
+   *  field. Threading it here keeps `productionFieldStats` the one definition; the alternative was a
+   *  tool assembling its own presence mixture, which is the drift failure this module exists to stop.
+   *  A caller that moves this MUST move `ref` to the same p, or the two halves of the pool transform
+   *  are measured at different presences. */
+  presenceP?: number;
 }
 
 /** The corpus a sample is built from.
@@ -543,7 +554,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
     // variant-free field at an unscaled FIELD_N while production had moved to the presence-weighted
     // construction, so the eval instrument measured a different coordinate from the one production
     // scored on. `productionFieldStats` is now the single definition both call.
-    const pt = buildPoolTransform(d.ref, productionFieldStats(basePool, d.coeffs, d.model), d.envelope);
+    const pt = buildPoolTransform(d.ref, productionFieldStats(basePool, d.coeffs, d.model, true, d.presenceP), d.envelope);
     // Optional pitcher spread + hitter tail for this tier — threaded into calibrate too (production
     // computes the anchor on the SAME corrected events the scores use). sHit=1 ⇒ the hitter K leg is
     // untouched (applyKSpread short-circuits s===1 to the exact raw K); the BUILD-3 HR/BABIP fields
