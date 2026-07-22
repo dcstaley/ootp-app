@@ -23,6 +23,7 @@ import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../
 import { parseBallparks } from "../data/ballparks.ts";
 import { FIELD_N, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT, type VertexPin } from "../training/forms.ts";
+import { inEphemeralScope, mayCache } from "./cache-scope.ts"; // draft scoring must not seed process-global caches
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
 import type { KSpread as KSpreadCfg } from "../config/types.ts"; // K + BUILD-3 pitcher per-channel spread fields
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
@@ -282,7 +283,10 @@ function referenceFieldStats(baseCatalog: any[], coeffs: Coeffs, model: EventMod
   const key = `${state.activeModelId ?? ""}|${catalogSource}`;
   if (refFieldCache?.key === key) return refFieldCache.stats;
   const stats = computeUnifiedFieldStats(baseCatalog, coeffs, model, FIELD_N, true); // eventForm-only path ⇒ ssp-free selection
-  refFieldCache = { key, stats };
+  // Only a SAVED configuration may seed this. See src/server/cache-scope.ts: an unsaved draft
+  // scored via /api/position-metrics used to be able to win a cold cache and serve every later
+  // tournament a reference field that exists in no saved state.
+  if (mayCache()) refFieldCache = { key, stats };
   return stats;
 }
 
@@ -786,7 +790,7 @@ function leagueExposureBaseline(coeffs: Coeffs, model: EventModel): ExposureBase
   const key = `${state.activeModelId ?? ""}|${catalogSource}`;
   if (leagueBaselineCache?.key === key) return leagueBaselineCache.base;
   const base = computeBaseline(exposureFieldMembers(catalog.cards.filter(isBaseCard), coeffs, model), EXPOSURE_N);
-  leagueBaselineCache = { key, base };
+  if (mayCache()) leagueBaselineCache = { key, base };   // same rule as refFieldCache
   return base;
 }
 function realizedSplitsOf(p: PlatoonExposure): RealizedSplits {
@@ -2271,7 +2275,8 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const body = JSON.parse((await readBody(req)) || "{}") as Tournament;
     const base = (body.id ? tournamentById.get(body.id) : null) ?? tournamentById.get(DEFAULT_TOURNAMENT_ID)!;
     const t: Tournament = { ...base, ...body, softcaps: body.softcaps ?? base.softcaps, eligibility: body.eligibility ?? base.eligibility };
-    const stats = positionPoolStats(t, scoreTournament(t));
+    // `t` is a possibly UNSAVED draft ⇒ compute freely, persist nothing.
+    const stats = inEphemeralScope(() => positionPoolStats(t, scoreTournament(t)));
     const metrics: Record<string, Record<string, { n: number; mean: number; max: number; p90: number; p95: number; top5: number; top10: number }>> = {};
     for (const [pos, perRating] of Object.entries(stats)) {
       metrics[pos] = {};
