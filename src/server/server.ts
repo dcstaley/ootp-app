@@ -34,7 +34,7 @@ import { makeMatchupModel, matchupShift } from "../model/matchup.ts";           
 import { computeKSupport, effectiveStuff, isLowKSupport, pitcherSideWeights, supportPercentile, type KSupport } from "../model/k-support.ts";
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
 import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
-import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, EXPOSURE_N, exposureFieldMembers, realizedSplitsOf, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
+import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, EXPOSURE_N, exposureFieldMembers, realizedSplitsOf, leaguePlayedPopulation, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { resolveTournamentAdjustment } from "../config/tournament.ts";
 import { Repository, isSafeId } from "../persistence/repository.ts";
@@ -830,7 +830,27 @@ let leagueBaselineCache: { key: string; base: ExposureBaseline } | null = null;
 function leagueExposureBaseline(coeffs: Coeffs, model: EventModel): ExposureBaseline {
   const key = `${state.activeModelId ?? ""}|${catalogSource}`;
   if (leagueBaselineCache?.key === key) return leagueBaselineCache.base;
-  const base = computeBaseline(exposureFieldMembers(catalog.cards.filter(isBaseCard), coeffs, model), EXPOSURE_N);
+  // B2 ALIGNMENT (C2'): the baseline is the league's ACTUAL PLAYED population, variants included at
+  // the rate the league actually played them — matching `realized`, which deploymentFrom subtracts it
+  // from. Falls back to the old variant-free full catalog only when the training data is not on disk,
+  // and says so, because a silent fallback would reinstate the mismatch invisibly.
+  let pop: Array<Record<string, unknown>> | null = null;
+  if (activeModelRef) {
+    try {
+      if (existsSync(TRAINING_DIR)) {
+        const byCid = new Map(catalog.cards.filter(isBaseCard).map((c) => [cardId(c as never), c]));
+        const r = leaguePlayedPopulation(windowObs(activeModelRef.window), (cid) => byCid.get(cid), (c) => makeVariant(c as never));
+        if (r.matched > 0) pop = r.population;
+      }
+    } catch (e) {
+      console.warn(`[server] empirical league exposure population unavailable: ${String(e)}`);
+    }
+  }
+  if (!pop) {
+    console.warn("[server] exposure baseline falling back to the variant-free catalog — the deployment shift's legs are mismatched (B2)");
+    pop = catalog.cards.filter(isBaseCard);
+  }
+  const base = computeBaseline(exposureFieldMembers(pop, coeffs, model), EXPOSURE_N);
   if (mayCache()) leagueBaselineCache = { key, base };   // same rule as refFieldCache
   return base;
 }

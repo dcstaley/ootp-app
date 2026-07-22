@@ -184,3 +184,42 @@ export function realizedSplitsOf(p: {
     r_pitch_split_rp: rs?.rp.r ?? p.r_pitch_split, l_pitch_split_rp: rs?.rp.l ?? p.l_pitch_split,
   };
 }
+
+// ═══ THE EMPIRICAL LEAGUE POPULATION (B2 alignment, C2' of the constants event) ══
+//
+// THE DEFECT. `deployment = logit(realized) − logit(leagueBaseline)` compared two populations with
+// different variant policies: `realized` is measured over VARIANT-INCLUSIVE league observations
+// (training always includes variants), while `leagueBaseline` was built from
+// `catalog.cards.filter(isBaseCard)` — variant-FREE. Same defect class as the frame gap's legs, in a
+// different subsystem, and B2 sized it as MATERIAL: 5.35pp on the RHP blend weight, pitcher max
+// |dOVR| = 53% of the elite-spread SD, and top-26 membership changing in 5 of 8 format×role cells.
+//
+// THE FIX IS EMPIRICAL, NOT FABRICATED (Fable ruling (p)). The baseline is rebuilt over the league's
+// ACTUAL PLAYED POPULATION, variants included at the rate the league actually played them — which is
+// low (2.5% of qualifying pitcher usage, 11.0% hitter). It does NOT use `presenceMixture`: p=0.30 is
+// a TOURNAMENT presence prior, and importing it here would replace one mismatch with another. The
+// league leg keeps its own empirical value, which is exactly why the measured 5-8x pitcher asymmetry
+// between league and tournament presence stays in the gap where it belongs.
+
+/** The league's played population: one card per observation, using the VARIANT row where the league
+ *  actually played a variant. `cardOf` resolves a training observation's cid against the catalog;
+ *  observations with no catalog match are skipped and counted, never guessed. */
+export function leaguePlayedPopulation<T extends { cid: string; variant: boolean }>(
+  observations: readonly T[],
+  cardOf: (cid: string) => Record<string, unknown> | undefined,
+  makeVariantRow: (c: Record<string, unknown>) => Record<string, unknown>,
+): { population: Array<Record<string, unknown>>; matched: number; unmatched: number; variants: number } {
+  const population: Array<Record<string, unknown>> = [];
+  let matched = 0, unmatched = 0, variants = 0;
+  const seen = new Set<string>();
+  for (const o of observations) {
+    const key = `${o.cid}|${o.variant ? "V" : "B"}`;
+    if (seen.has(key)) continue;             // one entry per (card, variant level), not per side/year
+    const c = cardOf(o.cid);
+    if (!c) { unmatched++; continue; }
+    seen.add(key);
+    matched++;
+    if (o.variant) { variants++; population.push(makeVariantRow(c)); } else population.push(c);
+  }
+  return { population, matched, unmatched, variants };
+}
