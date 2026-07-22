@@ -73,6 +73,7 @@ const FORBIDDEN: ReadonlyArray<readonly [string, (c: Card) => boolean]> = [
   ["Clubhouse", (c) => String(c["Card Badge"] ?? "").trim() === "CS"],
   ["MissionEdition", (c) => String(c["Card Badge"] ?? "").trim() === "ME"],
   ["PTCS", (c) => String(c["Card Badge"] ?? "").trim() === "PTCS"],
+  ["IconPreOrder", (c) => String(c["Card Series"] ?? "").trim() === "Icon Pre-Orders"],
   // THE ONE FRAGILE RULE: PTWC carries no badge, no distinguishing type and no sub-type — only this
   // title prefix. A title-format change silently re-admits these cards, so it is pinned in
   // tests/variant-eligibility.test.ts rather than trusted.
@@ -89,7 +90,10 @@ const FORBIDDEN: ReadonlyArray<readonly [string, (c: Card) => boolean]> = [
  *  observed or supplied. Any consumer that treats the class rule as complete is silently wrong on
  *  every exception. */
 export const VARIANT_OVERRIDES: ReadonlySet<string> = new Set<string>([
-  "83846", // Tris Speaker BOS 1910 — badge ME, VAL 100 (Derek, 2026-07-22)
+  "83846", // Tris Speaker BOS 1910 — badge ME (Derek, 2026-07-22)
+  "82762", // Roy Campanella BRO 1951 — series Icon Pre-Orders. NOT supplied by hand: the detector
+           // below found it in the league exports (VAR=Y) the moment the Icon Pre-Orders rule
+           // landed, which is the mechanism working exactly as intended.
 ]);
 
 /** The forbidden class a card falls in, or null if none. Null does NOT mean "has a variant" — only
@@ -103,6 +107,37 @@ export function variantForbiddenClass(c: Card): string | null {
 /** CAN this card have a v5? Class default, overridden by the explicit dev-override list. */
 export const canHaveVariant = (c: Card): boolean =>
   VARIANT_OVERRIDES.has(cardId(c)) || variantForbiddenClass(c) === null;
+
+/** THE STANDING DETECTOR (Derek, 2026-07-22: "ensure we have a mechanism for detecting these as they
+ *  come up"). Given observed variant sightings — a league export row with `VAR=Y`, or a cwhit capture
+ *  row at `VLvl 5` — return the ones our class rule says are IMPOSSIBLE.
+ *
+ *  A non-empty result means exactly one of two things, and both need a human:
+ *    · a NEW DEV OVERRIDE — add the card id to VARIANT_OVERRIDES; or
+ *    · OUR CLASS RULE IS WRONG OR INCOMPLETE — a class we have not encoded, or one we encoded badly.
+ *  It can never mean "noise": an observed variant is proof a variant exists.
+ *
+ *  This is the only way the override list can grow, because it cannot be derived from the catalog —
+ *  the catalog records no variant rows at all. Run it wherever observed data enters: model training
+ *  (league `VAR` column) and each cwhit capture pull (`VLvl` column). `tests/variant-eligibility.test.ts`
+ *  runs it over both corpora on every suite run, so new data trips it without anyone remembering to look. */
+export function unexpectedVariantSightings<T extends { cardId: string; source: string }>(
+  sightings: Iterable<T>, cardOf: (id: string) => Card | undefined,
+): Array<T & { forbiddenClass: string; title: string }> {
+  const out: Array<T & { forbiddenClass: string; title: string }> = [];
+  const seen = new Set<string>();
+  for (const s of sightings) {
+    if (seen.has(s.cardId)) continue;
+    const c = cardOf(s.cardId);
+    if (!c) continue;                                   // not in this catalog snapshot — not our call
+    if (VARIANT_OVERRIDES.has(s.cardId)) continue;      // already a known, recorded exception
+    const forbiddenClass = variantForbiddenClass(c);
+    if (!forbiddenClass) continue;
+    seen.add(s.cardId);
+    out.push({ ...s, forbiddenClass, title: String(c["//Card Title"] ?? "") });
+  }
+  return out;
+}
 
 /** The rule names, for reporting and for the pin. */
 export const VARIANT_FORBIDDEN_RULES: readonly string[] = FORBIDDEN.map(([n]) => n);

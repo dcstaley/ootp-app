@@ -29,6 +29,7 @@ describe("variant eligibility", () => {
     expect(n("MissionEdition")).toBe(52);
     expect(n("PTCS")).toBe(36);
     expect(n("PTWC")).toBe(4);
+    expect(n("IconPreOrder")).toBe(4);
   });
 
   it("the rules are mutually disjoint", () => {
@@ -39,7 +40,7 @@ describe("variant eligibility", () => {
 
   it("forbids 43.9% of the catalog and over half the iron window", () => {
     const forbidden = cards.filter((c) => variantForbiddenClass(c) !== null);
-    expect(forbidden.length).toBe(1610);
+    expect(forbidden.length).toBe(1614);
     const val = (c: Card) => Number(c["Card Value"] ?? NaN);
     const iron = cards.filter((c) => val(c) <= 59);
     const ironForbidden = iron.filter((c) => variantForbiddenClass(c) !== null);
@@ -73,5 +74,64 @@ describe("variant eligibility", () => {
   it("an unforbidden card is eligible without needing an override", () => {
     const plain = cards.find((c) => variantForbiddenClass(c) === null && !VARIANT_OVERRIDES.has(cardId(c)))!;
     expect(canHaveVariant(plain)).toBe(true);
+  });
+});
+
+// ═══ THE STANDING DETECTOR ═══════════════════════════════════════════════════
+//
+// Derek, 2026-07-22: "ensure that we have a mechanism for detecting these as they come up... whether
+// that's in our training data during model training or updates to cwhit data as we pull it".
+//
+// This is that mechanism. It runs the class rule against EVERY observed variant in both corpora on
+// every suite run, so a new dev override or a missed class trips here the moment the data lands,
+// without anyone remembering to check. A failure is never noise — an observed variant is proof a
+// variant exists — so the fix is always either a new entry in VARIANT_OVERRIDES or a corrected rule.
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { unexpectedVariantSightings } from "../src/data/variants.ts";
+
+const byId = new Map(cards.map((c) => [cardId(c), c]));
+const lookup = (id: string) => byId.get(id);
+
+/** Every league export row flagged `VAR`, as (cardId, source). The league is where high-value cards
+ *  live, so it sees overrides the tournament windows structurally cannot — Tris Speaker is VAL 100. */
+function leagueSightings(dir: string, out: { cardId: string; source: string }[] = []) {
+  for (const e of readdirSync(dir)) {
+    const p = join(dir, e);
+    if (statSync(p).isDirectory()) { leagueSightings(p, out); continue; }
+    if (!/\.csv$/i.test(e)) continue;
+    const lines = readFileSync(p, "utf8").split(/\r?\n/);
+    const head = (lines[0] ?? "").split(",").map((h) => h.trim());
+    const iVar = head.indexOf("VAR"), iCid = head.indexOf("CID");
+    if (iVar < 0 || iCid < 0) continue;
+    for (let i = 1; i < lines.length; i++) {
+      const f = lines[i]!.split(",");
+      if ((f[iVar] ?? "").trim().toUpperCase() === "Y") out.push({ cardId: (f[iCid] ?? "").trim(), source: e });
+    }
+  }
+  return out;
+}
+
+describe("standing variant-override detector", () => {
+  it("no league-observed variant contradicts the class rule", () => {
+    const found = unexpectedVariantSightings(leagueSightings("League Files"), lookup);
+    expect(found.map((f) => `${f.cardId} ${f.forbiddenClass} ${f.title} [${f.source}]`),
+      "an observed variant on a forbidden class: add it to VARIANT_OVERRIDES, or fix the rule").toEqual([]);
+  });
+
+  it("the detector actually fires — it is not vacuously green", () => {
+    // Tris Speaker IS such a card; he passes only because he is in the override list. Removing that
+    // protection must surface him, or this whole mechanism proves nothing.
+    const withoutOverrides = unexpectedVariantSightings(
+      [{ cardId: "83846", source: "probe" }],
+      (id) => (id === "83846" ? byId.get(id) : undefined),
+    );
+    // He is in VARIANT_OVERRIDES, so the detector correctly stays silent...
+    expect(withoutOverrides).toEqual([]);
+    // ...and a forbidden-class card that is NOT overridden must be caught.
+    const victim = cards.find((c) => variantForbiddenClass(c) !== null && !VARIANT_OVERRIDES.has(cardId(c)))!;
+    const caught = unexpectedVariantSightings([{ cardId: cardId(victim), source: "probe" }], lookup);
+    expect(caught).toHaveLength(1);
+    expect(caught[0]!.forbiddenClass).toBe(variantForbiddenClass(victim));
   });
 });
