@@ -1,0 +1,47 @@
+################################################################################
+# ANCHOR-UNIFORMITY AUDIT.  MEASUREMENT ONLY — nothing wired.
+# tools/anchor-uniformity-audit.ts. Are the 'anchor-absorbed' level biases UNIFORM-within-role
+# (anchor OK) or CARD-CORRELATED (a constant per-role shift cannot cancel it ⇒ candidate fix)?
+################################################################################
+
+  model 'league-42-43'  catalog 'cdmx'  deployed line vs observed, Quick tiers pooled.
+  A bias FLAT across the driving rating (slope CI covers 0) is UNIFORM ⇒ the anchor absorbs it,
+  doctrine confirmed. A bias whose slope CI EXCLUDES 0 is CARD-CORRELATED ⇒ the anchor cannot
+  absorb it ⇒ REPORTED as a candidate real fix (not wired).
+
+  pit BB9  (driver: Control)   (N=546)
+    overall level bias (pred−obs): +0.86/9
+    by driver quartile:  [26-65] +0.82   [65-75] +0.89   [76-89] +0.93   [90-173] +0.79
+    slope of bias on driver: -0.00119  [-0.00272, +0.00042]  ⇒ UNIFORM (CI covers 0) — anchor absorbs; doctrine confirmed
+
+  hit BB%  (driver: Eye)   (N=684)
+    overall level bias (pred−obs): +0.96%
+    by driver quartile:  [25-63] +0.87   [63-79] +1.19   [79-100] +1.05   [100-180] +0.72
+    slope of bias on driver: -0.00067  [-0.00455, +0.00317]  ⇒ UNIFORM (CI covers 0) — anchor absorbs; doctrine confirmed
+
+  hit wOBA (driver: Power — the overshoot class)   (N=684)
+    overall level bias (pred−obs): -0.0007 wOBA
+    by driver quartile:  [1-59] -0.0008   [59-80] +0.0034   [80-96] +0.0016   [97-155] -0.0058
+    slope of bias on driver: -0.00002  [-0.00007, +0.00002]  ⇒ UNIFORM (CI covers 0) — anchor absorbs; doctrine confirmed
+    ⚠ TAIL: linear slope is flat but the quartile pattern is NON-MONOTONE (spread +0.0092) — a tail the anchor also cannot absorb (not a uniform shift). This is the known hitter-tail residual class, not a NEW linear defect.
+
+  pit wOBAA composite (driver: Stuff)   (N=546)
+    overall level bias (pred−obs): +0.0107 wOBA
+    by driver quartile:  [25-66] +0.0077   [66-80] +0.0108   [80-97] +0.0114   [97-147] +0.0120
+    slope of bias on driver: +0.00007  [+0.00003, +0.00012]  ⇒ ★ CARD-CORRELATED (CI excludes 0) — anchor CANNOT absorb; candidate fix
+
+### VERDICT
+
+  1 of 4 flagged channels are CARD-CORRELATED — the anchor cannot absorb them:
+    · pit wOBAA composite (driver: Stuff): slope +0.00007 [+0.00003, +0.00012] — CANDIDATE REAL FIX (reported, NOT wired).
+  These are not "his level win, absorbed" — they are per-card errors the calibration hides.
+
+### CROSS-ROLE BUDGET (cap mode) — does the anchor's per-role centring survive these?
+
+  Cap-mode allocates hitters-vs-pitchers by CENTRED value. A UNIFORM per-role composite bias is
+  centred away by the anchor and does not move the split; a CARD-CORRELATED one does.
+    hit composite (wOBA):  slope -0.00002 [-0.00007, +0.00002]  uniform
+    pit composite (wOBAA): slope +0.00007 [+0.00003, +0.00012]  CARD-CORRELATED
+  ⇒ cross-role budget is AT RISK: a card-correlated composite bias distorts the centred value that drives the split (candidate fix, not wired).
+
+(end of artifact — anchor-uniformity audit)
