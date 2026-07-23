@@ -37,7 +37,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, productionFieldStats, applyWobaWeights, computeDerived,
+  makeRawPolyModel, productionFieldStats, cohortSelectForModel, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolPitMeansOwn, FIELD_N,
   kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
@@ -69,7 +69,7 @@ const lbl = (s: string) => s.replace(/\s*\(from .*\)$/, "");
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
 const state = (await repo.load<{ activeModelId?: string; catalogSourceId?: string }>("state", "app")) ?? {};
-type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
+type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans; cohortRule?: string; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
 const trained = (await repo.loadAll<TM_>("trained-models")).find((x) => x.id === state.activeModelId);
 if (!trained?.eventForm || !trained.wobaWeights || !trained.platoon) throw new Error("active model missing eventForm/wobaWeights/platoon");
 if (!trained.trainingMeans) throw new Error("active model has NO trainingMeans — the gap convention needs the artifact frame");
@@ -87,6 +87,14 @@ const depsBase = {
   pitExp: new Map(trained.platoon.pit.map((p) => [p.hand, { wR: p.vsRHB, wL: p.vsLHB }])),
   hitExp: new Map(trained.platoon.hit.map((p) => [p.hand, { wR: p.vsRHP, wL: p.vsLHP }])),
 };
+// COHORT-RULE EVENT (2026-07-23): resolve the pool-leg selection from the ACTIVE model's tag, so the
+// gate sweep measures on the SAME coordinate the model was trained on (same-construction invariant).
+// Untagged model ⇒ undefined ⇒ model-woba (bit-identical). Built once (coeffs-independent ref).
+const bqSel = tournaments.find((t) => t.id === "bronze-quick")!;
+const selCoeffs = resolveCoeffs(model, eras.get(bqSel.eraId)!, parks.get(bqSel.parkId)!, bqSel.softcaps);
+applyWobaWeights(selCoeffs, trained.wobaWeights!);
+const select = cohortSelectForModel(trained.cohortRule, baseCards, selCoeffs, rp);
+if (trained.cohortRule) console.error(`[c6] cohort rule '${trained.cohortRule}' → z-sum pool leg active`);
 
 function rng(seed: number): () => number {
   let a = seed >>> 0;
@@ -159,8 +167,8 @@ for (const [fi, fm] of CWHIT_CORPUS.entries()) {
   const basePool = baseCards.filter((c) => inV(c) && rowEligible(c as any, t));
   if (!basePool.length) { skipped.push(`${fm.key}: empty eligible pool`); continue; }
 
-  const refF = productionFieldStats(baseCards, coeffsF, rp);
-  const poolF = productionFieldStats(basePool, coeffsF, rp);
+  const refF = productionFieldStats(baseCards, coeffsF, rp, true, undefined, select);
+  const poolF = productionFieldStats(basePool, coeffsF, rp, true, undefined, select);
   const pt = buildPoolTransform(refF, poolF, depsBase.envelope);
   const shift = buildFrameShift(TM, poolF);
   const gapK = shift.pit.vR.stu ?? 0;
@@ -177,7 +185,7 @@ for (const [fi, fm] of CWHIT_CORPUS.entries()) {
     valueMax: t.card_value_max ?? Infinity,
     eligible: (c: Record<string, unknown>) => rowEligible(c as unknown as Card, t),
   };
-  const depsF: SampleDeps = { ...depsBase, coeffs: coeffsF, derived: derivedF, ref: refF, formats: [win] };
+  const depsF: SampleDeps = { ...depsBase, coeffs: coeffsF, derived: derivedF, ref: refF, formats: [win], select };
   // THREE ARMS, because "everything shipping" spans two roles and the leak checks need to isolate
   // each side's corrections:
   //   pre    no corrections at all

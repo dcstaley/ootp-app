@@ -49,7 +49,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, productionFieldStats, applyWobaWeights, computeDerived,
+  makeRawPolyModel, productionFieldStats, cohortSelectForModel, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolPitMeansOwn, FIELD_N,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -83,7 +83,7 @@ const lbl = (s: string) => s.replace(/\s*\(from .*\)$/, "");
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
 const state = (await repo.load<{ activeModelId?: string; catalogSourceId?: string }>("state", "app")) ?? {};
-type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
+type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans; cohortRule?: string; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
 const trained = (await repo.loadAll<TM_>("trained-models")).find((x) => x.id === state.activeModelId);
 if (!trained?.eventForm || !trained.wobaWeights || !trained.platoon) throw new Error("active model missing eventForm/wobaWeights/platoon");
 if (!trained.trainingMeans) throw new Error("active model has NO trainingMeans — the gap convention needs the artifact frame");
@@ -99,6 +99,9 @@ applyWobaWeights(coeffs, trained.wobaWeights);
 const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
+// COHORT-RULE EVENT: pool leg selects by the ACTIVE model's rule (same-construction with trainingMeans).
+const cohortSel = cohortSelectForModel(trained.cohortRule, baseCards, coeffs, rp);
+if (trained.cohortRule) console.error(`[c3] cohort rule '${trained.cohortRule}' -> z-sum pool leg active`);
 const depsBase = {
   baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W: trained.wobaWeights as WW,
   envelope: trained.ratingEnvelope,
@@ -277,7 +280,7 @@ const P_BAND = [0, 0.25, 0.30, 0.35];
 
 const poolOf = (win: ValueWindow) => baseCards.filter((c) => inValueWindow(c, win));
 const gapAt = (basePool: Card[], p: number, cf = coeffs) =>
-  buildFrameShift(TM, productionFieldStats(basePool, cf, rp, true, p)).pit.vR.stu ?? 0;
+  buildFrameShift(TM, productionFieldStats(basePool, cf, rp, true, p, cohortSel)).pit.vR.stu ?? 0;
 
 const gapTable = new Map<number, Map<string, number>>();
 for (const p of P_BAND) {
@@ -288,7 +291,7 @@ for (const p of P_BAND) {
 // INSTRUMENT CHECK: the explicit-p call at the shipped p must be the DEFAULT call, bit-for-bit.
 let instrDelta = 0;
 for (const win of QUICK) {
-  const a = buildFrameShift(TM, productionFieldStats(poolOf(win), coeffs, rp)).pit.vR.stu ?? 0;
+  const a = buildFrameShift(TM, productionFieldStats(poolOf(win), coeffs, rp, true, undefined, cohortSel)).pit.vR.stu ?? 0;
   instrDelta = Math.max(instrDelta, Math.abs(a - gapTable.get(PRESENCE_P)!.get(win.tier)!));
 }
 const spanOf = (m: Map<string, number>) => {
@@ -327,15 +330,15 @@ const scoreAccept = (cells: TierCell[], s: (g: number) => number) =>
   cells.map((c) => ({ tier: c.tier, s: s(c.gap), inside: s(c.gap) >= c.needCI.lo && s(c.gap) <= c.needCI.hi }));
 
 function buildLeg(p: number, bar: number): LegResult {
-  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp, true, p);
-  const deps: SampleDeps = { ...depsBase, ref, presenceP: p, minBf: bar };
+  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp, true, p, cohortSel);
+  const deps: SampleDeps = { ...depsBase, ref, presenceP: p, minBf: bar, select: cohortSel };
   const s = buildCwhitSample(deps);
 
   const cells: TierCell[] = [];
   let seedStep = 0;                                  // battery-needs-vs-bar's per-tier seed stream
   for (const win of QUICK) {
     const basePool = poolOf(win);
-    const poolField = productionFieldStats(basePool, coeffs, rp, true, p);
+    const poolField = productionFieldStats(basePool, coeffs, rp, true, p, cohortSel);
     const gap = buildFrameShift(TM, poolField).pit.vR.stu ?? 0;
     const pt = buildPoolTransform(ref, poolField, depsBase.envelope);
     const kbar600 = poolPitMeansOwn(presenceMixture(basePool, p, PRESENCE_M), coeffs, rp, pt, FIELD_N * PRESENCE_M).k;
@@ -484,8 +487,8 @@ for (const [vi, V] of VALIDATE.entries()) {
   const derivedF = computeDerived(coeffsF, true);
   const inV = (c: Card) => { const v = n_(c["Card Value"]); return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const basePool = baseCards.filter((c) => inV(c) && rowEligible(c as any, t));
-  const refF = productionFieldStats(baseCards, coeffsF, rp);      // env-matched reference, one definition
-  const poolF = productionFieldStats(basePool, coeffsF, rp);
+  const refF = productionFieldStats(baseCards, coeffsF, rp, true, undefined, cohortSel);      // env-matched reference, one definition
+  const poolF = productionFieldStats(basePool, coeffsF, rp, true, undefined, cohortSel);
   const pt = buildPoolTransform(refF, poolF, depsBase.envelope);
   const gap = buildFrameShift(TM, poolF).pit.vR.stu ?? 0;
   const kbar600 = poolPitMeansOwn(presenceMixture(basePool), coeffsF, rp, pt, FIELD_N * PRESENCE_M).k;
@@ -499,7 +502,7 @@ for (const [vi, V] of VALIDATE.entries()) {
     valueMax: t.card_value_max ?? Infinity,
     eligible: (c: Record<string, unknown>) => rowEligible(c as unknown as Card, t),
   };
-  const depsF: SampleDeps = { ...depsBase, coeffs: coeffsF, derived: derivedF, ref: refF, formats: [win] };
+  const depsF: SampleDeps = { ...depsBase, coeffs: coeffsF, derived: derivedF, ref: refF, formats: [win], select: cohortSel };
   const pre = buildCwhitSample(depsF);
   const post = buildCwhitSample({ ...depsF, kSpreadPit: new Map<string, KSpreadPit>([[fm.key, { s, mean: kbar600 }]]) });
   const postBy = new Map(post.recs.filter((r) => r.role === "pit").map((r) => [`${r.title}|${r.vlvl}`, r]));
@@ -983,7 +986,7 @@ for (const t of tournaments) {
   const inV = (c: Card) => { const v = n_(c["Card Value"]); return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const pool = baseCards.filter((c) => inV(c) && rowEligible(c as any, t));
   if (!pool.length) continue;
-  const g = buildFrameShift(TM, productionFieldStats(pool, cf, rp)).pit.vR.stu ?? 0;
+  const g = buildFrameShift(TM, productionFieldStats(pool, cf, rp, true, undefined, cohortSel)).pit.vR.stu ?? 0;
   domRows.push({ id: t.id, gap: g, sNew: sPrimary(g), sOld: sOld(g), pool: pool.length });
 }
 domRows.sort((a, b) => b.gap - a.gap);

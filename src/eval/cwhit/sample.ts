@@ -17,6 +17,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import type { Coeffs, Derived, CalScales } from "../../config/types.ts";
 import {
   FIELD_N, computeUnifiedFieldStats, productionFieldStats, buildPoolTransform, applyAffine, calibrate,
+  type RatingRef,
   type EventModel, type FieldStats, type PoolTransform, type RatingEnvelope,
 } from "../../scoring-core/index.ts";
 // Reached into directly rather than re-exported from scoring-core/index.ts: these are the SCORING
@@ -204,6 +205,10 @@ export interface SampleDeps {
    *  A caller that moves this MUST move `ref` to the same p, or the two halves of the pool transform
    *  are measured at different presences. */
   presenceP?: number;
+  /** COHORT-RULE EVENT (2026-07-23): the model-free z-sum cohort refs, present iff the active model
+   *  carries the tag (cohortSelectForModel). Threaded so the pool leg here selects the SAME way the
+   *  `ref` leg the tool passes in was built — the same-construction invariant. Absent ⇒ model-woba. */
+  select?: { hit: RatingRef; pit: RatingRef };
 }
 
 /** The corpus a sample is built from.
@@ -559,7 +564,7 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
     // variant-free field at an unscaled FIELD_N while production had moved to the presence-weighted
     // construction, so the eval instrument measured a different coordinate from the one production
     // scored on. `productionFieldStats` is now the single definition both call.
-    const pt = buildPoolTransform(d.ref, productionFieldStats(basePool, d.coeffs, d.model, true, d.presenceP), d.envelope);
+    const pt = buildPoolTransform(d.ref, productionFieldStats(basePool, d.coeffs, d.model, true, d.presenceP, d.select), d.envelope);
     // Optional pitcher spread + hitter tail for this tier — threaded into calibrate too (production
     // computes the anchor on the SAME corrected events the scores use). sHit=1 ⇒ the hitter K leg is
     // untouched (applyKSpread short-circuits s===1 to the exact raw K); the BUILD-3 HR/BABIP fields

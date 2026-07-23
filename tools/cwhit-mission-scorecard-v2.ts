@@ -37,7 +37,7 @@ import { rowEligible } from "../src/config/eligibility.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import type { CalScales, Coeffs, Derived } from "../src/config/types.ts";
 import {
-  FIELD_N, makeRawPolyModel, computeUnifiedFieldStats, productionFieldStats, applyWobaWeights, computeDerived,
+  FIELD_N, makeRawPolyModel, computeUnifiedFieldStats, productionFieldStats, cohortSelectForModel, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolPitMeansOwn, kSpreadPitRamp, pitSpreadHrRamp,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
 } from "../src/scoring-core/index.ts";
@@ -80,6 +80,7 @@ const state = (await repo.load<{ activeModelId?: string; catalogSourceId?: strin
 type TM = {
   id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope;
   trainingMeans?: TrainingMeans;
+  cohortRule?: string;
   platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] };
 };
 const trained = (await repo.loadAll<TM>("trained-models")).find((x) => x.id === state.activeModelId);
@@ -97,6 +98,12 @@ const hitExp = new Map(trained.platoon.hit.map((p) => [p.hand, { wR: p.vsRHP, wL
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards: Card[] = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards
   .filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
+// COHORT-RULE EVENT: pool leg selects by the ACTIVE model's rule (same-construction with trainingMeans).
+const scSelT = [...tourneys.values()].find((t) => t.id === "bronze-quick") ?? [...tourneys.values()][0]!;
+const scSelCoeffs = resolveCoeffs(model, eras.get(scSelT.eraId)!, parks.get(scSelT.parkId)!, scSelT.softcaps);
+applyWobaWeights(scSelCoeffs, W);
+const cohortSel = cohortSelectForModel(trained.cohortRule, baseCards, scSelCoeffs, rp);
+if (trained.cohortRule) console.error(`[scorecard] cohort rule '${trained.cohortRule}' -> z-sum pool leg active`);
 
 const CORRECTIONS = !process.argv.includes("--no-corrections");
 const SOURCE: CwhitSource = { kind: "capture", dir: CAPTURE_DIR_2026_07_21 };   // full depth; no derived top-N cut
@@ -165,7 +172,7 @@ const FORMATS: Fmt[] = CWHIT_CORPUS.map((reg) => {
  *  neutral bag. This is the piece v1 could not do. */
 function runFormat(fm: Fmt): { recs: Rec[]; notices: string[]; missedProj: number; cal: CalScales } {
   const { coeffs, derived, win } = fm;
-  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp);   // env-MATCHED reference
+  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp, true, undefined, cohortSel);   // env-MATCHED reference
   const basePool = baseCards.filter((c) => inValueWindow(c, win));
   fm.nPool = basePool.length;
 
@@ -174,7 +181,7 @@ function runFormat(fm: Fmt): { recs: Rec[]; notices: string[]; missedProj: numbe
   if (CORRECTIONS) {
     const TMeans = trained!.trainingMeans;
     if (!TMeans) throw new Error("corrections ON needs the active model's trainingMeans — or run with --no-corrections");
-    const poolField = productionFieldStats(basePool, coeffs, rp);
+    const poolField = productionFieldStats(basePool, coeffs, rp, true, undefined, cohortSel);
     const pt = buildPoolTransform(ref, poolField, envelope);
     const shift = buildFrameShift(TMeans, poolField);
     const pm = poolPitMeansOwn(basePool, coeffs, rp, pt, FIELD_N);
@@ -186,7 +193,7 @@ function runFormat(fm: Fmt): { recs: Rec[]; notices: string[]; missedProj: numbe
 
   const deps: SampleDeps = {
     baseCards, coeffs, derived, eventForm: trained!.eventForm!, model: rp, W, ref, envelope,
-    pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap, formats: [win], source: SOURCE,
+    pitExp, hitExp, kSpreadPit: ksMap, hitTail: htMap, formats: [win], source: SOURCE, select: cohortSel,
   };
   const r = buildCwhitSample(deps);
   return { recs: r.recs, notices: r.notices, missedProj: r.projJoin.missed, cal: r.cals[0]?.cal ?? {} };

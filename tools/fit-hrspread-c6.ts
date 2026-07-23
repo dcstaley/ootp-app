@@ -34,7 +34,7 @@ import { seedAccounts } from "../src/data/account-seed.ts";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
 import {
-  makeRawPolyModel, productionFieldStats, applyWobaWeights, computeDerived,
+  makeRawPolyModel, productionFieldStats, cohortSelectForModel, applyWobaWeights, computeDerived,
   buildPoolTransform, buildFrameShift, poolPitMeansOwn, FIELD_N,
   kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR,
   type EventForm, type FieldStats, type RatingEnvelope, type WobaWeights, type TrainingMeans,
@@ -67,7 +67,7 @@ const lbl = (s: string) => s.replace(/\s*\(from .*\)$/, "");
 const repo = new Repository("data");
 await seedDefaults(repo); await seedEras(repo); await seedAccounts(repo);
 const state = (await repo.load<{ activeModelId?: string; catalogSourceId?: string }>("state", "app")) ?? {};
-type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
+type TM_ = { id: string; eventForm?: EventForm; wobaWeights?: WobaWeights; ratingEnvelope?: RatingEnvelope; trainingMeans?: TrainingMeans; cohortRule?: string; platoon?: { pit: { hand: string; vsRHB: number; vsLHB: number }[]; hit: { hand: string; vsRHP: number; vsLHP: number }[] } };
 const trained = (await repo.loadAll<TM_>("trained-models")).find((x) => x.id === state.activeModelId);
 if (!trained?.eventForm || !trained.wobaWeights || !trained.platoon) throw new Error("active model missing eventForm/wobaWeights/platoon");
 if (!trained.trainingMeans) throw new Error("active model has NO trainingMeans — the gap convention needs the artifact frame");
@@ -83,6 +83,9 @@ applyWobaWeights(coeffs, trained.wobaWeights);
 const derived = computeDerived(coeffs);
 const srcId = state.catalogSourceId ?? "cdmx";
 const baseCards = parseCatalogCsv(readFileSync(`data/imports/${srcId}.csv`, "utf8")).cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
+// COHORT-RULE EVENT: pool leg selects by the ACTIVE model's rule (same-construction with trainingMeans).
+const cohortSel = cohortSelectForModel(trained.cohortRule, baseCards, coeffs, rp);
+if (trained.cohortRule) console.error(`[hr] cohort rule '${trained.cohortRule}' -> z-sum pool leg active`);
 const depsBase = {
   baseCards, coeffs, derived, eventForm: trained.eventForm, model: rp, W: trained.wobaWeights as WW,
   envelope: trained.ratingEnvelope,
@@ -332,7 +335,7 @@ const P_BAND = [0, 0.25, 0.30, 0.35];
 
 const poolOf = (win: ValueWindow) => baseCards.filter((c) => inValueWindow(c, win));
 const gapAt = (basePool: Card[], p: number, cf = coeffs) =>
-  buildFrameShift(TM, productionFieldStats(basePool, cf, rp, true, p)).pit.vR.hrr ?? 0;
+  buildFrameShift(TM, productionFieldStats(basePool, cf, rp, true, p, cohortSel)).pit.vR.hrr ?? 0;
 
 const gapTable = new Map<number, Map<string, number>>();
 for (const p of P_BAND) {
@@ -343,7 +346,7 @@ for (const p of P_BAND) {
 // INSTRUMENT CHECK: the explicit-p call at the shipped p must be the DEFAULT call, bit-for-bit.
 let instrDelta = 0;
 for (const win of QUICK) {
-  const a = buildFrameShift(TM, productionFieldStats(poolOf(win), coeffs, rp)).pit.vR.hrr ?? 0;
+  const a = buildFrameShift(TM, productionFieldStats(poolOf(win), coeffs, rp, true, undefined, cohortSel)).pit.vR.hrr ?? 0;
   instrDelta = Math.max(instrDelta, Math.abs(a - gapTable.get(PRESENCE_P)!.get(win.tier)!));
 }
 // The HR identifiability prong is measured over ALL FIVE tiers: the fitted set is not known until the
@@ -372,7 +375,7 @@ for (const t of tournaments) {
   const inV = (c: Card) => { const v = n_(c["Card Value"]); return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const pool = baseCards.filter((c) => inV(c) && rowEligible(c as any, t));
   if (!pool.length) continue;
-  appliedGaps.push({ id: t.id, gap: buildFrameShift(TM, productionFieldStats(pool, cf, rp)).pit.vR.hrr ?? 0 });
+  appliedGaps.push({ id: t.id, gap: buildFrameShift(TM, productionFieldStats(pool, cf, rp, true, undefined, cohortSel)).pit.vR.hrr ?? 0 });
 }
 const APPLIED = appliedGaps.map((a) => a.gap);
 
@@ -401,7 +404,7 @@ const scoreAccept = (cells: TierCell[], s: (g: number) => number) =>
   cells.map((c) => ({ tier: c.tier, s: s(c.gap), inside: s(c.gap) >= c.needCI.lo && s(c.gap) <= c.needCI.hi }));
 
 function buildLeg(p: number, bar: number): LegResult {
-  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp, true, p);
+  const ref: FieldStats = productionFieldStats(baseCards, coeffs, rp, true, p, cohortSel);
 
   // ── PER-TIER PREP: the hrr gap (fit coordinate), the stu gap (K-ramp coordinate), the pool means,
   //    and the shipped C3 K-ramp scalar. Computed BEFORE the sample so the K-ramp baseline can be
@@ -410,7 +413,7 @@ function buildLeg(p: number, bar: number): LegResult {
   const prep: Prep[] = [];
   for (const win of QUICK) {
     const basePool = poolOf(win);
-    const poolField = productionFieldStats(basePool, coeffs, rp, true, p);
+    const poolField = productionFieldStats(basePool, coeffs, rp, true, p, cohortSel);
     const fs = buildFrameShift(TM, poolField);
     const gapHr = fs.pit.vR.hrr ?? 0, gapK = fs.pit.vR.stu ?? 0;
     const pt = buildPoolTransform(ref, poolField, depsBase.envelope);
@@ -422,7 +425,7 @@ function buildLeg(p: number, bar: number): LegResult {
   // hr9 pred equals its no-K-ramp value; but the DEPLOYED line and calibrate() see the K ramp exactly
   // as production does, which is what the env-bearing held-out formats read.
   const kSpreadBaseline = new Map<string, KSpreadPit>(prep.map((x) => [x.tier, { s: x.sK, mean: x.kbarK, sHr: 1, meanHr: x.hrbar600 }]));
-  const deps: SampleDeps = { ...depsBase, ref, presenceP: p, minBf: bar, kSpreadPit: kSpreadBaseline };
+  const deps: SampleDeps = { ...depsBase, ref, presenceP: p, minBf: bar, kSpreadPit: kSpreadBaseline, select: cohortSel };
   const s = buildCwhitSample(deps);
 
   const cells: TierCell[] = [];
@@ -575,8 +578,8 @@ for (const [vi, V] of VALIDATE.entries()) {
   const derivedF = computeDerived(coeffsF, true);
   const inV = (c: Card) => { const v = n_(c["Card Value"]); return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
   const basePool = baseCards.filter((c) => inV(c) && rowEligible(c as any, t));
-  const refF = productionFieldStats(baseCards, coeffsF, rp);
-  const poolF = productionFieldStats(basePool, coeffsF, rp);
+  const refF = productionFieldStats(baseCards, coeffsF, rp, true, undefined, cohortSel);
+  const poolF = productionFieldStats(basePool, coeffsF, rp, true, undefined, cohortSel);
   const pt = buildPoolTransform(refF, poolF, depsBase.envelope);
   const fs = buildFrameShift(TM, poolF);
   const gapHr = fs.pit.vR.hrr ?? 0, gapK = fs.pit.vR.stu ?? 0;
@@ -589,7 +592,7 @@ for (const [vi, V] of VALIDATE.entries()) {
     valueMax: t.card_value_max ?? Infinity,
     eligible: (c: Record<string, unknown>) => rowEligible(c as unknown as Card, t),
   };
-  const depsF: SampleDeps = { ...depsBase, coeffs: coeffsF, derived: derivedF, ref: refF, formats: [win] };
+  const depsF: SampleDeps = { ...depsBase, coeffs: coeffsF, derived: derivedF, ref: refF, formats: [win], select: cohortSel };
   // PRE = K ramp ON, HR OFF.  POST = K ramp ON, HR = fitted s_hr.  Both carry the shipped K ramp.
   const preKS = new Map<string, KSpreadPit>([[fm.key, { s: sK, mean: pm.k, sHr: 1, meanHr: pm.hr }]]);
   const postKS = new Map<string, KSpreadPit>([[fm.key, { s: sK, mean: pm.k, sHr: sHr, meanHr: pm.hr }]]);
