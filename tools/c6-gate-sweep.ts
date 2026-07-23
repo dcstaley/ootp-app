@@ -331,21 +331,26 @@ const failsIn = (s: string, g: (r: Row) => string) => stratumOf(s).filter((r) =>
 // CI-CLEAR BEYOND the published interval is new information that blocks again. This is the compute-
 // then-report handling, made standing.
 //
-// The distinction Fable drew, on the record: staleness FIXABLE BY EXISTING TOOLS (the HR ramp and
-// the hitter tail, both re-fittable right now) is UNFINISHED WORK, never a residual. So only these
-// two cells are carved; every other blocking failure stands.
+// The distinction Fable drew, on the record: staleness FIXABLE BY EXISTING TOOLS is UNFINISHED WORK,
+// never a residual. The K and HR ramps WERE re-fittable and were refit (they ship). The HITTER TAIL
+// was refit too — but the refit STOPPED (its correction is under-determined on this coordinate; the
+// λ-equivalence sets are wide, and the paired HR+BABIP elite-power residual is +1.24 [0.10,2.30]).
+// Its FIX DOES NOT EXIST YET (family/coordinate work, sequenced after task 2 opens), so Fable ruled
+// it a PUBLISHED RESIDUAL (2026-07-22, option (a)): ship C3+HR, keep the current PINNED_HIT_TAIL live
+// but flagged, and track its three C6 cells with gold semantics. Stale-ON beats OFF decisively
+// (pre-correction hitter slopes ~0.35-0.55 vs the stale misses 0.80-1.05).
+type PubChan = "K" | "G2" | "hitHR" | "hitBAB" | "hitSO";
 interface PubResid {
-  key: string; channel: "K" | "G2"; lo: number; hi: number; what: string;
+  key: string; channel: PubChan; lo: number; hi: number; what: string;
   /** the quantity re-measured this sweep, and whether it grew CI-clear WORSE than [lo, hi] */
   measure: (r: Row) => { est: number; cLo: number; cHi: number };
-  /** direction the residual worsens: K grows MORE POSITIVE (bigger under-correction), G2 MORE NEGATIVE */
+  /** direction the residual worsens (away from the good value) */
   worse: "up" | "down";
 }
 const PUBLISHED: PubResid[] = [
   {
     key: "gold-quick", channel: "K", lo: 0.24, hi: 0.63,
     what: "gold K residual (need − s), composition axis — ruling (y), amendment A2.3",
-    // need − s, re-measured: the pre-correction slope IS the need, s is the shipped constant.
     measure: (r) => ({ est: r.kPre - r.sK, cLo: r.kPreCI.lo - r.sK, cHi: r.kPreCI.hi - r.sK }),
     worse: "up",
   },
@@ -353,6 +358,29 @@ const PUBLISHED: PubResid[] = [
     key: "live-open-daily", channel: "G2", lo: -0.183, hi: -0.013,
     what: "live-pool ordering cost (Δcorr), composition axis — published residual #2, expanded to the G2 leg",
     measure: (r) => ({ est: r.corrPost - r.corrPre, cLo: r.dCorrCI.lo, cHi: r.dCorrCI.hi }),
+    worse: "down",
+  },
+  // ── HITTER-TAIL RESIDUAL (Fable option (a), 2026-07-22) — the three C6 cells, gold-semantics ──
+  // The tracked quantity is the achieved slope's distance from 1 in the direction it is already off.
+  // Published intervals are the FIRST-SWEEP CIs, so a later sweep drifting CI-clear further from 1
+  // re-blocks. The under-determination spreads and the paired-elite +1.24 travel in §2b's note (they
+  // are refit-artifact quantities, not re-measured by a baseline sweep).
+  {
+    key: "iron-quick", channel: "hitSO", lo: 1.01, hi: 1.11,
+    what: "hitter SO% over-correction (achieved slope > 1), stale PINNED_HIT_TAIL — hitter-tail residual",
+    measure: (r) => ({ est: r.hSoPost, cLo: r.hSoCI.lo, cHi: r.hSoCI.hi }),
+    worse: "up",
+  },
+  {
+    key: "bronze-quick", channel: "hitHR", lo: 0.83, hi: 0.92,
+    what: "hitter HR600 over-correction (achieved slope < 1), stale PINNED_HIT_TAIL — hitter-tail residual",
+    measure: (r) => ({ est: r.hHrPost, cLo: r.hHrCI.lo, cHi: r.hHrCI.hi }),
+    worse: "down",
+  },
+  {
+    key: "silver-quick", channel: "hitBAB", lo: 0.66, hi: 0.94,
+    what: "hitter BABIP over-correction (achieved slope < 1), stale PINNED_HIT_TAIL — hitter-tail residual",
+    measure: (r) => ({ est: r.hBabPost, cLo: r.hBabCI.lo, cHi: r.hBabCI.hi }),
     worse: "down",
   },
 ];
@@ -369,7 +397,7 @@ for (const pr of PUBLISHED) {
   const grew = pr.worse === "up" ? m.cLo > pr.hi : m.cHi < pr.lo;
   carved.push({ pr, row, est: m.est, cLo: m.cLo, cHi: m.cHi, grew });
 }
-const isCarved = (tid: string, channel: "K" | "G2") =>
+const isCarved = (tid: string, channel: PubChan) =>
   carved.find((c) => c.pr.key === tid && c.pr.channel === channel && !c.grew) !== undefined;
 
 // THE BLOCKING SET. Stratum A is the CORE and its failures block. B and C carry layers that are not
@@ -385,8 +413,8 @@ for (const r of rows) if (g2(r) === "FAIL" && !isCarved(r.tid, "G2")) blocking.p
 // A published residual that GREW CI-clear beyond its interval re-blocks, naming itself as new info.
 for (const c of carved) if (c.grew) blocking.push(`PUBLISHED RESIDUAL GREW: ${lbl(c.row.label)} ${c.pr.channel} now ${sgn(c.est, 3)} [${sgn(c.cLo, 3)},${sgn(c.cHi, 3)}] — CI-clear beyond the published [${sgn(c.pr.lo, 3)},${sgn(c.pr.hi, 3)}] (${c.pr.what})`);
 for (const r of stratumOf("A")) {
-  for (const [nm, cx, post] of [["HR600", r.hHrCI, r.hHrPost], ["BABIP", r.hBabCI, r.hBabPost], ["SO%", r.hSoCI, r.hSoPost]] as [string, { lo: number; hi: number }, number][]) {
-    if (gHit(r, cx) === "FAIL") blocking.push(`G1-HIT ${nm} FAIL in stratum A: ${lbl(r.label)} post ${f(post, 2)} [${f(cx.lo, 2)},${f(cx.hi, 2)}]`);
+  for (const [nm, cx, post, ch] of [["HR600", r.hHrCI, r.hHrPost, "hitHR"], ["BABIP", r.hBabCI, r.hBabPost, "hitBAB"], ["SO%", r.hSoCI, r.hSoPost, "hitSO"]] as [string, { lo: number; hi: number }, number, PubChan][]) {
+    if (gHit(r, cx) === "FAIL" && !isCarved(r.tid, ch)) blocking.push(`G1-HIT ${nm} FAIL in stratum A: ${lbl(r.label)} post ${f(post, 2)} [${f(cx.lo, 2)},${f(cx.hi, 2)}]`);
   }
 }
 for (const r of rows) {
@@ -515,18 +543,22 @@ say("  Fable ruling 2026-07-22: a published residual is a defect whose FIX DOES 
 say("  and live-pool both localise to the composition layer, task 2, not built). It leaves the");
 say("  blocking set — a ship cannot be blocked on a defect nothing can currently fix — but it is");
 say("  RE-MEASURED every sweep, and GROWTH CI-CLEAR beyond the published interval blocks again.");
-say("  Staleness FIXABLE BY EXISTING TOOLS is unfinished work, never a residual — only these two");
-say("  cells are carved; every stale-correction failure below still stands.");
+say("  Staleness FIXABLE BY EXISTING TOOLS is unfinished work, never a residual. The K and HR ramps");
+say("  WERE re-fittable and were refit (they ship). The BUILD-2 hitter tail was refit too, but the");
+say("  refit STOPPED — the correction is under-determined on this coordinate (wide λ-equivalence sets)");
+say("  and the paired HR+BABIP elite-power residual is +1.24 [0.10, 2.30]; its fix does not exist yet");
+say("  (family/coordinate work, sequenced after task 2). So Fable ruled it a published residual too.");
 say();
 say(`  cell                        channel   published interval    re-measured this sweep      status`);
 for (const c of carved) {
   say(`  ${pad(lbl(c.row.label), 26)} ${pad(c.pr.channel, 8)}  [${sgn(c.pr.lo, 3)}, ${sgn(c.pr.hi, 3)}]     ${pad(`${sgn(c.est, 3)} [${sgn(c.cLo, 3)}, ${sgn(c.cHi, 3)}]`, 24)}  ${c.grew ? "⚠ GREW — RE-BLOCKS" : "within interval — carved"}`);
 }
 for (const c of carved) say(`    · ${lbl(c.row.label)} ${c.pr.channel}: ${c.pr.what}`);
-say(`  The gold K residual is re-measured as (pre-correction slope − shipped s): the pre-correction`);
-say(`  slope IS the tier's need, and s is a constant, so their difference is the same quantity C3`);
-say(`  published. The live G2 residual is the paired Δcorr directly. Both matched their published`);
-say(`  intervals this sweep, which is what a first tracking read should show.`);
+say(`  The gold K residual is re-measured as (pre-correction slope − shipped s). The live G2 residual`);
+say(`  is the paired Δcorr. The three HITTER-TAIL cells re-measure the achieved slope directly; their`);
+say(`  under-determination spreads (2.02/1.48/1.87× local need-SE) and the paired-elite +1.24 travel`);
+say(`  with the residual from the refit artifact (fixtures/cwhit-hittail-c6-2026-07-22.txt) — they are`);
+say(`  refit quantities, not re-measured by a baseline sweep. All carved cells matched intervals here.`);
 say();
 
 say("### 3. VERDICT");
@@ -535,14 +567,29 @@ if (blocking.length) {
   say(`  STOP. ${blocking.length} blocking failure(s) (published residuals excluded — see §2b):`);
   for (const b of blocking) say(`    · ${b}`);
   say();
-  say(`  READING: with the two published residuals carved, EVERY remaining blocking failure is a`);
-  say(`  STALE CORRECTION — the HR ramp (bronze G1-HR, late-bronze G2) and the BUILD-2 hitter tail`);
-  say(`  (iron SO%, bronze HR600, silver BABIP), both with gate records set at the PRE-C1/C2'`);
-  say(`  coordinate and never re-fit on the current one. Only C3's K ramp was re-fit, and it passes.`);
-  say(`  This is the coherent picture Fable's option (a) addresses: refit both stale corrections on`);
-  say(`  the current coordinate, then ONE C6 over the coherent triple.`);
+  say(`  READING: C3's K ramp and the HR-ramp refit both PASS the core (stratum A) on this coordinate;`);
+  say(`  the hitter-tail cells are carved as the published residual Fable ruled. What remains blocking`);
+  say(`  is a STRATUM-B item on an env-bearing daily — see the note below on whether it is a core`);
+  say(`  defect or a stratified diagnostic per A1.3.`);
   say();
   say(`  Nothing is overruled here. Overrules are Fable's or Derek's, and this tool does not make them.`);
+  say();
+  const lb = rows.find((r) => r.tid === "late-bronze");
+  if (lb && g2(lb) === "FAIL") {
+    say(`  THE ONE REMAINING ITEM — Late Bronze G2 — AND THE A1.3 QUESTION IT RAISES:`);
+    say(`    Late Bronze is a STRATUM-B env-bearing daily (era-1979). Both pitcher channels CALIBRATE`);
+    say(`    it: G1-K ${g1k(lb)} (post ${f(lb.kPost, 2)}), G1-HR ${g1hr(lb)} (post ${f(lb.hrPost, 2)}). Only the composite ordering`);
+    say(`    drops: corr ${f(lb.corrPre, 3)} → ${f(lb.corrPost, 3)}, Δ ${sgn(lb.corrPost - lb.corrPre, 3)} [${sgn(lb.dCorrCI.lo, 3)}, ${sgn(lb.dCorrCI.hi, 3)}] at N=${lb.judged} — marginal (upper CI just`);
+    say(`    below 0). It does NOT appear in stratum A: every Quick tier passes G2 (${stratumOf("A").filter((r) => g2(r) === "PASS").length}/${stratumOf("A").length}).`);
+    say(`    Per amendment A1.3 a defect attributes to the stratum where it FIRST appears, and this one`);
+    say(`    first appears in B — so it localises to the ERA/PARK layer (task 1, not built), NOT the core`);
+    say(`    pitcher fit. THIS TOOL still blocks G2 in every stratum (an ordering-loss-is-a-defect-anywhere`);
+    say(`    choice made at C6's construction, BEFORE A1.3 was applied to G2). Whether that over-blocks`);
+    say(`    relative to A1.3 — i.e. whether stratum-B/C G2 should be a stratified DIAGNOSTIC like the`);
+    say(`    budget legs (A2.4) — is a doctrine call for Fable, not this tool. Role-leak stays blocking`);
+    say(`    everywhere (a correction crossing roles is not a layer effect). The verdict above reports`);
+    say(`    the STRICT reading; the ruling decides whether it holds.`);
+  }
 } else {
   say(`  PASS — no blocking failure. The shipping state clears every gate that blocks:`);
   say(`    · stratum A (the core): G1-K and G1-HR pass on every non-thin cell`);

@@ -1,5 +1,5 @@
 ################################################################################
-# C6 — FULL GATE SWEEP ON EVERYTHING SHIPPING.  VERDICT: STOP — 5 blocking failure(s)
+# C6 — FULL GATE SWEEP ON EVERYTHING SHIPPING.  VERDICT: STOP — 1 blocking failure(s)
 # Tool: tools/c6-gate-sweep.ts. EVALUATION ONLY — fits nothing, wires nothing, changes no
 # constant. It reads the SHIPPED constants and measures whether THEY pass.
 ################################################################################
@@ -8,20 +8,20 @@
 
   SHIPPED, and under test here:
     K_SPREAD_PIT   { A: 0.6668, q: 2.4, G0: 20, gMax: 22.25 }   s(g>gMax) = 1.8612 (flat hold)
-    PIT_SPREAD_HR  { A: 0.2648, G: 5.8 }   — UNCHANGED by this event, but re-gated:
-      its gate record was established at the PRE-C1/C2' coordinate and on the PRE-C3 K baseline.
-      C1/C2' moved the coordinate; C3 replaced the K ramp. A rule inherited across a coordinate
-      change is a defect until re-derived (intent contract clause 4), so it is re-derived here.
-    fit provenance   fitN 50 · fitP 0.3 — asserted at scoring-core load against
-      FIELD_N = 50 and PRESENCE_P = 0.3. This run imported the scoring core, so that assertion PASSED.
+    PIT_SPREAD_HR  { A: 0.1135, q: 0.54, G0: 20, gMax: 44.56 }   s(g>gMax) = 1.1749 (flat hold)
+      REFIT this event on the current coordinate (fit-hrspread-c6.ts) — the BUILD-3 saturating
+      constant was fitted at the PRE-C1/C2' coordinate on a residual about HR̄_pool (the pivot
+      conflation ruling (z) corrected), and the C6 sweep caught it over-correcting. The near-flat
+      refit carries a GEOMETRY-UNIDENTIFIED marker (unidentified): deliverable determined, shape not.
+    fit provenance   fitN 50 · fitP 0.3 (BOTH pitcher ramps) — asserted at scoring-core load
+      against FIELD_N = 50 and PRESENCE_P = 0.3. This run imported the scoring core, so it PASSED.
 
-    BUILD-2 HITTER TAIL (PINNED_HIT_TAIL) — ALSO SHIPPED, and also re-gated. An earlier draft of
-      this tool called it "dormant behind Tournament.hitTailCorrection". THAT WAS WRONG: it has
-      been STANDARD SCORING since 2026-07-17 (Derek's ruling 3 / plan §15.7 — universal
-      corrections ship ON BY DEFAULT with a global kill-switch), and hitTailCorrection is only an
-      override-OFF escape hatch that no tournament sets. A sweep that excluded it would not have
-      been a sweep of everything shipping, and its 7/7 gate record has the same clause-4 problem
-      as the HR ramp: it was established at the PRE-C1/C2' coordinate.
+    BUILD-2 HITTER TAIL (PINNED_HIT_TAIL) — REFIT this event on the current coordinate
+      (hit-tail-c6.ts). It has been STANDARD SCORING since 2026-07-17 (ruling 3 / §15.7) — the
+      hitTailCorrection flag is only an override-OFF escape hatch no tournament sets — and its 7/7
+      gate record had the same clause-4 problem as the HR ramp (PRE-C1/C2' coordinate). This is
+      the ONE C6 over the COHERENT TRIPLE: C3 K ramp + HR refit + hitter-tail refit, all on one
+      coordinate, the atomic-event rule made a gate.
 
   NOT under test: the pitcher BABIP scalar — never set in production (HELD at the bronze G1 fail),
   so there is nothing shipping to gate.
@@ -60,56 +60,56 @@
 ### 1. THE SWEEP
 
   format                 str  poolN  joined  judged   gapK   s_K     gapHR  s_HR    G1-K                    G1-HR                   G2
-  Iron Quick             A     1200     300     142   22.3   1.861*  44.6   1.265  1.80→0.97 [0.92,1.02] PASS 1.15→0.91 [0.65,1.15] PASS PASS
-  Bronze Quick           A     2096     337     156   19.7   1.642   33.4   1.264  1.62→0.99 [0.94,1.03] PASS 1.09→0.86 [0.73,0.99] FAIL PASS
-  Silver Quick           A     2748     276     121   17.5   1.486   25.3   1.261  1.47→0.99 [0.92,1.05] PASS 1.17→0.93 [0.79,1.06] PASS PASS
-  Gold Quick             A     3192     214      91   15.0   1.335   16.0   1.248  1.78→1.34 [1.23,1.43] FAIL 1.29→1.04 [0.85,1.23] PASS PASS
-  Diamond Quick          A     3498     122      36   10.3   1.136    4.1   1.133  1.04→0.92 [0.69,1.12] PASS 1.24→1.10 [0.77,1.37] PASS PASS
-  Bronze Heart           B      570     121      48   15.8   1.380   39.9   1.265  2.27→1.64 [1.47,1.82] FAIL 1.23→0.98 [0.74,1.13] PASS PASS
-  Early Gold             B     3192     242      99   15.0   1.335   16.0   1.248  2.04→1.53 [1.36,1.69] FAIL 1.44→1.15 [0.90,1.38] PASS PASS
-  Diamond Heart          B      879     133      67   13.9   1.280   12.2   1.233  1.50→1.17 [1.04,1.29] FAIL 1.12→0.91 [0.77,1.03] PASS PASS
-  Late Bronze            B     2096     195      34   19.7   1.642   33.4   1.264  1.67→1.01 [0.86,1.15] PASS 1.01→0.80 [0.27,1.24] PASS FAIL
-  Diamond Cap Daily      B+C   3498     215      26   10.3   1.136    4.1   1.133  1.78→1.56 [1.19,1.81] FAIL 0.88→0.77 [0.28,1.27] PASS PASS
-  Gold Cap Daily         B+C   3192     504     114   15.0   1.335   16.0   1.248  1.63→1.22 [1.14,1.30] FAIL 1.14→0.92 [0.77,1.07] PASS PASS
-  Saturday Bronze Cap    C     2096     346      42   19.7   1.642   33.4   1.264  1.74→1.06 [0.97,1.14] PASS 1.21→0.96 [0.62,1.20] PASS PASS
-  Gold Slots Daily       C     3192     454     109   15.0   1.335   16.0   1.248  1.63→1.22 [1.12,1.30] FAIL 1.24→0.99 [0.82,1.16] PASS PASS
-  Live Open Daily        A*    1274      80      42   44.5   1.861*  22.3   1.259  0.91→0.49 [0.38,0.58] FAIL 1.70→1.35 [1.08,1.61] FAIL FAIL
+  Iron Quick             A     1200     300     142   22.3   1.861*  44.6   1.175  1.80→0.97 [0.92,1.02] PASS 1.15→0.98 [0.70,1.24] PASS PASS
+  Bronze Quick           A     2096     337     156   19.7   1.642   33.4   1.150  1.62→0.99 [0.94,1.03] PASS 1.09→0.95 [0.80,1.09] PASS PASS
+  Silver Quick           A     2748     276     121   17.5   1.486   25.3   1.129  1.47→0.99 [0.92,1.05] PASS 1.17→1.04 [0.88,1.19] PASS PASS
+  Gold Quick             A     3192     214      91   15.0   1.335   16.0   1.101  1.78→1.34 [1.23,1.43] FAIL 1.29→1.18 [0.96,1.39] PASS PASS
+  Diamond Quick          A     3498     122      36   10.3   1.136    4.1   1.048  1.04→0.92 [0.69,1.12] PASS 1.24→1.19 [0.83,1.48] PASS PASS
+  Bronze Heart           B      570     121      48   15.8   1.380   39.9   1.165  2.27→1.64 [1.47,1.82] FAIL 1.23→1.06 [0.80,1.22] PASS PASS
+  Early Gold             B     3192     242      99   15.0   1.335   16.0   1.101  2.04→1.53 [1.36,1.69] FAIL 1.44→1.31 [1.02,1.57] FAIL PASS
+  Diamond Heart          B      879     133      67   13.9   1.280   12.2   1.087  1.50→1.17 [1.04,1.29] FAIL 1.12→1.03 [0.88,1.17] PASS PASS
+  Late Bronze            B     2096     195      34   19.7   1.642   33.4   1.150  1.67→1.01 [0.86,1.15] PASS 1.01→0.88 [0.30,1.36] PASS FAIL
+  Diamond Cap Daily      B+C   3498     215      26   10.3   1.136    4.1   1.048  1.78→1.56 [1.19,1.81] FAIL 0.88→0.84 [0.31,1.37] PASS PASS
+  Gold Cap Daily         B+C   3192     504     114   15.0   1.335   16.0   1.101  1.63→1.22 [1.14,1.30] FAIL 1.14→1.04 [0.87,1.22] PASS PASS
+  Saturday Bronze Cap    C     2096     346      42   19.7   1.642   33.4   1.150  1.74→1.06 [0.97,1.14] PASS 1.21→1.05 [0.68,1.32] PASS PASS
+  Gold Slots Daily       C     3192     454     109   15.0   1.335   16.0   1.101  1.63→1.22 [1.12,1.30] FAIL 1.24→1.13 [0.93,1.32] PASS PASS
+  Live Open Daily        A*    1274      80      42   44.5   1.861*  22.3   1.120  0.91→0.49 [0.38,0.58] FAIL 1.70→1.52 [1.21,1.81] FAIL FAIL
   * = the gap exceeds gMax = 22.25 and the DOMAIN RULE binds: s is held flat at 1.861.
 
   G2 detail (composite wOBAA ordering — the gate a spread correction is most likely to cost):
   format                 corr pre → post      Δ [95% CI]                verdict
-  Iron Quick             0.4901 → 0.5330     +0.0430 [-0.0202,+0.1088]  PASS
-  Bronze Quick           0.5435 → 0.5623     +0.0189 [-0.0342,+0.0757]  PASS
-  Silver Quick           0.6821 → 0.6677     -0.0144 [-0.0482,+0.0220]  PASS
-  Gold Quick             0.4970 → 0.5608     +0.0638 [-0.0015,+0.1281]  PASS
-  Diamond Quick          0.3201 → 0.3008     -0.0193 [-0.0525,+0.0162]  PASS
-  Bronze Heart           0.5058 → 0.5589     +0.0531 [-0.0169,+0.1249]  PASS
-  Early Gold             0.5302 → 0.5462     +0.0159 [-0.0034,+0.0339]  PASS
-  Diamond Heart          0.6972 → 0.7038     +0.0066 [-0.0278,+0.0438]  PASS
-  Late Bronze            0.4039 → 0.2744     -0.1294 [-0.2377,-0.0116]  FAIL
-  Diamond Cap Daily      0.6432 → 0.6599     +0.0167 [-0.0132,+0.0676]  PASS
-  Gold Cap Daily         0.8680 → 0.8672     -0.0008 [-0.0107,+0.0083]  PASS
-  Saturday Bronze Cap    0.7716 → 0.7733     +0.0017 [-0.0369,+0.0357]  PASS
-  Gold Slots Daily       0.5924 → 0.5786     -0.0138 [-0.0589,+0.0329]  PASS
-  Live Open Daily        0.7274 → 0.6267     -0.1007 [-0.1826,-0.0130]  FAIL
+  Iron Quick             0.4901 → 0.5323     +0.0423 [-0.0249,+0.1108]  PASS
+  Bronze Quick           0.5435 → 0.5623     +0.0189 [-0.0366,+0.0791]  PASS
+  Silver Quick           0.6821 → 0.6678     -0.0143 [-0.0471,+0.0224]  PASS
+  Gold Quick             0.4970 → 0.5521     +0.0551 [-0.0037,+0.1133]  PASS
+  Diamond Quick          0.3201 → 0.3069     -0.0132 [-0.0489,+0.0220]  PASS
+  Bronze Heart           0.5058 → 0.5568     +0.0510 [-0.0022,+0.1043]  PASS
+  Early Gold             0.5302 → 0.5476     +0.0173 [+0.0052,+0.0292]  PASS
+  Diamond Heart          0.6972 → 0.7008     +0.0036 [-0.0186,+0.0273]  PASS
+  Late Bronze            0.4039 → 0.2840     -0.1198 [-0.2200,-0.0053]  FAIL
+  Diamond Cap Daily      0.6432 → 0.6532     +0.0100 [-0.0164,+0.0531]  PASS
+  Gold Cap Daily         0.8680 → 0.8692     +0.0013 [-0.0071,+0.0089]  PASS
+  Saturday Bronze Cap    0.7716 → 0.7761     +0.0045 [-0.0352,+0.0378]  PASS
+  Gold Slots Daily       0.5924 → 0.5853     -0.0071 [-0.0415,+0.0281]  PASS
+  Live Open Daily        0.7274 → 0.6158     -0.1116 [-0.1989,-0.0215]  FAIL
 
   LEVELS (pred − obs), pre → post. REPORTED, NOT GATED: both corrections are centred scalars, so
   they move spread and leave the level to the anchor layer — which is ruling (z)'s whole point.
   format                 K9 level            HR9 level
-  Iron Quick             +0.71 → +0.33       +0.210 → +0.229
-  Bronze Quick           +0.74 → +0.69       +0.214 → +0.244
-  Silver Quick           +1.16 → +0.97       +0.159 → +0.188
-  Gold Quick             +0.11 → +0.05       +0.134 → +0.154
-  Diamond Quick          +0.48 → +0.46       +0.187 → +0.190
-  Bronze Heart           -0.57 → -0.63       +0.184 → +0.192
-  Early Gold             -0.66 → -0.71       +0.082 → +0.094
-  Diamond Heart          -0.10 → -0.13       +0.026 → +0.043
-  Late Bronze            +0.45 → +0.41       +0.239 → +0.246
-  Diamond Cap Daily      -0.44 → -0.51       +0.446 → +0.465
-  Gold Cap Daily         -0.02 → -0.25       +0.200 → +0.258
-  Saturday Bronze Cap    +0.51 → +0.17       +0.456 → +0.488
-  Gold Slots Daily       +0.16 → +0.05       +0.149 → +0.170
-  Live Open Daily        -0.17 → -0.13       -0.010 → +0.001
+  Iron Quick             +0.71 → +0.33       +0.210 → +0.222
+  Bronze Quick           +0.74 → +0.69       +0.214 → +0.231
+  Silver Quick           +1.16 → +0.97       +0.159 → +0.173
+  Gold Quick             +0.11 → +0.05       +0.134 → +0.142
+  Diamond Quick          +0.48 → +0.46       +0.187 → +0.188
+  Bronze Heart           -0.57 → -0.63       +0.184 → +0.189
+  Early Gold             -0.66 → -0.71       +0.082 → +0.087
+  Diamond Heart          -0.10 → -0.13       +0.026 → +0.033
+  Late Bronze            +0.45 → +0.41       +0.239 → +0.243
+  Diamond Cap Daily      -0.44 → -0.51       +0.446 → +0.453
+  Gold Cap Daily         -0.02 → -0.25       +0.200 → +0.223
+  Saturday Bronze Cap    +0.51 → +0.17       +0.456 → +0.474
+  Gold Slots Daily       +0.16 → +0.05       +0.149 → +0.158
+  Live Open Daily        -0.17 → -0.13       -0.010 → -0.005
 
   G1-HIT — THE BUILD-2 HITTER TAIL, RE-GATED ON THIS COORDINATE (clause 4: its 7/7 record was
   established at the PRE-C1/C2' coordinate, so it is re-derived rather than inherited):
@@ -138,32 +138,32 @@
 ### 2. THE STRATIFIED READ (A1.3) — a defect attributes to the stratum where it FIRST appears
 
   A — NEUTRAL UNCAPPED QUICKS — THE CORE. These BLOCK.
-      Iron Quick             G1-K PASS  (0.97)   G1-HR PASS  (0.91)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
-      Bronze Quick           G1-K PASS  (0.99)   G1-HR FAIL  (0.86)   G2 PASS    hit HR FAIL  BABIP PASS  SO PASS
-      Silver Quick           G1-K PASS  (0.99)   G1-HR PASS  (0.93)   G2 PASS    hit HR PASS  BABIP FAIL  SO PASS
-      Gold Quick             G1-K FAIL  (1.34)   G1-HR PASS  (1.04)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
-      Diamond Quick          G1-K PASS  (0.92)   G1-HR PASS  (1.10)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
-      ⇒ G1-K 4/5 pass · G1-HR 4/5 pass  (BLOCKING)
+      Iron Quick             G1-K PASS  (0.97)   G1-HR PASS  (0.98)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Bronze Quick           G1-K PASS  (0.99)   G1-HR PASS  (0.95)   G2 PASS    hit HR FAIL  BABIP PASS  SO PASS
+      Silver Quick           G1-K PASS  (0.99)   G1-HR PASS  (1.04)   G2 PASS    hit HR PASS  BABIP FAIL  SO PASS
+      Gold Quick             G1-K FAIL  (1.34)   G1-HR PASS  (1.18)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
+      Diamond Quick          G1-K PASS  (0.92)   G1-HR PASS  (1.19)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
+      ⇒ G1-K 4/5 pass · G1-HR 5/5 pass  (BLOCKING)
 
   A* — NEUTRAL UNCAPPED NON-QUICK CONTROL
-      Live Open Daily        G1-K FAIL  (0.49)   G1-HR FAIL  (1.35)   G2 FAIL    hit HR PASS  BABIP FAIL  SO FAIL
+      Live Open Daily        G1-K FAIL  (0.49)   G1-HR FAIL  (1.52)   G2 FAIL    hit HR PASS  BABIP FAIL  SO FAIL
       ⇒ G1-K 0/1 pass · G1-HR 0/1 pass  (reported, not blocking)
 
   B — ENV-BEARING DAILIES (+ the era/park layer — NOT BUILT, task 1)
-      Bronze Heart           G1-K FAIL  (1.64)   G1-HR PASS  (0.98)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
-      Early Gold             G1-K FAIL  (1.53)   G1-HR PASS  (1.15)   G2 PASS    hit HR FAIL  BABIP PASS  SO FAIL
-      Diamond Heart          G1-K FAIL  (1.17)   G1-HR PASS  (0.91)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
-      Late Bronze            G1-K PASS  (1.01)   G1-HR PASS  (0.80)   G2 FAIL    hit HR FAIL  BABIP PASS  SO PASS
-      ⇒ G1-K 1/4 pass · G1-HR 4/4 pass  (reported, not blocking)
+      Bronze Heart           G1-K FAIL  (1.64)   G1-HR PASS  (1.06)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Early Gold             G1-K FAIL  (1.53)   G1-HR FAIL  (1.31)   G2 PASS    hit HR FAIL  BABIP PASS  SO FAIL
+      Diamond Heart          G1-K FAIL  (1.17)   G1-HR PASS  (1.03)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
+      Late Bronze            G1-K PASS  (1.01)   G1-HR PASS  (0.88)   G2 FAIL    hit HR FAIL  BABIP PASS  SO PASS
+      ⇒ G1-K 1/4 pass · G1-HR 3/4 pass  (reported, not blocking)
 
   C — BUDGET CAP/SLOTS (+ the composition layer — NOT BUILT, task 2)
-      Saturday Bronze Cap    G1-K PASS  (1.06)   G1-HR PASS  (0.96)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
-      Gold Slots Daily       G1-K FAIL  (1.22)   G1-HR PASS  (0.99)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
+      Saturday Bronze Cap    G1-K PASS  (1.06)   G1-HR PASS  (1.05)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Gold Slots Daily       G1-K FAIL  (1.22)   G1-HR PASS  (1.13)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
       ⇒ G1-K 1/2 pass · G1-HR 2/2 pass  (reported, not blocking)
 
   B+C — BOTH LAYERS — never a clean read of either
-      Diamond Cap Daily      G1-K FAIL  (1.56)   G1-HR PASS  (0.77)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
-      Gold Cap Daily         G1-K FAIL  (1.22)   G1-HR PASS  (0.92)   G2 PASS    hit HR FAIL  BABIP FAIL  SO PASS
+      Diamond Cap Daily      G1-K FAIL  (1.56)   G1-HR PASS  (0.84)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Gold Cap Daily         G1-K FAIL  (1.22)   G1-HR PASS  (1.04)   G2 PASS    hit HR FAIL  BABIP FAIL  SO PASS
       ⇒ G1-K 0/2 pass · G1-HR 2/2 pass  (reported, not blocking)
 
 ### 2b. PUBLISHED RESIDUALS — CARVED FROM THE BLOCKING SET, RE-MEASURED, GROWTH-TESTED
@@ -172,36 +172,54 @@
   and live-pool both localise to the composition layer, task 2, not built). It leaves the
   blocking set — a ship cannot be blocked on a defect nothing can currently fix — but it is
   RE-MEASURED every sweep, and GROWTH CI-CLEAR beyond the published interval blocks again.
-  Staleness FIXABLE BY EXISTING TOOLS is unfinished work, never a residual — only these two
-  cells are carved; every stale-correction failure below still stands.
+  Staleness FIXABLE BY EXISTING TOOLS is unfinished work, never a residual. The K and HR ramps
+  WERE re-fittable and were refit (they ship). The BUILD-2 hitter tail was refit too, but the
+  refit STOPPED — the correction is under-determined on this coordinate (wide λ-equivalence sets)
+  and the paired HR+BABIP elite-power residual is +1.24 [0.10, 2.30]; its fix does not exist yet
+  (family/coordinate work, sequenced after task 2). So Fable ruled it a published residual too.
 
   cell                        channel   published interval    re-measured this sweep      status
   Gold Quick                 K         [+0.240, +0.630]     +0.449 [+0.291, +0.571]   within interval — carved
-  Live Open Daily            G2        [-0.183, -0.013]     -0.101 [-0.183, -0.013]   within interval — carved
+  Live Open Daily            G2        [-0.183, -0.013]     -0.112 [-0.199, -0.022]   within interval — carved
+  Iron Quick                 hitSO     [+1.010, +1.110]     +1.054 [+1.007, +1.110]   within interval — carved
+  Bronze Quick               hitHR     [+0.830, +0.920]     +0.876 [+0.834, +0.923]   within interval — carved
+  Silver Quick               hitBAB    [+0.660, +0.940]     +0.804 [+0.660, +0.939]   within interval — carved
     · Gold Quick K: gold K residual (need − s), composition axis — ruling (y), amendment A2.3
     · Live Open Daily G2: live-pool ordering cost (Δcorr), composition axis — published residual #2, expanded to the G2 leg
-  The gold K residual is re-measured as (pre-correction slope − shipped s): the pre-correction
-  slope IS the tier's need, and s is a constant, so their difference is the same quantity C3
-  published. The live G2 residual is the paired Δcorr directly. Both matched their published
-  intervals this sweep, which is what a first tracking read should show.
+    · Iron Quick hitSO: hitter SO% over-correction (achieved slope > 1), stale PINNED_HIT_TAIL — hitter-tail residual
+    · Bronze Quick hitHR: hitter HR600 over-correction (achieved slope < 1), stale PINNED_HIT_TAIL — hitter-tail residual
+    · Silver Quick hitBAB: hitter BABIP over-correction (achieved slope < 1), stale PINNED_HIT_TAIL — hitter-tail residual
+  The gold K residual is re-measured as (pre-correction slope − shipped s). The live G2 residual
+  is the paired Δcorr. The three HITTER-TAIL cells re-measure the achieved slope directly; their
+  under-determination spreads (2.02/1.48/1.87× local need-SE) and the paired-elite +1.24 travel
+  with the residual from the refit artifact (fixtures/cwhit-hittail-c6-2026-07-22.txt) — they are
+  refit quantities, not re-measured by a baseline sweep. All carved cells matched intervals here.
 
 ### 3. VERDICT
 
-  STOP. 5 blocking failure(s) (published residuals excluded — see §2b):
-    · G1-HR FAIL in stratum A: Bronze Quick post 0.86 [0.73,0.99]
-    · G2 ORDERING FAIL: Late Bronze corr 0.4039 → 0.2744 (Δ CI -0.2377,-0.0116)
-    · G1-HIT SO% FAIL in stratum A: Iron Quick post 1.05 [1.01,1.11]
-    · G1-HIT HR600 FAIL in stratum A: Bronze Quick post 0.88 [0.83,0.92]
-    · G1-HIT BABIP FAIL in stratum A: Silver Quick post 0.80 [0.66,0.94]
+  STOP. 1 blocking failure(s) (published residuals excluded — see §2b):
+    · G2 ORDERING FAIL: Late Bronze corr 0.4039 → 0.2840 (Δ CI -0.2200,-0.0053)
 
-  READING: with the two published residuals carved, EVERY remaining blocking failure is a
-  STALE CORRECTION — the HR ramp (bronze G1-HR, late-bronze G2) and the BUILD-2 hitter tail
-  (iron SO%, bronze HR600, silver BABIP), both with gate records set at the PRE-C1/C2'
-  coordinate and never re-fit on the current one. Only C3's K ramp was re-fit, and it passes.
-  This is the coherent picture Fable's option (a) addresses: refit both stale corrections on
-  the current coordinate, then ONE C6 over the coherent triple.
+  READING: C3's K ramp and the HR-ramp refit both PASS the core (stratum A) on this coordinate;
+  the hitter-tail cells are carved as the published residual Fable ruled. What remains blocking
+  is a STRATUM-B item on an env-bearing daily — see the note below on whether it is a core
+  defect or a stratified diagnostic per A1.3.
 
   Nothing is overruled here. Overrules are Fable's or Derek's, and this tool does not make them.
+
+  THE ONE REMAINING ITEM — Late Bronze G2 — AND THE A1.3 QUESTION IT RAISES:
+    Late Bronze is a STRATUM-B env-bearing daily (era-1979). Both pitcher channels CALIBRATE
+    it: G1-K PASS (post 1.01), G1-HR PASS (post 0.88). Only the composite ordering
+    drops: corr 0.404 → 0.284, Δ -0.120 [-0.220, -0.005] at N=34 — marginal (upper CI just
+    below 0). It does NOT appear in stratum A: every Quick tier passes G2 (5/5).
+    Per amendment A1.3 a defect attributes to the stratum where it FIRST appears, and this one
+    first appears in B — so it localises to the ERA/PARK layer (task 1, not built), NOT the core
+    pitcher fit. THIS TOOL still blocks G2 in every stratum (an ordering-loss-is-a-defect-anywhere
+    choice made at C6's construction, BEFORE A1.3 was applied to G2). Whether that over-blocks
+    relative to A1.3 — i.e. whether stratum-B/C G2 should be a stratified DIAGNOSTIC like the
+    budget legs (A2.4) — is a doctrine call for Fable, not this tool. Role-leak stays blocking
+    everywhere (a correction crossing roles is not a layer effect). The verdict above reports
+    the STRICT reading; the ruling decides whether it holds.
 
 
 (end of artifact — C6 gate sweep, STOP)
