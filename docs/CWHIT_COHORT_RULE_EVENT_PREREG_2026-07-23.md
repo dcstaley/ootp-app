@@ -1,12 +1,13 @@
 # Cohort-rule change + 43-44 retrain — EVENT PRE-REGISTRATION
 
-**2026-07-23. Written for Fable's approval BEFORE Sunday's execution. No code path activates and no
-fit runs until this is approved. The event itself is Sunday-timed (2044 data lands first).**
+**2026-07-23. Written for Fable's approval. No code path activates and no fit runs until this is
+approved. TIMING UPDATE (Fable): the event is no longer gated on Sunday's 2044 data — it executes on
+approval. See §4 for the one data question that timing change surfaces.**
 
 This is the atomic event the cohort arbitration recommended and Fable directed (option (ii),
 2026-07-23): the cohort **selection rule** changes to a model-independent, data-fixed coordinate, a
-fresh 43-44 model trains under it, and both pitcher ramps refit on the new coordinate — all as ONE
-dated event. FIELD_N = 50 is RETAINED; the size was never the lever (arbitration Q1). The RULE is.
+fresh model trains under it, and both pitcher ramps refit on the new coordinate — all as ONE dated
+event. FIELD_N = 50 is RETAINED; the size was never the lever (arbitration Q1). The RULE is.
 
 ---
 
@@ -72,12 +73,23 @@ only on a REAL pool change, never on a retrain or a form change.
 
 ---
 
-## 4. THE EVENT SEQUENCE (Sunday; one atomic event)
+## 4. THE EVENT SEQUENCE (one atomic event; executes on approval)
 
-1. **2044 data lands** (Derek).
+**THE DATA QUESTION the de-Sunday-ing surfaces, for Fable to pin (step 1):** the event needs a fresh
+train under the new rule. Two readings of "no longer waiting for Sunday's data":
+  (a) new-window data (2044 / 43-44) is available NOW → train it under the new rule as designed; or
+  (b) proceed on the CURRENT window → re-train the existing 42-43 window under the new rule (no new
+      data), which still delivers the rule change and the data-fixed coordinate — the whole point is
+      the SELECTION rule, not the window — and simply carries the current window forward.
+Either works for the rule change; (b) is the cleaner default if 2044 is not actually in hand, because
+nothing about this event needs a new window — it needs a train under the new SELECTION. Derek/Fable
+confirm which. The steps below are identical under either; only the training window differs.
+
+1. **Training data confirmed** (per the question above) — new window if in hand, else the current
+   42-43 window; the rule change is independent of which.
 2. **New cohort rule in code** — the z-sum metric wired into both legs (built now, §6; activated in
    this step).
-3. **Train the 43-44 model** under the new rule (its `trainingMeans` built by the new train-leg
+3. **Train the fresh model** under the new rule (its `trainingMeans` built by the new train-leg
    metric). A rule change re-trains by construction — this supersedes "League 42-43 Retrain", which
    is retired unused (it was zero-predictive-content over the active artifact anyway).
 4. **K-ramp refit** on the new coordinate (its own re-derivation; the C3 prereg battery, §5). The
@@ -89,7 +101,7 @@ only on a REAL pool change, never on a retrain or a form change.
 6. **Full gates** (C6 over the coherent set) **+ the (c) validation report** (§7) **+ Scorecard v2**.
 7. **Activation** on pass; one Derek Regenerate lands the new model + rules + refit ramps together.
 
-Active stays `league-42-43` until step 7. Nothing here changes production before Sunday.
+Active stays `league-42-43` until step 7. Nothing here changes production before activation.
 
 ---
 
