@@ -1,0 +1,280 @@
+################################################################################
+# C6 — THE RE-DERIVED HITTER-TAIL CORRECTION (HR600 / BABIP / SO%). VERDICT: STOP — ACCEPTANCE HR600: >1 fit-set tier outside CI + GATE (w)2' HR600 (family misfit) + GATE (w)2' BABIP (family misfit) + GATE (w)2' SO% (family misfit) + PAIRED HR+BABIP ELITE-POWER (residual CI excludes 0)
+# Pre-registration: docs/CWHIT_HITTAIL_REFIT_PREREG_2026-07-22.md + AMENDMENT 1.
+# Tool: tools/hit-tail-c6.ts. FIT AND REPORT ONLY — this tool wires nothing. On a PASS the
+# constants ship in the SAME dated commit as C3 and the HR-ramp refit (the atomic-event rule).
+################################################################################
+
+### THE CLAUSE-4 AUDIT, RESOLVED IN CODE (nothing here is tuned)
+  A. ESTIMAND — ALREADY CORRECT. The bake-off slope loss de-means pred AND obs PER TIER before
+     the slope (a single tier's OLS slope centres on that tier's means), which IS ruling (z)'s
+     free-slope-with-per-tier-level. Prereg §1.A was over-cautious; the fix that MATTERS is the
+     instrument (B). No estimand change was needed or made.
+  B. INSTRUMENT — the real defect. Every field is now productionFieldStats (presence mixture at
+     FIELD_N·PRESENCE_M) at BOTH sites (neutral ref + per-tier pool), so g = k−1 and every pool
+     moment (p50/p75/sd) sit on production's post-C1/C2' coordinate, not the phantom FIELD_N fork.
+  C. FAMILY — re-selected by the bake-off on THIS coordinate (PINNED_HIT_TAIL NOT inherited).
+  D. SELECTION — deliverable-space equivalence per channel, minimax-centre λ, sets published.
+  E. FORMAT REACH — applied/held-out formats resolved from the corpus REGISTRY by tournamentId.
+
+### HEADER
+  tool        tools/hit-tail-c6.ts
+  date        2026-07-22
+  model       'league-42-43'   (raw-poly event model, own-gap path, no anchor on the judged line)
+  catalog     'cdmx'   (3669 base cards, variant rows excluded from the catalog read)
+  channels    HR600 / BABIP / SO% — RAW hitter event line, own-gap ON, no anchor (hitters only)
+  coordinate  g = k−1 = ref.μ / poolField.μ − 1, both via productionFieldStats (audit B)
+  fit-N       FIELD_N = 50  (scaled by PRESENCE_M on the replicated presence mixture)
+  fit-p       PRESENCE_P = 0.3   (band re-check at 0.25 / 0.35)
+  families    hinge, hinge50, quad, pivot, step  ×  shapes lin, sat  (w_sat G0 = 0.1)
+  bootstrap   needs B = 2000; acceptance B = 2000; λ-selection/deliverable B = 300; SEED 20260716
+  applied     46 production tournaments (own era/park/eligibility → own g), post-clamp at gMax
+
+### GATE (w)1 — IDENTIFIABILITY OF THE g COORDINATE (per channel; property of the coordinate)
+  requirement: g strictly monotone across the five tiers at every p, AND ≥ 60% span retention vs p=0.
+  HR600  (g = pow gap)
+    p             iron   bronze   silver     gold  diamond   mono   span    ret
+    0.00         0.714    0.452    0.323    0.200    0.073   YES    0.64     —
+    0.25         0.691    0.446    0.313    0.196    0.074   YES    0.62   96%
+    0.30         0.649    0.435    0.313    0.195    0.072   YES    0.58   90%
+    0.35         0.650    0.426    0.317    0.194    0.074   YES    0.58   90%
+  BABIP  (g = babip gap)
+    p             iron   bronze   silver     gold  diamond   mono   span    ret
+    0.00         0.624    0.377    0.197    0.133    0.098   YES    0.53     —
+    0.25         0.638    0.396    0.234    0.172    0.103   YES    0.53   102%
+    0.30         0.645    0.393    0.239    0.177    0.104   YES    0.54   103%
+    0.35         0.644    0.394    0.235    0.178    0.099   YES    0.55   104%
+  SO%  (g = kRat gap)
+    p             iron   bronze   silver     gold  diamond   mono   span    ret
+    0.00         0.200    0.190    0.151    0.132    0.074   YES    0.13     —
+    0.25         0.181    0.148    0.136    0.109    0.064   YES    0.12   93%
+    0.30         0.187    0.158    0.135    0.109    0.063   YES    0.12   98%
+    0.35         0.183    0.164    0.130    0.110    0.067   YES    0.12   93%
+  GATE (w)1: PASS
+
+### 2. THE PRIMARY LEG — p = 0.30
+  judged hitters: 684 well-sampled (PA ≥ 500) across 5 Quick tiers
+
+── HR600 ──
+  FAMILY BAKE-OFF on the fit set (min slope loss wins; PINNED_HIT_TAIL NOT inherited)
+    family×shape     λ*      loss
+    hinge-lin        2.70   0.0191   ← chosen
+    hinge-sat        1.30   0.0568
+    hinge50-lin      1.95   0.0888
+    pivot-lin        1.65   0.2083
+    hinge50-sat      1.15   0.2216
+    quad-lin         2.80   0.2793
+    quad-sat         0.35   0.2845
+    step-lin         2.85   0.3332
+    pivot-sat        1.00   0.4136
+    step-sat         2.95   0.9100
+  CHOSEN: hinge-lin   argmin λ = 2.70
+
+  PER-TIER NEED (pre-correction calibration slope; free-level per-tier OLS) + coherent set
+  tier      set   N    g        need   [boot 95% CI]        se
+  iron     fit   193    0.649    1.26   [1.15,1.37]   0.055
+  bronze   OUT   176    0.435    1.03   [0.98,1.10]   0.032
+  silver   fit   150    0.313    1.13   [1.05,1.21]   0.043
+  gold     fit   130    0.195    1.22   [1.12,1.35]   0.058
+  diamond  fit*   35    0.072    1.07   [0.86,1.39]   0.133
+    feasibility (gap asc: diamond → gold → silver → bronze → iron): all-five min-slack -0.016 ⇒ INFEASIBLE
+      drop iron      still infeasible ✗   min-slack -0.016
+      drop bronze    FEASIBLE ✓   min-slack +0.093
+      drop silver    still infeasible ✗   min-slack -0.016
+      drop gold      FEASIBLE ✓   min-slack +0.058
+      drop diamond   still infeasible ✗   min-slack -0.016
+    ⇒ infeasible with all five; removing bronze restores feasibility with maximal min-slack 0.093
+    fit set: iron, silver, gold, diamond   smallest-gap (mandatory): diamond
+
+  SELECTION — deliverable-space equivalence (achieved-slope space), minimax centre
+    λ-equivalence set = [2.25, 3.20]  (20 grid pts)   MINIMAX-CENTRE λ = 2.70  [boot 95% CI 2.05, 3.40]
+    set width 1.85 need-SEs; centre reaches 0.94 SEs to the furthest member.
+    touches λ→0 (structural-limit closure): no;  touches grid top (λ=6): no
+    fitted tier   se     set achieved-slope range     centre
+    iron       0.055          0.876 – 0.979   0.928
+    silver     0.043          0.893 – 0.958   0.926
+    gold       0.058          0.967 – 1.035   1.002
+    diamond    0.133          0.951 – 0.984   0.969
+
+  GATE (w)2' APPLIED-DOMAIN DELIVERABLE: FAIL
+    applied-domain deliverable NOT well-determined: worst D-spread 0.1046 at gap 0.553 is 2.02× the local need-SE (0.052) — exceeds 1 at 29 of 46 applied gaps.
+    geometry resolved: the equivalence set is interior (λ bounded away from 0).
+    worst spread ratio 2.02× local need-SE (29 of 46 applied gaps exceed 1).
+
+  GATE (w)3 LEAVE-ONE-FITTED-TIER-OUT (deliverable/achieved-slope space): PASS
+    drop iron      → λ  2.40   inside full-fit s-CI at every fitted gap: YES ✓
+    drop silver    → λ  2.75   inside full-fit s-CI at every fitted gap: YES ✓
+    drop gold      → λ  2.70   inside full-fit s-CI at every fitted gap: YES ✓
+    drop diamond   → λ  2.65   inside full-fit s-CI at every fitted gap: YES ✓
+
+  ACCEPTANCE — post-correction slope at λ=2.70 covers 1 (its own bootstrap CI), on the fit set
+    tier       g        need (pre)   achieved (post)   [boot 95% CI]     covers 1?
+    iron      0.649         1.26              0.93   [0.87,0.99]     NO  ✗
+    silver    0.313         1.13              0.93   [0.87,0.99]     NO  ✗
+    gold      0.195         1.22              1.00   [0.93,1.08]     YES ✓
+    diamond   0.072         1.07              0.97   [0.78,1.22]     YES ✓  (mandatory)
+    bronze    0.435         1.03              0.84   [excluded — amd 1]   NOT SCORED
+    inside: 2 of 4;  SMALLEST-GAP (diamond) INSIDE ✓
+  ACCEPTANCE: FAIL
+
+  EXCLUDED BRONZE — PUBLISHED RESIDUAL: need 1.03 [0.98,1.10] vs achieved 0.84 ⇒ resid +0.192 [0.12, 0.27] (gold semantics).
+
+── BABIP ──
+  FAMILY BAKE-OFF on the fit set (min slope loss wins; PINNED_HIT_TAIL NOT inherited)
+    family×shape     λ*      loss
+    hinge50-sat      0.55   0.0015   ← chosen
+    hinge50-lin      1.30   0.0034
+    hinge-lin        1.80   0.0133
+    hinge-sat        0.55   0.0220
+    pivot-lin        0.65   0.0355
+    pivot-sat        0.35   0.0569
+    step-lin         1.85   0.1291
+    step-sat         0.65   0.1695
+    quad-lin         0.55   0.3107
+    quad-sat         0.10   0.3107
+  CHOSEN: hinge50-sat   argmin λ = 0.55
+
+  PER-TIER NEED (pre-correction calibration slope; free-level per-tier OLS) + coherent set
+  tier      set   N    g        need   [boot 95% CI]        se
+  iron     fit   193    0.645    1.31   [1.13,1.51]   0.098
+  bronze   fit   176    0.393    1.14   [0.96,1.41]   0.116
+  silver   fit   150    0.239    1.34   [1.12,1.55]   0.109
+  gold     fit   130    0.177    1.33   [1.13,1.51]   0.100
+  diamond  fit*   35    0.104    1.25   [0.86,1.84]   0.244
+    feasibility (gap asc: diamond → gold → silver → bronze → iron): all-five min-slack +0.278 ⇒ FEASIBLE
+    ⇒ all five tiers feasible — fit set = all five, no exclusions
+    fit set: iron, bronze, silver, gold, diamond   smallest-gap (mandatory): diamond
+
+  SELECTION — deliverable-space equivalence (achieved-slope space), minimax centre
+    λ-equivalence set = [0.40, 0.75]  (8 grid pts)   MINIMAX-CENTRE λ = 0.55  [boot 95% CI 0.30, 0.80]
+    set width 1.63 need-SEs; centre reaches 0.86 SEs to the furthest member.
+    touches λ→0 (structural-limit closure): no;  touches grid top (λ=6): no
+    fitted tier   se     set achieved-slope range     centre
+    iron       0.098          1.059 – 1.171   1.121
+    bronze     0.116          0.875 – 0.991   0.939
+    silver     0.109          0.842 – 1.021   0.936
+    gold       0.100          0.934 – 1.091   1.018
+    diamond    0.244          0.916 – 1.049   0.988
+
+  GATE (w)2' APPLIED-DOMAIN DELIVERABLE: FAIL
+    applied-domain deliverable NOT well-determined: worst D-spread 0.1448 at gap 0.645 is 1.48× the local need-SE (0.098) — exceeds 1 at 38 of 46 applied gaps.
+    geometry resolved: the equivalence set is interior (λ bounded away from 0).
+    worst spread ratio 1.48× local need-SE (38 of 46 applied gaps exceed 1).
+
+  GATE (w)3 LEAVE-ONE-FITTED-TIER-OUT (deliverable/achieved-slope space): PASS
+    drop iron      → λ  0.40   inside full-fit s-CI at every fitted gap: YES ✓
+    drop bronze    → λ  0.70   inside full-fit s-CI at every fitted gap: YES ✓
+    drop silver    → λ  0.55   inside full-fit s-CI at every fitted gap: YES ✓
+    drop gold      → λ  0.55   inside full-fit s-CI at every fitted gap: YES ✓
+    drop diamond   → λ  0.55   inside full-fit s-CI at every fitted gap: YES ✓
+
+  ACCEPTANCE — post-correction slope at λ=0.55 covers 1 (its own bootstrap CI), on the fit set
+    tier       g        need (pre)   achieved (post)   [boot 95% CI]     covers 1?
+    iron      0.645         1.31              1.12   [0.99,1.28]     YES ✓
+    bronze    0.393         1.14              0.94   [0.80,1.08]     YES ✓
+    silver    0.239         1.34              0.94   [0.78,1.08]     YES ✓
+    gold      0.177         1.33              1.02   [0.85,1.17]     YES ✓
+    diamond   0.104         1.25              0.99   [0.67,1.38]     YES ✓  (mandatory)
+    inside: 5 of 5;  SMALLEST-GAP (diamond) INSIDE ✓
+  ACCEPTANCE: PASS
+
+── SO% ──
+  FAMILY BAKE-OFF on the fit set (min slope loss wins; PINNED_HIT_TAIL NOT inherited)
+    family×shape     λ*      loss
+    step-lin         1.15   0.0308   ← chosen
+    step-sat         0.25   0.0312
+    pivot-sat        0.10   0.0420
+    pivot-lin        0.45   0.0424
+    hinge50-lin      0.30   0.0616
+    hinge50-sat      0.10   0.0637
+    hinge-lin        0.00   0.0648
+    hinge-sat        0.00   0.0648
+    quad-lin         0.00   0.0648
+    quad-sat         0.00   0.0648
+  CHOSEN: step-lin   argmin λ = 1.15
+
+  PER-TIER NEED (pre-correction calibration slope; free-level per-tier OLS) + coherent set
+  tier      set   N    g        need   [boot 95% CI]        se
+  iron     fit   193    0.187    1.20   [1.14,1.27]   0.035
+  bronze   fit   176    0.158    1.09   [1.04,1.15]   0.026
+  silver   fit   150    0.135    1.12   [1.07,1.17]   0.027
+  gold     fit   130    0.109    1.14   [1.07,1.21]   0.037
+  diamond  fit*   35    0.063    1.16   [1.00,1.31]   0.076
+    feasibility (gap asc: diamond → gold → silver → bronze → iron): all-five min-slack +0.080 ⇒ FEASIBLE
+    ⇒ all five tiers feasible — fit set = all five, no exclusions
+    fit set: iron, bronze, silver, gold, diamond   smallest-gap (mandatory): diamond
+
+  SELECTION — deliverable-space equivalence (achieved-slope space), minimax centre
+    λ-equivalence set = [0.85, 1.45]  (13 grid pts)   MINIMAX-CENTRE λ = 1.15  [boot 95% CI 0.75, 1.85]
+    set width 1.78 need-SEs; centre reaches 0.91 SEs to the furthest member.
+    touches λ→0 (structural-limit closure): no;  touches grid top (λ=6): no
+    fitted tier   se     set achieved-slope range     centre
+    iron       0.035          1.041 – 1.102   1.071
+    bronze     0.026          0.972 – 1.018   0.995
+    silver     0.027          1.016 – 1.056   1.036
+    gold       0.037          1.049 – 1.086   1.067
+    diamond    0.076          1.114 – 1.132   1.123
+
+  GATE (w)2' APPLIED-DOMAIN DELIVERABLE: FAIL
+    applied-domain deliverable NOT well-determined: worst D-spread 0.0483 at gap 0.158 is 1.87× the local need-SE (0.026) — exceeds 1 at 30 of 46 applied gaps.
+    geometry resolved: the equivalence set is interior (λ bounded away from 0).
+    worst spread ratio 1.87× local need-SE (30 of 46 applied gaps exceed 1).
+
+  GATE (w)3 LEAVE-ONE-FITTED-TIER-OUT (deliverable/achieved-slope space): PASS
+    drop iron      → λ  1.10   inside full-fit s-CI at every fitted gap: YES ✓
+    drop bronze    → λ  1.45   inside full-fit s-CI at every fitted gap: YES ✓
+    drop silver    → λ  1.10   inside full-fit s-CI at every fitted gap: YES ✓
+    drop gold      → λ  1.15   inside full-fit s-CI at every fitted gap: YES ✓
+    drop diamond   → λ  1.05   inside full-fit s-CI at every fitted gap: YES ✓
+
+  ACCEPTANCE — post-correction slope at λ=1.15 covers 1 (its own bootstrap CI), on the fit set
+    tier       g        need (pre)   achieved (post)   [boot 95% CI]     covers 1?
+    iron      0.187         1.20              1.07   [1.02,1.13]     NO  ✗
+    bronze    0.158         1.09              0.99   [0.95,1.04]     YES ✓
+    silver    0.135         1.12              1.04   [0.99,1.08]     YES ✓
+    gold      0.109         1.14              1.07   [1.00,1.13]     YES ✓
+    diamond   0.063         1.16              1.12   [0.97,1.26]     YES ✓  (mandatory)
+    inside: 4 of 5;  SMALLEST-GAP (diamond) INSIDE ✓
+  ACCEPTANCE: PASS
+
+### 3. THE PAIRED HR+BABIP ELITE-POWER GATE (BUILD-2's decisive acceptance)
+  Both corrections applied together (+ SO); elite-power = POW ≥ pool p75. The cancellation must
+  stay RESOLVED, not moved: the joint residual CI must cover 0.
+  elite-power mis-valuation (level-free mwOBA, + = over-valued): +1.24* [+0.10, +2.30]  n=378
+    drivers: HR +0.7  BABIP -0.2 (mwOBA)
+  GATE: FAIL — residual CI excludes 0 (cancellation moved, not resolved)
+
+### 4. THE BAND RE-CHECK — p = 0.25 / 0.35 (do the gates and acceptance reproduce?)
+  p       channel   fam-shape       λ (set)              feas         accept    (w)2'  (w)3   elite
+  0.25    HR600     hinge-lin       2.70 [2.25,3.20]    −bronze      2/4 ✗     FAIL  PASS   SIG✗
+  0.25    BABIP     hinge50-sat     0.55 [0.40,0.75]    all five     5/5 ✓     FAIL  PASS
+  0.25    SO%       step-sat        0.25 [0.20,0.30]    all five     4/5 ✓     FAIL  PASS
+  0.30    HR600     hinge-lin       2.70 [2.25,3.20]    −bronze      2/4 ✗     FAIL  PASS   SIG✗
+  0.30    BABIP     hinge50-sat     0.55 [0.40,0.75]    all five     5/5 ✓     FAIL  PASS
+  0.30    SO%       step-lin        1.15 [0.85,1.45]    all five     4/5 ✓     FAIL  PASS
+  0.35    HR600     hinge-lin       2.70 [2.25,3.20]    −bronze      2/4 ✗     FAIL  PASS   SIG✗
+  0.35    BABIP     hinge50-sat     0.55 [0.40,0.75]    all five     5/5 ✓     FAIL  PASS
+  0.35    SO%       step-lin        1.15 [0.85,1.45]    all five     4/5 ✓     FAIL  PASS
+  BAND VERDICT: DOES NOT HOLD across the whole band
+
+### 5. THE PROPOSED CONSTANTS, WITH PROVENANCE (do NOT read as wired)
+
+  NO CONSTANTS ARE PROPOSED FOR SHIPPING. ACCEPTANCE HR600: >1 fit-set tier outside CI + GATE (w)2' HR600 (family misfit) + GATE (w)2' BABIP (family misfit) + GATE (w)2' SO% (family misfit) + PAIRED HR+BABIP ELITE-POWER (residual CI excludes 0).
+  What follows is what the pre-registered rule PRODUCED, recorded so the record is complete.
+
+  PINNED_HIT_TAIL_C6 = {
+    hr:  { fam: "hinge", shape: "lin", lam: 2.70 },   // set [2.25, 3.20], fit iron/silver/gold/diamond
+    bab: { fam: "hinge50", shape: "sat", lam: 0.55 },   // set [0.40, 0.75], fit iron/bronze/silver/gold/diamond
+    so:  { fam: "step", shape: "lin", lam: 1.15 },   // set [0.85, 1.45], fit iron/bronze/silver/gold/diamond
+  };
+  PROVENANCE (fit-derived, coordinate-dependent — never rescale, only re-derive): fitN = 50, fitP = 0.3.
+  HR600 excluded bronze (residual +0.19 [0.12, 0.27]).
+
+### 6. RECORDED, NOT ACTED ON (the freeze applies)
+  · PITCHER BIT-IDENTITY is not checked here — the hitter tail never touches pitcher lines; the
+    final C6 sweep asserts it (max |Δ| = 0 across all pitcher rows) before anything is announced.
+  · BB% is a watch-only channel, out of scope; wOBA is a downstream summary, never a fit target.
+  · FIELD_N = 50 is known-defective and frozen until a retrain; nothing here revisits it.
+  · Any STOP is REPORTED, not tuned past: ACCEPTANCE HR600: >1 fit-set tier outside CI + GATE (w)2' HR600 (family misfit) + GATE (w)2' BABIP (family misfit) + GATE (w)2' SO% (family misfit) + PAIRED HR+BABIP ELITE-POWER (residual CI excludes 0).
+
+(end of artifact — hitter-tail refit, STOP)
