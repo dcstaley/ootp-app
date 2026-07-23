@@ -2139,7 +2139,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   // pre-ramp scores); anything else re-enables. The BABIP sibling is HELD (gate record) — there
   // is no BABIP switch because there is no BABIP wiring.
   if (method === "GET" && url === "/api/training/pit-spread")
-    return json(res, { enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans, A: PIT_SPREAD_HR.A, G: PIT_SPREAD_HR.G, babHeld: true });
+    return json(res, { enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans, A: PIT_SPREAD_HR.A, q: PIT_SPREAD_HR.q, G0: PIT_SPREAD_HR.G0, gMax: PIT_SPREAD_HR.gMax, fitN: PIT_SPREAD_HR.fitN, fitP: PIT_SPREAD_HR.fitP, geometry: PIT_SPREAD_HR.geometry, sAtGMax: pitSpreadHrRamp(PIT_SPREAD_HR.gMax), babHeld: true });
   if (method === "POST" && url === "/api/training/pit-spread") {
     state.pitSpreadHr = u.searchParams.get("enabled") === "false" ? "off" : "on";
     await saveState();

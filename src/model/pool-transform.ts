@@ -344,12 +344,18 @@ export function assertKSpreadProvenance(fieldN: number, presenceP: number, gMaxF
   if (fieldN !== K_SPREAD_PIT.fitN) bad.push(`FIELD_N is ${fieldN} but K_SPREAD_PIT was fitted at fitN = ${K_SPREAD_PIT.fitN}`);
   if (presenceP !== K_SPREAD_PIT.fitP) bad.push(`PRESENCE_P is ${presenceP} but K_SPREAD_PIT was fitted at fitP = ${K_SPREAD_PIT.fitP}`);
   if (gMaxFitted !== undefined && gMaxFitted !== K_SPREAD_PIT.gMax) bad.push(`the fitted gap max is ${gMaxFitted} but K_SPREAD_PIT carries gMax = ${K_SPREAD_PIT.gMax}`);
+  // The HR ramp is fitted at the SAME cohort coordinate and must move with it — a coordinate change
+  // stales BOTH pitcher ramps at once (that is the atomic-event rule made executable). Its gMax is
+  // its OWN (the HR fit spans a different gap range), so only (N, p) are checked against the shared
+  // cohort constants here; gMax is pinned in tests/pitspread.test.ts.
+  if (fieldN !== PIT_SPREAD_HR.fitN) bad.push(`FIELD_N is ${fieldN} but PIT_SPREAD_HR was fitted at fitN = ${PIT_SPREAD_HR.fitN}`);
+  if (presenceP !== PIT_SPREAD_HR.fitP) bad.push(`PRESENCE_P is ${presenceP} but PIT_SPREAD_HR was fitted at fitP = ${PIT_SPREAD_HR.fitP}`);
   if (bad.length) {
     throw new Error(
-      `K_SPREAD_PIT PROVENANCE MISMATCH — the pitcher K-spread ramp is being evaluated at a different `
+      `PITCHER-SPREAD PROVENANCE MISMATCH — a pitcher spread ramp is being evaluated at a different `
       + `coordinate from the one it was fitted at, and it CANNOT be rescaled to fit:\n  - ${bad.join("\n  - ")}\n`
-      + `Re-derive the ramp (tools/fit-kspread-c3.ts, spec docs/CWHIT_C3_RAMP_PREREG_2026-07-22.md) `
-      + `and update A, q AND gMax together. See src/model/pool-transform.ts.`,
+      + `Re-derive the ramp(s) (tools/fit-kspread-c3.ts / tools/fit-hrspread-c6.ts) and update A, q AND `
+      + `gMax together. See src/model/pool-transform.ts.`,
     );
   }
 }
@@ -375,14 +381,69 @@ export function assertKSpreadProvenance(fieldN: number, presenceP: number, gMaxF
 // window-matched vs bronze-quick). NOTE this flag is HR-channel-only; parks carry no K factor,
 // so the K ramp above is park-clean everywhere. The
 // sibling BABIP scalar was HELD (bronze G1 CI-clear fail) — sPitBab is never set in production.
-export const PIT_SPREAD_HR = { A: 0.2648, G: 5.8 } as const;
+//
+// ══ 2026-07-22 CONSTANTS EVENT — HR REFIT. THE FAMILY CHANGED; the BUILD-3 block above is history. ══
+// Spec: docs/CWHIT_HRRAMP_REFIT_PREREG_2026-07-22.md + amendment 1. Fit artifact:
+// fixtures/cwhit-hrspread-c6-2026-07-22.txt (tools/fit-hrspread-c6.ts). This is the second leg of the
+// atomic event (C3 K ramp + this HR ramp + the BUILD-2 hitter tail all ship on ONE coordinate).
+//
+// WHY IT WAS REFIT: the BUILD-3 saturating constant was fitted at the PRE-C1/C2' coordinate and on a
+// residual taken ABOUT HR̄_pool with no per-tier free level — the same pivot conflation ruling (z)
+// corrected for C3. C1/C2' moved the coordinate; the C6 sweep then caught the stale ramp
+// over-correcting (bronze G1-HR 0.86 [0.73,0.99]). The refit re-derives it on production's coordinate
+// with the free-slope estimand, the deliverable-space selection, and the C3 family.
+//
+// THE NEED IS GAP-FLAT, and the family was chosen to SAY SO HONESTLY. On the current coordinate the
+// per-tier HR9 needs are 1.15/1.09/1.17/1.29/1.24 across hrr-gaps 44.6/33.4/25.3/16.0/4.1 — no
+// monotone geometry. The C3 power law s(g)=1+A(g/G0)^q contains BOTH the constant (q→0) and a ramp
+// (q>0), so it does not pre-judge; the deliverable-space selection landed at q=0.54, a near-flat
+// s_hr ~1.08-1.17. GEOMETRY-UNIDENTIFIED (Fable): the response is unresolved between the constant and
+// a mild ramp — the DELIVERABLE is determined, the SHAPE is not. That is the honest successor to the
+// old "HR is gap-flat" claim, and it is why q carries a wide bootstrap CI while s(g) does not.
+//
+// GATE (w)2' (Fable ruling, 2026-07-22): family misfit iff the shipped s(g) is not well-determined
+// over the APPLIED domain — the equivalence set's s-spread at the hrr gap of all 46 production
+// tournaments (post-clamp) must be ≤ 1 need-SE everywhere, on the INTERPOLATED-SE yardstick (local
+// SE = linear interpolation of the bracketing tiers' need-SEs; nearest-tier snap would claim measured
+// precision at unmeasured gaps, which is anti-statistical). PASSED at worst 1.00× (0 of 46 exceed),
+// the 1.00× sitting AT gold's own fitted gap = the equivalence set's definitional tightness. The
+// low-q edge is the STRUCTURAL-LIMIT constant closure, not a grid edge — touching it is information.
+//
+// SELECTION, ESTIMAND, DOMAIN, PROVENANCE — all identical to C3: deliverable-space equivalence with a
+// minimax centre (set q ∈ [0.05,1.25], published); per-card free-level objective; flat-hold above the
+// largest fitted gap; fitN/fitP/gMax stamped and asserted. Compare ramps on s(g), never on {A,q}.
+// GATES: (w)1 span 96-99.6%; (w)3 LOTO pass; acceptance 5/5 fit-set tiers inside CI with the
+// smallest-gap tier (diamond) mandatory-inside; band holds at p=0.25/0.35.
+//
+// BASELINE: the C3 K ramp was ACTIVE at every step of the fit (the HR residual sits on the shipped
+// K line, not a stale one). The RAW Quick-tier HR9 line is invariant to the K leg by construction
+// (applyPitSpread moves only K when sHr=1), so the K baseline is load-bearing only for the deployed
+// env-bearing held-out legs — which it carried.
+export const PIT_SPREAD_HR = {
+  A: 0.1135,
+  q: 0.54,
+  G0: 20,
+  gMax: 44.56,
+  fitN: 50,
+  fitP: 0.30,
+  /** Fable's (w)2' verdict: the deliverable is determined, the SHAPE (constant vs mild ramp) is not. */
+  geometry: "unidentified" as const,
+} as const;
 
-/** s(gap) for the pitcher HR9 spread on the own-gap path: 1 + A·(1 − e^(−g/G)), s(g ≤ 0) = 1
- *  EXACTLY (league anchor). Applied via applyPitSpread to the raw model HR, PRE-BIP PRE-ERA
- *  (era_effective_hr/park multiply downstream, once — the K precedent's placement). gap = the
- *  own-HR-channel hrr gap, buildFrameShift(trainingMeans, poolField).pit.vR.hrr. */
-export const pitSpreadHrRamp = (gap: number): number =>
-  (gap > 0 ? 1 + PIT_SPREAD_HR.A * (1 - Math.exp(-gap / PIT_SPREAD_HR.G)) : 1);
+/** s(gap) for the pitcher HR9 spread on the own-gap path:
+ *
+ *      s(g) = 1                         g <= 0    EXACTLY (league anchor)
+ *      s(g) = 1 + A·(g/G0)^q            0 < g <= gMax
+ *      s(g) = s(gMax) = 1.175           g > gMax  (domain flat-hold — never assert more than the fit saw)
+ *
+ *  Applied via applyPitSpread to the raw model HR, PRE-BIP PRE-ERA (era_effective_hr/park multiply
+ *  downstream, once — the K precedent's placement). gap = the own-HR-channel hrr gap,
+ *  buildFrameShift(trainingMeans, poolField).pit.vR.hrr. */
+export const pitSpreadHrRamp = (gap: number): number => {
+  if (!(gap > 0)) return 1;
+  const g = Math.min(gap, PIT_SPREAD_HR.gMax);
+  return 1 + PIT_SPREAD_HR.A * Math.pow(g / PIT_SPREAD_HR.G0, PIT_SPREAD_HR.q);
+};
 
 // The full transform: a per-rating map for each role × platoon side. Absent entries fall
 // back to identity (applyAffine with undefined → raw r), so a partial transform is safe.

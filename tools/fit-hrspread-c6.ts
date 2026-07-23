@@ -943,7 +943,7 @@ say(`  equivalence set = q ∈ [${f(primary.sel.setLo, 2)}, ${f(primary.sel.setH
 say(`  PROVENANCE (fit-derived, coordinate-dependent — never rescale, only re-derive): fitN = ${FIELD_N}, fitP = ${PRESENCE_P}, gMax = ${f(gMaxP, 2)}.`);
 say(`  It joins K_SPREAD_PIT under assertKSpreadProvenance on a PASS (prereg §4 gate 5).`);
 say();
-say(`  SHIPPED CONSTANT, QUOTED FOR CONTRAST AND NOT TOUCHED: PIT_SPREAD_HR = { A: ${PIT_SPREAD_HR.A}, G: ${PIT_SPREAD_HR.G} }`);
+say(`  RETIRED SATURATING CONSTANT, QUOTED FOR CONTRAST: PIT_SPREAD_HR (BUILD-3) = { A: 0.2648, G: 5.8 }`);
 say(`  on the FALSIFIED saturating family, fitted at the PRE-C1/C2' coordinate. Compare on s(g) only:`);
 say(`    g          10      15      20      25      30      40`);
 say(`    C6       ${[10, 15, 20, 25, 30, 40].map((g) => rpad(f(sPrimary(g), 3), 8)).join("")}`);

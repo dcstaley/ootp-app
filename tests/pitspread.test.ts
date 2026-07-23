@@ -59,34 +59,61 @@ function card(over: Record<string, number> = {}): Record<string, unknown> {
 
 const mkE = (): RawPitching => ({ BB: 45, K: 130, HR: 17, nHH: 120, XBH: 30, pbabipSC: 90 });
 
-// ── 0) the production ramp (constants shipped 2026-07-17) ──────────────────────
-describe("pitSpreadHrRamp — fitted constants + league anchor + shape (regression pins)", () => {
-  it("pins the fit provenance constants exactly (A=0.2648, G=5.8 — fixtures/pitspread-fit-run-2026-07-17.txt)", () => {
-    expect(PIT_SPREAD_HR.A).toBe(0.2648);
-    expect(PIT_SPREAD_HR.G).toBe(5.8);
+// ── 0) the production ramp — HR REFIT, C6 constants event 2026-07-22 ────────────
+describe("pitSpreadHrRamp — refit constants + league anchor + domain rule (regression pins)", () => {
+  // THE FAMILY CHANGED. Previous pins were { A: 0.2648, G: 5.8 } on the saturating form, fitted at
+  // the PRE-C1/C2' coordinate on a residual about HR̄_pool — the pivot conflation ruling (z) corrected.
+  // Spec: docs/CWHIT_HRRAMP_REFIT_PREREG_2026-07-22.md + amendment 1.
+  // Fit artifact: fixtures/cwhit-hrspread-c6-2026-07-22.txt (tools/fit-hrspread-c6.ts).
+  it("pins the fit constants exactly (A=0.1135, q=0.54, G0=20 — HR refit)", () => {
+    expect(PIT_SPREAD_HR.A).toBe(0.1135);
+    expect(PIT_SPREAD_HR.q).toBe(0.54);
+    expect(PIT_SPREAD_HR.G0).toBe(20);
+  });
+  it("pins the fit-derived provenance + the geometry-unidentified marker (Fable (w)2')", () => {
+    expect(PIT_SPREAD_HR.fitN).toBe(50);
+    expect(PIT_SPREAD_HR.fitP).toBe(0.30);
+    expect(PIT_SPREAD_HR.gMax).toBe(44.56);
+    // The (w)2' verdict travels with the constant: deliverable determined, shape (constant vs mild
+    // ramp) not. It is why q carries a wide CI while s(g) does not.
+    expect(PIT_SPREAD_HR.geometry).toBe("unidentified");
   });
   it("s(0) === 1 EXACTLY, and s(g ≤ 0) === 1 (league anchor)", () => {
     expect(pitSpreadHrRamp(0)).toBe(1);
     expect(pitSpreadHrRamp(-5)).toBe(1);
     expect(pitSpreadHrRamp(-100)).toBe(1);
   });
-  it("reproduces the fitted ramp values at the tier gaps (gap-FLAT plateau — the BUILD-3 geometry)", () => {
-    // From the fit run: s at tier g_hr — gold 17.5 → 1.25, silver 27.6 / bronze 36.3 / iron 47.7 → 1.26.
-    expect(pitSpreadHrRamp(17.5)).toBeCloseTo(1.25, 2);
-    expect(pitSpreadHrRamp(27.6)).toBeCloseTo(1.26, 2);
-    expect(pitSpreadHrRamp(36.3)).toBeCloseTo(1.26, 2);
-    expect(pitSpreadHrRamp(47.7)).toBeCloseTo(1.26, 2);
-    // 95% saturation lands at the lowest observed gap by the pin rule (G = g_min/3).
-    expect(pitSpreadHrRamp(5.8)).toBeCloseTo(1.167, 3); // 1 + A·(1−e^−1)
+  it("reproduces the fitted s at the five tier gaps (the near-flat refit, all inside their CIs)", () => {
+    //   iron 44.56 → 1.175 [need 1.15]   bronze 33.36 → 1.150 [1.09]   silver 25.33 → 1.129 [1.17]
+    //   gold 15.97 → 1.101 [1.29]        diamond 4.05 → 1.048 [1.24]
+    expect(pitSpreadHrRamp(44.56)).toBeCloseTo(1.175, 3);
+    expect(pitSpreadHrRamp(33.36)).toBeCloseTo(1.150, 3);
+    expect(pitSpreadHrRamp(25.33)).toBeCloseTo(1.129, 3);
+    expect(pitSpreadHrRamp(15.97)).toBeCloseTo(1.101, 3);
+    expect(pitSpreadHrRamp(4.05)).toBeCloseTo(1.048, 3);
+    // A = s(G0) − 1 exactly (the whole point of fixing G0).
+    expect(pitSpreadHrRamp(PIT_SPREAD_HR.G0)).toBeCloseTo(1 + PIT_SPREAD_HR.A, 12);
   });
-  it("is monotone non-decreasing and bounded by the plateau 1 + A", () => {
+  it("HOLDS FLAT above gMax — s(g > gMax) === s(gMax), at every gap production can reach", () => {
+    const plateau = pitSpreadHrRamp(PIT_SPREAD_HR.gMax);
+    expect(plateau).toBeCloseTo(1.175, 3);
+    for (const g of [44.57, 45, 50, 100, 1e6]) expect(pitSpreadHrRamp(g)).toBe(plateau);
+  });
+  it("is monotone non-decreasing, and CONCAVE over the fitted range (q < 1 — saturating shape)", () => {
+    const plateau = pitSpreadHrRamp(PIT_SPREAD_HR.gMax);
     let prev = pitSpreadHrRamp(0);
-    for (let g = 1; g <= 100; g += 1) {
+    for (let g = 0.25; g <= 100; g += 0.25) {
       const s = pitSpreadHrRamp(g);
       expect(s).toBeGreaterThanOrEqual(prev);
-      expect(s).toBeLessThan(1 + PIT_SPREAD_HR.A);
+      expect(s).toBeLessThanOrEqual(plateau);
       prev = s;
     }
+    // q = 0.54 < 1 ⇒ concave: second difference negative across the fitted range.
+    for (let g = 5; g <= 43; g += 2) {
+      const d2 = pitSpreadHrRamp(g + 1) - 2 * pitSpreadHrRamp(g) + pitSpreadHrRamp(g - 1);
+      expect(d2).toBeLessThan(0);
+    }
+    expect(PIT_SPREAD_HR.q).toBeLessThan(1);
   });
 });
 

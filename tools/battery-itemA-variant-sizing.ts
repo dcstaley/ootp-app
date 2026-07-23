@@ -188,7 +188,7 @@ console.log(`╚═════════════════════�
 console.log(`model '${trained.id}' | catalog '${srcId}' (${baseCards.length} base cards, ${nVariantRowsInCsv} variant rows in the CSV)`);
 console.log(`model artifact: includeVariants=${String(trained.includeVariants)}  window=[${(trained.window ?? []).join(",")}]  ⇒ trainingMeans is VARIANT-INCLUSIVE`);
 console.log(`FIELD_N = ${FIELD_N} (imported from src/scoring-core/pool-stats.ts; never re-declared here)`);
-console.log(`shipped ramps quoted as they stand: K_SPREAD_PIT = {A:${K_SPREAD_PIT.A}, q:${K_SPREAD_PIT.q}, gMax:${K_SPREAD_PIT.gMax}}  PIT_SPREAD_HR = {A:${PIT_SPREAD_HR.A}, G:${PIT_SPREAD_HR.G}}  — NOT refit`);
+console.log(`shipped ramps quoted as they stand: K_SPREAD_PIT = {A:${K_SPREAD_PIT.A}, q:${K_SPREAD_PIT.q}, gMax:${K_SPREAD_PIT.gMax}}  PIT_SPREAD_HR = {A:${PIT_SPREAD_HR.A}, q:${PIT_SPREAD_HR.q}, gMax:${PIT_SPREAD_HR.gMax}}  — NOT refit`);
 console.log(`MEASUREMENT ONLY — no production behaviour, default or constant is changed, and nothing is wired.`);
 
 // ═══ 1. INVENTORY ════════════════════════════════════════════════════════════
@@ -375,7 +375,7 @@ for (const fm of FORMATS) {
 // ═══ 3. DOWNSTREAM: THE SHIPPED RAMPS ════════════════════════════════════════
 console.log(`\n\n╔═══ 3. DOWNSTREAM — the SHIPPED ramps, evaluated at the moved gaps (NOT refit) ═══╗`);
 console.log(`  s_K(g)  = 1 + ${K_SPREAD_PIT.A}·(min(g, ${K_SPREAD_PIT.gMax})/${K_SPREAD_PIT.G0})^${K_SPREAD_PIT.q},  g = frameShift.pit.vR.stu   (flat above gMax)`);
-console.log(`  s_HR(g) = 1 + ${PIT_SPREAD_HR.A}·(1 − e^(−g/${PIT_SPREAD_HR.G})),  g = frameShift.pit.vR.hrr`);
+console.log(`  s_HR(g) = 1 + ${PIT_SPREAD_HR.A}·(min(g, ${PIT_SPREAD_HR.gMax})/${PIT_SPREAD_HR.G0})^${PIT_SPREAD_HR.q},  g = frameShift.pit.vR.hrr`);
 console.log(`  Both are s(g ≤ 0) = 1 EXACTLY (league anchor). Constants quoted from src/model/pool-transform.ts.`);
 console.log(`\n  format         gap_stu cur / inc     s_K cur / inc (Δ)          gap_hrr cur / inc     s_HR cur / inc (Δ)`);
 for (const fm of FORMATS) {
