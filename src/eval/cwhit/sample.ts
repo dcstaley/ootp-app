@@ -28,7 +28,7 @@ import {
   hittingBsr, assembleRawHittingWoba, assembleRawPitchingWoba,
 } from "../../scoring-core/woba.ts";
 import type { Card } from "../../data/catalog.ts";
-import { makeVariant, canHaveVariant, conditionalPresence, presenceTripwire, type PresenceReading, type PresenceVerdict } from "../../data/variants.ts";
+import { makeVariant, canHaveVariant, conditionalPresence, presenceTripwire, type PresenceReading, type PresenceVerdict, type PresenceScope } from "../../data/variants.ts";
 import { PIT_BIP_ADJ, HIT_BIP_ADJ, hRate, type EventForm } from "../../model/curves.ts";
 import { applyPitSpread } from "../../model/pool-transform.ts";
 import { applyHitTail, type HitTail } from "../../scoring-core/hit-tail.ts";
@@ -252,7 +252,7 @@ export interface SampleResult {
    *  at the end of `buildCwhitSample`). Always present, so a tool can PRINT the reading even when
    *  it is in band and therefore silent in `notices`. */
   presence: PresenceReading;
-  presenceTrip: { verdict: PresenceVerdict; ok: boolean; p: number; shipped: number; message: string };
+  presenceTrip: { verdict: PresenceVerdict; ok: boolean; p: number; shipped: number; scope: PresenceScope; message: string };
   /** What this sample was actually built from + the floors it was built under — reported so a run's
    *  provenance line states its corpus and bar instead of assuming the module defaults. */
   source: CwhitSource;
@@ -712,10 +712,14 @@ export function buildCwhitSample(d: SampleDeps): SampleResult {
     // the safe direction for a drift detector.
     eligible: eligById.get(r.cid.split("|")[0] ?? "") ?? false,
   })));
-  const presenceTrip = presenceTripwire(presence);
-  // Silent when in band — that is the rule ("inside 0.25-0.35 => no action"). Loud otherwise, and
-  // loud about thinness too, because a thin reading masquerading as a pass is how a tripwire dies.
-  if (presenceTrip.verdict !== "in-band") notices.push(presenceTrip.message);
+  // SCOPE: `formats` explicitly narrowed ⇒ this is a per-format read, which CANNOT speak to a
+  // GLOBAL prior. Only a default (whole-corpus) read earns a drift verdict.
+  const presenceScope: PresenceScope = d.formats ? "partial" : "corpus";
+  const presenceTrip = presenceTripwire(presence, undefined, presenceScope);
+  // Silent when in band — that is the rule ("inside 0.25-0.35 => no action") — and silent on a
+  // partial read, which has no verdict to give. Loud on a real breach, and loud about THINNESS too,
+  // because a thin reading masquerading as a pass is how a tripwire dies unnoticed.
+  if (presenceTrip.verdict === "OUT-OF-BAND" || presenceTrip.verdict === "insufficient data") notices.push(presenceTrip.message);
 
   return { recs, pools, cals, windows, notices, projUnjoinedCatalog, projUnobserved, obsFiles, projFiles, source: src, floors: { minBf, minPa }, projJoin, presence, presenceTrip };
 }

@@ -238,7 +238,12 @@ export function conditionalPresence(rows: Iterable<PresenceRow>): PresenceReadin
   };
 }
 
-export type PresenceVerdict = "in-band" | "OUT-OF-BAND" | "insufficient data";
+export type PresenceVerdict = "in-band" | "OUT-OF-BAND" | "insufficient data" | "partial read";
+
+/** What population a presence reading covers. `PRESENCE_P` is a GLOBAL prior (ruling (t): one p for
+ *  every format, property-conditioning REJECTED because the natural conditioner is realized rather
+ *  than ex-ante), so only an ECOSYSTEM-WIDE reading can answer whether it has drifted. */
+export type PresenceScope = "corpus" | "partial";
 
 /** THE STANDING TRIPWIRE (drift doctrine). Every capture re-pull compares realized conditional
  *  presence against the shipped `PRESENCE_P`.
@@ -251,20 +256,32 @@ export type PresenceVerdict = "in-band" | "OUT-OF-BAND" | "insufficient data";
  *  knob, because a ramp fitted at one p can only be RE-DERIVED at another, never rescaled.
  *
  *  A thin reading returns "insufficient data" and is NEVER reported as either a pass or a breach. */
-export function presenceTripwire(reading: PresenceReading, shipped: number = PRESENCE_P): {
-  verdict: PresenceVerdict; ok: boolean; p: number; shipped: number; message: string;
-} {
+export function presenceTripwire(
+  reading: PresenceReading, shipped: number = PRESENCE_P, scope: PresenceScope = "corpus",
+): { verdict: PresenceVerdict; ok: boolean; p: number; shipped: number; scope: PresenceScope; message: string } {
   const p = reading.conditionalP;
+  // GRAIN FIRST. A SINGLE-FORMAT read cannot answer the ecosystem question, and per-format realized
+  // presence genuinely spans ~12-49% — a spread ruling (t) MEASURED and deliberately declined to
+  // condition on. Issuing a breach against a GLOBAL prior from a per-format read would fire on
+  // nearly every call, and a tripwire that always fires is one that gets ignored. The reading is
+  // still returned in full; only the VERDICT is withheld.
+  if (scope === "partial") {
+    return {
+      verdict: "partial read", ok: true, p, shipped, scope,
+      message: `presence: this read covers ONE format (conditional ${(100 * p).toFixed(1)}%), not the ecosystem. `
+        + `p = ${shipped} is a GLOBAL prior and per-format presence legitimately spans ~12-49%, so no drift verdict is issued.`,
+    };
+  }
   if (!Number.isFinite(p) || reading.eligibleUsage < PRESENCE_MIN_USAGE) {
     return {
-      verdict: "insufficient data", ok: true, p, shipped,
+      verdict: "insufficient data", ok: true, p, shipped, scope,
       message: `presence tripwire: INSUFFICIENT DATA — eligible-class usage ${reading.eligibleUsage.toFixed(0)} `
         + `is below the ${PRESENCE_MIN_USAGE} bar over ${reading.rows} rows, so no presence verdict is issued (not a pass).`,
     };
   }
   const inBand = p >= PRESENCE_BAND.lo && p <= PRESENCE_BAND.hi;
   return {
-    verdict: inBand ? "in-band" : "OUT-OF-BAND", ok: inBand, p, shipped,
+    verdict: inBand ? "in-band" : "OUT-OF-BAND", ok: inBand, p, shipped, scope,
     message: inBand
       ? `presence tripwire: realized conditional presence ${(100 * p).toFixed(1)}% is inside the `
         + `${(100 * PRESENCE_BAND.lo).toFixed(0)}-${(100 * PRESENCE_BAND.hi).toFixed(0)}% band around the shipped p = ${shipped} — no action.`

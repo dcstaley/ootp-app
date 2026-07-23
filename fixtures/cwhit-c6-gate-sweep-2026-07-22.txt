@@ -1,5 +1,5 @@
 ################################################################################
-# C6 — FULL GATE SWEEP ON EVERYTHING SHIPPING.  VERDICT: STOP — 4 blocking failure(s)
+# C6 — FULL GATE SWEEP ON EVERYTHING SHIPPING.  VERDICT: STOP — 5 blocking failure(s)
 # Tool: tools/c6-gate-sweep.ts. EVALUATION ONLY — fits nothing, wires nothing, changes no
 # constant. It reads the SHIPPED constants and measures whether THEY pass.
 ################################################################################
@@ -15,8 +15,16 @@
     fit provenance   fitN 50 · fitP 0.3 — asserted at scoring-core load against
       FIELD_N = 50 and PRESENCE_P = 0.3. This run imported the scoring core, so that assertion PASSED.
 
-  NOT under test: the BABIP scalar (never set in production — held at the bronze G1 fail) and
-  the BUILD-2 hitter tail (dormant behind Tournament.hitTailCorrection, no default flip).
+    BUILD-2 HITTER TAIL (PINNED_HIT_TAIL) — ALSO SHIPPED, and also re-gated. An earlier draft of
+      this tool called it "dormant behind Tournament.hitTailCorrection". THAT WAS WRONG: it has
+      been STANDARD SCORING since 2026-07-17 (Derek's ruling 3 / plan §15.7 — universal
+      corrections ship ON BY DEFAULT with a global kill-switch), and hitTailCorrection is only an
+      override-OFF escape hatch that no tournament sets. A sweep that excluded it would not have
+      been a sweep of everything shipping, and its 7/7 gate record has the same clause-4 problem
+      as the HR ramp: it was established at the PRE-C1/C2' coordinate.
+
+  NOT under test: the pitcher BABIP scalar — never set in production (HELD at the bronze G1 fail),
+  so there is nothing shipping to gate.
 
 ### HEADER
   date        2026-07-22
@@ -38,8 +46,11 @@
           failure under an overrule; the ramp has since been replaced, so it is re-measured, not
           inherited. The CI is on the PAIRED difference — the observed series is shared and its
           sampling noise cancels.
-  LEAK    hitter lines must be BIT-IDENTICAL pre vs post. Both corrections are pitcher-only, so
-          any hitter movement is a correction crossing roles — a STOP whatever the pitcher gates say.
+  G1-HIT  post-correction HR600 / BABIP / SO%(PA) calibration slopes CI must cover 1 — the
+          BUILD-2 hitter tail's own gates, re-derived on this coordinate.
+  LEAK    BOTH DIRECTIONS must be BIT-IDENTICAL: the pitcher ramps must not move hitter lines,
+          and the hitter tail must not move pitcher lines. Each is fitted for ONE role, so
+          crossing the boundary means acting where it was never fitted — a STOP in any stratum.
 
   BLOCKING vs REPORTED, decided in advance by the stratification (A1.3 / A2.4), not after the
   numbers: stratum A is the CORE and its G1 failures BLOCK. Strata B and C carry the era and
@@ -100,61 +111,97 @@
   Gold Slots Daily       +0.16 → +0.05       +0.149 → +0.170
   Live Open Daily        -0.17 → -0.13       -0.010 → +0.001
 
-  ROLE-LEAK CHECK — hitter lines under a pitcher-only correction:
-    14 formats, 4828 hitter rows compared across five channels (HR600, BB%, BABIP, SO%, wOBA).
-    max |Δ| over ALL of them: 0.0e+0   ⇒ BIT-IDENTICAL ✓ — no correction crossed roles
+  G1-HIT — THE BUILD-2 HITTER TAIL, RE-GATED ON THIS COORDINATE (clause 4: its 7/7 record was
+  established at the PRE-C1/C2' coordinate, so it is re-derived rather than inherited):
+  format                 judged  HR600                    BABIP                    SO%(PA)
+  Iron Quick                193  1.26→1.01 [0.96,1.08] PASS 1.31→1.06 [0.94,1.20] PASS 1.20→1.05 [1.01,1.11] FAIL
+  Bronze Quick              176  1.03→0.88 [0.83,0.92] FAIL 1.14→0.90 [0.78,1.02] PASS 1.09→0.97 [0.93,1.02] PASS
+  Silver Quick              150  1.13→0.96 [0.91,1.02] PASS 1.34→0.80 [0.66,0.94] FAIL 1.12→1.01 [0.97,1.05] PASS
+  Gold Quick                130  1.22→1.04 [0.97,1.13] PASS 1.33→0.91 [0.75,1.07] PASS 1.14→1.03 [0.97,1.09] PASS
+  Diamond Quick              35  1.07→0.98 [0.79,1.29] PASS 1.25→0.91 [0.59,1.30] PASS 1.16→1.09 [0.95,1.22] PASS
+  Bronze Heart               72  1.13→1.00 [0.79,1.18] PASS 1.20→1.01 [0.79,1.25] PASS 1.29→1.16 [1.06,1.28] FAIL
+  Early Gold                162  1.30→1.17 [1.04,1.30] FAIL 1.71→1.03 [0.90,1.18] PASS 1.28→1.16 [1.05,1.27] FAIL
+  Diamond Heart             116  1.10→0.98 [0.90,1.06] PASS 1.35→0.95 [0.83,1.08] PASS 1.09→0.98 [0.86,1.09] PASS
+  Late Bronze                52  0.99→0.84 [0.72,0.97] FAIL 1.64→1.09 [0.76,1.45] PASS 1.12→1.01 [0.96,1.07] PASS
+  Diamond Cap Daily          76  1.07→1.02 [0.93,1.12] PASS 1.27→0.87 [0.64,1.09] PASS 0.88→0.82 [0.72,0.94] FAIL
+  Gold Cap Daily            169  1.31→1.18 [1.11,1.25] FAIL 1.18→0.88 [0.78,0.99] FAIL 1.07→0.97 [0.92,1.02] PASS
+  Saturday Bronze Cap        48  1.29→1.09 [0.99,1.21] PASS 1.19→0.81 [0.40,1.32] PASS 0.93→0.85 [0.74,1.00] FAIL
+  Gold Slots Daily          159  1.15→1.00 [0.92,1.09] PASS 1.33→0.92 [0.78,1.04] PASS 1.08→0.98 [0.94,1.02] PASS
+  Live Open Daily            51  1.38→0.99 [0.85,1.10] PASS 1.21→0.70 [0.49,0.86] FAIL 1.61→1.37 [1.28,1.46] FAIL
+
+  ROLE-LEAK CHECK — BOTH DIRECTIONS. Each correction is fitted for ONE role; crossing the
+  boundary means it is acting where it was never fitted, which is a STOP in any stratum.
+    pitcher ramps → hitters:  4828 hitter rows over 14 formats, five channels;  max |Δ| = 0.0e+0
+    hitter tail  → pitchers:  3539 pitcher rows over 14 formats, five channels;  max |Δ| = 0.0e+0
+    ⇒ BIT-IDENTICAL BOTH WAYS ✓ — no correction crossed roles
 
 ### 2. THE STRATIFIED READ (A1.3) — a defect attributes to the stratum where it FIRST appears
 
   A — NEUTRAL UNCAPPED QUICKS — THE CORE. These BLOCK.
-      Iron Quick             G1-K PASS  (0.97)   G1-HR PASS  (0.91)   G2 PASS
-      Bronze Quick           G1-K PASS  (0.99)   G1-HR FAIL  (0.86)   G2 PASS
-      Silver Quick           G1-K PASS  (0.99)   G1-HR PASS  (0.93)   G2 PASS
-      Gold Quick             G1-K FAIL  (1.34)   G1-HR PASS  (1.04)   G2 PASS
-      Diamond Quick          G1-K PASS  (0.92)   G1-HR PASS  (1.10)   G2 PASS
+      Iron Quick             G1-K PASS  (0.97)   G1-HR PASS  (0.91)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Bronze Quick           G1-K PASS  (0.99)   G1-HR FAIL  (0.86)   G2 PASS    hit HR FAIL  BABIP PASS  SO PASS
+      Silver Quick           G1-K PASS  (0.99)   G1-HR PASS  (0.93)   G2 PASS    hit HR PASS  BABIP FAIL  SO PASS
+      Gold Quick             G1-K FAIL  (1.34)   G1-HR PASS  (1.04)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
+      Diamond Quick          G1-K PASS  (0.92)   G1-HR PASS  (1.10)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
       ⇒ G1-K 4/5 pass · G1-HR 4/5 pass  (BLOCKING)
 
   A* — NEUTRAL UNCAPPED NON-QUICK CONTROL
-      Live Open Daily        G1-K FAIL  (0.49)   G1-HR FAIL  (1.35)   G2 FAIL
+      Live Open Daily        G1-K FAIL  (0.49)   G1-HR FAIL  (1.35)   G2 FAIL    hit HR PASS  BABIP FAIL  SO FAIL
       ⇒ G1-K 0/1 pass · G1-HR 0/1 pass  (reported, not blocking)
 
   B — ENV-BEARING DAILIES (+ the era/park layer — NOT BUILT, task 1)
-      Bronze Heart           G1-K FAIL  (1.64)   G1-HR PASS  (0.98)   G2 PASS
-      Early Gold             G1-K FAIL  (1.53)   G1-HR PASS  (1.15)   G2 PASS
-      Diamond Heart          G1-K FAIL  (1.17)   G1-HR PASS  (0.91)   G2 PASS
-      Late Bronze            G1-K PASS  (1.01)   G1-HR PASS  (0.80)   G2 FAIL
+      Bronze Heart           G1-K FAIL  (1.64)   G1-HR PASS  (0.98)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Early Gold             G1-K FAIL  (1.53)   G1-HR PASS  (1.15)   G2 PASS    hit HR FAIL  BABIP PASS  SO FAIL
+      Diamond Heart          G1-K FAIL  (1.17)   G1-HR PASS  (0.91)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
+      Late Bronze            G1-K PASS  (1.01)   G1-HR PASS  (0.80)   G2 FAIL    hit HR FAIL  BABIP PASS  SO PASS
       ⇒ G1-K 1/4 pass · G1-HR 4/4 pass  (reported, not blocking)
 
   C — BUDGET CAP/SLOTS (+ the composition layer — NOT BUILT, task 2)
-      Saturday Bronze Cap    G1-K PASS  (1.06)   G1-HR PASS  (0.96)   G2 PASS
-      Gold Slots Daily       G1-K FAIL  (1.22)   G1-HR PASS  (0.99)   G2 PASS
+      Saturday Bronze Cap    G1-K PASS  (1.06)   G1-HR PASS  (0.96)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Gold Slots Daily       G1-K FAIL  (1.22)   G1-HR PASS  (0.99)   G2 PASS    hit HR PASS  BABIP PASS  SO PASS
       ⇒ G1-K 1/2 pass · G1-HR 2/2 pass  (reported, not blocking)
 
   B+C — BOTH LAYERS — never a clean read of either
-      Diamond Cap Daily      G1-K FAIL  (1.56)   G1-HR PASS  (0.77)   G2 PASS
-      Gold Cap Daily         G1-K FAIL  (1.22)   G1-HR PASS  (0.92)   G2 PASS
+      Diamond Cap Daily      G1-K FAIL  (1.56)   G1-HR PASS  (0.77)   G2 PASS    hit HR PASS  BABIP PASS  SO FAIL
+      Gold Cap Daily         G1-K FAIL  (1.22)   G1-HR PASS  (0.92)   G2 PASS    hit HR FAIL  BABIP FAIL  SO PASS
       ⇒ G1-K 0/2 pass · G1-HR 2/2 pass  (reported, not blocking)
+
+### 2b. PUBLISHED RESIDUALS — CARVED FROM THE BLOCKING SET, RE-MEASURED, GROWTH-TESTED
+
+  Fable ruling 2026-07-22: a published residual is a defect whose FIX DOES NOT EXIST YET (gold
+  and live-pool both localise to the composition layer, task 2, not built). It leaves the
+  blocking set — a ship cannot be blocked on a defect nothing can currently fix — but it is
+  RE-MEASURED every sweep, and GROWTH CI-CLEAR beyond the published interval blocks again.
+  Staleness FIXABLE BY EXISTING TOOLS is unfinished work, never a residual — only these two
+  cells are carved; every stale-correction failure below still stands.
+
+  cell                        channel   published interval    re-measured this sweep      status
+  Gold Quick                 K         [+0.240, +0.630]     +0.449 [+0.291, +0.571]   within interval — carved
+  Live Open Daily            G2        [-0.183, -0.013]     -0.101 [-0.183, -0.013]   within interval — carved
+    · Gold Quick K: gold K residual (need − s), composition axis — ruling (y), amendment A2.3
+    · Live Open Daily G2: live-pool ordering cost (Δcorr), composition axis — published residual #2, expanded to the G2 leg
+  The gold K residual is re-measured as (pre-correction slope − shipped s): the pre-correction
+  slope IS the tier's need, and s is a constant, so their difference is the same quantity C3
+  published. The live G2 residual is the paired Δcorr directly. Both matched their published
+  intervals this sweep, which is what a first tracking read should show.
 
 ### 3. VERDICT
 
-  STOP. 4 blocking failure(s):
+  STOP. 5 blocking failure(s) (published residuals excluded — see §2b):
     · G1-HR FAIL in stratum A: Bronze Quick post 0.86 [0.73,0.99]
-    · G1-K FAIL in stratum A: Gold Quick post 1.34 [1.23,1.43]
     · G2 ORDERING FAIL: Late Bronze corr 0.4039 → 0.2744 (Δ CI -0.2377,-0.0116)
-    · G2 ORDERING FAIL: Live Open Daily corr 0.7274 → 0.6267 (Δ CI -0.1826,-0.0130)
+    · G1-HIT SO% FAIL in stratum A: Iron Quick post 1.05 [1.01,1.11]
+    · G1-HIT HR600 FAIL in stratum A: Bronze Quick post 0.88 [0.83,0.92]
+    · G1-HIT BABIP FAIL in stratum A: Silver Quick post 0.80 [0.66,0.94]
+
+  READING: with the two published residuals carved, EVERY remaining blocking failure is a
+  STALE CORRECTION — the HR ramp (bronze G1-HR, late-bronze G2) and the BUILD-2 hitter tail
+  (iron SO%, bronze HR600, silver BABIP), both with gate records set at the PRE-C1/C2'
+  coordinate and never re-fit on the current one. Only C3's K ramp was re-fit, and it passes.
+  This is the coherent picture Fable's option (a) addresses: refit both stale corrections on
+  the current coordinate, then ONE C6 over the coherent triple.
 
   Nothing is overruled here. Overrules are Fable's or Derek's, and this tool does not make them.
 
-  BUILDER NOTICES (9), reproduced rather than filtered — the presence tripwire
-  reports here when it is anything other than in-band:
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 42.4% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 19.3% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 19.7% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 11.9% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 35.3% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 41.0% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 49.2% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · ⚠ PRESENCE TRIPWIRE FIRED: realized conditional presence 42.0% is OUTSIDE the 25-35% band around the shipped p = 0.3. The shipped K-spread ramp was fitted AT p = 0.3 and its sensitivity legs cover only that band, so this is outside the evidence. FLAG A p-UPDATE FOR THE NEXT REFIT EVENT — retrain-coupled like FIELD_N. Do NOT rescale the ramp: the gap is not monotone in p, so it can only be RE-DERIVED.
-    · presence tripwire: INSUFFICIENT DATA — eligible-class usage 0 is below the 5000 bar over 180 rows, so no presence verdict is issued (not a pass).
 
 (end of artifact — C6 gate sweep, STOP)

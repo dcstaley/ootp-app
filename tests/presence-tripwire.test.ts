@@ -95,6 +95,27 @@ describe("presenceTripwire — silent in band, loud outside, never a verdict whe
       expect(t.message).toMatch(/RE-DERIVED/);
     }
   });
+  it("A PER-FORMAT READ ISSUES NO DRIFT VERDICT — the grain must match the prior's", () => {
+    // p is a GLOBAL prior (ruling (t) rejected property-conditioning), and per-format realized
+    // presence genuinely spans ~12-49% — a spread that ruling MEASURED and chose not to condition
+    // on. Judging a per-format read against the global prior fires on nearly every call, and a
+    // tripwire that always fires is one that gets turned off. Caught by the C6 sweep, which calls
+    // the builder once per format and lit up eight false breaches.
+    for (const p of [0.12, 0.19, 0.42, 0.49]) {
+      const t = presenceTripwire(conditionalPresence([
+        { usage: 100000 * (1 - p), variant: false, eligible: true },
+        { usage: 100000 * p, variant: true, eligible: true },
+      ]), PRESENCE_P, "partial");
+      expect(t.verdict).toBe("partial read");
+      expect(t.ok).toBe(true);
+      expect(t.message).toMatch(/GLOBAL prior/);
+    }
+  });
+  it("the SAME readings DO fire at corpus scope — the withholding is about grain, not leniency", () => {
+    for (const p of [0.12, 0.19, 0.42, 0.49]) {
+      expect(at(p).verdict).toBe("OUT-OF-BAND");
+    }
+  });
   it("a THIN reading is 'insufficient data' and is NEVER reported as a breach", () => {
     // A tripwire that cried wolf on thin data would be turned off, which is how tripwires die.
     const t = at(0.9, PRESENCE_MIN_USAGE - 1);
@@ -117,9 +138,13 @@ describe("SOURCE SCAN — the tripwire is wired into the ONE sample builder", ()
   it("exposes the reading on the result even when in band (so tools can print a silent pass)", () => {
     expect(src).toMatch(/presence,\s*presenceTrip\s*\}/);
   });
-  it("pushes a notice when the verdict is anything other than in-band", () => {
-    // Including 'insufficient data' — a tripwire that has quietly stopped seeing data looks
-    // identical to one that is passing, unless it says so.
-    expect(src).toMatch(/verdict !== "in-band"\) notices\.push/);
+  it("pushes a notice on a real breach AND on thinness, but not on a partial read", () => {
+    // 'insufficient data' must be loud: a tripwire that has quietly stopped seeing data looks
+    // identical to one that is passing, unless it says so. A PARTIAL read is different — it has no
+    // verdict to give, and shouting on every per-format call is how the signal gets ignored.
+    expect(src).toMatch(/verdict === "OUT-OF-BAND" \|\| presenceTrip\.verdict === "insufficient data"\) notices\.push/);
+  });
+  it("decides scope from whether the caller narrowed the format set", () => {
+    expect(src).toMatch(/presenceScope: PresenceScope = d\.formats \? "partial" : "corpus"/);
   });
 });
