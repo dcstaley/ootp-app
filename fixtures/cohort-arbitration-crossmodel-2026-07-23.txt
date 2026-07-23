@@ -1,0 +1,58 @@
+################################################################################
+# COHORT ARBITRATION — CROSS-MODEL + COORDINATE-STABILITY.  MEASUREMENT ONLY.
+# tools/cohort-arbitration-crossmodel.ts. Nothing wired; both artifacts read-only.
+# Active = league-42-43; cross-model partner = league-42-43-retrain (task-0 STOP subject).
+################################################################################
+
+### THE TWO ARTIFACTS DIFFER ONLY IN trainingMeans (verified task-0):
+  hitter: eye +1.62  pow +2.59  kRat -1.59  babip -1.24  gap +0.38
+  pitcher: con +0.00  stu +0.00  pbabip +0.00  hrr +0.00  ← the 0.000 control
+  eventForm / wobaWeights / platoon: BIT-IDENTICAL. So every cross-model delta below is a pure
+  train-leg (trainingMeans) effect by construction.
+
+### Q1 — WHERE THE CROSS-MODEL GAP DRIFT LIVES (train leg vs pool leg)
+
+  For each Quick tier: the K gap (stu) and HR gap (hrr) under each artifact, the pool field on
+  that channel (shared eventForm ⇒ artifact-independent), and the decomposition of the gap move.
+
+  tier      │ K gap (stu)  act→ret   Δgap │ pool.hit.kRat (shared) │ s_K act→ret   ΔsK │ HR gap act→ret Δ │ s_HR act→ret ΔsHR
+  iron      │   22.3→ 20.7  -1.59 │          102.5 (both) │ 1.861→1.721 -0.140 │ 44.6→47.2 +2.59 │ 1.175→1.175 +0.000
+  bronze    │   19.7→ 18.1  -1.59 │          105.0 (both) │ 1.642→1.525 -0.118 │ 33.4→36.0 +2.59 │ 1.150→1.156 +0.006
+  silver    │   17.5→ 15.9  -1.59 │          107.2 (both) │ 1.486→1.387 -0.099 │ 25.3→27.9 +2.59 │ 1.129→1.136 +0.007
+  gold      │   15.0→ 13.4  -1.59 │          109.7 (both) │ 1.335→1.256 -0.079 │ 16.0→18.6 +2.59 │ 1.101→1.109 +0.008
+  diamond   │   10.3→  8.7  -1.59 │          114.4 (both) │ 1.136→1.091 -0.045 │  4.1→ 6.6 +2.59 │ 1.048→1.063 +0.015
+
+  DECOMPOSITION: the mean K-gap move is -1.59. The train-leg move (trainingMeans.hit.kRat)
+  is -1.59, and the pool leg is IDENTICAL across artifacts (same eventForm ranking, printed
+  once above). So the cross-model K-gap drift is 100% train leg, ~0% pool leg.
+  ⇒ THE DRIFT LIVES ENTIRELY IN THE FROZEN TRAIN LEG. A cohort rule applied to the POOL leg
+  (the FIELD_N knob) CANNOT touch it; only the TRAIN-LEG selection (how trainingMeans is built)
+  can, and that is retrain-coupled — a rule change re-trains, which is the atomic event's job.
+
+### Q2 — THE FAMILY-LEVEL DRIFT TAX (dS/dg at the operating gaps; convex K vs flat HR)
+
+  K ramp  {A:0.6668, q:2.4} CONVEX ⇒ dS/dg RISES with gap.
+  HR ramp {A:0.1135, q:0.54} CONCAVE/near-flat ⇒ dS/dg FALLS with gap, small everywhere.
+
+  ΔS is the EXACT correction move s(g_ret)−s(g_act) (the linear dS/dg·Δg is shown for local slope
+  context but is only valid away from the gMax knee — iron's gap crosses it, so its exact move
+  -0.140 is the full ramp drop from the flat-hold plateau, not the 0 the local slope predicts).
+
+  tier      │ K gap │ dS_K/dg │ EXACT ΔS_K (Δg -1.6) │ HR gap │ dS_HR/dg │ EXACT ΔS_HR (Δg +2.6)
+  iron      │  22.3 │  0.0000 │    -0.140 (crosses gMax) │ 44.6 │  0.0000  │ +0.000
+  bronze    │  19.7 │  0.0783 │    -0.118         │ 33.4 │  0.0024  │ +0.006
+  silver    │  17.5 │  0.0665 │    -0.099         │ 25.3 │  0.0027  │ +0.007
+  gold      │  15.0 │  0.0536 │    -0.079         │ 16.0 │  0.0034  │ +0.008
+  diamond   │  10.3 │  0.0317 │    -0.045         │  4.1 │  0.0064  │ +0.015
+
+  HEADLINE: the SAME frame drift (kRat −1.59 into K, pow +2.59 into HR) moves the CONVEX K
+  correction by up to -0.140 but the FLAT HR correction by at most +0.015 — a 10× difference in drift
+  tax between the two families. That is the whole reason bronze K crossed CI and HR did not:
+  the convex form amplifies frame drift, the flat form absorbs it. FORM is a drift-robustness axis:
+  a flatter / less-convex K ramp would pay less tax per unit of frame drift, at the cost of the
+  diamond-end curvature the convex form bought.
+  This is NOT a recommendation to flatten K (that would reopen the diamond G1 the convex form
+  resolved) — it is the measurement that says the cohort rule and the ramp form are TWO levers on
+  the same drift tax, and the arbitration should weigh both.
+
+(end of artifact — cohort arbitration cross-model)
