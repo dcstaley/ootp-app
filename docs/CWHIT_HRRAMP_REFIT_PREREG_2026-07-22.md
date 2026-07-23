@@ -121,3 +121,24 @@ SAME dated commit as C3 and the hitter-tail refit — the atomic-event rule — 
 final C6 sweeps the coherent triple before any of it is announced to Derek.
 
 (end of pre-registration — HR-ramp refit)
+
+---
+
+# AMENDMENT 1 — Fable's approval. 2026-07-22. The coherent-set RULE, pre-committed.
+
+Approved with one amendment replacing "measure-then-declare the coherent set": pre-commit the RULE,
+not the set. This governs §4 gate 2.
+
+1. **Default fit set = all five tiers.**
+2. **Exclusion only by the mechanical monotone-feasibility test:** a tier is excluded iff no monotone
+   curve passes through all five need-CIs AND its removal restores feasibility with maximal margin —
+   deterministic given the measured needs, not a judgment call after seeing the fit.
+3. **Excluded tiers become tracked published residuals** (gold semantics: re-measured every sweep,
+   re-block on CI-clear growth beyond the published interval).
+4. **More than one exclusion on a channel = STOP** — that is a family/coordinate failure, not
+   carve-out material.
+5. **Diamond-mandatory does NOT transfer** (it was K-specific history). Channel-general replacement:
+   the **SMALLEST-GAP tier in the fit set is mandatory-within-CI** — it anchors `s(g→0) = 1`, and a
+   low-end miss is never acceptable.
+
+(end of amendment 1 — HR-ramp refit)

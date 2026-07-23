@@ -112,3 +112,22 @@ coordinate, with provenance stamped. It ships in the SAME dated commit as C3 and
 atomic-event rule — and the final C6 sweeps the coherent triple before anything is announced to Derek.
 
 (end of pre-registration — hitter-tail refit)
+
+---
+
+# AMENDMENT 1 — Fable's approval. 2026-07-22. The coherent-set RULE, pre-committed (per channel).
+
+Approved with one amendment replacing "measure-then-declare". Governs §4 gate 2, applied INDEPENDENTLY
+to each of the three channels (HR600, BABIP, SO%).
+
+1. **Default fit set = all five tiers**, per channel.
+2. **Exclusion only by the mechanical monotone-feasibility test:** a tier is excluded iff no monotone
+   `s_ch` passes through all five need-CIs AND its removal restores feasibility with maximal margin —
+   deterministic given the measured needs.
+3. **Excluded tiers become tracked published residuals** (gold semantics).
+4. **More than one exclusion ON A CHANNEL = STOP** — family/coordinate failure for that channel, not
+   carve-out material.
+5. **Diamond-mandatory does NOT transfer.** The **SMALLEST-GAP tier in each channel's fit set is
+   mandatory-within-CI** — it anchors `s_ch(g→0) = 1`; a low-end miss is never acceptable.
+
+(end of amendment 1 — hitter-tail refit)
