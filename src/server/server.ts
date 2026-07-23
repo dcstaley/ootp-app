@@ -21,7 +21,7 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant, presenceMixture, PRESENCE_M, PRESENCE_P } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { FIELD_N, productionFieldStats, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
+import { FIELD_N, productionFieldStats, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, buildCohortRefs, cohortSelectForModel, COHORT_RULE_TAG, type RatingRef, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT, type VertexPin } from "../training/forms.ts";
 import { inEphemeralScope, mayCache } from "./cache-scope.ts"; // draft scoring must not seed process-global caches
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
@@ -250,6 +250,7 @@ let activePlatoon: PlatoonExposure | null = null;
 let activeWobaWeights: WobaWeights | null = null; // active model's wRAA-derived wOBA weights → folded into coeffs
 let activeEnvelope: RatingEnvelope | null = null; // active model's per-rating training maxima → pool-transform saturation ceilings
 let activeTrainingMeans: TrainingMeans | null = null; // active model's per-channel training-opponent means → frame-v2 opp-gap reference (absent ⇒ own-gap)
+let activeCohortSelect: { hit: RatingRef; pit: RatingRef } | undefined; // active model's z-sum cohort refs (cohort-rule event) — absent ⇒ model-woba selection (bit-identical)
 // C4 low-K-support DISPLAY reference (model-scoped, never tournament-scoped). Stamped on
 // artifacts at save time; `activeModelRef` lets a pre-C4 artifact recompute it lazily from its
 // own window. DISPLAY-ONLY — read exclusively by toRow. See src/model/k-support.ts.
@@ -330,7 +331,7 @@ function referenceFieldStats(baseCatalog: any[], coeffs: Coeffs, model: EventMod
   if (refFieldCache?.key === key) return refFieldCache.stats;
   // C2' — a FIELD (it estimates a population cards meet), so it is presence-weighted, not
   // variant-free. topN scales by PRESENCE_M or the cohort silently shrinks by that factor.
-  const stats = productionFieldStats(baseCatalog, coeffs, model); // eventForm-only ⇒ ssp-free selection
+  const stats = productionFieldStats(baseCatalog, coeffs, model, true, undefined, activeCohortSelect); // eventForm-only ⇒ ssp-free selection; cohort-rule event: same select as the pool leg
   // Only a SAVED configuration may seed this. See src/server/cache-scope.ts: an unsaved draft
   // scored via /api/position-metrics used to be able to win a cold cache and serve every later
   // tournament a reference field that exists in no saved state.
@@ -391,7 +392,7 @@ function scoreTournament(t: Tournament): Scored {
   let matchup: { model: EventModel; shift: FrameShift } | undefined;
   let hitTail: HitTail | undefined;
   if (eventForm) {
-    const poolField = productionFieldStats(basePool, coeffs, evModel); // C2': FIELD ⇒ presence-weighted
+    const poolField = productionFieldStats(basePool, coeffs, evModel, true, undefined, activeCohortSelect); // C2': FIELD ⇒ presence-weighted; cohort-rule event: model-free select when the active model carries it
     const mode = transformMode();
     if ((mode === "frame-v2" || mode === "matchup") && activeTrainingMeans) {
       // The crossed opponent-gap shift + K spread are shared by both modes. matchup binds the
@@ -1465,6 +1466,7 @@ interface TrainedModel {
   wobaWeights?: WobaWeights; // wRAA-derived wOBA event weights for this model's leagues (optional; absent ⇒ defaults)
   ratingEnvelope?: RatingEnvelope; // per-rating training maxima → pool-transform saturation ceilings (optional)
   trainingMeans?: TrainingMeans; // per-channel top-50-field training-opponent means (matched to μ_pool) → frame-v2/matchup opp-gap reference (optional)
+  cohortRule?: string; // the SELECTION rule this model's trainingMeans was built under (cohort-rule event, 2026-07-23). Absent ⇒ model-woba (pre-event). COHORT_RULE_TAG ⇒ the model-free z-sum, and the pool leg must select the same way (cohortSelectForModel). Coordinate-defining — asserted on the ramps' provenance.
   // C4: the deployed K curve's league training support (weighted p05 of fit-window Stuff + a
   // percentile ladder). DISPLAY-ONLY — feeds the low-support grid flag, never any scoring path.
   // Absent on pre-C4 artifacts ⇒ the server recomputes it from this artifact's own window.
@@ -1572,8 +1574,17 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     c.maxPA = Math.max(c.maxPA as number, o.hit.PA); c.maxBF = Math.max(c.maxBF as number, o.pitch.BF);
   }
   const tmAll = [...tmCards.values()].filter((c) => c["Eye vR"] != null && c["Eye vL"] != null && c["Control vR"] != null && c["Control vL"] != null);
-  const tmFieldHit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxPA as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true);
-  const tmFieldPit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxBF as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true);
+  // COHORT-RULE EVENT (2026-07-23): the train leg selects by the MODEL-FREE z-sum against the
+  // NON-VARIANT catalog's rating baseline — the same-construction invariant with the pool leg, which
+  // resolves the identical `select` via cohortSelectForModel from the tag stamped below. FIELD_N=50
+  // retained (size was never the lever). Pre-event artifacts carry no tag and keep model-woba, so
+  // production is untouched until a z-sum-tagged model is activated. `buildCohortRefs` is built once
+  // from the non-variant catalog (the one place doctrine excludes variants — the rating-scaling
+  // baseline).
+  const tmCatalog = loadCatalog().catalog.cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
+  const tmSelect = buildCohortRefs(tmCatalog, tmCoeffs, tmModel, true);
+  const tmFieldHit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxPA as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true, tmSelect);
+  const tmFieldPit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxBF as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true, tmSelect);
   // Defensive: a sparse training window (few qualifying cards) can leave a channel's field stat
   // absent → `undefined.mu` crash. Extract each channel safely; if ANY is missing, omit
   // trainingMeans entirely (the model still saves — own-gap works without it; frame-v2/matchup
@@ -1606,6 +1617,10 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     wobaWeights,
     ratingEnvelope,
     trainingMeans,
+    // Stamp the SELECTION rule this trainingMeans was built under, but ONLY if the frame is complete
+    // (a model with no trainingMeans has no frame coordinate to tag). The pool leg reads this to
+    // select the same way — same-construction invariant — and the ramps assert it (coordinate-defining).
+    cohortRule: trainingMeans ? COHORT_RULE_TAG : undefined,
     // C4 low-support display reference: the BF^0.75-weighted p05 of Stuff over `pitQual` — the
     // EXACT rows the K curve above was fit on — so the threshold ships with the model it
     // describes instead of being recomputed per request. Non-scoring (see k-support.ts).
@@ -1641,6 +1656,35 @@ async function refreshActiveModel(): Promise<void> {
   activeWobaWeights = m?.wobaWeights ?? null;
   activeEnvelope = m?.ratingEnvelope ?? null;
   activeTrainingMeans = m?.trainingMeans ?? null;
+  // COHORT-RULE EVENT (2026-07-23): the selection rule the active model's frame was built under.
+  // The pool leg must select the SAME way (same-construction invariant), so scoring resolves
+  // `activeCohortSelect` from this tag; absent/"model-woba" ⇒ undefined ⇒ the pre-event model-woba
+  // ranking (bit-identical). Built once here (catalog-fixed, coeffs-independent) rather than per
+  // request.
+  const activeCohortRule = m?.cohortRule;
+  const cohortT0 = tournaments[0];
+  const cohortModel0 = (await repo.loadAll<Model>("models"))[0];
+  if (m?.eventForm && activeCohortRule === COHORT_RULE_TAG && cohortT0 && cohortModel0 && eras.get("era-2010")) {
+    const cat = loadCatalog().catalog.cards.filter(isBaseCard);
+    // The z-sum ref reads ratings only; coeffs affect the (unused-here) wOBA, so any resolved bag
+    // gives identical moments — a neutral era-2010 bag with the model's own weights.
+    const c0 = resolveCoeffs(cohortModel0, eras.get("era-2010")!,
+      { id: "neutral", name: "neutral", avg_l: 1, avg_r: 1, hr_l: 1, hr_r: 1, gap: 1 }, cohortT0.softcaps);
+    if (m.wobaWeights) applyWobaWeights(c0, m.wobaWeights);
+    activeCohortSelect = buildCohortRefs(cat, c0, makeRawPolyModel(m.eventForm), true);
+  } else {
+    activeCohortSelect = undefined;
+  }
+  // PROVENANCE GUARD (prereg §6): a spread ramp fit under one selection rule scored under another is
+  // on a different coordinate — the exact hole the task-0 STOP walked through. If the active model's
+  // rule disagrees with the enabled ramps' fit tag, the ramp is silently on the wrong coordinate.
+  // Loud, not fatal (a warning at activation, matching the trainingMeans-coherence checks), because
+  // the ramps ship in the SAME event as the rule and the mismatch only exists mid-migration.
+  const ramps = [{ n: "K-spread", tag: K_SPREAD_PIT.cohortRule, on: kSpreadPitEnabled() }, { n: "HR-spread", tag: PIT_SPREAD_HR.cohortRule, on: pitSpreadHrEnabled() }];
+  const activeRule = activeCohortRule ?? "model-woba";
+  for (const r of ramps) if (r.on && m?.eventForm && activeTrainingMeans && r.tag !== activeRule) {
+    console.warn(`[server] ⚠ COORDINATE MISMATCH: the ${r.n} ramp was fit under cohort rule '${r.tag}' but active model '${m?.id}' selects under '${activeRule}'. The ramp is on the WRONG coordinate — refit it under the active rule (its own atomic event) or the corrections mis-calibrate.`);
+  }
   activeKSupportStamped = m?.kSupport ?? null; // C4 display flag reference (stamped at save time)
   activeModelRef = m ? { id: m.id, window: m.window, minPA: m.minPA, includeVariants: m.includeVariants } : null;
   kSupportCache = null; // model change moves the training support
@@ -2047,7 +2091,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const evModel = makeRawPolyModel(ef);
     // Build each available mode's transform config from the SAME primitives scoreTournament uses.
     const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
-    const poolField = productionFieldStats(basePool, coeffs, evModel); // C2': FIELD ⇒ presence-weighted
+    const poolField = productionFieldStats(basePool, coeffs, evModel, true, undefined, activeCohortSelect); // C2': FIELD ⇒ presence-weighted; cohort-rule event: model-free select when the active model carries it
     // own-gap mode mirrors STANDARD scoring, which now includes the pitcher K-spread AND the
     // BUILD-3 HR-spread ramps (kill-switch-aware) — same primitives, same centering, so the
     // scorecard evaluates what production actually ships.

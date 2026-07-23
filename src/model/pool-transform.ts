@@ -313,6 +313,11 @@ export const K_SPREAD_PIT = {
   /** Fit-derived provenance, asserted against the values actually in force. Never rescale. */
   fitN: 50,
   fitP: 0.30,
+  /** The COHORT SELECTION RULE this ramp was fit under (cohort-rule event, 2026-07-23). "model-woba"
+   *  = the pre-event coordinate these constants live on. The cohort-rule event re-fits the ramp under
+   *  "zsum-catalog-v1" and re-stamps this; activating a model whose cohortRule differs from this tag
+   *  is a coordinate mismatch (the arm-B same-construction violation) and is guarded at activation. */
+  cohortRule: "model-woba",
 } as const;
 
 /** s(gap) for the pitcher K-spread on the own-gap path:
@@ -426,6 +431,8 @@ export const PIT_SPREAD_HR = {
   gMax: 44.56,
   fitN: 50,
   fitP: 0.30,
+  /** The cohort selection rule this ramp was fit under — see K_SPREAD_PIT.cohortRule. */
+  cohortRule: "model-woba",
   /** Fable's (w)2' verdict: the deliverable is determined, the SHAPE (constant vs mild ramp) is not. */
   geometry: "unidentified" as const,
 } as const;

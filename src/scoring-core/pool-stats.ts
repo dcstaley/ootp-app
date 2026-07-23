@@ -19,6 +19,7 @@ import {
 } from "../model/pool-transform.ts";
 import { n, sameSidePenaltyHitting, sameSidePenaltyPitching } from "./helpers.ts";
 import { assembleRawHittingWoba, assembleRawPitchingWoba } from "./woba.ts";
+import { cohortZSum, buildRatingRef, COHORT_RULE_TAG, type RatingRef } from "./cohort-select.ts";
 
 export interface FieldStats {
   hit: { vR: Record<string, RatingStats>; vL: Record<string, RatingStats> };
@@ -102,8 +103,8 @@ export function cardSideWobas(c: any, coeffs: Coeffs, model: EventModel, sspFree
  *  p = 0.25 / 0.35, and the alternative was a tool assembling its own presence-weighted field, i.e.
  *  a second definition of the exact thing this function exists to be the only copy of. Production
  *  never passes it. */
-export const productionFieldStats = (cards: any[], coeffs: Coeffs, model: EventModel, sspFree = true, p: number = PRESENCE_P): FieldStats =>
-  computeUnifiedFieldStats(presenceMixture(cards as Card[], p), coeffs, model, FIELD_N * PRESENCE_M, sspFree);
+export const productionFieldStats = (cards: any[], coeffs: Coeffs, model: EventModel, sspFree = true, p: number = PRESENCE_P, select?: { hit: RatingRef; pit: RatingRef }): FieldStats =>
+  computeUnifiedFieldStats(presenceMixture(cards as Card[], p), coeffs, model, FIELD_N * PRESENCE_M, sspFree, select);
 
 /** THE field cohort size — the validated realistic-field size (`tools/field-size.ts`).
  *
@@ -138,7 +139,35 @@ export function computeFieldStats(cards: any[], coeffs: Coeffs, model: EventMode
  *     cohort's DEPLOYMENT-side values (vR-cohort's vR ratings + vL-cohort's vL ratings), so a
  *     platoon specialist counts on the side he actually plays and his rarely-used bad side
  *     doesn't define the frame. */
-export function computeUnifiedFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, sspFree = false): FieldStats {
+/** Catalog-fixed z-sum references, one per role (cohort-rule event, 2026-07-23). Built ONCE from the
+ *  NON-VARIANT catalog — the rating-scaling baseline, the one place doctrine excludes variants
+ *  (Fable). Reused for BOTH legs of the gap (train + pool), which is the same-construction invariant.
+ *  Uses the same cardRec extraction the field means are taken over, so the selector and the selected
+ *  are the identical rating vector, side-pooled. */
+export function buildCohortRefs(catalog: any[], coeffs: Coeffs, model: EventModel, sspFree = true): { hit: RatingRef; pit: RatingRef } {
+  const hitVals: Record<string, number[]> = {}, pitVals: Record<string, number[]> = {};
+  for (const k of HIT_RATINGS) hitVals[k] = [];
+  for (const k of PIT_RATINGS) pitVals[k] = [];
+  for (const c of catalog) {
+    const r = cardRec(c, coeffs, model, sspFree);
+    for (const k of HIT_RATINGS) { hitVals[k]!.push(r.hitVR.rat[k] ?? 0, r.hitVL.rat[k] ?? 0); }
+    for (const k of PIT_RATINGS) { pitVals[k]!.push(r.pitVR.rat[k] ?? 0, r.pitVL.rat[k] ?? 0); }
+  }
+  return { hit: buildRatingRef(HIT_RATINGS, hitVals), pit: buildRatingRef(PIT_RATINGS, pitVals) };
+}
+
+/** Resolve the cohort selection for an active model. A model with `cohortRule === COHORT_RULE_TAG`
+ *  selects by the model-free z-sum (both legs); an ABSENT or `"model-woba"` tag is the current
+ *  behaviour and returns `undefined` (⇒ computeUnifiedFieldStats ranks by model wOBA, bit-identical).
+ *  So every pre-existing artifact is untouched and only a NEW z-sum-trained model flips the pool leg
+ *  — the per-model backward-compatibility that keeps production stable until activation. */
+export function cohortSelectForModel(cohortRule: string | undefined, catalog: any[], coeffs: Coeffs, model: EventModel, sspFree = true): { hit: RatingRef; pit: RatingRef } | undefined {
+  return cohortRule === COHORT_RULE_TAG ? buildCohortRefs(catalog, coeffs, model, sspFree) : undefined;
+}
+
+/** `select` present ⇒ MODEL-FREE z-sum cohort (cohort-rule event); absent ⇒ the current top-N-by-model-
+ *  wOBA. The two legs of the frame gap must use the SAME `select`, or the gap is biased. */
+export function computeUnifiedFieldStats(cards: any[], coeffs: Coeffs, model: EventModel, topN: number, sspFree = false, select?: { hit: RatingRef; pit: RatingRef }): FieldStats {
   // DEDUPE BY OBJECT IDENTITY BEFORE PREDICTING. `presenceMixture` represents a weighted mixture by
   // emitting the SAME card reference m times (and one shared v5 reference k times), so a replicated
   // population contains ~m× as many entries as distinct cards. Predicting each entry separately made
@@ -155,13 +184,23 @@ export function computeUnifiedFieldStats(cards: any[], coeffs: Coeffs, model: Ev
     if (!r) { r = cardRec(c, coeffs, model, sspFree); memo.set(c, r); }
     return r;
   });
-  // Pitchers: top-N by combined allowed wOBA (lower = better), both-side values pooled.
-  const pitTop = [...recs].sort((a, b) => (a.pitVR.woba + a.pitVL.woba) - (b.pitVR.woba + b.pitVL.woba)).slice(0, topN);
+  // Cohort SELECTION. Default (no `select`): top-N by the model's predicted wOBA — pitchers by
+  // combined allowed wOBA (lower = better), hitters per side by wOBA (higher = better). With
+  // `select`: top-N by the MODEL-FREE z-sum over the whole rating vector (higher = stronger,
+  // uniform direction for both roles) against the catalog-fixed reference — the cohort-rule event's
+  // data-fixed coordinate. Only the SELECTION differs; the pooling of the selected recs is identical.
+  const zPit = (r: CardRec) => cohortZSum(r.pitVR.rat, select!.pit) + cohortZSum(r.pitVL.rat, select!.pit);
+  const pitTop = select
+    ? [...recs].sort((a, b) => zPit(b) - zPit(a)).slice(0, topN)
+    : [...recs].sort((a, b) => (a.pitVR.woba + a.pitVL.woba) - (b.pitVR.woba + b.pitVL.woba)).slice(0, topN);
   const pit: Record<string, RatingStats> = {};
   for (const k of PIT_RATINGS) pit[k] = ratingStats(pitTop.flatMap((r) => [r.pitVR.rat[k] ?? 0, r.pitVL.rat[k] ?? 0]));
   // Hitters: per-side cohorts, each contributing its deployment-side values.
-  const hVR = recs.map((r) => r.hitVR).sort((a, b) => b.woba - a.woba).slice(0, topN);
-  const hVL = recs.map((r) => r.hitVL).sort((a, b) => b.woba - a.woba).slice(0, topN);
+  const hSort = (recSide: SideRec[]) => select
+    ? [...recSide].sort((a, b) => cohortZSum(b.rat, select.hit) - cohortZSum(a.rat, select.hit)).slice(0, topN)
+    : [...recSide].sort((a, b) => b.woba - a.woba).slice(0, topN);
+  const hVR = hSort(recs.map((r) => r.hitVR));
+  const hVL = hSort(recs.map((r) => r.hitVL));
   const hit: Record<string, RatingStats> = {};
   for (const k of HIT_RATINGS) hit[k] = ratingStats([...hVR.map((x) => x.rat[k] ?? 0), ...hVL.map((x) => x.rat[k] ?? 0)]);
   return { hit: { vR: hit, vL: hit }, pit: { vR: pit, vL: pit } };
