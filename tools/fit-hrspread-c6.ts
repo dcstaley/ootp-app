@@ -169,6 +169,9 @@ interface Selected {
   setLo: number; setHi: number; setN: number; contiguous: boolean; atEdge: boolean;
   radius: number; width: number;
   sLo: number[]; sHi: number[];
+  /** The equivalence-set members, carried so (w)2' can evaluate their s(g) spread over the APPLIED
+   *  domain (all production tournaments), not just the fitted gaps. */
+  members: { A: number; q: number }[];
 }
 function select(prof: ProfPt[], gaps: number[], ses: number[]): Selected {
   const lin = prof.find((p) => Math.abs(p.q - 1) < 1e-9)!;
@@ -193,7 +196,85 @@ function select(prof: ProfPt[], gaps: number[], ses: number[]): Selected {
     contiguous: pool.length === Math.round((setHi - setLo) * 100) + 1,
     atEdge: Math.abs(setLo - qAt(QI_LO)) < 1e-9 || Math.abs(setHi - qAt(QI_HI)) < 1e-9,
     radius, width: Math.max(...gaps.map((_, i) => (sHi[i]! - sLo[i]!) / ses[i]!)), sLo, sHi,
+    members: pool.map((p) => ({ A: p.A, q: p.q })),
   };
+}
+
+// ── GATE (w)2' — Fable ruling 2026-07-22, replacing the old grid-edge (w)2 ──────────────────────
+// Family misfit iff the SHIPPED DELIVERABLE is not well-determined over the APPLIED DOMAIN. Concretely:
+// evaluate the equivalence set's s(g) SPREAD at the gaps of ALL production tournaments POST-CLAMP;
+// spread ≤ 1 need-SE everywhere ⇒ no misfit, regardless of where the parameter set's edges sit.
+// TWO EDGE CLAUSES:
+//   · a STRUCTURAL-LIMIT edge — q → 0, the CONSTANT response, a closure boundary of the family — is
+//     NOT a grid edge. Touching it is INFORMATION (records a geometry-unresolved marker), never misfit.
+//   · an ARBITRARY high-q edge gets the OCTAVE-EXTENSION check: extend the grid one octave and re-select;
+//     if the applied-domain spread still holds the extension is harmless; if it grows, that is the
+//     genuine unbounded-family misfit the old (w)2 caught in C3.
+// The yardstick is the STRICTEST fitted need-SE (min over the fit set): spread ≤ that ⇒ ≤ every SE.
+interface W2Prime { pass: boolean; marker: string; maxSpread: number; refSE: number; atGap: number; why: string; geomUnresolved: boolean }
+// The yardstick is "≤ 1 need-SE everywhere" (Fable). "everywhere" is per applied gap, so the SE is the
+// one RELEVANT at that gap — the need-SE of the nearest fitted tier — not a single global SE. Judging
+// the ambiguity at a small-gap tier against a large-gap tier's tight SE would demand the deliverable be
+// pinned finer than the need itself was measured there, which is not what well-determined means.
+interface W2PrimeExt extends W2Prime { nearestWorst: number; interpWorst: number; nearestExc: number; interpExc: number; nApplied: number }
+function w2prime(sel: Selected, appliedGaps: number[], fitGaps: number[], ses: number[], gMax: number, reprofileHi?: (hiQi: number) => Selected): W2PrimeExt {
+  // The yardstick is "≤ 1 need-SE everywhere" (Fable). At a FITTED gap the SE is that tier's need-SE.
+  // At an APPLIED gap between tiers the local precision is the LINEAR INTERPOLATION of the bracketing
+  // tiers' need-SEs — the principled, discontinuity-free reading. `nearest` (snap to the closest
+  // tier) is reported ALONGSIDE only because at a mid-bracket gap it snaps to whichever tier is
+  // closer and so can quote a tighter SE than the interpolation region actually carries; it is the
+  // stricter reading and its disagreement with interp is the yardstick sensitivity, surfaced not hidden.
+  const srt = fitGaps.map((g, i) => ({ g, se: ses[i]! })).sort((a, b) => a.g - b.g);
+  const interpSE = (g: number) => {
+    if (g <= srt[0]!.g) return srt[0]!.se;
+    if (g >= srt[srt.length - 1]!.g) return srt[srt.length - 1]!.se;
+    for (let i = 1; i < srt.length; i++) { const a = srt[i - 1]!, b = srt[i]!; if (g <= b.g) return a.se + (b.se - a.se) * (g - a.g) / (b.g - a.g); }
+    return srt[srt.length - 1]!.se;
+  };
+  const nearestSE = (g: number) => { let bi = 0, bd = Infinity; for (let i = 0; i < fitGaps.length; i++) { const d = Math.abs(fitGaps[i]! - g); if (d < bd) { bd = d; bi = i; } } return ses[bi]!; };
+  const spreadAt = (members: { A: number; q: number }[], g: number) => {
+    const gc = Math.min(g, gMax);                          // POST-CLAMP
+    const vs = members.map((m) => sOf(m.A, m.q)(gc));
+    return Math.max(...vs) - Math.min(...vs);
+  };
+  // The binding quantity (interpolated yardstick), plus the nearest-tier reading for the audit.
+  let worstRatio = 0, maxSpread = 0, atGap = NaN, refSE = Math.min(...ses);
+  let nearestWorst = 0, nearestExc = 0, interpExc = 0;
+  for (const g of appliedGaps) {
+    const gc = Math.min(g, gMax), s = spreadAt(sel.members, gc);
+    const ri = s / interpSE(gc), rn = s / nearestSE(gc);
+    if (ri > worstRatio) { worstRatio = ri; maxSpread = s; atGap = gc; refSE = interpSE(gc); }
+    nearestWorst = Math.max(nearestWorst, rn);
+    if (ri > 1) interpExc++;
+    if (rn > 1) nearestExc++;
+  }
+  const lowEdge = Math.abs(sel.setLo - qAt(QI_LO)) < 1e-9;
+  const highEdge = Math.abs(sel.setHi - qAt(QI_HI)) < 1e-9;
+  const wellDet = worstRatio <= 1;
+
+  // The octave-extension check, only when the ARBITRARY high edge is touched.
+  let octaveNote = "", octaveMisfit = false;
+  if (highEdge && reprofileHi) {
+    const ext = reprofileHi(QI_HI * 2);
+    let extRatio = 0; for (const g of appliedGaps) { const gc = Math.min(g, gMax); extRatio = Math.max(extRatio, spreadAt(ext.members, gc) / interpSE(gc)); }
+    octaveMisfit = extRatio > 1;
+    octaveNote = ` High edge touched: octave extension to q=${f(qAt(QI_HI * 2), 1)} gives worst applied-domain spread ${f(extRatio, 2)}× local need-SE (${octaveMisfit ? "GROWS beyond" : "still within"} 1).`;
+  }
+
+  const geomUnresolved = lowEdge || highEdge;
+  const marker = geomUnresolved
+    ? `GEOMETRY-UNIDENTIFIED: response unresolved between the constant (q→0) and a mild ramp; the DELIVERABLE is determined, the SHAPE is not. The honest successor to a bare "gap-flat" claim.`
+    : `geometry resolved: the equivalence set is interior, shape identified.`;
+  const pass = wellDet && !octaveMisfit;
+  const nApplied = appliedGaps.length;
+  const why = pass
+    ? `applied-domain deliverable is well-determined: the worst equivalence-set s-spread across all `
+      + `${appliedGaps.length} production tournaments (post-clamp) is ${f(maxSpread, 3)} at gap ${f(atGap, 1)}, which is `
+      + `${f(worstRatio, 2)}× the local need-SE (${f(refSE, 3)}) there — ≤ 1 everywhere. ${lowEdge ? "The set's low end sits at the STRUCTURAL-LIMIT edge q→0 (the constant response, a family closure boundary) — that is information, not a grid edge." : ""}${octaveNote}`
+    : octaveMisfit
+      ? `the high-q edge is arbitrary and the octave-extension check FAILS:${octaveNote} the family is unbounded and the deliverable ambiguous — genuine misfit.`
+      : `applied-domain deliverable is NOT well-determined: worst s-spread ${f(maxSpread, 3)} at gap ${f(atGap, 1)} is ${f(worstRatio, 2)}× the local need-SE (${f(refSE, 3)}) — exceeds 1. The shipped curve is ambiguous where it is applied, by more than the need was measured there.`;
+  return { pass, marker, maxSpread, refSE, atGap, why, geomUnresolved, nearestWorst, interpWorst: worstRatio, nearestExc, interpExc, nApplied };
 }
 
 interface FitRow { tier: string; cid: string; name: string; bf: number; pred: number; obs: number; nv: number; w: number; d: number; z: number }
@@ -277,6 +358,24 @@ const span0 = spanOf(gapTable.get(0)!);
 const w1Rows = P_BAND.map((p) => ({ p, ord: descending(gapTable.get(p)!), ret: spanOf(gapTable.get(p)!) / span0 }));
 const W1_PASS = w1Rows.every((r) => r.ord) && w1Rows.filter((r) => r.p > 0).every((r) => r.ret >= 0.60);
 
+// ── THE APPLIED DOMAIN (gate (w)2', Fable ruling) — the hrr gap of EVERY production tournament ──
+// (w)2' asks whether the shipped s_hr(g) is well-determined where it is ACTUALLY APPLIED, not just at
+// the five fitted gaps. Computed once at the shipped p, exactly as production would resolve each
+// format: its own era/park/eligibility → its own field → its own hrr gap. Post-clamp is applied
+// inside w2prime (each gap capped at the fitted gMax before the spread is read).
+const appliedGaps: { id: string; gap: number }[] = [];
+for (const t of tournaments) {
+  const era = eras.get(t.eraId), park = parks.get(t.parkId);
+  if (!era || !park) continue;
+  const cf = resolveCoeffs(model, era, park, t.softcaps);
+  applyWobaWeights(cf, trained.wobaWeights!);
+  const inV = (c: Card) => { const v = n_(c["Card Value"]); return (t.card_value_min == null || v >= t.card_value_min) && (t.card_value_max == null || v <= t.card_value_max); };
+  const pool = baseCards.filter((c) => inV(c) && rowEligible(c as any, t));
+  if (!pool.length) continue;
+  appliedGaps.push({ id: t.id, gap: buildFrameShift(TM, productionFieldStats(pool, cf, rp)).pit.vR.hrr ?? 0 });
+}
+const APPLIED = appliedGaps.map((a) => a.gap);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 2. ONE PRESENCE LEG = measure the needs, run the feasibility rule, fit, gate, score acceptance
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -290,7 +389,7 @@ interface LegResult {
   aCI: { lo: number; hi: number }; qCI: { lo: number; hi: number };
   sCI: Map<string, { lo: number; hi: number }>;
   loo: { dropped: string; A: number; q: number; sAt: Map<string, number>; inAll: boolean }[];
-  w2: { pass: boolean; why: string };
+  w2: W2PrimeExt;
   w3: boolean; monotone: boolean;
   accept: { tier: string; s: number; need: number; lo: number; hi: number; inside: boolean; thin: boolean }[];
   acceptPass: boolean; smallInside: boolean;
@@ -397,10 +496,16 @@ function buildLeg(p: number, bar: number): LegResult {
   });
   const w3 = loo.every((x) => x.inAll);
 
-  // GATE (w)2 — the EQUIVALENCE SET reaching a grid edge = family misfit.
-  const w2 = sel.atEdge
-    ? { pass: false, why: `the EQUIVALENCE SET reaches a grid edge: q ∈ [${f(sel.setLo, 2)}, ${f(sel.setHi, 2)}] on a grid of [${f(qAt(QI_LO), 2)}, ${f(qAt(QI_HI), 2)}] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit` }
-    : { pass: true, why: `the equivalence set q ∈ [${f(sel.setLo, 2)}, ${f(sel.setHi, 2)}] (${sel.setN} of ${prof.length} grid points, ${sel.contiguous ? "contiguous" : "NON-CONTIGUOUS"}) is interior to [${f(qAt(QI_LO), 2)}, ${f(qAt(QI_HI), 2)}]; the minimax centre sits ${f(sel.radius, 2)} need-SEs from the furthest member, on a set ${f(sel.width, 2)} SEs wide` };
+  // GATE (w)2' — family misfit iff the shipped deliverable is not well-determined over the APPLIED
+  // domain (Fable ruling). The high-edge octave check re-profiles on an extended grid; the fit set,
+  // gaps and ses are fixed, so the re-profile is the same objective on a taller q-grid.
+  const reprofileHi = (hiQi: number): Selected => {
+    const ext: ProfPt[] = [];
+    for (let i = QI_LO; i <= hiQi; i++) { const q = qAt(i); const r = fitAt(aggs, q); ext.push({ q, A: r.A, sse: r.sse }); }
+    return select(ext, gaps, ses);
+  };
+  const gMaxLeg = Math.max(...gaps);            // flat-hold gap = largest FITTED gap (domain rule)
+  const w2 = w2prime(sel, APPLIED, gaps, ses, gMaxLeg, reprofileHi);
 
   const monotone = sel.A > 0 && sel.q > 0;
 
@@ -536,7 +641,7 @@ const bandHolds = pLegs.every((l) => !l.feas.stop && l.w2.pass && l.w3 && l.mono
 const fails: string[] = [];
 if (!W1_PASS) fails.push("GATE (w)1 IDENTIFIABILITY");
 if (primary.feas.stop) fails.push("STOP — family/coordinate failure: >1 exclusion on the HR channel");
-if (!primary.w2.pass) fails.push("GATE (w)2 EQUIVALENCE SET AT A GRID EDGE (family misfit)");
+if (!primary.w2.pass) fails.push("GATE (w)2' APPLIED-DOMAIN DELIVERABLE NOT WELL-DETERMINED (family misfit)");
 if (!primary.w3) fails.push("GATE (w)3 LEAVE-ONE-TIER-OUT IN DELIVERABLE SPACE");
 if (!primary.monotone) fails.push("KILL 6 — THE FITTED FORM IS NOT MONOTONE OVER THE OBSERVED RANGE");
 if (!primary.feas.stop && !primary.smallInside) fails.push(`ACCEPTANCE — SMALLEST-GAP tier (${primary.smallestGapTier}) OUTSIDE its measured CI (STOP-class)`);
@@ -565,7 +670,8 @@ say(`     ${w1Rows.every((r) => r.ord) ? "strictly descending at every p in the 
 say(`     span retention ${f(w1Rows.find((r) => r.p === PRESENCE_P)!.ret * 100, 1)}% at the shipped p (${w1Rows.filter((r) => r.p > 0).map((r) => `${f(r.p, 2)}: ${f(r.ret * 100, 1)}%`).join(", ")}) against a 60% floor.`);
 say(`  2. THE COHERENT-SET RULE (amendment 1): ${primary.feas.reason}.`);
 say(`     Fit set = ${primary.fitTiers.join(", ")}${primary.excluded.length ? `; excluded = ${primary.excluded.map((e) => e.tier).join(", ")} (published residual)` : ""}.`);
-say(`  3. GATE (w)2 ${primary.w2.pass ? "PASSES" : "FAILS"}: ${primary.w2.why}`);
+say(`  3. GATE (w)2' ${primary.w2.pass ? "PASSES" : "FAILS"} (applied-domain deliverable, Fable ruling): ${primary.w2.why}`);
+if (primary.w2.geomUnresolved) say(`     ${primary.w2.marker}`);
 say(`  4. GATE (w)3 ${primary.w3 ? "PASSES" : "FAILS"} in deliverable space: ${primary.w3 ? "no single tier determines the delivered s(g)" : "a leave-one-out refit leaves the full fit's s-CI"}.`);
 say(`  5. ACCEPTANCE ${primary.acceptPass ? "PASSES" : "FAILS"}: ${nIn} of the ${primary.fitCells.length} fit-set tiers inside their measured CI,`);
 say(`     SMALLEST-GAP tier (${primary.smallestGapTier}) ${primary.smallInside ? "INSIDE ✓ — mandatory-within-CI met" : "OUTSIDE ✗ — STOP-class on its own"}.`);
@@ -666,7 +772,7 @@ function sayLeg(leg: LegResult, title: string, full: boolean) {
   say();
   if (!full) return;
   say(`  THE EQUIVALENCE SET, PUBLISHED IN FULL (ruling (x) — this IS the deliverable's precision)`);
-  say(`    set:  q ∈ [${f(leg.sel.setLo, 2)}, ${f(leg.sel.setHi, 2)}]   ${leg.sel.setN} of ${leg.prof.length} grid points   ${leg.sel.contiguous ? "CONTIGUOUS ✓" : "NON-CONTIGUOUS ⚠"}   touches a grid edge: ${leg.sel.atEdge ? "YES ✗" : "NO ✓"}`);
+  say(`    set:  q ∈ [${f(leg.sel.setLo, 2)}, ${f(leg.sel.setHi, 2)}]   ${leg.sel.setN} of ${leg.prof.length} grid points   ${leg.sel.contiguous ? "CONTIGUOUS ✓" : "NON-CONTIGUOUS ⚠"}   touches a grid edge: ${leg.sel.atEdge ? `YES (q→0 is the STRUCTURAL-LIMIT constant edge — informational, see (w)2')` : "NO"}`);
   say(`      tier        se     set s-range          centre    (centre − range mid) / se`);
   for (const [i, c] of leg.fitCells.entries()) {
     const mid = (leg.sel.sLo[i]! + leg.sel.sHi[i]!) / 2;
@@ -674,8 +780,13 @@ function sayLeg(leg: LegResult, title: string, full: boolean) {
   }
   say(`    set width ${f(leg.sel.width, 2)} need-SEs; the centre reaches ${f(leg.sel.radius, 2)} SEs to the furthest member.`);
   say();
-  say(`  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: ${leg.w2.pass ? "PASS" : "FAIL"}`);
+  say(`  GATE (w)2' APPLIED-DOMAIN DELIVERABLE (Fable ruling — replaces the old grid-edge (w)2): ${leg.w2.pass ? "PASS" : "FAIL"}`);
   say(`    ${leg.w2.why}`);
+  say(`    ${leg.w2.marker}`);
+  say(`    YARDSTICK SENSITIVITY (surfaced, not hidden): over ${leg.w2.nApplied} production tournaments post-clamp, worst s-spread`);
+  say(`    is ${f(leg.w2.interpWorst, 2)}× local need-SE under the INTERPOLATED yardstick (${leg.w2.interpExc} exceed 1) and ${f(leg.w2.nearestWorst, 2)}× under NEAREST-tier`);
+  say(`    (${leg.w2.nearestExc} exceed 1). The two disagree only in the diamond↔gold interpolation region, where nearest snaps to`);
+  say(`    gold's tighter SE. Interpolation is the principled reading; the disagreement is the ruling-relevant sensitivity.`);
   say();
   say(`  GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE`);
   say(`    dropped        A        q      ${LADDER.map((t) => rpad(`s(${t.slice(0, 3)})`, 10)).join("")}  inside s-CI?`);

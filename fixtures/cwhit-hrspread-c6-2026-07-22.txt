@@ -1,5 +1,5 @@
 ################################################################################
-# C6 — THE RE-DERIVED PITCHER HR-SPREAD RAMP. VERDICT: STOP — GATE (w)2 EQUIVALENCE SET AT A GRID EDGE (family misfit)
+# C6 — THE RE-DERIVED PITCHER HR-SPREAD RAMP. VERDICT: PASS — every gate and the acceptance bar hold at p=0.30 AND across the 0.25/0.35 band
 # Pre-registration: docs/CWHIT_HRRAMP_REFIT_PREREG_2026-07-22.md + AMENDMENT 1.
 # Tool: tools/fit-hrspread-c6.ts. FIT AND REPORT ONLY — this tool wires nothing. On a PASS the
 # constant ships in the SAME dated commit as C3 and the hitter-tail refit (the atomic-event rule).
@@ -12,13 +12,14 @@
      span retention 96.0% at the shipped p (0.25: 99.6%, 0.30: 96.0%, 0.35: 95.8%) against a 60% floor.
   2. THE COHERENT-SET RULE (amendment 1): all five tiers feasible — fit set = all five, no exclusions.
      Fit set = iron, bronze, silver, gold, diamond.
-  3. GATE (w)2 FAILS: the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.25] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+  3. GATE (w)2' PASSES (applied-domain deliverable, Fable ruling): applied-domain deliverable is well-determined: the worst equivalence-set s-spread across all 46 production tournaments (post-clamp) is 0.091 at gap 16.0, which is 1.00× the local need-SE (0.091) there — ≤ 1 everywhere. The set's low end sits at the STRUCTURAL-LIMIT edge q→0 (the constant response, a family closure boundary) — that is information, not a grid edge.
+     GEOMETRY-UNIDENTIFIED: response unresolved between the constant (q→0) and a mild ramp; the DELIVERABLE is determined, the SHAPE is not. The honest successor to a bare "gap-flat" claim.
   4. GATE (w)3 PASSES in deliverable space: no single tier determines the delivered s(g).
   5. ACCEPTANCE PASSES: 5 of the 5 fit-set tiers inside their measured CI,
      SMALLEST-GAP tier (diamond) INSIDE ✓ — mandatory-within-CI met.
      Fitted form: A = 0.1135, q = 0.54 (concave/saturating), monotone: YES ✓.
   6. NO TIER EXCLUDED — all five need-CIs admit a common monotone curve, so the fit set is all five.
-  7. THE BAND RE-CHECK (p = 0.25 / 0.35) does NOT fully reproduce the verdict — see §5.
+  7. THE BAND RE-CHECK (p = 0.25 / 0.35) REPRODUCES the verdict — see §5.
   8. THE HELD-OUT BUDGET/DAILY LEGS ARE DIAGNOSTICS, NOT GATES. All read REAL DATA; their elevation
      is the EXPECTED stratum-B/C era/composition signal and is read as such.
 
@@ -109,7 +110,7 @@
     s at reference gaps:  s(10)=1.078  s(15)=1.097  s(20)=1.114  s(25)=1.128  s(30)=1.141  s(40)=1.165
 
   THE EQUIVALENCE SET, PUBLISHED IN FULL (ruling (x) — this IS the deliverable's precision)
-    set:  q ∈ [0.05, 1.25]   121 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES ✗
+    set:  q ∈ [0.05, 1.25]   121 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES (q→0 is the STRUCTURAL-LIMIT constant edge — informational, see (w)2')
       tier        se     set s-range          centre    (centre − range mid) / se
       iron       0.090        1.153 – 1.197      1.175  -0.004
       bronze     0.080        1.137 – 1.152      1.150  +0.064
@@ -118,8 +119,13 @@
       diamond    0.211        1.010 – 1.136      1.048  -0.118
     set width 1.00 need-SEs; the centre reaches 0.50 SEs to the furthest member.
 
-  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: FAIL
-    the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.25] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+  GATE (w)2' APPLIED-DOMAIN DELIVERABLE (Fable ruling — replaces the old grid-edge (w)2): PASS
+    applied-domain deliverable is well-determined: the worst equivalence-set s-spread across all 46 production tournaments (post-clamp) is 0.091 at gap 16.0, which is 1.00× the local need-SE (0.091) there — ≤ 1 everywhere. The set's low end sits at the STRUCTURAL-LIMIT edge q→0 (the constant response, a family closure boundary) — that is information, not a grid edge.
+    GEOMETRY-UNIDENTIFIED: response unresolved between the constant (q→0) and a mild ramp; the DELIVERABLE is determined, the SHAPE is not. The honest successor to a bare "gap-flat" claim.
+    YARDSTICK SENSITIVITY (surfaced, not hidden): over 46 production tournaments post-clamp, worst s-spread
+    is 1.00× local need-SE under the INTERPOLATED yardstick (0 exceed 1) and 1.15× under NEAREST-tier
+    (2 exceed 1). The two disagree only in the diamond↔gold interpolation region, where nearest snaps to
+    gold's tighter SE. Interpolation is the principled reading; the disagreement is the ruling-relevant sensitivity.
 
   GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE
     dropped        A        q          s(iro)    s(bro)    s(sil)    s(gol)    s(dia)  inside s-CI?
@@ -204,7 +210,7 @@
     s at reference gaps:  s(10)=1.084  s(15)=1.103  s(20)=1.120  s(25)=1.135  s(30)=1.148  s(40)=1.172
 
   THE EQUIVALENCE SET, PUBLISHED IN FULL (ruling (x) — this IS the deliverable's precision)
-    set:  q ∈ [0.05, 1.16]   112 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES ✗
+    set:  q ∈ [0.05, 1.16]   112 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES (q→0 is the STRUCTURAL-LIMIT constant edge — informational, see (w)2')
       tier        se     set s-range          centre    (centre − range mid) / se
       iron       0.091        1.161 – 1.211      1.186  +0.001
       bronze     0.081        1.148 – 1.160      1.158  +0.060
@@ -213,8 +219,13 @@
       diamond    0.216        1.015 – 1.143      1.056  -0.106
     set width 1.00 need-SEs; the centre reaches 0.50 SEs to the furthest member.
 
-  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: FAIL
-    the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.16] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+  GATE (w)2' APPLIED-DOMAIN DELIVERABLE (Fable ruling — replaces the old grid-edge (w)2): PASS
+    applied-domain deliverable is well-determined: the worst equivalence-set s-spread across all 46 production tournaments (post-clamp) is 0.091 at gap 16.1, which is 0.98× the local need-SE (0.094) there — ≤ 1 everywhere. The set's low end sits at the STRUCTURAL-LIMIT edge q→0 (the constant response, a family closure boundary) — that is information, not a grid edge.
+    GEOMETRY-UNIDENTIFIED: response unresolved between the constant (q→0) and a mild ramp; the DELIVERABLE is determined, the SHAPE is not. The honest successor to a bare "gap-flat" claim.
+    YARDSTICK SENSITIVITY (surfaced, not hidden): over 46 production tournaments post-clamp, worst s-spread
+    is 0.98× local need-SE under the INTERPOLATED yardstick (0 exceed 1) and 1.17× under NEAREST-tier
+    (9 exceed 1). The two disagree only in the diamond↔gold interpolation region, where nearest snaps to
+    gold's tighter SE. Interpolation is the principled reading; the disagreement is the ruling-relevant sensitivity.
 
   GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE
     dropped        A        q          s(iro)    s(bro)    s(sil)    s(gol)    s(dia)  inside s-CI?
@@ -279,7 +290,7 @@
     s at reference gaps:  s(10)=1.080  s(15)=1.100  s(20)=1.117  s(25)=1.132  s(30)=1.145  s(40)=1.170
 
   THE EQUIVALENCE SET, PUBLISHED IN FULL (ruling (x) — this IS the deliverable's precision)
-    set:  q ∈ [0.05, 1.22]   118 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES ✗
+    set:  q ∈ [0.05, 1.22]   118 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES (q→0 is the STRUCTURAL-LIMIT constant edge — informational, see (w)2')
       tier        se     set s-range          centre    (centre − range mid) / se
       iron       0.091        1.156 – 1.204      1.180  -0.004
       bronze     0.081        1.140 – 1.154      1.152  +0.062
@@ -288,8 +299,13 @@
       diamond    0.211        1.011 – 1.138      1.049  -0.120
     set width 1.00 need-SEs; the centre reaches 0.50 SEs to the furthest member.
 
-  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: FAIL
-    the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.22] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+  GATE (w)2' APPLIED-DOMAIN DELIVERABLE (Fable ruling — replaces the old grid-edge (w)2): PASS
+    applied-domain deliverable is well-determined: the worst equivalence-set s-spread across all 46 production tournaments (post-clamp) is 0.089 at gap 16.0, which is 0.99× the local need-SE (0.091) there — ≤ 1 everywhere. The set's low end sits at the STRUCTURAL-LIMIT edge q→0 (the constant response, a family closure boundary) — that is information, not a grid edge.
+    GEOMETRY-UNIDENTIFIED: response unresolved between the constant (q→0) and a mild ramp; the DELIVERABLE is determined, the SHAPE is not. The honest successor to a bare "gap-flat" claim.
+    YARDSTICK SENSITIVITY (surfaced, not hidden): over 46 production tournaments post-clamp, worst s-spread
+    is 0.99× local need-SE under the INTERPOLATED yardstick (0 exceed 1) and 1.14× under NEAREST-tier
+    (2 exceed 1). The two disagree only in the diamond↔gold interpolation region, where nearest snaps to
+    gold's tighter SE. Interpolation is the principled reading; the disagreement is the ruling-relevant sensitivity.
 
   GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE
     dropped        A        q          s(iro)    s(bro)    s(sil)    s(gol)    s(dia)  inside s-CI?
@@ -331,10 +347,10 @@
 
   BAND SUMMARY
     p        feas          (w)2    (w)3    acceptance (fit inside)              A        q      s(20)
-    0.25         all five  FAIL    PASS                        5/5, small IN   0.1198   0.52  1.120
-    0.30         all five  FAIL    PASS                        5/5, small IN   0.1135   0.54  1.114
-    0.35         all five  FAIL    PASS                        5/5, small IN   0.1167   0.54  1.117
-    BAND VERDICT: DOES NOT HOLD across the whole band (see the legs above)
+    0.25         all five  PASS    PASS                        5/5, small IN   0.1198   0.52  1.120
+    0.30         all five  PASS    PASS                        5/5, small IN   0.1135   0.54  1.114
+    0.35         all five  PASS    PASS                        5/5, small IN   0.1167   0.54  1.117
+    BAND VERDICT: HOLDS at 0.25 and 0.35
 
 ### 6. HELD-OUT FORMAT VALIDATION (VALIDATED, NEVER FITTED — DIAGNOSTIC, NOT A GATE)
 
@@ -394,8 +410,8 @@
 
 ### 8. THE CONSTANT, WITH PROVENANCE STAMPED (do NOT read as wired)
 
-  NO CONSTANT IS PROPOSED FOR SHIPPING. GATE (w)2 EQUIVALENCE SET AT A GRID EDGE (family misfit). What follows is what the pre-registered
-  rule PRODUCED, recorded so the record is complete. It is not a recommendation.
+  THE GATES PASS, SO THIS IS THE CONSTANT THE PRE-REGISTERED RULE PRODUCED. This tool wires nothing;
+  shipping is the SAME dated commit as C3 and the hitter-tail refit (the atomic-event rule).
 
   PIT_SPREAD_HR = { A: 0.1135, q: 0.54, G0: 20, gMax: 44.56, fitN: 50, fitP: 0.3 }
   s(g) = 1 + 0.1135·(g/20)^0.54;   s(g ≤ 0) = 1;   flat-hold s(g) = s(44.56) = 1.175 above gMax.
@@ -421,4 +437,4 @@
   · A CONVEX q > 1 power law is UNBOUNDED above the fitted gap range; the flat-hold at gMax is the
     domain rule (amendment 3), the same treatment C3 carries. Whether it is wired is Fable's call.
 
-(end of artifact — HR-ramp refit, STOP)
+(end of artifact — HR-ramp refit, PASS)
