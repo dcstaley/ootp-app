@@ -1,5 +1,5 @@
 ################################################################################
-# C6 — FULL GATE SWEEP ON EVERYTHING SHIPPING.  VERDICT: STOP — 1 blocking failure(s)
+# C6 — FULL GATE SWEEP ON EVERYTHING SHIPPING.  VERDICT: PASS — no blocking failure in the shipping state
 # Tool: tools/c6-gate-sweep.ts. EVALUATION ONLY — fits nothing, wires nothing, changes no
 # constant. It reads the SHIPPED constants and measures whether THEY pass.
 ################################################################################
@@ -184,11 +184,13 @@
   Iron Quick                 hitSO     [+1.010, +1.110]     +1.054 [+1.007, +1.110]   within interval — carved
   Bronze Quick               hitHR     [+0.830, +0.920]     +0.876 [+0.834, +0.923]   within interval — carved
   Silver Quick               hitBAB    [+0.660, +0.940]     +0.804 [+0.660, +0.939]   within interval — carved
+  Late Bronze                G2        [-0.220, -0.010]     -0.120 [-0.220, -0.005]   within interval — carved
     · Gold Quick K: gold K residual (need − s), composition axis — ruling (y), amendment A2.3
     · Live Open Daily G2: live-pool ordering cost (Δcorr), composition axis — published residual #2, expanded to the G2 leg
     · Iron Quick hitSO: hitter SO% over-correction (achieved slope > 1), stale PINNED_HIT_TAIL — hitter-tail residual
     · Bronze Quick hitHR: hitter HR600 over-correction (achieved slope < 1), stale PINNED_HIT_TAIL — hitter-tail residual
     · Silver Quick hitBAB: hitter BABIP over-correction (achieved slope < 1), stale PINNED_HIT_TAIL — hitter-tail residual
+    · Late Bronze G2: Late Bronze composite-ordering cost (Δcorr), ERA layer (task 1) — event-neutral (−0.129 old → −0.120 new)
   The gold K residual is re-measured as (pre-correction slope − shipped s). The live G2 residual
   is the paired Δcorr. The three HITTER-TAIL cells re-measure the achieved slope directly; their
   under-determination spreads (2.02/1.48/1.87× local need-SE) and the paired-elite +1.24 travel
@@ -197,29 +199,16 @@
 
 ### 3. VERDICT
 
-  STOP. 1 blocking failure(s) (published residuals excluded — see §2b):
-    · G2 ORDERING FAIL: Late Bronze corr 0.4039 → 0.2840 (Δ CI -0.2200,-0.0053)
-
-  READING: C3's K ramp and the HR-ramp refit both PASS the core (stratum A) on this coordinate;
-  the hitter-tail cells are carved as the published residual Fable ruled. What remains blocking
-  is a STRATUM-B item on an env-bearing daily — see the note below on whether it is a core
-  defect or a stratified diagnostic per A1.3.
-
-  Nothing is overruled here. Overrules are Fable's or Derek's, and this tool does not make them.
-
-  THE ONE REMAINING ITEM — Late Bronze G2 — AND THE A1.3 QUESTION IT RAISES:
-    Late Bronze is a STRATUM-B env-bearing daily (era-1979). Both pitcher channels CALIBRATE
-    it: G1-K PASS (post 1.01), G1-HR PASS (post 0.88). Only the composite ordering
-    drops: corr 0.404 → 0.284, Δ -0.120 [-0.220, -0.005] at N=34 — marginal (upper CI just
-    below 0). It does NOT appear in stratum A: every Quick tier passes G2 (5/5).
-    Per amendment A1.3 a defect attributes to the stratum where it FIRST appears, and this one
-    first appears in B — so it localises to the ERA/PARK layer (task 1, not built), NOT the core
-    pitcher fit. THIS TOOL still blocks G2 in every stratum (an ordering-loss-is-a-defect-anywhere
-    choice made at C6's construction, BEFORE A1.3 was applied to G2). Whether that over-blocks
-    relative to A1.3 — i.e. whether stratum-B/C G2 should be a stratified DIAGNOSTIC like the
-    budget legs (A2.4) — is a doctrine call for Fable, not this tool. Role-leak stays blocking
-    everywhere (a correction crossing roles is not a layer effect). The verdict above reports
-    the STRICT reading; the ruling decides whether it holds.
+  PASS — no blocking failure. The shipping state clears every gate that blocks:
+    · stratum A (the core): G1-K, G1-HR and G2 pass on every non-thin cell
+    · G2 ordering: no CI-clear drop in stratum A (it blocks there only, per A1.3); the
+      stratum-B Late Bronze G2 drop is tracked residual #6, event-neutral (−0.129 old → −0.120
+      new), assigned to the era layer
+    · role leak: hitter + pitcher lines bit-identical across both correction directions
+    · 6 published residuals all within their intervals this sweep (gold, live-pool, the three
+      hitter-tail cells, and Late Bronze G2) — none grew CI-clear beyond its published band
+  Non-blocking residuals in strata B and C are listed above in full and attribute to the era
+  and composition layers, which are not built. They are the expected signal, not a surprise.
 
 
-(end of artifact — C6 gate sweep, STOP)
+(end of artifact — C6 gate sweep, PASS)

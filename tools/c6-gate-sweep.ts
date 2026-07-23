@@ -383,6 +383,19 @@ const PUBLISHED: PubResid[] = [
     measure: (r) => ({ est: r.hBabPost, cLo: r.hBabCI.lo, cHi: r.hBabCI.hi }),
     worse: "down",
   },
+  // ── RESIDUAL #6 (Fable ruling, 2026-07-22) — Late Bronze G2, assigned to the ERA layer ──────────
+  // Both pitcher channels calibrate Late Bronze (G1-K/G1-HR pass); only the composite ordering drops,
+  // and it drops the SAME under old and new constants (−0.129 vs −0.120) — the event is not the cause.
+  // It first appears in stratum B, so per A1.3 it localises to the era/park layer (task 1, alongside
+  // EG/BH), and it is tracked here with gold semantics: a later sweep dropping CI-clear below the
+  // published interval re-blocks regardless of stratum, because a stratum-B residual that suddenly
+  // worsens is new information.
+  {
+    key: "late-bronze", channel: "G2", lo: -0.22, hi: -0.01,
+    what: "Late Bronze composite-ordering cost (Δcorr), ERA layer (task 1) — event-neutral (−0.129 old → −0.120 new)",
+    measure: (r) => ({ est: r.corrPost - r.corrPre, cLo: r.dCorrCI.lo, cHi: r.dCorrCI.hi }),
+    worse: "down",
+  },
 ];
 /** Is (format, channel) a carved published residual, and did it stay within its published interval? */
 interface CarveResult { pr: PubResid; row: Row; est: number; cLo: number; cHi: number; grew: boolean }
@@ -409,7 +422,14 @@ for (const r of stratumOf("A")) {
   if (g1k(r) === "FAIL" && !isCarved(r.tid, "K")) blocking.push(`G1-K FAIL in stratum A: ${lbl(r.label)} post ${f(r.kPost, 2)} [${f(r.kCI.lo, 2)},${f(r.kCI.hi, 2)}]`);
   if (g1hr(r) === "FAIL") blocking.push(`G1-HR FAIL in stratum A: ${lbl(r.label)} post ${f(r.hrPost, 2)} [${f(r.hrCI.lo, 2)},${f(r.hrCI.hi, 2)}]`);
 }
-for (const r of rows) if (g2(r) === "FAIL" && !isCarved(r.tid, "G2")) blocking.push(`G2 ORDERING FAIL: ${lbl(r.label)} corr ${f(r.corrPre, 4)} → ${f(r.corrPost, 4)} (Δ CI ${sgn(r.dCorrCI.lo, 4)},${sgn(r.dCorrCI.hi, 4)})`);
+// G2 BLOCKS STRATUM A ONLY (Fable ruling 2026-07-22, aligning the tool to amendment A1.3 — the
+// block-everywhere choice predated A1.3 and was never ratified). A stratum-B/C G2 failure first
+// appears outside the core, so it localises to the era/composition layer (task 1/2, not built) and
+// is a stratified DIAGNOSTIC, reported in the tables above but not blocking. Tracked published G2
+// residuals (live-open, late-bronze) still re-block on CI-clear GROWTH via the carved-growth loop
+// below, regardless of stratum. Role-leak stays blocking everywhere — a correction crossing roles
+// is not a layer effect.
+for (const r of stratumOf("A")) if (g2(r) === "FAIL" && !isCarved(r.tid, "G2")) blocking.push(`G2 ORDERING FAIL (stratum A core): ${lbl(r.label)} corr ${f(r.corrPre, 4)} → ${f(r.corrPost, 4)} (Δ CI ${sgn(r.dCorrCI.lo, 4)},${sgn(r.dCorrCI.hi, 4)})`);
 // A published residual that GREW CI-clear beyond its interval re-blocks, naming itself as new info.
 for (const c of carved) if (c.grew) blocking.push(`PUBLISHED RESIDUAL GREW: ${lbl(c.row.label)} ${c.pr.channel} now ${sgn(c.est, 3)} [${sgn(c.cLo, 3)},${sgn(c.cHi, 3)}] — CI-clear beyond the published [${sgn(c.pr.lo, 3)},${sgn(c.pr.hi, 3)}] (${c.pr.what})`);
 for (const r of stratumOf("A")) {
@@ -592,9 +612,13 @@ if (blocking.length) {
   }
 } else {
   say(`  PASS — no blocking failure. The shipping state clears every gate that blocks:`);
-  say(`    · stratum A (the core): G1-K and G1-HR pass on every non-thin cell`);
-  say(`    · G2 ordering: no CI-clear drop in ANY stratum`);
-  say(`    · role leak: hitter lines bit-identical under both pitcher corrections`);
+  say(`    · stratum A (the core): G1-K, G1-HR and G2 pass on every non-thin cell`);
+  say(`    · G2 ordering: no CI-clear drop in stratum A (it blocks there only, per A1.3); the`);
+  say(`      stratum-B Late Bronze G2 drop is tracked residual #6, event-neutral (−0.129 old → −0.120`);
+  say(`      new), assigned to the era layer`);
+  say(`    · role leak: hitter + pitcher lines bit-identical across both correction directions`);
+  say(`    · ${carved.length} published residuals all within their intervals this sweep (gold, live-pool, the three`);
+  say(`      hitter-tail cells, and Late Bronze G2) — none grew CI-clear beyond its published band`);
   say(`  Non-blocking residuals in strata B and C are listed above in full and attribute to the era`);
   say(`  and composition layers, which are not built. They are the expected signal, not a surprise.`);
 }
