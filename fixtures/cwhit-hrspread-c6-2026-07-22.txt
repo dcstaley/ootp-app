@@ -1,0 +1,424 @@
+################################################################################
+# C6 — THE RE-DERIVED PITCHER HR-SPREAD RAMP. VERDICT: STOP — GATE (w)2 EQUIVALENCE SET AT A GRID EDGE (family misfit)
+# Pre-registration: docs/CWHIT_HRRAMP_REFIT_PREREG_2026-07-22.md + AMENDMENT 1.
+# Tool: tools/fit-hrspread-c6.ts. FIT AND REPORT ONLY — this tool wires nothing. On a PASS the
+# constant ships in the SAME dated commit as C3 and the hitter-tail refit (the atomic-event rule).
+################################################################################
+
+### WHAT THIS RUN CONCLUDES (the detail is below; nothing here is tuned)
+
+  1. GATE (w)1 IDENTIFIABILITY PASSES on the hrr COORDINATE (all five tiers). Ordering
+     strictly descending at every p in the band;
+     span retention 96.0% at the shipped p (0.25: 99.6%, 0.30: 96.0%, 0.35: 95.8%) against a 60% floor.
+  2. THE COHERENT-SET RULE (amendment 1): all five tiers feasible — fit set = all five, no exclusions.
+     Fit set = iron, bronze, silver, gold, diamond.
+  3. GATE (w)2 FAILS: the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.25] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+  4. GATE (w)3 PASSES in deliverable space: no single tier determines the delivered s(g).
+  5. ACCEPTANCE PASSES: 5 of the 5 fit-set tiers inside their measured CI,
+     SMALLEST-GAP tier (diamond) INSIDE ✓ — mandatory-within-CI met.
+     Fitted form: A = 0.1135, q = 0.54 (concave/saturating), monotone: YES ✓.
+  6. NO TIER EXCLUDED — all five need-CIs admit a common monotone curve, so the fit set is all five.
+  7. THE BAND RE-CHECK (p = 0.25 / 0.35) does NOT fully reproduce the verdict — see §5.
+  8. THE HELD-OUT BUDGET/DAILY LEGS ARE DIAGNOSTICS, NOT GATES. All read REAL DATA; their elevation
+     is the EXPECTED stratum-B/C era/composition signal and is read as such.
+
+### HEADER
+  tool        tools/fit-hrspread-c6.ts
+  date        2026-07-22
+  model       'league-42-43'   (raw-poly event model, own-gap path, no anchor on the judged line)
+  catalog     'cdmx'   (3669 base cards, variant rows excluded from the catalog read)
+  commit      f0c0207 (HEAD at generation)
+  channel     HR9 — pitcher home runs per 9, the RAW event-model line (era_hr = 1 on neutral Quick env)
+  coordinate  gapHr = buildFrameShift(trainingMeans, productionFieldStats(pool)).pit.vR.hrr — post-C1 + post-C2'
+  baseline    shipped C3 K ramp ACTIVE at every step: sK = kSpreadPitRamp(gapK), K_SPREAD_PIT = {A:0.6668, q:2.40, gMax:22.25}
+  fit-N       FIELD_N = 50   (cohort size; scaled by PRESENCE_M = 20 on the replicated mixture)
+  fit-p       PRESENCE_P = 0.3   (presence prior; sensitivity legs at 0.25 / 0.35)
+  corpus      full-depth capture (buildCwhitSample DEFAULT_SOURCE) — ONE sample builder, no private joins
+  bars        primary BF ≥ 600; sensitivity BF ≥ 1000 (REPORT, not a gate)
+  bootstrap   B = 2000, SEED = 20260716; needs = mmse() slope of obs~pred, resample cards within tier
+  grain       observed statistics at ROW grain = (card × variant level); pool constants at CARD grain
+  era_k       1.0000  era_effective_hr 1.0000  on the neutral Quick env
+
+### THE DECLARED FORM (declared before the numbers, per pre-registration §3)
+
+    s(g) = 1 + A·(g/20)^q      for g > 0;      s(g ≤ 0) = 1 EXACTLY
+
+  · G0 = 20 fixes the units of A (A = s(20) − 1); A (amplitude) and q (curvature) are fitted.
+  · THE FAMILY CONTAINS BOTH ANSWERS: q → 0 ⇒ a CONSTANT amplification s ≈ 1 + A (HR-is-flat);
+    q > 0 ⇒ a monotone RAMP (HR-is-gap-driven). The deliverable-space selection decides, not the
+    family. This is the HR prereg's clause-4 (C) ruling: HR's family question is genuinely open.
+  · OBJECTIVE (ruling (z)): per-card residuals, per-card noise weights w_i = 1/per9NoiseVar(obs,BF),
+    a PER-TIER FREE LEVEL. HR̄_pool drops out; s is a PURE SPREAD RESPONSE. Production applies s
+    about HR̄_pool — the level lives in the ANCHOR layer, not in s.
+  · BASELINE (prereg §3): the shipped C3 K ramp is ACTIVE in BOTH arms. The HR residual is measured
+    GIVEN the shipped K ramp — the shipping reality — not against a stale K line.
+  · FITTED SET (amendment 1): the MONOTONE-FEASIBILITY RULE. Default all five; exclude at most one
+    tier (the one whose removal maximises min-slack) only when no monotone curve fits all five CIs;
+    >1 exclusion ⇒ STOP. The SMALLEST-GAP fit-set tier is mandatory-within-CI (replaces diamond).
+  · SELECTION (ruling (x)): DELIVERABLE-SPACE EQUIVALENCE, minimax centre, set published in full.
+    Grid q ∈ [0.05, 8.00] step 0.01, A closed-form at each q.
+
+### 1. THE COORDINATE + GATE (w)1 IDENTIFIABILITY (prong 1)
+
+  INSTRUMENT CHECK — productionFieldStats(pool) vs the same call with p stated explicitly at
+  p = 0.3: max |Δgap| = 0.0e+0  ✓ bit-identical (the p knob is default-identity)
+
+  gapHr pit.hrr        iron   bronze   silver     gold  diamond
+  p = 0.00            49.32    36.59    28.46    19.11     7.14
+  p = 0.25            46.67    34.25    25.56    16.35     4.64
+  p = 0.30            44.56    33.36    25.33    15.97     4.05
+  p = 0.35            44.47    32.65    25.37    15.63     4.05
+
+  The identifiability prong is over ALL FIVE tiers (the fitted set is not known until the needs are
+  measured — amendment 1 — and this prong is a property of the hrr COORDINATE, not of the fit).
+    p        ordering strictly descending    five-tier span   retention vs p=0
+    0.00     YES ✓                           42.18                —
+    0.25     YES ✓                           42.03           99.6%
+    0.30     YES ✓                           40.51           96.0%
+    0.35     YES ✓                           40.43           95.8%
+
+  REQUIREMENT: ordering at the fitted p matches p=0's, AND five-tier span retention ≥ 60%.
+  NOTE (prereg §2): if the HR NEED is gap-flat, ordering of NEEDS is not expected to be informative
+  — that is a family question the selection answers, NOT this gate, which is about the coordinate.
+  GATE (w)1: PASS
+
+### 2. THE PRIMARY FIT — p = 0.30, BF ≥ 600
+
+── PRIMARY LEG  p = 0.3, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  "fit" = in the fitted set; "fit*" = the smallest-gap MANDATORY tier; "OUT" = excluded, published (amd 1).
+  tier      set    N   gapHr      HR̄_pool/600   HR̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     fit  142     44.56       16.43       1.06    1.15   [0.84,1.46]   0.090    1.28
+  bronze   fit  156     33.36       16.36       1.06    1.09   [0.92,1.26]   0.080    1.13
+  silver   fit  121     25.33       16.29       1.05    1.17   [1.00,1.34]   0.082    0.95
+  gold     fit   91     15.97       15.75       1.02    1.29   [1.05,1.53]   0.091    1.27
+  diamond  fit*  36      4.05       15.44       1.00    1.24   [0.92,1.55]   0.211    1.14
+
+  THE FEASIBILITY RULE (amendment 1 — tiers ordered by gapHr ASCENDING)
+    order (gap asc):  diamond → gold → silver → bronze → iron
+    all-five min-slack (max hi−floor deficit): +0.212  ⇒ FEASIBLE — fit all five
+    fit set: iron, bronze, silver, gold, diamond   smallest-gap (mandatory): diamond
+
+  THE FIT  (fitted set: iron, bronze, silver, gold, diamond)
+    wide-grid SSE optimum:   q* = 0.05   A* = 0.1473   SSE 848.6
+    LINEAR LIMIT (q = 1):    A  = 0.0855   SSE 855.3   ⇒ β = A/20 = 0.00427 per gap unit
+    SELECTED (minimax centre of the equivalence set):  A = 0.1135  [boot 95% CI 0.0054, 0.1830]
+                                                       q = 0.54  [boot 95% CI 0.39, 5.12]
+    curvature: CONCAVE / saturating (q < 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(10)=1.078  s(15)=1.097  s(20)=1.114  s(25)=1.128  s(30)=1.141  s(40)=1.165
+
+  THE EQUIVALENCE SET, PUBLISHED IN FULL (ruling (x) — this IS the deliverable's precision)
+    set:  q ∈ [0.05, 1.25]   121 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES ✗
+      tier        se     set s-range          centre    (centre − range mid) / se
+      iron       0.090        1.153 – 1.197      1.175  -0.004
+      bronze     0.080        1.137 – 1.152      1.150  +0.064
+      silver     0.082        1.097 – 1.149      1.129  +0.069
+      gold       0.091        1.055 – 1.146      1.101  +0.004
+      diamond    0.211        1.010 – 1.136      1.048  -0.118
+    set width 1.00 need-SEs; the centre reaches 0.50 SEs to the furthest member.
+
+  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: FAIL
+    the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.25] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE
+    dropped        A        q          s(iro)    s(bro)    s(sil)    s(gol)    s(dia)  inside s-CI?
+    iron          0.0913   0.63       1.15      1.13      1.11      1.08      1.03  YES ✓
+    bronze        0.1796   0.42       1.25      1.22      1.20      1.16      1.09  YES ✓
+    silver        0.1096   0.51       1.16      1.14      1.12      1.10      1.05  YES ✓
+    gold          0.0405   1.98       1.20      1.11      1.06      1.03      1.00  YES ✓
+    diamond       0.1114   0.56       1.17      1.15      1.13      1.10      1.05  YES ✓
+    full fit s(g)                        1.17      1.15      1.13      1.10      1.05
+    full fit CI                1.09-1.37 1.05-1.23 1.02-1.20 1.00-1.17 1.00-1.10
+  GATE (w)3: PASS
+
+  ACCEPTANCE — implied s(g_t) vs the measured bootstrap CI, ON THE FIT SET
+  (smallest-gap tier MANDATORY; at most one other fit-set tier may sit outside. Excluded tiers
+  are published in §4, not scored.)
+    tier       gapHr   s(gap)   measured need   [boot 95% CI]    inside?
+    iron      44.56    1.175            1.15   [0.84,1.46]      YES ✓
+    bronze    33.36    1.150            1.09   [0.92,1.26]      YES ✓
+    silver    25.33    1.129            1.17   [1.00,1.34]      YES ✓
+    gold      15.97    1.101            1.29   [1.05,1.53]      YES ✓
+    diamond    4.05    1.048            1.24   [0.92,1.55]      YES ✓  (mandatory)
+    inside: 5 of 5;  SMALLEST-GAP (diamond) INSIDE ✓
+    monotone over the observed range: YES ✓
+  ACCEPTANCE: PASS
+
+  DIAGNOSTIC D2 — RULING (z): pivot-s − need (systematic level bleed) vs wtd free-s − need (weighting only)
+    tier      HR̄_pool/9   wtd mean pred   offset(pred−HR̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   need
+    iron         1.06            1.06              -0.00                      -0.22      1.28         1.23   1.15
+    bronze       1.06            1.04              -0.01                      -0.22      1.13         1.04   1.09
+    silver       1.05            1.08              +0.03                      -0.18      0.95         1.16   1.17
+    gold         1.02            1.01              -0.00                      -0.15      1.27         1.27   1.29
+    diamond      1.00            1.01              +0.01                      -0.22      1.14         1.33   1.24
+    pivot-s − need mean -0.04 (systematic, same sign);  wtd free-s − need mean +0.02 (weighting only)
+
+  DIAGNOSTIC D4 — family reach: tier-aggregate fit to the needs, precision-weighted (NOT the objective)
+         all five, optimum     A*  0.169 q*  0.05      1.18    1.17    1.17    1.17    1.16  ⇒ 5/5 fit inside
+         fit set, optimum      A*  0.169 q*  0.05      1.18    1.17    1.17    1.17    1.16  ⇒ 5/5 fit inside
+      needs                                       1.15    1.09    1.17    1.29    1.24
+
+### 3. THE 1000 BAR — A SENSITIVITY REPORT, NOT A GATE
+
+  A POOL-LEVEL ramp is one function s(g) of a FORMAT'S GAP — a catalog property — so s(g_t) returns
+  the SAME scalar at the 600 and 1000 bar. It cannot move between bars; the needs can.
+
+  tier       s(gapHr)   need@600  [CI]              need@1000 [CI]             N600→N1000   Δneed
+  iron        1.175       1.15  [0.84,1.46]           1.39 [1.20,1.60]          142→112  +0.24
+  bronze      1.150       1.09  [0.92,1.26]           1.07 [0.92,1.21]          156→122  -0.01
+  silver      1.129       1.17  [1.00,1.34]           1.15 [0.96,1.33]           121→96  -0.02
+  gold        1.101       1.29  [1.05,1.53]           1.20 [1.02,1.42]            91→68  -0.09
+  diamond     1.048       1.24  [0.92,1.55]           1.32 [1.10,1.51]            36→19  +0.08
+  1000-bar feasibility: all five tiers feasible — fit set = all five, no exclusions. Fit set iron, bronze, silver, gold, diamond; 4/5 inside, smallest-gap outside. REPORT ONLY.
+
+### 4. THE EXCLUDED TIER(S) — PUBLISHED QUANTIFIED RESIDUAL(S) (amendment 1)
+
+  NONE. All five tiers' need-CIs admit a common monotone curve (all-five min-slack +0.212 ≥ 0),
+  so no tier is fitted out and there is no published residual on the HR channel this run.
+
+### 5. THE GATES RE-CHECKED ACROSS THE PRESENCE BAND (p = 0.25 / 0.35)
+
+── SENSITIVITY LEG  p = 0.25, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  "fit" = in the fitted set; "fit*" = the smallest-gap MANDATORY tier; "OUT" = excluded, published (amd 1).
+  tier      set    N   gapHr      HR̄_pool/600   HR̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     fit  142     46.67       16.43       1.06    1.16   [0.84,1.47]   0.091    1.31
+  bronze   fit  156     34.25       16.34       1.05    1.10   [0.94,1.28]   0.081    1.20
+  silver   fit  121     25.56       16.22       1.05    1.17   [0.99,1.34]   0.082    0.91
+  gold     fit   91     16.35       15.74       1.02    1.28   [1.04,1.52]   0.091    1.24
+  diamond  fit*  36      4.64       15.46       1.00    1.27   [0.95,1.59]   0.216    1.38
+
+  THE FEASIBILITY RULE (amendment 1 — tiers ordered by gapHr ASCENDING)
+    order (gap asc):  diamond → gold → silver → bronze → iron
+    all-five min-slack (max hi−floor deficit): +0.238  ⇒ FEASIBLE — fit all five
+    fit set: iron, bronze, silver, gold, diamond   smallest-gap (mandatory): diamond
+
+  THE FIT  (fitted set: iron, bronze, silver, gold, diamond)
+    wide-grid SSE optimum:   q* = 0.05   A* = 0.1543   SSE 846.9
+    LINEAR LIMIT (q = 1):    A  = 0.0882   SSE 853.2   ⇒ β = A/20 = 0.00441 per gap unit
+    SELECTED (minimax centre of the equivalence set):  A = 0.1198  [boot 95% CI 0.0048, 0.1879]
+                                                       q = 0.52  [boot 95% CI 0.38, 5.01]
+    curvature: CONCAVE / saturating (q < 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(10)=1.084  s(15)=1.103  s(20)=1.120  s(25)=1.135  s(30)=1.148  s(40)=1.172
+
+  THE EQUIVALENCE SET, PUBLISHED IN FULL (ruling (x) — this IS the deliverable's precision)
+    set:  q ∈ [0.05, 1.16]   112 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES ✗
+      tier        se     set s-range          centre    (centre − range mid) / se
+      iron       0.091        1.161 – 1.211      1.186  +0.001
+      bronze     0.081        1.148 – 1.160      1.158  +0.060
+      silver     0.082        1.105 – 1.156      1.136  +0.067
+      gold       0.091        1.063 – 1.153      1.108  +0.003
+      diamond    0.216        1.015 – 1.143      1.056  -0.106
+    set width 1.00 need-SEs; the centre reaches 0.50 SEs to the furthest member.
+
+  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: FAIL
+    the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.16] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE
+    dropped        A        q          s(iro)    s(bro)    s(sil)    s(gol)    s(dia)  inside s-CI?
+    iron          0.0979   0.62       1.17      1.14      1.11      1.09      1.04  YES ✓
+    bronze        0.1771   0.43       1.25      1.22      1.20      1.16      1.09  YES ✓
+    silver        0.1187   0.48       1.18      1.15      1.13      1.11      1.06  YES ✓
+    gold          0.0555   1.53       1.20      1.13      1.08      1.04      1.01  YES ✓
+    diamond       0.1175   0.54       1.19      1.16      1.13      1.11      1.05  YES ✓
+    full fit s(g)                        1.19      1.16      1.14      1.11      1.06
+    full fit CI                1.11-1.38 1.06-1.23 1.02-1.21 1.00-1.17 1.00-1.11
+  GATE (w)3: PASS
+
+  ACCEPTANCE — implied s(g_t) vs the measured bootstrap CI, ON THE FIT SET
+  (smallest-gap tier MANDATORY; at most one other fit-set tier may sit outside. Excluded tiers
+  are published in §4, not scored.)
+    tier       gapHr   s(gap)   measured need   [boot 95% CI]    inside?
+    iron      46.67    1.186            1.16   [0.84,1.47]      YES ✓
+    bronze    34.25    1.158            1.10   [0.94,1.28]      YES ✓
+    silver    25.56    1.136            1.17   [0.99,1.34]      YES ✓
+    gold      16.35    1.108            1.28   [1.04,1.52]      YES ✓
+    diamond    4.64    1.056            1.27   [0.95,1.59]      YES ✓  (mandatory)
+    inside: 5 of 5;  SMALLEST-GAP (diamond) INSIDE ✓
+    monotone over the observed range: YES ✓
+  ACCEPTANCE: PASS
+
+  DIAGNOSTIC D2 — RULING (z): pivot-s − need (systematic level bleed) vs wtd free-s − need (weighting only)
+    tier      HR̄_pool/9   wtd mean pred   offset(pred−HR̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   need
+    iron         1.06            1.05              -0.01                      -0.21      1.31         1.24   1.16
+    bronze       1.05            1.04              -0.02                      -0.22      1.20         1.06   1.10
+    silver       1.05            1.09              +0.04                      -0.18      0.91         1.16   1.17
+    gold         1.02            1.02              +0.00                      -0.15      1.24         1.26   1.28
+    diamond      1.00            1.00              -0.00                      -0.21      1.38         1.37   1.27
+    pivot-s − need mean +0.01 (systematic, same sign);  wtd free-s − need mean +0.02 (weighting only)
+
+  DIAGNOSTIC D4 — family reach: tier-aggregate fit to the needs, precision-weighted (NOT the objective)
+         all five, optimum     A*  0.173 q*  0.05      1.18    1.18    1.18    1.17    1.16  ⇒ 5/5 fit inside
+         fit set, optimum      A*  0.173 q*  0.05      1.18    1.18    1.18    1.17    1.16  ⇒ 5/5 fit inside
+      needs                                       1.16    1.10    1.17    1.28    1.27
+
+── SENSITIVITY LEG  p = 0.35, BF ≥ 600 ──
+
+  MEASURED NEEDS (re-measured on this coordinate; the quoted values are a CROSS-CHECK, not an input)
+  "fit" = in the fitted set; "fit*" = the smallest-gap MANDATORY tier; "OUT" = excluded, published (amd 1).
+  tier      set    N   gapHr      HR̄_pool/600   HR̄_pool/9   slope   [boot 95% CI]    se     pivot-s
+  iron     fit  142     44.47       16.29       1.05    1.16   [0.84,1.47]   0.091    1.22
+  bronze   fit  156     32.65       16.23       1.05    1.09   [0.92,1.27]   0.081    1.07
+  silver   fit  121     25.37       16.29       1.05    1.17   [1.00,1.34]   0.083    0.95
+  gold     fit   91     15.63       15.72       1.01    1.29   [1.05,1.53]   0.091    1.25
+  diamond  fit*  36      4.05       15.40       0.99    1.24   [0.92,1.55]   0.211    1.06
+
+  THE FEASIBILITY RULE (amendment 1 — tiers ordered by gapHr ASCENDING)
+    order (gap asc):  diamond → gold → silver → bronze → iron
+    all-five min-slack (max hi−floor deficit): +0.219  ⇒ FEASIBLE — fit all five
+    fit set: iron, bronze, silver, gold, diamond   smallest-gap (mandatory): diamond
+
+  THE FIT  (fitted set: iron, bronze, silver, gold, diamond)
+    wide-grid SSE optimum:   q* = 0.05   A* = 0.1497   SSE 849.2
+    LINEAR LIMIT (q = 1):    A  = 0.0887   SSE 855.4   ⇒ β = A/20 = 0.00444 per gap unit
+    SELECTED (minimax centre of the equivalence set):  A = 0.1167  [boot 95% CI 0.0059, 0.1863]
+                                                       q = 0.54  [boot 95% CI 0.39, 5.06]
+    curvature: CONCAVE / saturating (q < 1);  monotone increasing: YES ✓
+    s at reference gaps:  s(10)=1.080  s(15)=1.100  s(20)=1.117  s(25)=1.132  s(30)=1.145  s(40)=1.170
+
+  THE EQUIVALENCE SET, PUBLISHED IN FULL (ruling (x) — this IS the deliverable's precision)
+    set:  q ∈ [0.05, 1.22]   118 of 796 grid points   CONTIGUOUS ✓   touches a grid edge: YES ✗
+      tier        se     set s-range          centre    (centre − range mid) / se
+      iron       0.091        1.156 – 1.204      1.180  -0.004
+      bronze     0.081        1.140 – 1.154      1.152  +0.062
+      silver     0.083        1.103 – 1.151      1.133  +0.066
+      gold       0.091        1.057 – 1.148      1.102  -0.003
+      diamond    0.211        1.011 – 1.138      1.049  -0.120
+    set width 1.00 need-SEs; the centre reaches 0.50 SEs to the furthest member.
+
+  GATE (w)2 EQUIVALENCE SET AT A GRID EDGE: FAIL
+    the EQUIVALENCE SET reaches a grid edge: q ∈ [0.05, 1.22] on a grid of [0.05, 8.00] — the deliverable cannot distinguish members arbitrarily far out, which is family misfit
+
+  GATE (w)3 LEAVE-ONE-TIER-OUT, IN DELIVERABLE SPACE
+    dropped        A        q          s(iro)    s(bro)    s(sil)    s(gol)    s(dia)  inside s-CI?
+    iron          0.0936   0.63       1.15      1.13      1.11      1.08      1.03  YES ✓
+    bronze        0.1824   0.42       1.26      1.22      1.20      1.16      1.09  YES ✓
+    silver        0.1139   0.50       1.17      1.15      1.13      1.10      1.05  YES ✓
+    gold          0.0394   2.11       1.21      1.11      1.07      1.02      1.00  YES ✓
+    diamond       0.1153   0.55       1.18      1.15      1.13      1.10      1.05  YES ✓
+    full fit s(g)                        1.18      1.15      1.13      1.10      1.05
+    full fit CI                1.10-1.39 1.06-1.23 1.02-1.20 1.00-1.17 1.00-1.10
+  GATE (w)3: PASS
+
+  ACCEPTANCE — implied s(g_t) vs the measured bootstrap CI, ON THE FIT SET
+  (smallest-gap tier MANDATORY; at most one other fit-set tier may sit outside. Excluded tiers
+  are published in §4, not scored.)
+    tier       gapHr   s(gap)   measured need   [boot 95% CI]    inside?
+    iron      44.47    1.180            1.16   [0.84,1.47]      YES ✓
+    bronze    32.65    1.152            1.09   [0.92,1.27]      YES ✓
+    silver    25.37    1.133            1.17   [1.00,1.34]      YES ✓
+    gold      15.63    1.102            1.29   [1.05,1.53]      YES ✓
+    diamond    4.05    1.049            1.24   [0.92,1.55]      YES ✓  (mandatory)
+    inside: 5 of 5;  SMALLEST-GAP (diamond) INSIDE ✓
+    monotone over the observed range: YES ✓
+  ACCEPTANCE: PASS
+
+  DIAGNOSTIC D2 — RULING (z): pivot-s − need (systematic level bleed) vs wtd free-s − need (weighting only)
+    tier      HR̄_pool/9   wtd mean pred   offset(pred−HR̄)   wtd mean resid(obs−pred)   pivot-s   wtd free-s   need
+    iron         1.05            1.05              +0.00                      -0.21      1.22         1.24   1.16
+    bronze       1.05            1.04              -0.00                      -0.22      1.07         1.04   1.09
+    silver       1.05            1.08              +0.03                      -0.18      0.95         1.16   1.17
+    gold         1.01            1.02              +0.00                      -0.15      1.25         1.26   1.29
+    diamond      0.99            1.01              +0.01                      -0.22      1.06         1.33   1.24
+    pivot-s − need mean -0.08 (systematic, same sign);  wtd free-s − need mean +0.02 (weighting only)
+
+  DIAGNOSTIC D4 — family reach: tier-aggregate fit to the needs, precision-weighted (NOT the objective)
+         all five, optimum     A*  0.171 q*  0.05      1.18    1.17    1.17    1.17    1.16  ⇒ 5/5 fit inside
+         fit set, optimum      A*  0.171 q*  0.05      1.18    1.17    1.17    1.17    1.16  ⇒ 5/5 fit inside
+      needs                                       1.16    1.09    1.17    1.29    1.24
+
+  BAND SUMMARY
+    p        feas          (w)2    (w)3    acceptance (fit inside)              A        q      s(20)
+    0.25         all five  FAIL    PASS                        5/5, small IN   0.1198   0.52  1.120
+    0.30         all five  FAIL    PASS                        5/5, small IN   0.1135   0.54  1.114
+    0.35         all five  FAIL    PASS                        5/5, small IN   0.1167   0.54  1.117
+    BAND VERDICT: DOES NOT HOLD across the whole band (see the legs above)
+
+### 6. HELD-OUT FORMAT VALIDATION (VALIDATED, NEVER FITTED — DIAGNOSTIC, NOT A GATE)
+
+  Formats resolved from the corpus REGISTRY by tournamentId and named to the builder by REGISTRY
+  KEY. BOTH arms carry the shipped C3 K ramp (sK = kSpreadPitRamp(gapK)); the HR ramp is the only
+  thing that moves pre→post. The judged line is the DEPLOYED one (era/park applied).
+
+  format               strat  poolN  joined  judged  gapHr  HR̄dep/9  s(gap)  pre slope [CI]        post slope [CI]       verdict
+  Early Gold           B       3192     242      99   16.0    0.26   1.101      1.44 [1.13,1.74]      1.31 [1.03,1.58]  MISS — post CI excludes 1
+  Bronze Heart         B        570     121      48   39.9    0.61   1.165      1.23 [0.94,1.43]      1.06 [0.81,1.24]  PASS — post CI covers 1
+  Late Bronze          B       2096     195      34   33.4    0.91   1.150      1.01 [0.34,1.59]      0.88 [0.30,1.38]  PASS — post CI covers 1
+  Diamond Heart        B        879     133      67   12.2    0.96   1.087      1.12 [0.95,1.29]      1.03 [0.87,1.19]  PASS — post CI covers 1
+  Live Open Daily      A*      1274      80      42   22.3    1.00   1.120      1.70 [1.34,2.00]      1.52 [1.20,1.79]  MISS — post CI excludes 1
+  Saturday Bronze Cap  C       2096     346      42   33.4    1.06   1.150      1.21 [0.82,1.53]      1.05 [0.71,1.33]  PASS — post CI covers 1
+  Gold Slots Daily     C       3192     454     109   16.0    1.02   1.101      1.24 [1.03,1.46]      1.13 [0.93,1.33]  PASS — post CI covers 1
+  Gold Cap Daily       B+C     3192     504     114   16.0    1.02   1.101      1.14 [0.95,1.33]      1.04 [0.86,1.21]  PASS — post CI covers 1
+  Diamond Cap Daily    B+C     3498     215      26    4.1    1.08   1.048      0.88 [0.34,1.41]      0.84 [0.32,1.34]  PASS — post CI covers 1
+  HR̄dep/9 is the DEPLOYED-frame pool mean (×era_effective_hr) for reading; the correction is centred
+  on the RAW pre-era HR̄ per 600, where production applies it.
+  EXTRAPOLATION: the fit spans gapHr 4.05–44.56 (the Quick fit set). every validated format sits inside it.
+
+  HR9 LEVEL (pred − obs), pre → post:
+    Early Gold            +0.08 → +0.09   [era-1920 / park-169]
+    Bronze Heart          +0.18 → +0.19   [era-1939 / park-191, Year rule]
+    Late Bronze           +0.24 → +0.24   [era-1979 / park-114]
+    Diamond Heart         +0.03 → +0.03   [era-1958 / park-156]
+    Live Open Daily       -0.01 → -0.00   [neutral env, uncapped — non-Quick control]
+    Saturday Bronze Cap   +0.46 → +0.47   [neutral env, cap 1331 — PRE-REGISTERED held-out]
+    Gold Slots Daily      +0.15 → +0.16   [neutral env, slots — PRE-REGISTERED held-out; never before evaluated]
+    Gold Cap Daily        +0.20 → +0.22   [park-156 + cap 1580 — PRE-REGISTERED held-out (HR park flag)]
+    Diamond Cap Daily     +0.45 → +0.45   [era-1998 / park-101 + cap 1755]
+
+  GOLD-SLOTS REACHABILITY: resolves to registry key 'goldslotsdaily' (label "Gold Slots Daily"), joined 454
+    pitcher rows / 109 judged at BF ≥ 600 over a 3192-card pool ⇒ IT READS REAL DATA.
+
+### 7. THE STRATIFIED READ
+
+  A — NEUTRAL UNCAPPED QUICKS (the core; this is what was FITTED)
+      5 of the 5 fit-set tiers inside, smallest-gap (diamond) INSIDE.
+      Residuals s(gap) − need: iron +0.02  bronze +0.06  silver -0.04  gold -0.19  diamond -0.20
+      Non-Quick neutral control (live-open-daily): judged 42, MISS — post CI excludes 1
+
+  B — ENV-BEARING UNCAPPED DAILIES (+ the era/park layer; parks DO carry an HR factor — the K ramp
+      does not, so this stratum is more load-bearing for HR than for K)
+      Early Gold           judged  99  s 1.101  slope 1.44 → 1.31  MISS — post CI excludes 1
+      Bronze Heart         judged  48  s 1.165  slope 1.23 → 1.06  PASS — post CI covers 1
+      Late Bronze          judged  34  s 1.150  slope 1.01 → 0.88  PASS — post CI covers 1
+      Diamond Heart        judged  67  s 1.087  slope 1.12 → 1.03  PASS — post CI covers 1
+
+  C — BUDGET CAP/SLOTS FORMATS (+ the composition layer)
+      Saturday Bronze Cap  judged  42  s 1.150  slope 1.21 → 1.05  PASS — post CI covers 1
+      Gold Slots Daily     judged 109  s 1.101  slope 1.24 → 1.13  PASS — post CI covers 1
+      Gold Cap Daily       judged 114  s 1.101  slope 1.14 → 1.04  PASS — post CI covers 1   [also carries env ⇒ B+C]
+      Diamond Cap Daily    judged  26  s 1.048  slope 0.88 → 0.84  PASS — post CI covers 1   [also carries env ⇒ B+C]
+      DIAGNOSTIC, NOT A GATE. A stratum-C miss localises to the COMPOSITION layer (task 2), not the
+      core fit. gold-cap additionally carries park-156's non-neutral HR handedness (the standing flag).
+
+### 8. THE CONSTANT, WITH PROVENANCE STAMPED (do NOT read as wired)
+
+  NO CONSTANT IS PROPOSED FOR SHIPPING. GATE (w)2 EQUIVALENCE SET AT A GRID EDGE (family misfit). What follows is what the pre-registered
+  rule PRODUCED, recorded so the record is complete. It is not a recommendation.
+
+  PIT_SPREAD_HR = { A: 0.1135, q: 0.54, G0: 20, gMax: 44.56, fitN: 50, fitP: 0.3 }
+  s(g) = 1 + 0.1135·(g/20)^0.54;   s(g ≤ 0) = 1;   flat-hold s(g) = s(44.56) = 1.175 above gMax.
+  fitted set = iron, bronze, silver, gold, diamond   (all five — no exclusions)
+  equivalence set = q ∈ [0.05, 1.25], 121 grid points, width 1.00 need-SEs.
+  PROVENANCE (fit-derived, coordinate-dependent — never rescale, only re-derive): fitN = 50, fitP = 0.3, gMax = 44.56.
+  It joins K_SPREAD_PIT under assertKSpreadProvenance on a PASS (prereg §4 gate 5).
+
+  SHIPPED CONSTANT, QUOTED FOR CONTRAST AND NOT TOUCHED: PIT_SPREAD_HR = { A: 0.2648, G: 5.8 }
+  on the FALSIFIED saturating family, fitted at the PRE-C1/C2' coordinate. Compare on s(g) only:
+    g          10      15      20      25      30      40
+    C6          1.078   1.097   1.114   1.128   1.141   1.165
+    shipped     1.218   1.245   1.256   1.261   1.263   1.265
+
+### 9. RECORDED, NOT ACTED ON (the freeze applies)
+
+  · The K ramp baseline is the SHIPPED C3 constant K_SPREAD_PIT (imported, not re-fit here). The HR
+    residual is measured on top of it; if C3's constant moves, this refit must re-run.
+  · The RAW hr9 line the Quick fit judges is invariant to the K ramp (applyPitSpread moves only K
+    when sHr = 1), so the Quick-tier fit numbers do not depend on the K baseline; the DEPLOYED line
+    and calibrate() DO, which is why the held-out (env-bearing) legs carry it.
+  · FIELD_N = 50 is known-defective and frozen until a retrain; nothing here revisits it.
+  · A CONVEX q > 1 power law is UNBOUNDED above the fitted gap range; the flat-hold at gMax is the
+    domain rule (amendment 3), the same treatment C3 carries. Whether it is wired is Fable's call.
+
+(end of artifact — HR-ramp refit, STOP)
