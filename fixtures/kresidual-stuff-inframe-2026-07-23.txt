@@ -1,0 +1,57 @@
+################################################################################
+# K-RESIDUAL vs STUFF, IN-FRAME (deployed form).  MEASUREMENT ONLY — nothing wired.
+# The unification pre-step: is the Stuff→K mechanism a CURVE-FORM defect, present in-frame?
+################################################################################
+
+  model 'league-42-43'  DEPLOYED form  window 2042+2043  N=149 ROWS (card×side×season, BF-weighted)
+  residual = deployed pred K/600 − observed K/600.  Positive = OVER-predict K (⇒ under-rate the
+  pitcher's wOBAA the K feeds); negative = UNDER-predict K.
+
+  overall in-frame K bias: +0.31/600  (≈0 expected — the form was fit here)
+
+  THE SHAPE IS THE SIGNAL. Pooled first, then per HAND — Fable's amendment makes the hand-split
+  LEVEL read load-bearing (the pitcher-side verdict cleared pooled SPREAD, never hand-split LEVEL).
+
+  ── POOLED (both hands)  (N=149 rows, level +0.31/600) ──
+     stu quintile        mean K resid      n
+     [70-101]            +0.31       29
+     [102-118]           -0.11       30
+     [118-128]           -1.22       30
+     [129-140]           +1.27       30
+     [140-187]           +1.75       30
+     LINEAR partial: +0.245 [-0.645, +1.211] covers 0   (≈0 BY CONSTRUCTION — not evidence)
+     CUBIC  partial: -0.5049 [-0.9188, -0.1386] ★ CI-CLEAR — the quad mis-fits the Stuff→K shape
+
+  ── vs RHB (vR)  (N=77 rows, level +0.55/600) ──
+     stu quintile        mean K resid      n
+     [70-102]            -1.60       15
+     [105-117]           -0.30       15
+     [118-130]           -0.45       16
+     [130-140]           +1.66       15
+     [142-187]           +2.83       16
+     LINEAR partial: +0.914 [-0.321, +2.548] covers 0   (≈0 BY CONSTRUCTION — not evidence)
+     CUBIC  partial: -0.8145 [-1.8530, -0.3268] ★ CI-CLEAR — the quad mis-fits the Stuff→K shape
+
+  ── vs LHB (vL)  (N=72 rows, level +0.00/600) ──
+     stu quintile        mean K resid      n
+     [75-97]             +1.58       14
+     [101-118]           +0.55       14
+     [119-124]           -0.80       15
+     [125-139]           -1.80       14
+     [140-182]           -0.21       15
+     LINEAR partial: -0.675 [-1.874, +0.455] covers 0   (≈0 BY CONSTRUCTION — not evidence)
+     CUBIC  partial: +0.0537 [-0.6781, +0.5923] covers 0 — no cubic misfit
+
+  HAND-SPLIT LEVEL gap (vR − vL): +0.54/600 — a non-trivial gap means the deployed K
+  curve carries a hand-LEVEL error the pooled read hides (the amendment's flagged dimension).
+
+### VERDICT
+
+  A stu-correlated in-frame K residual IS present: the pooled quintile pattern runs +0.31 (low
+  stu) → +1.75 (high stu), CI-clear cubic partial, and a +0.54/600 hand-split LEVEL gap. Direction differs from the naive signature.
+  The deployed K curve leaves a systematic Stuff-shaped residual IN-FRAME ⇒ the mechanism is a
+  CURVE-FORM defect, not purely a frame effect. The hand-LEVEL gap in particular is a curve
+  defect the pooled fit cannot express — it is the amendment's flagged dimension, confirmed. A form-level
+  K-curve fix proposal is warranted (returns to Fable for ruling — NOT fit here).
+
+(end of artifact — K-residual vs Stuff in-frame)
