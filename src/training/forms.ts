@@ -202,7 +202,15 @@ function pinH(pins: VertexPin[] | undefined, channel: string, h: FittedH, rating
 // ≈0.86 hit / 0.92 pit, which real dead-ball tournament data validated over unit; see
 // PERBIP_* below); "unit" ⇒ H = perBIP(rating) × BIP, kept as a bake-off candidate.
 // The XBH curve fits the SHARE of (predicted) hits that go for extra bases.
-export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve | "unit" }
+// `eyeAug` adds a linear ln(EYE) term to the K fit — the hitter mirror of the pitcher's
+// `stuffAug`. Motivation (fixtures/hitter-residual-channels-2026-07-25.txt Part 1b): hit.k is
+// fit on AvoidK ALONE and no hitter channel carries any aux, so EYE has NO pathway into the
+// strikeout channel — and the deployed model over-predicts K by +2.01/600 per SD of EYE
+// marginally, +2.15 CONDITIONAL on the other four ratings (it STRENGTHENS under conditioning,
+// so it is not a proxy), r = 0.525, the largest of 24 structurally-free cells, family-wise
+// p = 0.000, CI-clear in 7 of 7 seasons. Mechanism: plate appearances resolve SEQUENTIALLY, so
+// a patient hitter works counts and strikes out less than his contact rating alone implies.
+export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve | "unit"; eyeAug?: boolean }
 
 // `pins` (optional) = the vertex-pin collector: when passed (the production trainer path), any
 // quad channel whose unconstrained vertex lands in-domain is refit vertex-pinned (see the
@@ -222,10 +230,14 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75, pins?:
   const babip = obs.map((p) => p.ratings.hit.babip);
 
   const bb = pinEvent(pins, "hit.bb", fitEvent(form.bb, eye, BB, w), eye, BB, w);
-  const k = pinEvent(pins, "hit.k", fitEvent(form.k, kr, K, w), kr, K, w);
+  // K carries the optional EYE aux (see HitForm.eyeAug) — jointly fitted, exactly as the
+  // pitcher's Stuff aux is on pit.bb/pit.hr, so the primary AvoidK curve and the aux are
+  // estimated in one WLS rather than sequentially.
+  const k = pinEvent(pins, "hit.k", form.eyeAug ? fitEventAux(form.k, kr, eye, K, w) : fitEvent(form.k, kr, K, w), kr, K, w, form.eyeAug ? eye : undefined);
   const hr = pinEvent(pins, "hit.hr", fitEvent(form.hr, pow, HR, w), pow, HR, w);
   // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2); pinned rates when pinned.
-  const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rate(k, kr[i]!) - rate(hr, pow[i]!) - HIT_BIP_ADJ, 1));
+  // rateAux ≡ rate when the event has no aux, so the no-aux forms stay bit-identical.
+  const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rateAux(k, kr[i]!, eye[i]!) - rate(hr, pow[i]!) - HIT_BIP_ADJ, 1));
   const h = pinH(pins, "hit.h", fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG), babip, bip, nonHRH, w);
   const hP = obs.map((_, i) => hRate(h, babip[i]!, bip[i]!));
   const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
@@ -246,7 +258,9 @@ function hitAssembly(bb: number, k: number, hr: number, h: FittedH, xbh: FittedE
 }
 export function predictHitForm(m: FittedHit, o: TrainObs): number {
   const r = o.ratings.hit;
-  return hitAssembly(rate(m.bb, r.eye), rate(m.k, r.kRat), rate(m.hr, r.pow), m.h, m.xbh, r.babip, r.gap);
+  // K reads the EYE aux when the fitted event carries one (rateAux ≡ rate otherwise), mirroring
+  // the pitcher side's rateAux(bb, con, stu) — so a no-aux FittedHit predicts bit-identically.
+  return hitAssembly(rate(m.bb, r.eye), rateAux(m.k, r.kRat, r.eye), rate(m.hr, r.pow), m.h, m.xbh, r.babip, r.gap);
 }
 
 // ── Pitching form ──────────────────────────────────────────────────────────────
@@ -648,6 +662,12 @@ export const LOG_PIT: PitForm = { name: "woba", bb: LOG, k: LOG, hr: LOG, h: LOG
 // identified, and pinning 1.0 made the Early Gold dead-ball 1B bias WORSE, +16→+21.
 // It survives as the PERBIP_* bake-off candidates below for the quicks-ladder round.)
 export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, xbh: LOG, h: LOG };
+// CANDIDATE (2026-07-25) — the DEPLOYED hitter form with ONE declared change: a linear z-scored
+// ln(EYE) aux on the K channel (see HitForm.eyeAug for the residual evidence that motivates it).
+// The exact mirror of PARETO_PIT vs PARETO_NOAUG_PIT on the pitcher side, so the A/B is a
+// one-term contrast under identical curves, pinning discipline and folds. NOT deployed: the
+// production trainer (server.saveTrainedModel) still fits RAWPOLY_HIT.
+export const RAWPOLY_EYEAUG_HIT: HitForm = { ...RAWPOLY_HIT, name: "woba·rawpoly-eyeaug", eyeAug: true };
 export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, h: LOG };
 // DEPLOYED pitching form: log baseline + a linear Stuff term on BB and HR (fixes the
 // low-Stuff over-rating; validated OOT — beats plain LOG forward & backward).
@@ -683,6 +703,25 @@ export const PARETO_PIT: PitForm = { name: "woba·pareto", bb: LOG, k: Q2, hr: Q
 // folds. (Mechanism is plausible either way — PAs resolve sequentially, so high Stuff getting
 // ahead in counts could genuinely suppress walks — so this is a measurement, not a suspicion.)
 export const PARETO_NOAUG_PIT: PitForm = { name: "woba·pareto-noaug", bb: LOG, k: Q2, hr: Q2, h: Q2, stuffAug: false };
+
+// ── THE DEPLOYED PAIR — ONE SOURCE OF TRUTH (2026-07-25) ───────────────────────
+// "Which form does production ship" used to be written down INDEPENDENTLY in each place that
+// claimed to mirror production, and the copies drifted. When the pitcher form moved
+// STUFFAUG_PIT → PARETO_PIT on 2026-07-14 only the trainer was updated, so the live
+// /api/training/residuals endpoint (and the Model-Training "where the model misses" view) spent
+// weeks describing a RETIRED form's misses — the second time that exact drift happened on that
+// file (it had previously been stuck on LOG_PIT). The fix is not another correction: every path
+// that claims to mirror production reads THIS constant, and tests/deployed-forms.test.ts fails
+// if one stops.
+//   `pinned` mirrors the OTHER half of "how production fits": server.saveTrainedModel ALWAYS
+//   hands fitHitForm/fitPitForm a `vertexPinned` collector, so any quad channel whose
+//   unconstrained vertex lands in-domain is refit vertex-pinned (see pinQuadAtDomainMax). A
+//   mirror that omits the collector is a DIFFERENT model, not a cosmetic difference — that is the
+//   parity defect commit 7dea19a fixed for the bake-off wrappers, and the same flag value belongs
+//   here so residuals/tools cannot re-acquire it.
+// Changing the deployed form = editing this one object (plus a FORM_ENTRIES entry so the
+// scoreboard can still compare candidates against what we ship).
+export const DEPLOYED_FORMS = { hit: RAWPOLY_HIT, pit: PARETO_PIT, pinned: true } as const;
 
 // Uniform-curve forms apply one curve to EVERY rating-driven event (incl. the BABIP
 // term of H) — the "is log the right curve" comparison, now including H.
@@ -761,6 +800,13 @@ export interface MatchupHitParams { bb: FittedEvent; hr: FittedEvent; h: FittedH
 export interface MatchupPitParams { bb: FittedEvent; hr: FittedEvent; h: FittedH; mk: FittedMatchupK }
 
 // Fit chains mirror fitHitForm(RAWPOLY_HIT) / fitPitForm(STUFFAUG_PIT) exactly, with
+// NOTE (2026-07-25): the pitcher leg is deliberately left on STUFFAUG_PIT and does NOT read
+// DEPLOYED_FORMS. This candidate's published evidence (plan §10.3, the in-frame K-separation
+// measurement) was produced against the all-log StuffAug baseline, so re-basing it on PARETO_PIT
+// would silently redefine what the matchup-K contrast is measuring. It is a frozen bake-off
+// candidate, not a mirror of production — the drift guard does not apply to it.
+// (Consequence to keep in view: the matchup-K rows on the scoreboard are NOT a like-for-like
+// contrast against the deployed pitcher form; they differ in the K/HR/H curves too.)
 // the K event swapped to the joint matchup fit (the BIP chain consumes the matchup K).
 export function fitHitMatchup(obs: TrainObs[], opp: TrainObs[], fitExp = 0.75): MatchupHitParams {
   const mk = fitMatchupK(obs, opp, fitExp);
@@ -788,7 +834,7 @@ export function fitPitMatchup(obs: TrainObs[], opp: TrainObs[], fitExp = 0.75): 
   const nHH = per600((p) => p.pitch.b1 + p.pitch.b2 + p.pitch.b3);
   const con = obs.map((p) => p.ratings.pitch.con), stu = obs.map((p) => p.ratings.pitch.stu);
   const hrr = obs.map((p) => p.ratings.pitch.hrr), pbabip = obs.map((p) => p.ratings.pitch.pbabip);
-  const bb = fitEventAux(STUFFAUG_PIT.bb, con, stu, BB, w); // stuffAug — matches the deployed pit form
+  const bb = fitEventAux(STUFFAUG_PIT.bb, con, stu, BB, w); // stuffAug — the candidate's frozen baseline (see the block comment; NOT the deployed form since 2026-07-14)
   const hr = fitEventAux(STUFFAUG_PIT.hr, hrr, stu, HR, w);
   const bip = obs.map((o, i) => Math.max(600 - rateAux(bb, con[i]!, stu[i]!) - matchupPitK(mk, o.ratings.pitch.stu) - rateAux(hr, hrr[i]!, stu[i]!) - PIT_BIP_ADJ, 1));
   const h = fitH(pbabip, bip, nHH, w, STUFFAUG_PIT.h, STUFFAUG_PIT.hBip ?? LOG);
@@ -842,6 +888,9 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   pitEntry(PARETO_NOAUG_PIT),    // deployed curves, Stuff aux OFF — the aux's own evidence test
   pitEntry(STUFFAUG_PIT),        // the pre-2026-07-14 deployed form (all-log + aux)
   pitEntry(SATBB_PIT),           // pareto with the BB curve saturating instead of log
+  // HITTER CANDIDATE (2026-07-25): the deployed hitter form + a ln(EYE) aux on K. Hitter-only —
+  // there is no pitcher counterpart (the pitcher K channel already reads Stuff as its primary).
+  hitEntry(RAWPOLY_EYEAUG_HIT),
   hitEntry(LOGCUBIC_HIT), pitEntry(LOGCUBIC_PIT),   // #1 cubic-in-log
   hitEntry(RAWLIN_HIT), pitEntry(RAWLIN_PIT),       // curve family — is log the right curve?
   hitEntry(RAWQUAD_HIT), pitEntry(RAWQUAD_PIT),

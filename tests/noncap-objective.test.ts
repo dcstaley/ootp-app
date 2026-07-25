@@ -38,7 +38,12 @@ const BASE: RosterOptimizeOptions = {
 const vSP = blendPitch(0.05, 0.02, 2, "sp", ps, 0.58, 0.42);
 const vRP = blendPitch(0.05, 0.02, 2, "rp", ps, 0.58, 0.42);
 const relief = 0.15 * vRP; // default bullpenWeight
-const bench = 0.3 * 0.05;  // default benchWeight · max(vR,vL)
+// RE-BASELINED (2026-07-25, findings §5 / §8 Option 2): the bench-depth credit was
+// `benchWeight · max(vR, vL)`; it is now `benchWeight · platoon-blended value`, because a card that
+// never starts has no platoon assignment and pricing it at its better side made pure bench bats the
+// most lopsided segment of the roster. This fixture carries no platoonCapture (ρ=1), so the change
+// visible here is the FORM of the credit alone — the ρ threading is exactly neutral at ρ=1.
+const bench = 0.3 * (0.58 * 0.05 + 0.42 * 0.04);  // benchWeight · (platoonVR·vR + platoonVL·vL)
 
 describe("non-cap objective — pick the best players per role (cap/slots unchanged)", () => {
   const none = buildRosterLp(HIT, PIT, { ...BASE, mode: "none" }).lp;

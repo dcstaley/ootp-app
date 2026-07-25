@@ -22,7 +22,7 @@ import { makeVariant, presenceMixture, PRESENCE_M, PRESENCE_P } from "../data/va
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
 import { FIELD_N, productionFieldStats, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, buildCohortRefs, cohortSelectForModel, COHORT_RULE_TAG, COHORT_MODE_DEFAULT, cohortRuleMismatches, cohortRuleMismatchMessage, type RatingRef, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
-import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT, type VertexPin } from "../training/forms.ts";
+import { fitHitForm, fitPitForm, DEPLOYED_FORMS, type VertexPin } from "../training/forms.ts";
 import { inEphemeralScope, mayCache } from "./cache-scope.ts"; // draft scoring must not seed process-global caches
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
 import type { KSpread as KSpreadCfg } from "../config/types.ts"; // K + BUILD-3 pitcher per-channel spread fields
@@ -918,6 +918,11 @@ function rosterOptions(t: Tournament): RosterOptimizeOptions {
     nHitters: t.hitters, nPitchers: t.pitchers, dh: t.dh,
     minStarters: t.min_starters, minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
     platoonVR: exp?.platoonVR ?? t.platoonVR ?? 0.62, platoonVL: exp?.platoonVL ?? t.platoonVL ?? 0.38, // team exposure: weights the vR/vL HITTER lineups
+    // ρ from the tournament's OWN WinParams — the same source (and the same resolution order:
+    // t.tuning override over the model default) the E[wins] evaluator reads. Set here rather than
+    // in ewinsInputs because the defect is mode-independent: non-cap builds no WinParams at all,
+    // and its rosters were measured just as platoon-lopsided as cap/slots (0.0313 vs 0.0316).
+    platoonCapture: winParamsFor(t).platoonCapture,
     pitchSplit: resolvePitchSplit(t),                               // (hand,role) PITCHER batter-hand exposure
     minPlayersPerPosition: t.minPlayersPerPosition ?? 2,            // coverage depth / backups
     mode: budgetMode(t), totalCap: t.total_cap ?? undefined, slotCounts: t.slot_counts,
@@ -1571,12 +1576,15 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   const f = getFit(window, minPA, includeVariants);
   if (!f.available || !f.woba_hitting || !f.woba_pitching || !f.basic_hitting || !f.basic_pitching) throw new Error(f.error ?? "fit unavailable");
   // Freeze the deployed D3 #2 form, fit on the SAME qualifying obs as the log-linear fit
-  // (one fit path — reuse the bake-off's fitHitForm/fitPitForm). DEPLOYED FORMS (bake-off +
-  // Phase-1c two-axis validated): HITTING = raw-poly (quadratic POW captures real accelerating
-  // power; contact/discipline log). PITCHING = the PARETO form (PARETO_PIT): log BB + Stuff aux,
-  // raw-quad K/HR/H. It restores the pitcher value SPREAD the deployed all-log StuffAug flattened
-  // (in-frame 0.62→0.74, CI-clear; EG cap-bias 0.73→0.86) while BB stays log — the only channel that
-  // turned over under all-quad — so the monotone gate is fully clean (plan §11.31).
+  // (one fit path — reuse the bake-off's fitHitForm/fitPitForm). WHICH forms is not decided here:
+  // it is read from DEPLOYED_FORMS (src/training/forms.ts), the ONE record of the deployed pair,
+  // so the diagnostic paths that mirror production cannot drift away from this fit. For the
+  // record of what that pair currently is (bake-off + Phase-1c two-axis validated): HITTING =
+  // raw-poly (quadratic POW captures real accelerating power; contact/discipline log). PITCHING =
+  // the PARETO form: log BB + Stuff aux, raw-quad K/HR/H. It restores the pitcher value SPREAD the
+  // earlier all-log StuffAug flattened (in-frame 0.62→0.74, CI-clear; EG cap-bias 0.73→0.86) while
+  // BB stays log — the only channel that turned over under all-quad — so the monotone gate is
+  // fully clean (plan §11.31).
   const obs = windowObs(window).filter((o) => includeVariants || !o.variant);
   const hitQual = obs.filter((o) => HITTER.qualifies(o, minPA)), pitQual = obs.filter((o) => PITCHER.qualifies(o, minPA));
   // Vertex-pin monotone fallback (ruling 2026-07-21, bake-off candidate C — evidence
@@ -1585,7 +1593,7 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   // with the vertex pinned at the domain max (monotone by construction, behavioral null vs the
   // deployed quad). Pins are recorded on the artifact + surfaced in the response notes below.
   const vertexPinned: VertexPin[] = [];
-  const eventForm: EventForm = { hit: fitHitForm(RAWPOLY_HIT, hitQual, 0.75, vertexPinned), pit: fitPitForm(PARETO_PIT, pitQual, 0.75, vertexPinned) };
+  const eventForm: EventForm = { hit: fitHitForm(DEPLOYED_FORMS.hit, hitQual, 0.75, vertexPinned), pit: fitPitForm(DEPLOYED_FORMS.pit, pitQual, 0.75, vertexPinned) };
   // Deploy-time vertex gate (Batch-1 item 1, T-3 pattern) — now the RESIDUAL backstop: the pin
   // fallback clears any in-domain vertex at fit time (the pinned vertex sits AT the domain edge,
   // outside the strict-interior test), so an offender here means the pinned refit itself failed —

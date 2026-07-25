@@ -12,6 +12,7 @@
 
 import type { HitterCandidate, PitcherCandidate, RosterOptimizeOptions } from "./types.ts";
 import { lineupPositions, qualifiesStarter, blendPitch, SLOT_TIERS, FIELD_POSITIONS } from "./types.ts";
+import { effectiveValue } from "./assign.ts";
 
 export interface BuiltRosterLp { lp: string; vars: number; constraints: number }
 
@@ -43,6 +44,12 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   const pEmph = opts.pitcherEmphasis ?? 1;
   const bonus = opts.bothSidesBonus ?? 1.25;
   const bsThresh = opts.bothSidesThreshold ?? 0;
+  // Platoon capture ρ — the SAME number the E[wins] evaluator scores this roster with. Selection
+  // used to maximise at ρ=1 (every card always gets its favourable matchup) and then be graded at
+  // ρ=0.8, so the objective systematically bought platoon specialists its own scorer marks down:
+  // measured, rostered hitters carried 2.1× the platoon spread of the top of their own pool and
+  // the rosters matched "top-N by max(vR,vL)" to three decimals. Absent ⇒ 1 = the old behaviour.
+  const rho = opts.platoonCapture ?? 1;
   // Non-budgeted (Top-X) mode: JUST PICK THE BEST PLAYERS per role. Versus cap/slots
   // it drops the rotation slot-decay (every SP slot weighs the same) and the both-sides
   // bonus, and — crucially — values a slotted starter on its SP blend ALONE, not also
@@ -56,8 +63,9 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // builds usageWeights for cap/slots, so the double-credit is gone in practice.
   // The HITTER half of the same rule (a lineup starter must not also collect bench-depth
   // value) is enforced in EVERY mode by the zst start-indicator netting below — it used to be
-  // eweins-only, which left non-cap paying starters twice and, because the bench credit keys on
-  // max(vR,vL) rather than the platoon blend, systematically favoured platoon specialists.
+  // eweins-only, which left non-cap paying starters twice and, because the bench credit then keyed
+  // on max(vR,vL) rather than the platoon blend, systematically favoured platoon specialists.
+  // (That `max` is itself gone now — see the bench-depth credit below.)
   const weighted = opts.mode !== "none";
   const bonusEff = weighted ? bonus : 1;
   // Per-segment PREFERENCE dials — pure objective value multipliers (NOT caps). Down-dialing a
@@ -113,7 +121,10 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
     const bothSides = Math.min(c.valueVR, c.valueVL) >= bsThresh ? bonusEff : 1;
     for (const side of ["L", "R"] as const) {
       const w = side === "R" ? opts.platoonVR : opts.platoonVL;
-      const val = side === "R" ? c.valueVR : c.valueVL;
+      // ρ-capture blend, via the evaluator's OWN function (assign.ts) — not a second copy of the
+      // arithmetic. This is the one structural difference that used to exist between what the
+      // optimizer maximises and what the app then scores.
+      const val = effectiveValue(c, side, rho);
       for (const p of new Set([...c.positions, ...(lockEligPos.get(i) ?? [])])) {
         if (!positions.includes(p)) continue;
         const y = `yh_${i}_${p}_v${side}`;
@@ -123,8 +134,17 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
         (hCardSide[`${i}|${side}`] ??= []).push(y);
       }
     }
-    const benchMax = Math.max(c.valueVR, c.valueVL);
-    benchCoef[i] = (eweins ? benchMax * uw!.benchPA : hEmph * benchW * benchMax) * wBench;
+    // Bench-depth credit. SECOND, SEPARABLE fix (findings §5/§8 Option 2): this used to be
+    // max(valueVR, valueVL). A card that never starts has no platoon assignment — when a starter
+    // is out it comes in against whichever hand that game presents — so pricing it at its better
+    // side credits it a matchup it may never see. The zst netting below cancels this term for
+    // STARTERS only, so pure bench bats kept the whole over-credit and came out the most lopsided
+    // segment on the roster (bench gap 0.0336 vs 0.0126 for both-sides starters, cap/slots).
+    // The evaluator prices a bench bat by re-matching it into the lineup on both sides (offense.ts
+    // leave-one-out), so the matching proxy is the platoon-weighted ρ-blend, same as the lineup
+    // terms above. NOTE: unlike the ρ threading, this changes the objective even at ρ=1.
+    const benchVal = opts.platoonVR * effectiveValue(c, "R", rho) + opts.platoonVL * effectiveValue(c, "L", rho);
+    benchCoef[i] = (eweins ? benchVal * uw!.benchPA : hEmph * benchW * benchVal) * wBench;
     obj.push(`${f6(benchCoef[i]!)} rh_${i}`);
   });
   bin.push(...rhVars);
@@ -142,9 +162,9 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // credit on rh (that double-count inflated hitters and starved pitching). z_i = 1 iff the card
   // starts any side (Σ yh ≥ 1 ⇒ z=1, forced by the constraint; the −bench coef on z keeps it 0
   // otherwise). So a starter is valued on its lineup value alone; only a PURE bench bat keeps
-  // the bench credit. Mode-independent because the defect is mode-independent: the credit keys on
-  // max(vR,vL) while the lineup term keys on the platoon blend, so leaving it un-netted pays a
-  // platoon specialist more than a better all-around bat (measured: ~6× the median adjacent gap
+  // the bench credit. Mode-independent because the defect is mode-independent: the credit used to
+  // key on max(vR,vL) while the lineup term keys on the platoon blend, so leaving it un-netted paid
+  // a platoon specialist more than a better all-around bat (measured: ~6× the median adjacent gap
   // on the real catalog, inverting ~36% of adjacent pairs). The coefficient is whatever rh got.
   const stVars: string[] = []; // zst start-indicators (one per hitter) — reused by 2b below
   hitters.forEach((_, i) => {

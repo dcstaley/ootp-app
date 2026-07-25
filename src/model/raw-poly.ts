@@ -27,7 +27,10 @@ export function makeRawPolyModel(form: EventForm): EventModel {
   function predictHitting(r: HittingRatings, _c: Coeffs): RawHitting {
     const BB = rate(hit.bb, r.eye);
     const HR = rate(hit.hr, r.pow);          // quadratic in raw POW
-    const SO = rate(hit.k, r.kRat);
+    // + linear EYE term when the form carries one (the `eyeAug` candidate); rateAux ≡ rate for
+    // a form without it, so every already-trained artifact — including the deployed one, whose
+    // hit.k has no aux — scores bit-identically.
+    const SO = rateAux(hit.k, r.kRat, r.eye);
     // BIP chain mirrors forms.ts predictHitForm exactly (shared HIT_BIP_ADJ).
     const BIP = Math.max(600 - BB - SO - HR - HIT_BIP_ADJ, 1);
     const AB = Math.max(600 - BB - 4 - 3 - 6, 1); // for completeness (unused downstream)

@@ -12,11 +12,12 @@
 
 import type { TrainObs } from "./loader.ts";
 import { HITTER, PITCHER, type RoleSpec, type BakeoffModel } from "./bakeoff.ts";
-// Residuals score the DEPLOYED model (hitting = raw-poly curve-form; pitching =
-// StuffAug), not the retired log-linear baseline — so "where the model misses"
-// reflects what users actually see. Tracks the deployed forms by reference: change
-// RAWPOLY_HIT / STUFFAUG_PIT and this follows.
-import { hitFormModel, pitFormModel, RAWPOLY_HIT, STUFFAUG_PIT } from "./forms.ts";
+// Residuals score the DEPLOYED model — so "where the model misses" reflects what users
+// actually see. This file names NO form of its own: it reads DEPLOYED_FORMS (forms.ts), the
+// ONE record of the deployed pair and its pinning. It used to name the forms itself and drifted
+// TWICE (stuck on LOG_PIT, then on STUFFAUG_PIT after the 2026-07-14 switch to PARETO_PIT), each
+// time leaving the live endpoint describing a retired model's misses.
+import { hitFormModel, pitFormModel, DEPLOYED_FORMS } from "./forms.ts";
 
 export interface CardResidual { name: string; cid: string; variant: boolean; side: "L" | "R"; pred: number; actual: number; valErrPts: number; vol: number; ratings: Record<string, number> }
 // grid cells carry both the RAW mean error and the INTERACTION residual (raw minus
@@ -81,15 +82,20 @@ const wstd = (xs: number[], ws: number[]) => {
 // for hitters); `sig` = the subset that defines the signature buckets.
 interface RoleCfg { spec: RoleSpec; model: BakeoffModel; ratings: Record<string, (o: TrainObs) => number>; sig: string[] }
 const HIT_CFG: RoleCfg = {
-  spec: HITTER, model: hitFormModel(RAWPOLY_HIT),
+  spec: HITTER, model: hitFormModel(DEPLOYED_FORMS.hit, DEPLOYED_FORMS.pinned),
   ratings: { babip: (o) => o.ratings.hit.babip, pow: (o) => o.ratings.hit.pow, eye: (o) => o.ratings.hit.eye, k: (o) => o.ratings.hit.kRat, gap: (o) => o.ratings.hit.gap },
   sig: ["babip", "pow", "eye", "k"],
 };
 const PIT_CFG: RoleCfg = {
-  spec: PITCHER, model: pitFormModel(STUFFAUG_PIT),
+  spec: PITCHER, model: pitFormModel(DEPLOYED_FORMS.pit, DEPLOYED_FORMS.pinned),
   ratings: { stu: (o) => o.ratings.pitch.stu, con: (o) => o.ratings.pitch.con, pbabip: (o) => o.ratings.pitch.pbabip, hrr: (o) => o.ratings.pitch.hrr },
   sig: ["stu", "con", "pbabip", "hrr"],
 };
+/** The model a role's cards are scored under here — i.e. what the live /api/training/residuals
+ *  endpoint reports the misses OF. Exported ONLY so tests/deployed-forms.test.ts can assert it
+ *  fits bit-identically to the production trainer (form AND vertex pinning); that assertion is
+ *  what stops this file from re-acquiring its own idea of what ships. */
+export const residualModelFor = (role: "hitter" | "pitcher"): BakeoffModel => (role === "hitter" ? HIT_CFG : PIT_CFG).model;
 
 // `model` overrides the role's default (deployed) model — lets callers analyze a
 // CANDIDATE model's misses (e.g. compare Poisson vs the deployed raw-poly) without

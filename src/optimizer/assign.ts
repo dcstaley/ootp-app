@@ -59,12 +59,31 @@ function hungarian(cost: number[][], n: number, m: number): number[] {
 export const sideWoba = (c: HitterCandidate, side: "R" | "L") => (side === "R" ? c.valueVR : c.valueVL) + TARGET_WOBA;
 
 /**
+ * The platoon-capture blend itself — the ONE copy of this arithmetic in the app. Everything that
+ * needs a deployment-adjusted per-side number (the E[wins] evaluator, the lineup matching, and the
+ * SELECTION MILP) goes through here, because the whole class of bug this fixes was the selection
+ * objective and the evaluator disagreeing about exactly this number.
+ */
+const captureBlend = (onSide: number, offSide: number, capture: number) =>
+  capture * onSide + (1 - capture) * offSide;
+
+/**
  * Deployment-adjusted wOBA for a card fielded on `side`. With capture rate `ρ < 1` a platoon
  * specialist doesn't ALWAYS get its favorable matchup, so `(1−ρ)` of its off-side value bleeds
  * in — shrinking the specialist-vs-all-around gap (ρ=1 = perfect deployment, the old behavior).
  */
 export const effectiveWoba = (c: HitterCandidate, side: "R" | "L", capture = 1) =>
-  capture * sideWoba(c, side) + (1 - capture) * sideWoba(c, side === "R" ? "L" : "R");
+  captureBlend(sideWoba(c, side), sideWoba(c, side === "R" ? "L" : "R"), capture);
+
+/**
+ * The SAME deployment adjustment expressed on the D2 SIGNED-DISTANCE scale that the optimizer
+ * objective speaks (i.e. `effectiveWoba − TARGET_WOBA`, since the anchor is a constant that the
+ * blend passes through). Stated directly rather than as a subtraction so that `capture = 1`
+ * returns the raw per-side value BIT-for-bit — the gate that lets ρ=1 reproduce the pre-ρ
+ * objective exactly.
+ */
+export const effectiveValue = (c: HitterCandidate, side: "R" | "L", capture = 1) =>
+  captureBlend(side === "R" ? c.valueVR : c.valueVL, side === "R" ? c.valueVL : c.valueVR, capture);
 
 /**
  * Best position→card assignment for one platoon side (max total effective wOBA): the cards

@@ -1,0 +1,376 @@
+================================================================================
+HITTER EYE-AUX ON THE K CHANNEL — CANDIDATE MEASUREMENT — 2026-07-25
+tools/hitter-eyeaug.ts · root 'League Files' · seasons 2037–2043 · MEASUREMENT ONLY
+================================================================================
+
+THE FINDING BEING ACTED ON (fixtures/hitter-residual-channels-2026-07-25.txt, Part 1b):
+the hitter EYE rating has NO pathway into the strikeout channel — hit.k is fit on AvoidK
+ALONE and not one hitter channel carries an aux — and the deployed model over-predicts K for
+high-Eye hitters by +2.01/600 per SD of EYE marginally [+1.48, +2.56] and +2.15 CONDITIONAL on
+the other four ratings [+1.47, +2.93]. It STRENGTHENS under conditioning (not a proxy), r=0.525
+is the largest of 24 structurally-free cells, it clears a family-wise permutation null over the
+whole family (p=0.000), the quintile ramp is monotone −3.08 → +3.33/600, and it is CI-clear in
+7 of 7 seasons (5 out of frame), +2.13 pooled 2037–2043.
+
+THE CANDIDATE: src/training/forms.ts RAWPOLY_EYEAUG_HIT ('woba·rawpoly-eyeaug') = the DEPLOYED
+hitter form with ONE declared change, `eyeAug: true`, which routes hit.k through fitEventAux —
+the same primitive `stuffAug` uses on pit.bb/pit.hr — fitting the log-AvoidK curve and a linear
+z-scored ln(EYE) term JOINTLY in one WLS. Threading mirrors the pitcher side exactly:
+fitHitForm's BIP chain consumes rateAux(k, kRat, eye), predictHitForm and the deployed
+raw-poly predictHitting read rateAux(hit.k, kRat, eye). rateAux ≡ rate when the fitted event
+carries no aux, so EVERY existing form and every already-trained artifact — including the
+deployed one — predicts BIT-IDENTICALLY. Production still fits RAWPOLY_HIT; nothing shipped.
+
+THE STANDARD, fixed before the run — the one stuffAug cleared on 2026-07-25 (§Q2 of
+fixtures/bakeoff-parity-scoreboard-2026-07-25.txt): ΔwPearson POSITIVE in all six evaluations
+(stuffAug: +0.012…+0.033, CI-clear in four, never negative) with a coherent mechanism, while
+the deliverable metrics stayed unresolvable. Inconsistent, or CI-clear negative anywhere ⇒ the
+term does NOT earn its place.
+
+EVERY fit below passes a FRESH vertex-pin collector — production parity (commit 7dea19a).
+EVERY interval below is a 4000-replicate CLUSTER bootstrap over cid, never over rows.
+
+================================================================================
+§1  DATA AND EXCLUSIONS
+--------------------------------------------------------------------------------
+years present under root: 2032, 2033, 2037, 2038, 2039, 2040, 2041, 2042, 2043
+years USED: 2037, 2038, 2039, 2040, 2041, 2042, 2043   (Old Data 2032–33 excluded — four-season gap, never pooled)
+  2037: 4 league(s) HD450 HD451 HD453 PEL
+  2038: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2039: 4 league(s) HD451 HD452 HD453 PEL   EXCLUDED: HD450
+  2040: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2041: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2042: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2043: 5 league(s) HD450 HD451 HD452 HD453 PEL
+loader auto-exclusions (corrupt cells): HD450|2039
+  ⇒ the known duplicate-vL/vR cell HD450|2039 is DETECTED AND DROPPED (confirmed).
+validateDataset: 1 error(s), 0 warning(s)
+  ERROR  HD450 2039: vL and vR are identical (PA=71886, BF=74940, rows=870) — one file is a duplicate of the other — EXCLUDED from modeling
+SEASON COVERAGE IS UNEQUAL: 2037 has 4 leagues (no HD452); 2038 and 2040–2043 have 5; 2039 is
+effectively 4 after the HD450 exclusion. Every cross-season claim below is qualified by this.
+
+================================================================================
+§2  THE FITTED TERM — what the aux actually estimates, per window
+--------------------------------------------------------------------------------
+aux β = K per 600 PA per SD of ln(EYE), on top of the log-AvoidK curve. The MECHANISM predicts
+a NEGATIVE β (more patience ⇒ fewer strikeouts). The 'implied' column converts β to K/600 per
+SD of RAW EYE at the window mean (dz_lnEYE/dEYE · SD_EYE), so it is directly comparable to the
++2.01/600-per-SD residual slope the term is meant to remove.
+
+window      n rows  cards   aux β (per SD lnEYE)   implied K/600 per SD raw EYE   direction
+2037+2038      159     77                -2.3344                         -2.371   NEGATIVE — as the mechanism predicts
+2040+2041      179     79                -2.6596                         -2.591   NEGATIVE — as the mechanism predicts
+2042+2043      173     74                -2.1857                         -2.119   NEGATIVE — as the mechanism predicts
+
+================================================================================
+§3  PIN AUDIT — does adding the aux change WHETHER any quad channel pins?
+--------------------------------------------------------------------------------
+This bit the stuffAug comparison: on [2042,2043] the Stuff aux moved the pit.hr vertex INTO
+domain, so that arm was not a strict one-term contrast. Checked here for both arms, per window.
+
+window      form                   pinned channels          hit.hr vertex-in-domain?
+2037+2038   woba·rawpoly           — none —                 no (vertex outside the fit domain)
+2037+2038   woba·rawpoly-eyeaug    — none —                 no (vertex outside the fit domain)
+2040+2041   woba·rawpoly           — none —                 no (vertex outside the fit domain)
+2040+2041   woba·rawpoly-eyeaug    — none —                 no (vertex outside the fit domain)
+2042+2043   woba·rawpoly           — none —                 no (vertex outside the fit domain)
+2042+2043   woba·rawpoly-eyeaug    — none —                 no (vertex outside the fit domain)
+
+STRUCTURAL READ (from fitHitForm, not just the numbers above): RAWPOLY_HIT's ONLY quad channel
+is hit.hr, and hit.hr is fit on (POW, HR/600, w) BEFORE the BIP chain is built — the K aux
+cannot touch its design, its target or its weights. hit.bb/hit.k/hit.xbh/hit.h are all LOG, and
+pinEvent requires a rawpoly-2 channel, so no other pin can fire on either arm. The aux therefore
+CANNOT change the pinning of this form, in any window, by construction — and the table confirms
+it. Unlike the stuffAug arm, this IS a strict one-term contrast.
+
+================================================================================
+§4  SCOREBOARD — the candidate on the harness, pinned, League Files 2037–2043
+--------------------------------------------------------------------------------
+minN=1000 (PA)  topN=26  k=5-fold  includeVariants=true  foldKey=cid|side
+Hitter rows only. wPears = weighted Pearson (affine-invariant, blind to level); top26 = fraction
+of the model's top-26 that are truly top-26; regret = mean per-slot actual-wOBA shortfall of the
+model's top-26 (LOWER better). Rank = within the full hitter candidate field of that cell.
+
+-- train window 2037+2038 --
+  eval        window            n   wPears  wP-rank   spear    top26  t26-rank   regret     gate
+* in-sample   2037+2038        159  0.9259     6/17  0.8958  0.8077      1/17  0.00174  pass
++ in-sample   2037+2038        159  0.9263     5/17  0.8959  0.7692      6/17  0.00200  pass
+* cv          2037+2038, 5-fold 159  0.9228     1/17  0.8935  0.7692      2/17  0.00228  
++ cv          2037+2038, 5-fold 159  0.9224     3/17  0.8926  0.7692      3/17  0.00297  
+* forward     2037+2038→2039,2040,2041,2042,2043 258  0.9255     1/17  0.8577  0.5769      3/17  0.00542  
++ forward     2037+2038→2039,2040,2041,2042,2043 258  0.9251     3/17  0.8573  0.5769      4/17  0.00507  
+
+-- train window 2040+2041 --
+  eval        window            n   wPears  wP-rank   spear    top26  t26-rank   regret     gate
+* in-sample   2040+2041        179  0.8924     7/17  0.8068  0.6923      7/17  0.00291  pass
++ in-sample   2040+2041        179  0.8926     6/17  0.8099  0.7308      1/17  0.00245  pass
+* cv          2040+2041, 5-fold 179  0.8881     2/17  0.8019  0.6538     11/17  0.00319  
++ cv          2040+2041, 5-fold 179  0.8883     1/17  0.8045  0.6923      4/17  0.00294  
+* forward     2040+2041→2042,2043 173  0.8985     7/17  0.7883  0.7692      1/17  0.00283  
++ forward     2040+2041→2042,2043 173  0.8985     8/17  0.7927  0.7692      2/17  0.00283  
+* backward    2040+2041→2037,2038,2039 189  0.9115     9/17  0.8757  0.6538      4/17  0.00441  
++ backward    2040+2041→2037,2038,2039 189  0.9119     8/17  0.8755  0.6538      5/17  0.00479  
+
+-- train window 2042+2043 --
+  eval        window            n   wPears  wP-rank   spear    top26  t26-rank   regret     gate
+* in-sample   2042+2043        173  0.9125     6/17  0.8081  0.7308      6/17  0.00269  pass
++ in-sample   2042+2043        173  0.9118    10/17  0.8095  0.7308      7/17  0.00269  pass
+* cv          2042+2043, 5-fold 173  0.9095     5/17  0.8040  0.7308      9/17  0.00269  
++ cv          2042+2043, 5-fold 173  0.9090     7/17  0.8057  0.7308     10/17  0.00269  
+* backward    2042+2043→2037,2038,2039,2040,2041 252  0.9283     2/17  0.8619  0.5769      4/17  0.00470  
++ backward    2042+2043→2037,2038,2039,2040,2041 252  0.9283     3/17  0.8605  0.5769      5/17  0.00486  
+
+('*' = deployed woba·rawpoly, '+' = candidate woba·rawpoly-eyeaug. Ranks are ORDINAL over a
+tightly-packed field and should not be read as evidence — §5 puts intervals on the gaps.)
+
+================================================================================
+§5  THE SIX PAIRED EVALUATIONS — deployed vs candidate, same folds, same pinning
+--------------------------------------------------------------------------------
+Identical curves (LOG bb/k/xbh/h, quad hr), identical pinning discipline, identical folds; the
+ONLY declared difference is the linear z-scored ln(EYE) aux on the hitter K fit. Exactly the six
+evaluations stuffAug was held to. Δ = eyeaug − deployed. Sign convention: ΔwPearson > 0 and
+Δtop26 > 0 favour the aux; Δregret < 0 favours the aux (lower regret is better).
+
+evaluation                                n   cards   metric     eyeaug   deployed  Δ (aux − none)     95% CI (cluster-by-card)
+FORWARD  fit 2037+2038 → test 2039–2043    258    103   top26      0.5769   0.5769    +0.0113          [-0.0385, +0.0770]  CI spans 0
+                                                        regret     0.00507  0.00542   -0.00033          [-0.00221, +0.00071]  CI spans 0
+                                                        wPearson   0.9251   0.9255    -0.0003          [-0.0027, +0.0021]  CI spans 0
+
+FORWARD  fit 2040+2041 → test 2042+2043    173     74   top26      0.7692   0.7692    +0.0072          [-0.0385, +0.0769]  CI spans 0
+                                                        regret     0.00283  0.00283   -0.00016          [-0.00130, +0.00043]  CI spans 0
+                                                        wPearson   0.8985   0.8985    +0.0001          [-0.0033, +0.0037]  CI spans 0
+
+BACKWARD fit 2042+2043 → test 2037–2041    252    102   top26      0.5769   0.5769    -0.0024          [-0.0385, +0.0385]  CI spans 0
+                                                        regret     0.00486  0.00470   -0.00003          [-0.00088, +0.00078]  CI spans 0
+                                                        wPearson   0.9283   0.9283    +0.0000          [-0.0023, +0.0023]  CI spans 0
+
+BACKWARD fit 2040+2041 → test 2037–2039    189     84   top26      0.6538   0.6538    +0.0011          [-0.0769, +0.0770]  CI spans 0
+                                                        regret     0.00479  0.00441   -0.00005          [-0.00159, +0.00089]  CI spans 0
+                                                        wPearson   0.9119   0.9115    +0.0004          [-0.0032, +0.0038]  CI spans 0
+
+CV       5-fold on 2042+2043 (cid|side)    173     74   top26      0.7308   0.7308    +0.0048          [-0.0385, +0.0769]  CI spans 0
+                                                        regret     0.00269  0.00269   -0.00004          [-0.00074, +0.00046]  CI spans 0
+                                                        wPearson   0.9090   0.9095    -0.0005          [-0.0038, +0.0029]  CI spans 0
+
+CV       5-fold on 2040+2041 (cid|side)    179     79   top26      0.6923   0.6538    +0.0027          [-0.0769, +0.0769]  CI spans 0
+                                                        regret     0.00294  0.00319   -0.00008          [-0.00089, +0.00063]  CI spans 0
+                                                        wPearson   0.8883   0.8881    +0.0003          [-0.0035, +0.0042]  CI spans 0
+
+ΔwPearson TALLY: 4 of 6 positive; 0 CI-clear positive; 0 CI-clear NEGATIVE.
+  -0.0003, +0.0001, +0.0000, +0.0004, -0.0005, +0.0003
+
+================================================================================
+§6  RESIDUAL RE-MEASUREMENT — does the EYE→K structure actually go away?
+--------------------------------------------------------------------------------
+Per-row K residual = PREDICTED K/600 − OBSERVED K/600 (positive = the model over-predicts
+strikeouts, the direction the finding reports for high-Eye hitters). Slopes are PA-weighted, per
+SD of raw EYE, matching the published +2.01 marginal / +2.15 conditional exactly in units and
+grain. CONDITIONAL holds all five hitter ratings (eye, pow, kRat, babip, gap) — the decisive read.
+
+READ THE TWO FRAMES DIFFERENTLY, and this is the whole methodological point:
+  · IN FRAME the aux is fitted by weighted least squares against ln(EYE), so the marginal
+    ln(EYE) direction of the K residual is SUPPRESSED BY CONSTRUCTION. A near-zero in-frame
+    slope is therefore only a sanity check that the term is the right FUNCTIONAL FORM (the aux
+    is linear in z-ln(EYE); the residual is measured against RAW EYE, and the CONDITIONAL slope
+    is not forced to zero at all, so neither reading is a tautology — but neither is evidence).
+  · OUT OF FRAME nothing is forced. A term that is real removes the structure on data it never
+    saw; a term that merely absorbs in-sample noise does not. THAT is the decisive panel.
+
+panel                                        n/cards  arm       level K/600   MARGINAL per SD EYE        CONDITIONAL per SD EYE
+IN FRAME   fit 2042+2043 → measure 2042+2043   173/74
+                                                      deployed       +0.151    +2.006 [+1.433, +2.562]★  +2.150 [+1.439, +2.919]★
+                                                      eyeaug         +0.122    +0.116 [-0.523, +0.713]   +0.071 [-0.662, +0.858] 
+                                                      REMOVED:  marginal 94% of the deployed slope; conditional 97%
+
+OUT FRAME  fit 2042+2043 → measure 2037–2041  252/102
+                                                      deployed       +2.352    +2.082 [+1.689, +2.598]★  +2.380 [+1.890, +2.965]★
+                                                      eyeaug         +2.638    +0.330 [-0.098, +0.775]   +0.452 [-0.070, +0.996] 
+                                                      REMOVED:  marginal 84% of the deployed slope; conditional 81%
+
+OUT FRAME  fit 2037+2038 → measure 2039–2043  258/103
+                                                      deployed       -2.282    +2.358 [+1.847, +2.866]★  +2.404 [+1.792, +3.098]★
+                                                      eyeaug         -2.569    +0.129 [-0.480, +0.666]   +0.015 [-0.674, +0.714] 
+                                                      REMOVED:  marginal 95% of the deployed slope; conditional 99%
+
+OUT FRAME  fit 2040+2041 → measure 2042+2043   173/74
+                                                      deployed       -1.101    +2.084 [+1.520, +2.656]★  +2.149 [+1.448, +2.912]★
+                                                      eyeaug         -1.451    -0.336 [-1.033, +0.314]   -0.507 [-1.241, +0.287] 
+                                                      REMOVED:  marginal 116% of the deployed slope; conditional 124%
+
+★ = the interval excludes zero (cid-cluster bootstrap, 1500 replicates).
+
+================================================================================
+§7  THE BIP CHAIN KNOCK-ON — changing predicted K necessarily moves predicted hits
+--------------------------------------------------------------------------------
+hitter BIP = 600 − uBB − K − HR − 5 and non-HR hits recompute as hRate(babip, BIP), so the aux
+cannot move K alone. TWO effects, reported separately because they mostly cancel:
+  (a) MECHANICAL — hold the fitted h curve fixed and move only K: ΔBIP = −ΔK, and hits follow
+      the fitted ln(BIP) elasticity (~0.86, so BELOW 1 — hits move less than proportionally).
+  (b) REFIT — in the candidate, hit.h is REFIT on the NEW predicted-BIP column (fitHitForm
+      builds BIP from the aux-carrying K before fitting h), so most of (a) is re-absorbed. This
+      is the number that actually reaches wOBA.
+
+window      arm       mean pred K   mean pred BIP   mean pred nHH   mean pred wOBA   fitted ln(BIP) coef
+2037+2038   deployed       116.30          415.33          125.98          0.32554                115.31
+2037+2038   eyeaug         116.34          415.28          125.98          0.32555                120.23
+2040+2041   deployed       117.16          414.45          125.04          0.32464                107.63
+2040+2041   eyeaug         117.11          414.50          125.05          0.32466                112.88
+2042+2043   deployed       116.40          415.43          125.12          0.32436                119.47
+2042+2043   eyeaug         116.37          415.46          125.12          0.32437                123.86
+
+PER-CARD SPREAD of the knock-on (window 2042+2043, PA-weighted over the fit rows) — the means
+above hide it, because the aux moves high-Eye and low-Eye cards in OPPOSITE directions:
+  Δ predicted K/600      mean +0.077   sd 2.266   range -5.071 … +7.664
+  Δ predicted nHH/600    mean -0.018   sd 0.588   range -1.711 … +1.354
+  Δ predicted wOBA       mean -0.00003   sd 0.00097   range -0.00282 … +0.00227
+  hits-per-K pass-through d(nHH)/d(−K) over cards with |ΔK| > 0.05: median 0.211 (n=169)
+  ⇒ a K the model no longer predicts becomes a ball in play, and roughly that fraction of it
+  becomes a HIT. The knock-on is real and travels into wOBA; it is NOT a rounding effect.
+
+================================================================================
+§8  DOES THE FIX REACH wOBA? the composite residual, and the cancellation question
+--------------------------------------------------------------------------------
+fixtures/hitter-residual-channels-2026-07-25.txt Part 2 found the composite wOBA bias slope on
+EYE is ~0 BY CANCELLATION, not by absence of error: on EYE the K channel contributes −0.000033
+per rating point, BABIP +0.000025 and HR +0.000019 — three CI-clear, oppositely-signed channel
+errors summing to +0.000006. 'Fix K' and 'improve wOBA' are therefore DIFFERENT claims, and
+removing one leg of a cancellation could leave the composite alone or make it WORSE. Measured:
+
+composite wOBA residual (predicted − observed), slope per SD of EYE, same panels as §6:
+panel                                        n/cards  arm       level wOBA    MARGINAL per SD EYE            CONDITIONAL per SD EYE
+IN FRAME   fit 2042+2043 → measure 2042+2043   173/74
+                                                      deployed     +0.00006   +0.00010 [-0.00067, +0.00082]  -0.00003 [-0.00100, +0.00095] 
+                                                      eyeaug       +0.00007   +0.00076 [-0.00001, +0.00153]  +0.00081 [-0.00018, +0.00180] 
+                                                      →         |conditional EYE slope| GROWS: 0.00003 → 0.00081
+
+OUT FRAME  fit 2042+2043 → measure 2037–2041  252/102
+                                                      deployed     -0.00532   -0.00101 [-0.00178, -0.00035]★ -0.00100 [-0.00177, -0.00029]★
+                                                      eyeaug       -0.00547   -0.00040 [-0.00115, +0.00026]  -0.00022 [-0.00097, +0.00050] 
+                                                      →         |conditional EYE slope| SHRINKS: 0.00100 → 0.00022
+
+OUT FRAME  fit 2037+2038 → measure 2039–2043  258/103
+                                                      deployed     +0.00594   +0.00047 [-0.00032, +0.00117]  +0.00036 [-0.00026, +0.00108] 
+                                                      eyeaug       +0.00612   +0.00121 [+0.00045, +0.00190]★ +0.00129 [+0.00067, +0.00205]★
+                                                      →         |conditional EYE slope| GROWS: 0.00036 → 0.00129
+
+OUT FRAME  fit 2040+2041 → measure 2042+2043   173/74
+                                                      deployed     +0.00418   +0.00176 [+0.00079, +0.00266]★ +0.00112 [+0.00012, +0.00213]★
+                                                      eyeaug       +0.00434   +0.00251 [+0.00159, +0.00336]★ +0.00209 [+0.00107, +0.00312]★
+                                                      →         |conditional EYE slope| GROWS: 0.00112 → 0.00209
+
+THE LEVERAGE ARITHMETIC — why a large K fix is a small wOBA fix. A strikeout carries NO wOBA
+weight; it moves wOBA ONLY by removing a ball in play, and the fitted ln(BIP) elasticity is
+BELOW 1, so only a fraction of a recovered BIP becomes a hit (§7 measures the pass-through
+directly). Scale, on the 2042+2043 fit rows:
+  sd of the prediction CHANGE the aux causes:  0.00097 wOBA
+  sd of ACTUAL wOBA across the same cards:     0.01800 wOBA
+  ⇒ the aux repositions cards by 5.4% of the card-to-card spread the metric ranks on.
+  A Pearson shift of the size §5 could resolve (~±0.003 at these n) is simply not available
+  from a term with that lever, however right the term is about strikeouts.
+
+================================================================================
+§9  VERDICT
+================================================================================
+
+DOES THE EYE AUX EARN ITS PLACE BY THE stuffAug STANDARD? NO. The term is RIGHT about
+strikeouts — it removes 81–99% of the motivating residual on data it never saw — and it does
+not pay on wOBA: ΔwPearson is zero to three decimals in all six evaluations. Worse, it
+UNBALANCES the composite: the residual artifact's EYE cancellation breaks, and the composite
+EYE bias grows more often than it shrinks. Right about the channel, adverse on the deliverable.
+
+ΔwPearson (eyeaug − deployed) across the six evaluations: 4 of 6 POSITIVE, 0 CI-clear
+positive, 0 CI-clear negative.
+  FORWARD  fit 2037+2038 → test 2039–2043  -0.0003  [-0.0027, +0.0021]
+  FORWARD  fit 2040+2041 → test 2042+2043  +0.0001  [-0.0033, +0.0037]
+  BACKWARD fit 2042+2043 → test 2037–2041  +0.0000  [-0.0023, +0.0023]
+  BACKWARD fit 2040+2041 → test 2037–2039  +0.0004  [-0.0032, +0.0038]
+  CV       5-fold on 2042+2043 (cid|side)  -0.0005  [-0.0038, +0.0029]
+  CV       5-fold on 2040+2041 (cid|side)  +0.0003  [-0.0035, +0.0042]
+
+(stuffAug's comparator, the bar this had to clear: +0.012, +0.020, +0.017, +0.023, +0.032,
++0.033 — six of six positive, four CI-clear, never negative.)
+
+READ THE SIGNS HONESTLY. 4 of 6 positive sounds like a weak version of stuffAug's 6 of 6; it is
+not the same kind of number. EVERY magnitude here is ≤ 0.0005 — one to two ORDERS OF MAGNITUDE
+below stuffAug's +0.012…+0.033, and far inside the ±0.003 the design can resolve. The sign
+pattern is a coin flip on numerical noise, not a weak positive trend, and it must not be
+reported as "directionally favourable". The correct statement is that ΔwPearson is ZERO.
+
+RESIDUAL RE-MEASUREMENT (the term must remove the structure that motivates it):
+  IN FRAME  the deployed arm's conditional EYE→K slope is +2.150/600 per SD; with the aux
+            fitted it is +0.071 [-0.662, +0.858] — 97% removed. Suppressed by
+            least squares, so this confirms the FUNCTIONAL FORM fits, nothing more.
+  fit 2042+2043 → measure 2037–2041    deployed +2.380 → eyeaug +0.452
+            [-0.070, +0.996], 81% removed on data the fit never saw.
+  fit 2037+2038 → measure 2039–2043    deployed +2.404 → eyeaug +0.015
+            [-0.674, +0.714], 99% removed on data the fit never saw.
+  fit 2040+2041 → measure 2042+2043    deployed +2.149 → eyeaug -0.507
+            [-1.241, +0.287], 124% removed on data the fit never saw.
+
+PINNING: the aux CANNOT change which channels pin on this form. hit.hr is the only quad and it
+is fitted before the BIP chain exists, on (POW, HR, w) alone; every other hitter channel is LOG
+and pinEvent requires a rawpoly-2. §3 confirms it empirically on all three windows. Unlike the
+stuffAug arm — where the aux moved pit.hr's vertex in-domain on [2042,2043] and cost that
+comparison its one-term status — THIS IS A STRICT ONE-TERM CONTRAST.
+
+BIP KNOCK-ON: reported in §7 and not negligible. The aux moves predicted K in OPPOSITE
+directions for high-Eye and low-Eye cards, so the pooled mean barely moves while individual
+cards move materially; each strikeout the model stops predicting becomes a ball in play and
+roughly the fitted BABIP fraction of it becomes a hit, which travels into predicted wOBA. The
+candidate REFITS hit.h on the new predicted-BIP column, so most of the mechanical effect is
+re-absorbed by the h curve rather than propagating raw.
+
+WHY BOTH RESULTS ARE TRUE AT ONCE — the part that matters more than the verdict. A strikeout
+carries NO wOBA weight in this form: it moves wOBA ONLY by removing a ball in play, and the
+fitted ln(BIP) elasticity is below 1, so only about a fifth of a recovered strikeout becomes a
+hit (§7's measured pass-through). The aux moves individual cards by up to ~7 K/600 — a large,
+real, correctly-signed correction — and that lands as a prediction change whose spread is a
+few percent of the card-to-card wOBA spread the metric ranks on (§8). A term with that lever
+CANNOT produce a resolvable Pearson gain at this n no matter how right it is. The residual
+finding and this null are therefore not in conflict, and neither one overturns the other:
+the deployed model IS mis-predicting strikeouts on the EYE axis, and fixing that does not
+measurably improve the wOBA ranking it is used for.
+
+AND A REASON THE TERM MAY BE ACTIVELY UNWANTED — the strongest argument against it, and it is
+NOT the null. The residual artifact found the composite EYE slope sits at ~0 BY CANCELLATION
+between oppositely-signed channels (K −0.000033, BABIP +0.000025, HR +0.000019). Removing the
+K leg does not have to help the composite — it can UNBALANCE it. Measured in §8, it does:
+  IN FRAME   fit 2042+2043 → measure 2042+2043 -0.00003  → +0.00081 
+  OUT FRAME  fit 2042+2043 → measure 2037–2041 -0.00100★ → -0.00022 
+  OUT FRAME  fit 2037+2038 → measure 2039–2043 +0.00036  → +0.00129★
+  OUT FRAME  fit 2040+2041 → measure 2042+2043 +0.00112★ → +0.00209★
+  (conditional composite wOBA bias per SD EYE; ★ = CI excludes zero.)
+  ⇒ |slope| GROWS in 3 of 4 panels. In 1 the candidate's composite EYE bias is CI-CLEAR where
+  the deployed form's was NOT; in 1 the reverse. So on the quantity the model is actually
+  used for, correcting the strikeout channel makes the EYE-axis bias LARGER more often than
+  smaller. The channel fix is real and the composite consequence is adverse — which is exactly
+  what a cancellation predicts, and exactly why a channel-level residual is not by itself a
+  mandate to add a term. (Magnitudes are ≤0.002 wOBA per SD throughout, small in absolute
+  terms; the point is the DIRECTION and that it is the opposite of the intended improvement.)
+
+RECOMMENDATION: DO NOT ADOPT, and do NOT discard the finding. The candidate stays in
+FORM_ENTRIES as a scored candidate (nothing deployed, no default changed) so it is re-measured
+on every future scoreboard run. The reason to keep it on the books rather than delete it: the
+term's coefficient is stable across all three windows (−2.12 to −2.59 K/600 per SD of raw EYE)
+and matches the independently-measured residual slope (+2.01 to +2.15) almost exactly — that
+is what a real channel looks like, and the sequential-resolution mechanism is the same one
+that carried stuffAug. What is missing is the LEVER, not the effect.
+
+WHAT WOULD CHANGE THE ANSWER, and neither is available in league data today: (i) a deliverable
+metric sensitive to strikeouts in their own right rather than only through wOBA volume; (ii) an
+OUT-OF-FRAME pool whose EYE distribution is shifted far enough that a +2/600 K error stops
+being a wOBA rounding error — the tournament ladder, not the league. NOTE that (ii) cuts both
+ways: the same shift that would make the fix pay would also amplify the composite unbalancing
+measured above, so the ladder test must read the COMPOSITE, not just the K channel.
+
+A METHOD POINT WORTH KEEPING. This is the first candidate in the program that removed its
+motivating residual almost completely and still failed. That combination is only visible
+because the residual re-measurement (§6) and the metric comparison (§5) were run as SEPARATE
+questions. Had only §6 been run the term would look like a clear win; had only §5 been run it
+would look like an irrelevant null. A channel-level residual is evidence that the FORM is
+wrong; it is not evidence that correcting it improves the thing the model is used for.
+
+DATA LIMITS, stated so the deliverable metrics are not over-read: only a few dozen distinct
+CARDS clear the 1000-PA bar per test block, so the top-26 intervals in §5 run to roughly ±0.08
+to ±0.12 — two to three roster slots out of 26. Ordinal rankings in §4 are NOT evidence.
+League coverage is unequal by season (2037: 4 leagues; 2039 effectively 4; the rest 5).

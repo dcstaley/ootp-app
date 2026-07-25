@@ -106,6 +106,12 @@ export interface RosterOptimizeOptions {
   minStarters: number; minStarterStamina: number; minPitchTypes: number;
   // platoon exposure (weights the vR/vL lineup value)
   platoonVR: number; platoonVL: number;
+  // Platoon CAPTURE rate ρ — the same WinParams knob the E[wins] evaluator uses (see
+  // eval/expected-wins.ts). The SELECTION objective must value a card by the matchup mix it will
+  // actually see, not by the favourable side alone: with ρ<1, `(1−ρ)` of the off-side value bleeds
+  // into every per-side term (optimizer/assign.ts `effectiveValue`). Absent ⇒ 1 = the pre-ρ
+  // behaviour (perfect deployment), so every existing caller/test is unchanged by construction.
+  platoonCapture?: number;
   // pitcher batter-hand exposure by (hand, deployed role); absent ⇒ team-split fallback.
   // Rotation-slot value uses the SP weight, bullpen value the RP weight.
   pitchSplit?: PitchSplit;

@@ -96,10 +96,15 @@ interface TrainedModelSummary {
 interface ModelsResp { models?: TrainedModelSummary[]; activeId?: string | null }
 
 type FitTab = "woba_hitting" | "woba_pitching" | "basic_hitting" | "basic_pitching";
-// The DEPLOYED forms (must match server.ts saveTrainedModel): raw-poly hitting + log pitching.
-// Used to filter the bake-off scoreboard down to JUST the live model on the Active-model tab.
+// The DEPLOYED forms, by scoreboard name — used to filter the bake-off scoreboard down to JUST
+// the live model on the Active-model tab. The SOURCE OF TRUTH is DEPLOYED_FORMS in
+// src/training/forms.ts; these are the same two `name` fields, copied because the browser bundle
+// must not pull in the trainer. tests/deployed-forms.test.ts fails if the copies diverge.
+// (They HAD diverged: the pitcher entry read "woba" — the retired log-linear PARITY baseline —
+// so the Active tab's "Deployed model performance" panel showed a form we stopped shipping long
+// before the 2026-07-14 StuffAug → pareto switch.)
 const DEPLOYED_HIT_MODEL = "woba·rawpoly";
-const DEPLOYED_PIT_MODEL = "woba";
+const DEPLOYED_PIT_MODEL = "woba·pareto";
 
 // The DEPLOYED #2 eventForm's fitted curves (from /api/training/active-eventform) — what
 // actually scores, shown in the coefficient panel instead of the retired log-linear baseline.
@@ -727,7 +732,7 @@ export function ModelTrainingPage() {
                 <button key={id} onClick={() => setTab(id)} style={{ ...inputStyle, border: "none", borderRadius: 0, cursor: "pointer", padding: "6px 14px", fontSize: 13, fontWeight: tab === id ? 700 : 400, background: tab === id ? C.accent : C.input, color: tab === id ? "#fff" : C.sub }}>{label}</button>
               ))}
             </span>
-            <span style={{ fontSize: 12, color: C.sub }}>{tab === "active" ? "The live scoring model — saved models, its coefficients, and where it misses." : "Candidate-form comparison (model selection). D3 resolved: raw-poly hitting + log pitching."}</span>
+            <span style={{ fontSize: 12, color: C.sub }}>{tab === "active" ? "The live scoring model — saved models, its coefficients, and where it misses." : "Candidate-form comparison (model selection). D3 resolved: raw-poly hitting + pareto pitching."}</span>
           </div>
 
           {tab === "active" && (<>
@@ -830,7 +835,7 @@ export function ModelTrainingPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 8px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, fontSize: 14 }}>Deployed model performance {activeSbLoading && <span style={{ fontSize: 12, color: C.sub }}>· computing…</span>}</h3>
             {activeModel
-              ? <span style={{ fontSize: 12, color: C.sub }}><b style={{ color: C.text }}>{activeModel.name}</b> · window {activeModel.window.join("+")} · min {activeModel.minPA} · {activeModel.includeVariants ? "variants" : "base"} — raw-poly hitting · log pitching</span>
+              ? <span style={{ fontSize: 12, color: C.sub }}><b style={{ color: C.text }}>{activeModel.name}</b> · window {activeModel.window.join("+")} · min {activeModel.minPA} · {activeModel.includeVariants ? "variants" : "base"} — raw-poly hitting · pareto pitching</span>
               : <span style={{ fontSize: 12, color: "#eab308" }}>No model active — live scoring is the log-linear baseline. Click <b>Use</b> on a saved model above.</span>}
           </div>
           {activeModel?.stale && (
@@ -924,7 +929,7 @@ export function ModelTrainingPage() {
                     <>XBH/H = {curveText("GAP", activeForm.hit.xbh)}</>,
                     <>HBP/600 = 6.0000 (fixed)</>,
                   ]}
-                  note={<><b>Deployed #2 model</b> — raw-poly (quadratic) on HR (POW) &amp; XBH (GAP), log elsewhere; quadratics shown expanded in the raw rating. Fit quality is in <b>Deployed model performance</b> above.</>}
+                  note={<><b>Deployed model</b> (raw-poly) — quadratic on HR (POW), log elsewhere incl. XBH; quadratics shown expanded in the raw rating. Fit quality is in <b>Deployed model performance</b> above.</>}
                   diagRows={[]} />
               ) : <p style={{ color: C.sub, fontSize: 13 }}>No active #2 model — deployed scoring would fall back to the retired log-linear baseline. Click <b>Use</b> on a saved model above.</p>)}
 
@@ -937,7 +942,7 @@ export function ModelTrainingPage() {
                     <>nonHR-H/600 = {hText("PBABIP", activeForm.pit.h)}</>,
                     <>XBH = 0.25·H (fixed share)</>,
                   ]}
-                  note={<><b>Deployed #2 model</b> — pitching is LOG on every event (the raw-poly HR curve was retired — see Bake-off). Fit quality is in <b>Deployed model performance</b> above.</>}
+                  note={<><b>Deployed model</b> (pareto, since 2026-07-14) — quadratic on K (STU), HR (HRR) and nonHR-H (PBABIP); BB stays LOG (the only channel that turned over in-domain), plus a linear ln(STU) term on BB and HR. Fit quality is in <b>Deployed model performance</b> above.</>}
                   diagRows={[]} />
               ) : <p style={{ color: C.sub, fontSize: 13 }}>No active #2 model — deployed scoring would fall back to the retired log-linear baseline.</p>)}
 
