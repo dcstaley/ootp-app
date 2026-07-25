@@ -57,11 +57,23 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
   const pick = (model: string, role: string, evaluation: string) => sb.rows.find((r) => r.model === model && r.role === role && r.evaluation === evaluation)!.metrics;
 
   const MODELS = ["woba", "basic", "woba·rawpoly", "woba·logcubic", "woba·rawlin", "woba·rawquad", "woba·rawcubic", "woba·qpow-lin", "woba·rawpoly-hlin", "woba·biplin", "woba·perbip", "woba·matchupK", "woba·poisson", "woba·nb", "woba·seqcond", "ceiling·flex"];
+  // Pitcher-ONLY candidates (2026-07-25 parity fix): the DEPLOYED pitcher form and the pitching
+  // forms adopted/evaluated after the original bake-off. They have no hitter counterpart, so the
+  // field is deliberately asymmetric.
+  const PIT_ONLY = ["woba·pareto", "woba·pareto-noaug", "woba·stuffaug", "woba·satbb"];
   it("covers the baselines + candidate forms × roles × {in-sample, cv} (no OOT: the fixture has no out-of-window year)", () => {
     expect(sb.years).toEqual([2037, 2038]);
     expect(new Set(sb.rows.map((r) => r.evaluation))).toEqual(new Set(["in-sample", "cv"]));
-    expect(new Set(sb.rows.map((r) => `${r.model}-${r.role}`))).toEqual(new Set(MODELS.flatMap((m) => [`${m}-hitter`, `${m}-pitcher`])));
-    expect(sb.rows.length).toBe(MODELS.length * 2 * 2); // (model×role) × {in-sample, cv}
+    expect(new Set(sb.rows.map((r) => `${r.model}-${r.role}`))).toEqual(
+      new Set([...MODELS.flatMap((m) => [`${m}-hitter`, `${m}-pitcher`]), ...PIT_ONLY.map((m) => `${m}-pitcher`)]),
+    );
+    expect(sb.rows.length).toBe((MODELS.length * 2 + PIT_ONLY.length) * 2); // (model×role) × {in-sample, cv}
+  });
+  it("the DEPLOYED forms are both on the scoreboard (the parity requirement)", () => {
+    // Production fits RAWPOLY_HIT + PARETO_PIT (server.saveTrainedModel). If either drops out of
+    // FORM_ENTRIES the scoreboard silently stops comparing candidates against what we ship.
+    expect(sb.rows.some((r) => r.model === "woba·rawpoly" && r.role === "hitter")).toBe(true);
+    expect(sb.rows.some((r) => r.model === "woba·pareto" && r.role === "pitcher")).toBe(true);
   });
   it("OOT tracks the selected window: a sub-window fits on the window + tests the held-out year", () => {
     const sb2 = buildScoreboard(FIXTURE, { minN: 1000, k: 5, window: [2038] });
@@ -73,7 +85,7 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
   it("only candidate forms carry a gate, and only on the in-sample row", () => {
     const gated = sb.rows.filter((r) => r.gate);
     expect(gated.every((r) => r.model !== "woba" && r.model !== "basic" && r.evaluation === "in-sample")).toBe(true);
-    expect(gated.length).toBe(13 * 2); // 13 forms × {hitter, pitcher}, in-sample only (incl. matchupK)
+    expect(gated.length).toBe(13 * 2 + PIT_ONLY.length); // 13 two-role forms × {hitter, pitcher} + the 4 pitcher-only forms, in-sample only (incl. matchupK)
   });
   it("the wOBA + basic baselines fit the data (CV Pearson high, metrics in range)", () => {
     for (const model of ["woba", "basic"]) {

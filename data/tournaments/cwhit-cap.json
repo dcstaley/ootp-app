@@ -8,7 +8,7 @@
   "roster_size": 26,
   "hitters": 18,
   "pitchers": 8,
-  "min_starters": 4,
+  "min_starters": 2,
   "min_starter_stamina": 45,
   "min_pitch_types": 3,
   "dh": false,
@@ -47,14 +47,7 @@
   },
   "eligibility": {
     "mode": "ALL",
-    "rules": [
-      {
-        "id": "r1783582372551-0",
-        "column": "Year",
-        "op": "num_ge",
-        "a": "1999"
-      }
-    ]
+    "rules": []
   },
   "positionRanks": {
     "RF": {
@@ -66,28 +59,30 @@
   "topPitchers": 100,
   "minPlayersPerPosition": 2,
   "tournamentAdjustment": {
-    "enabled": false,
+    "enabled": true,
     "hr": 1.15,
     "bb": 0.85,
     "k": 1,
-    "h": 1,
+    "h": 1.15,
     "gap": 1
   },
   "positionMins": {
     "2B": {
       "starter": {
-        "range": 86
+        "range": 86,
+        "error": 50
       }
     },
     "C": {
       "starter": {
-        "frame": 41,
-        "ability": 51,
-        "arm": 40
+        "frame": 45,
+        "ability": 61,
+        "arm": 60
       },
       "backup": {
-        "ability": 45,
-        "frame": 35
+        "ability": 50,
+        "frame": 45,
+        "arm": 50
       }
     },
     "1B": {
@@ -98,36 +93,43 @@
     "3B": {
       "starter": {
         "range": 60,
-        "arm": 60
+        "arm": 60,
+        "error": 50
       },
       "backup": {
         "range": 55,
-        "arm": 55
+        "arm": 55,
+        "error": 50
       }
     },
     "SS": {
       "starter": {
-        "range": 86
+        "error": 50,
+        "range": 98
       }
     },
     "LF": {
       "starter": {
-        "range": 40
+        "range": 40,
+        "error": 45
       }
     },
     "CF": {
       "starter": {
-        "range": 92
+        "range": 98,
+        "error": 50
       }
     },
     "RF": {
       "starter": {
         "range": 60,
-        "arm": 60
+        "arm": 60,
+        "error": 50
       },
       "backup": {
         "range": 55,
-        "arm": 55
+        "arm": 55,
+        "error": 50
       }
     }
   },

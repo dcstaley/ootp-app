@@ -1,21 +1,21 @@
 {
-  "id": "live-bronze",
-  "name": "Live Bronze",
+  "id": "diamond-ice-to-see-you",
+  "name": "Diamond Ice to see you",
   "kind": "tournament",
   "card_value_min": null,
-  "card_value_max": 69,
+  "card_value_max": 99,
   "total_cap": null,
   "roster_size": 26,
-  "hitters": 13,
-  "pitchers": 13,
+  "hitters": 14,
+  "pitchers": 12,
   "min_starters": 5,
-  "min_starter_stamina": 45,
+  "min_starter_stamina": 50,
   "min_pitch_types": 3,
   "dh": true,
   "variants_allowed": true,
-  "max_variants_on_roster": 0,
+  "max_variants_on_roster": 5,
   "eraId": "era-2010",
-  "parkId": "park-12",
+  "parkId": "park-56",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -47,28 +47,22 @@
   },
   "eligibility": {
     "mode": "ALL",
-    "rules": [
-      {
-        "id": "r1783434398115-0",
-        "column": "Card Type",
-        "op": "set_in",
-        "values": [
-          "1"
-        ]
-      }
-    ]
+    "rules": []
   },
   "positionRanks": {
     "RF": {
       "starter": {}
+    },
+    "C": {
+      "backup": {}
     }
   },
   "budget_mode": "none",
   "topHitters": 50,
-  "topPitchers": 110,
+  "topPitchers": 100,
   "minPlayersPerPosition": 2,
   "tournamentAdjustment": {
-    "enabled": true,
+    "enabled": false,
     "hr": 1.15,
     "bb": 0.85,
     "k": 1,
@@ -78,64 +72,65 @@
   "positionMins": {
     "C": {
       "starter": {
-        "ability": 55,
-        "frame": 50
+        "ability": 40,
+        "frame": 60,
+        "arm": 40
       },
       "backup": {
-        "ability": 50,
-        "frame": 45
+        "frame": 50,
+        "arm": 40,
+        "ability": 40
       }
     },
     "1B": {
-      "starter": {}
+      "starter": {
+        "range": 1
+      }
     },
     "2B": {
       "starter": {
-        "range": 69
-      },
-      "backup": {
-        "range": 65
+        "range": 85
       }
     },
     "3B": {
       "starter": {
-        "range": 55,
-        "arm": 55
+        "range": 60,
+        "arm": 60
       },
       "backup": {
-        "range": 50,
-        "arm": 50
+        "range": 55,
+        "arm": 55
       }
     },
     "SS": {
       "starter": {
-        "range": 77
+        "range": 103
       },
       "backup": {
-        "range": 69
+        "range": 95
       }
     },
     "LF": {
       "starter": {
-        "range": 45
+        "range": 40
       }
     },
     "CF": {
       "starter": {
-        "range": 73
+        "range": 111
       },
       "backup": {
-        "range": 68
+        "range": 95
       }
     },
     "RF": {
       "starter": {
-        "range": 55,
+        "range": 60,
         "arm": 55
       },
       "backup": {
-        "range": 50,
-        "arm": 50
+        "range": 60,
+        "arm": 55
       }
     }
   }

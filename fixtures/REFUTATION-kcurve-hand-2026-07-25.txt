@@ -1,0 +1,634 @@
+################################################################################
+# EXPLAINING THE vR/vL K-RESIDUAL ASYMMETRY — and what it means for the POOLED cubic
+# Adversarial re-analysis of fixtures/kresidual-wide-window-2026-07-25.txt
+# MEASUREMENT ONLY. No fit, no refit, nothing wired, nothing committed.
+################################################################################
+
+  model 'league-42-43' DEPLOYED form, fit window 2042+2043, root 'League Files'
+  rows rebuilt to the artifact's spec: card×side×season, BF weights, global z(stu), card-cluster boot.
+  reproduction check — full window 2037–2043: N=719 rows / 70 cards
+    pooled cubic -0.4983 (artifact -0.4983)   vR -0.8871 (artifact -0.8871)   vL +0.1797 (artifact +0.1797)
+    vR−vL cubic -1.0668 (artifact -1.0668).  Rows reproduce exactly — everything below is on the same data.
+
+################################################################################
+### VERDICT ON THE ASYMMETRY:  EXPLAINED
+################################################################################
+
+  CAUSE: OPPOSING-BATTER COMPOSITION, resolved by PITCHER hand. The deployed pitching
+  prediction contains NO opponent term — predictPitching() sees only the pitcher's own
+  ratings — while the opposition a line was thrown to differs enormously by matchup cell.
+
+   1. Opposing avoid-K by cell (PA-weighted, switch-hitters resolved to the hand they bat from):
+      same-side matchups face batters -6.37 avoid-K points weaker than opposite-side ones.
+   2. The residual tracks it: same−opposite K residual level gap -6.99/600, CI [-9.53, -5.15],
+      p=0.000; correlation with the opposition gap +0.80 across seasons, same sign in 33/33 league-seasons.
+      The fitted slope is +0.842 K/600 per opposing rating point — 1.14× what the model's OWN
+      hitter K curve says a rating point is worth. It is the missing opponent term, at full size.
+   3. The two arms carry that effect in DIFFERENT PROPORTIONS: the vR arm is 52% same-side
+      matchups, the vL arm 20%. And because STU vR ≠ STU vL (mean gap +3.9 for RHP, -3.9 for LHP),
+      the mixture lands at DIFFERENT PLACES on the Stuff axis in each arm — a level effect
+      converted into a shape difference.
+   4. REMOVE IT AND THE ASYMMETRY IS GONE: with the matchup-cell level removed, vR−vL cubic goes
+      -1.0668 → -0.0175 (98% of it), CI [-0.999, +0.404], p=0.770. The arms converge to
+      vR -0.5148 vs vL -0.4973. Stratifying instead of correcting gives the same answer:
+      the vR−vL cubic computed WITHIN pitcher hand and BF-averaged is -0.1349 (p=0.677).
+
+  There is no hand-specific curve behaviour left to explain. This is consistent with the
+  mechanism argument that closed the decision: the platoon difference is already in the
+  ratings, and nothing in the engine converts ratings to outcomes differently by hand.
+
+################################################################################
+### WHAT THIS MEANS FOR THE POOLED CUBIC:  NOT CONTAMINATED — AND ATTENUATED, NOT INFLATED
+################################################################################
+
+  The fear was that the pooled -0.4983 is partly the same artifact. It is not. Removing the
+  composition makes the pooled cubic STRONGER and CLEANER, not weaker:
+
+                                               pooled cubic  95% CI (card cluster)          p
+     raw (the artifact's number)                    -0.4983  [-1.268, +0.001]           0.050  COVERS 0
+     − matchup-cell level                           -0.5999  [-1.193, -0.362]           0.000  CI-CLEAR
+     − matchup-cell × season level                  -0.6001  [-1.208, -0.358]           0.000  CI-CLEAR
+     − linear opposing-avoid-K term                 -0.6409  [-1.210, -0.354]           0.000  CI-CLEAR
+
+  The composition was ADDING NOISE, not signal: the BF-weighted residual variance falls from
+  31.9 to 14.8 (K/600)² once the matchup cells are centred — the composition is 54% of the
+  whole K residual, dwarfing anything the curve shape is doing. Its effect on the pooled cubic
+  was to widen the CI to the point of covering zero (raw p=0.050), not to create the estimate.
+
+  SO THE POOLED CUBIC IS USABLE — WITH THREE CAVEATS THAT ARE NOT ABOUT THE HAND SPLIT:
+   (i)  IT RESTS ON ~10 EFFECTIVE CARDS. The Kish ESS over CARDS of the cubic's own information
+        is 9.9 of 70 (the artifact's quoted 94.6 is a ROW-grain ESS, and the bootstrap
+        resamples cards, not rows). Craig Kimbrel alone holds 26% of it. A cubic coefficient is
+        -16.2 K/600 at z=+3, so its value is set by the two or three cards out there.
+   (ii) A CUBIC IS NOT ESTABLISHED AS THE FORM. On the corrected residual the QUARTIC beats the
+        cubic on all three cross-validations (LOCO 13.17 vs 13.34), and trimming to |z|≤1.75
+        cuts the coefficient to 46% of its value. What is established is only that the leftover
+        shape is HIGHER-ORDER THAN QUADRATIC and lives in the Stuff tails.
+   (iii) THE FIRST-BEST FIX IS NOT A CURVE TERM AT ALL. The largest measurable defect on this line
+        is the missing opponent term (54% of the residual variance, a -6.99/600 matchup gap).
+        Fitting a cubic on top of an uncorrected residual spends curve parameters absorbing
+        exposure. Note the deployed form is fit on 2042+2043 whose matchup mixture is a property
+        of THAT window's rosters and usage — the same drift the pool-turnover argument warns about.
+
+  WHAT WOULD SETTLE THE REMAINING QUESTIONS
+   • For the ~10-effective-card problem: cards outside the current Stuff tail, or the
+     cwhitstats corpus (100s of instances per format at 1000s of IP) which resolves the elite
+     tail this corpus cannot. Nothing inside 'League Files' can fix it — 7 seasons of the same
+     70 cards buy ~1.2–1.3× the information of one season (§10).
+   • For cubic-vs-quartic-vs-something-else: refit the K channel WITH an opponent term present
+     and re-measure the leftover shape. Until the opponent term exists, every shape estimate on
+     this line is measured on a residual that is 54% exposure.
+   • For the hand question: closed. It is explained, and the explanation is measurable, sized,
+     and removable.
+
+
+################################################################################
+## 1. THE DESIGN-DIFFERENCE PLACEBO — how much of the "hand asymmetry" a SINGLE
+##    hand-blind curve produces on its own.  ANSWER: only 3–9%. Not the explanation.
+################################################################################
+
+  The cubic partial is a PROJECTION coefficient, not a property of the curve. If the true
+  residual function m(stu) is not itself a cubic, its projection onto [1,z,z²,z³] depends on
+  the BF-weighted DESIGN. vR and vL are not two views of one design: STU vR ≠ STU vL for the
+  same card, and the BF sits in different places on each arm.
+
+     BF-weighted z(stu) design, per arm            vR (RHB)      vL (LHB)      diff
+        mean z                                        +0.090        -0.131    +0.221
+        sd   z                                         0.998         0.989    +0.009
+        skew z                                        -0.232        +0.243    -0.475
+        E[z³]  (the cubic's own moment)               +0.038        -0.153    +0.191
+        E[z⁶]  (the cubic's leverage mass)             14.82         20.56     -5.74
+
+  THE PLACEBO. Fit a flexible HAND-BLIND function of Stuff on the POOLED rows (it cannot
+  contain a hand effect — it has never seen the hand label), then project THAT function onto
+  the cubic basis separately in each arm, using each arm's own rows and BF weights. The
+  resulting vR−vL contrast is 100% design artifact, by construction.
+
+     hand-blind curve                     vR cubic    vL cubic    vR−vL     % of observed -1.0668
+     pooled degree-5 poly                   -0.5130     -0.4803   -0.0327             3%
+     pooled degree-7 poly                   -0.5217     -0.4369   -0.0848             8%
+     kernel smoother h=0.50                 -0.2982     -0.2703   -0.0280             3%
+     kernel smoother h=0.35                 -0.3866     -0.2898   -0.0968             9%
+
+################################################################################
+## 2. INFLUENCE — is the contrast the property of a few cards?
+################################################################################
+
+     70 cards, 719 rows.  CUBIC-INFORMATION concentration (Σ w·c², c = z³ ⊥ [1,z,z²]):
+        vR: top-1 card holds 26.9% of the arm's cubic information, top-3 44.5%, top-5 58.3%
+        vL: top-1 card holds 21.9% of the arm's cubic information, top-3 45.1%, top-5 57.7%
+        Kish ESS over CARDS of that information: vR 9.4 cards, vL 10.6 cards
+        (the artifact quotes cubic-contrast ESS 55.8 / 62.4 — those are ROW-grain ESS. At the
+         grain the bootstrap actually resamples, the cubic rests on ~9/11 effective CARDS.)
+
+     Top cubic-information cards per arm:
+        vR: Craig Kimbrel 26.9%, Carl Hubbell 9.1%, Whitey Ford 8.5%, Randy Johnson 7.2%, Juan Marichal 6.6%
+        vL: Craig Kimbrel 21.9%, Carl Hubbell 14.7%, Mason Miller 8.5%, Dellin Betances 7.2%, Daniel Palencia 5.4%
+
+     LEAVE-ONE-CARD-OUT on the vR−vL cubic (base -1.0668). Most influential cards:
+     card                        rows         BF  mean stu      z   d(-card)        Δ
+     Carl Hubbell                  14    440,852      81.9  -1.75    -0.7574  +0.3094
+     Craig Kimbrel                 12     42,371     183.7  +3.20    -1.2788  -0.2120
+     Randy Johnson                 14    346,411     137.2  +0.94    -0.8548  +0.2120
+     Daniel Palencia               14     99,245     142.4  +1.19    -1.2251  -0.1583
+     Eddie Cicotte                 12    177,061     105.0  -0.63    -0.9531  +0.1137
+     Jonathan Papelbon             14    114,815     143.3  +1.24    -1.1569  -0.0901
+     Dellin Betances               14    147,563     140.0  +1.08    -1.1563  -0.0895
+     Sam McDowell                  16    122,962     135.5  +0.86    -0.9853  +0.0815
+     Cliff Lee                     17    170,275     127.7  +0.48    -1.1357  -0.0688
+     Pedro Martinez                14    376,959     120.9  +0.15    -1.0028  +0.0640
+
+     SEQUENTIAL DROP of the most influential card at each step (greedy, worst case):
+     cards dropped     cards left   vR−vL cubic   dropped
+     0                         70       -1.0668   
+     1                         69       -0.7574   Carl Hubbell
+     2                         68       -0.5361   Carl Hubbell, Randy Johnson
+     3                         67       -0.7011   Carl Hubbell, Randy Johnson, Daniel Palencia
+     4                         66       -0.8497   Carl Hubbell, Randy Johnson, Daniel Palencia, Walker Buehler
+     5                         65       -1.0314   Carl Hubbell, Randy Johnson, Daniel Palencia, Walker Buehler, Craig Kimbrel
+     6                         64       -1.2747   Carl Hubbell, Randy Johnson, Daniel Palencia, Walker Buehler, Craig Kimbrel, Mason Miller
+
+     Re-run of the artifact's own paired card-cluster test after dropping the top influencers:
+        drop 3 cards: vR−vL cubic -0.7011  CI [-1.7587, +0.0412]  p=0.063  COVERS 0
+        drop 5 cards: vR−vL cubic -1.0314  CI [-2.4343, +0.0050]  p=0.052  COVERS 0
+
+     CLUSTER JACKKNIFE (delete-one-card) on the contrast: SE 0.5297, t = -2.01
+        (a normal-approx two-sided p of 0.044; with 70 clusters the t-reference has ~69 df)
+
+     THE SAME KNIFE ON THE POOLED CUBIC (-0.4983) — the number the programme now depends on:
+        cubic-information concentration: top-1 card 25.5% (Craig Kimbrel), top-3 46.3%, top-5 56.1%
+        Kish ESS over CARDS: 9.9 effective cards (the artifact's row-grain ESS is 94.6)
+        most influential cards (leave-one-out):
+           Randy Johnson           z +0.94     346,411 BF  →  pooled cubic -0.3094  (Δ +0.1890)
+           Carl Hubbell            z -1.75     440,852 BF  →  pooled cubic -0.6619  (Δ -0.1635)
+           Whitey Ford             z -0.27     250,729 BF  →  pooled cubic -0.5864  (Δ -0.0881)
+           Vida Blue               z +0.61     230,511 BF  →  pooled cubic -0.4420  (Δ +0.0564)
+           Cliff Lee               z +0.48     170,275 BF  →  pooled cubic -0.4511  (Δ +0.0472)
+           Satchel Paige           z +0.32     699,681 BF  →  pooled cubic -0.5432  (Δ -0.0449)
+        sequential greedy drop: -0.498  →  -0.309  →  -0.445  →  -0.543  →  -0.644  →  -1.182
+        pooled cubic, full set:  -0.4983 CI [-1.2676, +0.0014] p=0.050 COVERS 0
+        pooled cubic, −3 cards:  -0.5434 CI [-1.5928, -0.1910] p=0.006 CI-clear
+
+################################################################################
+## 3. MULTIPLICITY — the cubic is one of FOUR hand contrasts that were available
+################################################################################
+
+     Same paired card-cluster machinery, applied to EVERY coefficient of the cubic fit:
+     contrast (vR−vL)           point  95% CI (paired cluster)          p   flag
+     level (β0)               -0.2740  [-3.4124, +4.2531]           0.928   covers 0
+     linear (β1)              +4.6151  [+1.0320, +8.5938]           0.011   CI-clear
+     quadratic (β2)           +1.2014  [-1.1324, +2.6650]           0.311   covers 0
+     cubic (β3)               -1.0668  [-2.1243, -0.0830]           0.034   CI-clear
+     (BF-weighted mean-residual gap, the artifact's "LEVEL": +1.06/600)
+
+     The CUBIC's own p of 0.034, Šidák-corrected for the 4 coefficient looks: 0.131.
+     Bonferroni: 0.138.  The cubic contrast does NOT survive either correction.
+     Smallest of the four p-values is the LINEAR contrast (0.011) — a bigger, cleaner hand
+     difference than the cubic, and one the proposal does not mention. If the cubic contrast is
+     taken as evidence for hand-conditioning the SHAPE, the linear contrast is stronger evidence
+     for hand-conditioning the SLOPE — which is a different (and larger) fix. Both readings cannot
+     be selected post hoc from the same four-way look and still carry their nominal p-values.
+
+################################################################################
+## 4. SEED AND SCHEME SENSITIVITY — "two seeds agreed" is not stability
+################################################################################
+
+     40 independent rng streams, 4,000 paired card-cluster draws each, same statistic:
+        p:  min 0.028   p10 0.030   median 0.033   p90 0.040   max 0.045
+        CI excludes zero in 40/40 streams (100%).  p < 0.05 in 40/40.
+        ⇒ the flag is stable at 4k draws; the estimate sits on the 0.05 boundary and the
+          Monte-Carlo error of p alone spans 0.016.
+
+################################################################################
+## 5. SPEC SENSITIVITY — how much of the contrast is the analyst's choices?
+################################################################################
+
+     specification                    rows  cards    vR cub    vL cub     vR−vL  % of base
+     BASELINE (artifact spec)          719     70   -0.8871   +0.1797   -1.0668       100%
+     weights √BF                       719     70   -0.7682   -0.0249   -0.7433        70%
+     weights BF^0.25                   719     70   -0.7316   -0.1401   -0.5916        55%
+     UNWEIGHTED (w=1)                  719     70   -0.7094   -0.2520   -0.4574        43%
+     weights BF²                       719     70   -0.8844   +0.4409   -1.3252       124%
+     z within HAND                     719     70   -0.8815   +0.1736   -1.0551        99%
+     z within SEASON                   719     70   -0.8344   +0.1614   -0.9958        93%
+     degree 4 (quartic added)          719     70   -1.0927   +0.2258   -1.3185       124%
+     degree 5                          719     70   -1.2829   +0.6148   -1.8978       178%
+     degree 2 (no cubic)               719     70       n/a       n/a       n/a       n/a%
+     trim |z| > 2.0                    655     67   -0.5496   +0.0767   -0.6263        59%
+     trim |z| > 1.75                   634     67   -0.5496   -0.2028   -0.3468        33%
+     trim |z| > 1.5                    580     65   +0.7770   +3.3097   -2.5327       237%
+     include 2032-33 'Old Data'        892     84   -0.8430   +0.0849   -0.9279        87%
+     minPA 500 (looser)                941     86   -0.8823   +0.1109   -0.9932        93%
+     minPA 2000 (tighter)              511     60   -0.8856   +0.2514   -1.1370       107%
+     minPA 3000                        434     49   -0.9248   +0.2463   -1.1711       110%
+
+     Global z domain on the full window: [-2.62, +3.36].
+     A cubic coefficient of -1.067 contributes -8.5 K/600 at z=+2 and -28.8 at z=+3 —
+     i.e. the coefficient's meaning is set almost entirely by the handful of rows in the tails.
+
+################################################################################
+## 6. COMMON SUPPORT — compare the arms where they are actually comparable
+################################################################################
+
+     (a) DISTRIBUTION MATCHING. Reweight one arm (10 z-bins) so its BF-weighted Stuff
+         histogram matches the other's, then recompute. If the contrast is a design artifact
+         (§1), matching must shrink it.
+            raw:                       vR -0.8871   vL +0.1797   diff -1.0668
+            vR reweighted to vL's z:   vR -0.4619   vL +0.1797   diff -0.6416  (60% of base)
+            vL reweighted to vR's z:   vR -0.8871   vL +0.5371   diff -1.4243  (134% of base)
+
+     (b) COMMON-SUPPORT RESTRICTION to z ∈ [-1.65, +1.61] (both arms' 2nd–98th BF pct):
+            N=617 rows / 67 cards.  vR−vL cubic -3.9154
+            CI [-10.3174, +3.6454]  p=0.274  COVERS 0
+
+     (c) NONPARAMETRIC, no basis at all — BF-weighted mean residual per arm in common z bins.
+         A real hand-specific SHAPE must show up as arms separating somewhere. (Paired card-
+         cluster CI on the within-bin difference.)
+     z bin              nR   nL   vR resid   vL resid     diff  95% CI (paired)
+     [-2.6, -1.4)       27   36      +0.77      -0.65    +1.42  [-1.24, +7.86] p=0.163 covers 0
+     [-1.4, -0.7)       56   33      -4.80      -0.77    -4.04  [-6.22, -0.94] p=0.027 CI-clear
+     [-0.7, -0.2)       60   48      -1.12      -2.82    +1.71  [-4.11, +9.67] p=0.648 covers 0
+     [-0.2, +0.3)       89   95      -2.24      -0.94    -1.30  [-4.28, +3.71] p=0.542 covers 0
+     [+0.3, +0.9)       81   38      -0.06      -8.17    +8.10  [-1.32, +13.19] p=0.102 covers 0
+     [+0.9, +1.5)       48   25      +3.52      +0.89    +2.64  [-4.80, +6.96] p=0.607 covers 0
+     [+1.5, +3.2)       26   50      -1.46      -2.53    +1.07  [-4.95, +8.14] p=0.723 covers 0
+
+     ⇒ arms separate CI-clear in 1/7 bins.
+
+################################################################################
+## 7. THE CONFOUND THE ANALYST FLAGGED AND DID NOT TEST — who each arm actually faced
+################################################################################
+
+  (a) PITCHER HAND. 'vR/vL' is the BATTER's hand. For a RHP, vR is the SAME-side (platoon-
+      advantage) matchup; for a LHP it is the OPPOSITE-side one. If the deployed K curve
+      mis-fits along the PLATOON-ADVANTAGE axis, the batter-hand split is a confounded proxy.
+
+     split                        rows  cards          BF     cubic
+     all RHP                       462     43   3,890,529   -0.4012
+     all LHP                       257     27   2,240,401   -0.7182
+     SAME-side matchups            328     63   2,401,441   -0.5349
+     OPPOSITE-side matchups        391     70   3,729,489   -0.5573
+
+     SAME−OPPOSITE cubic contrast: +0.0224  CI [-0.9922, +0.4868]  p=0.835  covers 0
+     vR−vL WITHIN RHP only: -0.3388  CI [-1.4289, +0.3104]  p=0.280  covers 0
+     vR−vL WITHIN LHP only: +0.2191  CI [-3.5425, +2.8325]  p=0.955  covers 0  (27 cards)
+        LHP share of rows 35.7%, of BF 36.5%.
+
+  (b) ROLE. POS values present: CL, DH, RP, SP. Stuff and role are strongly related, and
+      role changes both the opposition mix and the platoon exposure a pitcher sees.
+     split                        rows  cards  BF-wtd stu    vR cub    vL cub     vR−vL
+     starters (POS SP)             447     46       114.1   +0.1848   -0.2567   +0.4416
+     non-starters                  272     45       132.2   -0.6074   -0.6317   +0.0244
+     within starters:     CI [-2.2297, +5.9033] p=0.680 covers 0
+     within non-starters: CI [-1.8224, +1.5152] p=0.955 covers 0
+
+  (c) OPPOSITION COMPOSITION. A pitcher's vR line is against RHB, his vL line against LHB.
+      Those are DIFFERENT POPULATIONS of hitters, and the deployed pitching prediction contains
+      NO opponent term at all (predictPitching sees only the pitcher's own ratings). So any
+      systematic quality difference between the RHB and LHB populations lands directly in the
+      residual — as a LEVEL per arm, and as SHAPE to the extent it interacts with Stuff.
+
+     year      RHB n     RHB PA  RHB kRat   LHB n     LHB PA  LHB kRat     gap
+     2037         30    420,376     115.8      23    248,322     119.0    -3.2
+     2038         32    527,760     116.9      24    302,085     118.8    -1.9
+     2039         25    400,804     118.5      18    213,795     116.9    +1.6
+     2040         28    497,182     119.1      24    265,602     118.8    +0.2
+     2041         27    466,938     119.8      23    284,903     120.0    -0.2
+     2042         24    440,421     120.1      21    301,934     123.9    -3.8
+     2043         28    433,317     121.1      22    294,695     126.3    -5.2
+     (kRat = avoid-K rating, PA-weighted over qualified hitters of that batting hand; higher = harder to K.)
+     Mean RHB−LHB avoid-K gap across the window: -1.79 rating points.
+     This gap is NEVER in the prediction and NEVER removed by the hand contrast — differencing the
+     arms differences away the SEASON, not the OPPOSITION POPULATION, which is exactly what differs
+     between the arms by construction.
+
+  (d) THE MECHANISM — the two arms are a RE-SORTING of the same 70 cards, not two views of one
+      design. STU vR and STU vL are DIFFERENT RATINGS, and the gap between them is signed by the
+      pitcher's own hand:
+        mean (STU vR − STU vL):  RHP +3.93   LHP -3.86   (42 / 21 cards)
+      So a RHP sits HIGHER on the vR arm's Stuff axis than on the vL arm's, and a LHP the
+      reverse. Any residual attached to the PITCHER (hand, role, usage) therefore lands at a
+      DIFFERENT place on z in each arm — which is a shape contrast with no curve defect in it.
+
+     cell (throws × batter)     rows          BF  BF-wtd stu  level resid
+     RHP vs RHB (same)           232   1,902,891       121.4        -3.55
+     RHP vs LHB (opp)            230   1,987,638       115.4        +0.91
+     LHP vs RHB (opp)            161   1,741,851       117.8        +2.78
+     LHP vs LHB (same)            96     498,550       114.2       -11.53
+
+     THE AXIS THAT IS ACTUALLY RESOLVED IS SAME-SIDE vs OPPOSITE-SIDE, AND IT IS A LEVEL:
+        same-side level -5.21/600, opposite-side level +1.78/600, contrast -6.99/600
+        CI [-9.53, -5.15]  p=0.000  CI-CLEAR
+        — an order of magnitude bigger than anything in the batter-hand cubic story, on a resolved axis
+        the proposal does not consider. (Top-BF cards in the extreme cell LHP-vs-LHB: Carl Hubbell 20%, Randy Johnson 15%, Whitey Ford 11%.)
+        NOTE this is NOT itself a clean curve finding either — same-side BF is a manager-selected
+        subset — but it dominates the hand story the proposal is built on.
+
+     REMOVING A PITCHER-TYPE LEVEL (the residual structure the re-sorting can convert into shape):
+     construction                        vR−vL cubic  95% CI (paired cluster)          p
+     raw (the artifact)                      -1.0668  [-2.1243, -0.0830]           0.034
+     after pitcher-HAND level removed        -1.0630  [-2.1160, -0.0969]           0.031  CI-clear
+     after ROLE (SP/RP) level removed        -1.0197  [-2.0584, -0.0743]           0.037  CI-clear
+     after hand×role level removed           -1.0073  [-1.9978, -0.0133]           0.046  CI-clear
+     (a per-year-hand FE cannot do this: the confound is a per-PITCHER-TYPE level, and the
+      re-sorting happens WITHIN a season, so the artifact's §5 FE checks are blind to it.)
+
+     THE STRATIFIED ESTIMAND — vR−vL computed WITHIN each stratum, then BF-averaged. This is
+     what "the K curve's shape differs by batter hand" actually asserts; the raw contrast is a
+     mixture that also contains the re-sorting.
+     stratification                stratified vR−vL  95% CI                           p
+     none (the artifact's number)           -1.0668  [-2.1243, -0.0830]           0.034  CI-clear
+     by pitcher hand                        -0.1349  [-1.5727, +0.9421]           0.677  COVERS 0
+     by role (SP / non-SP)                  +0.3539  [-1.8442, +4.9155]           0.669  COVERS 0
+     by hand × role                         +0.6476  [-3.2562, +4.0335]           0.443  COVERS 0
+
+################################################################################
+## 7e. CANDIDATE 1 — THE OPPOSING-BATTER POPULATION, RESOLVED BY PITCHER HAND
+################################################################################
+
+     A switch-hitter bats RIGHT against a LHP and LEFT against a RHP, so 'the RHB population'
+     is not one population — it depends on the pitcher's hand. And the batter's own avoid-K
+     rating is itself hand-split. Resolving both gives four opposition cells:
+
+     year     RHB vs RHP  RHB vs LHP  LHB vs RHP  LHB vs LHP   same−opp kRat  
+     2037          113.5       116.7       119.8       101.9             -7.41
+     2038          114.5       118.5       119.9        99.7             -7.66
+     2039          115.8       120.5       117.5        98.4             -6.48
+     2040          116.1       121.6       117.6       102.6             -5.72
+     2041          117.1       121.4       117.7       105.9             -4.41
+     2042          116.8       122.3       120.8       111.4             -5.84
+     2043          117.6       123.9       123.8       114.4             -7.07
+     (avoid-K rating, PA-weighted over qualified hitters; higher = harder to strike out.)
+
+     THE OPPOSITION IS NOT SYMMETRIC. Same-side matchups face batters whose avoid-K averages
+     -6.37 rating points LOWER than opposite-side matchups. The model has no opponent
+     term, so that difference is a pure additive residual — and it lines up with the measured
+     same-vs-opposite level gap:
+     year     opp kRat gap  resid level gap  vR−vL cubic
+     2037            -7.41            -8.15       -1.680
+     2038            -7.66            -8.19       -0.958
+     2039            -6.48            -6.93       -1.218
+     2040            -5.72            -6.94       -1.206
+     2041            -4.41            -5.83       -0.563
+     2042            -5.84            -6.25       -1.037
+     2043            -7.07            -6.36       -0.754
+     correlation(opp kRat gap, resid level gap) across the 7 seasons: +0.80
+     correlation(opp kRat gap, vR−vL cubic)      across the 7 seasons: +0.49
+     NOTE ON 'CONSISTENT ACROSS 7 SEASONS': the seasons are not equal. League coverage is
+     4 leagues in 2037, 5 in 2038 and 2040–2043, and 4 effective in 2039 (HD450|2039 is
+     excluded as corrupt by the loader). The 2032–33 'Old Data' seasons carry 4 and 2. A
+     7/7 sign count is therefore 7 correlated, unequally-weighted looks at ~70 recurring cards,
+     not 7 independent replications.
+
+     ══ THE DECISIVE TEST — remove the composition and re-read the SAME statistics ══
+
+        arm composition by matchup cell (BF share of the arm):
+           vR arm: 52.2% same-side (RHP), 47.8% opposite (LHP)
+           vL arm: 20.1% same-side (LHP), 79.9% opposite (RHP)
+        ⇒ the vR arm is HALF same-side matchups, the vL arm ONE FIFTH. The arms are not two
+          views of one thing; they carry different mixtures of a matchup effect worth -6.99/600.
+
+        fitted slope of the K residual on opposing avoid-K: +0.842 K/600 per rating point
+        the deployed HITTER K curve's own local slope:      -0.741 K/600 per rating point
+        ⇒ the residual moves with opposing avoid-K at 1.14× the rate the model itself says a
+          rating point is worth. The size is not an accident — it is the missing opponent term.
+
+     construction                                pooled cubic        vR        vL     vR−vL
+     raw (the artifact)                               -0.4983   -0.8871   +0.1797   -1.0668
+     − linear opposing-avoid-K term                   -0.6409   -0.6220   -0.5135   -0.1085
+     − matchup-cell (throws×batter) level             -0.5999   -0.5148   -0.4973   -0.0175
+     − matchup-cell × SEASON level                    -0.6001   -0.5037   -0.5156   +0.0119
+
+     with the artifact's own paired card-cluster inference:
+        raw:                       pooled -0.4983 CI [-1.268, +0.001];  vR−vL -1.0668 p=0.034 CI-clear
+        − opposing-avoid-K term:   pooled -0.6409 CI [-1.210, -0.354] CI-clear;  vR−vL -0.1085 CI [-0.956, +0.344] p=0.537 COVERS 0
+        − matchup-cell level:      pooled -0.5999 CI [-1.193, -0.362] CI-clear;  vR−vL -0.0175 CI [-0.999, +0.404] p=0.770 COVERS 0
+        − matchup-cell × season:   pooled -0.6001 CI [-1.208, -0.358] CI-clear
+
+################################################################################
+## 7f. CANDIDATE 2 — ARE THE ARMS POPULATED BY DIFFERENTLY-SHAPED CARDS?
+################################################################################
+
+     BF-weighted PITCHING rating vector carried by each arm:
+                          STU      CON   PBABIP      HRA          BF
+        vR arm          119.7    103.4    117.8    116.1   3,644,742
+        vL arm          115.2    100.0    117.3    119.1   2,486,188
+        difference       +4.5     +3.5     +0.4     -2.9
+     The arms are the SAME CARDS — but not the same RATINGS. Every channel is hand-split, so the
+     two arms are two different rating vectors for one roster, and the ordering differs.
+
+     PER-CARD vL EXPOSURE SHARE (BF vL / total BF). If vL exposure were random, share ≈ constant.
+                                      n  vL share   STU vR   STU vL    %LHP    %SP
+        top-15 by vL share           15     0.573      n/a    116.4       0     73
+        bottom-15 by vL share        15     0.110    120.1      n/a     100     80
+        all cards                    70     0.376      n/a      n/a      39     66
+        correlation(vL share, STU vL − STU vR) across cards: n/a
+        correlation(vL share, is-LHP)                      : -0.85
+
+################################################################################
+## 7g. CANDIDATE 3 — PARK HANDEDNESS, AND THE PER-LEAGUE READ
+################################################################################
+
+     The training CSVs carry NO park identifier and NO park columns; the corpus is documented
+     (src/training/loader.ts) as collected in a NEUTRAL league environment — no park, neutral
+     era — which is why outcomes are summed across leagues with no neutralisation. So there is
+     no per-hand park factor on this line to remove, and none to blame. What CAN be checked is
+     whether the gap behaves like a shared environment effect: a park-handedness story needs
+     the gap to be league-specific (different parks) — a common gap in EVERY league is evidence
+     against it.
+
+     league      rows  cards          BF   lvl vR   lvl vL   vR cub   vL cub    vR−vL
+     PEL          367     46   1,359,037    +0.99    -1.71   -1.022   -0.005   -1.016
+     HD450        290     49     935,993    -1.01    -0.31   -1.195   +0.241   -1.435
+     HD451        336     41   1,090,860    -0.81    -1.61   -0.862   +0.453   -1.315
+     HD452        286     45     925,250    -1.18    -1.05   -0.888   +0.130   -1.018
+     HD453        336     46   1,100,625    -0.85    -0.87   -1.227   +0.938   -2.165
+     (per-league rows are the SAME cards again — a card is deployed in several leagues at once,
+      so these are not independent samples either; they are re-cuts of one roster.)
+
+     Across the 33 (league × season) cells:
+        correlation(opposition avoid-K gap, same−opposite residual level gap) = +0.38
+        same−opposite residual level gap is NEGATIVE in 33/33 cells;  vR−vL level gap positive in 21/33
+
+################################################################################
+## 8. PARAMETER COST — does the hand split actually PREDICT better?
+################################################################################
+
+     BF-weighted MSE of the K residual (units (K/600)²).  Baseline (no correction) = 31.949.
+     Three cross-validations. The CARD folds are the honest ones: the whole corpus is ~70 cards,
+     and a card's residual is nearly a fixed function of its (unchanging) ratings, so a season
+     fold leaks the same card into train and test.
+
+     correction model                  par  in-sample      LOSO  10-fold card      LOCO
+     no correction (deployed as-is)      0     31.949    31.949        31.949    31.949
+     pooled constant                     1     31.035    31.428        31.100    31.238
+     pooled linear                       2     30.919    31.308        31.113    31.604
+     pooled quadratic                    3     30.893    31.314        31.119    32.131
+     pooled CUBIC                        4     29.716    30.154        30.893    31.411
+     hand-conditioned constant           2     30.764    31.325        31.901    32.187
+     hand-conditioned linear             4     30.195    30.766        32.522    33.011
+     hand-conditioned quadratic          6     30.153    30.827        34.211    34.882
+     hand-conditioned CUBIC              8     28.199    28.864        32.694    32.272
+
+     Best by LOSO: hand-conditioned CUBIC.  Best by 10-fold-card: pooled CUBIC.  Best by LOCO: pooled constant.
+     hand-conditioned cubic vs pooled cubic:  LOSO -4.3%   10-fold-card +5.8%   LOCO +2.7%
+     (positive = the hand split predicts WORSE.)
+
+     Information criteria on the effective sample size (n = 140 card×hand cells, since a card's
+     seasons repeat one underlying residual):
+     correction model                  par        AIC        BIC
+     no correction (deployed as-is)      0      485.0      485.0
+     pooled constant                     1      482.9      485.9
+     pooled linear                       2      484.4      490.3
+     pooled quadratic                    3      486.3      495.1
+     pooled CUBIC                        4      482.8      494.6
+     hand-conditioned constant           2      483.7      489.6
+     hand-conditioned linear             4      485.1      496.8
+     hand-conditioned quadratic          6      488.9      506.5
+     hand-conditioned CUBIC              8      483.5      507.0
+
+################################################################################
+## 9. IS A CUBIC THE RIGHT DESCRIPTION AT ALL?
+################################################################################
+
+     hand-blind correction             par  in-sample      LOSO  10-fold card      LOCO
+     pooled linear                       2     30.919    31.308        31.113    31.604
+     pooled quadratic                    3     30.893    31.314        31.119    32.131
+     pooled CUBIC                        4     29.716    30.154        30.893    31.411
+     pooled quartic                      5     29.712    30.159        31.823    32.539
+     broken line, knot z=+1.0            3     30.750    31.181        31.239    31.681
+     broken line, knot z=+1.5            3     30.555    30.982        31.196    31.423
+     broken line, knot z=-1.0            3     30.446    30.853        30.956    31.857
+
+     Cubic partial after trimming the tails that define it:
+        |z| ≤ 3.20  (N=713, 99% of rows): pooled -0.4739   vR -1.0016   vL +0.1797   vR−vL -1.1813
+        |z| ≤ 2.50  (N=691, 96% of rows): pooled -0.7135   vR -1.3469   vL +0.3666   vR−vL -1.7135
+        |z| ≤ 2.00  (N=655, 91% of rows): pooled -0.7732   vR -0.5496   vL +0.0767   vR−vL -0.6263
+        |z| ≤ 1.75  (N=634, 88% of rows): pooled -0.5966   vR -0.5496   vL -0.2028   vR−vL -0.3468
+        |z| ≤ 1.50  (N=580, 81% of rows): pooled +1.4800   vR +0.7770   vL +3.3097   vR−vL -2.5327
+
+################################################################################
+## 10. HOW MUCH INDEPENDENT INFORMATION IS IN THE WIDE WINDOW?
+################################################################################
+
+     Variance decomposition of the residual (BF-weighted):
+                     between-card   within-card      ICC
+        pooled               4.46         26.56    0.144
+        vR                  16.70          5.89    0.739
+        vL                  33.56          8.63    0.795
+     The POOLED ICC (0.14) is misleading — pooling puts the two arms of the same card in one
+     cluster, and the arms differ, which inflates the "within" term. The relevant number is the
+     WITHIN-ARM one, because every estimate here is computed inside an arm:
+        vR: ICC 0.739, 5.7 seasons/card ⇒ design effect 4.47, so 393 rows carry ≈ 88 rows of information
+            — i.e. 1.27× what ONE season of the same cards would have given.
+        vL: ICC 0.795, 5.1 seasons/card ⇒ design effect 4.26, so 326 rows carry ≈ 77 rows of information
+            — i.e. 1.20× what ONE season of the same cards would have given.
+     The wide window multiplied rows by 3.2× and independent information by roughly 1.2–1.3×.
+
+     THE vL CELL THAT CARRIES THE CONTRAST. The artifact's vL quintile table has one cell at
+     -7.20/600 while every other vL cell sits near -1; it is the bin z∈[+0.3,+0.9). Its BF, by card:
+        Whitey Ford                 57,167 BF     35.7% of the bin   mean resid -14.82
+        Jesse Orosco                34,316 BF     21.4% of the bin   mean resid -12.53
+        Koji Uehara                 27,136 BF     16.9% of the bin   mean resid -3.73
+        Bubba Chandler              22,567 BF     14.1% of the bin   mean resid +0.21
+        Daisuke Matsuzaka            7,751 BF      4.8% of the bin   mean resid +1.15
+        Josh Johnson                 5,478 BF      3.4% of the bin   mean resid +6.49
+        top-2 cards = 57.1% of the bin's BF.
+
+     COLLAPSED to one row per (card, hand) — the unit that is actually independent:
+        N=133 cells / 70 cards.  vR cubic -0.8870  vL +0.1832  vR−vL -1.0701
+        paired card-cluster CI [-2.1560, -0.0892]  p=0.036  CI-clear
+
+################################################################################
+## 12. THE POOLED CUBIC AFTER THE COMPOSITION CORRECTION — is it usable?
+################################################################################
+
+     Object: the 719 rows with the matchup-cell (pitcher-hand × batter-hand) level removed.
+     Pooled cubic -0.5999 (raw -0.4983); vR -0.5148, vL -0.4973 — the arms now AGREE.
+
+     Corrected residual by Stuff quintile, per arm (the shape that is left):
+     z(stu) quintile        n          BF    pooled        vR        vL
+     [-2.62, -0.82]       143   1,256,661     -0.33     -1.52     +1.25
+     [-0.82, -0.14]       144     963,571     -1.48     -1.59     -1.27
+     [-0.14, 0.25]        144   1,403,946     -0.15     -0.30     -0.11
+     [0.25, 1.08]         144   1,654,031     +0.57     +0.80     -0.93
+     [1.08, 3.36]         144     852,721     +1.30     +1.72     +0.35
+
+     INFLUENCE on the corrected pooled cubic:
+        Kish ESS over CARDS of the cubic information: 9.9 effective cards (of 70)
+        Craig Kimbrel           z +3.20  →  -0.6615  (Δ -0.0615)
+        Randy Johnson           z +0.94  →  -0.5447  (Δ +0.0552)
+        Carl Hubbell            z -1.75  →  -0.5495  (Δ +0.0504)
+        Mason Miller            z +2.96  →  -0.6334  (Δ -0.0335)
+        Dellin Betances         z +1.08  →  -0.6284  (Δ -0.0284)
+        sequential greedy drop: -0.600  →  -0.661  →  -0.981  →  -1.089  →  -1.004  →  -1.102
+
+     SEED STABILITY of the corrected pooled cubic (20 streams × 3,000 cluster draws):
+        p: min 0.000  median 0.000  max 0.001;  CI-clear in 20/20
+
+     SPEC SENSITIVITY of the corrected pooled cubic:
+     specification                rows     cubic  % of base
+     corrected baseline            719   -0.5999       100%
+     weights √BF                   719   -0.5850        98%
+     UNWEIGHTED                    719   -0.5952        99%
+     z within SEASON               719   -0.5760        96%
+     degree 4                      719   -1.0232       171%
+     degree 5                      719   -0.5685        95%
+     trim |z| > 2.0                655   -0.5821        97%
+     trim |z| > 1.75               634   -0.2778        46%
+     trim |z| > 1.5                580   -0.4570        76%
+
+     IS A CUBIC THE RIGHT FORM FOR THE CORRECTED RESIDUAL? BF-weighted MSE, same three CVs.
+     hand-blind correction           par  in-sample      LOSO  10-fold card      LOCO
+     no correction                     0     14.771    14.771        14.771    14.771
+     constant                          1     14.771    15.127        14.992    14.953
+     linear                            2     14.610    14.955        14.848    14.990
+     quadratic                         3     14.542    14.918        15.580    15.499
+     CUBIC                             4     12.836    13.215        13.254    13.337
+     quartic                           5     12.336    12.744        13.087    13.175
+     broken line, knot z=+1.0          3     14.512    14.888        15.140    15.078
+     broken line, knot z=+1.5          3     14.422    14.801        14.877    14.930
+     broken line, knot z=-1.0          3     13.764    14.126        14.166    14.315
+     hand-conditioned CUBIC            8     12.326    13.042        13.876    13.950
+     Best by LOSO: quartic.   Best by 10-fold-card: quartic.   Best by LOCO: quartic.
+     The CUBIC now earns its keep: LOCO 13.34 vs 14.77 uncorrected (-9.7%), and it beats
+     every 2–3 parameter alternative on all three folds. Hand-conditioning it makes prediction
+     WORSE on both card-based folds (13.88 / 13.95 vs 13.25 / 13.34) — the rejection stands after correction.
+     The QUARTIC beats the cubic on all three (13.17 LOCO) — so "cubic" is not established as the
+     right form; what is established is that the leftover shape is higher-order than quadratic.
+
+     Residual composition-shape check — is any of the leftover cubic still a mixture effect?
+        same-side BF share by Stuff quintile (if this varied sharply with Stuff, a cell-mean
+        removal would still leave a mixture footprint):
+           Q1 33%   Q2 32%   Q3 28%   Q4 63%   Q5 30%
+        cubic WITHIN each matchup cell, after the cell level is removed:
+           RHP vs RHB    n= 232   1,902,891 BF   cubic -0.6909
+           RHP vs LHB    n= 230   1,987,638 BF   cubic -0.3521
+           LHP vs RHB    n= 161   1,741,851 BF   cubic -0.3334
+           LHP vs LHB    n=  96     498,550 BF   cubic -0.5525
+        (all four cells carry the same-signed cubic ⇒ the leftover shape is a property of Stuff,
+         not of the matchup mixture. But note how NON-UNIFORM the mixture itself is across Stuff
+         — that is precisely the machinery that converted a matchup LEVEL into arm-specific SHAPE.)
+
+################################################################################
+## 11. THE "OUT-OF-TIME REPLICATION" IS LARGELY ARITHMETIC
+################################################################################
+
+     497 out-of-sample rows; 451 of them (98.4% of OOS BF) belong to a card×arm cell that
+     the fit window also contains. Ratings never change, so that cell's residual is close to a
+     constant. CARRY-FORWARD TEST — overwrite each OOS row's residual with its own cell's
+     IN-SAMPLE mean (zero new information) and recompute:
+                                               POOLED         vR         vL
+        actual OOS cubic                      -0.4714    -0.8623    +0.2226
+        carry-forward (no new info)           -0.5929    -0.8674    -0.0581
+        in-sample cubic                       -0.5414    -0.8690    +0.0227
+
+     BF-weighted correlation between a cell's IN-SAMPLE residual and its OUT-OF-SAMPLE residual:
+        r = 0.864 over 97 card×arm cells ⇒ 75% of the "new" measurement was
+        already determined by the in-sample one.
+     The artifact's headline — vR -0.8690 in-sample vs -0.8623 out-of-sample, "a 0.8% difference" —
+     is therefore not a strong replication result. Two estimates that share 98% of their cards and
+     read the SAME unchanging ratings SHOULD agree closely; agreeing is the null, not the finding.
+     The closeness of the agreement (0.8%) is if anything a warning that the two windows are
+     nearly the same measurement, not two of them.
+

@@ -21,7 +21,7 @@ import { buildEligiblePool, rowEligible } from "../config/eligibility.ts";
 import { makeVariant, presenceMixture, PRESENCE_M, PRESENCE_P } from "../data/variants.ts";
 import { overlayFromCatalog, parseVariantExport, type AccountOverlay } from "../data/account.ts";
 import { parseBallparks } from "../data/ballparks.ts";
-import { FIELD_N, productionFieldStats, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, buildCohortRefs, cohortSelectForModel, COHORT_RULE_TAG, type RatingRef, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
+import { FIELD_N, productionFieldStats, scoreCard, calibrate, calibrateBasic, computeDerived, valueFor, TARGET_WOBA, TARGET_BASIC, makeRawPolyModel, logLinearModel, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, buildCohortRefs, cohortSelectForModel, COHORT_RULE_TAG, COHORT_MODE_DEFAULT, cohortRuleMismatches, cohortRuleMismatchMessage, type RatingRef, kSpreadPitRamp, K_SPREAD_PIT, pitSpreadHrRamp, PIT_SPREAD_HR, cardSideWobas, applyWobaWeights, applyAffine, type EventForm, type FieldStats, type PoolTransform, type FrameShift, type Coeffs, type EventModel, type WobaWeights, type RatingEnvelope, type TrainingMeans } from "../scoring-core/index.ts";
 import { fitHitForm, fitPitForm, RAWPOLY_HIT, PARETO_PIT, type VertexPin } from "../training/forms.ts";
 import { inEphemeralScope, mayCache } from "./cache-scope.ts"; // draft scoring must not seed process-global caches
 import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/hit-tail.ts"; // BUILD-2 hitter tail correction (standard scoring; kill-switch state.hitTail)
@@ -251,6 +251,13 @@ let activeWobaWeights: WobaWeights | null = null; // active model's wRAA-derived
 let activeEnvelope: RatingEnvelope | null = null; // active model's per-rating training maxima → pool-transform saturation ceilings
 let activeTrainingMeans: TrainingMeans | null = null; // active model's per-channel training-opponent means → frame-v2 opp-gap reference (absent ⇒ own-gap)
 let activeCohortSelect: { hit: RatingRef; pit: RatingRef } | undefined; // active model's z-sum cohort refs (cohort-rule event) — absent ⇒ model-woba selection (bit-identical)
+let activeCohortRule: string | undefined;                              // the active model's stamped selection rule (absent ⇒ pre-event / "model-woba")
+// The active model's live coordinate mismatch against the ENABLED spread ramps. The activation
+// endpoint REJECTS a mismatch, so this can only be non-empty from a pre-existing persisted state
+// (startup, or a ramp/kill-switch change made after activation) — which is exactly why it must be
+// readable: refreshActiveModel cannot throw on that path without making a bad state unrecoverable,
+// so it records the mismatch here for the status endpoints to surface.
+let activeCohortMismatch: { ramp: string; fitRule: string; activeRule: string }[] = [];
 // C4 low-K-support DISPLAY reference (model-scoped, never tournament-scoped). Stamped on
 // artifacts at save time; `activeModelRef` lets a pre-C4 artifact recompute it lazily from its
 // own window. DISPLAY-ONLY — read exclusively by toRow. See src/model/k-support.ts.
@@ -322,6 +329,15 @@ const hitTailEnabled = () => state.hitTail !== "off";
 // (POST /api/training/pit-spread?enabled=false). The sibling BABIP scalar was HELD (bronze gate
 // failed CI-clear) — nothing sets sPitBab in production. Requires trainingMeans, like the K ramp.
 const pitSpreadHrEnabled = () => state.pitSpreadHr !== "off";
+// Recompute the active model's cohort-coordinate mismatch. Called from refreshActiveModel (the model
+// moved) AND from the two ramp kill-switches (the ENABLED SET moved — turning a ramp back on can
+// create a mismatch that did not exist while it was off, and that must not go unrecorded).
+const recomputeCohortMismatch = () => {
+  activeCohortMismatch = activeEventForm && activeTrainingMeans
+    ? cohortRuleMismatches(activeCohortRule, { kSpread: kSpreadPitEnabled(), hrSpread: pitSpreadHrEnabled() })
+    : [];
+  return activeCohortMismatch;
+};
 // Reference field = top-50 of the FULL (non-variant) catalog by predicted wOBA — the
 // unrestricted "league," dynamic (recomputed when the active model OR catalog changes),
 // tournament-independent (raw wOBA is era/park-free). Cached.
@@ -925,6 +941,29 @@ function winParamsFor(t: Tournament): WinParams {
   return p;
 }
 
+/** The E[wins] objective inputs for a cap/slots tournament: the usage weights (value × playing
+ *  time) the MILP prices roles with, plus the per-segment preference dials. ONE construction,
+ *  shared by roster GENERATION and by the stage-2 upgrade refine — the two sides of an upgrade
+ *  comparison MUST be solved under the same objective or the delta is measured in mixed units
+ *  (refine used to omit these and silently fall back to the legacy weighted objective).
+ *  Non-cap ("none") has no usage model; callers must not apply this there. */
+function ewinsInputs(t: Tournament, opts: RosterOptimizeOptions) {
+  const wp = winParamsFor(t);
+  const usage = buildUsage(opts, wp);
+  const avgPA = usage.lineupPA.reduce((s, x) => s + x, 0) / (usage.lineupPA.length || 1);
+  // Bench bats see only part-time PA (availability-lite): a fraction of the absence share.
+  const usageWeights = { lineupPA: avgPA, benchPA: (1 - wp.fullStrengthShare) * avgPA * 0.3, rotationBF: usage.rotationBF, bullpenBF: usage.bullpenBF };
+  // Dials are per-segment PREFERENCE weights (pure objective multipliers, NOT spend caps): a
+  // down-dial shrinks that segment's value so the solver shifts scarce slots to the other
+  // segments (the intended reallocation), while relative order WITHIN a segment is untouched —
+  // so the best card always wins its slot. One solve; no natural/dialed re-solve dance.
+  const dials = t.tuning?.dials;
+  const segmentWeights = dials
+    ? { lineup: dials.lineup, bench: dials.bench, rotation: dials.rotation, bullpen: dials.bullpen }
+    : undefined;
+  return { wp, usageWeights, segmentWeights };
+}
+
 /** Budget spent per segment in a solved roster (lineup starters / bench / rotation / bullpen). */
 // The 0-variant OPTIMAL roster's run differential (off+def), cached per tournament — the anchor
 // for "50% = a perfectly-optimized roster with NO variants". A roster that uses variants (or is
@@ -976,19 +1015,7 @@ async function generateRosterFor(tid: string, aid: string | null, ownedOnly: boo
   if (opts.mode === "none") {
     r = await generateFullRoster(hitters, pitchers, opts);
   } else {
-    const wp = winParamsFor(t);
-    const usage = buildUsage(opts, wp);
-    const avgPA = usage.lineupPA.reduce((s, x) => s + x, 0) / (usage.lineupPA.length || 1);
-    // Bench bats see only part-time PA (availability-lite): a fraction of the absence share.
-    const usageWeights = { lineupPA: avgPA, benchPA: (1 - wp.fullStrengthShare) * avgPA * 0.3, rotationBF: usage.rotationBF, bullpenBF: usage.bullpenBF };
-    // Dials are per-segment PREFERENCE weights (pure objective multipliers, NOT spend caps): a
-    // down-dial shrinks that segment's value so the solver shifts scarce slots to the other
-    // segments (the intended reallocation), while relative order WITHIN a segment is untouched —
-    // so the best card always wins its slot. One solve; no natural/dialed re-solve dance.
-    const dials = t.tuning?.dials;
-    const segmentWeights = dials
-      ? { lineup: dials.lineup, bench: dials.bench, rotation: dials.rotation, bullpen: dials.bullpen }
-      : undefined;
+    const { wp, usageWeights, segmentWeights } = ewinsInputs(t, opts);
     const ewOpts = { ...opts, usageWeights, segmentWeights };
     r = await generateFullRoster(hitters, pitchers, ewOpts);
     expectedWinPct = await expectedWin(t.id, r, hitters, pitchers, opts, usageWeights, wp);
@@ -1273,7 +1300,17 @@ async function refineUpgrades(
   for (const id of pitcherIds) roles[id] = "pitcher";
   const { hitters, pitchers, twoWayIds, ownedByDisp } = rosterCandidates(
     t, aid, true, new Set(excluded), roles, forceInclude, opts0.platoonVR, opts0.platoonVL, metric);
-  const opts = { ...opts0, twoWayIds, lockedIds: locked };
+  // Cap/slots MUST carry the E[wins] usage weights + dials, exactly as generation builds them
+  // (ewinsInputs). The baseline this refine measures against is a generation solve; without the
+  // usage weights every re-solve here would run the LEGACY weighted objective instead, putting
+  // the two sides of one comparison in different units (and re-introducing the SP-relief and
+  // hitter-bench double-counts the E[wins] branch nets out). Non-cap has no usage model and
+  // keeps the legacy weighted objective — the same one generation uses for "none".
+  let opts: RosterOptimizeOptions = { ...opts0, twoWayIds, lockedIds: locked };
+  if (opts.mode !== "none") {
+    const { usageWeights, segmentWeights } = ewinsInputs(t, opts);
+    opts = { ...opts, usageWeights, segmentWeights };
+  }
   const isUnownedCand = (id: string) => allCand.has(strip(id)) && (ownedByDisp[id] ?? 0) <= 0;
   // Owned-only baseline pool: drop the force-included UNOWNED candidates so the
   // baseline is the best OWNED roster (the true reference the delta measures against).
@@ -1477,17 +1514,49 @@ interface TrainedModel {
 // Summary drops the heavy payloads (coefficients + the raw eventForm betas); `hasEventForm`
 // tells the UI whether the model is #2-capable (activatable for scoring); `stale` (T-4) flags
 // an artifact whose evaluation semantics predate the current MODEL_FORMAT_VERSION.
-type TrainedModelSummary = Omit<TrainedModel, "coefficients" | "eventForm"> & { hasEventForm: boolean; stale: boolean; currentFormatVersion: number };
+type TrainedModelSummary = Omit<TrainedModel, "coefficients" | "eventForm"> & {
+  hasEventForm: boolean; stale: boolean; currentFormatVersion: number;
+  cohortMismatch?: { ramp: string; fitRule: string; activeRule: string }[];
+};
 const modelSummary = (m: TrainedModel): TrainedModelSummary => {
   const { coefficients, eventForm, ...rest } = m;
-  return { ...rest, hasEventForm: !!eventForm, stale: (m.formatVersion ?? 1) < MODEL_FORMAT_VERSION, currentFormatVersion: MODEL_FORMAT_VERSION };
+  // `cohortMismatch` is DERIVED like `stale`, not stored: it compares this artifact's cohort selection
+  // rule against the rule the currently-ENABLED spread ramps were fitted under, so it moves when a
+  // kill-switch flips or a ramp is refit, exactly as `stale` moves when MODEL_FORMAT_VERSION bumps.
+  // Present ⇒ activation of this artifact is REJECTED (the corrections would be on the wrong
+  // coordinate). Only meaningful for a trainingMeans-bearing artifact — without a frame the ramps are
+  // skipped entirely, so there is no coordinate to disagree about. Undefined (not []) when clean, so
+  // the field is absent for every existing artifact and old clients see no change.
+  const bad = m.trainingMeans ? cohortRuleMismatches(m.cohortRule, { kSpread: kSpreadPitEnabled(), hrSpread: pitSpreadHrEnabled() }) : [];
+  return {
+    ...rest, hasEventForm: !!eventForm, stale: (m.formatVersion ?? 1) < MODEL_FORMAT_VERSION, currentFormatVersion: MODEL_FORMAT_VERSION,
+    ...(bad.length ? { cohortMismatch: bad } : {}),
+  };
 };
 const listModels = async (): Promise<TrainedModelSummary[]> =>
   (await repo.loadAll<TrainedModel>("trained-models")).sort((a, b) => b.trainedAt.localeCompare(a.trainedAt)).map(modelSummary);
 
-async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?: number; includeVariants?: boolean; notes?: string; force?: boolean }): Promise<TrainedModelSummary> {
+async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?: number; includeVariants?: boolean; notes?: string; force?: boolean; cohortRule?: string }): Promise<TrainedModelSummary> {
   const name = String(body.name ?? "").trim();
   if (!name) throw new Error("name required");
+  // COHORT SELECTION RULE — EXPLICIT, DEFAULTING TO LEGACY (2026-07-24).
+  //
+  // The cohort-rule event built the model-free z-sum selection and then SHELVED it (it failed its
+  // gates); the machinery was meant to stay dormant. It did not: the trainer built the train-leg
+  // cohort under z-sum and stamped COHORT_RULE_TAG UNCONDITIONALLY, so every artifact trained after
+  // the event was on the shelved coordinate and there was NO WAY LEFT to train one under the legacy
+  // selection — which also means the live production model could not have been reconstructed if lost.
+  //
+  // The rule is now a request-level choice and the DEFAULT IS LEGACY: no `select` passed to
+  // computeUnifiedFieldStats (⇒ its pre-event top-N-by-model-wOBA ranking, bit-identical to before the
+  // optional parameter existed) and NO stamp on the artifact (`undefined`, which every downstream
+  // reader — cohortSelectForModel, the ramps' guard — already treats as "model-woba"). The z-sum
+  // selection is reachable only by asking for it BY NAME, which is what "dormant" has to mean for a
+  // coordinate-defining switch.
+  const rawCohortRule = String(body.cohortRule ?? "").trim() || COHORT_MODE_DEFAULT;
+  if (rawCohortRule !== COHORT_MODE_DEFAULT && rawCohortRule !== COHORT_RULE_TAG)
+    throw new Error(`unknown cohortRule '${rawCohortRule}' — expected '${COHORT_MODE_DEFAULT}' (default, legacy) or '${COHORT_RULE_TAG}' (the SHELVED model-free z-sum selection; its ramps are not refit, so an artifact trained under it cannot be activated while the spread ramps are enabled)`);
+  const useZSumCohort = rawCohortRule === COHORT_RULE_TAG;
   const window = Array.isArray(body.window) && body.window.length ? body.window.map(Number) : defaultWindow(trainingYears());
   const minPA = Math.max(0, Number(body.minPA ?? 1000) || 1000);
   const includeVariants = body.includeVariants !== false;
@@ -1574,15 +1643,19 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     c.maxPA = Math.max(c.maxPA as number, o.hit.PA); c.maxBF = Math.max(c.maxBF as number, o.pitch.BF);
   }
   const tmAll = [...tmCards.values()].filter((c) => c["Eye vR"] != null && c["Eye vL"] != null && c["Control vR"] != null && c["Control vL"] != null);
-  // COHORT-RULE EVENT (2026-07-23): the train leg selects by the MODEL-FREE z-sum against the
-  // NON-VARIANT catalog's rating baseline — the same-construction invariant with the pool leg, which
-  // resolves the identical `select` via cohortSelectForModel from the tag stamped below. FIELD_N=50
-  // retained (size was never the lever). Pre-event artifacts carry no tag and keep model-woba, so
-  // production is untouched until a z-sum-tagged model is activated. `buildCohortRefs` is built once
-  // from the non-variant catalog (the one place doctrine excludes variants — the rating-scaling
-  // baseline).
-  const tmCatalog = loadCatalog().catalog.cards.filter((c) => String(c["Variant"] ?? "").toUpperCase() !== "Y");
-  const tmSelect = buildCohortRefs(tmCatalog, tmCoeffs, tmModel, true);
+  // COHORT-RULE EVENT (2026-07-23), now OPT-IN (see the rule resolution at the top of this function).
+  // When asked for by name, the train leg selects by the MODEL-FREE z-sum against the NON-VARIANT
+  // catalog's rating baseline — the same-construction invariant with the pool leg, which resolves the
+  // identical `select` via cohortSelectForModel from the tag stamped below. `buildCohortRefs` is built
+  // once from the non-variant catalog (the one place doctrine excludes variants — the rating-scaling
+  // baseline). FIELD_N=50 either way (size was never the lever).
+  //
+  // DEFAULT: `undefined` — computeUnifiedFieldStats then ranks by model wOBA exactly as it did before
+  // the `select` parameter existed. The catalog is not even loaded on that path, so the legacy trainer
+  // has no dependency the pre-event one didn't have.
+  const tmSelect = useZSumCohort
+    ? buildCohortRefs(loadCatalog().catalog.cards.filter(isBaseCard), tmCoeffs, tmModel, true)
+    : undefined;
   const tmFieldHit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxPA as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true, tmSelect);
   const tmFieldPit = computeUnifiedFieldStats(tmAll.filter((c) => (c.maxBF as number) >= minPA), tmCoeffs, tmModel, FIELD_N, true, tmSelect);
   // Defensive: a sparse training window (few qualifying cards) can leave a channel's field stat
@@ -1617,10 +1690,13 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
     wobaWeights,
     ratingEnvelope,
     trainingMeans,
-    // Stamp the SELECTION rule this trainingMeans was built under, but ONLY if the frame is complete
-    // (a model with no trainingMeans has no frame coordinate to tag). The pool leg reads this to
-    // select the same way — same-construction invariant — and the ramps assert it (coordinate-defining).
-    cohortRule: trainingMeans ? COHORT_RULE_TAG : undefined,
+    // Stamp the SELECTION rule this trainingMeans was ACTUALLY built under — never a rule the frame
+    // was not built under, and only if the frame is complete (a model with no trainingMeans has no
+    // frame coordinate to tag). The pool leg reads this to select the same way (same-construction
+    // invariant) and the activation guard asserts it against the ramps (coordinate-defining).
+    // LEGACY (the default) stamps `undefined`, which is what every pre-event artifact carries and what
+    // downstream reads as "model-woba" — so a default retrain is indistinguishable from a pre-event one.
+    cohortRule: trainingMeans && useZSumCohort ? COHORT_RULE_TAG : undefined,
     // C4 low-support display reference: the BF^0.75-weighted p05 of Stuff over `pitQual` — the
     // EXACT rows the K curve above was fit on — so the threshold ships with the model it
     // describes instead of being recomputed per request. Non-scoring (see k-support.ts).
@@ -1637,10 +1713,23 @@ async function saveTrainedModel(body: { name?: string; window?: number[]; minPA?
   // log-linear fallback and every tool that resolves the active model throws. Auto-activate
   // ONLY when nothing is active: training an extra/experimental model must never silently
   // swap the pointer out from under a live production model.
+  //
+  // ...but auto-activation is still an ACTIVATION, and it goes through the same coordinate gate as the
+  // explicit one. Otherwise a delete-then-retrain cycle is a hole straight around the gate: delete the
+  // active model, train a z-sum artifact, and it becomes the live scoring model with no click and no
+  // check. Blocking here leaves `activeModelId` null — the log-linear-fallback state this branch
+  // exists to avoid — which is the lesser evil by a wide margin: null is loud (every tool that
+  // resolves the active model throws) and one activation away from fixed, whereas a silently
+  // mis-coordinated ramp changes every card's score and looks completely normal.
   if (!state.activeModelId) {
-    state.activeModelId = id;
-    await saveState();
-    await refreshActiveModel(); // load the form into memory + clear the scoring cache
+    const bad = cohortRuleMismatches(model.cohortRule, { kSpread: kSpreadPitEnabled(), hrSpread: pitSpreadHrEnabled() });
+    if (bad.length && model.trainingMeans) {
+      console.error(`[server] ⛔ auto-activation BLOCKED — ${cohortRuleMismatchMessage(id, bad)}`);
+    } else {
+      state.activeModelId = id;
+      await saveState();
+      await refreshActiveModel(); // load the form into memory + clear the scoring cache
+    }
   }
   return modelSummary(model);
 }
@@ -1661,7 +1750,7 @@ async function refreshActiveModel(): Promise<void> {
   // `activeCohortSelect` from this tag; absent/"model-woba" ⇒ undefined ⇒ the pre-event model-woba
   // ranking (bit-identical). Built once here (catalog-fixed, coeffs-independent) rather than per
   // request.
-  const activeCohortRule = m?.cohortRule;
+  activeCohortRule = m?.cohortRule;
   const cohortT0 = tournaments[0];
   const cohortModel0 = (await repo.loadAll<Model>("models"))[0];
   if (m?.eventForm && activeCohortRule === COHORT_RULE_TAG && cohortT0 && cohortModel0 && eras.get("era-2010")) {
@@ -1677,13 +1766,19 @@ async function refreshActiveModel(): Promise<void> {
   }
   // PROVENANCE GUARD (prereg §6): a spread ramp fit under one selection rule scored under another is
   // on a different coordinate — the exact hole the task-0 STOP walked through. If the active model's
-  // rule disagrees with the enabled ramps' fit tag, the ramp is silently on the wrong coordinate.
-  // Loud, not fatal (a warning at activation, matching the trainingMeans-coherence checks), because
-  // the ramps ship in the SAME event as the rule and the mismatch only exists mid-migration.
-  const ramps = [{ n: "K-spread", tag: K_SPREAD_PIT.cohortRule, on: kSpreadPitEnabled() }, { n: "HR-spread", tag: PIT_SPREAD_HR.cohortRule, on: pitSpreadHrEnabled() }];
-  const activeRule = activeCohortRule ?? "model-woba";
-  for (const r of ramps) if (r.on && m?.eventForm && activeTrainingMeans && r.tag !== activeRule) {
-    console.warn(`[server] ⚠ COORDINATE MISMATCH: the ${r.n} ramp was fit under cohort rule '${r.tag}' but active model '${m?.id}' selects under '${activeRule}'. The ramp is on the WRONG coordinate — refit it under the active rule (its own atomic event) or the corrections mis-calibrate.`);
+  // rule disagrees with the enabled ramps' fit tag, the ramp is silently on the wrong coordinate and
+  // every card's corrected K/HR is wrong.
+  //
+  // THIS PATH DOES NOT THROW, AND THAT IS DELIBERATE (2026-07-24). The *activation* endpoint rejects a
+  // mismatch outright (see /api/training/models/activate) — that is the gate, and it is a hard one,
+  // because refusing costs nothing when the previous model is still live. But refresh also runs at
+  // STARTUP against whatever is already persisted, and a server that dies on boot takes the UI down
+  // with it — the same UI you would use to switch models or flip the ramp kill-switches. A
+  // pre-existing bad state must stay RECOVERABLE. So here: fail loudly (console.error, not warn) and
+  // fail VISIBLY — `cohortMismatch` on the model summary the Model-Training page reads, next to
+  // `stale`, so the condition is on screen and not only in a stdout nobody watches.
+  if (recomputeCohortMismatch().length) {
+    console.error(`[server] ⛔ ${cohortRuleMismatchMessage(m!.id, activeCohortMismatch)}`);
   }
   activeKSupportStamped = m?.kSupport ?? null; // C4 display flag reference (stamped at save time)
   activeModelRef = m ? { id: m.id, window: m.window, minPA: m.minPA, includeVariants: m.includeVariants } : null;
@@ -2171,24 +2266,33 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       enabled: kSpreadPitEnabled(), hasTrainingMeans: !!activeTrainingMeans,
       A: K_SPREAD_PIT.A, q: K_SPREAD_PIT.q, G0: K_SPREAD_PIT.G0, gMax: K_SPREAD_PIT.gMax,
       fitN: K_SPREAD_PIT.fitN, fitP: K_SPREAD_PIT.fitP, sAtGMax: kSpreadPitRamp(K_SPREAD_PIT.gMax),
+      // The cohort SELECTION rule is provenance too — the (N, p, gMax) leg is already reported, and
+      // the rule leg moves independently of it (a retrain changes the rule while N/p/gMax stand still).
+      // `coordinateMismatch` is the startup path's VISIBLE half: refreshActiveModel can only log it.
+      cohortRule: K_SPREAD_PIT.cohortRule, activeCohortRule: activeCohortRule ?? COHORT_MODE_DEFAULT,
+      coordinateMismatch: activeCohortMismatch.length ? activeCohortMismatch : null,
     });
   if (method === "POST" && url === "/api/training/kspread-pit") {
     state.kSpreadPit = u.searchParams.get("enabled") === "false" ? "off" : "on";
     await saveState();
     invalidateDerivedCaches(); // re-score under the new setting
-    return json(res, { ok: true, enabled: kSpreadPitEnabled(), hasTrainingMeans: !!activeTrainingMeans });
+    const bad = recomputeCohortMismatch(); // the ENABLED set moved → the coordinate verdict can flip
+    if (bad.length) console.error(`[server] ⛔ ${cohortRuleMismatchMessage(state.activeModelId ?? "(active)", bad)}`);
+    return json(res, { ok: true, enabled: kSpreadPitEnabled(), hasTrainingMeans: !!activeTrainingMeans, coordinateMismatch: bad.length ? bad : null });
   }
   // BUILD-3 pitcher HR-spread ramp (own-gap standard scoring, 2026-07-17): status + KILL-SWITCH.
   // GET → { enabled, hasTrainingMeans, A, G, babHeld }. POST ?enabled=false disables (rollback to
   // pre-ramp scores); anything else re-enables. The BABIP sibling is HELD (gate record) — there
   // is no BABIP switch because there is no BABIP wiring.
   if (method === "GET" && url === "/api/training/pit-spread")
-    return json(res, { enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans, A: PIT_SPREAD_HR.A, q: PIT_SPREAD_HR.q, G0: PIT_SPREAD_HR.G0, gMax: PIT_SPREAD_HR.gMax, fitN: PIT_SPREAD_HR.fitN, fitP: PIT_SPREAD_HR.fitP, geometry: PIT_SPREAD_HR.geometry, sAtGMax: pitSpreadHrRamp(PIT_SPREAD_HR.gMax), babHeld: true });
+    return json(res, { enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans, A: PIT_SPREAD_HR.A, q: PIT_SPREAD_HR.q, G0: PIT_SPREAD_HR.G0, gMax: PIT_SPREAD_HR.gMax, fitN: PIT_SPREAD_HR.fitN, fitP: PIT_SPREAD_HR.fitP, geometry: PIT_SPREAD_HR.geometry, sAtGMax: pitSpreadHrRamp(PIT_SPREAD_HR.gMax), babHeld: true, cohortRule: PIT_SPREAD_HR.cohortRule, activeCohortRule: activeCohortRule ?? COHORT_MODE_DEFAULT, coordinateMismatch: activeCohortMismatch.length ? activeCohortMismatch : null });
   if (method === "POST" && url === "/api/training/pit-spread") {
     state.pitSpreadHr = u.searchParams.get("enabled") === "false" ? "off" : "on";
     await saveState();
     invalidateDerivedCaches(); // re-score under the new setting
-    return json(res, { ok: true, enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans });
+    const bad = recomputeCohortMismatch(); // the ENABLED set moved → the coordinate verdict can flip
+    if (bad.length) console.error(`[server] ⛔ ${cohortRuleMismatchMessage(state.activeModelId ?? "(active)", bad)}`);
+    return json(res, { ok: true, enabled: pitSpreadHrEnabled(), hasTrainingMeans: !!activeTrainingMeans, coordinateMismatch: bad.length ? bad : null });
   }
   // BUILD-2 hitter tail correction (own-gap standard scoring, 2026-07-17 Derek ruling): status +
   // KILL-SWITCH. GET → { enabled, cfg } (cfg = the pinned universal λ constants). POST
@@ -2227,6 +2331,18 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       const m = (await repo.loadAll<TrainedModel>("trained-models")).find((x) => x.id === id);
       if (!m) return json(res, { ok: false, error: "unknown model" }, 404);
       if (!m.eventForm) return json(res, { ok: false, error: "model has no #2 form (retrain to activate)" }, 400);
+      // THE COORDINATE GATE (2026-07-24). Activating a model whose cohort selection rule differs from
+      // the rule the enabled spread ramps were FITTED under silently rescales every card's corrected
+      // K/HR — a change nobody asked for, visible nowhere, on the single most load-bearing number in
+      // the app. This used to be a console.warn inside refreshActiveModel, i.e. no protection at all
+      // for a user who activates through the UI and never sees stdout.
+      //
+      // REJECT, and reject BEFORE touching state: `state.activeModelId` is not written and
+      // refreshActiveModel is not called, so the previously active model stays live and scoring is
+      // untouched. The escape hatch is in the message (refit the ramps, or disable them) rather than a
+      // force flag — a force flag here would just be the warning again, one keystroke away.
+      const bad = m.trainingMeans ? cohortRuleMismatches(m.cohortRule, { kSpread: kSpreadPitEnabled(), hrSpread: pitSpreadHrEnabled() }) : [];
+      if (bad.length) return json(res, { ok: false, error: cohortRuleMismatchMessage(m.id, bad), cohortMismatch: bad, activeId: state.activeModelId ?? null }, 409);
     }
     state.activeModelId = id || null;
     await saveState();

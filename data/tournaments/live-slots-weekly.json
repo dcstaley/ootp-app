@@ -1,21 +1,21 @@
 {
-  "id": "live-bronze",
-  "name": "Live Bronze",
+  "id": "live-slots-weekly",
+  "name": "Live Slots weekly",
   "kind": "tournament",
   "card_value_min": null,
-  "card_value_max": 69,
+  "card_value_max": null,
   "total_cap": null,
   "roster_size": 26,
-  "hitters": 13,
-  "pitchers": 13,
+  "hitters": 14,
+  "pitchers": 12,
   "min_starters": 5,
-  "min_starter_stamina": 45,
+  "min_starter_stamina": 55,
   "min_pitch_types": 3,
   "dh": true,
   "variants_allowed": true,
   "max_variants_on_roster": 0,
   "eraId": "era-2010",
-  "parkId": "park-12",
+  "parkId": "park-13",
   "softcaps": {
     "cap_k_top": 500,
     "cap_k_bot": 0,
@@ -49,26 +49,25 @@
     "mode": "ALL",
     "rules": [
       {
-        "id": "r1783434398115-0",
+        "id": "r1784910148520-0",
         "column": "Card Type",
-        "op": "set_in",
-        "values": [
-          "1"
-        ]
+        "op": "num_eq",
+        "a": "1"
       }
     ]
   },
   "positionRanks": {
     "RF": {
-      "starter": {}
+      "starter": {},
+      "backup": {}
     }
   },
-  "budget_mode": "none",
-  "topHitters": 50,
-  "topPitchers": 110,
+  "budget_mode": "slots",
+  "topHitters": 100,
+  "topPitchers": 100,
   "minPlayersPerPosition": 2,
   "tournamentAdjustment": {
-    "enabled": true,
+    "enabled": false,
     "hr": 1.15,
     "bb": 0.85,
     "k": 1,
@@ -78,65 +77,75 @@
   "positionMins": {
     "C": {
       "starter": {
-        "ability": 55,
-        "frame": 50
+        "frame": 61
       },
       "backup": {
-        "ability": 50,
-        "frame": 45
+        "frame": 55
       }
-    },
-    "1B": {
-      "starter": {}
     },
     "2B": {
-      "starter": {
-        "range": 69
-      },
-      "backup": {
-        "range": 65
-      }
-    },
-    "3B": {
-      "starter": {
-        "range": 55,
-        "arm": 55
-      },
-      "backup": {
-        "range": 50,
-        "arm": 50
-      }
-    },
-    "SS": {
       "starter": {
         "range": 77
       },
       "backup": {
-        "range": 69
+        "range": 70
+      }
+    },
+    "3B": {
+      "starter": {
+        "range": 60,
+        "arm": 55
+      },
+      "backup": {
+        "range": 60,
+        "arm": 55
+      }
+    },
+    "SS": {
+      "starter": {
+        "range": 81
+      },
+      "backup": {
+        "range": 77
       }
     },
     "LF": {
       "starter": {
-        "range": 45
+        "range": 40
       }
     },
     "CF": {
       "starter": {
-        "range": 73
+        "range": 82
       },
       "backup": {
-        "range": 68
+        "range": 75
       }
     },
     "RF": {
       "starter": {
-        "range": 55,
+        "range": 60,
         "arm": 55
       },
       "backup": {
-        "range": 50,
-        "arm": 50
+        "range": 60,
+        "arm": 55
       }
     }
+  },
+  "slot_counts": {
+    "perfect": 4,
+    "diamond": 4,
+    "gold": 4,
+    "silver": 4,
+    "bronze": 5
+  },
+  "tuning": {
+    "dials": {
+      "bullpen": 0.5,
+      "bench": 1,
+      "rotation": 0.5
+    },
+    "rotationShare": 0.6
   }
 }

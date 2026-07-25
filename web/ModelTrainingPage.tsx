@@ -83,6 +83,12 @@ interface TrainedModelSummary {
   formatVersion?: number; // evaluation-semantics version at train time; absent ⇒ predates versioning (v1)
   currentFormatVersion: number; // the server's live MODEL_FORMAT_VERSION
   stale: boolean; // artifact predates current evaluation semantics — re-save to retrain
+  // COHORT-COORDINATE MISMATCH (2026-07-24) — derived server-side like `stale`: this artifact's cohort
+  // SELECTION rule disagrees with the rule the currently-enabled spread ramps were FITTED under, so
+  // the corrections would sit on the wrong coordinate and silently rescale every card's K/HR.
+  // Present ⇒ the server REJECTS activation (409); the badge exists so the reason is on screen
+  // BEFORE the click, and so a pre-existing mismatch (which the startup path can only log) is visible.
+  cohortMismatch?: { ramp: string; fitRule: string; activeRule: string }[];
   validation?: { errors: number; warnings: number; excluded: string[]; forced: boolean }; // dataset state at train time
   diag: { hitPearson: number | null; pitPearson: number | null; rowsHit: number; rowsPit: number };
   trainedAt: string; notes?: string;
@@ -749,6 +755,7 @@ export function ModelTrainingPage() {
                       <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>
                         {activeModelId === m.id && <span title="live scoring model (grid + optimizer)" style={{ color: "#22c55e", marginRight: 4 }}>●</span>}{m.name}{!m.includeVariants && <span style={{ color: C.sub, fontSize: 10 }}> · base</span>}
                         {m.stale && <span title="Artifact predates current evaluation semantics (uBB targets / format v3) — re-save to retrain on current semantics" style={{ color: "#f59e0b", fontSize: 10, fontWeight: 600, marginLeft: 6, padding: "1px 5px", border: "1px solid #f59e0b", borderRadius: 4, whiteSpace: "nowrap" }}>v{m.formatVersion ?? 1} → v{m.currentFormatVersion}</span>}
+                        {m.cohortMismatch && <span title={`Cohort-coordinate mismatch: this model selects under '${m.cohortMismatch[0]!.activeRule}' but ${m.cohortMismatch.map((b) => `${b.ramp} was fitted under '${b.fitRule}'`).join("; ")}. Activation is BLOCKED — refit the ramp(s) (tools/fit-kspread-c3.ts / tools/fit-hrspread-c6.ts) under the active rule, or disable them.`} style={{ color: "#ef4444", fontSize: 10, fontWeight: 600, marginLeft: 6, padding: "1px 5px", border: "1px solid #ef4444", borderRadius: 4, whiteSpace: "nowrap" }}>⛔ coordinate</span>}
                         {m.validation && (m.validation.forced || m.validation.errors > 0
                           ? <span title={`trained over ${m.validation.errors} dataset error(s)${m.validation.excluded.length ? ` — excluded: ${m.validation.excluded.join(", ")}` : ""}`} style={{ color: "#ef4444", fontSize: 10, fontWeight: 600, marginLeft: 6, padding: "1px 5px", border: "1px solid #ef4444", borderRadius: 4, whiteSpace: "nowrap" }}>⚠ forced</span>
                           : m.validation.warnings > 0
@@ -764,7 +771,7 @@ export function ModelTrainingPage() {
                       <td style={{ ...td, whiteSpace: "nowrap" }}>
                         {activeModelId === m.id
                           ? <span title="This model drives live scoring (grid + optimizer + calibration)" style={{ ...inputStyle, display: "inline-block", cursor: "default", padding: "2px 8px", fontSize: 12, background: "#16a34a", color: "#fff", border: "1px solid #16a34a" }}>Scoring ✓</span>
-                          : <button onClick={() => activateModel(m.id)} disabled={!m.hasEventForm} title={m.hasEventForm ? "Use this model for live scoring (grid + optimizer + calibration)" : "Pre-#2 artifact — re-save to enable scoring"} style={{ ...inputStyle, cursor: m.hasEventForm ? "pointer" : "not-allowed", padding: "2px 8px", fontSize: 12, opacity: m.hasEventForm ? 1 : 0.5 }}>Use</button>}
+                          : <button onClick={() => activateModel(m.id)} disabled={!m.hasEventForm} title={!m.hasEventForm ? "Pre-#2 artifact — re-save to enable scoring" : m.cohortMismatch ? "BLOCKED: cohort-coordinate mismatch with the enabled spread ramps (see the ⛔ badge) — the server will reject this activation" : "Use this model for live scoring (grid + optimizer + calibration)"} style={{ ...inputStyle, cursor: m.hasEventForm ? "pointer" : "not-allowed", padding: "2px 8px", fontSize: 12, opacity: m.hasEventForm ? 1 : 0.5 }}>Use</button>}
                         <button onClick={() => loadModelConfig(m)} title="Load this model's window + min + variants into the page" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, marginLeft: 4 }}>Load</button>
                         <button onClick={() => deleteModel(m.id)} title="Delete" style={{ ...inputStyle, cursor: "pointer", padding: "2px 8px", fontSize: 12, marginLeft: 4, color: "#f87171", border: "1px solid #ef4444" }}>✕</button>
                       </td>

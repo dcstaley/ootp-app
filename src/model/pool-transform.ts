@@ -24,6 +24,10 @@
 
 // Shared BIP-chain constant (curves.ts, import-free) for applyPitSpread below.
 import { PIT_BIP_ADJ } from "./curves.ts";
+// The legacy selection-rule name has ONE definition (cohort-select.ts owns the rule vocabulary); the
+// ramps' `cohortRule` tags and the mismatch check below are compared against it, never a local
+// string literal. cohort-select.ts imports nothing, so this cannot cycle.
+import { COHORT_MODE_DEFAULT } from "../scoring-core/cohort-select.ts";
 
 export interface RatingStats { mu: number; sd: number }
 
@@ -363,6 +367,55 @@ export function assertKSpreadProvenance(fieldN: number, presenceP: number, gMaxF
       + `gMax together. See src/model/pool-transform.ts.`,
     );
   }
+}
+
+/** THE COHORT-COORDINATE CHECK — the (N, p, gMax) provenance check's missing sibling.
+ *
+ *  `assertKSpreadProvenance` above guards the cohort SIZE and the presence prior. It cannot guard the
+ *  cohort SELECTION RULE, because the rule is a property of the ACTIVE MODEL ARTIFACT, not of the
+ *  module constants — a retrain moves it while FIELD_N / PRESENCE_P / gMax all stay put, so that
+ *  assert passes silently in exactly the scenario that matters. This function is the rule leg.
+ *
+ *  WHY IT IS THE SAME CLASS OF ERROR: the gap the ramps consume is a mean over a SELECTED cohort. Change
+ *  which cards are in the cohort and the gap coordinate moves under the fitted A/q, so every card's
+ *  corrected K (and HR) changes, silently and everywhere. Like (N, p), the rule cannot be rescaled to —
+ *  only RE-DERIVED (tools/fit-kspread-c3.ts / tools/fit-hrspread-c6.ts).
+ *
+ *  PURE + CALLER-GATED, deliberately. It returns the offenders instead of throwing, because the two
+ *  call sites need DIFFERENT severities: an activation must be REJECTED (nothing has changed yet, so
+ *  refusing is free and leaves the previous model live), while a mismatch discovered at STARTUP must
+ *  not throw — a process that dies on boot makes a bad persisted state unrecoverable through the UI
+ *  that would fix it. The `on` flags are passed in because the kill-switches live in server state.
+ *
+ *  `activeRule === undefined` is the pre-event artifact and means "model-woba" (the coordinate the
+ *  shipped ramps are stamped with), so every existing model is a no-op here BY CONSTRUCTION. */
+export function cohortRuleMismatches(
+  activeRule: string | undefined,
+  on: { kSpread: boolean; hrSpread: boolean },
+): { ramp: string; fitRule: string; activeRule: string }[] {
+  const rule = activeRule ?? COHORT_MODE_DEFAULT;
+  const ramps = [
+    { ramp: "K-spread (K_SPREAD_PIT)", fitRule: K_SPREAD_PIT.cohortRule as string, on: on.kSpread, tool: "tools/fit-kspread-c3.ts" },
+    { ramp: "HR-spread (PIT_SPREAD_HR)", fitRule: PIT_SPREAD_HR.cohortRule as string, on: on.hrSpread, tool: "tools/fit-hrspread-c6.ts" },
+  ];
+  return ramps.filter((r) => r.on && r.fitRule !== rule).map(({ ramp, fitRule }) => ({ ramp, fitRule, activeRule: rule }));
+}
+
+/** The one message for a cohort-rule mismatch, so the activation rejection, the startup console error
+ *  and the UI badge all say the same thing (and name the same refit tools). */
+export function cohortRuleMismatchMessage(modelId: string, bad: { ramp: string; fitRule: string; activeRule: string }[]): string {
+  return (
+    `COHORT-RULE COORDINATE MISMATCH — model '${modelId}' selects its cohort under rule `
+    + `'${bad[0]!.activeRule}', but ${bad.length === 1 ? "an enabled spread ramp was" : "enabled spread ramps were"} fitted `
+    + `under a different rule:\n  - ${bad.map((b) => `${b.ramp} was fitted under '${b.fitRule}'`).join("\n  - ")}\n`
+    + `The gap the ramp consumes is a mean over the SELECTED cohort, so a rule change moves the `
+    + `coordinate under the fitted A/q and silently rescales EVERY card's corrected K/HR. A ramp cannot `
+    + `be rescaled to another rule — it must be RE-DERIVED: refit with tools/fit-kspread-c3.ts and `
+    + `tools/fit-hrspread-c6.ts under the active rule (their own atomic event) and re-stamp `
+    + `cohortRule in src/model/pool-transform.ts. To activate this model without refitting, first `
+    + `disable the ramps (POST /api/training/kspread-pit?enabled=false, `
+    + `POST /api/training/pit-spread?enabled=false).`
+  );
 }
 
 // ── Pitcher HR9 spread ramp (BUILD-3, own-gap path; PRODUCTION, on by default) ──

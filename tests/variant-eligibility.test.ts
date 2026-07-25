@@ -22,10 +22,15 @@ describe("variant eligibility", () => {
     // Counts from docs/CARD_VARIANT_ELIGIBILITY.md, each backed by 0 observed v5 across its played
     // members in the 2026-07-21 corpus. A catalog refresh legitimately moves these — when it does,
     // re-derive from the corpus and update here as part of the reviewed change, never by loosening.
+    //
+    // RE-DERIVED 2026-07-25 against the catalog refreshed 2026-07-24: base cards 3669 → 3704 (+35),
+    // of which 6 land in forbidden classes — LE 90 → 93 and Clubhouse 144 → 147. Every other class
+    // is UNMOVED, which is the check that this is catalog growth and not a rule drifting: new cards
+    // arrived in two existing classes, no class lost members and no new class appeared.
     expect(n("Live")).toBe(1274);
-    expect(n("LE")).toBe(90);
+    expect(n("LE")).toBe(93);
     expect(n("PTMS")).toBe(10);
-    expect(n("Clubhouse")).toBe(144);
+    expect(n("Clubhouse")).toBe(147);
     expect(n("MissionEdition")).toBe(52);
     expect(n("PTCS")).toBe(36);
     expect(n("PTWC")).toBe(4);
@@ -40,7 +45,7 @@ describe("variant eligibility", () => {
 
   it("forbids 43.9% of the catalog and over half the iron window", () => {
     const forbidden = cards.filter((c) => variantForbiddenClass(c) !== null);
-    expect(forbidden.length).toBe(1614);
+    expect(forbidden.length).toBe(1620); // re-derived 2026-07-25 (1614 → 1620; see the class counts above)
     const val = (c: Card) => Number(c["Card Value"] ?? NaN);
     const iron = cards.filter((c) => val(c) <= 59);
     const ironForbidden = iron.filter((c) => variantForbiddenClass(c) !== null);

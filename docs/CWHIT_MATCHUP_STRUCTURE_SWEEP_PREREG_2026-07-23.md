@@ -194,10 +194,167 @@ Nothing fits until this amended prereg is re-confirmed. Production stays league-
 
 > **NOTE — the curve-form pre-step is COMPLETE** (`tools/kresidual-stuff-inframe.ts`, artifact
 > `fixtures/kresidual-stuff-inframe-2026-07-23.txt`). It found a CI-clear in-frame cubic K misfit
-> concentrated on vR (against RHB), with a +0.54/600 hand-split LEVEL gap — a curve-form defect, not a
-> pure frame effect. Its DIRECTION at high Stuff is OVER-prediction of K (opposite the naive "too-
+> concentrated on vR (against RHB), with a reported +0.54/600 hand-split LEVEL gap — a curve-form
+> defect, not a pure frame effect.
+>
+> **CORRECTION 2026-07-25** (`tools/kresidual-hand-power.ts`, artifact
+> `fixtures/kresidual-hand-power-2026-07-25.txt`): **the +0.54/600 hand LEVEL gap is NOT SUPPORTED** —
+> CI [−1.34, +2.59], p = 0.586, well inside its own noise. Amendment 1 §A treated the hand-split LEVEL
+> read as load-bearing ("confirmed"); it is not, and that claim is withdrawn. Only the CUBIC SHAPE
+> asymmetry has support, and even that is a boundary case: the direct vR−vL cubic difference is
+> −0.868, CI [−1.966, −0.010], p = 0.049, and the CI covered zero under a different RNG stream.
+> What IS solid: the POOLED cubic (−0.5049, CI-clear) is unaffected by any of this, and the
+> vR-concentration is NOT a power artifact — vL is thinner in raw BF (78%) but BETTER informed about
+> the cubic contrast (ESS 11.6 vs 9.6; CI 21% narrower), so "vL is flat" is a resolved reading, and
+> vR's cubic survives BF-matching to vL (negative in 100% of draws, CI-clear in 85.8%).
+> Amendment 1 §A's expansion of the MEASUREMENT to both hands stands unchanged — this correction is to
+> the pre-step's level claim, not to the sweep's scope. It is also the first live application of
+> Amendment 2 RULE M3 (power reported with every null). Its DIRECTION at high Stuff is OVER-prediction of K (opposite the naive "too-
 > shallow" hypothesis), which unwinds the single-mechanism unification with the anchor audit's wOBAA
 > bias. Full reading is in the pre-step handback; it is the reason K is in the measurement (A) but its
 > coordinate is deferred (B).
 
 (end of AMENDMENT 1 — matchup-structure sweep)
+
+---
+
+# AMENDMENT 2 — measurement-layer gates. 2026-07-25. Written under the collapsed role (Opus 5 owns authority + execution).
+
+**Status: this amendment RE-CONFIRMS the amended sweep and is the condition under which it may run.**
+Amendment 1 expanded the MEASUREMENT to all channels × both roles × both hands × the format registry —
+roughly 500 cells — while §4's gates were written for the P0–P3 predictor ladder only. The largest
+measurement surface in the program's history was therefore ungated. That is the hole this closes.
+
+Nothing here narrows Amendment 1's scope. It constrains what the measurement is ALLOWED TO
+AUTHORISE.
+
+---
+
+## 2.1 THE MEASUREMENT LAYER IS EXPLORATORY. Declared, not discovered.
+
+At ~500 cells, a 95% CI screen produces roughly 25 spurious "CI-clear" cells by chance alone, and
+"CI-clear hand-split on channel X" is precisely the evidence format this program acts on. Therefore:
+
+**RULE M1 — NO SWEEP CELL ALONE MAY AUTHORISE A FIT.** A channel earns a correction only after the
+effect CONFIRMS on formats that were not used to surface it. Selection formats and confirmation
+formats are drawn from the registry by `tournamentId` (never a slug list — the b4dc2ed rule) and the
+split is declared BEFORE the sweep runs, not after.
+
+**RULE M2 — the sweep reports EFFECT SIZES, not verdicts.** Every cell reports its point estimate,
+its CI, and its BF/PA support. Cells are ranked by effect size in deliverable terms (per-600 and
+per-card wOBA), never by p-value or CI-clearance. A cell that is CI-clear but deliverably tiny is
+reported as tiny.
+
+**RULE M3 — POWER IS REPORTED WITH EVERY NULL.** A flat cell is only evidence of absence if it had
+the power to see the effect. Every null carries its CI width and the minimum effect it could have
+resolved. "Covers zero" is not a finding on its own. (This rule is written by the vR/vL K result,
+where the hand asymmetry may be power rather than signal — under test separately in
+`tools/kresidual-hand-power.ts`.)
+
+**RULE M4 — the multiplicity is stated in the artifact.** The artifact's header carries the total cell
+count and the number of CI-clear cells expected by chance at that count, so no reader — including me —
+can treat the raw count of "significant" cells as a finding.
+
+## 2.2 PER-CHANNEL CLOSE RULES. What a null looks like, declared in advance.
+
+Each channel must be able to CLOSE. A measurement plan with no exit will always find one more thing.
+
+- **BB-class (`pit.con ↔ hit.eye`)** — no correction exists anywhere in the model, so the sweep is the
+  only instrument that can say one is MISSING. **CLOSE CONDITION: if the realized field tracks its
+  rating cohort within the confirmation band, BB is declared to need no correction and the channel is
+  CLOSED — not re-opened without new evidence of a different kind.** Prior evidence favours closure:
+  the anchor-uniformity audit (`fixtures/anchor-uniformity-audit-2026-07-23.txt`) found BOTH BB
+  channels UNIFORM (pit BB9 slope covers 0; hit BB% same), i.e. level-only and anchor-absorbed, which
+  does not distort card ordering.
+- **K-class (`pit.stu ↔ hit.kRat`)** — measured here, but its coordinate stays deferred (Amendment 1 §B).
+  The in-frame curve defect is fixed FIRST (own prereg, own gates, out-of-time validated); only the
+  need REMAINING after the curve fix is attributable to matchup structure. **CLOSE CONDITION: if the
+  post-curve-fix residual need is within the confirmation band, K's matchup coordinate is closed.**
+- **HR/BABIP-class (`pit.hrr`, `pit.pbabip`, `hit.pow`, `hit.babip`)** — carries the ladder (§2.3).
+  **CLOSE CONDITION: if no ex-ante predictor beats P0 in deliverable terms, the current coordinate is
+  KEPT, the confounding is documented as a known limitation, and the coordinate question is closed as
+  answered-in-the-negative.** This is an acceptable, non-failure ending and is pre-committed as such.
+- **Remaining channels (`hit.gap`, and any not carrying a correction)** — measured for completeness;
+  a finding here opens a NEW pre-registered item, it does not extend this one.
+
+## 2.3 THE PREDICTOR LADDER — P1 AND P3 REINSTATED. Ruling recorded as a ruling.
+
+**I proposed cutting P1 (whole-pool mean) and P3 (percentile-band) on the argument that, because the
+optimizer's objective is beating the BEST rosters, a predictor describing the typical opponent is
+"the wrong target by construction — no measurement needed." THAT ARGUMENT IS WITHDRAWN.** It conflates
+two layers I had myself separated one step earlier:
+
+- the OPTIMIZER'S OBJECTIVE = which rosters we want to beat (the best);
+- the CALIBRATION COORDINATE = which opposition GENERATED the observed outcomes we fit against.
+
+The coordinate's job is the second. What we wish to beat does not change what the observed numbers
+were accumulated against. The (c) report (`fixtures/cohort-channel-groundtruth-2026-07-23.txt`)
+measured that ground truth directly — realized field 10–17 (kRat) / 9–13 (pow) below EVERY top-N
+cohort, realized-usage weighting best in 38 of 45 cells — and P1/P3 are the two candidates shaped like
+that finding. They may well lose (P1's flat average is the most likely to fail the identifiability
+gate), but **they must lose by MEASUREMENT.** The whole ladder runs through one harness, so the
+marginal cost of carrying them is near zero, and "no measurement needed" is the sentence that preceded
+three prior coordinate failures in this program's record (the arm-C inversion, the z-sum coordinate,
+the live-pool result).
+
+**RULING: P0, P1, P2, P3 all run, on the HR/BABIP-class as scoped in Amendment 1 §B.** Rejected
+alternative: cut P1/P3 by argument (rejected — deciding by construction what the data was prepared to
+decide by measurement). Rejected alternative: cut the whole ladder (rejected — it discards the layer
+improvement along with the foundation-digging; the ladder is scoped, cheap, and gated).
+
+**Note on P2 (playability-weighted).** Who plays is driven by availability AND ratings AND
+eligibility (Derek, 2026-07-25). Ratings and eligibility are catalog-derived and legal; availability
+is game economy and is BANNED from modelling ([[never-flag-config-edits-or-meta-economy]]) — it is
+neither an input nor an argument here. So P2 is expected to capture the ratings/eligibility part and
+to MISS the availability part; it is measured on that understanding, and gate 3 (§4, no market/usage
+leak) is unchanged and binding. P2's most defensible benefit may be STABILITY rather than accuracy —
+it replaces top-N's hard membership edge (measured churn: only 26–38 of 50 members shared under an
+alternative rule) with a smooth weighting. If P2 wins, the artifact must state whether it won on
+tracking or on stability, because those imply different things downstream.
+
+## 2.4 INTERPRETATION RULES for the realized-field ground truth.
+
+**SURVIVORSHIP (Derek, 2026-07-25).** Better teams play MORE games in a tournament because losing
+teams are eliminated, so any usage-weighted measurement over this corpus is already tilted toward what
+the STRONG teams played. Two consequences the artifact must carry:
+1. The measured cohort−realized gap is a LOWER BOUND — the realized field sits below the top-N cohort
+   even after survivorship pushes it upward.
+2. The objective and the calibration data do not conflict: the corpus over-represents strong
+   opposition by construction, so the opposition we calibrate against is already close to the
+   opposition we care about beating.
+Also: a playability prior fit on realized usage is partly fitting WINNING, not only quality —
+state that where P2 is interpreted.
+
+**ROUND-POOLING IS SELF-CONSISTENT — NOT a limitation.** cwhitstats pools all rounds of a format. A
+card's observed stats and the opposition inside those stats come from the SAME games, so both sides
+are weighted by run depth identically. Nothing needs correcting for it. (Recorded because I initially
+wrote this up as a defect; it is not one.)
+
+**OPEN, UNQUANTIFIED — within-format heterogeneity.** The tilt is not uniform across cards inside a
+format: a card whose team ran deep faced tougher opposition than one eliminated early, and run depth
+correlates with card quality. If real, this COMPRESSES the observed good-vs-bad gap — the exact
+quantity the spread ramps are fit to. Not measurable without round-level rows (the corpus has none).
+NOT being chased; recorded so it is known to sit inside any spread refit.
+
+## 2.5 DATA. Measurement now; fits wait.
+
+The current capture corpus is adequate for MEASUREMENT and the sweep runs on it now. **No composition-
+layer FIT may use it.** Fits wait on the wide re-pull, which extends the window backward (depth, and
+several cells are thin) and, pulled today, also picks up everything after the corpus's ~2026-07-19
+cutoff as a forward slice. It is the only temporal replication this program has ever had available —
+partial, because the older pool is genuinely weaker (cards improve every window, so an old-vs-new
+split cannot cleanly separate measurement noise from real drift), but unique. Derek's action; it gates
+§2.3's fits and every composition-layer fit behind them.
+
+## 2.6 STANDING DISCIPLINES restated (they are now the only integrity control).
+
+- **Prereg before fit.** A gate decided after seeing a result is not a gate.
+- **Independent refuter** on any prereg that authorises a fit; its refutation is appended to the doc.
+- **Deliverable-space selection**; publish the equivalence set; a selection at a grid edge is family
+  misfit, not a fit.
+- **Clause 4 / atomic event.** A coordinate change and every correction consuming it ship together.
+- **Residual ledger must SHRINK.** Six published residuals stand. Success bar for the composition
+  layer, adopted and on the record: **at least four of the six retired.** A SEVENTH requires an
+  explicit STOP stating why six did not already mean stop.
+
+(end of AMENDMENT 2 — matchup-structure sweep)

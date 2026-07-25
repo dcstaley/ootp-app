@@ -9,7 +9,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   computeUnifiedFieldStats, buildCohortRefs, cohortSelectForModel, makeRawPolyModel,
-  K_SPREAD_PIT, PIT_SPREAD_HR, COHORT_RULE_TAG, type Coeffs,
+  K_SPREAD_PIT, PIT_SPREAD_HR, COHORT_RULE_TAG, COHORT_MODE_DEFAULT,
+  cohortRuleMismatches, cohortRuleMismatchMessage, type Coeffs,
 } from "../src/scoring-core/index.ts";
 import type { EventForm } from "../src/model/curves.ts";
 
@@ -86,5 +87,36 @@ describe("ramp provenance carries the selection-rule tag (the activation guard's
   });
   it("the z-sum tag is distinct from the ramps' current tag — so activating a z-sum model pre-refit mismatches", () => {
     expect(COHORT_RULE_TAG).not.toBe(K_SPREAD_PIT.cohortRule);
+  });
+});
+
+// ── THE COORDINATE GATE (2026-07-24) ─────────────────────────────────────────────────────────────
+// The rule leg of ramp provenance. assertKSpreadProvenance guards (N, p, gMax) — quantities a RETRAIN
+// DOES NOT MOVE — so it passes silently in exactly the scenario that matters: a model whose cohort
+// SELECTION RULE differs from the rule the enabled ramps were fitted under. These pin the pure
+// predicate; tests/cohort-rule-guard.test.ts pins that the server actually blocks on it.
+describe("cohortRuleMismatches — the rule leg of ramp provenance", () => {
+  const bothOn = { kSpread: true, hrSpread: true };
+  it("PRODUCTION IS A NO-OP: an untagged (pre-event) model matches the shipped model-woba ramps", () => {
+    // The safety-critical case. The live artifact carries NO cohortRule, so every one of these paths
+    // must find nothing — activation, startup and the UI badge all stay silent.
+    expect(cohortRuleMismatches(undefined, bothOn)).toEqual([]);
+    expect(cohortRuleMismatches(COHORT_MODE_DEFAULT, bothOn)).toEqual([]);
+  });
+  it("a z-sum-tagged model mismatches BOTH enabled ramps (they are still fitted on model-woba)", () => {
+    const bad = cohortRuleMismatches(COHORT_RULE_TAG, bothOn);
+    expect(bad).toHaveLength(2);
+    expect(bad.every((b) => b.activeRule === COHORT_RULE_TAG && b.fitRule === "model-woba")).toBe(true);
+  });
+  it("a DISABLED ramp cannot mismatch — a ramp that never runs has no coordinate to be wrong on", () => {
+    // This is the documented escape hatch: kill the ramps and a z-sum model becomes activatable.
+    expect(cohortRuleMismatches(COHORT_RULE_TAG, { kSpread: false, hrSpread: false })).toEqual([]);
+    expect(cohortRuleMismatches(COHORT_RULE_TAG, { kSpread: true, hrSpread: false })).toHaveLength(1);
+  });
+  it("the message names the refit tools — the rejection has to tell you what to DO", () => {
+    const msg = cohortRuleMismatchMessage("some-model", cohortRuleMismatches(COHORT_RULE_TAG, bothOn));
+    expect(msg).toContain("tools/fit-kspread-c3.ts");
+    expect(msg).toContain("tools/fit-hrspread-c6.ts");
+    expect(msg).toContain(COHORT_RULE_TAG);
   });
 });

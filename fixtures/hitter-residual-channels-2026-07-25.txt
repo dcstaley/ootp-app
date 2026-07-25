@@ -1,0 +1,934 @@
+################################################################################
+# HITTER-RESIDUAL CHANNEL LOCATOR (deployed form, in-frame).  MEASUREMENT ONLY — nothing wired,
+# nothing fit into production, no defaults changed.
+# THE MIRROR of tools/stuff-residual-channels.ts, which had never been run for hitters. Questions:
+#  Q1 which hitter EVENT CHANNEL carries the largest share of the model's wOBA bias, and its slope
+#     on each rating axis (Parts 1-3);
+#  Q2 which RATING AXES are genuine independent drivers once the other four are held fixed, vs
+#     merely proxies for a correlated rating (Parts 4-6);
+#  Q3 is any of it SHAPE (an interaction corner) rather than additive — tested against a
+#     permutation null, not eyeballed (Part 5);
+#  Q4 does the published elite-POWER 'hitter tail' residual reproduce here, and on which line
+#     (Part 7);
+#  Q0 and, governing all of it: which ratings can physically REACH which channels in the deployed
+#     form — the structural map, read from the code (Part 0).
+################################################################################
+
+  model 'league-42-43'  DEPLOYED form  window 2042+2043  minPA 1000 (window SUM)
+  PRIMARY GRAIN = FIT GRAIN: one row per (card × side), seasons SUMMED over the window — the
+  actual units the deployed curves were fit on.  N=173 ROWS / 74 DISTINCT CARDS, PA-weighted.
+  (loadWindow SUMS a card's seasons into one row per card-side. It does NOT return per-season rows;
+  Part 8 loads each season SEPARATELY and stacks them for the row-grain / per-season reads.)
+  variants: INCLUDED (as the model trains them)
+  wOBA event weights: THE MODEL'S OWN (trained.wobaWeights, wRAA-derived)
+    bb 0.7083  hbp 0.7391  1b 0.8992  xbh 1.3000  hr 2.0508
+    ⇒ the blended non-HR-hit weight w̃ is NOT a constant here (unlike the pitcher form's fixed 25%
+      XBH share): w̃ = (1−share_pred)·w_1b + share_pred·w_xbh, and share_pred is the FITTED hit.xbh
+      curve on GAP. PA-weighted mean w̃ over these rows = 0.9994 (range 0.9224-1.0272).
+
+  RATING AXES (all five — HIT_RATINGS, src/model/pool-transform.ts:87). Mean / SD over these rows:
+  EYE 110.4/29.8   POW 114.1/23.4   AvoidK 120.1/23.2   BABIP(rat) 123.9/14.3   GAP 108.9/19.4
+
+  residual convention throughout: DEPLOYED PREDICTION − OBSERVED. Positive on the wOBA composite =
+  the model says the hitter produced MORE than he did = the model OVER-CREDITS him. (This is the
+  OPPOSITE sign convention in meaning from the pitcher artifact, where positive wOBA-ALLOWED meant
+  UNDER-credit. Same arithmetic, mirrored role — do not blur the two.)
+
+  DECOMPOSITION CLOSURE CHECK: max |Σ channel contributions − ΔwOBA| over all 173 rows =
+  1.61e-16 wOBA. The decomposition is EXACT (floating-point only) ⇒ the channel
+  shares below are exhaustive and mutually exclusive — nothing is double-counted or missing.
+
+  DATA / EXCLUSIONS. root 'League Files'. The loader's corrupt-cell detector (src/training/validate.ts
+  corruptCellKeys — duplicate vL/vR files) ran on this load and excluded: []
+  (none inside the deployed window; the known corrupt cell HD450|2039 sits OUTSIDE it — it IS
+  detected and dropped in the per-season loads of Part 8, confirmed there).
+  leagues in-window: HD450, HD451, HD452, HD453, PEL   seasons: 2042, 2043   unparsed files: 0
+
+################################################################################
+### VERDICT (the short form — the full argument, with every number, is at the end)
+################################################################################
+
+  THE BIGGEST BIAS IS A LEVEL AND IT DOES NOT MATTER: +94% of the +0.00111 composite level is
+  the HBP channel's fixed 6/600 constant, which any per-role anchor absorbs. THE BIGGEST BIAS THAT
+  DOES MATTER IS ON THE EYE AXIS, AND THE COMPOSITE HIDES IT COMPLETELY. No rating axis has a
+  CI-clear slope on the composite (marginal or conditional) — but that is a CANCELLATION between
+  channels, not an absence of error: on EYE, 4 of 6 channels carry CI-clear, opposite-signed
+  contributions (K -0.000033, BABIP +0.000025, HR +0.000019) that sum to
+  +0.000006. Only the exact channel decomposition exposes it.
+
+  WHICH CHANNEL CARRIES THE LARGEST RATING-CORRELATED BIAS: the STRIKEOUT channel, against EYE —
+  a rating that has
+  NO PATHWAY into it (hit.k is fit on AvoidK alone; no hitter channel carries an aux term). The
+  model over-predicts K by +2.01/600 per SD of EYE marginally and +2.15/600 CONDITIONAL on the
+  other four ratings — it strengthens under conditioning. r = 0.525, the largest of all 24
+  structurally-free cells, and it clears a family-wise permutation null over that whole family
+  (p = 0.000). The BABIP channel carries a second, independent EYE error (conditional
+  +1.12 pts×1000 per SD, CI-clear), and the BIP-chain coupling check shows only ~6% of it is
+  the mechanical echo of the K error — two errors, not one seen twice.
+  IT IS A PROPERTY OF THE FORM, NOT OF THE 42-43 FIT: the K-vs-EYE slope is CI-clear in 7 of 7
+  individual seasons (5 of them OUT of the fit window) at +2.13/600 per SD pooled over
+  2037-2043 [+1.65, +2.67]. (Not 7 independent replications — the same card pool
+  recurs — but the same defect every time, in and out of frame.)
+
+  WHICH AXES ARE GENUINELY INDEPENDENT: EYE, and only EYE. It is the sole rating whose slope
+  survives holding the other four fixed (in the K, BABIP and HBP channels). POW, AvoidK, the BABIP
+  rating and GAP produce nothing that survives conditioning. Notably HR-vs-EYE is CI-clear
+  MARGINALLY and dies conditionally — the single-axis trap, firing exactly where the doctrine says
+  it would.
+
+  SHAPE OR ADDITIVE: ADDITIVE. Every 2-D corner tested inside its permutation null
+  (POW×EYE p=0.883, POW×GAP p=0.902, EYE×AvoidK p=0.998). One M3 product term (POW×EYE) is
+  CI-clear, but it is a single uncorrected df against a multiplicity-safe null that did not fire —
+  NOT ESTABLISHED, flagged for a larger sample.
+
+  THE ELITE-POWER TAIL DOES NOT REPRODUCE IN FRAME, AND THAT IS THE EXPECTED RESULT. The line
+  measured is the RAW deployed event line; the deployed hitter-tail correction is the EXACT
+  IDENTITY on league data by construction (zero pool gap ⇒ every strength 0), so there was nothing
+  to include. Top-POW-quartile HR residual +0.231/600 (slightly OVER-predicted — opposite sign to
+  the published claim); elite calibration slope 1.528 vs pooled 0.997, CI covering 1.0 (published
+  out-of-frame: 2.44 vs 1.17). Decisively, 0 of 173 in-frame rows sit beyond the hit.hr quad's
+  fit-domain edge (POW 172) where the late bend lives — THE LEAGUE FRAME DOES NOT EXERCISE
+  THE FAILURE MODE. This is not evidence against the published residual.
+
+  WHAT IS AN ARTIFACT OF THE FORM'S WIRING RATHER THAN A MECHANISM: the HBP level term (a
+  constant); every near-zero OWN-rating partial (least-squares-forced, not evidence the curve is
+  right); the HR-vs-EYE marginal (a POW proxy); the pooled all-seasons BABIP-rating coefficient
+  (confounded with the season-level frame drift). The EYE findings are NOT in that list: they sit
+  in cells the form structurally cannot reach, which is precisely why they are readable.
+
+  MEASUREMENT ONLY — nothing fit, wired, persisted, or defaulted.
+
+################################################################################
+# PART 0 — THE STRUCTURAL RATING-PATHWAY MAP (read from the code, not assumed)
+################################################################################
+
+  Sources: fitHitForm (src/training/forms.ts:211) — what each curve is FIT on; predictHitting
+  (src/model/raw-poly.ts:27) — what each curve is EVALUATED on; the deployed artifact's own
+  fitted curves (printed below, so this is the DEPLOYED wiring, not the form template's).
+
+  channel          deployed curve                 PRIMARY rating AUX terms
+  ---------------- ------------------------------ -------------- ------------------------------
+  hit.bb  (uBB)    log                            EYE            NONE
+  hit.k   (K)      log                            AvoidK         NONE
+  hit.hr  (HR)     rawpoly-2                      POW            NONE
+  hit.h   (nHH)    rating log + BIP log           BABIP-rating   the derived BIP count (its OWN fitted curve)
+  hit.xbh (share)  log                            GAP            NONE
+
+  ⇒ THE HEADLINE STRUCTURAL FACT, and it is the OPPOSITE of the pitcher side: NOT ONE HITTER
+  CHANNEL CARRIES AN AUX TERM. fitHitForm never calls fitEventAux (compare fitPitForm, which calls
+  it for pit.bb and pit.hr under `stuffAug`), and the deployed artifact confirms it — aux present
+  on hit.*: NONE. Every hitter channel is a ONE-RATING channel.
+
+  WHICH RATINGS CANNOT REACH WHICH CHANNELS (the "nowhere to land" analysis):
+    · EYE, AvoidK, POW  →  reach hit.h ONLY through the BIP COUNT (BIP = 600 − BB − K − HR − 5),
+      and BIP enters hit.h's design as its own fitted ln(BIP) term ⇒ the hits residual is
+      orthogonalized against the BIP COMBINATION, but NOT against eye/kRat/pow individually.
+    · BABIP-rating  →  NO pathway into BB, K or HR. None. It touches only the hit RATE.
+    · GAP           →  NO pathway into BB, K, HR, BIP, or the hit TOTAL. It splits hits into 1B vs
+      XBH and nothing else. A GAP-correlated error can therefore ONLY surface in the XBH-share
+      channel (and, through the wOBA weights, in the composite).
+    · POW           →  NO pathway into the contact rate, the walk rate, or the K rate.
+
+  HOW TO READ EVERY RESIDUAL BELOW (the least-squares orthogonality caveat, hitter version):
+  each channel was fit BY WEIGHTED LEAST SQUARES on its own primary rating, so IN FRAME its
+  residual is pushed toward zero slope ON THAT RATING BY CONSTRUCTION — but is STRUCTURALLY FREE
+  on the other four. So:
+    · a channel showing a slope on a FOREIGN rating (e.g. HR residual vs GAP) is the informative
+      case: the form has no way to express it;
+    · a channel showing a slope on its OWN rating is the suppressed case — for the LOG channels
+      (bb/k/h/xbh) the fit absorbs level and linear-in-ln, and for hit.hr (raw-QUAD in POW) it
+      absorbs level, linear AND quadratic in raw POW. In both, only the CUBIC partial is free.
+  THREE REASONS THE ORTHOGONALITY IS ONLY APPROXIMATE, not exact (so a small own-rating slope is
+  not automatically a finding): (a) the fit weights PA^0.75, this artifact weights PA; (b) the fit
+  target for hit.h/hit.xbh is a CHAIN quantity (predicted-BIP, predicted-hits) while the residual
+  here is measured against the OBSERVED line; (c) the deployed hit.hr was NOT vertex-pinned
+  (vertexPinned lists only pit.hr) but IS tangent-linear-extended beyond its fit domain — see Part 7.
+
+################################################################################
+# PART 1 — PER-CHANNEL RESIDUAL vs ITS OWN PRIMARY RATING (native units, pooled over both hands)
+################################################################################
+
+  The in-frame orthogonality check, channel by channel. The composite is shown against every axis
+  in Part 4; here each channel is shown against the rating it was FIT on.
+
+  ▸ wOBA COMPOSITE (reference row)
+    fit status: assembled — not itself fit
+  ── POOLED (both hands) vs POW (its strongest axis)  (N=173 rows / 74 distinct cards, level +0.00111 wOBA) ──
+     POW quintile       mean resid          n rows   cards
+     [23-92]              +0.00139          34      21
+     [92-104]             -0.00028          35      25
+     [104-120]            +0.00095          34      28
+     [122-135]            +0.00147          35      24
+     [135-172]            +0.00185          35      24
+     LINEAR partial (per SD POW): +0.000301 [-0.000465, +0.001154] covers 0
+     CUBIC  partial (per SD POW): -0.0000195 [-0.0003770, +0.0002862] covers 0 — no cubic misfit
+
+  ▸ HR
+    fit status: hit.hr — FIT on POW (raw-QUAD). No aux ⇒ eye/kRat/babip/gap NEVER enter
+  ── POOLED (both hands) vs POW  (N=173 rows / 74 distinct cards, level +0.043/600) ──
+     POW quintile       mean resid          n rows   cards
+     [23-92]                +0.221          34      21
+     [92-104]               -0.446          35      25
+     [104-120]              +0.015          34      28
+     [122-135]              +0.186          35      24
+     [135-172]              +0.176          35      24
+     LINEAR partial (per SD POW): +0.0188 [-0.1501, +0.2271] covers 0
+     CUBIC  partial (per SD POW): -0.03616 [-0.32795, +0.05804] covers 0 — no cubic misfit
+
+  ▸ BABIP (nHH / BIP)
+    fit status: hit.h — FIT on ln(BABIP-rating) + ln(BIP). No aux ⇒ pow/eye/kRat enter ONLY through BIP
+  ── POOLED (both hands) vs BABIP(rat)  (N=173 rows / 74 distinct cards, level -0.019 pts×1000) ──
+     BABIP(rat) quintile mean resid          n rows   cards
+     [66-108]               -1.067          34      24
+     [108-119]              +1.457          35      34
+     [119-127]              -0.810          34      30
+     [127-137]              +0.547          35      30
+     [138-164]              -0.740          35      29
+     LINEAR partial (per SD BABIP(rat)): -0.2283 [-0.9580, +0.5910] covers 0
+     CUBIC  partial (per SD BABIP(rat)): -0.27274 [-0.54773, -0.09466] ★ CI-CLEAR — curved (a quad cannot express it)
+
+  ▸ non-HR hits (nHH)
+    fit status: hit.h (rate) × BIP chain (volume)
+  ── POOLED (both hands) vs BABIP(rat)  (N=173 rows / 74 distinct cards, level -0.038/600) ──
+     BABIP(rat) quintile mean resid          n rows   cards
+     [66-108]               -0.253          34      24
+     [108-119]              +0.396          35      34
+     [119-127]              -0.242          34      30
+     [127-137]              +0.031          35      30
+     [138-164]              -0.206          35      29
+     LINEAR partial (per SD BABIP(rat)): -0.0219 [-0.3642, +0.3279] covers 0
+     CUBIC  partial (per SD BABIP(rat)): -0.06335 [-0.20788, +0.02533] covers 0 — no cubic misfit
+
+  ▸ XBH share of hits
+    fit status: hit.xbh — FIT on ln(GAP). No aux ⇒ no other rating enters
+  ── POOLED (both hands) vs GAP  (N=173 rows / 74 distinct cards, level +1.417 pts×1000) ──
+     GAP quintile       mean resid          n rows   cards
+     [34-88]                +2.812          34      24
+     [88-100]               +6.511          35      27
+     [100-117]              -7.378          34      25
+     [117-128]              +1.732          35      30
+     [130-162]              +5.671          35      23
+     LINEAR partial (per SD GAP): -0.3421 [-4.9711, +4.0843] covers 0
+     CUBIC  partial (per SD GAP): +0.90163 [-1.04282, +2.34070] covers 0 — no cubic misfit
+
+  ▸ BB (uBB)
+    fit status: hit.bb — FIT on ln(EYE). No aux ⇒ no other rating enters
+  ── POOLED (both hands) vs EYE  (N=173 rows / 74 distinct cards, level -0.136/600) ──
+     EYE quintile       mean resid          n rows   cards
+     [40-82]                +0.639          34      21
+     [82-97]                -0.420          35      25
+     [97-117]               -0.604          34      24
+     [118-139]              -0.046          35      26
+     [139-204]              +0.221          35      23
+     LINEAR partial (per SD EYE): -0.0283 [-0.3776, +0.3406] covers 0
+     CUBIC  partial (per SD EYE): -0.13787 [-0.42075, +0.12385] covers 0 — no cubic misfit
+
+  ▸ K
+    fit status: hit.k — FIT on ln(AvoidK). No aux ⇒ no other rating enters
+  ── POOLED (both hands) vs AvoidK  (N=173 rows / 74 distinct cards, level +0.151/600) ──
+     AvoidK quintile    mean resid          n rows   cards
+     [60-98]                -1.342          34      24
+     [98-111]               +1.018          35      27
+     [111-122]              +1.257          34      28
+     [122-135]              +0.346          35      27
+     [135-230]              -0.849          35      24
+     LINEAR partial (per SD AvoidK): -0.1588 [-0.8188, +0.5599] covers 0
+     CUBIC  partial (per SD AvoidK): +0.24870 [+0.02865, +0.63649] ★ CI-CLEAR — curved (a quad cannot express it)
+
+################################################################################
+# PART 1b — THE STRUCTURALLY-FREE CELLS: does any rating reach a channel it cannot reach?
+################################################################################
+
+  24 free (channel × rating) cells — every pairing where Part 0 says the rating has NO pathway
+  into the channel, so the fit could not have absorbed it and a non-zero reading is real signal
+  rather than least-squares leftovers. Weighted correlation r of the channel residual with the
+  z-scored rating (unit-free, hence comparable across cells):
+
+  channel                           EYE            POW         AvoidK     BABIP(rat)            GAP
+  ---------------------- -------------- -------------- -------------- -------------- --------------
+  HR                            +0.192           (fit)        -0.114         -0.067         -0.117 
+  BABIP                         +0.197         +0.110         -0.075           (fit)        +0.017 
+  non-HR hits                   -0.092         +0.056         -0.027           (fit)        +0.104 
+  XBH share of hits             -0.112         +0.035         +0.130         +0.150           (fit)
+  BB                              (fit)        -0.011         -0.070         -0.006         +0.025 
+  K                             +0.525*        +0.091           (fit)        -0.048         -0.145 
+  (* = that cell's own uncorrected permutation p < 0.05 — NOT multiplicity-corrected.)
+
+  FAMILY-WISE PERMUTATION NULL (600 CARD-level shuffles, all channels read through the SAME
+  shuffle, max|r| taken over all 24 free cells):
+    observed max|r| = 0.525  (K × EYE)
+    null 95th pct   = 0.384   ⇒ family-wise p = 0.000  ★ SURVIVES multiplicity correction
+    top free cells by |r|: K×EYE +0.525, BABIP×EYE +0.197, HR×EYE +0.192, XBH share of hits×BABIP(rat) +0.150, K×GAP -0.145
+
+  DETAIL ON THE 3 FREE CELLS WHOSE LINEAR PARTIAL IS CI-CLEAR (card-cluster bootstrap). For each,
+  the quintile shape, then the MARGINAL and CONDITIONAL (all five ratings held) slope in the
+  channel's native units — the conditional is the decisive one:
+
+  ── HR vs EYE  [FREE CELL — EYE has NO pathway into this channel]  (N=173 rows / 74 distinct cards, level +0.043/600) ──
+     EYE quintile       mean resid          n rows   cards
+     [40-82]                -0.471          34      21
+     [82-97]                -0.080          35      25
+     [97-117]               +0.371          34      24
+     [118-139]              -0.003          35      26
+     [139-204]              +0.343          35      23
+     LINEAR partial (per SD EYE): +0.1938 [+0.0165, +0.3650] ★ CI-clear
+     CUBIC  partial (per SD EYE): +0.01659 [-0.07147, +0.13269] covers 0 — no cubic misfit
+
+     MARGINAL    (per SD EYE): +0.1938 [-0.0018, +0.3652] covers 0
+     CONDITIONAL (per SD EYE): +0.1682 [-0.0270, +0.3748] covers 0 — a proxy for a correlated rating
+     full conditional set: EYE +0.1682   POW -0.1078   AvoidK -0.1078   BABIP(rat) -0.0188   GAP -0.0878
+
+  ── BABIP (nHH / BIP) vs EYE  [FREE CELL — EYE has NO pathway into this channel]  (N=173 rows / 74 distinct cards, level -0.019 pts×1000) ──
+     EYE quintile       mean resid          n rows   cards
+     [40-82]                -2.278          34      21
+     [82-97]                -0.245          35      25
+     [97-117]               +0.228          34      24
+     [118-139]              -0.582          35      26
+     [139-204]              +2.428          35      23
+     LINEAR partial (per SD EYE): +1.0679 [+0.2533, +1.9187] ★ CI-clear
+     CUBIC  partial (per SD EYE): -0.05626 [-0.44728, +0.57428] covers 0 — no cubic misfit
+
+     MARGINAL    (per SD EYE): +1.0679 [+0.3301, +1.8438] ★
+     CONDITIONAL (per SD EYE): +1.1174 [+0.1739, +2.0504] ★ SURVIVES — an independent axis for this channel
+     full conditional set: EYE +1.1174★   POW +0.4414   AvoidK +0.0853   BABIP(rat) -0.1242   GAP +0.5774
+
+  ── K vs EYE  [FREE CELL — EYE has NO pathway into this channel]  (N=173 rows / 74 distinct cards, level +0.151/600) ──
+     EYE quintile       mean resid          n rows   cards
+     [40-82]                -3.081          34      21
+     [82-97]                -0.535          35      25
+     [97-117]               -0.512          34      24
+     [118-139]              +1.340          35      26
+     [139-204]              +3.334          35      23
+     LINEAR partial (per SD EYE): +2.0061 [+1.4212, +2.5787] ★ CI-clear
+     CUBIC  partial (per SD EYE): +0.16265 [-0.25654, +0.41942] covers 0 — no cubic misfit
+
+     MARGINAL    (per SD EYE): +2.0061 [+1.4754, +2.5660] ★
+     CONDITIONAL (per SD EYE): +2.1498 [+1.4710, +2.9277] ★ SURVIVES — an independent axis for this channel
+     full conditional set: EYE +2.1498★   POW -0.1263   AvoidK +0.3593   BABIP(rat) -0.0218   GAP +0.0443
+
+  ARE THESE ONE ERROR OR SEVERAL? THE BIP-CHAIN COUPLING CHECK. A K mis-prediction moves the
+  predicted BIP count, and hit.h reads BIP through its own fitted ln(BIP) term — so a K error
+  MECHANICALLY produces a BABIP-rate error. If the BABIP cell were merely that echo it would
+  not be a separate finding. The arithmetic (all at the pooled means):
+    fitted ln(BIP) coefficient 119.47;  mean predicted nHH 125.1/600, mean predicted BIP 415.4/600
+    ⇒ H-on-BIP elasticity 0.955 at the mean, and d(babip)/d(BIP) = (b_BIP − nHH)/BIP² = -3.27e-5
+    measured ΔK slope on EYE: +2.006 K/600 per SD ⇒ PREDICTED BABIP echo +0.066 pts×1000 per SD
+    MEASURED BABIP slope on EYE: +1.068 pts×1000 per SD
+    ⇒ the chain echo explains 6% of it. The BABIP cell is therefore NOT mostly a mechanical
+    echo of the K cell — it is a largely SEPARATE contact-rate error on the same rating axis.
+    (Note the elasticity is BELOW 1, so a K over-prediction shrinks predicted hits LESS than
+    proportionally — which is why the echo has the sign it does.)
+
+################################################################################
+# PART 2 — THE RANKING: each channel's CONTRIBUTION to the wOBA bias SLOPE, on EVERY axis
+################################################################################
+
+  Composite in-frame wOBA bias LEVEL: +0.00111 wOBA  (positive = the model OVER-credits).
+
+  LEVEL DECOMPOSITION first — which channel carries the level bias, before any slope:
+  channel                                        level (wOBA)    % of composite level
+  HBP    (fixed 6/600)                               +0.00105                  +94.1%
+  GAP    (XBH-share = the hit MIX)                   +0.00014                  +12.3%
+  HR     (direct + BIP-volume)                       +0.00013                  +11.5%
+  BB     (direct + BIP-volume)                       -0.00009                   -8.4%
+  K      (BIP-volume ONLY — no wOBA weight)          -0.00007                   -6.5%
+  BABIP  (contact-RATE leg of hits)                  -0.00003                   -3.1%
+  TOTAL                                              +0.00111                  100.0%
+
+  ── SLOPE ON EYE (per rating point) ──
+     composite +0.000006  [-0.000019, +0.000032] covers 0   (card-cluster bootstrap)
+     channel                                             slope                     95% CI    % of comp
+     K      (BIP-volume ONLY — no wOBA weight)       -0.000033     [-0.000043, -0.000024]      -522.4%  ★
+     BABIP  (contact-RATE leg of hits)               +0.000025     [+0.000005, +0.000043]      +384.1%  ★
+     HR     (direct + BIP-volume)                    +0.000019     [+0.000001, +0.000037]      +296.7%  ★
+     GAP    (XBH-share = the hit MIX)                -0.000007     [-0.000021, +0.000010]      -102.9%
+     HBP    (fixed 6/600)                            +0.000004     [+0.000000, +0.000007]       +56.7%  ★
+     BB     (direct + BIP-volume)                    -0.000001     [-0.000009, +0.000008]       -12.1%
+
+  ── SLOPE ON POW (per rating point) ──
+     composite +0.000013  [-0.000021, +0.000054] covers 0   (card-cluster bootstrap)
+     channel                                             slope                     95% CI    % of comp
+     BABIP  (contact-RATE leg of hits)               +0.000017     [-0.000009, +0.000045]      +129.8%
+     K      (BIP-volume ONLY — no wOBA weight)       -0.000008     [-0.000026, +0.000011]       -59.1%
+     GAP    (XBH-share = the hit MIX)                +0.000003     [-0.000013, +0.000018]       +23.0%
+     HR     (direct + BIP-volume)                    +0.000002     [-0.000021, +0.000027]       +18.9%
+     HBP    (fixed 6/600)                            -0.000001     [-0.000005, +0.000005]        -6.4%
+     BB     (direct + BIP-volume)                    -0.000001     [-0.000012, +0.000010]        -6.2%
+
+  ── SLOPE ON AvoidK (per rating point) ──
+     composite -0.000022  [-0.000052, +0.000008] covers 0   (card-cluster bootstrap)
+     channel                                             slope                     95% CI    % of comp
+     HR     (direct + BIP-volume)                    -0.000015     [-0.000032, +0.000005]       +66.7%
+     BABIP  (contact-RATE leg of hits)               -0.000014     [-0.000040, +0.000012]       +64.1%
+     GAP    (XBH-share = the hit MIX)                +0.000010     [-0.000007, +0.000027]       -44.9%
+     BB     (direct + BIP-volume)                    -0.000005     [-0.000025, +0.000010]       +21.0%
+     K      (BIP-volume ONLY — no wOBA weight)       +0.000004     [-0.000011, +0.000017]       -17.9%
+     HBP    (fixed 6/600)                            -0.000002     [-0.000007, +0.000003]       +10.9%
+
+  ── SLOPE ON BABIP(rat) (per rating point) ──
+     composite -0.000005  [-0.000053, +0.000050] covers 0   (card-cluster bootstrap)
+     channel                                             slope                     95% CI    % of comp
+     GAP    (XBH-share = the hit MIX)                +0.000017     [-0.000004, +0.000037]      -325.9%
+     HR     (direct + BIP-volume)                    -0.000014     [-0.000050, +0.000025]      +264.3%
+     BABIP  (contact-RATE leg of hits)               -0.000011     [-0.000046, +0.000030]      +216.4%
+     K      (BIP-volume ONLY — no wOBA weight)       +0.000006     [-0.000022, +0.000034]      -121.2%
+     HBP    (fixed 6/600)                            -0.000003     [-0.000011, +0.000005]       +61.3%
+     BB     (direct + BIP-volume)                    -0.000000     [-0.000021, +0.000022]        +5.2%
+
+  ── SLOPE ON GAP (per rating point) ──
+     composite -0.000003  [-0.000039, +0.000034] covers 0   (card-cluster bootstrap)
+     channel                                             slope                     95% CI    % of comp
+     HR     (direct + BIP-volume)                    -0.000018     [-0.000040, +0.000008]      +657.1%
+     K      (BIP-volume ONLY — no wOBA weight)       +0.000015     [-0.000004, +0.000032]      -554.5%
+     HBP    (fixed 6/600)                            -0.000004     [-0.000011, +0.000002]      +146.7%
+     BABIP  (contact-RATE leg of hits)               +0.000004     [-0.000025, +0.000031]      -143.3%
+     BB     (direct + BIP-volume)                    +0.000002     [-0.000011, +0.000013]       -70.9%
+     GAP    (XBH-share = the hit MIX)                -0.000002     [-0.000022, +0.000018]       +64.8%
+
+  ★ = the channel's own slope CI excludes zero. Shares can exceed 100% or go negative: channels
+  push in OPPOSITE directions.
+
+  ⚠ READ THE ABSOLUTE SLOPES, NOT THE PERCENTAGES, AS PRIMARY. Where the composite denominator is
+  small and its own CI covers zero, "% of composite" is a RATIO OF NOISY QUANTITIES and unstable.
+  The ranking by |absolute slope| is the robust statement; the share column is orientation only.
+
+  ROBUSTNESS — the deployed minPA 1000 filter is also the TRAINING filter, so rows below it were
+  never fit (a mildly out-of-frame margin). Relaxing to minPA 300 adds 100 rows
+  (37 more distinct cards) but only 3.0% of the PA weight — a shape check, not power:
+    minPA 1000 (deployed, N=173/74c)         level +0.00111   EYE +0.000006  POW +0.000013  AvoidK -0.000022  BABIP(rat) -0.000005  GAP -0.000003
+    minPA  300 (relaxed,  N=273/111c)        level +0.00113   EYE +0.000006  POW +0.000010  AvoidK -0.000021  BABIP(rat) -0.000002  GAP -0.000004
+
+  THE GRAIN TRAP, QUANTIFIED (why every CI here is a CARD-CLUSTER bootstrap). 173 rows come from
+  only 74 distinct cards (2.34 rows/card), and a card's residual is close to a fixed
+  function of its unchanging ratings. Ratio of CLUSTER CI width to naive ROW CI width, composite
+  slope, per axis:
+    EYE 1.03×   POW 1.15×   AvoidK 0.95×   BABIP(rat) 1.03×   GAP 0.92×
+  A ratio > 1 means the naive row bootstrap would have reported an interval that much TOO NARROW
+  — i.e. would have manufactured that much significance. Every interval in this artifact is the
+  cluster one.
+
+################################################################################
+# PART 3 — HAND SPLIT (vs RHP / vs LHP)
+################################################################################
+
+  ── vs RHP (vR)  (N=92 rows / 71 cards) ──
+     composite level +0.00154 wOBA
+     composite slope per axis:
+       EYE               -0.000012 [-0.000036, +0.000012] covers 0
+       POW               +0.000027 [-0.000005, +0.000067] covers 0
+       AvoidK            -0.000023 [-0.000053, +0.000010] covers 0
+       BABIP(rat)        -0.000020 [-0.000074, +0.000044] covers 0
+       GAP               +0.000015 [-0.000043, +0.000076] covers 0
+     channel LEVELS: BABIP +0.00040  GAP +0.00014  HR +0.00072  BB -0.00044  K -0.00030  HBP +0.00102
+
+  ── vs LHP (vL)  (N=81 rows / 65 cards) ──
+     composite level +0.00037 wOBA
+     composite slope per axis:
+       EYE               +0.000045 [-0.000002, +0.000094] covers 0
+       POW               -0.000013 [-0.000066, +0.000052] covers 0
+       AvoidK            -0.000019 [-0.000077, +0.000046] covers 0
+       BABIP(rat)        +0.000016 [-0.000073, +0.000115] covers 0
+       GAP               -0.000025 [-0.000074, +0.000036] covers 0
+     channel LEVELS: BABIP -0.00079  GAP +0.00014  HR -0.00090  BB +0.00051  K +0.00032  HBP +0.00109
+
+################################################################################
+# PART 4 — ALL FIVE HITTER AXES on the composite (the doctrine's read)
+################################################################################
+
+  Weighted axis CORRELATIONS over these 173 rows — read this FIRST, it is why a single-axis
+  read can be misleading. (Weighted Pearson r; axes standardized on the same weights.)
+
+                         EYE          POW       AvoidK   BABIP(rat)          GAP
+  EYE                 +1.000       +0.299       -0.266       -0.135       -0.304
+  POW                 +0.299       +1.000       -0.443       -0.176       -0.288
+  AvoidK              -0.266       -0.443       +1.000       +0.277       +0.064
+  BABIP(rat)          -0.135       -0.176       +0.277       +1.000       +0.175
+  GAP                 -0.304       -0.288       +0.064       +0.175       +1.000
+
+  ⇒ strongest rating correlations: POW×AvoidK -0.443, EYE×GAP -0.304, EYE×POW +0.299.
+  Any marginal slope on one of a correlated pair is partly the other's. Part 6 is the decisive read.
+
+  RESIDUAL STRUCTURE BY AXIS — composite residual, weighted cubic R² per axis + linear partial:
+
+  axis             cubic R²    linear/SD                     95% CI     cubic/SD  slope/point
+  -------------- ---------- ------------ -------------------------- ------------ ------------
+  POW                0.0151    +0.000301     [-0.000465, +0.001154]    -0.000019    +0.000013
+  EYE                0.0147    +0.000191     [-0.000565, +0.000980]    -0.000191    +0.000006
+  GAP                0.0128    -0.000053     [-0.000826, +0.000677]    -0.000013    -0.000003
+  AvoidK             0.0126    -0.000507     [-0.001251, +0.000155]    -0.000067    -0.000022
+  BABIP(rat)         0.0080    -0.000076     [-0.000773, +0.000750]    -0.000143    -0.000005
+
+  ⇒ the axis carrying the MOST composite-residual structure is POW (R² 0.0151).
+
+  Composite-residual QUINTILE SHAPE on each axis:
+
+  ── wOBA composite vs POW  (N=173 rows / 74 distinct cards, level +0.00111 wOBA) ──
+     POW quintile       mean resid          n rows   cards
+     [23-92]              +0.00139          34      21
+     [92-104]             -0.00028          35      25
+     [104-120]            +0.00095          34      28
+     [122-135]            +0.00147          35      24
+     [135-172]            +0.00185          35      24
+     LINEAR partial (per SD POW): +0.000301 [-0.000465, +0.001154] covers 0
+     CUBIC  partial (per SD POW): -0.0000195 [-0.0003770, +0.0002862] covers 0 — no cubic misfit
+
+  ── wOBA composite vs EYE  (N=173 rows / 74 distinct cards, level +0.00111 wOBA) ──
+     EYE quintile       mean resid          n rows   cards
+     [40-82]              -0.00018          34      21
+     [82-97]              +0.00113          35      25
+     [97-117]             +0.00182          34      24
+     [118-139]            +0.00048          35      26
+     [139-204]            +0.00195          35      23
+     LINEAR partial (per SD EYE): +0.000191 [-0.000565, +0.000980] covers 0
+     CUBIC  partial (per SD EYE): -0.0001907 [-0.0005869, +0.0004059] covers 0 — no cubic misfit
+
+  ── wOBA composite vs GAP  (N=173 rows / 74 distinct cards, level +0.00111 wOBA) ──
+     GAP quintile       mean resid          n rows   cards
+     [34-88]              +0.00198          34      24
+     [88-100]             +0.00101          35      27
+     [100-117]            +0.00076          34      25
+     [117-128]            +0.00084          35      30
+     [130-162]            +0.00157          35      23
+     LINEAR partial (per SD GAP): -0.000053 [-0.000826, +0.000677] covers 0
+     CUBIC  partial (per SD GAP): -0.0000130 [-0.0002807, +0.0003371] covers 0 — no cubic misfit
+
+  ── wOBA composite vs AvoidK  (N=173 rows / 74 distinct cards, level +0.00111 wOBA) ──
+     AvoidK quintile    mean resid          n rows   cards
+     [60-98]              +0.00199          34      24
+     [98-111]             +0.00115          35      27
+     [111-122]            +0.00163          34      28
+     [122-135]            +0.00039          35      27
+     [135-230]            +0.00052          35      24
+     LINEAR partial (per SD AvoidK): -0.000507 [-0.001251, +0.000155] covers 0
+     CUBIC  partial (per SD AvoidK): -0.0000671 [-0.0003389, +0.0003925] covers 0 — no cubic misfit
+
+  ── wOBA composite vs BABIP(rat)  (N=173 rows / 74 distinct cards, level +0.00111 wOBA) ──
+     BABIP(rat) quintile mean resid          n rows   cards
+     [66-108]             +0.00014          34      24
+     [108-119]            +0.00194          35      34
+     [119-127]            +0.00112          34      30
+     [127-137]            +0.00112          35      30
+     [138-164]            +0.00082          35      29
+     LINEAR partial (per SD BABIP(rat)): -0.000076 [-0.000773, +0.000750] covers 0
+     CUBIC  partial (per SD BABIP(rat)): -0.0001433 [-0.0004404, +0.0000692] covers 0 — no cubic misfit
+
+  THE FULL CHANNEL × AXIS MATRIX — linear partial per SD of the axis, native channel units.
+  ★ = CI-clear (card-cluster bootstrap). Diagonal-ish cells (a channel against its OWN fitted
+  rating) are SUPPRESSED BY CONSTRUCTION — marked (fit). Everything else is structurally free:
+
+  channel                            EYE             POW          AvoidK      BABIP(rat)             GAP
+  ---------------------- --------------- --------------- --------------- --------------- ---------------
+  wOBA COMPOSITE              +0.000191       +0.000301       -0.000507       -0.000076       -0.000053 
+  HR                            +0.1938★   +0.0188 (fit)        -0.1156         -0.0678         -0.1181 
+  BABIP                         +1.0679★        +0.5931         -0.4041    -0.2283 (fit)        +0.0940 
+  non-HR hits                   -0.2099         +0.1282         -0.0613    -0.0219 (fit)        +0.2377 
+  XBH share of hits             -2.2676         +0.7057         +2.6285         +3.0255    -0.3421 (fit)
+  BB                       -0.0283 (fit)        -0.0248         -0.1572         -0.0136         +0.0570 
+  K                             +2.0061★        +0.3485    -0.1588 (fit)        -0.1831         -0.5539 
+
+################################################################################
+# PART 5 — 2-D SHAPE READ: corner or additive? (every corner tested against a permutation null)
+################################################################################
+
+  The INTERACTION residual strips the additive 1-D main effects (raw − row marginal − col marginal
+  + overall), so what remains is TRUE 2-way structure. Cells here hold ~15-25 rows and as few as
+  ~8 CARDS, and small cells throw large corners by chance — so no corner is reported without its
+  null p-value beside it. (On the pitcher side this test killed an eye-catching false positive.)
+
+  ── POW (rows) × EYE (cols) — wOBA composite residual ──
+     tercile cuts: POW 100/130   EYE 93/126
+     cell = mean residual (wOBA) / INTERACTION residual / n rows / c cards
+                                        EYE·L                         EYE·M                         EYE·H
+     POW·L      +0.00091 / +0.00113 / n30/c17 +0.00084 / -0.00066 / n20/c14  +0.00024 / -0.00060 / n11/c8
+     POW·M      +0.00078 / +0.00078 / n17/c12 +0.00242 / +0.00070 / n23/c17 -0.00122 / -0.00226 / n14/c10
+     POW·H       -0.00220 / -0.00294 / n14/c9 +0.00264 / +0.00018 / n11/c11 +0.00314 / +0.00135 / n33/c23
+     strongest INTERACTION cell (n≥8): -0.00294   |   most over-credited cell: +0.00314 (n33)
+     spread of cell means: +0.00534   max |interaction|: +0.00294
+     PERMUTATION NULL (600 CARD-level shuffles): max|interaction| under pure noise has 95th pct
+     +0.01158; observed +0.00294 ⇒ p = 0.883  — WITHIN chance for cells this small (do NOT read the corner as real)
+
+  ── POW (rows) × GAP (cols) — wOBA composite residual ──
+     tercile cuts: POW 100/130   GAP 98/120
+     cell = mean residual (wOBA) / INTERACTION residual / n rows / c cards
+                                        GAP·L                         GAP·M                         GAP·H
+     POW·L      +0.00075 / -0.00025 / n13/c11 -0.00286 / -0.00301 / n18/c16 +0.00232 / +0.00115 / n30/c20
+     POW·M      +0.00149 / +0.00028 / n17/c12 +0.00096 / +0.00060 / n14/c11 +0.00040 / -0.00099 / n23/c17
+     POW·H      +0.00150 / -0.00045 / n31/c22 +0.00205 / +0.00096 / n18/c13   +0.00096 / -0.00117 / n9/c9
+     strongest INTERACTION cell (n≥8): -0.00301   |   most over-credited cell: +0.00232 (n30)
+     spread of cell means: +0.00519   max |interaction|: +0.00301
+     PERMUTATION NULL (600 CARD-level shuffles): max|interaction| under pure noise has 95th pct
+     +0.01146; observed +0.00301 ⇒ p = 0.902  — WITHIN chance for cells this small (do NOT read the corner as real)
+
+  ── EYE (rows) × AvoidK (cols) — wOBA composite residual ──
+     tercile cuts: EYE 93/126   AvoidK 106/128
+     cell = mean residual (wOBA) / INTERACTION residual / n rows / c cards
+                                     AvoidK·L                      AvoidK·M                      AvoidK·H
+     EYE·L        +0.00115 / +0.00071 / n9/c7 -0.00031 / -0.00078 / n18/c14 +0.00020 / +0.00061 / n34/c22
+     EYE·M      +0.00160 / -0.00056 / n21/c17 +0.00246 / +0.00027 / n18/c15 +0.00142 / +0.00011 / n15/c12
+     EYE·H      +0.00135 / -0.00015 / n29/c22 +0.00224 / +0.00071 / n17/c11 -0.00008 / -0.00072 / n12/c10
+     strongest INTERACTION cell (n≥8): -0.00078   |   most over-credited cell: +0.00246 (n18)
+     spread of cell means: +0.00277   max |interaction|: +0.00078
+     PERMUTATION NULL (600 CARD-level shuffles): max|interaction| under pure noise has 95th pct
+     +0.01041; observed +0.00078 ⇒ p = 0.998  — WITHIN chance for cells this small (do NOT read the corner as real)
+
+################################################################################
+# PART 6 — THE DECISIVE READ: marginal vs CONDITIONAL slope, every rating
+################################################################################
+
+  Weighted regressions of the residual on z-scored ratings (coefficients = residual per SD).
+    M1 MARGINAL     : y ~ z_<axis>                                        (one axis alone)
+    M2 CONDITIONAL  : y ~ z_eye + z_pow + z_kRat + z_babip + z_gap        (that axis, shape fixed)
+    M3 + INTERACTION: M2 + one z·z product                                (the shape-corner term)
+  All CIs are card-cluster bootstrap. THIS IS THE READ THAT SEPARATES a genuine independent axis
+  from one that is merely a proxy for a correlated rating.
+
+  ▸ wOBA composite   (level +0.00111)
+     axis            M1 marginal                     95% CI M2 conditional                     95% CI  survives
+     EYE               +0.000191     [-0.000544, +0.000943]      +0.000050     [-0.000839, +0.000948]     26%
+     POW               +0.000301     [-0.000459, +0.001228]      +0.000091     [-0.000817, +0.001044]     30%
+     AvoidK            -0.000507     [-0.001224, +0.000155]      -0.000475     [-0.001398, +0.000250]     94%
+     BABIP(rat)        -0.000076     [-0.000764, +0.000756]      +0.000078     [-0.000591, +0.000970]    103%
+     GAP               -0.000053     [-0.000760, +0.000745]      +0.000006     [-0.000807, +0.000858]     11%
+
+  ▸ BABIP contribution   (level -0.00003)
+     axis            M1 marginal                     95% CI M2 conditional                     95% CI  survives
+     EYE               +0.000734     [+0.000187, +0.001303]★     +0.000764     [+0.000125, +0.001434]★   104%
+     POW               +0.000390     [-0.000207, +0.001037]      +0.000257     [-0.000355, +0.000973]     66%
+     AvoidK            -0.000325     [-0.000918, +0.000301]      -0.000011     [-0.000638, +0.000659]      3%
+     BABIP(rat)        -0.000163     [-0.000691, +0.000413]      -0.000081     [-0.000610, +0.000560]     50%
+     GAP               +0.000075     [-0.000449, +0.000634]      +0.000397     [-0.000201, +0.000996]    527%
+
+  ▸ GAP contribution   (level +0.00014)
+     axis            M1 marginal                     95% CI M2 conditional                     95% CI  survives
+     EYE               -0.000197     [-0.000657, +0.000263]      -0.000204     [-0.000765, +0.000356]    104%
+     POW               +0.000069     [-0.000299, +0.000434]      +0.000246     [-0.000240, +0.000702]    357%
+     AvoidK            +0.000227     [-0.000185, +0.000624]      +0.000228     [-0.000236, +0.000631]    100%
+     BABIP(rat)        +0.000246     [-0.000056, +0.000549]      +0.000212     [-0.000103, +0.000516]     86%
+     GAP               -0.000034     [-0.000419, +0.000293]      -0.000077     [-0.000518, +0.000356]    226%
+
+  ▸ HR contribution   (level +0.00013)
+     axis            M1 marginal                     95% CI M2 conditional                     95% CI  survives
+     EYE               +0.000567     [+0.000068, +0.001093]★     +0.000492     [-0.000099, +0.001123]     87%
+     POW               +0.000057     [-0.000484, +0.000628]      -0.000313     [-0.000916, +0.000282]    551%
+     AvoidK            -0.000338     [-0.000747, +0.000143]      -0.000314     [-0.000817, +0.000163]     93%
+     BABIP(rat)        -0.000200     [-0.000700, +0.000337]      -0.000056     [-0.000608, +0.000487]     28%
+     GAP               -0.000345     [-0.000811, +0.000183]      -0.000256     [-0.000748, +0.000304]     74%
+
+  ▸ BB contribution   (level -0.00009)
+     axis            M1 marginal                     95% CI M2 conditional                     95% CI  survives
+     EYE               -0.000023     [-0.000269, +0.000215]      -0.000037     [-0.000379, +0.000208]    159%
+     POW               -0.000019     [-0.000292, +0.000246]      -0.000068     [-0.000421, +0.000272]    365%
+     AvoidK            -0.000106     [-0.000524, +0.000220]      -0.000153     [-0.000643, +0.000207]    143%
+     BABIP(rat)        -0.000004     [-0.000302, +0.000327]      +0.000019     [-0.000260, +0.000387]    491%
+     GAP               +0.000037     [-0.000230, +0.000259]      +0.000013     [-0.000305, +0.000242]     35%
+
+  ▸ K contribution   (level -0.00007)
+     axis            M1 marginal                     95% CI M2 conditional                     95% CI  survives
+     EYE               -0.000998     [-0.001272, -0.000726]★     -0.001062     [-0.001477, -0.000701]★   106%
+     POW               -0.000178     [-0.000599, +0.000241]      +0.000068     [-0.000332, +0.000423]     38%
+     AvoidK            +0.000090     [-0.000247, +0.000418]      -0.000163     [-0.000519, +0.000134]    180%
+     BABIP(rat)        +0.000092     [-0.000341, +0.000521]      +0.000005     [-0.000286, +0.000363]      6%
+     GAP               +0.000291     [-0.000110, +0.000624]      -0.000003     [-0.000407, +0.000354]      1%
+
+  ▸ HBP contribution   (level +0.00105)
+     axis            M1 marginal                     95% CI M2 conditional                     95% CI  survives
+     EYE               +0.000108     [+0.000012, +0.000207]★     +0.000098     [+0.000003, +0.000207]★    90%
+     POW               -0.000019     [-0.000116, +0.000105]      -0.000100     [-0.000221, +0.000030]    521%
+     AvoidK            -0.000055     [-0.000169, +0.000073]      -0.000063     [-0.000187, +0.000090]    114%
+     BABIP(rat)        -0.000046     [-0.000158, +0.000065]      -0.000021     [-0.000131, +0.000086]     46%
+     GAP               -0.000077     [-0.000204, +0.000051]      -0.000068     [-0.000207, +0.000062]     89%
+
+  M3 INTERACTION TERMS on the composite (same pairs as the Part-5 grids):
+     POW × EYE                  +0.000736 [+0.000023, +0.001795] ★ CI-CLEAR — a genuine SHAPE-CORNER term   (grid null p=0.883)
+     POW × GAP                  -0.000350 [-0.001333, +0.000643] covers 0 — no shape-corner term   (grid null p=0.902)
+     EYE × AvoidK               +0.000352 [-0.000479, +0.000894] covers 0 — no shape-corner term   (grid null p=0.998)
+
+################################################################################
+# PART 7 — THE ELITE-POWER TAIL: does the published 'hitter tail' residual reproduce here?
+################################################################################
+
+  THE PRIOR (src/scoring-core/hit-tail.ts + docs/CWHIT_HITTAIL_BUILD2_2026-07-17.md): OUT of frame
+  (tournament pools) the hitter HR quad bends down too early — elite-power HR under-predicted, mid
+  power over-predicted, elite calibration slope 2.44 vs pooled 1.17; BABIP tail under-reacted;
+  SO% under-reacts in its MID band. The deployed correction is hinge(HR, λ2.20) + hinge(BABIP,
+  λ1.10) + step(SO, λ0.30), gap-conditioned.
+
+  WHICH LINE IS MEASURED HERE, AND WHY. This artifact measures predictHitting — the RAW deployed
+  event line. The hitter-tail correction is NOT in it, and could not be: applyHitTail's strength is
+  lw = λ·w(g) with g = max(ref.μ/pool.μ − 1, 0) taken from the own-gap pool transform, so on a
+  LEAGUE (unrestricted) pool g = 0 ⇒ every lw = 0 ⇒ applyHitTail is the EXACT IDENTITY. There is
+  no correction to include on league training data. The hit-tail doc says the same thing from the
+  other side ("League IN-FRAME is calibrated"). CONSEQUENCE FOR THIS READ: in-frame is the WRONG
+  frame to confirm or refute the tail. A null here is the EXPECTED result, not a refutation; a
+  POSITIVE here would be the surprise — it would mean the defect is present even in frame, where
+  the correction is switched off by construction.
+
+  POW QUARTILES (PA-weighted), composite and HR channel — pred − obs, so NEGATIVE HR = the model
+  UNDER-predicts the home runs that band actually hit (the direction the published tail claims):
+
+  POW quartile            n/cards   comp resid   HR resid/600   HR pred    HR obs  BABIP resid
+  Q1 [23-96]                43/26     +0.00104         +0.163     10.81     10.65        -0.77
+  Q2 [96-113]               43/29     +0.00021         -0.307     14.15     14.46        -0.23
+  Q3 [114-133]              43/27     +0.00115         +0.057     17.06     17.00        -0.49
+  Q4 [133-172]              44/30     +0.00200         +0.231     19.17     18.94        +1.65
+
+  HR CALIBRATION SLOPE (observed HR regressed on PREDICTED HR; 1.00 = correctly spread, >1 = the
+  model UNDER-spreads i.e. compresses the real spread into too narrow a predicted range):
+    pooled     0.997  [0.947, 1.046]
+    elite band 1.528  [0.919, 2.022]   (top POW quartile, n=44/30 cards)
+    published OUT-OF-FRAME reference: pooled 1.17, elite 2.44.
+
+  THE STRUCTURAL FACT BEHIND THE TAIL CLAIM (deployed hit.hr, raw-quad in POW):
+    μ 113.80  σ 24.28  β [15.7000, 3.3316, -0.3445]  fit domain z [-3.739, 2.397]
+    unconstrained vertex at z 4.836 (POW 231) — OUTSIDE the fit domain ⇒ no in-domain turn-over,
+    and the deployed artifact's vertexPinned list confirms hit.hr was NOT pinned (only pit.hr was).
+    Beyond z 2.397 (POW 172) the curve is TANGENT-LINEAR, not quadratic
+    (curves.ts curveBase out-of-domain policy). In THIS in-frame set 0 of 173 rows sit above that
+    edge, so the quad's late bend — the thing the tail correction fights — is NOT EXERCISED AT ALL
+    by the league frame. That is a second, independent reason a league-frame null on the tail is
+    uninformative about the out-of-frame claim.
+
+  POW-axis partials on the composite and on HR (from Parts 1/4, restated for the verdict):
+    composite vs POW: linear +0.000301 [-0.000465, +0.001154] covers 0;  cubic -0.000019 covers 0
+    HR channel vs POW: linear +0.0188 [-0.1812, +0.2453] covers 0;  cubic -0.0362 covers 0
+    (the HR-vs-POW linear AND quadratic partials are absorbed by the raw-quad fit — only the CUBIC
+     is structurally free, so THAT is the term to read here.)
+
+################################################################################
+# PART 8 — PER-SEASON (row grain): coverage, weight, and whether the reads are season-stable
+################################################################################
+
+  Each season is loaded SEPARATELY (loadWindow(root,[y])) and kept as its own rows — card × side ×
+  season. Seasons 2042+2043 are IN FRAME (the deployed fit); every other season is OUT of frame
+  for this model. League coverage VARIES by season, so the weight column is not uniform and no
+  "consistent across N seasons" claim below is treated as N equal seasons.
+  Per-season qualification: PA ≥ 400 (the deployed minPA 1000 is a WINDOW-SUM threshold and would
+  discard most single seasons).
+
+  season   leagues                              rows  cards   PA wt%  comp level          EYE         POW      AvoidK  BABIP(rat)         GAP  excluded
+  -------- ---------------------------------- ------ ------ -------- -----------  ----------- ----------- ----------- ----------- -----------
+  2037     HD450/HD451/HD453/PEL                 158     75     12.2    -0.00660    -0.000016   +0.000005   -0.000064   -0.000030   -0.000029  —
+  2038     HD450/HD451/HD452/HD453/PEL           180     82     15.1    -0.00659    -0.000047   -0.000038   +0.000010   +0.000001   -0.000005  —
+  2039     HD450/HD451/HD452/HD453/PEL           171     76     12.1    -0.00283    -0.000005   +0.000005   +0.000012   +0.000023   -0.000035  HD450|2039
+  2040     HD450/HD451/HD452/HD453/PEL           192     84     15.2    -0.00239    -0.000062   -0.000060   +0.000016   +0.000030   +0.000027  —
+  2041     HD450/HD451/HD452/HD453/PEL           191     78     15.2    -0.00259    -0.000042   -0.000065   +0.000017   +0.000078   +0.000039  —
+  2042*    HD450/HD451/HD452/HD453/PEL           184     79     15.1    +0.00162    -0.000011   +0.000011   -0.000019   -0.000038   -0.000018  —
+  2043*    HD450/HD451/HD452/HD453/PEL           192     80     15.0    +0.00064    +0.000024   +0.000016   -0.000020   +0.000037   +0.000017  —
+  * = in the deployed fit window.
+
+  The corrupt cell HD450|2039 IS detected and dropped by the loader in the 2039 load (see the
+  excluded column) — confirming the exclusion is live in this run. 2037 carries 4 leagues (no
+  HD452) and 2039 is effectively 4 after the exclusion; 2038 and 2040-2043 carry 5.
+
+  STACKED ROW GRAIN, in-frame seasons only (2042+2043): N=376 rows / 91 cards.
+  Compare with the FIT-GRAIN primary (N=173/74): the composite level and axis slopes should
+  agree in sign and rough size; a divergence would mean the summing changes the answer.
+    fit grain (summed)         level +0.00111   EYE +0.000006  POW +0.000013  AvoidK -0.000022  BABIP(rat) -0.000005  GAP -0.000003
+    row grain (per season)     level +0.00113   EYE +0.000006  POW +0.000014  AvoidK -0.000020  BABIP(rat) -0.000003  GAP -0.000001
+
+  ALL SEASONS 2037-2043 stacked (1268 rows / 119 cards) — mostly OUT of frame, so this is
+  the model's behavior on data it did not see, at the cost of a moving league frame (cards improve
+  every season, so the frame strengthens BY CONSTRUCTION — a level drift across seasons is the
+  NULL, not a defect):
+    level -0.00256   EYE -0.000015  POW -0.000008  AvoidK +0.000004  BABIP(rat) +0.000035  GAP +0.000006
+    conditional (all five, per SD, card-cluster CI):
+      EYE            -0.000437 [-0.001083, +0.000263] covers 0
+      POW            -0.000027 [-0.000812, +0.000685] covers 0
+      AvoidK         -0.000152 [-0.000840, +0.000394] covers 0
+      BABIP(rat)     +0.000508 [+0.000013, +0.001126] ★ independent axis
+      GAP            -0.000136 [-0.000815, +0.000525] covers 0
+
+  REPLICATION OF THE HEADLINE CELL (K residual vs EYE, per SD, card-cluster CI) across every
+  sample available. A finding that only exists in the fit window would be suspect; one that
+  holds out of frame and season by season is a property of the FORM, not of the fit:
+
+  sample                                n/cards   K/600 per SD EYE                 95% CI
+  FIT GRAIN in-frame (minPA 1000)        173/74             +2.006       [+1.459, +2.560] ★
+  FIT GRAIN in-frame (minPA 300)        273/111             +2.084       [+1.527, +2.627] ★
+  ROW GRAIN in-frame (2042,2043)         376/91             +2.055       [+1.489, +2.616] ★
+    season 2037 (OUT of frame)           158/75             +1.971       [+1.262, +2.849] ★
+    season 2038 (OUT of frame)           180/82             +2.313       [+1.596, +3.209] ★
+    season 2039 (OUT of frame)           171/76             +2.378       [+1.890, +2.990] ★
+    season 2040 (OUT of frame)           192/84             +2.536       [+1.918, +3.328] ★
+    season 2041 (OUT of frame)           191/78             +2.276       [+1.524, +3.092] ★
+    season 2042*                         184/79             +1.876       [+1.265, +2.480] ★
+    season 2043*                         192/80             +2.274       [+1.542, +3.037] ★
+  ALL SEASONS 2037-2043 stacked        1268/119             +2.131       [+1.646, +2.669] ★
+  ⇒ CI-clear in 7 of 7 individual seasons (5 of them OUT of the fit window) and in every
+  pooled sample. NOTE THE COVERAGE CAVEAT: the seasons are NOT equal weight (2037 has 4 leagues,
+  2039 is 4 after the corrupt-cell exclusion, the rest 5), and the same ~80-card pool recurs
+  across seasons, so these are NOT 7 independent replications — they are one persistent
+  form property observed repeatedly. That is still the right conclusion: it is a defect of the
+  FORM (no EYE pathway into hit.k), not of the 42-43 fit.
+
+  OLD DATA (2032, 2033), REPORTED SEPARATELY AND NEVER POOLED — it sits after a four-season gap
+  from the rest, across which the league frame moved wholesale. N=276 rows / 86 cards.
+    level -0.01113   EYE -0.000028  POW -0.000027  AvoidK -0.000011  BABIP(rat) +0.000012  GAP +0.000018
+    Treat as context only: a 2032-33 card pool is not the pool the deployed model describes.
+
+################################################################################
+# PART 9 — INDEPENDENT INSTRUMENT: the residual meta-model (src/training/residuals.ts)
+################################################################################
+
+  A different instrument on the same question, kept because the pitcher artifact used it and the
+  comparison is only meaningful if both sides run it. DIFFERENCES, stated so the numbers are
+  comparable: it REFITS RAWPOLY_HIT on the window (vs the DEPLOYED artifact used above — they
+  should agree closely but not bit-exactly); it weights PA^0.75 (vs PA); and it reports valuation
+  error = (pred − actual)×1000 for hitters, i.e. POSITIVE = the model OVER-values — the SAME sign
+  direction as this artifact's composite.
+
+  systematic r² of the residual meta-model (z + z² + all pairwise interactions): 0.092
+    ⇒ 9% of the hitter valuation error is ratings-explainable; the rest is noise.
+
+  per-rating meta-model coefficients (valuation-error points per ±1 SD):
+  rating           linear       quad
+  babip             -0.08      -0.16
+  pow               +0.55      +0.35
+  eye               +0.05      -0.35
+  k                 -0.09      -0.27
+  gap               +0.22      +0.60
+
+  pairwise INTERACTION coefficients, |largest| first — THE SHAPE TERMS:
+    pow × k                -0.60
+    pow × eye              +0.57
+    pow × gap              -0.36
+    eye × k                +0.35
+    babip × gap            +0.28
+    babip × k              +0.18
+    eye × gap              +0.15
+    k × gap                +0.14
+    babip × eye            +0.06
+    babip × pow            -0.02
+
+  largest interaction |-0.60| (pow×k) vs largest linear |+0.55| (pow)
+  ⇒ interactions are COMPARABLE TO the main effects on this instrument.
+  CAVEAT (same as the pitcher artifact): these are ridge point estimates with NO significance test.
+  Where they disagree with the tested reads (Part 5's permutation null, Part 6's bootstrap CIs),
+  trust the tested reads.
+
+  5-band marginals (valuation-error points per band, PA^0.75-weighted):
+    babip    XL -0.9 (n20)   L -0.8 (n32)   M +0.2 (n70)   H +1.2 (n34)   XH -1.5 (n17)
+    pow      XL +1.5 (n18)   L -1.3 (n38)   M -0.3 (n66)   H +1.0 (n35)   XH +1.0 (n16)
+    eye      XL +0.5 (n18)   L -0.7 (n36)   M -0.2 (n68)   H +1.3 (n34)   XH +0.3 (n17)
+    k        XL +0.2 (n18)   L +0.9 (n37)   M -0.1 (n69)   H -0.5 (n32)   XH -0.5 (n17)
+    gap      XL +1.0 (n20)   L -0.2 (n33)   M -0.6 (n69)   H +0.7 (n35)   XH +1.4 (n16)
+
+################################################################################
+### VERDICT
+################################################################################
+
+  ── THE ONE-PARAGRAPH ANSWER ──
+
+  THE LARGEST BIAS IS A LEVEL, NOT A SLOPE, AND IT IS ANCHOR-ABSORBABLE: +0.00105 of the
+  +0.00111 composite (+94%) is the HBP channel — the model assigns every hitter a
+  FIXED 6/600 hit-by-pitch against an observed mean of 5.15/600. A pure constant is exactly what a
+  per-role anchor CAN absorb, so it is not a per-card error and it is not the interesting result.
+  ON THE COMPOSITE, NO RATING AXIS IS A CI-CLEAR DRIVER — marginally none of the five, conditionally
+  none of the five. BUT THAT COMPOSITE NULL IS A CANCELLATION, NOT AN ABSENCE, and the exact
+  decomposition is what exposes it: on the EYE axis 4 of 6 channels carry CI-clear slopes that
+  very nearly annihilate each other (K -0.000033, BABIP +0.000025, HR +0.000019 — sum ≈ the
+  +0.000006 composite). A composite-only read would have reported "nothing here".
+
+  ── THE FINDING: EYE REACHES CHANNELS THE FORM DENIES IT ──
+
+  The strongest, most robust result in this artifact is a STRUCTURALLY-FREE cell (Part 1b): the
+  strikeout channel's residual against EYE.
+    · K residual vs EYE: marginal +2.006 K/600 per SD [+1.475, +2.566] ★,
+      CONDITIONAL on all four other ratings +2.150 [+1.471, +2.928] ★ — it does not merely
+      survive conditioning, it STRENGTHENS. Weighted correlation r = 0.525, the largest of all
+      24 free cells, and it clears a FAMILY-WISE permutation null over the whole family (p = 0.000),
+      so it is not a multiple-comparisons artifact.
+      MEANING: hit.k is fit on AvoidK ALONE and EYE has NO pathway into it (Part 0). The model
+      OVER-predicts strikeouts for high-EYE hitters by ~2.1 K/600 per SD of EYE and under-predicts
+      them for low-EYE hitters — a monotone quintile ramp (-3.08 → +3.33/600). Plate
+      discipline genuinely suppresses strikeouts beyond what the contact rating expresses, and
+      the deployed hitter form CANNOT express it. This is the exact hitter analogue of the
+      pitcher form's stuffAug legs — a second rating that genuinely reaches a channel.
+    · BABIP residual vs EYE: marginal +1.068 pts×1000 per SD [+0.330, +1.844] ★,
+      CONDITIONAL +1.117 [+0.174, +2.050] ★ — also survives. AND IT IS NOT THE FIRST
+      FINDING'S ECHO: the BIP-chain coupling check (Part 1b) shows the mechanical echo of the K
+      error through the fitted ln(BIP) term accounts for only ~6% of it. Two separate errors on
+      one axis, not one error seen twice.
+    · HR residual vs EYE is CI-clear MARGINALLY but its conditional CI covers zero ⇒ that third
+      cell is a proxy for the correlated ratings (EYE×POW r +0.299), NOT an independent axis.
+      Reporting it as a finding would be exactly the single-axis trap the doctrine warns about.
+    · The HBP channel ALSO carries a CI-clear EYE slope (conditional +0.000098/SD ★): the fixed
+      6/600 constant has no rating pathway at all, so the real EYE-correlation of hit-by-pitches lands
+      entirely in the residual. Small, but a rating-correlated bias an anchor cannot absorb.
+
+  ── SHAPE OR ADDITIVE ──
+
+  ADDITIVE. No tested 2-D corner came close to its permutation null: POW×EYE p=0.883, POW×GAP p=0.902, EYE×AvoidK p=0.998.
+  ONE TENSION, FLAGGED NOT HIDDEN: the POW×EYE product term in the M3 regression IS
+  CI-clear (+0.000736 [+0.000023, +0.001795]) while the corresponding grid null
+  says p=0.883. These are DIFFERENT tests: the M3 term is a single pre-specified degree of
+  freedom with no multiplicity correction, the grid null is a MAX statistic over 9 cells (i.e.
+  already multiplicity-corrected). The multiplicity-safe test does not fire, the CI barely
+  excludes zero, and the meta-model's interaction coefficients (Part 9) are untested ridge point
+  estimates. CALL: a shape corner is NOT ESTABLISHED. It is a pre-registerable question for a
+  larger sample, not a result.
+
+  ── THE ELITE-POWER TAIL (the standing published residual) ──
+
+  LINE MEASURED: the RAW deployed event line, with the hitter-tail correction ABSENT — not by
+  choice but by construction (zero pool gap ⇒ every λ·w(g) = 0 ⇒ applyHitTail is the exact
+  identity on league data). SPLIT THE CLAIM IN TWO:
+    · the LEVEL claim (elite POW under-predicted) does NOT reproduce in frame — the top POW
+      quartile's HR residual is +0.231/600, i.e. very slightly OVER-predicted, the OPPOSITE
+      sign; the mid quartile is -0.307/600.
+    · the SPREAD claim (elite calibration slope above pooled) is DIRECTIONALLY present but weak:
+      elite 1.528 vs pooled 0.997, and the elite CI covers 1.0. Published out-of-frame: 2.44 vs 1.17.
+  NEITHER IS EVIDENCE AGAINST THE PUBLISHED RESIDUAL, and the artifact should not be read that
+  way. In frame is the wrong frame for it: the correction is switched off here by design, the
+  hit-tail doc itself records league in-frame as calibrated, and — the sharper structural point —
+  0 of 173 in-frame rows sit beyond the hit.hr quad's fit-domain edge (z 2.40, POW 172),
+  which is exactly where the late bend the correction fights would live. THE LEAGUE FRAME DOES
+  NOT EXERCISE THE FAILURE MODE. Confirming or refuting the tail requires the out-of-frame
+  instrument (the cwhit sample), which is out of scope here.
+
+  ── SECONDARY: CURVE-SHAPE MISFIT ON OWN RATINGS (2 of the 4 log channels) ──
+
+  On an own-rating cell the fit absorbs level and linear-in-ln, so ONLY the cubic partial is free
+  — and it is CI-clear in 2 of the four log channels:
+    · hit.k (log on AvoidK)              cubic +0.2487 [+0.0050, +0.6386] ★  (K/600 per SD)
+    · hit.h (log on the BABIP rating)    cubic -0.2727 [-0.5573, -0.0990] ★  (BABIP pts×1000 per SD)
+  These are genuine functional-form misfits of the LOG family on its own driver (a log curve
+  cannot bend that way), not rating-shape effects. They are an order less consequential than
+  the EYE finding in wOBA terms and are recorded, not acted on.
+
+  ── FRAME NOTE (Part 8) ──
+
+  The composite LEVEL moves monotonically across seasons: 2037 -0.0066  2038 -0.0066  2039 -0.0028  2040 -0.0024  2041 -0.0026  2042 +0.0016  2043 +0.0006.
+  Out-of-frame seasons sit NEGATIVE (the model under-credits) and in-frame seasons positive. That
+  is the league frame strengthening every window — cards improve each season, so a model fit on
+  42-43 opposition scores earlier, weaker-opposition seasons low. It is the NULL, not a defect,
+  and it is why the all-seasons pooled conditional (which shows a CI-clear BABIP-rating slope) is
+  reported as a LEAD ONLY: any rating correlated with the season composition will pick up the
+  drift. Do not carry that pooled coefficient forward as a finding.
+
+  WHAT IS AN ARTIFACT OF STRUCTURE, NOT A MECHANISM. Every hitter channel is a ONE-RATING channel
+  with NO aux term (Part 0) — the exact opposite of the pitcher form, where three of four channels
+  carried a ln(Stuff) aux and the contact channel had no Stuff pathway at all. Consequences:
+    (a) each channel's residual is least-squares-suppressed on its OWN rating, so an own-rating
+        null is uninformative — only the CUBIC partial is free there;
+    (b) EVERY cross-rating cell of the Part-4 matrix is structurally free, so a cross cell that
+        comes back near zero is REAL evidence of absence, not a suppression artifact;
+    (c) there is no hitter analogue of the pitcher's "residual had nowhere to land except contact"
+        artifact, because no hitter channel is privileged by an aux term. A cross-rating hitter
+        finding therefore does NOT carry the pitcher artifact's structural discount — and the EYE
+        result above sits in free cells, so it is the real thing rather than the mirror image of
+        the pitcher artifact's cautionary tale.
+  NAMED AS ARTIFACTS, NOT MECHANISMS:
+    · the HBP LEVEL term (+94% of the composite level) — a fixed constant, absorbable by any
+      per-role anchor; only its EYE SLOPE is a genuine per-card error;
+    · every near-zero own-rating linear partial (HR vs POW +0.019, BB vs EYE, K vs AvoidK, …) —
+      FORCED by least squares, and NOT evidence that those curves are correctly shaped;
+    · the HR-vs-EYE marginal cell — CI-clear marginally, gone conditionally ⇒ a proxy for POW;
+    · the pooled all-seasons BABIP-rating coefficient — confounded with the season level drift;
+    · the POW×EYE M3 interaction — single untested df against a multiplicity-safe null that did
+      not fire.
+
+  MEASUREMENT ONLY. Nothing here was fit, wired, or persisted; no default changed. Any remedy is a
+  separate, pre-registered step.
+
+(end of artifact — hitter-residual channel locator)

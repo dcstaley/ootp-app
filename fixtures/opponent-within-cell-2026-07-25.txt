@@ -1,0 +1,386 @@
+################################################################################
+# OPPONENT QUALITY, OR PLATOON ARTIFACT?  — the within-cell re-scope.  MEASUREMENT ONLY.
+# Replaces the composition-share gate of opponent-term-channel-survey-2026-07-25.txt.
+################################################################################
+
+## VERDICT
+
+  SPLIT. 4 of 8 channels are admitted as opponent-responsive.
+
+  The pre-committed rule: a channel is admitted ONLY if (a) its slope on opposing quality survives
+  cell×season fixed effects CI-clear (card-cluster bootstrap) AND (b) that slope transfers
+  leave-one-platoon-cell-out — fit on three cells, beat a season-FE constant on the fourth.
+
+  channel                 raw slope  within slope  survives  within 95% CI             LOCO skill   verdict
+  PITCHER BB                 -0.252        -0.010      3.8%  [-0.071, +0.034]               -3.6%   NOT opponent-responsive
+  PITCHER K                  +0.676        +0.170     25.2%  [+0.065, +0.260]               20.4%   ADMITTED
+  HITTER BB                  +0.233        +0.174     74.6%  [+0.058, +0.273]               29.0%   ADMITTED
+  HITTER K                   -0.406        -0.172     42.4%  [-0.288, -0.073]               30.9%   ADMITTED
+  HITTER hits(nonHR)         +0.277        -0.083    -29.8%  [-0.233, +0.104]              -17.1%   NOT opponent-responsive
+  HITTER HR                  +0.084        +0.085    101.3%  [+0.038, +0.130]               20.6%   ADMITTED
+  PITCHER HR                 -0.082        -0.111    135.6%  [-0.134, -0.089]               -9.7%   CI-clear, DOES NOT TRANSFER
+  PITCHER hits(nonHR)        +0.032        -0.137   -426.2%  [-0.276, +0.027]              -18.1%   NOT opponent-responsive
+
+  THE HEADLINE CHANNEL. PITCHER BB carried the survey's largest number (62.6% of its residual
+  mean-square, a 23-EYE-point composition gap, and the stuffAug verdict). Its raw slope on opposing
+  EYE is -0.252/600 per rating point. Holding the platoon cell and season, 3.8% survives:
+  -0.0096, CI [-0.071, +0.034] — COVERS ZERO. The within-cell design is not degenerate:
+  opposing EYE still varies by 3.21 rating points sd across leagues inside a (cell, season),
+  and the smaller-signal channels resolve on it, so this is an ABSENCE, not a power failure.
+  PITCHER K: 25.2% survives (+0.1703, CI [+0.065, +0.260] CI-clear).
+
+  PRICING RATIOS AT THE CORRECTED GRAIN (1.00 = exactly what the model's own complementary curve
+  already prices that rating point at):
+  PBB 0.67×  PK 0.92×  HBB 0.50×  HK 0.89×  HH 2.45×  HHR 0.73×  PHR 0.59×  PH -0.17×
+  mean 0.82×; 1 above 1.00 (HITTER hits(nonHR)).
+  At the survey's pooled grain pitcher K read 1.14× and hitter K 1.30×;
+  at the corrected grain they read 0.92× and 0.89× — CONFIRMED as grain artifacts.
+  RECONCILIATION with the reviewer's "every ratio below 1.00, mean ≈0.71": TRUE for the six K/BB/HR
+  channels — all below 1.00, mean 0.71× — but NOT true across all eight. The two
+  hits(nonHR) channels are exceptions: HITTER hits 2.45× (still far above 1.00 after the grain fix)
+  and PITCHER hits -0.17× (wrong sign, CI spans zero). Over all eight the mean is 0.82×. Neither
+  hits channel is opponent-responsive under the pre-committed rule, so the exception does not
+  rescue an opponent term — but the blanket "every ratio" statement is overstated.
+
+  ALL FIVE GATES, PER CHANNEL. The pre-committed rule uses columns [CI-card] and [LOCO B] only.
+  The other three are audit additions and are reported as qualifiers, not as new admission rules:
+    CI-card   pre-committed card-cluster CI on the within-(cell×season) slope.
+    CI-LS     the same slope under a LEAGUE-SEASON cluster. Opposing quality is CONSTANT inside a
+              league-season and the same ~60-65 cards recur in nearly every league, so a card
+              resample barely disturbs the design the slope is identified on: CI-card is the
+              LENIENT cluster here and CI-LS is the honest one for a league-season regressor.
+    cardFE    slope with a CARD×cell×season fixed effect — the SAME card, same season, same
+              platoon cell, facing a different league's opposition. The strictest design here.
+    LOCO B    pre-committed transfer: beat a season-FE constant on the held-out platoon cell.
+    LOCO W    the LEVEL-FREE part of that transfer — does the slope predict the across-league
+              spread INSIDE the held-out cell, rather than just reproducing its platoon level?
+    OOS       out-of-sample within-cell skill (§2C): the share of within-(cell×season) residual
+              variance the paired opposing rating actually predicts in a held-out league.
+
+  channel                  slope  CI-card   CI-LS  cardFE   LOCO B   LOCO W     OOS   pre-committed verdict
+  PITCHER BB              -0.010        —       —       —    -3.6%    -3.5%   -0.3%   NOT responsive
+  PITCHER K               +0.170    clear       —   clear    20.4%    -0.4%    0.5%   ADMITTED
+  HITTER BB               +0.174    clear   clear   clear    29.0%    -2.8%    0.6%   ADMITTED
+  HITTER K                -0.172    clear       —   clear    30.9%    -1.4%    0.6%   ADMITTED
+  HITTER hits(nonHR)      -0.083        —       —       —   -17.1%    -5.5%   -0.3%   NOT responsive
+  HITTER HR               +0.085    clear       —   clear    20.6%     6.2%    0.7%   ADMITTED
+  PITCHER HR              -0.111    clear   clear   clear    -9.7%    19.5%    3.9%   no transfer
+  PITCHER hits(nonHR)     -0.137        —       —       —   -18.1%    -0.2%   -0.1%   NOT responsive
+
+  READING THE QUALIFIERS. Of the 4 admitted: 1 stay CI-clear on the league-season cluster
+  (HITTER BB); 4 stay CI-clear under a card fixed effect
+  (PITCHER K, HITTER BB, HITTER K, HITTER HR);
+  and 1 transfer LEVEL-FREE (HITTER HR).
+  The card-FE column is the reassuring one: every within-cell slope is essentially UNCHANGED when
+  the same card is compared to itself across leagues, so none of these slopes is a card-composition
+  artifact. The LOCO W column is the damaging one: for PITCHER K, HITTER BB, HITTER K
+  the positive LOCO B is the slope reproducing the held-out cell's platoon LEVEL, not predicting
+  across-league quality variation inside it.
+
+  EFFECT SIZE — the number that governs whether any of this is worth a term. Out of sample, inside
+  a platoon cell, the paired opposing rating predicts 3.9% of the residual variance at BEST
+  (PITCHER HR); for the admitted channels it is 0.5%, 0.6%, 0.6%, 0.7%.
+  The slopes are directionally resolvable and near-zero in explanatory power: a ±1 sd swing in
+  within-cell opposing quality moves the residual by 0.42, 0.34, 0.38, 0.14/600 against residual sds of
+  6.4, 4.0, 5.9, 1.9/600.
+
+  READ. PITCHER K, HITTER BB, HITTER K, HITTER HR are admitted: the slope survives the platoon
+  cell and transfers to a held-out cell. PITCHER HR resolve(s) within-cell but does NOT transfer — CI-clear on a slope that does not generalise across cells is not a quality response.
+
+################################################################################
+## 0. SETUP, GRAIN, AND COUNTS
+################################################################################
+
+  model 'league-42-43' DEPLOYED form (not refit), fit window 2042+2043, root 'League Files', minPA/BF 1000.
+  residual = predicted − observed, per 600.  weights BF (pitching) / PA (hitting).  CIs: CARD-CLUSTER bootstrap.
+  matchup cell = pitcher hand × batter hand, switch-hitters resolved to the hand they actually bat from.
+
+  SURVEY grain    — rows: card × side × SEASON (five leagues SUMMED). composition: one opposing profile
+                    per (season, cell) = 7 × 4 = 28 design points.
+                    pitcher rows 719 / 70 cards;  hitter rows 789 / 93 cards.
+  CORRECTED grain — rows: card × side × (LEAGUE, SEASON). composition: one opposing profile per
+                    (league, season, cell).  33 league-seasons × 4 = 132 design points.
+                    pitcher rows 1615 / 60 cards;  hitter rows 1631 / 65 cards.
+
+  league coverage is UNEQUAL across seasons — any "consistent across N seasons" claim below is across
+  unequal seasons and says so:
+     2037: 4 league(s) — PEL, HD450, HD451, HD453
+     2038: 5 league(s) — PEL, HD450, HD451, HD452, HD453
+     2039: 4 league(s) — PEL, HD451, HD452, HD453
+     2040: 5 league(s) — PEL, HD450, HD451, HD452, HD453
+     2041: 5 league(s) — PEL, HD450, HD451, HD452, HD453
+     2042: 5 league(s) — PEL, HD450, HD451, HD452, HD453
+     2043: 5 league(s) — PEL, HD450, HD451, HD452, HD453
+  corrupt-cell exclusion applied by the loader: HD450|2039
+  (verified in code: the exclusion is decided per league-year from that cell's own vL/vR duplication,
+   so loadWindowLeagues applies it identically — the corrected grain drops the same cell as the survey.)
+  'League Files/Old Data' seasons 2032, 2033 sit after a four-season gap and are EXCLUDED here
+  (never pooled). Every number in this file is 2037–2043 only.
+
+  WHY THE GRAIN IS THE WHOLE QUESTION. At the survey grain the opposing profile is a function of
+  (season, cell) only — 4 levels per season — and the cell is a deterministic function of the card's
+  own hand and side. A regression of the residual on it cannot distinguish "responds to opposing
+  quality" from "differs by platoon cell". At the corrected grain five leagues run in parallel with
+  different card populations, so opposing quality varies INSIDE a (cell, season) and the two
+  hypotheses separate. Spread of the opposing rating, total vs within-cell×season:
+
+  channel                 opposing  sd total  sd within    cell  within/total
+  PITCHER BB                   eye     13.36       3.21    4.19         24.0%
+  PITCHER K                   kRat      4.84       2.49    3.46         51.5%
+  HITTER BB                    con      5.82       1.96    2.28         33.8%
+  HITTER K                     stu      5.04       2.20    3.66         43.7%
+  HITTER hits(nonHR)        pbabip      2.99       1.63    2.41         54.6%
+  HITTER HR                    hrr      3.64       1.63    2.93         44.8%
+  PITCHER HR                   pow      4.14       2.62    3.52         63.4%
+  PITCHER hits(nonHR)        babip      3.31       1.27    2.15         38.4%
+
+################################################################################
+## 1. GRAIN RE-RUN — every survey quantity, recomputed at the corrected grain
+################################################################################
+
+  BRIDGE = corrected ROWS with the survey's POOLED composition, so the row-grain change and the
+  composition-grain change are separable. Read SURVEY → BRIDGE → CORRECTED.
+
+  ── composition share of the residual mean-square ──
+  channel                 SURVEY cell  BRIDGE cell  CORR cell  CORR cell×yr  CORR design
+  PITCHER BB                    62.6%        51.2%      51.2%         53.2%        58.0%
+  PITCHER K                     53.8%        34.4%      34.4%         39.5%        49.1%
+  HITTER BB                     38.9%        21.4%      21.4%         27.2%        42.8%
+  HITTER K                      31.0%        23.3%      23.3%         31.5%        41.5%
+  HITTER hits(nonHR)            14.1%         6.3%       6.3%         10.8%        22.8%
+  HITTER HR                     11.5%         4.8%       4.8%          7.7%        15.8%
+  PITCHER HR                     9.6%         3.0%       3.0%          8.1%        20.1%
+  PITCHER hits(nonHR)            3.2%         1.3%       1.3%          3.9%        13.9%
+  ("CORR design" = league × season × cell fixed effects — the full composition design point. It is an
+   UPPER BOUND on what any opponent term could absorb, and it necessarily exceeds the cell share.)
+
+  ── residual LEVEL gap, same-side − opposite-side (per 600) ──
+  channel                   SURVEY  SURVEY 95% CI           CORRECTED  CORRECTED 95% CI      
+  PITCHER BB                 +7.16  [+6.21, +7.97] clear        +7.22  [+6.23, +8.14] clear  
+  PITCHER K                  -6.99  [-9.42, -5.10] clear        -6.61  [-9.31, -4.64] clear  
+  HITTER BB                  +2.60  [+1.86, +3.57] clear        +2.46  [+1.60, +3.60] clear  
+  HITTER K                   -3.86  [-5.07, -2.74] clear        -4.10  [-5.41, -2.99] clear  
+  HITTER hits(nonHR)         +0.63  [-0.19, +1.32] covers 0      +0.65  [-0.28, +1.37] covers 0
+  HITTER HR                  -0.26  [-0.51, -0.05] clear        -0.26  [-0.55, -0.02] clear  
+  PITCHER HR                 +0.08  [-0.16, +0.41] covers 0      +0.01  [-0.25, +0.36] covers 0
+  PITCHER hits(nonHR)        +0.19  [-0.43, +0.94] covers 0      +0.03  [-0.65, +0.85] covers 0
+
+  ── PRICING RATIO (fitted response ÷ the model's own complementary pricing; 1.00 = exact) ──
+  channel                  SURVEY   BRIDGE  CORRECTED  CORRECTED 95% CI        own pricing
+  PITCHER BB                0.76×    0.77×      0.67×  [0.58, 0.75]                 -0.379
+  PITCHER K                 1.14×    1.11×      0.92×  [0.66, 1.16]                 +0.738
+  HITTER BB                 0.60×    0.59×      0.50×  [0.40, 0.56]                 +0.469
+  HITTER K                  1.30×    1.34×      0.89×  [0.66, 1.17]                 -0.458
+  HITTER hits(nonHR)        3.93×    4.24×      2.45×  [1.79, 3.24]                 +0.113
+  HITTER HR                 0.82×    0.87×      0.73×  [0.42, 1.09]                 +0.114
+  PITCHER HR                0.61×    0.53×      0.59×  [0.43, 0.75]                 -0.139
+  PITCHER hits(nonHR)      -0.16×   -0.27×     -0.17×  [-0.66, 0.25]                -0.193
+
+################################################################################
+## 2. WITHIN-CELL TEST — the core. Does opposing QUALITY predict the residual once the
+##    platoon cell is held? Slopes are events/600 per opposing rating point.
+################################################################################
+
+  channel                  rows  cards      raw  +cell FE  +cell×yr  survives  cell×yr 95% CI          
+  PITCHER BB               1615     60   -0.252    -0.043    -0.010      3.8%  [-0.071, +0.034] covers 0
+  PITCHER K                1615     60   +0.676    +0.333    +0.170     25.2%  [+0.065, +0.260] ★ CI-CLEAR
+  HITTER BB                1631     65   +0.233    +0.219    +0.174     74.6%  [+0.058, +0.273] ★ CI-CLEAR
+  HITTER K                 1631     65   -0.406    -0.398    -0.172     42.4%  [-0.288, -0.073] ★ CI-CLEAR
+  HITTER hits(nonHR)       1631     65   +0.277    +0.210    -0.083    -29.8%  [-0.233, +0.104] covers 0
+  HITTER HR                1631     65   +0.084    +0.091    +0.085    101.3%  [+0.038, +0.130] ★ CI-CLEAR
+  PITCHER HR               1615     60   -0.082    -0.118    -0.111    135.6%  [-0.134, -0.089] ★ CI-CLEAR
+  PITCHER hits(nonHR)      1615     60   +0.032    -0.147    -0.137   -426.2%  [-0.276, +0.027] covers 0
+
+  POWER — a null must be readable as ABSENCE, not as a thin design. Below: the within-(cell×season)
+  spread of the opposing rating that identifies the slope, the half-width of the bootstrap CI (the
+  smallest slope this design could have resolved), and what that half-width implies over ±1 sd of
+  within-cell opposing quality — i.e. the smallest per-600 effect the test could have seen.
+
+  channel                 within sd  min detectable slope  → per 600 over ±1sd  point est × 1sd
+  PITCHER BB                   3.21               ±0.0525               ±0.168           -0.031
+  PITCHER K                    2.49               ±0.0979               ±0.244           +0.424
+  HITTER BB                    1.96               ±0.1073               ±0.211           +0.341
+  HITTER K                     2.20               ±0.1075               ±0.237           -0.379
+  HITTER hits(nonHR)           1.63               ±0.1684               ±0.275           -0.135
+  HITTER HR                    1.63               ±0.0461               ±0.075           +0.139
+  PITCHER HR                   2.62               ±0.0227               ±0.059           -0.292
+  PITCHER hits(nonHR)          1.27               ±0.1512               ±0.192           -0.174
+
+  ── the same slopes as PRICING RATIOS (÷ the model's own complementary pricing) ──
+  channel                  raw ratio  within ratio  card-FE ratio  own pricing
+  PITCHER BB                   0.67×         0.03×          0.00×       -0.379
+  PITCHER K                    0.92×         0.23×          0.25×       +0.738
+  HITTER BB                    0.50×         0.37×          0.42×       +0.469
+  HITTER K                     0.89×         0.38×          0.40×       -0.458
+  HITTER hits(nonHR)           2.45×        -0.73×         -0.68×       +0.113
+  HITTER HR                    0.73×         0.74×          0.69×       +0.114
+  PITCHER HR                   0.59×         0.80×          0.79×       -0.139
+  PITCHER hits(nonHR)         -0.17×         0.71×          0.67×       -0.193
+
+################################################################################
+## 2B. FE LADDER AND THE CLUSTERING AUDIT — how far the slope survives, and under which CI
+################################################################################
+
+  WHY A SECOND CLUSTER. The regressor (opposing quality) takes ONE value per (league, season,
+  cell) — it is constant inside a league-season. The corpus has 33 pitcher league-seasons but only
+  60 distinct pitcher cards / 65 hitter cards, i.e. nearly the same cards recur in EVERY league.
+  A card-cluster resample therefore reproduces almost the whole league-season design every draw and
+  does NOT propagate league-season shocks in the residual. The card CI is the PRE-COMMITTED one and
+  is kept as the admission rule, but it is the LENIENT one; the league-season CI is the honest one
+  for a league-season-level regressor. Both are shown. Neither is a substitute for section 3.
+
+  channel                     raw    +cell  +cell×yr  +card×cell×yr  keep(card)  id groups  sd(card)
+  PITCHER BB               -0.252   -0.043    -0.010         -0.001        0.5%        375      3.07
+  PITCHER K                +0.676   +0.333    +0.170         +0.185       27.4%        375      2.40
+  HITTER BB                +0.233   +0.219    +0.174         +0.196       84.3%        385      1.87
+  HITTER K                 -0.406   -0.398    -0.172         -0.184       45.4%        385      2.11
+  HITTER hits(nonHR)       +0.277   +0.210    -0.083         -0.076      -27.6%        385      1.57
+  HITTER HR                +0.084   +0.091    +0.085         +0.079       93.7%        385      1.56
+  PITCHER HR               -0.082   -0.118    -0.111         -0.110      133.7%        375      2.51
+  PITCHER hits(nonHR)      +0.032   -0.147    -0.137         -0.129     -402.9%        375      1.22
+
+  ("id groups" = (card, cell, season) cells containing ≥2 rows with DIFFERENT opposing quality — the
+   groups that actually identify the card-FE slope. "sd(card)" is the opposing-quality spread left
+   after card×cell×season means are removed: the design a card-FE null is read against.)
+
+  channel               cell×yr CI — CARD cluster     cell×yr CI — LEAGUE-SEASON    card-FE CI — CARD cluster     card-FE CI — LEAGUE-SEASON    
+  PITCHER BB            [-0.071, +0.034] covers 0     [-0.088, +0.067] covers 0     [-0.046, +0.038] covers 0     [-0.086, +0.070] covers 0     
+  PITCHER K             [+0.065, +0.260] ★clear       [-0.064, +0.359] covers 0     [+0.085, +0.269] ★clear       [-0.061, +0.377] covers 0     
+  HITTER BB             [+0.058, +0.273] ★clear       [+0.009, +0.332] ★clear       [+0.080, +0.302] ★clear       [+0.024, +0.364] ★clear       
+  HITTER K              [-0.288, -0.073] ★clear       [-0.383, +0.051] covers 0     [-0.309, -0.071] ★clear       [-0.381, +0.033] covers 0     
+  HITTER hits(nonHR)    [-0.233, +0.104] covers 0     [-0.303, +0.148] covers 0     [-0.225, +0.118] covers 0     [-0.315, +0.137] covers 0     
+  HITTER HR             [+0.038, +0.130] ★clear       [-0.024, +0.166] covers 0     [+0.028, +0.118] ★clear       [-0.030, +0.160] covers 0     
+  PITCHER HR            [-0.134, -0.089] ★clear       [-0.161, -0.062] ★clear       [-0.133, -0.089] ★clear       [-0.174, -0.055] ★clear       
+  PITCHER hits(nonHR)   [-0.276, +0.027] covers 0     [-0.372, +0.077] covers 0     [-0.268, +0.051] covers 0     [-0.376, +0.100] covers 0     
+
+################################################################################
+## 2C. WHOLE OPPOSING PROFILE vs THE SINGLE PAIRED RATING (within cell × season)
+################################################################################
+
+  The direct rating→channel map is Stuff↔avoid-K, Control↔Eye, pHR↔Power, pBABIP↔BABIP, Gap↔XBH.
+  Plate appearances in this engine plausibly resolve SEQUENTIALLY, so a rating moving a channel it
+  does not own is NOT automatically confounding — chaining (count leverage) is a real mechanism. So
+  this asks, OUT OF SAMPLE (leave-one-LEAGUE-out, everything demeaned within cell × season using
+  TRAINING-league means only): does the opposing card's WHOLE profile beat its single paired rating?
+  SKILL = 1 − MSE/MSE(predict the cell×season mean). Positive = real within-cell predictive content.
+
+  channel                  paired     skill  profile skill     gain  dominant   standardized within-cell betas
+  PITCHER BB                  eye     -0.3%           0.1%     0.3%       pow   kRat +0.12  eye +0.23  pow -0.30  babip +0.00  gap -0.06
+  PITCHER K                  kRat      0.5%          -1.0%    -1.4%      kRat   kRat +0.47  eye -0.21  pow +0.29  babip +0.21  gap -0.11
+  HITTER BB                   con      0.6%           0.3%    -0.3%       con   stu +0.25  con +0.56  hrr +0.54  pbabip +0.14
+  HITTER K                    stu      0.6%           1.2%     0.6%       hrr   stu -0.09  con +0.30  hrr -0.53  pbabip +0.38
+  HITTER hits(nonHR)       pbabip     -0.3%          -1.0%    -0.7%       stu   stu +0.23  con -0.17  hrr -0.11  pbabip -0.22
+  HITTER HR                   hrr      0.7%           0.4%    -0.3%    pbabip   stu -0.06  con +0.02  hrr +0.11  pbabip +0.11
+  PITCHER HR                  pow      3.9%           2.8%    -1.1%       pow   kRat -0.12  eye -0.08  pow -0.31  babip +0.00  gap +0.02
+  PITCHER hits(nonHR)       babip     -0.1%          -1.7%    -1.6%     babip   kRat +0.05  eye -0.00  pow -0.05  babip -0.17  gap -0.06
+
+  ("dominant" = largest |standardized beta| in the full within-cell fit. A dominant rating that is
+   NOT the paired one, together with a positive profile gain, is the chaining signature. A negative
+   profile gain means the extra columns are collinear noise and the paired rating is the whole story.)
+
+################################################################################
+## 3. LEAVE-ONE-CELL-OUT — the transfer gate. Fit on three platoon cells, predict the fourth.
+################################################################################
+
+  Design points are (league, season, cell) exposure-weighted cell means. The BASELINE is season
+  fixed effects with the slope pinned to ZERO — i.e. "the held-out cell behaves like the average of
+  the other three, in that season". Two slope estimators are tried against it:
+     A  POOLED on the three training cells (season FE + slope) — what a naive fit would carry.
+     B  WITHIN-(cell×season) on the three training cells — the pure opponent-quality response.
+  SKILL = 1 − MSE(model)/MSE(baseline), exposure-weighted over all four held-out cells. Positive
+  skill = the opposing-quality term genuinely transfers to a platoon cell it never saw. A platoon
+  dummy cannot produce positive skill here; a real quality response should.
+
+  A third reading, LEVEL-FREE (skill W), is added at audit: inside the held-out cell, demean x and y
+  by season and ask whether the training slope predicts the ACROSS-LEAGUE spread. Skill B asks the
+  slope to explain the held-out cell's platoon LEVEL as well; skill W asks only that the quality
+  response itself carry over. A channel can fail B for a level reason and still pass W.
+
+  channel                  pts  skill A (pooled)  skill B (within)  skill W (lvl-free)   slope A   slope B   transfers?
+  PITCHER BB               132             74.5%             -3.6%               -3.5%    -0.243    -0.004   pooled only — cross-cell level, not quality
+  PITCHER K                132             55.7%             20.4%               -0.4%    +0.678    +0.158   YES (B)
+  HITTER BB                129             39.8%             29.0%               -2.8%    +0.224    +0.174   YES (B)
+  HITTER K                 129             28.3%             30.9%               -1.4%    -0.343    -0.143   YES (B)
+  HITTER hits(nonHR)       129              8.4%            -17.1%               -5.5%    +0.188    -0.089   pooled only — cross-cell level, not quality
+  HITTER HR                129             11.2%             20.6%                6.2%    +0.075    +0.087   YES (B)
+  PITCHER HR               132             -3.9%             -9.7%               19.5%    -0.072    -0.111   NO
+  PITCHER hits(nonHR)      132             -3.4%            -18.1%               -0.2%    +0.032    -0.135   NO
+
+  per held-out cell (MSE in (events/600)², exposure-weighted):
+  channel               held-out    pts   MSE base     MSE A     MSE B   skill B   skill W
+  PITCHER BB            R|R          33     52.612    14.024    50.160      4.7%      0.1%
+  PITCHER BB            R|L          33     24.797     2.858    32.046    -29.2%     -8.6%
+  PITCHER BB            L|R          33     12.425     4.208    10.691     14.0%     -5.0%
+  PITCHER BB            L|L          33     10.675    11.956     9.882      7.4%      0.2%
+  PITCHER K             R|R          33     19.093    14.077    16.740     12.3%    -15.2%
+  PITCHER K             R|L          33     10.514     5.120     9.531      9.3%      7.4%
+  PITCHER K             L|R          33     29.891    14.311    23.286     22.1%     -7.6%
+  PITCHER K             L|L          33    137.272    28.350    99.098     27.8%     11.5%
+  HITTER BB             R|R          33      5.282     3.371     4.562     13.6%      7.7%
+  HITTER BB             R|L          33      7.102     2.628     3.549     50.0%      4.9%
+  HITTER BB             L|R          33      3.403     5.734     5.752    -69.0%    -15.1%
+  HITTER BB             L|L          30     21.181     4.863     4.517     78.7%    -38.6%
+  HITTER K              R|R          33     23.864    16.185    14.401     39.7%     -6.0%
+  HITTER K              R|L          33     11.830     4.844     6.642     43.9%     -7.1%
+  HITTER K              L|R          33     12.793     9.731    12.459      2.6%      2.3%
+  HITTER K              L|L          30      8.069    28.626     9.552    -18.4%     11.5%
+  HITTER hits(nonHR)    R|R          33      5.340     4.825     5.378     -0.7%      0.4%
+  HITTER hits(nonHR)    R|L          33      2.481     2.996     2.483     -0.1%     -0.1%
+  HITTER hits(nonHR)    L|R          33      3.536     2.852     5.226    -47.8%    -25.2%
+  HITTER hits(nonHR)    L|L          30     13.985    10.823    18.659    -33.4%     -3.5%
+  HITTER HR             R|R          33      0.408     0.347     0.342     16.2%      9.8%
+  HITTER HR             R|L          33      0.509     0.398     0.315     38.0%      2.7%
+  HITTER HR             L|R          33      0.450     0.345     0.353     21.5%      0.4%
+  HITTER HR             L|L          30      1.095     1.593     1.292    -18.0%     11.9%
+  PITCHER HR            R|R          33      0.424     0.543     0.622    -46.9%      6.3%
+  PITCHER HR            R|L          33      0.405     0.468     0.482    -19.1%     49.8%
+  PITCHER HR            L|R          33      0.520     0.460     0.457     12.1%     17.0%
+  PITCHER HR            L|L          33      1.582     1.299     1.336     15.6%    -12.7%
+  PITCHER hits(nonHR)   R|R          33      2.645     2.656     2.940    -11.2%     -7.1%
+  PITCHER hits(nonHR)   R|L          33      2.865     3.025     3.972    -38.6%      1.5%
+  PITCHER hits(nonHR)   L|R          33      2.492     2.479     3.033    -21.7%      5.3%
+  PITCHER hits(nonHR)   L|L          33     10.716    11.591    10.250      4.4%      4.2%
+
+################################################################################
+## 4. NOTES, CONTRADICTIONS, AND WHAT THIS DOES NOT SHOW
+################################################################################
+
+  VERTEX-PIN PARITY (verified in code, reported not fixed). The deployed trainer
+  (server.saveTrainedModel) fits fitHitForm(RAWPOLY_HIT, …, vertexPinned) +
+  fitPitForm(PARETO_PIT, …, vertexPinned). The bake-off harness's hitFormModel/pitFormModel
+  (src/training/forms.ts ~620-625) call fitHitForm(form, train) / fitPitForm(form, train) with NO
+  pins argument, so every FORM_ENTRIES candidate is fitted UNPINNED. The active artifact records
+  vertexPinned = [{"channel":"pit.hr","pinZ":2.652129826822849}].
+  ⇒ the harness has never scored what ships, and PARETO_PIT is not in FORM_ENTRIES at all.
+  This measurement does not use the harness fit path — every number above is read off the DEPLOYED
+  artifact's own eventForm — so the discrepancy does not touch these results. It is recorded here
+  because any later comparison built on FORM_ENTRIES would silently be off-deployment.
+
+  WHAT THE SURVEY GOT RIGHT AND WHAT IT DID NOT. The survey's shares are reproduced at its own
+  grain (section 1, SURVEY column) — they are arithmetically correct. What they do not establish is
+  a response to opponent QUALITY, because the regressor was a four-level platoon dummy. Section 2
+  is the missing test; section 3 is the missing gate.
+
+  WHAT REMAINS TRUE REGARDLESS. The model has no opponent term, and every event is a joint
+  pitcher-batter outcome — that is a structural fact, not a measurement. What this run bounds is
+  how much of the MEASURED residual structure is attributable to opposing quality as opposed to
+  platoon structure the model already fails to carry for a different reason.
+
+  AUDIT OF THIS TOOL (it was written but never run; it was checked before it was trusted). Verified:
+  row construction, composition, residual definitions, weights and the complementary-pricing slopes
+  are line-for-line the survey's, so SURVEY-column numbers are a true replication, not a re-derivation.
+  Three gaps were found and closed: (1) the pre-committed CARD-cluster bootstrap is the LENIENT
+  cluster here, because opposing quality is constant inside a league-season while the same cards recur
+  in every league — a league-season cluster CI was added (§2B); (2) no CARD fixed effect was tested,
+  the strongest design this corpus allows — added (§2B); (3) the whole-opposing-profile question was
+  not implemented at all — added out-of-sample (§2C). The level-free LOCO reading (skill W, §3) was
+  added so a transfer failure caused by the platoon LEVEL is not read as a failure of the response.
+
+  LIMITS. (a) Leagues are not randomised: a league's opposing quality correlates with its own card
+  population, so a within-cell slope is still observational. (b) The same cards recur across
+  league-seasons, which is why every CI is a card-cluster bootstrap and why distinct-card counts
+  sit beside every row count. (c) Opposition is proxied by the QUALIFYING population of the
+  league-season, not by the actual per-plate-appearance opponent — the same approximation the survey
+  made, kept deliberately so the two are comparable.
+  (d) Same-side exposure is manager-selected, so the platoon contrast is a property of this corpus.
+

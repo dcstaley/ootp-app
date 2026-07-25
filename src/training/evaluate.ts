@@ -16,7 +16,11 @@ export function foldOf(key: string, k: number): number {
   return (h >>> 0) % k;
 }
 
-interface EvalOpts { minN?: number; topN?: number; k?: number; window?: number[]; includeVariants?: boolean; foldKey?: (o: TrainObs) => string }
+// `years` (optional) restricts the year universe the scoreboard may draw on — the training
+// window AND the out-of-time blocks. Default = every year under the root. Added 2026-07-25 so a
+// run can exclude a data block that must never be pooled with the rest (e.g. `League Files/Old
+// Data` 2032–33, which sits after a four-season gap); omitting it reproduces the prior behavior.
+interface EvalOpts { minN?: number; topN?: number; k?: number; window?: number[]; years?: number[]; includeVariants?: boolean; foldKey?: (o: TrainObs) => string }
 
 // CV fold key (T-2). Decision (Derek): vL and vR are different players (profiles can
 // differ materially by side) → sides stay in INDEPENDENT folds; but base+variant are
@@ -88,7 +92,8 @@ export function defaultWindow(years: number[]): number[] {
 export function buildScoreboard(root: string, opts: EvalOpts = {}): Scoreboard {
   const { minN = 1000, topN = 26, k = 5, includeVariants = true } = opts;
   const vf = (o: TrainObs) => includeVariants || !o.variant;
-  const years = availableYears(root);
+  const allYears = availableYears(root);
+  const years = opts.years?.length ? allYears.filter((y) => opts.years!.includes(y)) : allYears;
   const window = opts.window?.length ? opts.window : defaultWindow(years);
   const winObs = loadWindow(root, window).observations.filter(vf);
   // Baselines + candidate forms, grouped by role (each role's models adjacent for

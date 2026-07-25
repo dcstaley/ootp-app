@@ -229,3 +229,138 @@ about talent is learned from tournament data. Gated on quicks.
 - `tests/matchup.test.ts`, `tests/frame-v2.test.ts` — equivalence/parity/subsumption guards.
 </content>
 </invoke>
+
+---
+
+# STATUS 2026-07-25 — THE FORK, as it stands. (Opus 5, with Fable's two amendments.)
+
+**HELD. A live candidate, not buried. Blocker status DOWNGRADED, not lifted.** This section is the
+standing statement of the version-3 ("native opponent-aware model") fork; read it before reviving.
+
+## The three versions and where each stands
+
+1. **own-gap — SHIPPED, production** (`data/state/app.json` `transformMode: "own-gap"`). Matchup
+   dependence IS live: the spread corrections key off each format's own opposition gap.
+2. **frame-v2 — BUILT, TESTED, REJECTED on the value path.** Additive per-channel rating shift by the
+   opposing gap. Lost head-to-head: it COMPRESSED hitters, CI-clear. Code present, switched off.
+3. **native matchup model — SCAFFOLDED, NEVER FITTED** (`src/model/matchup.ts`, Phase 0 plumbing
+   pinned to identity: `tail ≡ 0`, `aRole ≡ 1`). The principled version — evaluate each curve at
+   `own − μ_opp` instead of at the raw rating. It stopped because league data cannot identify it
+   (in-frame, everyone faces the same opposition; §1 item 5).
+
+## AMENDMENT 1 (Fable) — the payoff is CHANNEL-SPLIT. "Corrections dissolve" oversells by exactly K.
+
+A native matchup model makes predictions opponent-aware, so **it can only absorb corrections whose
+driver is the opponent.** Two independent results say the K correction's driver is NOT the opponent:
+
+- **the battery**: the K need is FLAT under every opposition weighting tried — moved < 0.01 across
+  three weightings;
+- **the (c) report** (`fixtures/cohort-channel-groundtruth-2026-07-23.txt`): realized opposing
+  avoid-K is essentially flat iron→gold, while K needs span 1.83 → 1.48.
+
+So the largest, most stubborn correction in the system would survive version 3 **essentially
+untouched**. The channels where a native model could genuinely dissolve corrections are **HR and
+BABIP** — the ones that responded to realized-field weighting.
+
+⇒ **Version 3 is a candidate source-fix for the HR/BABIP family ONLY** — the same two-family split
+that governs everything else in the composition layer. Do not justify it by pointing at the size of
+the K correction.
+
+## AMENDMENT 2 (Fable) — the blocker went IMPOSSIBLE → WEAKLY IDENTIFIED. That is a precondition.
+
+The tournament corpus does span a ladder of opposition strengths. But **within any one format every
+card faces the same opposition mix** — exposure is degenerate by construction (the reason the
+interaction discriminator died: separating the terms needs opposition to move without the value
+window moving). So version 3's matchup response would be identified almost entirely from
+**cross-format variation: ~14 opposition points, confounded simultaneously with era, composition and
+budget structure.**
+
+Fitting small scalar corrections on that support is one thing. **Refitting the core model's response
+curves on it is another.**
+
+⇒ **ENTRY GATE: a pre-registered IDENTIFIABILITY PRE-STUDY, with a kill condition, before any build.**
+Can the matchup response be pinned from this corpus's actual variation structure, with CIs that
+survive the confounds? Cheap, pre-registerable, and the same discipline that saved centerpiece #2. A
+version-3 build that skips it risks a month of fitting noise into the model's foundations.
+
+**Data-authority note:** fitting CORE CURVES on tournament data is permitted under the revised
+mission, but this would be the strongest use of that permission yet. Say so out loud when the time
+comes; do not let it pass as routine.
+
+## AMENDMENT 3 (Derek, 2026-07-25) — the matchup coordinate is single-rating by construction.
+
+Every channel in §2.1 pairs ONE own rating against ONE opposing rating (`kRat ↔ stu`, `eye ↔ con`,
+`pow ↔ hrr`, `babip/gap ↔ pbabip`). That is exactly the single-rating trap this project keeps falling
+into: **players do not exist in isolation — a low-K pitcher can be terrible or excellent depending on
+the rest of his card** ([[rating-shape-not-quality]]). The same property already broke the z-sum
+cohort coordinate (whole-vector selection cannot order a design-decoupled single channel).
+
+⇒ Any version-3 design must state how a card's response depends on its rating SHAPE, not just on the
+one channel being evaluated. A per-channel matchup coordinate that assumes otherwise inherits the
+defect it is meant to fix. This is a design requirement, not a caveat.
+
+## RECONSIDER TRIGGER
+
+After the two in-frame model fixes land (K curve; the Stuff/contact-side under-credit), measure how
+much correction actually REMAINS — **per channel family**. Large residual HR/BABIP correction ⇒ the
+argument for going native. Residual K correction ⇒ NOT an argument for it (Amendment 1). Entry gate
+is the identifiability pre-study regardless.
+
+(end of STATUS 2026-07-25)
+
+---
+
+# STATUS UPDATE 2026-07-25 (later) — AMENDMENT 2's IDENTIFIABILITY OBJECTION IS MATERIALLY WEAKENED.
+
+Evidence: `fixtures/REFUTATION-kcurve-hand-2026-07-25.txt` (independent-skeptic run; harness
+`tools/refute-kcurve-hand.ts`). Measurement only, nothing fit.
+
+**What was found.** `predictPitching` carries NO opponent term. Within LEAGUE data, same-side matchups
+face batters averaging **−6.37 avoid-K rating points** weaker than opposite-side ones. The deployed
+model's K residual tracks that composition at a fitted **+0.842 K/600 per opposing rating point —
+1.14× what the model's own hitter K curve prices a rating point at**, correlation +0.80 across
+seasons, same sign in **33/33 league-seasons**. That is the missing opponent term, at full size,
+measured in-frame.
+
+**Why it changes the fork.** AMENDMENT 2 held that a version-3 matchup response would be identified
+"almost entirely from cross-format variation: ~14 opposition points, confounded simultaneously with
+era, composition and budget structure," and set a pre-registered identifiability study as the entry
+gate. That objection was about the TOURNAMENT identification route. **A LEAGUE-DATA identification
+route now exists** — the same-side/opposite-side platoon contrast supplies abundant within-league
+variation in opposing quality, with no era/budget/pool confound, and it yields a direct estimate of
+the opponent response. The entry gate is not removed, but its hardest premise no longer holds for the
+K channel.
+
+**No contradiction with AMENDMENT 1.** Amendment 1 says the K CORRECTION's driver is not the opponent,
+on the battery (K need flat under every opposition weighting) and the (c) report (realized opposing
+avoid-K flat iron→gold). Those concern TOURNAMENT opposition across formats. This concerns WITHIN-
+LEAGUE platoon matchup opposition. Both hold. The consequence is that an opponent term is a MODEL
+(source) fix identified in-frame, whose effect on the tournament K correction must then be re-measured
+— it is not licensed by, and does not license, the tournament-side claims.
+
+**Consequences for the K curve work (all of it in-frame):**
+- **Hand-conditioning is REJECTED** — on mechanism (Derek: the engine computes from ratings; the
+  platoon difference is already carried by the hand-split ratings, and no mechanism makes the
+  rating→outcome CONVERSION hand-dependent), and independently on the numbers (removing composition
+  erases 98% of the vR−vL cubic gap, −1.0668 → −0.0175, p=0.770; hand-conditioning also predicts
+  WORSE on both card-based folds after correction).
+- **The hand LEVEL gap is dead** (p=0.481 on the wide window) — already withdrawn from the sweep prereg.
+- **The pooled cubic is ATTENUATED, not contaminated**: −0.4983 (CI covers 0) → −0.5999 CI-clear once
+  the matchup-cell level is removed. Composition was MASKING it. But it rests on ~**10 effective
+  cards** (Kish ESS over cards = 9.9 of 70; Kimbrel alone 26%), and a CUBIC is not established as the
+  form (a quartic beats it on all three CVs; trimming |z|≤1.75 cuts it 54%). Only "higher-order than
+  quadratic, in the tails" is established.
+- **First-best fix = the OPPONENT TERM, not a curve term.** Composition is 54% of the entire K
+  residual. Fitting curve shape before the opponent term would fit the curve to absorb the opponent's
+  absence — the exact confounding pattern this program is trying to get out of.
+
+**Method corrections this run forced, worth carrying:** (1) the earlier "out-of-time replication"
+(in-sample −0.869 vs OOS −0.862) is largely ARITHMETIC — the same cards on both sides over 99% shared
+BF, card×arm residuals correlating r=0.94, so 0.8% agreement is the NULL not the finding; (2) the
+vR−vL cubic p=0.034 was one of FOUR coefficient contrasts (the LINEAR contrast was larger, p=0.011);
+Šidák-corrected the cubic is **p=0.130**.
+
+**AMENDMENT 3 (rating shape) still binds** and now bites harder: any opponent term must not assume a
+card's response is a function of one rating against one opposing rating.
+
+(end of STATUS UPDATE 2026-07-25 later)

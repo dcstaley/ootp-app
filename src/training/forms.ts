@@ -617,11 +617,21 @@ const flexHitModel: BakeoffModel = { name: "ceiling·flex", role: "hitter", fit:
 const flexPitModel: BakeoffModel = { name: "ceiling·flex", role: "pitcher", fit: (t) => fitFlex(t, PIT_KEYS, getPitK, (o) => Math.pow(o.pitch.BF, 0.75), actualPitWoba), predict: (p, test) => test.map((o) => predictFlex(p as FlexParams, o, getPitK)) };
 
 // ── Seam wrappers + form definitions ───────────────────────────────────────────
-export function hitFormModel(form: HitForm): BakeoffModel {
-  return { name: form.name, role: "hitter", fit: (train) => fitHitForm(form, train), predict: (p, test) => test.map((o) => predictHitForm(p as FittedHit, o)) };
+// VERTEX-PIN PARITY (2026-07-25). The production trainer (server.saveTrainedModel) fits
+// `fitHitForm(RAWPOLY_HIT, …, 0.75, vertexPinned)` / `fitPitForm(PARETO_PIT, …, 0.75, vertexPinned)`
+// — i.e. it ALWAYS passes a pin collector, so any quad channel whose unconstrained vertex lands
+// in-domain is refit vertex-pinned (pinQuadAtDomainMax). These wrappers used to call
+// fitHitForm(form, train) with `pins` undefined, so every FORM_ENTRIES candidate was scored
+// UNPINNED — a different model from the one we ship (the live artifact league-42-43 records
+// vertexPinned: [{channel:"pit.hr", …}]). The pins are DATA-DEPENDENT (decided per fit by
+// inDomainVertex), never a fixed list, so parity = hand each fit its own FRESH collector,
+// exactly as saveTrainedModel does. `pinned` defaults to TRUE (production parity); pass false
+// for the historical unpinned shape when a diagnostic deliberately wants the raw fit.
+export function hitFormModel(form: HitForm, pinned = true): BakeoffModel {
+  return { name: form.name, role: "hitter", fit: (train) => fitHitForm(form, train, 0.75, pinned ? [] : undefined), predict: (p, test) => test.map((o) => predictHitForm(p as FittedHit, o)) };
 }
-export function pitFormModel(form: PitForm): BakeoffModel {
-  return { name: form.name, role: "pitcher", fit: (train) => fitPitForm(form, train), predict: (p, test) => test.map((o) => predictPitForm(p as FittedPit, o)) };
+export function pitFormModel(form: PitForm, pinned = true): BakeoffModel {
+  return { name: form.name, role: "pitcher", fit: (train) => fitPitForm(form, train, 0.75, pinned ? [] : undefined), predict: (p, test) => test.map((o) => predictPitForm(p as FittedPit, o)) };
 }
 
 // All-log forms — identical to the parity woba models; used only by the regression test.
@@ -666,6 +676,13 @@ export const SATBB_PIT: PitForm = { name: "woba·satbb", bb: { kind: "satexp", t
 // scorecard cells within ±0.01, BUILD-3 constants NOT stale (A 0.2674/0.2730 vs deployed 0.2648),
 // CV nominally best of the three — while passing the monotone guard by construction.
 export const PARETO_PIT: PitForm = { name: "woba·pareto", bb: LOG, k: Q2, hr: Q2, h: Q2, stuffAug: true };
+// PARETO WITHOUT the Stuff aux — same curves, `stuffAug: false`. The aux (a linear z-scored
+// ln(Stuff) term on the pitcher BB and HR fits) rode into the deployed form with StuffAug and was
+// never isolated as its own bake-off candidate, so it has no committed evidence artifact. This
+// entry makes it a directly testable A/B against PARETO_PIT under identical curves, pinning and
+// folds. (Mechanism is plausible either way — PAs resolve sequentially, so high Stuff getting
+// ahead in counts could genuinely suppress walks — so this is a measurement, not a suspicion.)
+export const PARETO_NOAUG_PIT: PitForm = { name: "woba·pareto-noaug", bb: LOG, k: Q2, hr: Q2, h: Q2, stuffAug: false };
 
 // Uniform-curve forms apply one curve to EVERY rating-driven event (incl. the BABIP
 // term of H) — the "is log the right curve" comparison, now including H.
@@ -817,6 +834,14 @@ const pitEntry = (f: PitForm): BakeoffEntry => ({ model: pitFormModel(f), spec: 
 /** Scoreboard entries contributed by candidate forms (appended to the baselines). */
 export const FORM_ENTRIES: BakeoffEntry[] = [
   hitEntry(RAWPOLY_HIT), pitEntry(RAWPOLY_PIT),     // #2 targeted raw-poly
+  // DEPLOYED PITCHER FORM + the two pitching forms adopted/evaluated AFTER the original bake-off
+  // (2026-07-25): PARETO_PIT shipped 2026-07-14 and had never been a scoreboard candidate at all —
+  // RAWPOLY_PIT above is NOT what we ship (it differs on k, h and the Stuff aux). Without these the
+  // scoreboard could not compare any change against production.
+  pitEntry(PARETO_PIT),          // DEPLOYED (with RAWPOLY_HIT on the hitting side)
+  pitEntry(PARETO_NOAUG_PIT),    // deployed curves, Stuff aux OFF — the aux's own evidence test
+  pitEntry(STUFFAUG_PIT),        // the pre-2026-07-14 deployed form (all-log + aux)
+  pitEntry(SATBB_PIT),           // pareto with the BB curve saturating instead of log
   hitEntry(LOGCUBIC_HIT), pitEntry(LOGCUBIC_PIT),   // #1 cubic-in-log
   hitEntry(RAWLIN_HIT), pitEntry(RAWLIN_PIT),       // curve family — is log the right curve?
   hitEntry(RAWQUAD_HIT), pitEntry(RAWQUAD_PIT),

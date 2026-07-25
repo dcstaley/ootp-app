@@ -65,7 +65,10 @@ for (const win of WINDOWS) {
 
   // Bake-off comparison metric (the harness the scoreboard/gates use): weighted Pearson
   // headline + spearman, in-sample and 5-fold CV, whole pitcher model quad-hr vs log-hr.
-  const mQ = pitFormModel(PARETO_PIT), mL = pitFormModel(HRLOG_PIT);
+  // pinned=false: this diagnostic exists to EXHIBIT the unconstrained quad's in-domain vertex.
+  // (The wrappers pin by default since 2026-07-25 to match production; here that would erase
+  // the very thing being measured.)
+  const mQ = pitFormModel(PARETO_PIT, false), mL = pitFormModel(HRLOG_PIT, false);
   const isQ = inSample(obs, mQ, PITCHER, { minN: MINPA });
   const isL = inSample(obs, mL, PITCHER, { minN: MINPA });
   const cvQ = crossValidate(obs, mQ, PITCHER, { minN: MINPA });

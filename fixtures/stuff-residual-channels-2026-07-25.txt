@@ -1,0 +1,637 @@
+################################################################################
+# STUFF-RESIDUAL CHANNEL LOCATOR (deployed form, in-frame).  MEASUREMENT ONLY — nothing wired.
+# Q1 (Parts 1-3): which pitcher EVENT CHANNEL carries the Stuff-correlated wOBA-allowed bias the
+# anchor cannot absorb? K was ruled out (wrong sign) — every channel is ranked by its slope share.
+# Q2 (Parts 4-8, SCOPE AMENDMENT): is it a Stuff effect at all, or a rating-SHAPE effect that
+# merely correlates with Stuff? All four axes, the 2-D corners vs a permutation null, and the
+# marginal-vs-conditional slope both in frame and out of frame (where the effect is CI-clear).
+################################################################################
+
+  model 'league-42-43'  DEPLOYED form  window 2042+2043  minBF 1000  N=149 ROWS
+  ROW grain = card × deployment side × season-window row, BF-weighted (same grain as the pre-step).
+  wOBA event weights: THE MODEL'S OWN (trained.wobaWeights, wRAA-derived)
+    bb 0.7083  hbp 0.7391  1b 0.8992  xbh 1.3000  hr 2.0508   ⇒ blended hit weight w̄ = 0.9994
+  Stuff over these rows: mean 120.3, SD 20.16  (1 SD ≈ 20.2 rating points — the
+  conversion between the "per SD" partials below and the "per Stuff point" slopes in the table).
+
+  residual convention throughout: DEPLOYED PREDICTION − OBSERVED. Positive on wOBAA = the model
+  says the pitcher allows MORE than he did = the model UNDER-CREDITS him. That is the sign of the
+  audit's finding, and it grows with Stuff.
+
+  DECOMPOSITION CLOSURE CHECK: max |Σ channel contributions − ΔwOBAA| over all 149 rows =
+  1.46e-16 wOBA. The decomposition is EXACT (floating-point only) ⇒ the channel
+  shares below are exhaustive and mutually exclusive — nothing is double-counted or missing.
+
+################################################################################
+# PART 1 — PER-CHANNEL RESIDUAL vs STUFF (native units, pooled over both hands)
+################################################################################
+
+  ▸ wOBAA COMPOSITE (reference row)
+    fit status: assembled — not itself fit
+  ── POOLED (both hands)  (N=149 rows, level +0.00059 wOBA) ──
+     Stuff quintile     mean resid          n
+     [70-101]             -0.00058      29
+     [102-118]            +0.00176      30
+     [118-128]            +0.00068      30
+     [129-140]            +0.00053      30
+     [140-187]            +0.00035      30
+     LINEAR partial (per SD Stuff): +0.000472 [-0.001286, +0.001837] covers 0
+     CUBIC  partial (per SD Stuff): +0.0004903 [-0.0000399, +0.0011237] covers 0 — no cubic misfit
+
+  ▸ HR allowed
+    fit status: pit.hr — FIT on HRR + ln(Stuff) aux ⇒ Stuff-orthogonal by construction
+  ── POOLED (both hands)  (N=149 rows, level -0.048/600) ──
+     Stuff quintile     mean resid          n
+     [70-101]               -0.109      29
+     [102-118]              +0.143      30
+     [118-128]              +0.072      30
+     [129-140]              -0.348      30
+     [140-187]              +0.180      30
+     LINEAR partial (per SD Stuff): -0.0018 [-0.1679, +0.1362] covers 0
+     CUBIC  partial (per SD Stuff): +0.03659 [-0.02218, +0.11906] covers 0 — no cubic misfit
+
+  ▸ BABIP allowed (nHH / BIP)
+    fit status: pit.h — FIT on pBABIP + BIP only; STUFF NEVER ENTERS ⇒ structurally free
+  ── POOLED (both hands)  (N=149 rows, level -0.236 pts×1000) ──
+     Stuff quintile     mean resid          n
+     [70-101]               -1.451      29
+     [102-118]              +0.904      30
+     [118-128]              -2.162      30
+     [129-140]              +0.903      30
+     [140-187]              +0.879      30
+     LINEAR partial (per SD Stuff): +0.9309 [-0.1901, +1.8495] covers 0
+     CUBIC  partial (per SD Stuff): +0.17105 [-0.22626, +0.64626] covers 0 — no cubic misfit
+
+  ▸ non-HR hits allowed (nHH)
+    fit status: pit.h (rate) × BIP chain (volume)
+  ── POOLED (both hands)  (N=149 rows, level -0.147/600) ──
+     Stuff quintile     mean resid          n
+     [70-101]               -0.603      29
+     [102-118]              +0.710      30
+     [118-128]              -0.492      30
+     [129-140]              -0.280      30
+     [140-187]              +0.129      30
+     LINEAR partial (per SD Stuff): +0.2817 [-0.2100, +0.6738] covers 0
+     CUBIC  partial (per SD Stuff): +0.21807 [+0.04049, +0.44565] ★ CI-CLEAR — curved (a quad cannot express it)
+
+  ▸ BB allowed (uBB)
+    fit status: pit.bb — FIT on Control + ln(Stuff) aux ⇒ Stuff-orthogonal by construction
+  ── POOLED (both hands)  (N=149 rows, level -0.132/600) ──
+     Stuff quintile     mean resid          n
+     [70-101]               -0.385      29
+     [102-118]              -1.106      30
+     [118-128]              -0.152      30
+     [129-140]              +1.234      30
+     [140-187]              -1.283      30
+     LINEAR partial (per SD Stuff): +0.1199 [-0.8257, +0.9052] covers 0
+     CUBIC  partial (per SD Stuff): +0.00262 [-0.43724, +0.33285] covers 0 — no cubic misfit
+
+  ▸ K (pre-step reference)
+    fit status: pit.k — FIT on Stuff ⇒ Stuff-orthogonal by construction
+  ── POOLED (both hands)  (N=149 rows, level +0.307/600) ──
+     Stuff quintile     mean resid          n
+     [70-101]               +0.309      29
+     [102-118]              -0.109      30
+     [118-128]              -1.220      30
+     [129-140]              +1.268      30
+     [140-187]              +1.752      30
+     LINEAR partial (per SD Stuff): +0.2450 [-0.5775, +1.2219] covers 0
+     CUBIC  partial (per SD Stuff): -0.50493 [-0.97571, -0.15230] ★ CI-CLEAR — curved (a quad cannot express it)
+
+################################################################################
+# PART 2 — THE RANKING: each channel's CONTRIBUTION to the wOBAA bias SLOPE on Stuff
+################################################################################
+
+  Composite in-frame wOBAA bias:  level +0.00059 wOBA,
+  slope on Stuff +0.000023 per Stuff point  [-0.000061, +0.000093]  covers 0
+  (the anchor audit measured +0.00007 on the OUT-OF-FRAME cwhit tournament line; this is the
+  IN-FRAME league counterpart — the same quantity on the data the curves were fit to, so its
+  magnitude is not expected to match, only its channel COMPOSITION is transferable.)
+
+  channel                                           level  slope/Stuff pt                     95% CI   % of composite
+  -------------------------------------------- ---------- --------------- --------------------------  ---------------
+  BABIP  (contact-rate leg of hits)              -0.00018       +0.000032     [-0.000008, +0.000067]          +137.1%
+  K      (BIP-volume ONLY — no wOBA weight)      -0.00015       -0.000006     [-0.000029, +0.000014]           -25.6%
+  XBH-SHARE (fixed 25% mis-allocation)           +0.00009       -0.000005     [-0.000017, +0.000008]           -19.3%
+  BB     (direct + BIP-volume)                   -0.00009       +0.000004     [-0.000029, +0.000031]           +17.5%
+  HBP    (fixed 6/600)                           +0.00106       -0.000002     [-0.000007, +0.000003]            -8.8%
+  HR     (direct + BIP-volume)                   -0.00014       -0.000000     [-0.000025, +0.000020]            -0.9%
+  -------------------------------------------- ---------- --------------- --------------------------  ---------------
+  TOTAL (= wOBAA composite, by construction)     +0.00059       +0.000023     [-0.000061, +0.000093]           100.0%
+
+  ★ = the channel's own slope CI excludes zero. Shares can exceed 100% or go negative: channels
+  push in OPPOSITE directions (K's over-prediction pushes wOBAA DOWN with Stuff — the pre-step's
+  finding, here quantified in wOBA units for the first time).
+
+  ⚠ READ THE ABSOLUTE SLOPES, NOT THE PERCENTAGES, AS PRIMARY. The composite denominator is small
+  and its own CI covers zero, so "% of composite" is a RATIO OF NOISY QUANTITIES and is unstable
+  (a 137% share of a near-zero total is not "more than all of it" — it is one channel's absolute
+  slope divided by a total that other channels partially cancel). The ranking by |absolute slope|
+  is the robust statement; the share column is orientation only.
+
+  ROBUSTNESS — the deployed minBF 1000 filter is also the TRAINING filter, so rows below it were
+  never fit (a mildly out-of-frame margin). Relaxing to minBF 300 adds 79 rows but only
+  2.5% of the BF weight, so it is a shape check, not a power gain:
+    minBF 1000 (deployed, N=149):  composite +0.000023   BABIP +0.000032
+    minBF  300 (relaxed,  N=228):  composite +0.000020   BABIP +0.000029
+
+################################################################################
+# PART 3 — HAND SPLIT (is the carrier channel hand-asymmetric?)
+################################################################################
+
+  ── vs RHB (vR)  (N=77 rows) ──
+     composite: level +0.00180  slope -0.000040 [-0.000221, +0.000089] covers 0
+     K      (BIP-volume ONLY — no wOBA weight)    slope  -0.000022 [-0.000064, +0.000011] +56.1%
+     BB     (direct + BIP-volume)                 slope  -0.000018 [-0.000090, +0.000036] +45.2%
+     BABIP  (contact-rate leg of hits)            slope  +0.000012 [-0.000067, +0.000064] -29.6%
+     HR     (direct + BIP-volume)                 slope  -0.000011 [-0.000057, +0.000016] +27.2%
+     HBP    (fixed 6/600)                         slope  -0.000003 [-0.000009, +0.000002] +6.6%
+     XBH-SHARE (fixed 25% mis-allocation)         slope  +0.000002 [-0.000005, +0.000014] -5.5%
+
+  ── vs LHB (vL)  (N=72 rows) ──
+     composite: level -0.00096  slope +0.000075 [+0.000018, +0.000142] CI-clear
+     BABIP  (contact-rate leg of hits)            slope  +0.000041 [-0.000011, +0.000088] +55.4%
+     K      (BIP-volume ONLY — no wOBA weight)    slope  +0.000017 [-0.000008, +0.000049] +22.4%
+     HR     (direct + BIP-volume)                 slope  +0.000015 [-0.000018, +0.000045] +19.8%
+     XBH-SHARE (fixed 25% mis-allocation)         slope  +0.000007 [-0.000007, +0.000020] +9.1%
+     BB     (direct + BIP-volume)                 slope  -0.000003 [-0.000020, +0.000027] -3.4%
+     HBP    (fixed 6/600)                         slope  -0.000003 [-0.000012, +0.000005] -3.4%
+
+  Per-channel native-unit shape by hand (the carrier channel first):
+
+  ── wOBAA COMPOSITE (reference row) — vs RHB (vR)  (N=77 rows, level +0.00180 wOBA) ──
+     Stuff quintile     mean resid          n
+     [70-102]             +0.00262      15
+     [105-117]            +0.00520      15
+     [118-130]            +0.00336      16
+     [130-140]            -0.00003      15
+     [142-187]            -0.00094      16
+     LINEAR partial (per SD Stuff): -0.000806 [-0.004441, +0.001920] covers 0
+     CUBIC  partial (per SD Stuff): +0.0013007 [+0.0000746, +0.0029788] ★ CI-CLEAR — curved (a quad cannot express it)
+
+  ── wOBAA COMPOSITE (reference row) — vs LHB (vL)  (N=72 rows, level -0.00096 wOBA) ──
+     Stuff quintile     mean resid          n
+     [75-97]              -0.00242      14
+     [101-118]            -0.00196      14
+     [119-124]            -0.00128      15
+     [125-139]            +0.00171      14
+     [140-182]            +0.00288      15
+     LINEAR partial (per SD Stuff): +0.001503 [+0.000442, +0.002996] CI-clear
+     CUBIC  partial (per SD Stuff): -0.0001850 [-0.0006357, +0.0006089] covers 0 — no cubic misfit
+
+  ── HR allowed — vs RHB (vR)  (N=77 rows, level -0.075/600) ──
+     Stuff quintile     mean resid          n
+     [70-102]               -0.028      15
+     [105-117]              +0.260      15
+     [118-130]              +0.205      16
+     [130-140]              -0.503      15
+     [142-187]              -0.011      16
+     LINEAR partial (per SD Stuff): -0.0757 [-0.3842, +0.1145] covers 0
+     CUBIC  partial (per SD Stuff): +0.06654 [-0.05889, +0.23686] covers 0 — no cubic misfit
+
+  ── HR allowed — vs LHB (vL)  (N=72 rows, level -0.015/600) ──
+     Stuff quintile     mean resid          n
+     [75-97]                -0.127      14
+     [101-118]              -0.039      14
+     [119-124]              +0.040      15
+     [125-139]              -0.307      14
+     [140-182]              +0.257      15
+     LINEAR partial (per SD Stuff): +0.1018 [-0.1124, +0.3090] covers 0
+     CUBIC  partial (per SD Stuff): -0.00664 [-0.09410, +0.22296] covers 0 — no cubic misfit
+
+  ── BABIP allowed (nHH / BIP) — vs RHB (vR)  (N=77 rows, level +0.870 pts×1000) ──
+     Stuff quintile     mean resid          n
+     [70-102]               +0.214      15
+     [105-117]              +2.435      15
+     [118-130]              -0.144      16
+     [130-140]              +1.169      15
+     [142-187]              +1.057      16
+     LINEAR partial (per SD Stuff): +0.3505 [-1.9056, +1.7608] covers 0
+     CUBIC  partial (per SD Stuff): +0.34757 [-0.57288, +1.50995] covers 0 — no cubic misfit
+
+  ── BABIP allowed (nHH / BIP) — vs LHB (vL)  (N=72 rows, level -1.645 pts×1000) ──
+     Stuff quintile     mean resid          n
+     [75-97]                -2.297      14
+     [101-118]              -0.720      14
+     [119-124]              -3.250      15
+     [125-139]              -0.384      14
+     [140-182]              +1.781      15
+     LINEAR partial (per SD Stuff): +1.1886 [-0.4190, +2.5117] covers 0
+     CUBIC  partial (per SD Stuff): +0.23356 [-0.49709, +0.97093] covers 0 — no cubic misfit
+
+  ── non-HR hits allowed (nHH) — vs RHB (vR)  (N=77 rows, level -0.388/600) ──
+     Stuff quintile     mean resid          n
+     [70-102]               -0.106      15
+     [105-117]              +0.275      15
+     [118-130]              -1.322      16
+     [130-140]              -0.283      15
+     [142-187]              -0.076      16
+     LINEAR partial (per SD Stuff): +0.0587 [-0.6892, +0.6098] covers 0
+     CUBIC  partial (per SD Stuff): +0.14639 [-0.19476, +0.90345] covers 0 — no cubic misfit
+
+  ── non-HR hits allowed (nHH) — vs LHB (vL)  (N=72 rows, level +0.161/600) ──
+     Stuff quintile     mean resid          n
+     [75-97]                -0.765      14
+     [101-118]              +0.904      14
+     [119-124]              -0.301      15
+     [125-139]              +0.783      14
+     [140-182]              +1.284      15
+     LINEAR partial (per SD Stuff): +0.6945 [-0.0279, +1.2315] covers 0
+     CUBIC  partial (per SD Stuff): +0.18398 [-0.10950, +0.49861] covers 0 — no cubic misfit
+
+  ── BB allowed (uBB) — vs RHB (vR)  (N=77 rows, level +1.989/600) ──
+     Stuff quintile     mean resid          n
+     [70-102]               +2.174      15
+     [105-117]              +2.542      15
+     [118-130]              +4.448      16
+     [130-140]              +1.371      15
+     [142-187]              -1.213      16
+     LINEAR partial (per SD Stuff): -0.5394 [-2.7177, +1.0161] covers 0
+     CUBIC  partial (per SD Stuff): +0.78513 [-0.10538, +1.25667] covers 0 — no cubic misfit
+
+  ── BB allowed (uBB) — vs LHB (vL)  (N=72 rows, level -2.833/600) ──
+     Stuff quintile     mean resid          n
+     [75-97]                -2.328      14
+     [101-118]              -4.496      14
+     [119-124]              -2.640      15
+     [125-139]              -1.066      14
+     [140-182]              -2.080      15
+     LINEAR partial (per SD Stuff): -0.0750 [-0.6370, +0.8036] covers 0
+     CUBIC  partial (per SD Stuff): -0.33719 [-0.65062, -0.08587] ★ CI-CLEAR — curved (a quad cannot express it)
+
+  ── K (pre-step reference) — vs RHB (vR)  (N=77 rows, level +0.546/600) ──
+     Stuff quintile     mean resid          n
+     [70-102]               -1.596      15
+     [105-117]              -0.304      15
+     [118-130]              -0.451      16
+     [130-140]              +1.661      15
+     [142-187]              +2.832      16
+     LINEAR partial (per SD Stuff): +0.9137 [-0.3518, +2.5886] covers 0
+     CUBIC  partial (per SD Stuff): -0.81452 [-1.89762, -0.30635] ★ CI-CLEAR — curved (a quad cannot express it)
+
+  ── K (pre-step reference) — vs LHB (vL)  (N=72 rows, level +0.002/600) ──
+     Stuff quintile     mean resid          n
+     [75-97]                +1.584      14
+     [101-118]              +0.554      14
+     [119-124]              -0.795      15
+     [125-139]              -1.796      14
+     [140-182]              -0.208      15
+     LINEAR partial (per SD Stuff): -0.6749 [-1.8608, +0.4199] covers 0
+     CUBIC  partial (per SD Stuff): +0.05370 [-0.59855, +0.56363] covers 0 — no cubic misfit
+
+################################################################################
+# PART 4 — SCOPE AMENDMENT: ALL FOUR PITCHER AXES, not just Stuff
+################################################################################
+
+  Weighted axis CORRELATIONS over these 149 rows — read this FIRST, it is why a single-axis
+  read can be misleading. (Weighted Pearson r; the axes are standardized on the same weights.)
+
+                   stu       con    pbabip       hrr
+  stu           +1.000    -0.346    +0.039    +0.090
+  con           -0.346    +1.000    -0.088    -0.163
+  pbabip        +0.039    -0.088    +1.000    +0.264
+  hrr           +0.090    -0.163    +0.264    +1.000
+
+  ⇒ Stuff and Control are MATERIALLY correlated (r = -0.346), so a marginal Stuff
+  slope is partly a Control slope in disguise. The conditional read (Part 6) is the decisive one.
+
+  RESIDUAL STRUCTURE BY AXIS — wOBAA composite residual, weighted cubic R² per axis (how much of
+  the residual's variance that ONE axis explains) + the linear partial per SD with bootstrap CI:
+
+  axis                         cubic R²    linear/SD                     95% CI     cubic/SD
+  -------------------------- ---------- ------------ -------------------------- ------------
+  Control                        0.0340    -0.001087     [-0.002464, +0.000498]    +0.000009
+  Stuff                          0.0320    +0.000472     [-0.001157, +0.001835]    +0.000490
+  HR-rate (HRA)                  0.0134    +0.000594     [-0.000899, +0.002146]    -0.000073
+  pBABIP (contact suppr.)        0.0057    -0.000064     [-0.001445, +0.001270]    +0.000095
+
+  ⇒ the axis carrying the MOST residual structure is Control (R² 0.0340).
+
+  Composite-residual QUINTILE SHAPE on each axis (the same read Part 1 gave for Stuff):
+
+  ── wOBAA composite vs Control  (N=149 rows, level +0.00059 wOBA) ──
+     Control quintile   mean resid          n
+     [48-79]              +0.00038      29
+     [81-90]              +0.00238      30
+     [90-104]             +0.00074      30
+     [105-121]            +0.00274      30
+     [122-150]            -0.00275      30
+     LINEAR partial (per SD Control): -0.001087 [-0.002464, +0.000498] covers 0
+     CUBIC  partial (per SD Control): +0.0000085 [-0.0011434, +0.0011377] covers 0 — no cubic misfit
+
+  ── wOBAA composite vs Stuff  (N=149 rows, level +0.00059 wOBA) ──
+     Stuff quintile     mean resid          n
+     [70-101]             -0.00058      29
+     [102-118]            +0.00176      30
+     [118-128]            +0.00068      30
+     [129-140]            +0.00053      30
+     [140-187]            +0.00035      30
+     LINEAR partial (per SD Stuff): +0.000472 [-0.001157, +0.001835] covers 0
+     CUBIC  partial (per SD Stuff): +0.0004903 [-0.0000358, +0.0010893] covers 0 — no cubic misfit
+
+  ── wOBAA composite vs HR-rate (HRA)  (N=149 rows, level +0.00059 wOBA) ──
+     HR-rate quintile   mean resid          n
+     [53-106]             -0.00055      29
+     [106-116]            -0.00007      30
+     [116-123]            +0.00034      30
+     [123-135]            +0.00061      30
+     [135-160]            +0.00304      30
+     LINEAR partial (per SD HR-rate): +0.000594 [-0.000899, +0.002146] covers 0
+     CUBIC  partial (per SD HR-rate): -0.0000727 [-0.0005917, +0.0005431] covers 0 — no cubic misfit
+
+  ── wOBAA composite vs pBABIP (contact suppr.)  (N=149 rows, level +0.00059 wOBA) ──
+     pBABIP quintile    mean resid          n
+     [50-97]              -0.00188      29
+     [97-114]             +0.00210      30
+     [115-124]            +0.00198      30
+     [124-133]            +0.00004      30
+     [133-200]            -0.00117      30
+     LINEAR partial (per SD pBABIP): -0.000064 [-0.001445, +0.001270] covers 0
+     CUBIC  partial (per SD pBABIP): +0.0000948 [-0.0001091, +0.0004557] covers 0 — no cubic misfit
+
+  And the same per-axis linear partial for EVERY CHANNEL (native units, per SD of the axis).
+  ★ marks a CI-clear linear partial. This is the "which axis, which channel" matrix:
+
+  channel                                  Stuff         Control          pBABIP         HR-rate
+  ------------------------------ --------------- --------------- --------------- ---------------
+  wOBAA COMPOSITE                     +0.000472       -0.001087       -0.000064       +0.000594 
+  HR allowed                            -0.0018         -0.3117★        +0.0514         +0.0026 
+  BABIP allowed                         +0.9309         -1.0705         -0.0907         +0.8746 
+  non-HR hits allowed                   +0.2817         +0.2342         -0.1085         +0.2851 
+  BB allowed                            +0.1199         -0.2171         -0.0466         +0.0408 
+  K                                     +0.2450         -1.7467★        +0.2128         +0.2439 
+
+################################################################################
+# PART 5 — 2-D SHAPE READ: is the bias in a rating-SHAPE CORNER or spread along an axis?
+################################################################################
+
+  The INTERACTION residual strips the additive 1-D main effects (raw − row marginal − col marginal
+  + overall), so what remains is TRUE 2-way structure. If the bias were a genuine single-axis Stuff
+  effect the interaction cells would all be ~0 and the raw cells would vary only down the rows. If
+  it is a SHAPE effect the interaction cells light up in a corner (e.g. high-Stuff/low-Control).
+
+  ── Stuff (rows) × Control (cols) — wOBAA composite residual ──
+     tercile cuts: Stuff 114/131   Control 88/111
+     cell = mean residual (wOBA) / INTERACTION residual / n rows
+                                  con·L                     con·M                     con·H
+     stu·L    +0.00185 / +0.00031 / n17 +0.00782 / +0.00590 / n12 -0.00080 / -0.00050 / n21
+     stu·M    -0.00221 / -0.00324 / n13 +0.00130 / -0.00010 / n23 +0.00146 / +0.00228 / n11
+     stu·H    +0.00305 / +0.00244 / n23 -0.00043 / -0.00141 / n11 -0.00230 / -0.00106 / n18
+     strongest INTERACTION cell (n≥8): +0.00590   |   most under-credited cell: +0.00782 (n12)
+     spread of cell means: +0.01012   max |interaction|: +0.00590
+     PERMUTATION NULL (600 shuffles): max|interaction| under pure noise has 95th pct +0.01074;
+     observed +0.00590 ⇒ p = 0.485  — the corner structure is WITHIN chance for cells this small (do NOT read the corner as real)
+
+  ── Stuff (rows) × HR-rate (HRA) (cols) — wOBAA composite residual ──
+     tercile cuts: Stuff 114/131   HR-rate (HRA) 115/126
+     cell = mean residual (wOBA) / INTERACTION residual / n rows
+                                  hrr·L                     hrr·M                     hrr·H
+     stu·L    -0.00307 / -0.00331 / n20 +0.00354 / +0.00224 / n15 +0.00421 / +0.00261 / n15
+     stu·M    +0.00044 / +0.00072 / n21 +0.00133 / +0.00055 / n12 -0.00004 / -0.00112 / n14
+     stu·H    +0.00495 / +0.00565 / n16 -0.00139 / -0.00175 / n14 +0.00021 / -0.00045 / n22
+     strongest INTERACTION cell (n≥8): +0.00565   |   most under-credited cell: +0.00495 (n16)
+     spread of cell means: +0.00802   max |interaction|: +0.00565
+     PERMUTATION NULL (600 shuffles): max|interaction| under pure noise has 95th pct +0.00874;
+     observed +0.00565 ⇒ p = 0.357  — the corner structure is WITHIN chance for cells this small (do NOT read the corner as real)
+
+################################################################################
+# PART 6 — THE DECISIVE READ: does the Stuff slope SURVIVE conditioning on the other ratings?
+################################################################################
+
+  Weighted regressions of the residual on z-scored ratings (coefficients = wOBA per SD of Stuff).
+    M1 MARGINAL     : y ~ z_stu                                   (what the audit measured)
+    M2 CONDITIONAL  : y ~ z_stu + z_con + z_pbabip + z_hrr        (Stuff holding SHAPE fixed)
+    M3 + INTERACTION: M2 + z_stu·z_con                            (the shape-corner term)
+
+  ▸ wOBAA composite
+     M1 stu (marginal)    : +0.000472  [-0.001175, +0.001884] covers 0
+     M2 stu (conditional) : +0.000092  [-0.001359, +0.001379] covers 0   ⇒ 20% of the marginal slope SURVIVES
+     M3 stu (+stu×con)    : +0.000016  [-0.001563, +0.001377] covers 0
+     M3 stu×con           : +0.000212  [-0.001263, +0.001332] covers 0 — no shape-corner term
+     full conditional coefficient set (per SD): stu +0.000092   con -0.000999   pbabip -0.000287   hrr +0.000498
+
+  ▸ BABIP contribution
+     M1 stu (marginal)    : +0.000647  [-0.000172, +0.001319] covers 0
+     M2 stu (conditional) : +0.000420  [-0.000309, +0.001042] covers 0   ⇒ 65% of the marginal slope SURVIVES
+     M3 stu (+stu×con)    : +0.000416  [-0.000417, +0.001111] covers 0
+     M3 stu×con           : +0.000011  [-0.000787, +0.000556] covers 0 — no shape-corner term
+     full conditional coefficient set (per SD): stu +0.000420   con -0.000540   pbabip -0.000286   hrr +0.000571
+
+################################################################################
+# PART 7 — RECONCILIATION with the older 'shape was ruled out' record
+################################################################################
+
+  Instrument: src/training/residuals.ts analyzeResiduals(role=pitcher) — the SAME instrument the
+  original investigation used ("residual meta-model stu linear = −1.16/SD", "stu marginal XL +2.9
+  → XH −3.8"). NOTE two differences from Parts 1–6, both stated so the numbers are comparable:
+    · SIGN: that module reports valuation error = (actual − pred)×1000 for pitchers, i.e. POSITIVE
+      = the model OVER-VALUES the card. That is exactly −1000 × the ΔwOBAA used above. So a
+      NEGATIVE stu coefficient there == a POSITIVE (under-credit) Stuff slope here. Same finding.
+    · FIT: that module REFITS STUFFAUG_PIT on the window; Parts 1–6 use the DEPLOYED artifact.
+      They should agree closely (the deployed artifact is that fit, frozen) but not bit-exactly.
+    · WEIGHT: BF^0.75 there vs BF here.
+
+  systematic r² of the residual meta-model (z + z² + all pairwise interactions): 0.092
+    ⇒ 9% of the pitcher valuation error is ratings-explainable; the rest is noise.
+
+  per-rating meta-model coefficients (valuation-error points per ±1 SD; NEGATIVE = under-credits
+  the high end of that rating = the direction of the Stuff under-credit):
+  rating           linear       quad
+  stu               -0.07      -0.42
+  con               +0.48      +0.61
+  pbabip            +0.13      +0.17
+  hrr               -0.23      +0.11
+
+  pairwise INTERACTION coefficients, |largest| first — THE SHAPE TERMS. If shape were irrelevant
+  these are all ~0 next to the linear terms:
+    stu × hrr              +1.09
+    stu × pbabip           -0.66
+    con × hrr              -0.52
+    pbabip × hrr           -0.21
+    con × pbabip           -0.13
+    stu × con              +0.01
+
+  largest interaction |+1.09| (stu×hrr) vs largest linear |+0.48| (con)
+  ⇒ interactions are COMPARABLE TO the main effects — shape matters.
+
+  5-band marginals (valuation-error points per band, BF^0.75-weighted):
+    stu      XL +0.0 (n17)   L -2.4 (n30)   M -0.3 (n59)   H -1.9 (n29)   XH -4.1 (n14)
+    con      XL -3.0 (n17)   L -0.1 (n29)   M -2.6 (n60)   H +0.3 (n30)   XH +1.4 (n13)
+    pbabip   XL +1.8 (n17)   L -2.6 (n28)   M -1.1 (n63)   H -0.7 (n29)   XH -2.9 (n12)
+    hrr      XL -1.0 (n15)   L +0.1 (n30)   M -1.9 (n60)   H -1.0 (n30)   XH +0.0 (n14)
+
+  WHAT THE OLD RECORD ACTUALLY RULED OUT — this is the reconciliation that matters. The archived
+  finding reads "Stuff curve SHAPE ... tested K-curve = LOG/raw-linear/raw-quad/raw-cubic/log-cubic
+  ... NOT a shape problem." That is the shape of the K CURVE (its functional form), tested by
+  swapping the curve family. It is NOT the RATING-SHAPE question the amendment asks (does the bias
+  live in a multi-rating profile corner rather than along one axis). The two are different tests
+  and the old one does not answer the new one. The old record ALSO reports "per-BIP hit rate has
+  ZERO Stuff signal (confirms engine: no harder-contact)" — THAT one IS in direct tension with
+  Part 2's ranking, and the tension is reported, not smoothed over, in the verdict below.
+
+################################################################################
+# PART 8 — THE CONDITIONAL READ OUT OF FRAME (the audit's own sample, where the effect is real)
+################################################################################
+
+  Instrument: buildCwhitSample + the DEPLOYED line, pitcher rows, well-sampled only (the anchor
+  audit's exact sample). N=546 cards. Ratings joined from the catalog and side-pooled, as there.
+
+  Marginal Stuff slope in the audit's own units: +0.000080 wOBA per Stuff point
+  (the audit reported +0.00007 — this reproduces it, confirming the same instrument and sample).
+  1 SD of Stuff over this sample = 22.0 rating points.
+
+  ▸ pit wOBAA bias, per SD of Stuff
+     M1 stu (marginal)    : +0.001753  [+0.000713, +0.002777] ★ CI-CLEAR
+     M2 stu (conditional) : +0.001227  [+0.000173, +0.002273] ★ CI-CLEAR   ⇒ 70% of the marginal slope SURVIVES
+     M3 stu×con           : +0.000152  [-0.000529, +0.001010] covers 0 — no shape-corner term
+
+  ALL FOUR conditional coefficients (per SD, each holding the other three fixed) — this is the
+  scope amendment's real payoff: it shows how many axes independently carry the bias.
+  axis                            coef/SD                     95% CI
+  Stuff                         +0.001227     [+0.000078, +0.002273]  ★ independent axis
+  Control                       -0.001722     [-0.002812, -0.000743]  ★ independent axis
+  pBABIP (contact suppr.)       +0.000852     [-0.000236, +0.002172]
+  HR-rate (HRA)                 +0.000820     [-0.000373, +0.001921]
+
+  axis correlations on THIS sample (they differ from the league frame — that is the point):
+                   stu       con    pbabip       hrr
+  stu           +1.000    -0.344    -0.171    +0.097
+  con           -0.344    +1.000    +0.050    -0.054
+  pbabip        -0.171    +0.050    +1.000    -0.090
+  hrr           +0.097    -0.054    -0.090    +1.000
+
+  ⇒ THE STUFF SLOPE SURVIVES CONDITIONING OUT OF FRAME (70% retained, CI still excludes
+  zero). On the sample where the effect is real, Stuff is a GENUINE independent axis, not a proxy
+  for Control or the other ratings.
+
+################################################################################
+### VERDICT
+################################################################################
+
+  TWO SEPARATE ANSWERS, and they must not be blurred: WHICH CHANNEL carries the bias (Parts 1–3,
+  the original question) and WHICH RATING AXES drive it (Parts 4–8, the scope amendment). The
+  channel answer is strong and unchanged; the axis answer amends the brief's Stuff-only framing.
+
+  ── PART A: WHICH CHANNEL ──
+
+  THE CHANNEL IS BABIP — the pitcher CONTACT-RATE channel (the pit.h curve). Of the six channels that
+  exhaustively decompose the wOBA-allowed bias, BABIP carries +0.000032 wOBA per Stuff
+  point — 5.4× the next-largest channel (K, -0.000006) and +137% of the composite
+  slope of +0.000023. Every other channel is at or below the +0.000006 level and they
+  partially cancel one another. The carrier is the CONTACT RATE, not HR, not BB, not K.
+
+  STRENGTH OF THE CLAIM, STATED HONESTLY. Pooled, the BABIP slope's bootstrap CI is
+  [-0.000008, +0.000067] — it does NOT quite exclude zero at 95%, and so does the composite
+  it explains (+0.000023 [-0.000061, +0.000093]). N=149 rows is a small instrument. So this
+  is a LOCATION result, not a fresh significance result: the audit already established (out of
+  frame, larger sample) THAT the Stuff-correlated bias exists and is CI-clear; this measurement
+  says WHICH channel it flows through, and the answer is unambiguous by margin (5.4×) even where
+  the individual CI is not. The vL composite IS CI-clear here (+0.000075 [+0.000018, +0.000142]),
+  and BABIP is its largest channel (+0.000041, +55%) — the same verdict on the one sub-sample
+  where the composite clears on its own.
+
+  SHAPE: a LEVEL/quintile pattern (neither linear nor cubic partial is CI-clear on its own).
+  The pooled quintile pattern runs -1.451 (lowest-Stuff quintile) → +0.879 pts×1000
+  (highest), i.e. the model over-states the contact
+  the high-Stuff pitcher allows and under-states it at the bottom — a LEVEL SHIFT ACROSS THE STUFF
+  RANGE rather than a tail blow-up, with no CI-clear curvature. Read this as a CHANNEL shape only —
+  whether the driving AXIS is really Stuff is settled below (scope amendment), not here.
+
+  HAND ASYMMETRY: on the carrier channel, vR +0.000012 vs vL +0.000041 — each point estimate
+  sits inside the other's CI, so the CHANNEL slope is NOT distinguishably hand-split.
+  BUT THE COMPOSITE IS: vR -0.000040 vs vL +0.000075 — opposite signs, and only vL
+  clears its CI. The Stuff-correlated under-credit is concentrated on the vs-LHB side in frame.
+  That is a real hand-split flag on the COMPOSITE even though the carrier channel's own slope is
+  not separable by hand at this N — carry it forward as an open dimension, not a settled one.
+
+  WHERE K SITS (closing the pre-step): K contributes -0.000006 per Stuff point,
+  NEGATIVE — it pushes the composite bias DOWN as Stuff rises, exactly the sign the pre-step
+  predicted. K is not the mechanism; it is a PARTIAL OFFSET to it, and it enters wOBAA only
+  indirectly (a strikeout has no wOBA weight — it moves wOBAA solely by removing a ball in play).
+  HR contributes -0.000000 and BB +0.000004;
+  HR is an order below the carrier ⇒ the HR candidate named in the brief is NOT the seat of the
+  under-credit. Of the two contact-side candidates (pit.pbabip vs pit.hrr), it is pbabip.
+
+  READ THE CONSTRUCTION CAVEAT WITH THIS — it is what makes the result both expected and useful.
+  pit.bb, pit.k and pit.hr all carry ln(Stuff) in their fitted design (pit.k's driver IS Stuff;
+  pit.bb and pit.hr carry the stuffAug linear leg), so their in-frame Stuff slopes are pushed toward
+  zero BY LEAST-SQUARES. pit.h does not — Stuff never enters the contact-rate design at all. So this
+  measurement does NOT prove BB/HR are innocent OUT of frame. What it does establish is sharper and
+  sufficient: (a) the deployed pitcher form has NO STUFF PATHWAY INTO THE CONTACT RATE, a structural
+  hole rather than a mis-shaped curve; (b) the Stuff-shaped contact error that such a pathway would
+  have absorbed measures +0.000032/Stuff-point in frame, the same order as the audit's
+  out-of-frame composite (+0.00007) and the dominant term of the in-frame one; and (c) the K route,
+  the only Stuff pathway the form does have, moves the composite the WRONG WAY.
+
+  ── PART B: WHICH RATING AXES — SINGLE-AXIS OR SHAPE-DEPENDENT? (the scope amendment) ──
+
+  The defect is best described as MULTI-AXIS AND ADDITIVE — genuinely rating-SHAPE dependent, but with NO interaction corner.
+  That is a THIRD answer, distinct from both options the amendment posed, and it is the one the
+  data supports: 2 of the 4 pitcher ratings carry an INDEPENDENT, CI-clear slope on the bias
+  (Stuff +0.001227/SD, Control -0.001722/SD), each surviving
+  when the others are held fixed — so no single rating tells you the error, exactly as the doctrine
+  says. But the 2-way interaction terms are NOT distinguishable from noise, so the bias is not
+  concentrated in a shape CORNER either: it is ADDITIVE across several axes.
+
+  The numbers behind that call:
+
+   1. AXIS RANKING (in frame). By cubic R² on the composite residual:
+      Control 0.034  >  Stuff 0.032  >  HR-rate 0.013  >  pBABIP 0.006.
+      Stuff ranks 2 of 4. Control carries MORE residual structure than Stuff, and the
+      conditional coefficient set puts Control (-0.000999/SD) ahead of Stuff (+0.000092/SD).
+      The brief's framing on Stuff alone was NOT the best axis.
+      (All four axis CIs cover zero in frame — this ranking is by point estimate, and at N=149 it
+      is an ordering of weak signals. It is corroborating evidence, not the call.)
+   2. CONDITIONING, IN FRAME. Marginal Stuff +0.000472/SD → conditional +0.000092/SD
+      (20% retained). Both CIs cover zero, so this is directional only.
+   3. CONDITIONING, OUT OF FRAME — THE DECISIVE ONE. On the cwhit sample (N=546) where the
+      marginal effect IS established: marginal +0.001753/SD (CI-clear) → conditional
+      +0.001227/SD [+0.000173, +0.002273] (still CI-clear) — 70% retained.
+      The Stuff slope SURVIVES holding the other three ratings fixed ⇒ Stuff is a GENUINE
+      INDEPENDENT AXIS on the sample that matters, not a proxy for Control.
+      Out-of-frame stu×con interaction: +0.000152/SD² [-0.000529, +0.001010] covers 0.
+   4. SHAPE CORNERS, TESTED AGAINST A PERMUTATION NULL. Largest 3×3 interaction cell:
+      Stuff×Control +0.00590 (p=0.485), Stuff×HR-rate +0.00565 (p=0.357),
+      against a Stuff main-effect quintile spread of only +0.00093. NEITHER corner beats its noise
+      null — the cells hold 11–23 rows and corners that large arise by chance. The eye-catching
+      corner is NOT evidence; this is exactly the trap the amendment warns about, and it does not
+      fire here.
+   5. INDEPENDENT INSTRUMENT (Part 7, the old record's own): meta-model systematic r² 0.092;
+      largest interaction stu×hrr +1.09 EXCEEDS the largest linear con +0.48,
+      and the stu LINEAR term is only -0.07 with a quad of -0.42. On the old
+      record's OWN instrument the structure looks interaction-led rather than Stuff-linear-led.
+      TENSION WITH ITEM 4, FLAGGED NOT HIDDEN: that meta-model's interaction coefficients are
+      ridge point estimates with NO significance test, while the corners that WERE tested
+      (permutation null, item 4; bootstrap CI, item 3) did not fire. Where they disagree, trust
+      the tested reads — item 5 is suggestive only, and it is why the call above is ADDITIVE
+      multi-axis rather than shape-corner.
+
+  CONTRADICTION WITH THE OLD RECORD, STATED PLAINLY. The archived investigation recorded "per-BIP
+  hit rate has ZERO Stuff signal (confirms engine: no harder-contact)" and used that to rule the
+  contact channel out. Part 2 ranks the CONTACT-RATE channel FIRST (+0.000032/Stuff-point,
+  5.4× the next channel). These disagree. Both can be partly right and the difference is
+  informative: the old test asked whether the RAW per-BIP hit rate correlates with Stuff (an engine
+  question — does high Stuff produce weaker contact); this one asks whether the MODEL'S BABIP
+  RESIDUAL correlates with Stuff (a model question — does the fitted contact curve mis-place cards
+  by Stuff). A curve fit on pBABIP alone can leave a Stuff-shaped residual even when the raw rate
+  carries no Stuff signal, because the OTHER channels' errors move BIP and the pBABIP→hits curve
+  is evaluated at the wrong BIP. Note also the old test predates the deployed 42-43 fit and the
+  stuffAug legs. THE OLD "ZERO STUFF SIGNAL IN CONTACT" CONCLUSION SHOULD NOT BE CARRIED FORWARD
+  UNEXAMINED — re-running it against the deployed artifact is the cheap way to settle it, and it
+  is NOT settled here.
+
+  WHAT THE AMENDMENT CHANGES ABOUT THE REMEDY. The pre-amendment draft of this artifact named a
+  linear Stuff aux term on pit.h (the analogue of the stuffAug legs pit.bb and pit.hr carry).
+  THE SHAPE READS AMEND IT — the CHANNEL stands, the AXIS SET does not. A pit.h aux keyed on Stuff
+  ALONE would leave the other CI-clear axes uncorrected (notably Control at -0.001722/SD,
+  the opposite sign to Stuff — the classic low-Stuff/high-Control over-valuation).
+  The remedy shape is therefore a MULTI-RATING aux on pit.h — ADDITIVE (no interaction term is
+  warranted: every corner test came back inside its null) — with the axis set taken from the
+  CONDITIONAL coefficients above, not from the marginal Stuff slope. Which ratings and what
+  magnitudes requires a fit, and fitting is out of scope here.
+  NOT a K-curve change (ruled out by the pre-step — wrong sign). NOT an HR-curve change (an order
+  too small here). NOT an anchor change (the anchor provably cannot absorb a rating-correlated
+  bias — that is the audit's whole point).
+  PROPOSED, NOT FIT, NOT WIRED. The form ruling is Fable's.
+
+(end of artifact — Stuff-residual channel locator)

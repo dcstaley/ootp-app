@@ -1,0 +1,651 @@
+################################################################################
+# REFUTATION — docs/OPPONENT_TERM_PREREG_2026-07-25.md (incl. §4.3a, added mid-review)
+# Independent skeptic, 2026-07-25.  ANALYSIS ONLY. Nothing fit into production,
+# nothing wired, nothing committed, no production file touched.
+#
+# New measurement run for this review (temporary harnesses, deleted after use — the
+# code is reproduced inline in §M so every number below can be re-derived):
+#   M1  identification at the (LEAGUE × season × cell) grain, with/without cell×season FE
+#   M2  power of that identification + the FE'd slope's own CI + a LOCO curvature test
+#   M3  the absorption CEILING on the bake-off's OWN metrics at the harness's OWN grain
+#   M4  the pitcher XBH share in the data (tests the §3 structural exclusion)
+################################################################################
+
+################################################################################
+### VERDICT:  EXECUTE-WITH-AMENDMENTS — but not the experiment as written.
+################################################################################
+
+  The prereg has TWO independent arguments bolted together, and they have opposite
+  standing. §4.3a (the deployed pitcher form was never in the bake-off; it is a greedy
+  sequence of pairwise-vs-incumbent changes) is CORRECT, verified in code, and if
+  anything UNDERSTATED — an independent audit of the five post-bake-off changes found
+  exactly one of them ran bidirectional out-of-time, and that one tested a form that was
+  not shipped. A form re-selection is overdue on that ground alone. §2 (the form ranking
+  is suspect because opponent-blind candidates competed on ABSORBING the missing
+  opponent) is NOT SUPPORTED. Its second named instance contradicts its own cited
+  evidence, and the absorption prize it postulates is, measured on the bake-off's own
+  metrics at the bake-off's own grain, +0.0245 Pearson for pitchers and +0.0007 for
+  hitters as a CEILING at perfect absorption, of which ≤6% / ≤18% is reachable by any
+  own-ratings form — and exactly 0.000 on top-N overlap and value-regret, the two
+  decision metrics. Worse, the ESTIMAND itself does not survive identification: the
+  matchup cell is a deterministic function of (own hand, side), and once the cell×season
+  level is held at the league grain, the response of PITCHER BB — the largest channel in
+  the survey, 62.6% — falls from −0.252 to −0.010 with a CI covering zero. The scales
+  the prereg proposes to fit are, for the biggest channel, a platoon dummy wearing an
+  opponent-rating label, and G1 cannot tell the difference because both mechanisms
+  produce the same cell levels. EXECUTE the §4.3a form-selection debt as its own,
+  separate, non-atomic project. Do NOT execute P1→P4 as specified: replace P1's gates,
+  fix the §1 default, and re-scope P4.
+
+################################################################################
+### THE SINGLE STRONGEST ARGUMENT AGAINST EXECUTING IT
+################################################################################
+
+  THE OPPONENT RESPONSE IS NOT IDENTIFIED AS A RESPONSE TO OPPONENT QUALITY. IT IS
+  IDENTIFIED AS A 4-LEVEL PLATOON CONTRAST, AND THE PREREG PROPOSES TO FIT IT AS THE
+  FORMER AND EXTRAPOLATE IT TO TOURNAMENT POOLS.
+
+  In tools/opponent-term-channel-survey.ts the regressor is `oppVal(d, r)` (line 233):
+  the (season × cell) mean opposing rating. The cell is `${r.T}|${r.B}` (line 201) —
+  pitcher hand × batter hand. For a pitcher, `T` is his `throws` and `B` is `o.side`;
+  for a hitter, `T` is `o.side` and `B` is his resolved bat-hand. So THE CELL IS A
+  DETERMINISTIC FUNCTION OF (own hand, side). The regressor therefore takes exactly 28
+  distinct values over 719/789 rows (M1 §0, measured), is perfectly collinear with a
+  4-level platoon dummy, and the "fitted response … CI [−0.322, −0.263]" is a slope
+  through 28 points, not 719.
+
+  The discriminating test: rebuild at the (LEAGUE × season) grain, where opposing quality
+  genuinely varies ACROSS the five leagues inside the same (season, cell) — 132 design
+  points instead of 28 — and ask whether the response survives a (cell × season) fixed
+  effect. If the mechanism is opponent quality, it must. Measured (M1 §1, M2 §B):
+
+     channel        raw slope   +cell×season FE      95% CI (card cluster)   surviving
+     PITCHER BB        -0.252            -0.010          [-0.066, +0.035]          4%   COVERS 0
+     PITCHER K         +0.676            +0.170          [+0.067, +0.254]         25%   CI-clear
+     HITTER BB         +0.233            +0.174          [+0.071, +0.278]         75%   CI-clear
+     HITTER K          -0.406            -0.172          [-0.293, -0.069]         42%   CI-clear
+     HITTER HR         +0.084            +0.085          [+0.037, +0.131]        101%   CI-clear
+     PITCHER HR        -0.082            -0.111          [-0.136, -0.088]        136%   CI-clear
+
+  PITCHER BB — the survey's #1 channel (62.6% of residual mean-square, the largest
+  composition gap in the whole survey at 23 EYE points, the channel that carries the
+  stuffAug verdict) — HAS NO MEASURABLE RESPONSE TO OPPOSING EYE once the platoon cell is
+  held. This is not low power: the within-cell sd of opposing EYE is 3.21 rating points
+  (24% of total, M2 §A) across 132 cells, and the CI [−0.066, +0.035] EXCLUDES the raw
+  −0.252 and the model's own pricing −0.380 by a wide margin. Nor is it generic
+  attenuation: PITCHER HR resolves a CI-clear slope on a SMALLER within-cell signal, and
+  both HR channels survive at ≥100%. The instrument works. Pitcher BB specifically fails.
+
+  WHAT THAT MEANS. Whatever produces the pitcher-BB same/opposite level gap is a property
+  of the MATCHUP CELL, not a dose-response to the opposition's walk-drawing ability. The
+  survey's own text names the two live alternatives and then does not test either:
+  manager-selected exposure (§"A CAVEAT THAT APPLIES TO EVERY NUMBER ABOVE"), and — not
+  named at all — the possibility that the engine applies a platoon adjustment ON TOP of
+  the hand-split ratings. The plan's mechanism claim that "no mechanism makes the
+  rating→outcome CONVERSION hand-dependent" (REBUILD_MATCHUP_CHANNEL_PLAN.md:342-344) is
+  ASSERTED, never tested. M1 is the first test of it, and for pitcher BB it fails.
+
+  A term fitted on the raw contrast and shipped will price opponents at ~0.76× the
+  model's own curve on pitcher BB. In a tournament pool whose opposing EYE sits 20 points
+  off the league frame that is 20 × 0.380 × 0.76 ≈ 5.8 uBB/600 ≈ 0.007 wOBA of invented
+  signal, on a channel where the honest estimate is 0.03× [−0.09, +0.17]. That is larger
+  than any correction the program currently ships, and G6 (extrapolation safety) checks
+  boundedness and monotonicity — not whether the slope is real.
+
+  AMENDMENT THAT FIXES IT (mandatory before any fit):
+    A-1. REPLACE G3's identification test. A channel's scale may move off its default ONLY
+         if it is CI-clear on the WITHIN-(season × cell) variation at the LEAGUE grain —
+         i.e. the M1/M2 estimator — not on the raw contrast. Report both numbers for every
+         channel. On today's evidence that admits at most PITCHER K, HITTER BB, HITTER K
+         and the two HR channels, and EXCLUDES PITCHER BB.
+    A-2. Add a pre-registered PLACEBO: fit the same S1 scale with the opposing rating
+         REPLACED by a pure same/opposite indicator scaled to the same cell means. If the
+         indicator fits as well as the rating-based term (it will, on 28 points), the
+         rating parameterisation is not doing the work and the term must not be
+         extrapolated on the rating axis.
+
+################################################################################
+### LINE OF ATTACK 1 — IS THE CENTRAL INFERENCE (§2) SOUND?
+################################################################################
+
+  ANSWER: the MECHANISM is real, the MAGNITUDE is off by roughly two orders of
+  magnitude, and one of the two named instances is a misreading of the prereg's own
+  cited evidence.
+
+  ── 1a. WOULD THE BAKE-OFF'S METRICS REWARD ABSORPTION? Partly, and far less than §2 needs.
+
+  The reviewer's hypothesis (affine-invariant Pearson may be blind to a level effect) is
+  half right. The absorption is a level effect PER CELL, not a global level, so Pearson
+  is NOT blind to it by affine-invariance. But the size is the question, and it is
+  measurable. M3 does it at the harness's exact grain (loadWindow SUMS seasons into one
+  row per card×side — evaluate.ts:34/54/62 all work on that object) with the harness's
+  own metric code (src/training/metrics.ts), on the DEPLOYED forms:
+
+    HITTER (n=173 rows / 74 cards, window 2042+2043)
+      cell    weight share   mean(actual − pred) wOBA
+      L|L           10.8%                +0.00112
+      L|R           28.6%                +0.00079
+      R|L           34.1%                +0.00066
+      R|R           26.5%                -0.00227      cell-level spread 0.00339 wOBA
+
+      metric            as-is    cell level removed         Δ
+      pearson         0.91250               0.91320   +0.00070
+      spearman        0.80810               0.80840   +0.00030
+      gapRmse         0.00604               0.00588   -0.00016
+      topNOverlap     0.73080               0.69230   -0.03850   (absorption makes it WORSE)
+      valueRegret     0.00269               0.00272   +0.00003   (WORSE)
+
+    PITCHER (n=149 rows / 67 cards)
+      cell    weight share   mean(actual − pred) wOBA
+      L|L           10.8%                -0.00565
+      L|R           25.9%                +0.00171
+      R|L           34.2%                +0.00238
+      R|R           29.0%                -0.00609      cell-level spread 0.00847 wOBA
+
+      metric            as-is    cell level removed         Δ
+      pearson         0.79100               0.81550   +0.02450
+      spearman        0.75870               0.76020   +0.00150
+      gapRmse         0.00762               0.00645   -0.00117
+      topNOverlap     0.53850               0.53850   +0.00000   (NO prize at all)
+      valueRegret     0.00500               0.00501   +0.00001   (NO prize at all)
+
+  Those Δ are the CEILING — what a form would gain if it absorbed the cell structure
+  PERFECTLY. The reachable fraction is bounded by how well own ratings can express the
+  cell level at that grain. Weighted R² of the cell level on [1, five/four own ratings,
+  their squares] — a design MORE flexible than any deployed channel curve:
+      HITTER 0.179     PITCHER 0.060
+  So the realistically reachable Pearson prize is ≈ 0.0245 × 0.060 ≈ +0.0015 (pitchers)
+  and ≈ 0.0007 × 0.179 ≈ +0.0001 (hitters).
+
+  READ. §2's claim — "a form search will select whichever candidate BENDS ENOUGH TO
+  ABSORB IT. Flexibility then scores well for a reason unrelated to correctness" — is
+  quantitatively FALSE on the hitter side (prize ≈ 1e-4 Pearson, and NEGATIVE on top-N
+  overlap) and marginal on the pitcher side (≈1.5e-3, versus decision margins of ~1e-3
+  to 7e-3 in the actual comparisons that were run). It is EXACTLY ZERO on top-N overlap
+  and value-regret in both roles. Every conclusion of the form "closing the omission can
+  change the ranking" rests on a prize that the harness's decision metrics cannot see.
+
+  ── 1b. THE K-CURVATURE INSTANCE CONTRADICTS ITS OWN CITED EVIDENCE.
+
+  Prereg §2, second bullet, verbatim: "**The pitcher K curve's apparent need for extra
+  curvature is 53.8% composition.** The 'quadratic isn't flexible enough' reading was
+  largely the opponent pushing on the own-rating curve."
+
+  53.8% is the share of the channel's residual MEAN SQUARE removed by the cell level. It
+  is a LEVEL decomposition. It says nothing about curvature. The prereg's own two cited
+  fixtures measure the curvature question directly and both say the OPPOSITE:
+
+   • fixtures/opponent-term-channel-survey-2026-07-25.txt, PITCHER K item 5:
+       "raw -0.4983 [-1.266, -0.002] CI-clear  →  corrected -0.5999 [-1.148, -0.366]
+        CI-clear ⇒ removing composition STRENGTHENS this channel's own-rating shape."
+     Across the four big channels the same column reads STRENGTHENS ×3 (pit K, hit BB,
+     hit K), unchanged ×1 (pit BB), WEAKENS ×0. Zero of four support the thesis.
+
+   • fixtures/REFUTATION-kcurve-hand-2026-07-25.txt:45 — "Removing the composition makes
+     the pooled cubic STRONGER and CLEANER, not weaker"; and §12 — "The CUBIC now earns
+     its keep: LOCO 13.34 vs 14.77 uncorrected (−9.7%), and it beats every 2–3 parameter
+     alternative on all three folds."
+
+  Independently measured for this review (M2 §C — leave-one-CARD-out weighted MSE of
+  degree-1/2/3 polynomials in the own rating, on the observed per-600 rate, RAW vs with
+  the (cell × season) level removed; the % is the LOCO MSE reduction vs degree 1):
+
+      channel        target                 deg-2 gain   deg-3 gain
+      PITCHER BB     RAW                        32.97%       30.23%
+      PITCHER BB     − cell×season level        40.34%       39.48%   ↑ curvature MORE useful
+      PITCHER K      RAW                         0.15%        0.76%
+      PITCHER K      − cell×season level         0.17%        6.13%   ↑ 8× MORE useful
+      HITTER BB      RAW                        19.40%       22.16%
+      HITTER BB      − cell×season level         6.48%       15.97%   ↓ less useful
+      HITTER K       RAW                        15.10%       14.50%
+      HITTER K       − cell×season level        12.80%       13.23%   ↓ marginally less
+      HITTER HR      RAW                        11.44%       11.20%
+      HITTER HR      − cell×season level         9.85%        9.67%   ~unchanged
+      PITCHER HR     RAW                         0.82%       -0.40%
+      PITCHER HR     − cell×season level         1.48%        0.16%   ~unchanged
+
+  On the PITCHER side — the side the prereg names — correcting the composition makes
+  curvature MORE valuable, not less. The claim that the K quad's flexibility was
+  absorbing the opponent is refuted by three independent measurements, two of which the
+  prereg itself cites. The hitter side shows mild absorption (hit BB deg-2 gain
+  19.4%→6.5%), which is a real finding — but it is on the role where the absorption
+  prize on the harness metric is +0.0001 Pearson.
+
+  ── 1c. WHAT SURVIVES OF §2. Exactly one instance: stuffAug. It is a LINEAR AUX TERM,
+  not curve flexibility, and the survey's own read is that "roughly half to two-thirds of
+  the shipped coefficient is exposure" with 52.5% surviving CI-clear on the wide window.
+  One partly-confounded linear coefficient on one channel is not a basis for re-running
+  the entire form selection. §4.3a is.
+
+  AMENDMENT:
+    A-3. RETRACT §2's second bullet ("the pitcher K curve's apparent need for extra
+         curvature is 53.8% composition") and the sentence "the current winner is a live
+         candidate for being OVER-flexible once its extra job is removed" as applied to
+         the pitcher K channel. Replace with the measured fact: on the pitcher side,
+         removing the composition INCREASES the predictive value of curvature.
+    A-4. Restate §2's motivation as §4.3a's — the deployed form was never scored against
+         the field — and drop the absorption framing as the justification, keeping it
+         only as a hitter-side caveat with its measured size (≤ +0.0007 Pearson ceiling,
+         0.000 on the decision metrics).
+
+################################################################################
+### LINE OF ATTACK 2 — IS THE EFFECT IDENTIFIABLE ONCE THE TERM IS FITTED?
+################################################################################
+
+  Largely answered above. Three additional findings.
+
+  2a. THE SURVEY MEASURES OPPOSITION AT THE WRONG GRAIN, AND IT INFLATES THE RATIOS.
+  `obsOf(year)` with no league argument (tool line 107) pools ALL FIVE LEAGUES into one
+  composition per (season, cell) — but a PEL pitcher faces PEL hitters, not HD453's. At
+  the correct (league × season × cell) grain the raw slopes shrink, and every pricing
+  ratio drops below 1.00:
+
+      channel      survey slope   league-grain slope   model's own pricing   survey ratio   correct-grain ratio   FE'd ratio
+      PITCHER BB         -0.291               -0.252                -0.380         0.76×                 0.66×        0.03×
+      PITCHER K          +0.842               +0.676                +0.737         1.14×                 0.92×        0.23×
+      HITTER BB          +0.284               +0.233                +0.471         0.60×                 0.49×        0.37×
+      HITTER K           -0.595               -0.406                -0.457         1.30×                 0.89×        0.38×
+      HITTER HR          +0.094               +0.084                +0.115         0.82×                 0.73×        0.74×
+      PITCHER HR         -0.086               -0.082                -0.140         0.61×                 0.59×        0.79×
+
+  The survey's headline "THE PRICING RATIOS SAY THE TERM IS ALREADY SPECIFIED, NOT
+  INVENTED … the model contains the number" rests on two readings above 1.00 (pit K 1.14,
+  hit K 1.30). BOTH are grain artifacts. At the correct grain nothing exceeds 0.92 and
+  the mean is 0.71; on the identification-honest estimator the four big channels sit at
+  0.03–0.38×. The claim that the model already prices the opponent correctly is not
+  supported by its own data measured properly.
+
+  2b. THE CLUSTER-LEVEL OBJECTION DOES NOT HOLD — reported because it is the objection a
+  reviewer would expect. I re-bootstrapped every slope clustering by (season × cell) and
+  by (league × season × cell) instead of by CARD (M1 §2). The card-cluster CIs are NOT
+  systematically too narrow — widths are comparable or wider than the alternatives on
+  five of six channels (e.g. PITCHER K card 0.371 vs season×cell 0.214). The survey's
+  choice of bootstrap grain is defensible. This objection is withdrawn.
+
+  2c. WHERE THE IDENTIFYING VARIATION COMES FROM WHEN THE TERM IS FITTED. Under S1 the
+  opponent input is "the model's own predicted rate for the opposing card" — but in-frame
+  a card's row aggregates ALL opposition it faced, so the input collapses to the cell's
+  mean predicted opposing rate: 28 numbers per channel (132 if leagues are separated).
+  Eight scales are then fitted against 28 (or 132) design points that are ALSO collinear
+  with a platoon dummy. This is exactly the design REBUILD_MATCHUP_CHANNEL_PLAN.md's
+  AMENDMENT 2 set as a kill condition for the tournament route ("~14 opposition points,
+  confounded"); the league route it was replaced by has 28, confounded with hand.
+  The STATUS UPDATE at :313 declares the identifiability objection "MATERIALLY WEAKENED"
+  on the strength of the raw contrast alone. M1 shows that weakening was premature.
+
+  AMENDMENT:
+    A-5. Re-run the survey at the (league × season × cell) grain before any fit and
+         republish the ratio table. The 1.00 default in §1 is currently justified by two
+         numbers that do not survive the grain correction.
+
+################################################################################
+### LINE OF ATTACK 3 — THE DEFAULT-SCALE-1.00 RULE (§1)
+################################################################################
+
+  IT IS NOT CONSERVATIVE. It is the least conservative of the three options (0, 1.00, or
+  "do not ship this channel"), and there is now a concrete case.
+
+  §1: "A channel whose scale the data cannot pin STAYS at 1.00. It is not dropped, not
+  special-cased, and not set to zero."
+
+  Note first what the prereg itself tabulates: three of four measured ratios EXCLUDE 1.00
+  (0.76 [0.69,0.85], 0.60 [0.51,0.68], 1.30 [1.10,1.52]). A default is supposed to be the
+  value the data is silent about; here the data is loudly not-1.00 wherever it speaks.
+
+  THE CONSTRUCTED CASE — PITCHER BB, and it is not hypothetical:
+    · the model's own hitter-BB curve prices an opposing EYE point at 0.380 uBB/600;
+    · scale 1.00 ships exactly that;
+    · the identification-honest estimate is 0.03× with CI [−0.09, +0.17] (M2 §B), which
+      EXCLUDES 1.00 by a factor of ~6 on the CI's own upper edge;
+    · G3 as written would leave it at 1.00, because the FE'd estimate is "not CI-clear".
+  So the rule takes the ONE channel where the honest evidence says the opponent response
+  is near zero and ships the largest possible response for it. Today that channel is
+  opponent-blind and costs nothing in-frame; after P4 it would inject ~0.38 uBB/600 per
+  opposing-EYE point into every out-of-frame pool. At a 20-point pool gap that is ~7.6
+  uBB/600 ≈ 0.009 wOBA of pure fabrication, on the channel with the LARGEST measured
+  composition gap in the corpus and therefore the largest lever.
+
+  The asymmetry the rule ignores: the status quo (opponent-blind) is a KNOWN, MEASURED,
+  in-frame-calibrated state whose out-of-frame error the shipped correction layer was
+  fitted against. Scale 1.00 is an UNMEASURED state. "Not dropped, not special-cased" is
+  a governance virtue, not a statistical one — declining to estimate a parameter is not
+  the same as asserting it equals the largest value on the table.
+
+  AMENDMENT:
+    A-6. The default for an unpinned channel is 0.00 (= the status quo, opponent-blind),
+         NOT 1.00. A scale moves off 0.00 only under A-1. This is the only default that
+         preserves the property the program actually needs: that an unresolved question
+         leaves behaviour unchanged, so the shipped correction layer stays valid for it.
+         If 1.00 is retained for governance reasons, then §1 must additionally require
+         that any channel left at default be reported as a NEW published residual under
+         G8 — which, per G8's own rule, would need an explicit STOP.
+
+################################################################################
+### LINE OF ATTACK 4 — DOUBLE-COUNTING WITH THE EXISTING CORRECTION LAYER
+################################################################################
+
+  4a. THE PREREG'S DISTINCTNESS CLAIM IS TRUE IN CODE. Verified:
+    · src/scoring-core/hit-tail.ts:13-17 — "the correction must be exactly the identity at
+      zero pool gap — which it is BY CONSTRUCTION: every strength is λ·w(g) with g = k−1
+      … league/unrestricted pool ⇒ k ≤ 1 ⇒ g = 0 ⇒ no-op."
+    · src/model/matchup.ts:38 — `matchupShift = buildFrameShift(opp.train, opp.pool)`, and
+      the matched-legs construction (server.ts trainingMeans comment) collapses the
+      in-frame gap to ~0.
+    · The independent audit in fixtures/hitter-residual-channels-2026-07-25.txt Part 7
+      confirms it empirically ("applyHitTail is the EXACT IDENTITY" in frame).
+  §7's assertion stands. This part of the prereg is correct and well-founded.
+
+  4b. BUT G7 IS NOT A GATE — IT IS A RIDGE. This is the harder question and the prereg
+  does not address it. The shipped ramps' coordinate is g = μ_train/μ_pool − 1, a function
+  of the OPPOSING FIELD's mean. An S1 opponent term's input is the opposing field's mean
+  predicted rate. OUT OF FRAME these are the same stimulus, up to a monotone map. So after
+  P4, tournament behaviour is governed by (opponent scale) × (ramp λ) along a ridge, and
+  the only data that can separate them is the tournament corpus — which the program's own
+  record says is 3-runnings-thin on Bronze-t, cannot resolve elite spread (τ_elite → 1e-9,
+  "requires 15–20 runnings/tier"), and whose deconvolved-spread instrument already FAILED
+  once. G7 says "refit … then the full C6 gates + Scorecard v2, no worse than the shipped
+  baseline." A ridge refit will meet "no worse than" by construction — it has a free
+  parameter to spend — while the SPLIT between the model term and the ramp is arbitrary.
+  The consequence is not a bad scorecard; it is that after P4 nobody can say which part of
+  the out-of-frame behaviour is the model and which is the patch, and the next retrain
+  will land somewhere else on the ridge.
+
+  AMENDMENT:
+    A-7. G7 must add an IDENTIFIABILITY condition, not just a non-regression one: the
+         opponent scale must be FROZEN at its in-frame (league) estimate and NOT refit on
+         tournament data; only the ramp λ may move. And G7 must report the ramp's
+         sensitivity to the opponent scale — dλ/d(scale) over the scale's CI. If a ±1 CI
+         of the scale moves λ by more than its own need-SE, the two are not separable and
+         the event must not ship both.
+    A-8. Pre-register, before the refit, what a "no worse than the shipped baseline"
+         scorecard would look like under the NULL that the opponent term does nothing but
+         re-parameterise the ramps. If the predicted null scorecard is indistinguishable
+         from the predicted success scorecard, G7 is not a test.
+
+################################################################################
+### LINE OF ATTACK 5 — G1's 15% BAR
+################################################################################
+
+  G1 IS AN IN-SAMPLE GOODNESS-OF-FIT DIAGNOSTIC DRESSED AS A GATE. It measures the share
+  of residual mean-square explained by matchup-cell FE after S1. But the S1 scale is a
+  single free parameter per channel fitted, by least squares, on a design whose dominant
+  structure IS the cell level. Asking whether the fit removed the thing it was fitted to
+  remove is not a test of mechanism.
+
+  · CAN A TERM PASS G1 AND STILL MAKE THE MODEL WORSE? Yes, and this is the live case. A
+    pure platoon dummy — scale × (a same/opposite indicator) — passes G1 outright, because
+    it IS the cell level. The rating-parameterised term is, on 28 collinear design points,
+    numerically indistinguishable from it (M1). It then extrapolates on the RATING axis to
+    tournament pools where the platoon mixture is different and the rating levels are far
+    outside the fitted domain. G1 passes; G6 checks boundedness and monotonicity, not
+    whether the axis is real; and the model ships a slope that M2 says is 0.03× on the
+    largest channel.
+  · CAN A CORRECT TERM FAIL G1? Yes. If part of the cell level is NOT opponent quality —
+    manager selection, or an engine-side platoon adjustment — a CORRECT opponent term will
+    leave that part behind and can miss 15%. G1 then kills a correct term for being honest.
+    G1 is wrong in both directions.
+  · IS THE 15% BAR EVEN THE BINDING CONSTRAINT? No: G2 is a NON-REGRESSION gate ("no worse
+    than the current model"), so P1 as specified CANNOT KILL THE PROJECT — a term that does
+    nothing passes G2 trivially and, per the argument above, passes G1 too. This directly
+    contradicts §5 ("This phase alone can end the project") and §10 (whose stated null —
+    "S1 absorbs little AND out-of-time metrics do not move" — is not what G1/G2 test). The
+    prereg's stopping rule and its gates disagree with each other.
+
+  A BETTER GATE — proposed, and cheap:
+    G1′ (LEAVE-ONE-CELL-OUT + WITHIN-CELL). Two conditions, both required:
+      (i) OUT-OF-CELL: fit the eight scales with one matchup cell HELD OUT; predict the
+          held-out cell's level; repeat for all four cells. A term that has learned an
+          opponent response predicts an unseen cell's level from that cell's opposing
+          profile. A term that has learned a platoon dummy cannot — it has no value for
+          the held-out level. Pre-commit the bar in the deliverable's own units: the
+          out-of-cell prediction error must be below need-SE.
+      (ii) WITHIN-CELL: the fitted scale must be reproduced, within its CI, by the
+          M1/M2 within-(season × cell) estimator at the league grain (A-1).
+    Failure of (i) in PITCHER BB and PITCHER K — the two the prereg nominates as its
+    stop condition — is then a real stop, on a real quantity.
+
+  AMENDMENT:
+    A-9. Replace G1 with G1′. Replace G2's "no worse than" with a two-sided condition:
+         the term must be no worse on the decision metrics AND must show a pre-committed
+         positive movement somewhere, or P1 reports the null and P2 does not run.
+
+################################################################################
+### LINE OF ATTACK 6 — THE JOINT-CONVERGENCE SCHEME (§4.4, G5)
+################################################################################
+
+  6a. CONVERGENCE IS NOT GUARANTEED, AND CONVERGENCE WOULD NOT BE EVIDENCE. §4.4 fits
+  hitters against the current pitcher form, then pitchers against the new hitter form,
+  and iterates. That is NOT block-coordinate descent: the hitter step minimises the
+  HITTER SSE and the pitcher step minimises the PITCHER SSE. There is no single objective
+  that both steps decrease, so the standard monotonicity argument does not apply. What is
+  actually being run is a fixed-point iteration of a general map T(hit, pit). Such maps
+  can cycle, diverge, or admit multiple fixed points, and nothing in the prereg bounds the
+  map's contraction. Even a converged point is not a stationary point of any joint
+  likelihood — so "it converged" carries no statistical content whatever. G5 treats
+  non-convergence as a STOP and convergence as a pass; only the first of those is
+  informative.
+
+  6b. THE 0.02 CRITERION IS TIGHTER THAN THE ESTIMATION PRECISION. The scales' CIs, on the
+  prereg's own table, span 0.16–0.42 (pit BB [0.69,0.85]; pit K [0.86,1.38]; hit K
+  [1.10,1.52]). A convergence criterion of "every scale moving < 0.02" is 8–20× tighter
+  than the uncertainty in the scales themselves. It is a numerical-precision test, and it
+  will pass for any stable arithmetic — including a fixed point that is statistically
+  meaningless.
+
+  6c. THE ENTANGLEMENT IS SMALLER THAN THE MACHINERY. In-frame, the opposing input under
+  S1 reduces to the mean predicted opposing rate PER CELL — 4 numbers per role per channel
+  (28 with seasons). The "joint fit" is therefore an iteration over ~28 constants, not a
+  genuinely coupled functional problem. P3 is engineering built for a problem the corpus
+  does not pose.
+
+  AMENDMENT:
+    A-10. Drop the fixed-point iteration. Fit both roles' curves and both roles' scales in
+          ONE weighted least-squares problem over the stacked hitter+pitcher rows (the
+          harness already passes `opp` to BakeoffModel.fit — bakeoff.ts:63 — and
+          fitMatchupK already does exactly this stacking, forms.ts:724-733). A single
+          objective gives a unique optimum, an honest df count, and makes G5 unnecessary.
+          If the iteration is kept, G5's criterion must be stated in the SCALE's own SE
+          units (e.g. < 0.1 × SE), and multi-start from every candidate form must be
+          required with the fixed-point SET published, not just the one reached.
+
+################################################################################
+### LINE OF ATTACK 7 — COST VS THE ALTERNATIVE; AND THE §4.3a RE-WEIGHING
+################################################################################
+
+  7a. §4.3a IS CORRECT AND IS UNDERSTATED. Verified independently:
+    · src/server/server.ts:1567 — `eventForm = { hit: fitHitForm(RAWPOLY_HIT, hitQual,
+      0.75, vertexPinned), pit: fitPitForm(PARETO_PIT, pitQual, 0.75, vertexPinned) }`.
+    · src/training/forms.ts:818-845 — FORM_ENTRIES contains `pitEntry(RAWPOLY_PIT)`;
+      PARETO_PIT, STUFFAUG_PIT and SATBB_PIT appear nowhere in it.
+    · RAWPOLY_PIT (:641) = {bb LOG, k LOG, hr Q2, h LOG, no aux};
+      PARETO_PIT (:668) = {bb LOG, k Q2, hr Q2, h Q2, stuffAug true}. The table in §4.3a is
+      accurate.
+    An audit of the five post-bake-off changes found: `stuffAug` — NO committed evidence
+    artifact at all, the OOT claim survives only in a commit message and was made under
+    OOT semantics that were replaced six days later; the STUFFAUG_PIT→PARETO_PIT switch —
+    the deciding step (the B.2 channel-subset search) ran CV and OOT-DOWN ONLY, never a
+    forward out-of-time test, over 6 subsets of one family with `stuffAug` frozen ON;
+    XBH rawpoly→LOG — in-sample only, no CV, no OOT, no artifact beyond a commit message;
+    the vertex pin — the only link with a committed, reproducible fixture, but in-sample +
+    CV only, no OOT in either direction; SATBB — pairwise, OOT-down only, rejected.
+    EXACTLY ONE step ran bidirectional out-of-time, and it tested the all-quad "winner"
+    that was NOT shipped. So §4.3a is right and the greedy-sequence objection is stronger
+    than the prereg states.
+
+  7b. AMENDMENT 3 OF §4.3a IS CORRECT — THE FIT PATHS DIFFER, AND IT IS MATERIAL.
+    · `hitFormModel`/`pitFormModel` (forms.ts:620-625) call `fitHitForm(form, train)` /
+      `fitPitForm(form, train)` — THREE arguments. The 4th parameter `pins?` is omitted.
+    · `pinEvent` (forms.ts:186): `if (!pins || inDomainVertex(e) == null) return e;` — so
+      with no collector the bake-off scores the UNCONSTRAINED fit.
+    · Production passes `vertexPinned` and therefore ships the PINNED refit.
+    · This is not theoretical: the ACTIVE artifact `data/trained-models/league-42-43.json`
+      records `vertexPinned: [{"channel":"pit.hr","pinZ":2.652129826822849}]`. The shipped
+      pit.hr curve is a one-parameter pinned parabola; the harness would score a
+      two-parameter free one.
+    THIS IS A FINDING ABOUT THE WHOLE VALIDATION RECORD, NOT ABOUT THIS PREREG: for any
+    quad channel whose vertex lands in-domain, the bake-off has never scored what is
+    shipped. Note the mitigating fact: the pinned refit was measured as a "BEHAVIORAL
+    NULL" vs the unconstrained quad (fixture pithr-form-bakeoff-run-2026-07-21.txt, CV
+    0.7611/0.7339 vs 0.7910/0.7587 in-sample, margins ~0.001–0.002), so the divergence is
+    small today. It is a correctness defect in the harness regardless.
+
+  7c. THE ESCALATION IS JUSTIFIED — BUT BY §4.3a, NOT BY §2, AND THAT CHANGES ITS SHAPE.
+    Because the justification is the form-selection DEBT rather than the opponent
+    omission, the two projects separate cleanly and SHOULD be separated:
+      PROJECT A (form-selection debt): add PARETO_PIT / STUFFAUG_PIT / SATBB_PIT to
+        FORM_ENTRIES, fix the pinning divergence, run buildScoreboard as a FIELD with its
+        existing bidirectional OOT discipline, publish the equivalence set under G4.
+        Opponent-blind throughout. No new estimand, no new parameter, no new coordinate,
+        no correction-layer refit, no atomic event — the winner may well BE the incumbent,
+        in which case the debt is retired at zero blast radius.
+      PROJECT B (opponent-awareness): only after A, and only if A-1's within-cell test
+        admits a channel at all.
+    Bundling them makes the ATOMIC EVENT (§7) far larger than either needs, forces the
+    correction-layer refit (G7's ridge) into a change that may not require it, and puts a
+    well-founded, low-risk cleanup behind a poorly-identified estimand.
+
+  7d. THE CHEAPEST DISCRIMINATING EXPERIMENT IS NOT P1 — AND IT HAS ALREADY BEEN RUN.
+    P1 fits eight scales and checks G1 (near-tautological) and G2 (non-regression), and
+    per §5 it cannot end the project. The experiments that DO discriminate are M1/M2 in
+    this document (~6 minutes of compute, no fit into production, no new parameter): the
+    within-(season × cell) identification test, and the LOCO curvature test. They have
+    already answered the two questions P1 was meant to answer, and both answers are
+    negative for the prereg's premises. The one thing M1/M2 do not settle is the
+    out-of-cell prediction test (G1′-i), which is also cheap and should be P1.
+
+  AMENDMENT:
+    A-11. SPLIT the event. Run Project A (form-selection debt, opponent-blind) as a normal
+          non-atomic change. Fix the pinning divergence in FORM_ENTRIES first, and re-run
+          buildScoreboard as a field. Only then consider Project B.
+    A-12. REPLACE P1 with: (a) the survey re-run at league grain (A-5), (b) the within-cell
+          identification test per channel (A-1), (c) the leave-one-cell-out prediction test
+          (G1′-i). No scales fitted into anything until all three pass for at least one
+          channel.
+
+################################################################################
+### NEW OBJECTIONS THE PREREG DOES NOT CONSIDER
+################################################################################
+
+  N-1. THE SURVEY DIAGNOSES WITH f(mean) AND THE PREREG PROPOSES mean-of-f. The "pricing
+    ratio" compares (slope of the residual on the CELL-MEAN opposing rating) against (the
+    local DERIVATIVE of the complementary curve evaluated AT that mean) —
+    tools/opponent-term-channel-survey.ts:207 `dSlope(..., x0)` with `x0 = wmean(rs, oppVal)`.
+    For a LOG curve (hit.bb, hit.k are both log) f′ = b/x, so f′′ ≠ 0 and by Jensen the
+    average marginal over the opposing DISTRIBUTION is not f′(mean). The 0.60–0.76×
+    "discount" on the log channels is therefore partly a curvature artifact of evaluating
+    at the mean, not an opponent-pricing fact. More importantly for the design: S1 as
+    proposed enters via "the model's own predicted rate for the OPPOSING CARD" — i.e.
+    E[f(x)], not f(E[x]) — so the survey's ratios are NOT the calibration target for S1's
+    scale, and §1's "default 1.00 = what the model already says that rating point is worth"
+    is comparing two different quantities. AMENDMENT: recompute every ratio as the
+    exposure-weighted mean of the complementary curve's LOCAL slope over the actual
+    opposing distribution, not the slope at the mean, before any scale is defaulted.
+
+  N-2. S1's OPERAND IS UNSPECIFIED, AND FOR TWO CHANNELS IT CANNOT BE A PROBABILITY.
+    "Odds-ratio / log5 … in log-odds space" is defined on probabilities. `predictPitching`
+    /`predictHitting` return per-600 COUNTS (K ≈ 130/600, BB ≈ 50/600), and the H channel's
+    quantity is a per-BIP rate whose denominator BIP is DERIVED from BB+K+HR
+    (curves.ts hRate; forms.ts:228, :276). A log5 on H therefore feeds back into the BIP
+    chain that produced its own denominator. The prereg never states which quantity log5
+    operates on for which channel. This is not pedantry: it determines G6's boundedness
+    answer and it determines whether the eight scales are even on comparable footing.
+    AMENDMENT: §4.2 must state, per channel, the exact operand (rate/600 as a probability;
+    per-BIP rate; or the count) and the baseline, and G6 must be evaluated on that operand.
+
+  N-3. §9's OWN CAVEAT INVALIDATES G3's SECOND CONDITION AND HALF OF G2. §9 states:
+    "Out-of-time is not out-of-card on this corpus: the same cards recur across seasons
+    with residuals correlating r = 0.94, so cross-season agreement is close to arithmetic."
+    G3 then requires scales to be "sign-consistent on held-out seasons" — a condition that,
+    by §9's own statement, is satisfied by construction and adds no information. The same
+    caveat is what the kcurve refutation §11 used to demote a headline result ("agreeing is
+    the null, not the finding"). The prereg records the caveat and then writes gates that
+    depend on the thing the caveat invalidates. AMENDMENT: delete "sign-consistent on
+    held-out seasons" from G3 (it is not evidence) and replace it with sign-consistency
+    across LEAGUES within season (33 league-seasons, genuinely different opposition
+    populations) — which is also what the within-cell test in A-1 exploits.
+
+  N-4. THE MATCHUP CELL IS NOT ORTHOGONAL TO ROLE, AND ROLE IS NOT IN THE MODEL. The
+    kcurve refutation §7(b) records that same-side exposure varies by role (starters vs
+    non-starters), and §3 of the survey records same-side BF share by Stuff quintile as
+    33/32/28/63/30% — a NON-MONOTONE spike at Q4. An opponent term fitted on cell means
+    absorbs whatever else is cell-shaped, including role-driven usage. The prereg's §8
+    "Collinearity with own ratings" risk names hand and card composition but not ROLE.
+    AMENDMENT: add role (SP / RP / CL) as a pre-registered control in every identification
+    regression, and report the scales with and without it.
+
+  N-5. G8's LEDGER IS ALREADY VIOLATED BY THE PREREG'S OWN §1. G8: "Six published residuals
+    stand. No seventh without an explicit STOP." §1's rule leaves any unpinned channel at
+    scale 1.00 — which is a shipped, unvalidated behaviour on that channel, i.e. exactly
+    the kind of thing the ledger exists to count. Under A-6's default (0.00) there is no
+    new residual; under 1.00 there are up to eight. The prereg cannot hold both G8 and §1.
+
+  N-6. NOT AN OBJECTION — A CHECK THAT PASSED. I tested §3's structural exclusion of
+    HITTER XBH against the DATA rather than the code, since the code's 0.25 is a modelling
+    choice the prereg is otherwise re-opening. Measured (M4, window 2042+2043, 149 rows /
+    67 cards): pitcher XBH share of non-HR hits has BF-weighted mean 0.2489 (the hard-coded
+    0.25 is right), sd 0.0148, range [0.156, 0.333] — it DOES vary — but its weighted
+    correlation with every pitcher rating is |r| ≤ 0.064 (hrr −0.047, pbabip +0.016,
+    stu +0.064, con +0.054). There is no pitcher rating that predicts it. The exclusion is
+    correct on the data, not merely on the code. §3 survives.
+
+################################################################################
+### WHAT SURVIVES SCRUTINY — the parts that are right
+################################################################################
+
+  1. §4.3a IN FULL, including all three of its required amendments. Verified in code; the
+     independent audit makes it stronger, not weaker. This is the strongest section of the
+     document and it is the one that justifies acting.
+  2. §4.3a AMENDMENT 3 (the pinning divergence) — VERIFIED TRUE. FORM_ENTRIES does not
+     pin; production does; the active artifact records a live pin on pit.hr. Fix it.
+  3. §4.1's PROFILE-NOT-PAIRED-RATING design constraint. The LOO evidence is thin (28
+     points, correctly flagged as directional), but the structural argument stands on its
+     own and is consistent with [[rating-shape-not-quality]] and with
+     REBUILD_MATCHUP_CHANNEL_PLAN.md AMENDMENT 3. Refusing to carve an exception for
+     HITTER hits on one noisy cell is the right call.
+  4. §3's EXCLUSION RULE and the recorded self-correction about dropping HR on an
+     event-space ranking, and about BABIP not being carried by the BIP chain. The BIP
+     reasoning is correct in code: BIP propagates VOLUME (forms.ts:228, :276) while the
+     hit RATE comes from `hRate` on the own contact rating alone.
+  5. §3's EXCLUSION OF HITTER XBH — correct on the code AND, per N-6, on the data.
+  6. §7's DISTINCTNESS CLAIM vs own-gap / frame-v2 — verified in hit-tail.ts:13-17 and
+     matchup.ts:38. The in-frame/out-of-frame distinction is real and correctly stated.
+  7. §8's RISK LIST is honest and largely complete, and §8's "thin design on the profile
+     question" and §9's "in-sample caveat" and "out-of-time is not out-of-card" are all
+     correct. The failure is not that the caveats are missing — it is that the GATES were
+     written as if they were not there (N-3).
+  8. §10's willingness to accept the null is genuine and the right posture. The defect is
+     that G1/G2 as written cannot deliver it (attack line 5).
+  9. §2's stuffAug instance. The measurement is sound and the conclusion — that roughly
+     half to two-thirds of the shipped pit.BB aux coefficient is exposure — is well
+     supported. Note it points the SAME way as this refutation: a term fitted on the cell
+     contrast is not what it appears to be.
+
+################################################################################
+### M — MEASUREMENT PROVENANCE
+################################################################################
+
+  All four measurements were run from throwaway harnesses in tools/ (`_tmp-refute-ident.ts`,
+  `_tmp-refute-ident2.ts`, `_tmp-refute-harness.ts`, `_tmp-xbh.ts`), DELETED after the run.
+  They call production loaders/models/metrics only — no scoring math was re-implemented.
+
+  Common: active model `league-42-43`, root 'League Files', years 2037–2043, minPA/BF 1000,
+  variants included, deployed eventForm (not refit), residual convention pred − obs.
+
+  M1/M2 grain: card × side × LEAGUE × season (1615 pitcher rows / 60 cards; 1631 hitter
+    rows / 65 cards; 33 (league,season) cells; composition computed per (league, season,
+    cell) — the correction to the survey's all-league pooling). Slopes by weighted LS on
+    [1, x] and on [1, x, (cell×season) dummies]; CIs by card-cluster bootstrap (600–800
+    draws), replicated with (season×cell) and (league×season×cell) clustering.
+  M2 §C: leave-one-CARD-out weighted MSE, weights w^0.75, degree-1/2/3 in the own rating,
+    target = observed per-600 rate, RAW and with the weighted (cell × season) mean removed.
+  M3 grain: the harness's own — `loadWindow(ROOT, [2042,2043])`, `HITTER/PITCHER.qualifies`,
+    `spec.weight` (PA^0.75 / BF^0.75), `spec.actualWoba`, deployed forms fitted by
+    `fitHitForm(RAWPOLY_HIT, …)` / `fitPitForm(PARETO_PIT, …)`, metrics by
+    `evalMetrics` from src/training/metrics.ts. Reachability R² is weighted LS of the cell
+    level on [1, own ratings, own ratings²].
+  M4: window 2042+2043, PITCHER.qualifies(1000), share = (b2+b3)/(b1+b2+b3), BF weights.
+
+  Test suite status after the review: see the reviewer's report. No production file was
+  modified in the course of this review.
+
+(end of refutation — opponent-aware model form prereg)

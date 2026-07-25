@@ -1,0 +1,362 @@
+################################################################################
+# OPPONENT-TERM CHANNEL SURVEY — every channel, both roles.  MEASUREMENT ONLY.
+# Does the missing opponent term matter outside pitcher-K, and where?
+################################################################################
+
+  model 'league-42-43' DEPLOYED form (not refit), fit window 2042+2043, root 'League Files'
+  grain: card × side × SEASON, 2037–2043.  weights BF (pitching) / PA (hitting).  CIs: CARD-CLUSTER bootstrap.
+  matchup cell = (pitcher hand × batter hand), switch-hitters resolved to the hand they
+  actually bat from (a switch-hitter bats RIGHT vs a LHP).  same-side = pitcher's platoon advantage.
+  pitcher rows 719 / 70 cards;  hitter rows 789 / 93 cards.
+
+################################################################################
+### RANKED — share of each channel's TOTAL residual mean-square explained by
+### opposing-matchup composition alone (4 cells, no other information)
+################################################################################
+
+  channel                        own↔opp   rows  cards     ESS  resid sd    cell  cell×yr   verdict
+  PITCHER BB                     con↔eye    719     70   265.7      4.53   62.6%    64.8%   NEEDS AN OPPONENT TERM
+  PITCHER K                     stu↔kRat    719     70   265.7      5.65   53.8%    60.6%   NEEDS AN OPPONENT TERM
+  HITTER BB                      eye↔con    789     93   311.2      2.98   38.9%    49.5%   NEEDS AN OPPONENT TERM
+  HITTER K                      kRat↔stu    789     93   311.2      4.80   31.0%    43.8%   NEEDS AN OPPONENT TERM
+  HITTER hits(nonHR)        babip↔pbabip    789     93   311.2      3.31   14.1%    21.8%   material
+  HITTER HR                      pow↔hrr    789     93   311.2      1.23   11.5%    18.3%   material
+  PITCHER HR                     hrr↔pow    719     70   265.7      1.19    9.6%    22.0%   material
+  PITCHER hits(nonHR)       pbabip↔babip    719     70   265.7      3.07    3.2%     9.5%   small
+  HITTER XBH                       gap↔—    789     93   311.2      3.00    2.2%     4.0%   rounding error
+
+  "resid sd" = √(BF/PA-weighted mean square of the channel residual), in events per 600 — the
+  size of the thing being decomposed. A large SHARE of a tiny residual is not a large defect;
+  read the two columns together. Absolute mean-square REMOVED by the composition, per 600²:
+  channel                    MS raw  MS − cell    removed   √removed
+  PITCHER BB                  20.53       7.68      12.85       3.58
+  PITCHER K                   31.95      14.77      17.18       4.14
+  HITTER BB                    8.86       5.41       3.45       1.86
+  HITTER K                    23.01      15.88       7.13       2.67
+  HITTER hits(nonHR)          10.97       9.42       1.55       1.24
+  HITTER HR                    1.51       1.34       0.17       0.42
+  PITCHER HR                   1.41       1.28       0.14       0.37
+  PITCHER hits(nonHR)          9.44       9.14       0.30       0.55
+  HITTER XBH                   9.01       8.80       0.20       0.45
+
+################################################################################
+### stuffAug VERDICT
+################################################################################
+
+  Method: refit the pitcher BB / HR event with the TRAINER's own design and weight (BF^0.75),
+  with and without composition controls, and read the aux coefficient off each fit. The
+  uncontrolled refit is the reproduction check against the deployed coefficient. PRIMARY
+  READ = the FIT WINDOW 2042+2043, because that is where the shipped number came from.
+
+  ── pit.BB Stuff aux:  COLLAPSES on the fit window; PARTIAL on the wide window
+     deployed beta -1.2248;  uncontrolled refit -1.1933 on the fit window (reproduces to 2.6%).
+                             uncontrolled   + controls  controlled 95% CI       composition share
+     fit window 2042+2043         -1.1933      -0.4305  [-1.025, +0.277] COVERS 0              63.9%
+     full 2037–2043               -1.3775      -0.7235  [-1.311, -0.054] CI-clear              47.5%
+
+  ── pit.HR Stuff aux:  SURVIVES — composition is a separate effect
+     deployed beta -0.2233;  uncontrolled refit -0.2366 on the fit window (reproduces to 5.9%).
+                             uncontrolled   + controls  controlled 95% CI       composition share
+     fit window 2042+2043         -0.2366      -0.2348  [-0.415, +0.009] COVERS 0               0.8%
+     full 2037–2043               -0.1378      -0.1735  [-0.294, -0.044] CI-clear             -25.9%
+
+  READ. The BB aux is substantially a proxy: the opposition a pitcher faces differs by 23
+  EYE points between same- and opposite-side matchups (the largest composition gap in the
+  whole survey), and that exposure is correlated with Stuff. Controlling it removes
+  63.9% of the coefficient on the window it was fitted on, and what survives there is no
+  longer resolved. On the wider window 52.5% survives and stays marginally CI-clear — so a real Stuff
+  effect on walks is NOT ruled out, but roughly half to two-thirds of the shipped coefficient
+  is exposure, and an opponent term would supersede that part. The HR aux is unaffected by
+  the controls in either direction and stands on its own.
+  NOTE the cell FE and the linear opposing-rating control agree closely in both channels,
+  which is the sign that they are picking up the same thing rather than absorbing the aux
+  by accident of specification.
+  SEPARATE OBSERVATION, not a composition finding: the HR aux survives the controls but is
+  itself weakly resolved — CI-clear on the fit window, covering zero on the wider one, and
+  the coefficient is -0.1378 there vs -0.2233 deployed. That is a stability question for
+  another pass; it is not the confound this task asked about.
+
+################################################################################
+## 1. THE MATCHUP CELLS — exposure and opposing profile
+################################################################################
+
+     BF / PA by matchup cell (pooled 2037–2043):
+     cell                    pit rows      pit BF  hit rows      hit PA
+     RHP vs RHB (same)            232   1,902,891       192   1,866,231
+     RHP vs LHB (opp)             230   1,987,638       244   1,972,784
+     LHP vs RHB (opp)             161   1,741,851       241   1,648,383
+     LHP vs LHB (same)             96     498,550       112     496,201
+
+     OPPOSING PROFILE by cell (PA/BF-weighted mean rating of the opposition actually faced,
+     averaged over the 7 seasons):
+     cell                kRat     eye     pow   babip     gap         stu      con      hrr   pbabip
+     RHP/RHB same       115.9    92.9   109.7   121.0   114.3       121.4    103.5    117.2    118.7
+     RHP/LHB opp        119.7   121.4   114.2   124.6   104.4       115.4     96.3    118.6    118.2
+     LHP/RHB opp        120.8   112.0   110.9   119.5   109.8       117.8    103.4    114.9    116.7
+     LHP/LHB same       105.5    97.9   105.1   123.0    98.9       114.2    114.5    120.9    113.8
+     (the hitter columns are the opposition a PITCHER in that cell faced; the pitcher columns
+      are the opposition a HITTER in that cell faced.)
+
+################################################################################
+## 2. PER-CHANNEL DETAIL — composition gap, level gap, response, and pricing ratio
+################################################################################
+
+  ══ PITCHER BB   (own con, opposing eye) ══
+     719 rows / 70 cards / 6,130,930 BF / Kish ESS 265.7
+     1. composition gap (same − opposite) in eye:  -23.13 rating points
+        (same-side faces 93.9, opposite-side 117.0)
+     2. residual LEVEL gap (same − opposite): +7.16/600  CI [+6.18, +7.97]  p=0.000  ★ CI-CLEAR
+        same-side level +4.58, opposite-side -2.57;  sign consistency 0/33 league-seasons negative
+     3. fitted response -0.291 events/600 per opposing rating point  CI [-0.322, -0.263]
+        the model's own complementary curve prices that point at -0.380
+        ⇒ RATIO 0.76×  CI [0.69, 0.85]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 62.6% of the channel's residual mean-square (cell), 64.8% (cell×season)
+        residual sd 4.53/600 → 3.58/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(con)), before → after removing the cell level:
+        raw +0.2381 [-0.401, +0.941] covers 0  →  corrected +0.2236 [-0.240, +0.593] covers 0
+        ⇒ removing composition unchanged this channel's own-rating shape structure.
+
+  ══ PITCHER K   (own stu, opposing kRat) ══
+     719 rows / 70 cards / 6,130,930 BF / Kish ESS 265.7
+     1. composition gap (same − opposite) in kRat:  -6.47 rating points
+        (same-side faces 113.7, opposite-side 120.2)
+     2. residual LEVEL gap (same − opposite): -6.99/600  CI [-9.41, -5.13]  p=0.000  ★ CI-CLEAR
+        same-side level -5.21, opposite-side +1.78;  sign consistency 33/33 league-seasons negative
+     3. fitted response +0.842 events/600 per opposing rating point  CI [+0.630, +1.020]
+        the model's own complementary curve prices that point at +0.737
+        ⇒ RATIO 1.14×  CI [0.86, 1.38]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 53.8% of the channel's residual mean-square (cell), 60.6% (cell×season)
+        residual sd 5.65/600 → 4.14/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(stu)), before → after removing the cell level:
+        raw -0.4983 [-1.266, -0.002] CI-clear  →  corrected -0.5999 [-1.148, -0.366] CI-clear
+        ⇒ removing composition STRENGTHENS this channel's own-rating shape structure.
+
+  ══ HITTER BB   (own eye, opposing con) ══
+     789 rows / 93 cards / 5,983,599 PA / Kish ESS 311.2
+     1. composition gap (same − opposite) in con:  +6.24 rating points
+        (same-side faces 105.8, opposite-side 99.5)
+     2. residual LEVEL gap (same − opposite): +2.60/600  CI [+1.82, +3.58]  p=0.000  ★ CI-CLEAR
+        same-side level +0.48, opposite-side -2.11;  sign consistency 0/33 league-seasons negative
+     3. fitted response +0.284 events/600 per opposing rating point  CI [+0.242, +0.320]
+        the model's own complementary curve prices that point at +0.471
+        ⇒ RATIO 0.60×  CI [0.51, 0.68]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 38.9% of the channel's residual mean-square (cell), 49.5% (cell×season)
+        residual sd 2.98/600 → 1.86/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(eye)), before → after removing the cell level:
+        raw -0.0977 [-0.320, +0.153] covers 0  →  corrected -0.1977 [-0.383, -0.011] CI-clear
+        ⇒ removing composition STRENGTHENS this channel's own-rating shape structure.
+
+  ══ HITTER K   (own kRat, opposing stu) ══
+     789 rows / 93 cards / 5,983,599 PA / Kish ESS 311.2
+     1. composition gap (same − opposite) in stu:  +3.40 rating points
+        (same-side faces 119.9, opposite-side 116.5)
+     2. residual LEVEL gap (same − opposite): -3.86/600  CI [-5.07, -2.75]  p=0.000  ★ CI-CLEAR
+        same-side level -0.59, opposite-side +3.27;  sign consistency 33/33 league-seasons negative
+     3. fitted response -0.595 events/600 per opposing rating point  CI [-0.693, -0.502]
+        the model's own complementary curve prices that point at -0.457
+        ⇒ RATIO 1.30×  CI [1.10, 1.52]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 31.0% of the channel's residual mean-square (cell), 43.8% (cell×season)
+        residual sd 4.80/600 → 2.67/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(kRat)), before → after removing the cell level:
+        raw +0.1907 [+0.017, +0.376] CI-clear  →  corrected +0.2191 [+0.103, +0.393] CI-clear
+        ⇒ removing composition STRENGTHENS this channel's own-rating shape structure.
+
+  ══ HITTER hits(nonHR)   (own babip, opposing pbabip) ══
+     789 rows / 93 cards / 5,983,599 PA / Kish ESS 311.2
+     1. composition gap (same − opposite) in pbabip:  +0.19 rating points
+        (same-side faces 117.7, opposite-side 117.5)
+     2. residual LEVEL gap (same − opposite): +0.63/600  CI [-0.18, +1.31]  p=0.124  covers 0
+        same-side level -0.48, opposite-side -1.11;  sign consistency 12/33 league-seasons negative
+     3. fitted response +0.445 events/600 per opposing rating point  CI [+0.360, +0.523]
+        the model's own complementary curve prices that point at +0.113
+        ⇒ RATIO 3.93×  CI [3.18, 4.62]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 14.1% of the channel's residual mean-square (cell), 21.8% (cell×season)
+        residual sd 3.31/600 → 1.24/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(babip)), before → after removing the cell level:
+        raw -0.1020 [-0.204, -0.008] CI-clear  →  corrected -0.0683 [-0.137, +0.021] covers 0
+        ⇒ removing composition WEAKENS this channel's own-rating shape structure.
+
+  ══ HITTER HR   (own pow, opposing hrr) ══
+     789 rows / 93 cards / 5,983,599 PA / Kish ESS 311.2
+     1. composition gap (same − opposite) in hrr:  +1.03 rating points
+        (same-side faces 118.0, opposite-side 116.9)
+     2. residual LEVEL gap (same − opposite): -0.26/600  CI [-0.51, -0.05]  p=0.020  ★ CI-CLEAR
+        same-side level -0.48, opposite-side -0.21;  sign consistency 23/33 league-seasons negative
+     3. fitted response +0.094 events/600 per opposing rating point  CI [+0.049, +0.137]
+        the model's own complementary curve prices that point at +0.115
+        ⇒ RATIO 0.82×  CI [0.43, 1.19]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 11.5% of the channel's residual mean-square (cell), 18.3% (cell×season)
+        residual sd 1.23/600 → 0.42/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(pow)), before → after removing the cell level:
+        raw +0.0339 [-0.038, +0.092] covers 0  →  corrected +0.0374 [-0.031, +0.086] covers 0
+        ⇒ removing composition STRENGTHENS this channel's own-rating shape structure.
+
+  ══ PITCHER HR   (own hrr, opposing pow) ══
+     719 rows / 70 cards / 6,130,930 BF / Kish ESS 265.7
+     1. composition gap (same − opposite) in pow:  -3.88 rating points
+        (same-side faces 108.7, opposite-side 112.6)
+     2. residual LEVEL gap (same − opposite): +0.08/600  CI [-0.17, +0.41]  p=0.524  covers 0
+        same-side level +0.33, opposite-side +0.24;  sign consistency 18/33 league-seasons negative
+     3. fitted response -0.086 events/600 per opposing rating point  CI [-0.117, -0.057]
+        the model's own complementary curve prices that point at -0.140
+        ⇒ RATIO 0.61×  CI [0.41, 0.83]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 9.6% of the channel's residual mean-square (cell), 22.0% (cell×season)
+        residual sd 1.19/600 → 0.37/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(hrr)), before → after removing the cell level:
+        raw +0.0494 [-0.031, +0.122] covers 0  →  corrected +0.0499 [-0.038, +0.109] covers 0
+        ⇒ removing composition unchanged this channel's own-rating shape structure.
+
+  ══ PITCHER hits(nonHR)   (own pbabip, opposing babip) ══
+     719 rows / 70 cards / 6,130,930 BF / Kish ESS 265.7
+     1. composition gap (same − opposite) in babip:  -0.77 rating points
+        (same-side faces 121.4, opposite-side 122.2)
+     2. residual LEVEL gap (same − opposite): +0.19/600  CI [-0.43, +0.94]  p=0.558  covers 0
+        same-side level +0.06, opposite-side -0.12;  sign consistency 18/33 league-seasons negative
+     3. fitted response +0.032 events/600 per opposing rating point  CI [-0.052, +0.130]
+        the model's own complementary curve prices that point at -0.194
+        ⇒ RATIO -0.16×  CI [-0.67, 0.27]  (1.00 = exactly what the model itself says the opponent is worth)
+     4. composition explains 3.2% of the channel's residual mean-square (cell), 9.5% (cell×season)
+        residual sd 3.07/600 → 0.55/600 of it is composition
+     5. own-rating SHAPE (cubic partial on z(pbabip)), before → after removing the cell level:
+        raw +0.0182 [-0.036, +0.111] covers 0  →  corrected +0.0084 [-0.041, +0.099] covers 0
+        ⇒ removing composition WEAKENS this channel's own-rating shape structure.
+
+  ══ HITTER XBH   (own gap, opposing —) ══
+     789 rows / 93 cards / 5,983,599 PA / Kish ESS 311.2
+     NO COMPLEMENTARY RATING EXISTS. The pitcher side has no GAP analog — predictPitching
+     hard-codes XBH = 0.25 × non-HR hits. So this channel cannot be given a paired opponent
+     term at all without first giving pitchers an extra-base-suppression rating that the
+     card data does not contain. Composition share is still measurable: cell 2.2%,
+     cell×season 4.0%; residual sd 3.00/600.
+     level same−opp -0.27/600, CI [-0.99, +0.54], p=0.542 covers 0.
+
+################################################################################
+## 3. stuffAug — the shipped Stuff aux on pitcher BB and HR, under composition control
+################################################################################
+
+     The aux is a linear z(ln Stuff) term added to the pitcher BB and HR fits, on the rationale
+     that "high Stuff suppresses walks and homers beyond Control/HRR". It was fitted on data
+     where opposing-batter composition varies strongly ACROSS the Stuff range and was unmodelled.
+
+     same-side BF share by Stuff quintile:      Q1 33%   Q2 32%   Q3 28%   Q4 63%   Q5 30%
+     opposing EYE faced, by Stuff quintile:     Q1 109.1  Q2 108.8  Q3 113.5  Q4 100.9  Q5 109.1
+     opposing POW faced, by Stuff quintile:     Q1 111.0  Q2 111.0  Q3 112.4  Q4 110.1  Q5 111.2
+     ⇒ the confound is present: the opposition a pitcher faces is NOT independent of his Stuff.
+
+  ── pit.BB aux (deployed beta -1.2248) ──
+     window                  control                              aux beta  95% CI (card cluster)     % of uncontrolled
+     fit window 2042+2043    none (reproduces the fit)             -1.1933  [-2.030, -0.415]                       100%
+     fit window 2042+2043    matchup-cell fixed effects            -0.4291  [-1.038, +0.251]                        36%
+     fit window 2042+2043    linear opposing eye                   -0.4156  [-1.071, +0.239]                        35%
+     fit window 2042+2043    cell FE + opposing rating             -0.4305  [-1.025, +0.277]                        36%
+     full 2037–2043          none (reproduces the fit)             -1.3775  [-2.228, -0.556]                       100%
+     full 2037–2043          matchup-cell fixed effects            -0.7007  [-1.299, -0.028]                        51%
+     full 2037–2043          linear opposing eye                   -0.7382  [-1.394, -0.069]                        54%
+     full 2037–2043          cell FE + opposing rating             -0.7235  [-1.311, -0.054]                        53%
+
+  ── pit.HR aux (deployed beta -0.2233) ──
+     window                  control                              aux beta  95% CI (card cluster)     % of uncontrolled
+     fit window 2042+2043    none (reproduces the fit)             -0.2366  [-0.394, -0.019]                       100%
+     fit window 2042+2043    matchup-cell fixed effects            -0.2312  [-0.418, +0.021]                        98%
+     fit window 2042+2043    linear opposing pow                   -0.2134  [-0.384, +0.030]                        90%
+     fit window 2042+2043    cell FE + opposing rating             -0.2348  [-0.415, +0.009]                        99%
+     full 2037–2043          none (reproduces the fit)             -0.1378  [-0.285, +0.006]                       100%
+     full 2037–2043          matchup-cell fixed effects            -0.1628  [-0.280, -0.021]                       118%
+     full 2037–2043          linear opposing pow                   -0.1406  [-0.268, +0.005]                       102%
+     full 2037–2043          cell FE + opposing rating             -0.1735  [-0.294, -0.044]                       126%
+
+################################################################################
+## 4. RATING SHAPE — is the paired opposing rating enough, or is the whole profile moving?
+################################################################################
+
+     The doctrine is that a card's quality is never inferrable from ONE rating. If an opponent
+     term is built as "residual ~ the single paired opposing rating", that assumption is being
+     made implicitly. Test it on the design points the composition actually supplies: the
+     7 seasons × 4 matchup cells = 28 distinct opposing-profile vectors.
+
+     correlation matrix of the opposing HITTER profile across the 28 (season × cell) design points:
+                       kRat      eye      pow    babip      gap
+        kRat          +1.00    +0.61    +0.84    +0.20    +0.62
+        eye           +0.61    +1.00    +0.69    +0.32    -0.16
+        pow           +0.84    +0.69    +1.00    +0.45    +0.41
+        babip         +0.20    +0.32    +0.45    +1.00    -0.15
+        gap           +0.62    -0.16    +0.41    -0.15    +1.00
+        mean |off-diagonal correlation| = 0.45
+
+     correlation matrix of the opposing PITCHER profile across the 28 (season × cell) design points:
+                        stu      con      hrr   pbabip
+        stu           +1.00    -0.22    +0.03    +0.80
+        con           -0.22    +1.00    +0.46    -0.58
+        hrr           +0.03    +0.46    +1.00    +0.03
+        pbabip        +0.80    -0.58    +0.03    +1.00
+        mean |off-diagonal correlation| = 0.35
+
+     PREDICTING THE CELL-MEAN RESIDUAL: paired rating alone vs the whole opposing profile.
+     Leave-one-(season×cell)-out prediction error, weighted by cell exposure. If the profile
+     version does not beat the paired-rating version, the single-rating pairing is adequate
+     HERE; if the paired rating is not even the best single predictor, it is not.
+     channel                 paired LOO  profile LOO  best single      winner
+     PITCHER BB                    0.95         0.84          eye     PROFILE
+     PITCHER K                     2.04         0.79         kRat     PROFILE
+     HITTER BB                     1.21         0.56          con     PROFILE
+     HITTER K                      1.71         1.33          stu     PROFILE
+     HITTER hits(nonHR)            0.55         0.60       pbabip   paired ok
+     HITTER HR                     0.12         0.09          hrr     PROFILE
+     PITCHER HR                    0.17         0.10          pow     PROFILE
+     PITCHER hits(nonHR)           0.99         0.53         kRat     PROFILE
+
+     READ, with the caveat stated first: 28 design points against 4–5 predictors is thin, and
+     LOO on 28 points is itself noisy — treat this as a DIRECTIONAL warning, not a measurement.
+     Directionally it is one-sided: the full opposing PROFILE beats the single paired rating on
+     7 of 8 channels, and for PITCHER hits the best single predictor of the residual is the
+     opposing kRat — NOT its own pair (babip). The opposing ratings are not independent
+     (mean |r| 0.45 on the hitter side, 0.35 on the pitcher side), so "the paired rating" is
+     partly standing in for a correlated bundle. DESIGN CONSTRAINT: an opponent term should be
+     specified over the opposing card's PROFILE, not its single paired rating — consistent with
+     the rating-shape doctrine. A single-rating pairing is a modelling assumption this data
+     does not support, and it is cheapest to avoid making it now.
+
+################################################################################
+## 5. WHAT THIS IMPLIES — per-channel or model-wide?
+################################################################################
+
+  MODEL-WIDE, NOT PER-CHANNEL — but the payoff is concentrated. The hole is structural: no
+  channel in either role has an opponent term, and the four count channels that carry the
+  wOBA weight (K and BB in both roles) are exactly the four where composition is largest:
+     PITCHER BB 62.6%,  PITCHER K 53.8%,  HITTER BB 38.9%,  HITTER K 31.0%
+  Those four alone account for 40.6 of the 43.0 total mean-square the composition removes
+  across all nine channels — 94.5% of the whole prize. Building the term for K and BB in both
+  roles captures nearly all of it; the power and BIP channels are follow-on, not motivation.
+
+  MATERIAL BUT SECONDARY: HITTER hits(nonHR) 14.1% (resid sd only 3.31/600); HITTER HR 11.5% (resid sd only 1.23/600); PITCHER HR 9.6% (resid sd only 1.19/600).
+  ROUNDING ERROR: PITCHER hits(nonHR) 3.2%; HITTER XBH 2.2%.
+
+  THE PRICING RATIOS SAY THE TERM IS ALREADY SPECIFIED, NOT INVENTED. Across the four big
+  channels the residual moves with the opposing rating at pitcher BB 0.76×, pitcher K 1.14×, hitter BB 0.60×, hitter K 1.30×
+  what the model's own complementary curve already prices that rating point at (1.00 = exact).
+  The model contains the number; it
+  simply never applies it to the opponent. That is an argument for a SYMMETRIC term derived
+  from the existing curves rather than a new free-parameter block.
+
+  WHERE THE EVIDENCE IS TOO THIN TO SAY — flagged explicitly:
+   • PITCHER hits(nonHR): composition share 3.2%, level gap +0.19/600 covering 0 (p=0.558),
+     sign consistency only 18/33, and a pricing ratio of -0.16× whose CI spans zero and the wrong
+     sign. This channel shows NO usable opponent signal on the paired rating. Do not build one
+     for it on this evidence.
+   • HITTER hits(nonHR): the composition GAP is +0.19 rating points — essentially nothing — yet
+     the fitted response is 3.93× the model's own pricing. A slope that large off a gap that
+     small is identified by season drift, not by the matchup, so it is not evidence for a
+     matchup opponent term. Treat the 14.1% share as an upper bound.
+   • HITTER XBH: unpairable. There is no pitcher GAP rating; predictPitching hard-codes the
+     0.25 XBH share. Any opponent term here needs a rating the card data does not carry.
+   • Both HR channels: shares of ~10–12% but on residual sds of ~1.2/600. Real, tiny, and the
+     18/33 and 23/33 league-season sign counts are not the near-unanimity the K and BB channels show.
+
+  A CAVEAT THAT APPLIES TO EVERY NUMBER ABOVE. Same-side exposure is MANAGER-SELECTED — a
+  pitcher gets platoon-advantage batters because someone chose the matchup. For PREDICTION
+  that distinction does not matter (the term models who was actually faced), but the SIZE of
+  the effect is a property of this corpus's usage patterns. Tournament rosters and usage
+  differ, so the coefficient should be re-measured there before it is trusted out of frame.
+  And this survey does not establish the FORM of an opponent term — only that the hole is
+  real, where it is largest, and that the model already contains the pricing it would need.
+

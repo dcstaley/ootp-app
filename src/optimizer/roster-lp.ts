@@ -54,6 +54,10 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
   // below (a slotted starter's rp relief credit is subtracted from its rotation term). The
   // legacy weighted cap/slots path (no usageWeights) still carries it, but production always
   // builds usageWeights for cap/slots, so the double-credit is gone in practice.
+  // The HITTER half of the same rule (a lineup starter must not also collect bench-depth
+  // value) is enforced in EVERY mode by the zst start-indicator netting below — it used to be
+  // eweins-only, which left non-cap paying starters twice and, because the bench credit keys on
+  // max(vR,vL) rather than the platoon blend, systematically favoured platoon specialists.
   const weighted = opts.mode !== "none";
   const bonusEff = weighted ? bonus : 1;
   // Per-segment PREFERENCE dials — pure objective value multipliers (NOT caps). Down-dialing a
@@ -80,6 +84,10 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
 
   const obj: string[] = [];
   const bin: string[] = [];
+  // Per-hitter bench-depth credit on rh_i, kept so the start-indicator netting below can subtract
+  // the SAME number back off. Storing it (rather than recomputing the expression twice) is what
+  // makes the cancellation exact in every mode.
+  const benchCoef: number[] = [];
   const cons: string[] = [];
   const strip = (id: string) => id.replace(/#V$/, "");
 
@@ -116,7 +124,8 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
       }
     }
     const benchMax = Math.max(c.valueVR, c.valueVL);
-    obj.push(`${f6((eweins ? benchMax * uw!.benchPA : hEmph * benchW * benchMax) * wBench)} rh_${i}`);
+    benchCoef[i] = (eweins ? benchMax * uw!.benchPA : hEmph * benchW * benchMax) * wBench;
+    obj.push(`${f6(benchCoef[i]!)} rh_${i}`);
   });
   bin.push(...rhVars);
   for (const side of ["L", "R"]) for (const p of positions) {
@@ -129,17 +138,20 @@ export function buildRosterLp(hitters: HitterCandidate[], pitchers: PitcherCandi
       if (t?.length) cons.push(` hone_${i}_v${side}: ${t.join(" + ")} - rh_${i} <= 0`);
     }
   });
-  // E[wins] bench NETTING: a hitter that STARTS a side must not ALSO collect the bench-depth
+  // Bench NETTING (ALL modes): a hitter that STARTS a side must not ALSO collect the bench-depth
   // credit on rh (that double-count inflated hitters and starved pitching). z_i = 1 iff the card
   // starts any side (Σ yh ≥ 1 ⇒ z=1, forced by the constraint; the −bench coef on z keeps it 0
   // otherwise). So a starter is valued on its lineup value alone; only a PURE bench bat keeps
-  // the bench credit.
-  const stVars: string[] = []; // zst start-indicators (one per hitter, eweins) — reused by 2b below
-  if (eweins) hitters.forEach((c, i) => {
+  // the bench credit. Mode-independent because the defect is mode-independent: the credit keys on
+  // max(vR,vL) while the lineup term keys on the platoon blend, so leaving it un-netted pays a
+  // platoon specialist more than a better all-around bat (measured: ~6× the median adjacent gap
+  // on the real catalog, inverting ~36% of adjacent pairs). The coefficient is whatever rh got.
+  const stVars: string[] = []; // zst start-indicators (one per hitter) — reused by 2b below
+  hitters.forEach((_, i) => {
     const allY = [...(hCardSide[`${i}|L`] ?? []), ...(hCardSide[`${i}|R`] ?? [])];
     if (!allY.length) return;
     const z = `zst_${i}`; bin.push(z); stVars.push(z);
-    obj.push(`${f6(-Math.max(c.valueVR, c.valueVL) * uw!.benchPA * wBench)} ${z}`);
+    obj.push(`${f6(-benchCoef[i]!)} ${z}`);
     // z = 1 iff the card starts a side: znet forces z ≥ Σyh/2 (starting ⇒ z=1); zub forces
     // z ≤ Σyh (not starting ⇒ z=0). The hard pin matters for the 2b cap below, which must not be
     // gamed by flagging a non-starter as a "starter".

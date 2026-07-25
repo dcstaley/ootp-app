@@ -7,7 +7,7 @@ export type { EventModel } from "../model/types.ts";
 export { logLinearModel } from "../model/log-linear.ts";
 export { makeRawPolyModel } from "../model/raw-poly.ts";
 export type { EventForm, FittedHit, FittedPit } from "../model/curves.ts";
-export { ratingStats, affineFor, applyAffine, applyFrameShift, applyKSpread, applyPitSpread, kSpreadPitRamp, K_SPREAD_PIT, assertKSpreadProvenance, pitSpreadHrRamp, PIT_SPREAD_HR, buildAffines, logistic, HIT_RATINGS, PIT_RATINGS, type PoolTransform, type PitSpreadFields, type RatingStats, type RatingEnvelope, type TrainingMeans, type FrameShift } from "../model/pool-transform.ts";
+export { ratingStats, affineFor, applyAffine, applyFrameShift, applyKSpread, applyPitSpread, kSpreadPitRamp, K_SPREAD_PIT, assertKSpreadProvenance, cohortRuleMismatches, cohortRuleMismatchMessage, pitSpreadHrRamp, PIT_SPREAD_HR, buildAffines, logistic, HIT_RATINGS, PIT_RATINGS, type PoolTransform, type PitSpreadFields, type RatingStats, type RatingEnvelope, type TrainingMeans, type FrameShift } from "../model/pool-transform.ts";
 export { FIELD_N, productionFieldStats, computeFieldStats, computeUnifiedFieldStats, buildPoolTransform, buildFrameShift, poolMeanK, poolMeanKOwn, poolPitMeansOwn, cardSideWobas, buildCohortRefs, cohortSelectForModel, type FieldStats } from "./pool-stats.ts";
 export { buildRatingRef, cohortZSum, COHORT_RULE_TAG, COHORT_MODE_DEFAULT, type RatingRef, type CohortMode, type CohortRuleTag } from "./cohort-select.ts";
 

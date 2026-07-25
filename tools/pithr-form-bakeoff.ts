@@ -119,7 +119,10 @@ if (process.argv[2] === "fit") {
   // In-sample + CV (the diag's exact harness), per candidate.
   console.log(`\n=== IN-FRAME THREE-WAY [${WINDOW}] ===`);
   console.log(`cand   in-sample wP/spear     cv wP/spear         HRch SD/600 (rateAux)   composite wOBAA SD`);
-  const models = [["A' quad", pitFormModel(PARETO_PIT), A], ["B hrlog", pitFormModel(HRLOG_PIT), B], ["C hrcq ", HRCQ_MODEL, C]] as const;
+  // pinned=false on A'/B: A' IS the unconstrained candidate that C (the pinned refit) is being
+  // judged against — with the wrappers' 2026-07-25 default pinning, A' would silently become C
+  // and the three-way collapses. Archival semantics preserved explicitly.
+  const models = [["A' quad", pitFormModel(PARETO_PIT, false), A], ["B hrlog", pitFormModel(HRLOG_PIT, false), B], ["C hrcq ", HRCQ_MODEL, C]] as const;
   for (const [nm, mdl, fit] of models) {
     const is = inSample(obs, mdl, PITCHER, { minN: MINPA });
     const cv = crossValidate(obs, mdl, PITCHER, { minN: MINPA });

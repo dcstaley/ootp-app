@@ -1,0 +1,323 @@
+﻿################################################################################
+# K-RESIDUAL vs STUFF — WIDE WINDOW / OUT-OF-TIME REPLICATION.  MEASUREMENT ONLY.
+# (a) Does the cubic K misfit REPLICATE on years the deployed form never saw?
+# (b) Is hand-conditioning WARRANTED — is vR/vL resolved on the wide window, stably?
+################################################################################
+
+  model 'league-42-43'  DEPLOYED form (not refit)  fit window 2042+2043  root 'League Files'
+  years available: 2032, 2033, 2037, 2038, 2039, 2040, 2041, 2042, 2043   |   analysed block 2037,2038,2039,2040,2041,2042,2043   |   deep-old 2032,2033 (reported separately)
+  grain: card × side × SEASON (per-year loads, stacked).  weights: BF.  CIs: CARD-CLUSTER bootstrap.
+  residual = deployed pred K/600 − observed K/600.  cubic partial = coefficient on z(stu)³.
+
+### VERDICT
+
+  (a) OUT-OF-TIME REPLICATION: YES IN THE vR ARM (CI-clear there); POOLED ONLY DIRECTIONAL.
+      In-sample 2042+2043 (N=222 rows): cubic -0.5414 [-1.2837, -0.1398] CI-clear.
+      OUT-OF-SAMPLE 2037–2041 (N=497 rows, never seen by the fit): cubic -0.4714
+      [-1.2738, +0.0990] covers 0 — SAME SIGN as in-sample, magnitude
+      0.87× the in-sample estimate. Full 2037–2043 (N=719): -0.4983 [-1.2377, +0.0088].
+      Per-year: 7/7 modern seasons carry a NEGATIVE cubic — every one of them.
+      THE REPLICATION LIVES IN THE vR ARM, and there it is emphatic: vR cubic -0.8690 in-sample vs
+      -0.8623 out-of-sample (CI [-1.7487, -0.1836], CI-CLEAR) — a 0.8% difference on data the fit
+      never touched. The POOLED out-of-sample cubic covers zero only because the vL arm (+0.2226) pulls
+      against it. In-sample shrinkage did NOT inflate the original finding: the OOS magnitude is 0.87× pooled
+      and 0.99× on vR — essentially unchanged.
+      LIMIT, stated up front: only 8 of the 61 out-of-sample cards are absent from the fit window, so this
+      is an out-of-TIME replication, NOT an out-of-CARD one (§2b).
+
+  (b) HAND-CONDITIONING: WARRANTED — the vR/vL cubic difference is resolved on the wide window.
+      Full-window vR−vL cubic -1.0668: seed A CI [-2.1075, -0.0817] p=0.034; seed B CI
+      [-2.0980, -0.1010] p=0.034 — STABLE across seeds. Per hand on the full window: vR -0.8871
+      [-1.7561, -0.2545], vL +0.1797 [-0.6560, +0.9170]; cubic-contrast ESS 55.8 vs 62.4.
+      Directional consistency: the vR−vL cubic is negative in 7/7 individual seasons. The hand LEVEL gap is
+      +1.06/600, CI [-1.69, +4.52] p=0.481 — STILL NOT RESOLVED.
+
+      NOTE the ×5 that wasn't: rows went 222 → 719 (3.2×), but the CARD-CLUSTER CI is what
+      counts — only 70 distinct cards underlie those 719 rows (10.3 rows/card), and a card's residual
+      is correlated across its own seasons. Row-level bootstrap CIs would be ~3.1× too narrow here.
+
+################################################################################
+## 1. DATA INVENTORY, GRAIN, AND THE BRIDGE TO THE EARLIER ARTIFACTS
+################################################################################
+
+     'Old Data' folder: LOADABLE — it parses to years 2032, 2033 (12 CSVs, same league/side naming).
+     It is NOT pooled into the main block: a 4-season gap separates it from 2037, so its frame is a
+     different world. It is reported in the per-year series (§3) as an out-of-frame extreme, flagged.
+
+     year       rows  cards          BF  vR rows  vL rows
+     2037         88     46     742,261       48       40
+     2038        107     54     933,159       57       50
+     2039         89     47     742,762       48       41
+     2040        106     56     931,394       60       46
+     2041        107     54     930,012       58       49
+     2042        112     56     930,398       63       49
+     2043        110     54     920,944       59       51
+     2032*       104     54     752,606       54       50
+     2033*        69     38     372,810       38       31
+     (* = 'Old Data', excluded from every pooled window below)
+
+     GRAIN BRIDGE. The earlier artifacts used ONE loader call over 2042+2043, which SUMS a card's
+     seasons into a single row (N=149 rows — the familiar 149-row set), and applies BF ≥ 1,000 to that
+     SUM. This tool loads each season separately (N=222 in-sample rows) and applies the threshold PER
+     SEASON. Both are legitimate; they answer different questions. Consistency check on the same years:
+        loader-aggregated 2042+2043: cubic -0.5359 [-1.2493, -0.1240]  (prior artifact: -0.5049)
+        per-season stacked 2042+2043: cubic -0.5414 [-1.2837, -0.1398]
+     The two agree in sign and rough magnitude, so the grain change is not what drives anything below.
+
+################################################################################
+## 2. THE THREE WINDOWS SIDE BY SIDE — full / in-sample / out-of-sample
+################################################################################
+
+  ══ FULL 2037–2043  (all modern years) ══
+     ── POOLED: N=719 rows / 70 cards / 6,130,930 BF,  level -0.96/600,  cubic-ESS 94.6 ──
+        stu quintile        n    total BF    mean K resid
+        [64-101]          143   1,256,661       -1.02
+        [101-115]         144     962,858       -1.82
+        [115-123]         144   1,459,077       -1.40
+        [123-140]         144   1,600,608       -1.11
+        [140-187]         144     851,726       +1.16
+        LINEAR partial: +0.342 [-0.606, +1.446] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: -0.4983 [-1.2377, +0.0088] covers 0   (cluster CI; naive row CI would be [-0.7074, -0.3006])
+
+     ── vs RHB (vR): N=393 rows / 69 cards / 3,644,742 BF,  level -0.53/600,  cubic-ESS 55.8 ──
+        stu quintile        n    total BF    mean K resid
+        [70-102]           78     744,333       -1.56
+        [102-114]          79     559,169       -1.20
+        [114-125]          78     543,806       -3.38
+        [125-140]          79   1,218,952       +0.30
+        [140-187]          79     578,482       +2.40
+        LINEAR partial: +0.863 [-0.487, +2.647] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: -0.8871 [-1.7561, -0.2545] ★ CI-CLEAR   (cluster CI; naive row CI would be [-1.1153, -0.6457])
+
+     ── vs LHB (vL): N=326 rows / 64 cards / 2,486,188 BF,  level -1.59/600,  cubic-ESS 62.4 ──
+        stu quintile        n    total BF    mean K resid
+        [64-97]            65     533,167       -0.49
+        [100-116]          65     377,682       -2.22
+        [116-121]          65   1,069,333       -0.77
+        [121-140]          65     226,767       -7.20
+        [140-182]          66     279,239       -1.37
+        LINEAR partial: -0.569 [-2.071, +0.574] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: +0.1797 [-0.6560, +0.9170] covers 0   (cluster CI; naive row CI would be [-0.1188, +0.4633])
+
+     hand contrast here: vR−vL cubic -1.0668,  hand LEVEL gap +1.06/600
+
+  ══ IN-SAMPLE 2042+2043  (the form was FIT here — residual is shrunk by construction) ══
+     ── POOLED: N=222 rows / 62 cards / 1,851,342 BF,  level +0.37/600,  cubic-ESS 33.3 ──
+        stu quintile        n    total BF    mean K resid
+        [74-105]           44     350,658       +0.18
+        [105-117]          44     298,771       +0.20
+        [117-126]          45     459,653       -1.14
+        [126-140]          44     498,514       +1.26
+        [140-187]          45     243,746       +1.85
+        LINEAR partial: +0.324 [-0.493, +1.335] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: -0.5414 [-1.2837, -0.1398] ★ CI-CLEAR   (cluster CI; naive row CI would be [-0.8477, -0.2316])
+
+     ── vs RHB (vR): N=122 rows / 61 cards / 1,043,163 BF,  level +0.55/600,  cubic-ESS 18.1 ──
+        stu quintile        n    total BF    mean K resid
+        [74-105]           24     180,749       -1.99
+        [105-116]          24     122,307       +0.60
+        [117-130]          25     202,210       -1.09
+        [130-140]          24     367,847       +1.65
+        [140-187]          25     170,050       +2.76
+        LINEAR partial: +1.006 [-0.405, +2.751] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: -0.8690 [-1.9596, -0.2791] ★ CI-CLEAR   (cluster CI; naive row CI would be [-1.3920, -0.4636])
+
+     ── vs LHB (vL): N=100 rows / 53 cards / 808,179 BF,  level +0.13/600,  cubic-ESS 22.9 ──
+        stu quintile        n    total BF    mean K resid
+        [75-97]            20     166,217       +1.40
+        [105-118]          20     185,044       +0.74
+        [118-123]          20     297,103       -0.45
+        [123-140]          20      79,004       -1.69
+        [140-182]          20      80,811       +0.04
+        LINEAR partial: -0.586 [-1.804, +0.546] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: +0.0227 [-0.7679, +0.5886] covers 0   (cluster CI; naive row CI would be [-0.4833, +0.4586])
+
+     hand contrast here: vR−vL cubic -0.8917,  hand LEVEL gap +0.42/600
+
+  ══ OUT-OF-SAMPLE 2037–2041  (the form has NEVER seen these years) ══
+     ── POOLED: N=497 rows / 61 cards / 4,279,588 BF,  level -1.53/600,  cubic-ESS 61.2 ──
+        stu quintile        n    total BF    mean K resid
+        [64-100]           99     932,683       -1.40
+        [100-114]          99     691,269       -2.34
+        [114-122]         100     926,396       -1.90
+        [122-137]          99   1,116,199       -2.12
+        [137-187]         100     613,041       +0.83
+        LINEAR partial: +0.257 [-0.725, +1.456] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: -0.4714 [-1.2738, +0.0990] covers 0   (cluster CI; naive row CI would be [-0.7262, -0.2063])
+
+     ── vs RHB (vR): N=271 rows / 60 cards / 2,601,579 BF,  level -0.96/600,  cubic-ESS 37.5 ──
+        stu quintile        n    total BF    mean K resid
+        [70-102]           54     565,761       -1.44
+        [102-114]          54     411,360       -1.92
+        [114-123]          54     321,521       -2.18
+        [124-134]          54     841,934       -1.35
+        [134-187]          55     461,003       +2.06
+        LINEAR partial: +0.716 [-0.716, +2.616] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: -0.8623 [-1.7487, -0.1836] ★ CI-CLEAR   (cluster CI; naive row CI would be [-1.1547, -0.5502])
+
+     ── vs LHB (vL): N=226 rows / 56 cards / 1,678,009 BF,  level -2.41/600,  cubic-ESS 39.8 ──
+        stu quintile        n    total BF    mean K resid
+        [64-97]            45     366,950       -1.35
+        [100-115]          45     254,079       -3.34
+        [115-121]          45     602,065       -1.54
+        [121-137]          45     255,936       -5.48
+        [140-181]          46     198,979       -1.91
+        LINEAR partial: -0.609 [-2.402, +0.633] covers 0  (≈0 in-sample BY CONSTRUCTION; OUT of sample it is free to move)
+        CUBIC  partial: +0.2226 [-0.7310, +1.0725] covers 0   (cluster CI; naive row CI would be [-0.1412, +0.5946])
+
+     hand contrast here: vR−vL cubic -1.0849,  hand LEVEL gap +1.46/600
+
+  ══ REPLICATION AT A GLANCE — cubic partial by window × hand (cluster CI) ══
+                     POOLED                        vR (RHB)                      vL (LHB)
+     FULL            -0.4983 [-1.238,+0.009]       -0.8871 [-1.756,-0.254]★      +0.1797 [-0.656,+0.917]
+     IN-SAMPLE       -0.5414 [-1.284,-0.140]★      -0.8690 [-1.960,-0.279]★      +0.0227 [-0.768,+0.589]
+     OUT-OF-SAMPLE   -0.4714 [-1.274,+0.099]       -0.8623 [-1.749,-0.184]★      +0.2226 [-0.731,+1.073]
+     (★ = CI-clear.) The vR column is the one that replicates: -0.8690 in-sample vs -0.8623 out-of-sample,
+     both CI-clear, a 0.8% difference. The POOLED out-of-sample reading covers zero only because
+     the vL arm (+0.2226) pulls against it — dilution, not absence.
+
+  ══ OUT-OF-TIME vs OUT-OF-CARD — the limit on how independent the OOS years really are ══
+     The card pool barely turns over: 53 of the 61 OOS cards ALSO appear in the fit window, leaving
+     8 cards (34 rows, 1.1% of OOS BF) the fit never saw in any season. A card's residual is
+     largely a fixed property of its (unchanging) ratings, so re-measuring the same card in an earlier
+     season is a weaker form of replication than a fresh card would be. On the card-disjoint subset:
+        card-disjoint OOS POOLED (N=34 rows / 8 cards): cubic +0.6570 [-3.8882, +5.4517]
+        card-disjoint OOS vR      (N=22 rows / 8 cards): cubic +1.6284 [-19.0513, +131.6227]
+        ⇒ UNINFORMATIVE. 8 clusters carrying 1.1% of the out-of-sample BF, with a cubic CI spanning
+          orders of magnitude (the design is near-singular at this size). NO inference is drawn from
+          it in either direction — the numbers are printed only so the gap is visible rather than
+          hidden. A card-disjoint replication is NOT available in this corpus and must not be claimed.
+
+     WHY THE OOS LINEAR TERM IS THE HIDDEN TELL: in-sample the linear slope is ~0 by least-squares
+     orthogonality (the quad fit absorbs it). Out of sample nothing forces that, so an OOS linear
+     partial of +0.257 that covers 0 is itself a free measurement of the curve's fit.
+
+################################################################################
+## 3. PER-YEAR SERIES — cubic partial, level, and hand contrast, season by season
+################################################################################
+
+     year     rows         BF   level    cubic  cubic 95% CI (cluster)     vR cub   vL cub    vR−vL
+     2037       88    742,261   -2.63  -0.2187  [-1.670, +0.606]           -0.918   +0.762   -1.680
+     2038      107    933,159   -1.67  -0.3439  [-1.145, +0.484]           -0.678   +0.280   -0.958
+     2039       89    742,762   -1.16  -0.4326  [-1.209, +0.273]           -0.832   +0.386   -1.218
+     2040      106    931,394   -1.82  -0.7229  [-1.678, -0.063]           -1.131   +0.075   -1.206
+     2041      107    930,012   -0.51  -0.5620  [-1.642, -0.016]           -0.683   -0.120   -0.563
+     2042      112    930,398   +0.29  -0.5972  [-1.701, -0.120]           -0.919   +0.118   -1.037
+     2043      110    920,944   +0.44  -0.4904  [-1.052, +0.003]           -0.841   -0.087   -0.754
+     2032*     104    752,606   -6.40  -0.5238  [-1.836, +0.573]           -0.368   -0.321   -0.047
+     2033*      69    372,810   -3.62  +0.1920  [-0.841, +1.214]           +0.034   +0.505   -0.472
+
+     Individual seasons are small (88–112 rows), so per-year CIs are wide by design — the point of this
+     table is the SIGN PATTERN and the absence/presence of a trend, not any single year's estimate.
+     Modern seasons with a negative cubic: 7/7.  With a negative vR−vL contrast: 7/7.
+     Level ranges -2.63 … +0.44/600 (spread 3.07); cubic ranges -0.723 … -0.219 (spread 0.504).
+
+################################################################################
+## 4. THE HAND CONTRAST ON THE WIDE WINDOW — power treatment, two seeds
+################################################################################
+
+     split         rows  cards          BF  cub-ESS    cubic  95% CI (cluster)         width
+     POOLED         719     70   6,130,930     94.6  -0.4983  [-1.2377, +0.0088]       1.247
+     vR (RHB)       393     69   3,644,742     55.8  -0.8871  [-1.7561, -0.2545]       1.502
+     vL (LHB)       326     64   2,486,188     62.4  +0.1797  [-0.6560, +0.9170]       1.573
+
+     PAIRED difference test. The same cards appear on both hands, so one cluster draw supplies BOTH
+     hands and the difference is taken within the draw — correct for the correlation AND more powerful
+     than resampling the hands independently (which is what the 2026-07-25 hand-power artifact did).
+
+        vR−vL CUBIC  point -1.0668
+           seed A (12000 draws): CI [-2.1075, -0.0817]  p=0.034  CI-clear
+           seed B (12000 draws): CI [-2.0980, -0.1010]  p=0.034  CI-clear
+           ⇒ SEED-STABLE: the two streams agree on the flag and to within 0.02 in p.
+        vR−vL LEVEL  point +1.06/600
+           seed A: CI [-1.69, +4.52]  p=0.481  covers 0
+           seed B: CI [-1.67, +4.42]  p=0.496  covers 0
+
+     Split by provenance — is the hand contrast an in-sample artifact?
+        in-sample  2042+2043: vR−vL cubic -0.8917  CI [-2.0616, +0.1359]  p=0.091
+        out-of-sample 2037–2041: vR−vL cubic -1.0849  CI [-2.2306, +0.0257]  p=0.054
+        ⇒ same sign in both halves.
+
+################################################################################
+## 5. THE FRAME-DRIFT CONFOUND, HANDLED EXPLICITLY
+################################################################################
+
+     Cards improve every season, so older years sit in a systematically WEAKER frame: the Stuff
+     distribution shifts, and so does the quality of the opposing hitters. A LEVEL residual in an old
+     year can therefore be frame drift rather than curve misfit, and must not be read naively.
+
+     year     BF-wtd stu    p10    p25    med    p75    p90   lgK/600  opp kRat    level
+     2037          114.2     87    102    118    130    144     116.6     115.2    -2.63
+     2038          115.6     88    105    119    132    151     116.3     116.0    -1.67
+     2039          117.6     90    109    120    134    154     116.7     116.4    -1.16
+     2040          117.6     88    105    119    133    151     117.4     117.1    -1.82
+     2041          118.7     90    109    119    133    152     116.6     117.6    -0.51
+     2042          119.4     90    109    120    134    152     116.1     119.2    +0.29
+     2043          121.1     91    110    122    134    153     116.7     121.2    +0.44
+     2032*         109.5     77     91    113    128    140     118.2     116.2    -6.40
+     2033*         111.3     84     97    114    125    144     116.3     115.7    -3.62
+
+     The drift is real and monotone-ish: BF-weighted Stuff moves 114.2 → 121.1 across 7 seasons
+     and opposing avoid-K (kRat) moves 115.2 → 121.2. So the confound is present, not hypothetical.
+
+     HOW STRONGLY DOES EACH READING TRACK THE DRIFT? (correlation across the 7 modern seasons)
+                                    vs BF-wtd stu  vs league K/600  vs opp kRat
+        per-year LEVEL                      +0.93            -0.34        +0.91
+        per-year CUBIC                      -0.65            -0.41        -0.49
+
+     ROBUSTNESS OF THE SHAPE — three constructions that KILL any level structure. If the cubic is a
+     level artifact, these must destroy it; if it is shape, they must leave it standing.
+        raw full-window cubic                        -0.4983 [-1.2377, +0.0088] covers 0
+        after per-YEAR level removed (year FE)       -0.4976 [-1.2458, +0.0138] covers 0
+        after per-YEAR×HAND level removed            -0.4628 [-1.2330, -0.0112] CI-clear
+        with z standardized WITHIN each season       -0.4752 [-1.2803, -0.0247] CI-clear
+        …the same, OUT-OF-SAMPLE years only          -0.4665 [-1.2520, +0.1085] covers 0
+        (within-season z is on a per-year-sd scale — compare SIGN and CI-clearness, not magnitude)
+
+     THE ARGUMENT, from these numbers rather than from first principles:
+      • LEVEL is NOT robust. It ranges -2.63 … +0.44/600 across seasons (spread 3.07) and correlates
+        +0.93 with the season's mean Stuff and +0.91 with opposing avoid-K. An old-year level residual
+        is not interpretable as curve misfit — exactly the warning, confirmed in the data.
+      • SHAPE (the cubic) IS robust. Removing per-year levels moves it -0.4983 → -0.4976; removing
+        per-year×hand levels moves it to -0.4628. Mechanically this is expected — the cubic partial is
+        orthogonal to the constant in the weighted basis, so a per-group additive shift cannot enter it
+        — and the numbers confirm the mechanism rather than merely assuming it. Standardizing Stuff
+        WITHIN each season, which also neutralises the drift in the Stuff DISTRIBUTION (not just its
+        level), leaves -0.4752 CI-clear. And the per-year cubic tracks the frame proxies weakly
+        (-0.65 vs mean Stuff, -0.49 vs opposing kRat) against LEVEL's +0.93 / +0.91.
+      • The HAND CONTRAST is robust by construction and confirmed empirically: vR and vL rows come from
+        the SAME season, the SAME league files and largely the SAME cards, so any year-level frame shift
+        is common to both arms and differences it out. The per-year×hand FE row above is the direct
+        check — it removes an arbitrary per-year-per-hand level and the cubic survives at -0.4628.
+        What frame drift CANNOT be differenced away by the hand contrast is a change in the platoon
+        COMPOSITION of the opposition itself; that is a separate exposure question, not this residual.
+
+################################################################################
+## 6. VERDICT, IN FULL
+################################################################################
+
+  (a) DOES THE CUBIC K MISFIT REPLICATE OUT-OF-SAMPLE?
+      YES IN THE vR ARM (CI-clear there); POOLED ONLY DIRECTIONAL. The form was fit on 2042+2043; on 2037–2041, data it has never seen, the cubic
+      partial is -0.4714 [-1.2738, +0.0990] over 497 rows / 61 cards — the same sign as the
+      in-sample -0.5414, at 0.87× the magnitude, and 7/7 individual seasons carry the same
+      sign. Pooled, that OOS interval grazes zero; the vR ARM does not — -0.8623 [-1.7487, -0.1836] against an
+      in-sample -0.8690, i.e. the misfit reproduces at 99% of its in-sample magnitude (a 0.8% difference)
+      on years the fit never saw.
+      In-sample shrinkage therefore did NOT manufacture the 2026-07-23 finding. The shape survives year
+      FE, year×hand FE and within-season standardization (§5), so it is not the frame-drift level
+      confound wearing a curve. THE CAVEAT THAT LIMITS ALL OF THIS: the same ~70 cards populate every
+      season (53/61 OOS cards are also fit-window cards), so this is replication ACROSS TIME on largely
+      the SAME cards — not replication on fresh cards, which this corpus cannot supply.
+
+  (b) IS HAND-CONDITIONING WARRANTED?
+      YES. On the full 2037–2043 window the vR−vL cubic difference is -1.0668, with paired
+      card-cluster CIs [-2.1075, -0.0817] (p=0.034) and [-2.0980, -0.1010] (p=0.034) under two independent
+      rng streams — stable, so the reading is usable this time. Season-by-season the contrast is negative in
+      7/7 years, and it is the same sign in-sample and out-of-sample, which is the
+      strongest single indicator either way. The hand LEVEL gap remains UNRESOLVED (+1.06/600,
+      p=0.481) and should not be carried into any proposal.
+
+  SCOPE. Measurement only: no fit, no refit, no defaults touched, nothing wired, nothing committed.
+  This EXTENDS the 2026-07-23 and 2026-07-25 artifacts; it supersedes neither.
+
+(end of artifact — K-residual wide window / out-of-time replication)

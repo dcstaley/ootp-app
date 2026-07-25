@@ -1,0 +1,132 @@
+﻿################################################################################
+# K-RESIDUAL vs STUFF — HAND-SPLIT POWER AUDIT.  MEASUREMENT ONLY — nothing wired.
+# Is the vR-concentration of the cubic K misfit a REAL hand asymmetry, or unequal power?
+################################################################################
+
+  model 'league-42-43'  DEPLOYED form  window 2042+2043  N=149 ROWS (card×side, BF-weighted)
+  source finding: fixtures/kresidual-stuff-inframe-2026-07-23.txt (pooled cubic CI-clear, vR-concentrated)
+  residual = deployed pred K/600 − observed K/600.  Cubic partial = coefficient on z(stu)³.
+
+### VERDICT
+
+  REAL ASYMMETRY — power ruled out
+
+  The power explanation fails at the first hurdle: vL is NOT the weaker split. It carries 72 rows to vR's 77,
+  78% of the BF, but 11.6 cubic-contrast ESS against vR's 9.6 — and a NARROWER bootstrap CI
+  (1.229 vs 1.556). vL resolves the cubic at least as well as vR does, so "vL is flat" is not "vL is unresolved".
+  Degrading vR to vL-equivalent BF, its cubic stays negative in 100% of draws and CI-clear in 86%,
+  and only 1.1% of vL-powered measurements of a vR-sized effect would read as high as vL's +0.0537.
+  CAVEAT, stated plainly: the direct vR−vL difference is -0.8682, CI [-1.9657, -0.0100], bootstrap p=0.049 —
+  a BOUNDARY case: the CI edge sits on zero, so the CI-clear flag itself is not a stable summary.
+  So: the vR-concentration is NOT a power artifact, but the two hands are only marginally distinguishable from
+  each other. The hand LEVEL gap (+0.54/600) is a separate claim and is NOT resolved (see §2).
+
+  Supporting numbers: vR cubic -0.8145 [-1.8521, -0.2957] (width 1.556) vs vL cubic
+  +0.0537 [-0.6532, +0.5759] (width 1.229) — vL's CI is 0.79× vR's width.
+  Information: vR 77 rows / 1,060,686 BF / cubic-ESS 9.6;  vL 72 rows / 832,512 BF /
+  cubic-ESS 11.6  (vL carries 78% of vR's BF and 120% of its cubic-contrast ESS).
+
+################################################################################
+## 1. INFORMATION CONTENT PER HAND — is vL thinner in BF, or only in rows?
+################################################################################
+
+                            vR (RHB)         vL (LHB)         ratio vL/vR
+     rows                   77               72               0.94×
+     total BF               1,060,686        832,512          0.78×
+     mean BF / row          13,775           11,563           0.84×
+     Kish ESS (BF wts)      24.1             21.0             0.87×
+     cubic-contrast ESS     9.6              11.6             1.20×
+     cubic info (Σ w·c²)    4678593.7        4157890.6        0.89×
+
+     BF distribution (quantiles of per-row BF)
+                            min      p10      p25      med      p75      p90      max      
+     vR (RHB)               1,031    1,454    2,425    4,663    16,001   40,165   102,374  
+     vL (LHB)               1,006    1,129    1,621    5,102    14,840   24,542   98,200   
+
+     BF and residual by Stuff quintile (per hand). The CUBIC is driven by the TAILS — if vL's BF is
+     thin exactly where the bend lives, its flatness is a support problem, not a shape finding.
+
+     ── vR (RHB) ──
+        stu quintile       n     total BF    % of hand BF    mean K resid
+        [70-102]          15     169,017        15.9%         -1.60
+        [105-117]         15     151,471        14.3%         -0.30
+        [118-130]         16     250,366        23.6%         -0.45
+        [130-140]         15     324,068        30.6%         +1.66
+        [142-187]         16     165,764        15.6%         +2.83
+
+     ── vL (LHB) ──
+        stu quintile       n     total BF    % of hand BF    mean K resid
+        [75-97]           14     169,775        20.4%         +1.58
+        [101-118]         14     199,535        24.0%         +0.55
+        [119-124]         15     301,956        36.3%         -0.80
+        [125-139]         14      65,453         7.9%         -1.80
+        [140-182]         15      95,793        11.5%         -0.21
+
+################################################################################
+## 2. RESOLUTION PER HAND — effective n and bootstrap CI WIDTH for the cubic
+################################################################################
+
+     A wide CI means UNRESOLVED, not FLAT. Widths from 2000 percentile-bootstrap draws (row resample).
+
+     split        rows   cubic-ESS   cubic β₃   95% CI                   width    status
+     POOLED       149    17.3        -0.5049    [-0.9425, -0.1533]       0.789    CI-clear
+     vR (RHB)     77     9.6         -0.8145    [-1.8521, -0.2957]       1.556    CI-clear
+     vL (LHB)     72     11.6        +0.0537    [-0.6532, +0.5759]       1.229    covers 0
+
+     vL's CI is 0.79× the width of vR's. Level: vR +0.55/600, vL +0.00/600,
+     gap +0.54/600 with bootstrap CI [-1.34, +2.59] COVERS 0.
+
+################################################################################
+## 3. POWER-MATCHED vR — degrade vR to vL-equivalent information, ask if it survives
+################################################################################
+
+     400 random without-replacement subsamples of vR per criterion; each gets its OWN 400-draw
+     bootstrap CI. "detection rate" = share of matched draws whose cubic CI excludes zero on the
+     negative side — i.e. the probability of REPRODUCING the vR finding at vL's information level.
+
+     ── BF-matched (target: total BF ≥ 832,512) ──
+        subsample size:    median 61 rows  [52, 69]   (vL has 72 rows)
+        subsample BF:      median 848,985   (vL has 832,512)
+        subsample cub-ESS: median 9.8   (vL has 11.6)
+        cubic β₃ across matched draws: median -0.8074  [p2.5 -1.4208, p97.5 -0.5388]
+        share of draws with β₃ < 0: 100.0%
+        median per-draw CI width: 1.787   (vR full 1.556, vL actual 1.229)
+        DETECTION RATE (CI-clear negative): 85.8%   (any-direction CI-clear 85.8%)
+
+     ── cubic-ESS-matched (target: cubic-ESS ≥ 11.6): NOT APPLICABLE ──
+        vR is ALREADY at or below vL on this criterion (vR 9.6 cubic-ESS vs vL
+        11.6 cubic-ESS), so there is nothing to degrade. That is itself an answer: on this
+        dimension vL is the BETTER-informed split, and its null cannot be blamed on power.
+
+     READ: if the detection rate is HIGH, an effect of vR's magnitude would normally have been seen at
+     vL's information — so vL's null is informative and the asymmetry is real. If it is LOW, vL's null is
+     what you would expect even if vL carried the SAME effect — the split is a power artifact.
+
+################################################################################
+## 4. THE REVERSE DIRECTION — is vL's point estimate merely noisier, or genuinely ~0?
+################################################################################
+
+     vL point estimate +0.0537 vs vR -0.8145. vL is 7% of vR's magnitude
+     and the OPPOSITE sign. A merely-noisier-but-same-effect vL would sit near vR's value with a wide CI.
+
+     DIFFERENCE TEST (independent bootstrap within each hand, 20000 draws, dedicated rng stream):
+        vR − vL cubic: -0.8682   CI [-1.9657, -0.0100]   p=0.049   ★ CI-clear
+        vR − vL level: +0.54/600   CI [-1.34, +2.59]   p=0.586   covers 0 — the hand LEVEL gap is NOT resolved
+        The CUBIC difference is a BOUNDARY case (CI edge on zero) — read the p-value, not the flag. The
+        LEVEL gap is nowhere near resolved: it is well inside its own noise.
+
+     REPLICATION PROBABILITY — the decisive reverse read. Reference distribution = the POOLED inner
+     bootstrap of the power-matched vR draws, i.e. what an estimate of a vR-SIZED effect looks like when
+     measured at vL's information, sampling noise included.
+        reference (vR-sized effect @ vL power): median -0.8402  [p2.5 -2.1639, p97.5 -0.1371]
+        P(estimate ≥ vL's +0.0537 | vR-sized effect at vL power) = 1.1%
+        ⇒ vL's flat reading is NOT a plausible measurement of a vR-sized effect — vL's point estimate is genuinely near zero.
+
+     Secondary (anti-conservative, for completeness — subsample spread only, no sampling noise):
+        vL's +0.0537 sits at percentile 100.0 of the BF-matched vR subsample estimates
+        and percentile n/a of the cubic-ESS-matched ones (NaN = criterion not applicable).
+
+     Also: pooled cubic -0.5049 [-0.9425, -0.1533] CI-clear. The POOLED finding is
+     unaffected by this audit either way — this tool only tests the HAND-SPLIT attribution.
+
+(end of artifact — K-residual hand-split power audit)
