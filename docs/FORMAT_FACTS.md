@@ -37,27 +37,15 @@ Cross-format facts:
   opposition is deterministic; identification of opponent effects needs cross-format
   contrasts (which are confounded) or the live-vs-quick window-matched pairs.
 
-PROVENANCE CORRECTION (2026-07-26, Derek): there is NO SUCH THING as a Derek tournament
-export. League Files/ = Derek's league exports (fitting truth). EVERYTHING tournament-side
-— captures, observed tables, AND Tournament Data/'s realized-PA rosters — is cwhit-site
-data: one provenance, one set of conventions/windows/limitations. Any fit on any of it is
-governed by the no-fits-until-re-pull rule.
-
-SUPERSEDING NOTE (2026-07-26, Derek): the provenance correction above is refined —
-`Tournament Data/` DOES contain Derek's OLD MANUAL EXPORTS from the early program era.
-They are DEPRECATED: never read those files again, for anything. All tournament data,
-present and future, is cwhit-site captures (fixtures/cwhit*). Consequence: the realized-PA
-roster dataset (487 rosters) lived in the deprecated folder ⇒ the usage-model calibration
-is PARKED pending one recon question: does cwhit expose per-team rosters with playing
-time? Yes ⇒ capture target, calibration revives; no ⇒ usage model stays as-is,
-refutation noted as historical context.
-
-FINAL RULE (2026-07-26, Derek — supersedes both notes above on this topic):
-`Tournament Data/` (Derek's old manual exports) is NOT dead — it is RESTRICTED: use it
-ONLY for usage-model work or for data genuinely unavailable from the cwhit site. For
-everything else, cwhit fixtures are the sole tournament source.
-PRIORITY RULE: the usage model and ANYTHING ELSE related to CAPS AND SLOTS (the deployment
-layer, the cap/slots double-count fix, cap-tightness instruments, budget-pair fits) sits
-BELOW the DEFENSE frontier in the roadmap. Order: current measurement work → era +
-composition (non-budget parts: decoupling, gold, live, hitter tail) → DEFENSE → then
-caps/slots/usage.
+DATA PROVENANCE + PRIORITY (2026-07-26, Derek — final; supersedes earlier note chain):
+- League Files/ = Derek's league exports (fitting truth). fixtures/cwhit* = the sole
+  tournament data source for all current and future work.
+- `Tournament Data/` = Derek's OLD manual exports (early-program era). RESTRICTED, not
+  dead: use ONLY for usage-model work or for data genuinely unavailable from the cwhit
+  site. Never for anything else.
+- PRIORITY: the usage model and ANYTHING related to CAPS AND SLOTS (deployment layer,
+  double-count fix, tightness instruments, budget-pair fits) sits BELOW the DEFENSE
+  frontier. Order: current measurements -> post-pull replication + earned fits -> era +
+  non-budget composition (decoupling, gold, live, hitter tail) -> DEFENSE -> caps/slots/
+  usage cluster (Tournament Data/ available to it under the restricted rule).
+- All fits on cwhit data remain blocked until the wide re-pull (Derek's action).

@@ -118,6 +118,8 @@ coordinate SOURCES:
   live-pool residual, hitter-tail redesign. Stratum C (with deployment).
 - DEPLOYMENT layer: coordinate = format budget RULES (cap tightness, slot structure).
   Phenomenon: budget formats run hot at matched gap (who-plays reaches deep). Stratum C.
+  PRIORITY (Derek, 2026-07-26): this layer and ALL caps/slots work sits BELOW the DEFENSE
+  frontier in the roadmap; era + non-budget composition come first.
 Strata doctrine: a defect attributes to the FIRST stratum it appears in (A = neutral
 quicks = core; B = env dailies; C = budget/restricted).
 
@@ -142,7 +144,8 @@ quicks = core; B = env dailies; C = budget/restricted).
 - Data authority: Derek's league exports = fitting truth for league; cwhit RAW observed =
   tournament truth; cwhit projections/derived cols = benchmark opponent, weight zero.
   Current captures (ending ~07-19) are valid for MEASUREMENT; NO fit may use them until
-  the wide re-pull (Derek's action).
+  the wide re-pull (Derek's action). Tournament Data/ (old manual exports) is RESTRICTED:
+  usage-model work or cwhit-unavailable data ONLY (see FORMAT_FACTS).
 - Rating-shape doctrine: NEVER infer card quality from one rating. Game meta-economy NEVER
   enters modeling. Derek's config edits are never questioned. No tier/type identity rules.
 - Gates are FROZEN; failures resolve by STOPPING. Instrument defects masquerade as model
