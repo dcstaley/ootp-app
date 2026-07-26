@@ -42,3 +42,12 @@ export. League Files/ = Derek's league exports (fitting truth). EVERYTHING tourn
 — captures, observed tables, AND Tournament Data/'s realized-PA rosters — is cwhit-site
 data: one provenance, one set of conventions/windows/limitations. Any fit on any of it is
 governed by the no-fits-until-re-pull rule.
+
+SUPERSEDING NOTE (2026-07-26, Derek): the provenance correction above is refined —
+`Tournament Data/` DOES contain Derek's OLD MANUAL EXPORTS from the early program era.
+They are DEPRECATED: never read those files again, for anything. All tournament data,
+present and future, is cwhit-site captures (fixtures/cwhit*). Consequence: the realized-PA
+roster dataset (487 rosters) lived in the deprecated folder ⇒ the usage-model calibration
+is PARKED pending one recon question: does cwhit expose per-team rosters with playing
+time? Yes ⇒ capture target, calibration revives; no ⇒ usage model stays as-is,
+refutation noted as historical context.
