@@ -36,3 +36,9 @@ Cross-format facts:
 - No matchup-level data exists anywhere, ever — only per-card aggregates. Within a format,
   opposition is deterministic; identification of opponent effects needs cross-format
   contrasts (which are confounded) or the live-vs-quick window-matched pairs.
+
+PROVENANCE CORRECTION (2026-07-26, Derek): there is NO SUCH THING as a Derek tournament
+export. League Files/ = Derek's league exports (fitting truth). EVERYTHING tournament-side
+— captures, observed tables, AND Tournament Data/'s realized-PA rosters — is cwhit-site
+data: one provenance, one set of conventions/windows/limitations. Any fit on any of it is
+governed by the no-fits-until-re-pull rule.
