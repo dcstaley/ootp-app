@@ -1,0 +1,1154 @@
+================================================================================
+THE WINDOW AND THE THRESHOLD — is minPA=1000 on a two-year window costing us? — 2026-07-26
+tools/window-threshold-sweep.ts · root 'League Files' · MEASUREMENT ONLY · harness as of 7c8a061
+================================================================================
+
+================================================================================
+VERDICT — is minPA=1000 costing us, does a wider window help once drift is absorbed,
+and does either change the EYE-axis verdict?
+================================================================================
+
+SHORT ANSWER: minPA=1000 is costing us almost exactly nothing, a wider window costs us a little,
+and neither rescues the EYE axis. The day's nulls were not sample-size nulls.
+
+1. IS minPA=1000 COSTING US?  Barely — and the honest answer has two halves.
+   Under R1 (out-of-time ΔwPearson over six numbers, test set FIXED at the deployed bar so this is
+   a power question and not a population shift), thresholds 250, 500, 750 clear the rule; the best is
+   minPA=250 at mean ΔwPearson +0.0009 (5/6 positive, 1 CI-clear positive, 0 CI-clear negative), and
+   minPA=500 is the sign-consistent one at 6/6 positive. So the sweep does have an interior optimum
+   and 1000 is not it.
+   BUT THE SIZE IS THE POINT. The gain is +0.0006 to +0.0009 in weighted Pearson. The comparator
+   this project adopts on is stuffAug at +0.012…+0.033 — one to two ORDERS OF MAGNITUDE larger. On
+   the deliverable metrics the gain is not there at all: Δtop26 and Δregret are ~0 at every
+   threshold, against top-26 intervals of ±0.08-0.19. Moving the bar to 500 would change no roster.
+   AND THE OTHER DIRECTION IS REAL. Dropping the bar to zero is clearly BAD: mean ΔwPearson
+   -0.0031 with the pitcher in-window fit collapsing (-0.025) and pitcher CV collapsing (-0.063).
+   So there is a genuine floor: the low-PA rows are not free information, they are noise the
+   PA^0.75 weight only partly suppresses. That is the population caveat in numbers — "more cards"
+   and "more information" are different quantities, and past ~250 PA the extra cards stop being
+   information and start being noise.
+   AND RELAXING DOES NOT NARROW ANYTHING (§1d). If the bar comes down on BOTH sides — the only way
+   an interval could narrow — it WIDENS: hitter wPearson half-width ±0.0260 at 1000 →
+   ±0.0489 at no bar; top-26 stays ±0.13-0.19 throughout. The data-limited deliverable metrics
+   are NOT limited by the threshold. That closes the "just lower the bar and the CIs will tighten"
+   hope directly, and it is the single most transferable result in this artifact.
+
+2. DOES A WIDER WINDOW HELP ONCE DRIFT IS ABSORBED?  No — and the drift absorption is a null with
+   a mechanism, which is more useful than a null without one.
+   Under R2 (test year PINNED, window grown away from it, so every width is scored on byte-identical
+   test rows), NO eligible width clears the rule. Widening is neutral for pitchers and mildly NEGATIVE for
+   hitters — the forward design puts k=3,4,5 CI-clear below k=2 (-0.0033, -0.0036, -0.0044). Only
+   at k=6 does it climb back to roughly even, and by then the oldest season is six years from the
+   test year.
+   THE ABSORBED ARM MOVED ALMOST NOTHING (§2d), and the reason is structural rather than
+   disappointing: this trainer POOLS a card's counts across the window's seasons, so a per-season
+   level shift reaches a card only through that card's season MIX. Cards with similar mixes all move
+   together, and a common shift is exactly what the fit's intercept already absorbs. Measured, the
+   differential part is ~1-4% of the between-card spread on every channel. So the season fixed
+   effect is not wrong — it has nothing left to remove once the seasons are pooled. The wide-window
+   measurement's finding still stands (LEVEL drifts, SHAPE does not); what this run adds is that the
+   drift was never entering the pooled fit as anything but an intercept.
+   The 7-season window cannot be judged on the metric that decides at all — it leaves no held-out
+   block (§2c). Its CV numbers are shown and are NOT evidence.
+
+3. DOES EITHER CHANGE THE EYE-AXIS VERDICT?  No. It is confirmed, and one of the two legs is
+   confirmed in the opposite direction from the "power failure" hypothesis.
+   THE THRESHOLD MAKES THE BABIP AUX WORSE, NOT BETTER. Its swing across the three published fit
+   windows goes 4.16x (minPA 1000) → 5.81x (500) → 8.11x (250) → 11.94x (no bar).
+   Adding the low-PA cards DESTABILISES exactly the leg that was unstable. That is the cleanest
+   result in the artifact: under-determination here is not a shortage of rows, it is a shortage of
+   INFORMATION about the contact channel, and low-PA rows carry the least of it per row.
+   AND THE SIGNS DO NOT STOP SORTING BY FIT WINDOW. 3 of the 5 arms sort perfectly at minPA 1000;
+   at minPA 250 it is 4 of 5 — relaxing the bar made MORE arms sort, not fewer (§3c). At the best
+   (threshold, window) that R1 and R2 actually selected — minPA 250, 2 seasons — R3 needed BOTH the
+   coefficients to steady AND the sort to break. Neither happened, so the verdict is unchanged.
+   THE ONE PLACE IT LOOKS DIFFERENT, HANDLED HONESTLY. At WIDTH 3 (which did NOT win R2) the sign
+   sort does break — but into SCATTER, not into consistency: the arms still land 3-4 of 6 positive
+   with a -0.0035 in one panel, so the adoption bar (consistently positive, never CI-clear negative)
+   is still missed by the same distance. And the coefficient story there does not hold up either.
+   On the MATCHED two-window basis (Table D) widening steadies the BABIP aux at minPA 250
+   (1.77x → 1.24x) and DESTABILISES it at minPA 1000 (1.06x → 1.58x). A parameter whose
+   apparent identification flips direction with a nuisance knob is not identified; the swing factor
+   is itself unstable. The K aux meanwhile sits at 1.01-1.14 in every cell of every table — which is
+   what an identified term looks like, and it is the leg that was never in doubt.
+   Drift absorption changes the coefficients by ~0.04x, i.e. not at all.
+   ⇒ THE EYE-AXIS DECLINE STANDS, and it now stands on evidence rather than on assumption. The
+   four-leg candidate was not a victim of the 74-card sample; it is not identified by this league's
+   data at any threshold or width available, and the six-leg cancellation finding (removing four legs
+   of a six-leg cancellation lands wherever the other two sit) remains the reason it cannot pay.
+
+WHAT THIS CLOSES. "It failed because we only had ~75 cards" is no longer available as an
+explanation for today's nulls. The 75 is a threshold artefact — the window really does hold 162
+hitters and 155 pitchers — but the discarded rows carry so little estimating weight (PA^0.75 already
+gives a 250-PA card ~35% of a 1000-PA card's) and so much noise that admitting them buys ~0.0006
+Pearson and costs interval width. Two years and 1000 PA are, to within the resolution of every
+metric we act on, the right settings. NO PRODUCTION DEFAULT SHOULD CHANGE ON THIS ARTIFACT.
+
+ONE THING IT DOES NOT CLOSE (§5): the per-event flex ceiling spends 21/15 parameters against these
+same row counts. A 5-parameter curve being unable to use extra rows does not prove a 21-parameter
+one cannot — flexible forms have more to gain. What it does establish is that the extra rows are
+available and are LOW QUALITY, so the ceiling's parameter-cost problem cannot be fixed by lowering
+the bar alone. The ceiling's own sweep is a separate measurement and was not run here.
+
+================================================================================
+§0  PROVENANCE — the data this run may draw on, and what it excludes
+--------------------------------------------------------------------------------
+availableYears(root) = 2032, 2033, 2037, 2038, 2039, 2040, 2041, 2042, 2043
+SEASONS USED = 2037, 2038, 2039, 2040, 2041, 2042, 2043  (7 seasons)
+EXCLUDED BY CONSTRUCTION: 'League Files/Old Data' 2032, 2033. They sit after a FOUR-SEASON gap
+(2034-2036 absent), so pooling them with 2037+ would mix two league frames separated by more
+power creep than any window here spans. They are never loaded into any window below. For the
+record only, their inventory:
+   2032: leagues HD450,HD451,HD453,PEL (4)  obs=602  PA=788,919
+   2033: leagues HD451,PEL (2)  obs=456  PA=412,673
+
+PER-SEASON COVERAGE (league count varies — every cross-season claim below is qualified by it):
+  year    leagues  names                                obs        PA  excluded-cell
+  2037          4  HD450,HD451,HD453,PEL                574   790,421  —
+  2038          5  HD450,HD451,HD452,HD453,PEL          582   978,928  —
+  2039          5  HD450,HD451,HD452,HD453,PEL          548   789,189  HD450|2039
+  2040          5  HD450,HD451,HD452,HD453,PEL          616   976,949  —
+  2041          5  HD450,HD451,HD452,HD453,PEL          604   975,716  —
+  2042          5  HD450,HD451,HD452,HD453,PEL          650   976,153  —
+  2043          5  HD450,HD451,HD452,HD453,PEL          642   972,755  —
+
+HD450|2039 EXCLUSION CONFIRMED: the loader's corrupt-cell detector drops it — excludedCells = [HD450|2039].
+Its five files parse and its five leagues are listed, but the HD450 cell contributes NOTHING to
+observations, role splits or wOBA weights (validate.ts corruptCellKeys: byte-identical vL/vR).
+⇒ 2039 IS EFFECTIVELY A FOUR-LEAGUE SEASON, like 2037. 2038 and 2040-2043 are five.
+   dataset validation on the 7-season window: ok=false, errors=1, excluded=[HD450|2039]
+   ok=false is the CORRECT state here, not a data problem: validateDataset reports a corrupt cell as
+   an ERROR *and* the loader excludes it. The error is the record that HD450|2039 was dropped.
+
+POOLING IDENTITY: this tool builds a multi-season window by pooling PER-SEASON loads (it must —
+the drift absorption has to happen while the season still exists). Checked against loadWindow on
+[2042,2043]: 782 vs 782 observations, 782 keys compared, 0 mismatches on
+(PA, BF, HR, K, POW, STU). IDENTICAL — the pooled build is the loader's own.
+
+THE COUNTS THAT MOTIVATE THE RUN (window [2042,2043]; threshold 0 = any positive exposure):
+     minPA   hitter rows  cards   pitcher rows  cards
+      none           440    162            394    155
+       250           278    111            233     90
+       500           225     94            205     81
+       750           197     81            168     71
+      1000           173     74            149     67   ← DEPLOYED
+      1500           136     66            123     59
+
+================================================================================
+PRE-REGISTERED DECISION RULES — fixed before the results below were read
+--------------------------------------------------------------------------------
+The metric that decides is OUT-OF-TIME ΔwPearson, never in-sample and never CV alone: a lower
+threshold trivially improves in-sample coverage, and CV shares the window's frame. In-sample and
+CV are reported as the overfit diagnostic (a term that buys in-sample fit and gives it back out of
+time is the signature this run is looking for).
+
+R1 THRESHOLD. A threshold beats minPA=1000 only if, across the THREE out-of-time panels × TWO
+   roles (six numbers, test set fixed at the deployed bar): the mean ΔwPearson vs minPA=1000 is
+   POSITIVE, at least 4 of 6 individual signs are positive, and NONE is CI-clear negative.
+   Otherwise minPA=1000 stands. Ties go to the incumbent.
+R2 WINDOW. A width beats 2 seasons only if, across the TWO out-of-time designs × TWO roles (four
+   numbers, test set fixed per design): mean ΔwPearson positive, >=3 of 4 signs positive, none
+   CI-clear negative. Raw and drift-absorbed are judged separately; the drift-absorbed arm is the
+   one the wide-window measurement predicts can win.
+R3 EYE AXIS. The Eye-axis verdict is RE-OPENED only if, at the best (threshold, window): the HR
+   and BABIP aux coefficients stop swinging (the published swing is BABIP -0.162/-0.172/-0.673, a
+   four-fold move between adjacent windows) AND the six ΔwPearson signs stop sorting perfectly by
+   fit window. Both, not either.
+CI convention: 95% cluster bootstrap over CARD (cid), 2000 replicates, paired draws across arms.
+* marks an interval excluding zero.
+
+================================================================================
+§1  THRESHOLD SWEEP — refit DEPLOYED_FORMS at six minPA cuts, TEST SET HELD FIXED
+--------------------------------------------------------------------------------
+Forms: woba·rawpoly (hit) / woba·pareto (pit), fitExp 0.75, FRESH vertex-pin
+collector on every fit (production parity). Test rows always qualify at minPA_eval=1000 — the
+SAME cards, in the same order, for all six arms. Only the FIT population moves.
+
+§1a  ABSOLUTE METRICS — every arm scored on the same fixed test rows
+--------------------------------------------------------------------------------
+
+IN-WINDOW   fit 2042+2043 → test 2042,2043   (optimistic bound (test rows are inside the fit window))
+  HITTER  test n=173 cards=74  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         440    162      0.9097  0.7308   0.00227
+           250         278    111      0.9101  0.7308   0.00257
+           500         225     94      0.9111  0.7308   0.00269
+           750         197     81      0.9122  0.7308   0.00269
+          1000         173     74      0.9125  0.7308   0.00269  ← deployed
+          1500         136     66      0.9127  0.7308   0.00269
+  PITCHER  test n=149 cards=67  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         394    155      0.7663  0.5385   0.00436
+           250         233     90      0.7910  0.5769   0.00449
+           500         205     81      0.7916  0.5385   0.00500
+           750         168     71      0.7908  0.5385   0.00500
+          1000         149     67      0.7913  0.5385   0.00500  ← deployed
+          1500         123     59      0.7898  0.5385   0.00500
+
+CV 5-fold   fit 2042+2043 → test 2042,2043   (folds on cid|side; train = fold!=f at minPA_fit, test = fold==f at minPA_eval)
+  HITTER  test n=173 cards=74  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         352    162      0.9072  0.7308   0.00227
+           250         222    111      0.9073  0.7308   0.00227
+           500         180     94      0.9082  0.7308   0.00227
+           750         158     81      0.9091  0.7308   0.00269
+          1000         138     74      0.9095  0.7308   0.00269  ← deployed
+          1500         109     66      0.9096  0.7308   0.00227
+  PITCHER  test n=149 cards=67  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         315    155      0.6986  0.5385   0.00486
+           250         186     90      0.7569  0.5385   0.00485
+           500         164     81      0.7599  0.5385   0.00485
+           750         134     71      0.7597  0.5385   0.00485
+          1000         119     67      0.7612  0.5385   0.00485  ← deployed
+          1500          98     59      0.7532  0.5385   0.00489
+
+OOT-BACK-A   fit 2042+2043 → test 2037,2038,2039,2040,2041   (the deployed window, extrapolating DOWN)
+  HITTER  test n=252 cards=102  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         440    162      0.9273  0.5769   0.00470
+           250         278    111      0.9273  0.5769   0.00470
+           500         225     94      0.9287  0.5769   0.00470
+           750         197     81      0.9283  0.5769   0.00470
+          1000         173     74      0.9283  0.5769   0.00470  ← deployed
+          1500         136     66      0.9276  0.5769   0.00470
+  PITCHER  test n=188 cards=78  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         394    155      0.8006  0.5769   0.00524
+           250         233     90      0.8187  0.6154   0.00572
+           500         205     81      0.8188  0.5769   0.00576
+           750         168     71      0.8186  0.6154   0.00572
+          1000         149     67      0.8176  0.6154   0.00572  ← deployed
+          1500         123     59      0.8161  0.6154   0.00572
+
+OOT-FWD   fit 2040+2041 → test 2042,2043   (extrapolating UP to newer, stronger cards)
+  HITTER  test n=173 cards=74  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         407    148      0.8986  0.7308   0.00319
+           250         273    111      0.9001  0.7308   0.00319
+           500         229     94      0.8993  0.7692   0.00283
+           750         202     84      0.8985  0.7692   0.00283
+          1000         179     79      0.8985  0.7692   0.00283  ← deployed
+          1500         138     67      0.8966  0.7692   0.00283
+  PITCHER  test n=149 cards=67  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         343    133      0.7886  0.5385   0.00504
+           250         212     83      0.7912  0.5385   0.00500
+           500         174     71      0.7912  0.5385   0.00500
+           750         151     65      0.7910  0.5385   0.00500
+          1000         139     63      0.7908  0.5385   0.00500  ← deployed
+          1500         120     57      0.7898  0.5385   0.00498
+
+OOT-BACK-B   fit 2040+2041 → test 2037,2038,2039   (second backward leg, independent fit window)
+  HITTER  test n=189 cards=84  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         407    148      0.9119  0.6538   0.00479
+           250         273    111      0.9127  0.6538   0.00458
+           500         229     94      0.9119  0.6538   0.00479
+           750         202     84      0.9112  0.6538   0.00479
+          1000         179     79      0.9115  0.6538   0.00441  ← deployed
+          1500         138     67      0.9084  0.6538   0.00479
+  PITCHER  test n=149 cards=68  (FIXED across all six arms)
+     minPA_fit  train rows  cards    wPearson   top26    regret
+          none         343    133      0.7985  0.7692   0.00453
+           250         212     83      0.7995  0.7692   0.00453
+           500         174     71      0.7978  0.7692   0.00453
+           750         151     65      0.7978  0.7692   0.00453
+          1000         139     63      0.7974  0.7692   0.00453  ← deployed
+          1500         120     57      0.7988  0.7692   0.00453
+
+§1b  PAIRED Δ vs the deployed minPA=1000 — cluster-bootstrap CIs over CARD
+--------------------------------------------------------------------------------
+Δ > 0 on wPearson/top26 favours the relaxed threshold; Δ < 0 on regret favours it.
+
+IN-WINDOW   fit 2042+2043 → test 2042,2043
+  HITTER   (cards resampled: 74)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  -0.0028 [-0.0050, -0.0012]*  +0.0008 [-0.0385, +0.0385]   +0.00003 [-0.00043, +0.00077] 
+           250  -0.0025 [-0.0044, -0.0010]*  -0.0017 [-0.0385, +0.0000]   +0.00003 [-0.00042, +0.00060] 
+           500  -0.0014 [-0.0028, -0.0003]*  +0.0103 [+0.0000, +0.0769]   -0.00010 [-0.00102, +0.00000] 
+           750  -0.0003 [-0.0007, +0.0001]   +0.0011 [+0.0000, +0.0000]   -0.00001 [+0.00000, +0.00000] 
+          1000  — reference —               
+          1500  +0.0002 [-0.0006, +0.0010]   -0.0008 [-0.0384, +0.0000]   -0.00003 [-0.00066, +0.00030] 
+  PITCHER   (cards resampled: 67)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  -0.0253 [-0.0570, +0.0032]   +0.0027 [-0.1154, +0.1154]   -0.00010 [-0.00201, +0.00194] 
+           250  -0.0002 [-0.0038, +0.0034]   +0.0046 [-0.0385, +0.0385]   -0.00008 [-0.00102, +0.00083] 
+           500  +0.0004 [-0.0021, +0.0029]   +0.0013 [-0.0385, +0.0385]   -0.00001 [-0.00064, +0.00083] 
+           750  -0.0005 [-0.0030, +0.0020]   -0.0021 [-0.0385, +0.0000]   +0.00000 [-0.00064, +0.00061] 
+          1000  — reference —               
+          1500  -0.0015 [-0.0048, +0.0015]   -0.0012 [-0.0385, +0.0385]   +0.00001 [-0.00056, +0.00061] 
+
+CV 5-fold   fit 2042+2043 → test 2042,2043
+  HITTER   (cards resampled: 74)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  -0.0023 [-0.0048, -0.0004]*  -0.0009 [-0.0385, +0.0385]   -0.00000 [-0.00043, +0.00030] 
+           250  -0.0023 [-0.0045, -0.0005]*  +0.0010 [-0.0385, +0.0769]   -0.00002 [-0.00043, +0.00025] 
+           500  -0.0014 [-0.0030, -0.0001]*  +0.0048 [+0.0000, +0.0385]   -0.00004 [-0.00043, +0.00000] 
+           750  -0.0004 [-0.0010, +0.0001]   +0.0016 [+0.0000, +0.0384]   -0.00001 [-0.00023, +0.00000] 
+          1000  — reference —               
+          1500  +0.0001 [-0.0008, +0.0011]   -0.0068 [-0.0769, +0.0384]   +0.00002 [-0.00043, +0.00042] 
+  PITCHER   (cards resampled: 67)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  -0.0628 [-0.1254, -0.0134]*  -0.0113 [-0.1154, +0.1154]   +0.00029 [-0.00143, +0.00221] 
+           250  -0.0041 [-0.0086, -0.0002]*  -0.0132 [-0.0770, +0.0385]   +0.00025 [-0.00045, +0.00143] 
+           500  -0.0012 [-0.0047, +0.0022]   -0.0013 [-0.0385, +0.0385]   +0.00009 [-0.00052, +0.00099] 
+           750  -0.0015 [-0.0042, +0.0012]   +0.0002 [-0.0385, +0.0385]   +0.00001 [-0.00058, +0.00071] 
+          1000  — reference —               
+          1500  -0.0080 [-0.0173, -0.0011]*  +0.0006 [-0.0385, +0.0385]   +0.00003 [-0.00060, +0.00063] 
+
+OOT-BACK-A   fit 2042+2043 → test 2037,2038,2039,2040,2041
+  HITTER   (cards resampled: 102)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  -0.0010 [-0.0022, +0.0003]   +0.0023 [-0.0385, +0.0769]   +0.00001 [-0.00058, +0.00078] 
+           250  -0.0009 [-0.0020, +0.0002]   +0.0044 [-0.0385, +0.0769]   -0.00002 [-0.00058, +0.00045] 
+           500  +0.0004 [-0.0005, +0.0015]   +0.0019 [-0.0385, +0.0385]   -0.00002 [-0.00062, +0.00078] 
+           750  +0.0000 [-0.0003, +0.0004]   -0.0001 [+0.0000, +0.0000]   +0.00000 [-0.00002, +0.00000] 
+          1000  — reference —               
+          1500  -0.0007 [-0.0014, +0.0000]   +0.0035 [-0.0385, +0.0769]   +0.00000 [-0.00053, +0.00095] 
+  PITCHER   (cards resampled: 78)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  -0.0170 [-0.0436, +0.0078]   +0.0216 [-0.0769, +0.1154]   -0.00075 [-0.00323, +0.00084] 
+           250  +0.0012 [-0.0027, +0.0051]   -0.0035 [-0.0769, +0.0385]   +0.00009 [-0.00045, +0.00117] 
+           500  +0.0012 [-0.0009, +0.0036]   -0.0039 [-0.0385, +0.0000]   +0.00006 [-0.00008, +0.00081] 
+           750  +0.0010 [-0.0009, +0.0034]   -0.0002 [+0.0000, +0.0000]   +0.00001 [+0.00000, +0.00019] 
+          1000  — reference —               
+          1500  -0.0015 [-0.0038, +0.0004]   -0.0003 [-0.0385, +0.0385]   -0.00001 [-0.00056, +0.00045] 
+
+OOT-FWD   fit 2040+2041 → test 2042,2043
+  HITTER   (cards resampled: 74)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  +0.0000 [-0.0016, +0.0016]   -0.0013 [-0.0385, +0.0385]   +0.00006 [-0.00037, +0.00123] 
+           250  +0.0015 [+0.0006, +0.0027]*  -0.0022 [-0.0385, +0.0000]   +0.00003 [+0.00000, +0.00037] 
+           500  +0.0007 [+0.0000, +0.0016]   -0.0007 [+0.0000, +0.0000]   +0.00003 [+0.00000, +0.00042] 
+           750  -0.0000 [-0.0005, +0.0005]   -0.0001 [+0.0000, +0.0000]   +0.00000 [+0.00000, +0.00000] 
+          1000  — reference —               
+          1500  -0.0019 [-0.0040, +0.0002]   +0.0055 [+0.0000, +0.0769]   -0.00003 [-0.00056, +0.00043] 
+  PITCHER   (cards resampled: 67)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  -0.0024 [-0.0130, +0.0083]   +0.0057 [-0.1154, +0.1154]   +0.00013 [-0.00177, +0.00219] 
+           250  +0.0004 [-0.0031, +0.0037]   +0.0005 [-0.0385, +0.0769]   +0.00010 [-0.00070, +0.00103] 
+           500  +0.0004 [-0.0016, +0.0025]   +0.0029 [-0.0385, +0.0385]   +0.00007 [-0.00070, +0.00084] 
+           750  +0.0002 [-0.0013, +0.0017]   +0.0004 [-0.0385, +0.0385]   +0.00010 [-0.00048, +0.00084] 
+          1000  — reference —               
+          1500  -0.0009 [-0.0042, +0.0019]   +0.0025 [-0.0385, +0.0385]   -0.00007 [-0.00101, +0.00066] 
+
+OOT-BACK-B   fit 2040+2041 → test 2037,2038,2039
+  HITTER   (cards resampled: 84)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  +0.0003 [-0.0008, +0.0014]   -0.0001 [-0.0385, +0.0385]   +0.00000 [-0.00091, +0.00055] 
+           250  +0.0012 [+0.0000, +0.0022]   -0.0004 [-0.0385, +0.0385]   -0.00002 [-0.00091, +0.00038] 
+           500  +0.0003 [-0.0007, +0.0012]   +0.0003 [-0.0385, +0.0385]   -0.00001 [-0.00091, +0.00038] 
+           750  -0.0003 [-0.0010, +0.0003]   +0.0003 [-0.0384, +0.0384]   +0.00002 [-0.00057, +0.00038] 
+          1000  — reference —               
+          1500  -0.0032 [-0.0052, -0.0014]*  -0.0044 [-0.0769, +0.0385]   +0.00021 [-0.00046, +0.00153] 
+  PITCHER   (cards resampled: 68)
+     minPA_fit  ΔwPearson                    Δtop26                       Δregret                     
+          none  +0.0011 [-0.0086, +0.0117]   -0.0046 [-0.0769, +0.0769]   +0.00009 [-0.00158, +0.00203] 
+           250  +0.0019 [-0.0009, +0.0047]   +0.0039 [+0.0000, +0.0385]   -0.00011 [-0.00132, +0.00019] 
+           500  +0.0004 [-0.0014, +0.0023]   +0.0039 [+0.0000, +0.0385]   -0.00011 [-0.00132, +0.00000] 
+           750  +0.0004 [-0.0011, +0.0022]   +0.0036 [+0.0000, +0.0385]   -0.00011 [-0.00132, +0.00000] 
+          1000  — reference —               
+          1500  +0.0014 [-0.0010, +0.0038]   -0.0032 [-0.0385, +0.0000]   +0.00005 [+0.00000, +0.00061] 
+
+§1c  RULE R1 — the out-of-time tally that decides
+--------------------------------------------------------------------------------
+Six numbers per threshold: OOT-BACK-A, OOT-FWD, OOT-BACK-B × HITTER, PITCHER.
+    minPA    mean Δr   pos  CI+  CI-   values (hit then pit, panels in order)
+     none    -0.0031   3/6    0    0   -0.0010  +0.0000  +0.0003  -0.0170  -0.0024  +0.0011 
+      250    +0.0009   5/6    1    0   -0.0009  +0.0015* +0.0012  +0.0012  +0.0004  +0.0019 
+      500    +0.0006   6/6    0    0   +0.0004  +0.0007  +0.0003  +0.0012  +0.0004  +0.0004 
+      750    +0.0002   4/6    0    0   +0.0000  -0.0000  -0.0003  +0.0010  +0.0002  +0.0004 
+     1000          —     —    —    —   (reference)
+     1500    -0.0011   1/6    0    1   -0.0007  -0.0019  -0.0032* -0.0015  -0.0009  +0.0014 
+
+R1 VERDICT: thresholds clearing the rule: 250, 500, 750 → BEST = 250
+
+§1d  DETERMINATION, NOT COMPARISON — does relaxing the bar NARROW the intervals?
+--------------------------------------------------------------------------------
+§1a-c hold the test set FIXED, so the interval WIDTH there cannot move — width is a property of
+the test set. The separate question 'would we measure our deliverable more sharply if the bar came
+down everywhere' needs the bar to move on BOTH sides. That changes the estimand (a top-26 over 162
+cards is not the same quantity as a top-26 over 74), so this table is NOT a model comparison and
+nothing in R1 depends on it. Panel: fit [2042,2043] → test 2037-2041, both at the same bar.
+
+  HITTER
+       bar  test n  cards   wPearson 95% CI                half-w     top26 95% CI                half-w
+      none     514    189     0.8407 [0.7861, 0.8839]     ±0.0489    0.1456 [0.0000, 0.3077]     ±0.1538
+       250     355    140     0.8990 [0.8612, 0.9284]     ±0.0336    0.4128 [0.2308, 0.6154]     ±0.1923
+       500     294    115     0.9148 [0.8810, 0.9412]     ±0.0301    0.5599 [0.3846, 0.6923]     ±0.1539
+       750     268    110     0.9187 [0.8854, 0.9442]     ±0.0294    0.5945 [0.4231, 0.7308]     ±0.1539
+      1000     252    102     0.9259 [0.8972, 0.9492]     ±0.0260    0.6307 [0.4615, 0.7692]     ±0.1538
+      1500     213     91     0.9354 [0.9063, 0.9579]     ±0.0258    0.7183 [0.5769, 0.8462]     ±0.1346
+
+  PITCHER
+       bar  test n  cards   wPearson 95% CI                half-w     top26 95% CI                half-w
+      none     461    181     0.6878 [0.6272, 0.7414]     ±0.0571    0.0600 [0.0000, 0.1923]     ±0.0961
+       250     262     99     0.7976 [0.7423, 0.8427]     ±0.0502    0.5354 [0.3462, 0.6923]     ±0.1731
+       500     223     88     0.8052 [0.7441, 0.8509]     ±0.0534    0.5997 [0.4615, 0.7692]     ±0.1538
+       750     205     83     0.8113 [0.7541, 0.8569]     ±0.0514    0.6097 [0.4231, 0.7692]     ±0.1731
+      1000     188     78     0.8162 [0.7610, 0.8586]     ±0.0488    0.6012 [0.4615, 0.7308]     ±0.1346
+      1500     162     71     0.8147 [0.7518, 0.8623]     ±0.0552    0.6629 [0.5000, 0.8077]     ±0.1538
+
+================================================================================
+§2  WINDOW WIDTH — 1 to 6 seasons, raw and with the season level drift absorbed
+--------------------------------------------------------------------------------
+HOW THE TEST SET IS HELD FIXED. A wider window eats the years an out-of-time test would use, so
+the test year is PINNED first and windows grow AWAY from it:
+  FORWARD  design: test = 2043 (fixed), windows = the last k seasons ending 2042, k = 1..6.
+  BACKWARD design: test = 2037 (fixed), windows = the first k seasons starting 2038, k = 1..6.
+Within a design every arm is scored on byte-identical test rows at minPA_eval=1000. The 7-season
+window (2037-2043) has NO out-of-time block left at all — it is reported at the end on CV and
+in-sample only, and cannot be compared to the others on the metric that decides.
+
+DRIFT ABSORPTION, IN TWO VERSIONS. Per season and per channel a per-600 shift is applied to the
+training counts BEFORE the seasons are pooled (estimated on a fixed reference cohort, exposure >=
+250, so the absorption never moves with the fit threshold). After pooling the season no longer
+exists as a covariate, so this is where a season fixed effect has to live.
+  ABSORB-resid  centres each season's mean RESIDUAL (observed − predicted under the deployed form).
+                THE CORRECT ONE: a fixed effect removes what the model FAILED to explain, and this
+                is precisely the quantity the wide-window run measured drifting -2.63…+0.44/600.
+  ABSORB-level  centres each season's mean RAW rate. Reported because it is the obvious thing to
+                do and it is WRONG: if 2043's cards genuinely hit more homers, that belongs to the
+                curve, and centring the raw level deletes real signal along with the drift. The
+                gap between the two arms is the size of that mistake.
+Either way a card's deviation from its own season's mean — the SHAPE — is untouched.
+
+
+══ minPA_fit = 1000 (deployed) ══
+
+FORWARD (test 2043)  HITTER   test n=126 cards=61  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2042                         114     56   0.8797 0.7308  0.00499  -0.0014 [-0.0069, +0.0041]  
+  RAW                  2 2041+2042                    169     73   0.8811 0.7308  0.00488  — reference —               
+  RAW                  3 2040+2041+2042               210     85   0.8778 0.6923  0.00519  -0.0033 [-0.0067, -0.0006]* 
+  RAW                  4 2039+2040+2041+2042          232     94   0.8775 0.6923  0.00519  -0.0036 [-0.0071, -0.0009]* 
+  RAW                  5 2038+2039+2040+2041+2042     252    102   0.8768 0.6923  0.00547  -0.0044 [-0.0091, -0.0009]* 
+  RAW                  6 2037+2038+2039+2040+2041+2042   271    109   0.8783 0.6923  0.00547  -0.0029 [-0.0074, +0.0008]  
+  ABSORB-resid         1 2042                         114     56   0.8797 0.7308  0.00499  -0.0014 [-0.0069, +0.0041]  
+  ABSORB-resid         2 2041+2042                    169     73   0.8809 0.7308  0.00488  -0.0003 [-0.0007, +0.0001]  
+  ABSORB-resid         3 2040+2041+2042               210     85   0.8775 0.6923  0.00519  -0.0037 [-0.0073, -0.0007]* 
+  ABSORB-resid         4 2039+2040+2041+2042          232     94   0.8773 0.6923  0.00519  -0.0039 [-0.0076, -0.0010]* 
+  ABSORB-resid         5 2038+2039+2040+2041+2042     252    102   0.8763 0.6923  0.00547  -0.0049 [-0.0098, -0.0011]* 
+  ABSORB-resid         6 2037+2038+2039+2040+2041+2042   271    109   0.8778 0.6923  0.00547  -0.0035 [-0.0082, +0.0004]  
+  ABSORB-level         1 2042                         114     56   0.8797 0.7308  0.00499  -0.0014 [-0.0069, +0.0041]  
+  ABSORB-level         2 2041+2042                    169     73   0.8810 0.7308  0.00488  -0.0001 [-0.0003, +0.0000]  
+  ABSORB-level         3 2040+2041+2042               210     85   0.8778 0.6923  0.00519  -0.0034 [-0.0069, -0.0006]* 
+  ABSORB-level         4 2039+2040+2041+2042          232     94   0.8775 0.6923  0.00519  -0.0037 [-0.0072, -0.0009]* 
+  ABSORB-level         5 2038+2039+2040+2041+2042     252    102   0.8766 0.6923  0.00547  -0.0046 [-0.0095, -0.0010]* 
+  ABSORB-level         6 2037+2038+2039+2040+2041+2042   271    109   0.8781 0.6923  0.00547  -0.0031 [-0.0077, +0.0006]  
+  RAW·card-disjoint    2 2041+2042                     30     18   0.8779 0.7308  0.00527  -0.0031 [-0.0133, +0.0068]  
+  RAW·card-disjoint    3 2040+2041+2042                60     30   0.8750 0.6923  0.00547  -0.0060 [-0.0172, +0.0026]  
+  RAW·card-disjoint    4 2039+2040+2041+2042           80     39   0.8740 0.7308  0.00514  -0.0072 [-0.0174, +0.0007]  
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042      98     47   0.8741 0.6923  0.00612  -0.0071 [-0.0195, +0.0029]  
+  RAW·card-disjoint    6 2037+2038+2039+2040+2041+2042   116     54   0.8757 0.6923  0.00612  -0.0055 [-0.0183, +0.0052]  
+
+FORWARD (test 2043)  PITCHER   test n=110 cards=54  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2042                         112     56   0.7427 0.6154  0.00529  -0.0020 [-0.0111, +0.0067]  
+  RAW                  2 2041+2042                    139     64   0.7447 0.6154  0.00529  — reference —               
+  RAW                  3 2040+2041+2042               162     69   0.7457 0.6154  0.00529  +0.0009 [-0.0080, +0.0094]  
+  RAW                  4 2039+2040+2041+2042          177     72   0.7460 0.6538  0.00453  +0.0013 [-0.0096, +0.0114]  
+  RAW                  5 2038+2039+2040+2041+2042     192     78   0.7468 0.6538  0.00453  +0.0022 [-0.0122, +0.0159]  
+  RAW                  6 2037+2038+2039+2040+2041+2042   201     82   0.7473 0.6538  0.00461  +0.0027 [-0.0145, +0.0190]  
+  ABSORB-resid         1 2042                         112     56   0.7427 0.6154  0.00529  -0.0020 [-0.0111, +0.0067]  
+  ABSORB-resid         2 2041+2042                    139     64   0.7446 0.6154  0.00529  -0.0000 [-0.0003, +0.0002]  
+  ABSORB-resid         3 2040+2041+2042               162     69   0.7458 0.6154  0.00529  +0.0010 [-0.0079, +0.0093]  
+  ABSORB-resid         4 2039+2040+2041+2042          177     72   0.7461 0.6154  0.00529  +0.0013 [-0.0090, +0.0111]  
+  ABSORB-resid         5 2038+2039+2040+2041+2042     192     78   0.7470 0.6154  0.00529  +0.0024 [-0.0116, +0.0155]  
+  ABSORB-resid         6 2037+2038+2039+2040+2041+2042   201     82   0.7477 0.6538  0.00461  +0.0030 [-0.0131, +0.0182]  
+  ABSORB-level         1 2042                         112     56   0.7427 0.6154  0.00529  -0.0020 [-0.0111, +0.0067]  
+  ABSORB-level         2 2041+2042                    139     64   0.7446 0.6154  0.00529  -0.0000 [-0.0004, +0.0003]  
+  ABSORB-level         3 2040+2041+2042               162     69   0.7457 0.6154  0.00529  +0.0009 [-0.0080, +0.0094]  
+  ABSORB-level         4 2039+2040+2041+2042          177     72   0.7460 0.6538  0.00453  +0.0013 [-0.0093, +0.0112]  
+  ABSORB-level         5 2038+2039+2040+2041+2042     192     78   0.7468 0.6154  0.00521  +0.0021 [-0.0123, +0.0155]  
+  ABSORB-level         6 2037+2038+2039+2040+2041+2042   201     82   0.7474 0.6538  0.00461  +0.0027 [-0.0142, +0.0185]  
+  RAW·card-disjoint    1 2042                          13      8   0.6914 0.6538  0.00466  -0.0510 [-0.1320, +0.0123]  
+  RAW·card-disjoint    2 2041+2042                     25     15   0.7395 0.6154  0.00529  -0.0053 [-0.0239, +0.0131]  
+  RAW·card-disjoint    3 2040+2041+2042                39     20   0.7295 0.6154  0.00590  -0.0148 [-0.0523, +0.0219]  
+  RAW·card-disjoint    4 2039+2040+2041+2042           50     23   0.7426 0.6154  0.00529  -0.0017 [-0.0325, +0.0261]  
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042      64     29   0.7382 0.6154  0.00529  -0.0059 [-0.0458, +0.0286]  
+  RAW·card-disjoint    6 2037+2038+2039+2040+2041+2042    72     33   0.7458 0.6538  0.00461  +0.0013 [-0.0320, +0.0299]  
+
+BACKWARD (test 2037)  HITTER   test n=101 cards=56  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2038                         117     63   0.8735 0.7308  0.00354  -0.0052 [-0.0101, -0.0004]* 
+  RAW                  2 2038+2039                    162     75   0.8786 0.7692  0.00223  — reference —               
+  RAW                  3 2038+2039+2040               192     83   0.8753 0.7692  0.00223  -0.0032 [-0.0050, -0.0016]* 
+  RAW                  4 2038+2039+2040+2041          225     91   0.8743 0.7692  0.00223  -0.0041 [-0.0091, +0.0003]  
+  RAW                  5 2038+2039+2040+2041+2042     252    102   0.8774 0.7692  0.00223  -0.0010 [-0.0040, +0.0019]  
+  RAW                  6 2038+2039+2040+2041+2042+2043   277    112   0.8801 0.7692  0.00223  +0.0016 [-0.0021, +0.0051]  
+  ABSORB-resid         1 2038                         117     63   0.8735 0.7308  0.00354  -0.0052 [-0.0101, -0.0004]* 
+  ABSORB-resid         2 2038+2039                    162     75   0.8782 0.7692  0.00223  -0.0004 [-0.0006, -0.0002]* 
+  ABSORB-resid         3 2038+2039+2040               192     83   0.8752 0.7692  0.00223  -0.0034 [-0.0051, -0.0016]* 
+  ABSORB-resid         4 2038+2039+2040+2041          225     91   0.8745 0.7692  0.00223  -0.0040 [-0.0085, +0.0001]  
+  ABSORB-resid         5 2038+2039+2040+2041+2042     252    102   0.8772 0.7692  0.00223  -0.0013 [-0.0037, +0.0011]  
+  ABSORB-resid         6 2038+2039+2040+2041+2042+2043   277    112   0.8797 0.7692  0.00223  +0.0012 [-0.0020, +0.0042]  
+  ABSORB-level         1 2038                         117     63   0.8735 0.7308  0.00354  -0.0052 [-0.0101, -0.0004]* 
+  ABSORB-level         2 2038+2039                    162     75   0.8784 0.7692  0.00223  -0.0002 [-0.0004, +0.0000]  
+  ABSORB-level         3 2038+2039+2040               192     83   0.8753 0.7692  0.00223  -0.0033 [-0.0050, -0.0016]* 
+  ABSORB-level         4 2038+2039+2040+2041          225     91   0.8746 0.7692  0.00223  -0.0039 [-0.0085, +0.0002]  
+  ABSORB-level         5 2038+2039+2040+2041+2042     252    102   0.8777 0.7692  0.00223  -0.0008 [-0.0032, +0.0016]  
+  ABSORB-level         6 2038+2039+2040+2041+2042+2043   277    112   0.8803 0.7692  0.00223  +0.0018 [-0.0016, +0.0051]  
+  RAW·card-disjoint    1 2038                          17     13   0.8462 0.7692  0.00317  -0.0323 [-0.0611, -0.0106]* 
+  RAW·card-disjoint    2 2038+2039                     38     22   0.8766 0.7308  0.00306  -0.0023 [-0.0143, +0.0089]  
+  RAW·card-disjoint    3 2038+2039+2040                53     28   0.8724 0.7308  0.00306  -0.0059 [-0.0123, +0.0010]  
+  RAW·card-disjoint    4 2038+2039+2040+2041           68     36   0.8609 0.8077  0.00208  -0.0173 [-0.0306, -0.0056]* 
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042      90     46   0.8757 0.7692  0.00217  -0.0027 [-0.0092, +0.0040]  
+  RAW·card-disjoint    6 2038+2039+2040+2041+2042+2043   111     56   0.8846 0.7692  0.00217  +0.0059 [-0.0017, +0.0134]  
+
+BACKWARD (test 2037)  PITCHER   test n=88 cards=46  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2038                         107     54   0.7839 0.6538  0.00354  +0.0051 [-0.0032, +0.0147]  
+  RAW                  2 2038+2039                    135     61   0.7784 0.6538  0.00393  — reference —               
+  RAW                  3 2038+2039+2040               157     70   0.7774 0.6538  0.00393  -0.0008 [-0.0042, +0.0025]  
+  RAW                  4 2038+2039+2040+2041          175     74   0.7782 0.6538  0.00393  -0.0000 [-0.0036, +0.0044]  
+  RAW                  5 2038+2039+2040+2041+2042     192     78   0.7785 0.6538  0.00393  +0.0002 [-0.0049, +0.0069]  
+  RAW                  6 2038+2039+2040+2041+2042+2043   214     86   0.7774 0.6538  0.00393  -0.0009 [-0.0057, +0.0057]  
+  ABSORB-resid         1 2038                         107     54   0.7839 0.6538  0.00354  +0.0051 [-0.0032, +0.0147]  
+  ABSORB-resid         2 2038+2039                    135     61   0.7783 0.6538  0.00393  -0.0001 [-0.0004, +0.0004]  
+  ABSORB-resid         3 2038+2039+2040               157     70   0.7774 0.6538  0.00393  -0.0009 [-0.0039, +0.0024]  
+  ABSORB-resid         4 2038+2039+2040+2041          175     74   0.7784 0.6538  0.00393  +0.0001 [-0.0042, +0.0056]  
+  ABSORB-resid         5 2038+2039+2040+2041+2042     192     78   0.7786 0.6538  0.00393  +0.0003 [-0.0055, +0.0082]  
+  ABSORB-resid         6 2038+2039+2040+2041+2042+2043   214     86   0.7774 0.6538  0.00393  -0.0009 [-0.0069, +0.0072]  
+  ABSORB-level         1 2038                         107     54   0.7839 0.6538  0.00354  +0.0051 [-0.0032, +0.0147]  
+  ABSORB-level         2 2038+2039                    135     61   0.7782 0.6538  0.00393  -0.0002 [-0.0005, +0.0001]  
+  ABSORB-level         3 2038+2039+2040               157     70   0.7772 0.6538  0.00393  -0.0011 [-0.0044, +0.0024]  
+  ABSORB-level         4 2038+2039+2040+2041          175     74   0.7781 0.6538  0.00393  -0.0001 [-0.0041, +0.0051]  
+  ABSORB-level         5 2038+2039+2040+2041+2042     192     78   0.7783 0.6538  0.00393  -0.0000 [-0.0054, +0.0073]  
+  ABSORB-level         6 2038+2039+2040+2041+2042+2043   214     86   0.7771 0.6538  0.00393  -0.0011 [-0.0064, +0.0061]  
+  RAW·card-disjoint    1 2038                          18     10   0.7554 0.6923  0.00431  -0.0220 [-0.0697, +0.0235]  
+  RAW·card-disjoint    2 2038+2039                     28     15   0.7551 0.6538  0.00380  -0.0227 [-0.0476, +0.0069]  
+  RAW·card-disjoint    3 2038+2039+2040                41     24   0.7653 0.7308  0.00348  -0.0119 [-0.0384, +0.0118]  
+  RAW·card-disjoint    4 2038+2039+2040+2041           51     28   0.7784 0.6538  0.00417  +0.0006 [-0.0228, +0.0226]  
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042      61     32   0.7818 0.6538  0.00379  +0.0034 [-0.0185, +0.0255]  
+  RAW·card-disjoint    6 2038+2039+2040+2041+2042+2043    81     40   0.7838 0.6154  0.00440  +0.0053 [-0.0078, +0.0185]  
+
+══ minPA_fit = 250 (§1 winner) ══
+
+FORWARD (test 2043)  HITTER   test n=126 cards=61  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2042                         222     90   0.8805 0.7308  0.00499  +0.0012 [-0.0036, +0.0066]  
+  RAW                  2 2041+2042                    266    103   0.8793 0.6923  0.00547  — reference —               
+  RAW                  3 2040+2041+2042               296    116   0.8783 0.6923  0.00519  -0.0011 [-0.0025, +0.0001]  
+  RAW                  4 2039+2040+2041+2042          325    125   0.8778 0.6923  0.00519  -0.0015 [-0.0032, -0.0001]* 
+  RAW                  5 2038+2039+2040+2041+2042     350    134   0.8774 0.6923  0.00547  -0.0020 [-0.0042, -0.0003]* 
+  RAW                  6 2037+2038+2039+2040+2041+2042   374    146   0.8787 0.6923  0.00547  -0.0006 [-0.0035, +0.0018]  
+  ABSORB-resid         1 2042                         222     90   0.8805 0.7308  0.00499  +0.0012 [-0.0036, +0.0066]  
+  ABSORB-resid         2 2041+2042                    266    103   0.8791 0.6923  0.00547  -0.0003 [-0.0007, +0.0000]  
+  ABSORB-resid         3 2040+2041+2042               296    116   0.8779 0.6923  0.00519  -0.0015 [-0.0032, +0.0000]  
+  ABSORB-resid         4 2039+2040+2041+2042          325    125   0.8776 0.6923  0.00519  -0.0018 [-0.0036, -0.0002]* 
+  ABSORB-resid         5 2038+2039+2040+2041+2042     350    134   0.8769 0.6923  0.00547  -0.0026 [-0.0050, -0.0006]* 
+  ABSORB-resid         6 2037+2038+2039+2040+2041+2042   374    146   0.8782 0.6923  0.00547  -0.0012 [-0.0041, +0.0013]  
+  ABSORB-level         1 2042                         222     90   0.8805 0.7308  0.00499  +0.0012 [-0.0036, +0.0066]  
+  ABSORB-level         2 2041+2042                    266    103   0.8792 0.6923  0.00547  -0.0001 [-0.0003, +0.0000]  
+  ABSORB-level         3 2040+2041+2042               296    116   0.8782 0.6923  0.00519  -0.0012 [-0.0026, +0.0001]  
+  ABSORB-level         4 2039+2040+2041+2042          325    125   0.8778 0.6923  0.00519  -0.0016 [-0.0032, -0.0001]* 
+  ABSORB-level         5 2038+2039+2040+2041+2042     350    134   0.8772 0.6923  0.00547  -0.0022 [-0.0045, -0.0004]* 
+  ABSORB-level         6 2037+2038+2039+2040+2041+2042   374    146   0.8785 0.6923  0.00547  -0.0008 [-0.0038, +0.0016]  
+  RAW·card-disjoint    1 2042                          60     33   0.8738 0.7692  0.00455  -0.0056 [-0.0121, +0.0008]  
+  RAW·card-disjoint    2 2041+2042                    101     46   0.8635 0.6538  0.00649  -0.0159 [-0.0256, -0.0081]* 
+  RAW·card-disjoint    3 2040+2041+2042               130     59   0.8772 0.6923  0.00547  -0.0022 [-0.0075, +0.0023]  
+  RAW·card-disjoint    4 2039+2040+2041+2042          158     68   0.8745 0.6538  0.00632  -0.0049 [-0.0121, +0.0012]  
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042     183     77   0.8762 0.6923  0.00612  -0.0032 [-0.0132, +0.0053]  
+  RAW·card-disjoint    6 2037+2038+2039+2040+2041+2042   207     89   0.8767 0.6923  0.00612  -0.0027 [-0.0139, +0.0070]  
+
+FORWARD (test 2043)  PITCHER   test n=110 cards=54  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2042                         188     76   0.7432 0.6154  0.00529  -0.0030 [-0.0113, +0.0049]  
+  RAW                  2 2041+2042                    223     87   0.7464 0.6154  0.00529  — reference —               
+  RAW                  3 2040+2041+2042               244     94   0.7465 0.6154  0.00529  +0.0001 [-0.0087, +0.0081]  
+  RAW                  4 2039+2040+2041+2042          254     97   0.7466 0.6154  0.00529  +0.0002 [-0.0101, +0.0099]  
+  RAW                  5 2038+2039+2040+2041+2042     270    101   0.7473 0.6154  0.00521  +0.0011 [-0.0097, +0.0117]  
+  RAW                  6 2037+2038+2039+2040+2041+2042   282    105   0.7478 0.6538  0.00461  +0.0016 [-0.0111, +0.0137]  
+  ABSORB-resid         1 2042                         188     76   0.7432 0.6154  0.00529  -0.0030 [-0.0113, +0.0049]  
+  ABSORB-resid         2 2041+2042                    223     87   0.7463 0.6154  0.00529  -0.0000 [-0.0002, +0.0002]  
+  ABSORB-resid         3 2040+2041+2042               244     94   0.7465 0.6154  0.00529  +0.0002 [-0.0084, +0.0080]  
+  ABSORB-resid         4 2039+2040+2041+2042          254     97   0.7466 0.6154  0.00529  +0.0003 [-0.0095, +0.0096]  
+  ABSORB-resid         5 2038+2039+2040+2041+2042     270    101   0.7475 0.6154  0.00529  +0.0012 [-0.0087, +0.0110]  
+  ABSORB-resid         6 2037+2038+2039+2040+2041+2042   282    105   0.7481 0.6538  0.00461  +0.0018 [-0.0095, +0.0128]  
+  ABSORB-level         1 2042                         188     76   0.7432 0.6154  0.00529  -0.0030 [-0.0113, +0.0049]  
+  ABSORB-level         2 2041+2042                    223     87   0.7463 0.6154  0.00529  -0.0000 [-0.0003, +0.0003]  
+  ABSORB-level         3 2040+2041+2042               244     94   0.7465 0.6154  0.00529  +0.0001 [-0.0087, +0.0082]  
+  ABSORB-level         4 2039+2040+2041+2042          254     97   0.7466 0.6154  0.00529  +0.0002 [-0.0099, +0.0097]  
+  ABSORB-level         5 2038+2039+2040+2041+2042     270    101   0.7472 0.6154  0.00521  +0.0009 [-0.0097, +0.0112]  
+  ABSORB-level         6 2037+2038+2039+2040+2041+2042   282    105   0.7479 0.6538  0.00461  +0.0016 [-0.0106, +0.0131]  
+  RAW·card-disjoint    1 2042                          51     26   0.7395 0.6538  0.00489  -0.0067 [-0.0300, +0.0145]  
+  RAW·card-disjoint    2 2041+2042                     79     37   0.7438 0.6154  0.00529  -0.0023 [-0.0231, +0.0183]  
+  RAW·card-disjoint    3 2040+2041+2042                99     44   0.7436 0.6154  0.00529  -0.0022 [-0.0325, +0.0242]  
+  RAW·card-disjoint    4 2039+2040+2041+2042          108     47   0.7455 0.6154  0.00529  -0.0002 [-0.0289, +0.0245]  
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042     123     51   0.7473 0.6154  0.00529  +0.0012 [-0.0174, +0.0200]  
+  RAW·card-disjoint    6 2037+2038+2039+2040+2041+2042   135     55   0.7484 0.6154  0.00529  +0.0023 [-0.0175, +0.0214]  
+
+BACKWARD (test 2037)  HITTER   test n=101 cards=56  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2038                         223     98   0.8743 0.7308  0.00306  -0.0056 [-0.0103, -0.0012]* 
+  RAW                  2 2038+2039                    270    110   0.8798 0.7308  0.00306  — reference —               
+  RAW                  3 2038+2039+2040               305    120   0.8760 0.7692  0.00223  -0.0037 [-0.0070, -0.0007]* 
+  RAW                  4 2038+2039+2040+2041          330    127   0.8749 0.7692  0.00223  -0.0047 [-0.0106, +0.0005]  
+  RAW                  5 2038+2039+2040+2041+2042     350    134   0.8787 0.7692  0.00223  -0.0011 [-0.0050, +0.0027]  
+  RAW                  6 2038+2039+2040+2041+2042+2043   376    144   0.8807 0.7692  0.00223  +0.0009 [-0.0035, +0.0051]  
+  ABSORB-resid         1 2038                         223     98   0.8743 0.7308  0.00306  -0.0056 [-0.0103, -0.0012]* 
+  ABSORB-resid         2 2038+2039                    270    110   0.8795 0.7308  0.00306  -0.0004 [-0.0006, -0.0001]* 
+  ABSORB-resid         3 2038+2039+2040               305    120   0.8760 0.7692  0.00223  -0.0037 [-0.0068, -0.0008]* 
+  ABSORB-resid         4 2038+2039+2040+2041          330    127   0.8751 0.7692  0.00223  -0.0046 [-0.0100, +0.0003]  
+  ABSORB-resid         5 2038+2039+2040+2041+2042     350    134   0.8784 0.7692  0.00223  -0.0013 [-0.0046, +0.0019]  
+  ABSORB-resid         6 2038+2039+2040+2041+2042+2043   376    144   0.8803 0.7692  0.00223  +0.0006 [-0.0034, +0.0042]  
+  ABSORB-level         1 2038                         223     98   0.8743 0.7308  0.00306  -0.0056 [-0.0103, -0.0012]* 
+  ABSORB-level         2 2038+2039                    270    110   0.8796 0.7308  0.00306  -0.0002 [-0.0004, +0.0000]  
+  ABSORB-level         3 2038+2039+2040               305    120   0.8761 0.7692  0.00223  -0.0037 [-0.0068, -0.0008]* 
+  ABSORB-level         4 2038+2039+2040+2041          330    127   0.8752 0.7692  0.00223  -0.0045 [-0.0100, +0.0004]  
+  ABSORB-level         5 2038+2039+2040+2041+2042     350    134   0.8789 0.7692  0.00223  -0.0008 [-0.0042, +0.0024]  
+  ABSORB-level         6 2038+2039+2040+2041+2042+2043   376    144   0.8809 0.7692  0.00223  +0.0011 [-0.0030, +0.0050]  
+  RAW·card-disjoint    1 2038                          76     42   0.8649 0.7692  0.00270  -0.0158 [-0.0378, +0.0025]  
+  RAW·card-disjoint    2 2038+2039                    106     54   0.8764 0.7308  0.00306  -0.0038 [-0.0172, +0.0082]  
+  RAW·card-disjoint    3 2038+2039+2040               133     64   0.8721 0.7308  0.00306  -0.0074 [-0.0136, -0.0008]* 
+  RAW·card-disjoint    4 2038+2039+2040+2041          152     71   0.8648 0.8077  0.00208  -0.0147 [-0.0264, -0.0043]* 
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042     172     78   0.8790 0.7692  0.00217  -0.0007 [-0.0066, +0.0052]  
+  RAW·card-disjoint    6 2038+2039+2040+2041+2042+2043   198     88   0.8850 0.7692  0.00217  +0.0050 [-0.0023, +0.0119]  
+
+BACKWARD (test 2037)  PITCHER   test n=88 cards=46  (FIXED across every arm below)
+  arm                  k window                      rows  cards    wPear  top26   regret  ΔwPearson vs RAW k=2        
+  RAW                  1 2038                         179     75   0.7824 0.6538  0.00393  +0.0032 [-0.0031, +0.0094]  
+  RAW                  2 2038+2039                    208     83   0.7791 0.6538  0.00393  — reference —               
+  RAW                  3 2038+2039+2040               227     90   0.7791 0.6538  0.00393  -0.0000 [-0.0049, +0.0042]  
+  RAW                  4 2038+2039+2040+2041          249     94   0.7795 0.6538  0.00393  +0.0003 [-0.0025, +0.0034]  
+  RAW                  5 2038+2039+2040+2041+2042     270    101   0.7789 0.6538  0.00393  -0.0003 [-0.0033, +0.0027]  
+  RAW                  6 2038+2039+2040+2041+2042+2043   286    106   0.7784 0.6538  0.00393  -0.0007 [-0.0036, +0.0022]  
+  ABSORB-resid         1 2038                         179     75   0.7824 0.6538  0.00393  +0.0032 [-0.0031, +0.0094]  
+  ABSORB-resid         2 2038+2039                    208     83   0.7791 0.6538  0.00393  -0.0000 [-0.0004, +0.0003]  
+  ABSORB-resid         3 2038+2039+2040               227     90   0.7791 0.6538  0.00393  -0.0000 [-0.0045, +0.0040]  
+  ABSORB-resid         4 2038+2039+2040+2041          249     94   0.7796 0.6538  0.00393  +0.0004 [-0.0032, +0.0044]  
+  ABSORB-resid         5 2038+2039+2040+2041+2042     270    101   0.7788 0.6538  0.00393  -0.0004 [-0.0043, +0.0039]  
+  ABSORB-resid         6 2038+2039+2040+2041+2042+2043   286    106   0.7784 0.6538  0.00393  -0.0008 [-0.0042, +0.0029]  
+  ABSORB-level         1 2038                         179     75   0.7824 0.6538  0.00393  +0.0032 [-0.0031, +0.0094]  
+  ABSORB-level         2 2038+2039                    208     83   0.7790 0.6538  0.00393  -0.0001 [-0.0005, +0.0003]  
+  ABSORB-level         3 2038+2039+2040               227     90   0.7789 0.6538  0.00393  -0.0002 [-0.0049, +0.0041]  
+  ABSORB-level         4 2038+2039+2040+2041          249     94   0.7794 0.6538  0.00393  +0.0002 [-0.0032, +0.0039]  
+  ABSORB-level         5 2038+2039+2040+2041+2042     270    101   0.7786 0.6538  0.00393  -0.0006 [-0.0043, +0.0033]  
+  ABSORB-level         6 2038+2039+2040+2041+2042+2043   286    106   0.7782 0.6538  0.00393  -0.0009 [-0.0042, +0.0025]  
+  RAW·card-disjoint    1 2038                          53     29   0.7608 0.6154  0.00424  -0.0176 [-0.0412, +0.0066]  
+  RAW·card-disjoint    2 2038+2039                     70     37   0.7734 0.6538  0.00339  -0.0055 [-0.0198, +0.0100]  
+  RAW·card-disjoint    3 2038+2039+2040                84     44   0.7777 0.6923  0.00332  -0.0011 [-0.0127, +0.0097]  
+  RAW·card-disjoint    4 2038+2039+2040+2041          103     48   0.7800 0.6923  0.00332  +0.0010 [-0.0105, +0.0120]  
+  RAW·card-disjoint    5 2038+2039+2040+2041+2042     124     55   0.7829 0.6538  0.00393  +0.0037 [-0.0060, +0.0139]  
+  RAW·card-disjoint    6 2038+2039+2040+2041+2042+2043   138     60   0.7831 0.6538  0.00393  +0.0038 [-0.0075, +0.0144]  
+
+§2b  RULE R2 — the out-of-time tally per width (four numbers: 2 designs × 2 roles)
+--------------------------------------------------------------------------------
+
+  arm = RAW   (Δ vs the RAW 2-season window, minPA_fit=1000)
+    k    mean Δr   pos  CI+  CI-   fwd·hit  fwd·pit  bwd·hit  bwd·pit
+    1    -0.0009   1/4    0    1   -0.0014   -0.0020   -0.0052*  +0.0051 
+    2    +0.0000   0/4    0    0   +0.0000   +0.0000   +0.0000   +0.0000    ← reference
+    3    -0.0016   1/4    0    2   -0.0033*  +0.0009   -0.0032*  -0.0008 
+    4    -0.0016   1/4    0    1   -0.0036*  +0.0013   -0.0041   -0.0000 
+    5    -0.0008   2/4    0    1   -0.0044*  +0.0022   -0.0010   +0.0002 
+    6    +0.0001   2/4    0    0   -0.0029   +0.0027   +0.0016   -0.0009 
+
+  arm = ABSORB-resid   (Δ vs the RAW 2-season window, minPA_fit=1000)
+    k    mean Δr   pos  CI+  CI-   fwd·hit  fwd·pit  bwd·hit  bwd·pit
+    1    -0.0009   1/4    0    1   -0.0014   -0.0020   -0.0052*  +0.0051 
+    2    -0.0002   0/4    0    1   -0.0003   -0.0000   -0.0004*  -0.0001 
+    3    -0.0017   1/4    0    2   -0.0037*  +0.0010   -0.0034*  -0.0009 
+    4    -0.0016   2/4    0    1   -0.0039*  +0.0013   -0.0040   +0.0001 
+    5    -0.0009   2/4    0    1   -0.0049*  +0.0024   -0.0013   +0.0003 
+    6    -0.0001   2/4    0    0   -0.0035   +0.0030   +0.0012   -0.0009 
+
+  arm = ABSORB-level   (Δ vs the RAW 2-season window, minPA_fit=1000)
+    k    mean Δr   pos  CI+  CI-   fwd·hit  fwd·pit  bwd·hit  bwd·pit
+    1    -0.0009   1/4    0    1   -0.0014   -0.0020   -0.0052*  +0.0051 
+    2    -0.0001   0/4    0    0   -0.0001   -0.0000   -0.0002   -0.0002 
+    3    -0.0017   1/4    0    2   -0.0034*  +0.0009   -0.0033*  -0.0011 
+    4    -0.0016   1/4    0    1   -0.0037*  +0.0013   -0.0039   -0.0001 
+    5    -0.0008   1/4    0    1   -0.0046*  +0.0021   -0.0008   -0.0000 
+    6    +0.0001   2/4    0    0   -0.0031   +0.0027   +0.0018   -0.0011 
+
+  arm = RAW·card-disjoint   (Δ vs the RAW 2-season window, minPA_fit=1000)
+    k    mean Δr   pos  CI+  CI-   fwd·hit  fwd·pit  bwd·hit  bwd·pit
+    1  (unavailable)
+    2    -0.0083   0/4    0    0   -0.0031   -0.0053   -0.0023   -0.0227 
+    3    -0.0096   0/4    0    0   -0.0060   -0.0148   -0.0059   -0.0119 
+    4    -0.0064   1/4    0    1   -0.0072   -0.0017   -0.0173*  +0.0006 
+    5    -0.0030   1/4    0    0   -0.0071   -0.0059   -0.0027   +0.0034 
+    6    +0.0017   3/4    0    0   -0.0055   +0.0013   +0.0059   +0.0053 
+
+R2 VERDICT: NO width clears R2 — the TWO-SEASON window STANDS.
+
+UNEQUAL SEASONS, NOT UNEQUAL WIDTHS. '3 seasons' is not 1.5× '2 seasons': 2037 and 2039 carry four
+leagues where 2038 and 2040-2043 carry five, so the marginal season is worth 80-100% of a typical
+one depending on which one it is. The rows/cards columns above are the honest x-axis — read the
+width tables against THOSE, not against k.
+
+Absorption clamps (an adjusted count that went negative, forced to 0), across every absorbed window
+built in this run: 8531 cells total, of which 1 sit on rows that clear minPA 1000
+(0.00% of 80692 such cells). Clamps are concentrated on zero-count channels of
+tiny-exposure rows — a card with 0 HR in 40 PA shifted down — which carry ~0 weight and mostly do
+not clear any fit bar. The absorption is not being driven by the clamp.
+
+§2d  WHY THE ABSORBED ARM MOVES SO LITTLE — the mechanism, not a shrug
+--------------------------------------------------------------------------------
+The absorbed and raw arms agree to the 4th decimal almost everywhere above. That is a RESULT with
+a mechanism, not a failed implementation: a season level shift is a CONSTANT added to every card's
+rate in that season, so it reaches a card's POOLED rate only through that card's season MIX. Cards
+with the same mix all move by the same amount, and a common shift is absorbed by the fit's
+intercept — leaving predictions unchanged up to a constant, which weighted Pearson cannot see.
+Only the DIFFERENTIAL part (cards weighted toward different seasons) can move a slope. Measured on
+the 6-season window 2038-2043, minPA_eval=1000 rows:
+
+  APPLIED PER-SEASON SHIFT, mode = resid (per 600, hitter channels; + = that season sat BELOW the window)
+     season      ubb       k      hr     nhh     xbh      hp
+       2038    -1.49   +1.73   -0.29   -1.17   -0.16   -0.01
+       2039    +0.44   +1.09   -0.01   -0.55   -0.64   -0.03
+       2040    -0.26   -0.20   -0.18   +0.14   +0.17   +0.10
+       2041    -0.15   +0.27   -0.23   +0.16   +0.04   +0.05
+       2042    +0.50   -0.61   +0.43   +1.04   +0.15   -0.01
+       2043    +1.06   -2.09   +0.27   +0.28   +0.32   -0.11
+      range     2.55    3.82    0.72    2.21    0.96    0.21   ← total spread of the shift
+
+  APPLIED PER-SEASON SHIFT, mode = level (per 600, hitter channels; + = that season sat BELOW the window)
+     season      ubb       k      hr     nhh     xbh      hp
+       2038    -0.49   +0.43   +0.13   -0.77   +0.07   -0.01
+       2039    +0.47   -0.01   +0.19   -0.03   -0.36   -0.03
+       2040    +0.05   -0.83   -0.00   +0.37   +0.22   +0.10
+       2041    -0.20   +0.05   -0.20   +0.17   -0.13   +0.05
+       2042    +0.15   +0.24   +0.06   +0.67   -0.01   -0.01
+       2043    +0.11   +0.12   -0.14   -0.42   +0.13   -0.11
+      range     0.96    1.26    0.39    1.44    0.58    0.21   ← total spread of the shift
+
+  For scale, the window's common RAW level per 600: ubb 48.0, k 116.5, hr 15.3, nhh 125.2, xbh 31.2, hp 5.1.
+  The resid-mode K shift spans a wider range than the level-mode one — the same fact the wide-window
+  run reported (the RESIDUAL level drifts more than the raw level, because the ratings rise too).
+  That is why 'resid' is the arm that matters: it is the only one that could have found anything.
+
+  HOW MUCH OF THAT SURVIVES POOLING, per card (rows qualifying at minPA 1000):
+    role/channel      SD(Δ) resid  SD(Δ) level   SD(rate)  ratio resid
+    hit ubb                 0.413        0.081     12.555        0.033
+    hit k                   0.703        0.093     21.482        0.033
+    hit hr                  0.132        0.050      4.847        0.027
+    hit nhh                 0.313        0.155     10.823        0.029
+    hit xbh                 0.122        0.043      6.733        0.018
+    hit hp                  0.029        0.029      0.947        0.031
+    pit ubb                 0.154        0.071     12.561        0.012
+    pit k                   0.454        0.067     15.502        0.029
+    pit hr                  0.150        0.043      2.869        0.052
+    pit nhh                 0.170        0.131      7.915        0.021
+
+  'ratio resid' is the differential movement the absorption actually delivered, as a fraction of
+  the between-card spread on that channel. A few percent — and most of even that is COMMON across
+  cards, so the slope-relevant part is smaller still. THAT is the whole story of the absorbed
+  arms' null: a season shift reaches a pooled card only through its season MIX, cards with similar
+  mixes move together, and a common shift is exactly what the fit's intercept already absorbs.
+  This is NOT evidence that the drift is harmless in general. It is evidence that a season fixed
+  effect has nothing left to remove ONCE THE SEASONS ARE POOLED — which is how this trainer works.
+  A trainer that fitted per-season rows would be a different question, and is not what we ship.
+
+§2c  THE 7-SEASON WINDOW — no out-of-time block exists for it
+--------------------------------------------------------------------------------
+2037-2043 spans every season available (after the 2032-33 block, which is never pooled), so there
+is no held-out year to test it on. It is reported on CV and in-window only, which R2 explicitly
+does not accept as evidence. Shown for coverage, not for adoption:
+
+  HITTER       window  rows  cards   CV wPear  CV top26   in-window r
+                   2yr   173     74     0.9095    0.7308        0.9125
+                   3yr   213     86     0.9075    0.6538        0.9098
+                   4yr   241     96     0.9174    0.6538        0.9197
+                   7yr   292    117     0.9301    0.5769        0.9315
+
+  PITCHER       window  rows  cards   CV wPear  CV top26   in-window r
+                   2yr   149     67     0.7612    0.5385        0.7913
+                   3yr   174     71     0.7786    0.5000        0.8022
+                   4yr   194     78     0.7938    0.5385        0.8105
+                   7yr   219     87     0.8102    0.6538        0.8250
+
+================================================================================
+§3  THE EYE AXIS RE-RUN — do the coefficients stabilise at the best (threshold, window)?
+--------------------------------------------------------------------------------
+fixtures/hitter-eye-composite-2026-07-26.txt declined the four-leg EYE-axis correction on
+UNDER-DETERMINATION: the well-determined K aux was stable across windows (-2.334 / -2.660 /
+-2.186) while the HR aux (-0.252 / -0.353 / -0.217) and especially the BABIP aux (-0.162 /
+-0.172 / -0.673) swung, and the six ΔwPearson signs sorted PERFECTLY by fit window. If that was a
+power failure, relaxing the threshold and/or widening the window should steady the coefficients
+and break the sign-window sort. If it does not, under-determination is real and the question is
+closed on evidence rather than by assumption.
+
+§3a  COEFFICIENT STABILITY — the ALL4 arm's four legs, across configurations
+--------------------------------------------------------------------------------
+Each aux β is in its channel's own per-600 units, per SD of ln(EYE) (the published convention).
+STABLE means: the same number at every fit window. The published 2-year / minPA=1000 row is
+reproduced first as a control — it must match the artifact.
+
+TABLE A — THE THRESHOLD LADDER, on the PUBLISHED fit windows (2037+2038 / 2040+2041 / 2042+2043,
+mutually disjoint). The minPA=1000 row must reproduce the artifact; it is the control.
+
+  configuration                      leg        per fit window (in window order)    max/min |β|
+  2yr · minPA 1000 (published control) K aux      -2.334 / -2.660 / -2.186                   1.22
+                                     HR aux     -0.252 / -0.353 / -0.217                   1.63
+                                     BABIP aux  -0.162 / -0.172 / -0.673                   4.16
+                                     HBP@110    +5.032 / +4.972 / +5.144                   1.03
+                                     (rows)     159 / 179 / 173                   
+  2yr · minPA 500                    K aux      -2.356 / -2.650 / -2.313                   1.15
+                                     HR aux     -0.208 / -0.341 / -0.270                   1.64
+                                     BABIP aux  -0.152 / -0.119 / -0.692                   5.81
+                                     HBP@110    +5.033 / +4.957 / +5.123                   1.03
+                                     (rows)     207 / 229 / 225                   
+  2yr · minPA 250                    K aux      -2.354 / -2.582 / -2.416                   1.10
+                                     HR aux     -0.215 / -0.339 / -0.270                   1.58
+                                     BABIP aux  -0.180 / -0.102 / -0.829                   8.11
+                                     HBP@110    +5.027 / +4.961 / +5.100                   1.03
+                                     (rows)     267 / 273 / 278                   
+  2yr · minPA none                   K aux      -2.251 / -2.672 / -2.467                   1.19
+                                     HR aux     -0.202 / -0.308 / -0.281                   1.52
+                                     BABIP aux  -0.174 / -0.072 / -0.866                  11.94
+                                     HBP@110    +5.032 / +4.958 / +5.100                   1.03
+                                     (rows)     399 / 407 / 440                   
+
+TABLE B — WIDTH, CONTROLLED. Comparing swing across THREE windows to swing across TWO would favour
+the smaller set mechanically (a max/min over more draws is larger), and overlapping windows would
+favour the wider one (they share seasons, so they must agree). So this contrast uses TWO MUTUALLY
+DISJOINT windows on the SAME anchors, and changes only the width:
+   width 2:  2037+2038          vs  2040+2041
+   width 3:  2037+2038+2039     vs  2040+2041+2042
+Two disjoint FOUR-season windows do not exist in 2037-2043 (that needs 8 seasons), so width 3 is
+the widest this contrast can reach.
+
+  configuration                      leg        per fit window (in window order)    max/min |β|
+  width 2 · minPA 1000               K aux      -2.334 / -2.660                            1.14
+                                     HR aux     -0.252 / -0.353                            1.40
+                                     BABIP aux  -0.162 / -0.172                            1.06
+                                     HBP@110    +5.032 / +4.972                            1.01
+                                     (rows)     159 / 179                         
+  width 3 · minPA 1000               K aux      -2.405 / -2.440                            1.01
+                                     HR aux     -0.279 / -0.265                            1.05
+                                     BABIP aux  -0.423 / -0.268                            1.58
+                                     HBP@110    +5.062 / +5.004                            1.01
+                                     (rows)     189 / 210                         
+  width 2 · minPA 250                K aux      -2.354 / -2.582                            1.10
+                                     HR aux     -0.215 / -0.339                            1.58
+                                     BABIP aux  -0.180 / -0.102                            1.77
+                                     HBP@110    +5.027 / +4.961                            1.01
+                                     (rows)     267 / 273                         
+  width 3 · minPA 250                K aux      -2.318 / -2.440                            1.05
+                                     HR aux     -0.286 / -0.265                            1.08
+                                     BABIP aux  -0.383 / -0.309                            1.24
+                                     HBP@110    +5.059 / +4.988                            1.01
+                                     (rows)     299 / 296                         
+
+TABLE C — does absorbing the season level drift steady the legs? (width 3, both thresholds)
+
+  configuration                      leg        per fit window (in window order)    max/min |β|
+  width 3 · minPA 1000 · raw         K aux      -2.405 / -2.440                            1.01
+                                     HR aux     -0.279 / -0.265                            1.05
+                                     BABIP aux  -0.423 / -0.268                            1.58
+                                     HBP@110    +5.062 / +5.004                            1.01
+                                     (rows)     189 / 210                         
+  width 3 · minPA 1000 · ABSORBED    K aux      -2.426 / -2.448                            1.01
+                                     HR aux     -0.274 / -0.267                            1.03
+                                     BABIP aux  -0.399 / -0.253                            1.58
+                                     HBP@110    +5.062 / +5.003                            1.01
+                                     (rows)     189 / 210                         
+  width 3 · minPA 250 · raw          K aux      -2.318 / -2.440                            1.05
+                                     HR aux     -0.286 / -0.265                            1.08
+                                     BABIP aux  -0.383 / -0.309                            1.24
+                                     HBP@110    +5.059 / +4.988                            1.01
+                                     (rows)     299 / 296                         
+  width 3 · minPA 250 · ABSORBED     K aux      -2.341 / -2.446                            1.05
+                                     HR aux     -0.281 / -0.268                            1.05
+                                     BABIP aux  -0.357 / -0.297                            1.20
+                                     HBP@110    +5.059 / +4.988                            1.01
+                                     (rows)     299 / 296                         
+
+READ: max/min |β| is the swing factor across that configuration's fit windows — 1.00 is perfect
+stability. The published complaint was a BABIP swing of ~4x against a K swing of ~1.2x. A term the
+data has identified does not move when you re-estimate it on a different slice of the same league.
+
+TABLE D — THE SWING OF THE SWING. Reading Tables A-C together on the MATCHED two-window basis (so
+the numbers are comparable), the BABIP aux's swing factor does not move in a consistent direction
+when the configuration changes — it goes the OTHER WAY depending on the threshold:
+  threshold      width 2   width 3  direction     
+  minPA 1000        1.06      1.58  steadier at 2 
+  minPA 250         1.77      1.24  steadier at 3 
+
+  Widening the window steadies the BABIP aux at minPA 250 and DESTABILISES it at minPA 1000. A
+  parameter whose apparent identification depends on which nuisance knob you turned is not an
+  identified parameter — the swing factor is itself unstable, which is the finding, not a puzzle.
+  (The K aux, by contrast, sits at 1.01-1.14 in EVERY cell of Tables A-D. That is what an
+  identified term looks like, and it is the leg that was never in doubt.)
+
+§3b  THE SIX PAIRED EVALUATIONS, REPEATED AT THE RELAXED THRESHOLD
+--------------------------------------------------------------------------------
+Exactly the published six panels (so the numbers are comparable), with ONE change: the FIT
+threshold. Test rows still qualify at minPA_eval=1000 — the published test populations, unchanged,
+which is also what keeps this from being a population shift. Δ = candidate − deployed.
+
+══ minPA_fit = 1000 (deployed — reproduces the published §8) ══
+
+  FORWARD  fit 2037+2038 → test 2039-2043   n=258 cards=103   deployed: wPearson 0.9255  top26 0.5769
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              -0.0003 [-0.0026, +0.0021]   +0.0111 [-0.0385, +0.0769]   -0.00033 [-0.00225, +0.00067] 
+    K+B            -0.0002 [-0.0023, +0.0020]   +0.0113 [-0.0385, +0.0769]   -0.00033 [-0.00225, +0.00068] 
+    K+B+HR         -0.0004 [-0.0018, +0.0009]   +0.0009 [-0.0385, +0.0769]   -0.00021 [-0.00226, +0.00064] 
+    K+B+HR+hbpμ    -0.0004 [-0.0018, +0.0009]   +0.0009 [-0.0385, +0.0769]   -0.00021 [-0.00226, +0.00064] 
+    ALL4           -0.0005 [-0.0021, +0.0010]   -0.0002 [-0.0385, +0.0769]   -0.00013 [-0.00177, +0.00064] 
+
+  FORWARD  fit 2040+2041 → test 2042+2043   n=173 cards=74   deployed: wPearson 0.8985  top26 0.7692
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0000 [-0.0035, +0.0036]   +0.0059 [-0.0385, +0.0769]   -0.00016 [-0.00124, +0.00043] 
+    K+B            +0.0001 [-0.0031, +0.0036]   +0.0061 [-0.0385, +0.0769]   -0.00015 [-0.00124, +0.00043] 
+    K+B+HR         +0.0045 [+0.0013, +0.0082]*  -0.0038 [-0.0769, +0.0385]   -0.00002 [-0.00108, +0.00123] 
+    K+B+HR+hbpμ    +0.0045 [+0.0013, +0.0082]*  -0.0038 [-0.0769, +0.0385]   -0.00002 [-0.00108, +0.00123] 
+    ALL4           +0.0050 [+0.0014, +0.0090]*  -0.0019 [-0.0769, +0.0385]   -0.00017 [-0.00180, +0.00079] 
+
+  BACKWARD fit 2042+2043 → test 2037-2041   n=252 cards=102   deployed: wPearson 0.9283  top26 0.5769
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0000 [-0.0025, +0.0024]   -0.0019 [-0.0385, +0.0385]   -0.00003 [-0.00089, +0.00078] 
+    K+B            +0.0001 [-0.0004, +0.0006]   +0.0040 [+0.0000, +0.0385]   -0.00007 [-0.00068, +0.00000] 
+    K+B+HR         -0.0017 [-0.0038, +0.0002]   +0.0003 [-0.0769, +0.0769]   +0.00008 [-0.00051, +0.00126] 
+    K+B+HR+hbpμ    -0.0017 [-0.0038, +0.0002]   +0.0003 [-0.0769, +0.0769]   +0.00008 [-0.00051, +0.00126] 
+    ALL4           -0.0023 [-0.0048, +0.0000]   +0.0003 [-0.0769, +0.0769]   +0.00009 [-0.00051, +0.00147] 
+
+  BACKWARD fit 2040+2041 → test 2037-2039   n=189 cards=84   deployed: wPearson 0.9115  top26 0.6538
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0003 [-0.0034, +0.0038]   +0.0014 [-0.0769, +0.0770]   -0.00007 [-0.00155, +0.00110] 
+    K+B            +0.0004 [-0.0031, +0.0037]   +0.0038 [-0.0769, +0.0770]   -0.00011 [-0.00155, +0.00075] 
+    K+B+HR         +0.0045 [+0.0019, +0.0072]*  +0.0084 [-0.0385, +0.0769]   -0.00022 [-0.00183, +0.00038] 
+    K+B+HR+hbpμ    +0.0045 [+0.0018, +0.0072]*  +0.0084 [-0.0385, +0.0769]   -0.00022 [-0.00183, +0.00038] 
+    ALL4           +0.0048 [+0.0019, +0.0079]*  +0.0113 [-0.0385, +0.0769]   -0.00028 [-0.00192, +0.00041] 
+
+  CV       5-fold on 2042+2043   n=173 cards=74   deployed: wPearson 0.9095  top26 0.7308
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              -0.0005 [-0.0039, +0.0029]   +0.0047 [-0.0385, +0.0769]   -0.00004 [-0.00073, +0.00045] 
+    K+B            -0.0006 [-0.0018, +0.0004]   +0.0017 [+0.0000, +0.0385]   -0.00003 [-0.00043, +0.00021] 
+    K+B+HR         -0.0009 [-0.0034, +0.0013]   -0.0027 [-0.0769, +0.0385]   -0.00006 [-0.00085, +0.00042] 
+    K+B+HR+hbpμ    -0.0010 [-0.0036, +0.0012]   -0.0027 [-0.0769, +0.0385]   -0.00006 [-0.00085, +0.00042] 
+    ALL4           -0.0012 [-0.0043, +0.0013]   -0.0071 [-0.0769, +0.0385]   -0.00003 [-0.00081, +0.00056] 
+
+  CV       5-fold on 2040+2041   n=179 cards=79   deployed: wPearson 0.8881  top26 0.6538
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0004 [-0.0034, +0.0042]   +0.0023 [-0.0769, +0.0769]   -0.00008 [-0.00089, +0.00063] 
+    K+B            +0.0005 [-0.0031, +0.0041]   +0.0015 [-0.0769, +0.0385]   -0.00008 [-0.00089, +0.00052] 
+    K+B+HR         +0.0015 [-0.0022, +0.0054]   +0.0104 [-0.0385, +0.0770]   -0.00017 [-0.00130, +0.00030] 
+    K+B+HR+hbpμ    +0.0016 [-0.0022, +0.0055]   +0.0088 [-0.0385, +0.0770]   -0.00015 [-0.00130, +0.00030] 
+    ALL4           +0.0015 [-0.0028, +0.0057]   +0.0101 [-0.0385, +0.0770]   -0.00014 [-0.00130, +0.00044] 
+
+══ minPA_fit = 250 ══
+
+  FORWARD  fit 2037+2038 → test 2039-2043   n=258 cards=103   deployed: wPearson 0.9251  top26 0.5385
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              -0.0002 [-0.0025, +0.0022]   +0.0133 [-0.0385, +0.0770]   -0.00038 [-0.00244, +0.00064] 
+    K+B            -0.0000 [-0.0021, +0.0021]   +0.0135 [-0.0385, +0.0770]   -0.00040 [-0.00246, +0.00059] 
+    K+B+HR         -0.0002 [-0.0014, +0.0010]   +0.0025 [-0.0385, +0.0769]   -0.00022 [-0.00221, +0.00046] 
+    K+B+HR+hbpμ    -0.0002 [-0.0014, +0.0009]   +0.0025 [-0.0385, +0.0769]   -0.00022 [-0.00221, +0.00046] 
+    ALL4           -0.0003 [-0.0017, +0.0010]   +0.0005 [-0.0385, +0.0385]   -0.00015 [-0.00199, +0.00074] 
+
+  FORWARD  fit 2040+2041 → test 2042+2043   n=173 cards=74   deployed: wPearson 0.9001  top26 0.7308
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0001 [-0.0032, +0.0036]   +0.0077 [-0.0385, +0.0769]   -0.00018 [-0.00139, +0.00043] 
+    K+B            +0.0000 [-0.0034, +0.0037]   +0.0077 [-0.0385, +0.0769]   -0.00018 [-0.00139, +0.00043] 
+    K+B+HR         +0.0038 [+0.0007, +0.0072]*  -0.0021 [-0.0769, +0.0769]   -0.00014 [-0.00189, +0.00124] 
+    K+B+HR+hbpμ    +0.0038 [+0.0007, +0.0072]*  -0.0021 [-0.0769, +0.0769]   -0.00014 [-0.00189, +0.00124] 
+    ALL4           +0.0042 [+0.0009, +0.0080]*  -0.0019 [-0.0769, +0.0769]   -0.00025 [-0.00192, +0.00094] 
+
+  BACKWARD fit 2042+2043 → test 2037-2041   n=252 cards=102   deployed: wPearson 0.9273  top26 0.5769
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0000 [-0.0026, +0.0026]   -0.0037 [-0.0769, +0.0385]   -0.00006 [-0.00111, +0.00078] 
+    K+B            -0.0000 [-0.0003, +0.0002]   -0.0057 [-0.0769, +0.0385]   +0.00006 [-0.00044, +0.00078] 
+    K+B+HR         -0.0025 [-0.0055, +0.0002]   -0.0023 [-0.0769, +0.0385]   +0.00013 [-0.00089, +0.00168] 
+    K+B+HR+hbpμ    -0.0025 [-0.0055, +0.0002]   -0.0023 [-0.0769, +0.0385]   +0.00013 [-0.00089, +0.00168] 
+    ALL4           -0.0029 [-0.0063, +0.0001]   -0.0032 [-0.0769, +0.0385]   +0.00013 [-0.00089, +0.00168] 
+
+  BACKWARD fit 2040+2041 → test 2037-2039   n=189 cards=84   deployed: wPearson 0.9127  top26 0.6538
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0004 [-0.0033, +0.0038]   +0.0018 [-0.0385, +0.0769]   -0.00007 [-0.00131, +0.00082] 
+    K+B            +0.0003 [-0.0034, +0.0039]   -0.0004 [-0.0769, +0.0769]   -0.00003 [-0.00131, +0.00110] 
+    K+B+HR         +0.0038 [+0.0014, +0.0064]*  +0.0115 [-0.0384, +0.0769]   -0.00026 [-0.00151, +0.00023] 
+    K+B+HR+hbpμ    +0.0038 [+0.0014, +0.0064]*  +0.0115 [-0.0384, +0.0769]   -0.00026 [-0.00151, +0.00023] 
+    ALL4           +0.0042 [+0.0015, +0.0071]*  +0.0129 [-0.0384, +0.0769]   -0.00031 [-0.00214, +0.00028] 
+
+  CV       5-fold on 2042+2043   n=173 cards=74   deployed: wPearson 0.9073  top26 0.7308
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              -0.0007 [-0.0044, +0.0031]   +0.0092 [-0.0385, +0.0769]   -0.00000 [-0.00068, +0.00066] 
+    K+B            -0.0007 [-0.0015, +0.0001]   +0.0039 [-0.0384, +0.0385]   +0.00004 [-0.00032, +0.00094] 
+    K+B+HR         -0.0013 [-0.0050, +0.0018]   -0.0136 [-0.0770, +0.0385]   +0.00014 [-0.00033, +0.00102] 
+    K+B+HR+hbpμ    -0.0014 [-0.0052, +0.0017]   -0.0142 [-0.0770, +0.0384]   +0.00015 [-0.00033, +0.00102] 
+    ALL4           -0.0015 [-0.0056, +0.0019]   -0.0141 [-0.0770, +0.0384]   +0.00010 [-0.00081, +0.00098] 
+
+  CV       5-fold on 2040+2041   n=179 cards=79   deployed: wPearson 0.8904  top26 0.6538
+    arm            ΔwPearson                    Δtop26                       Δregret                     
+    K              +0.0005 [-0.0030, +0.0041]   +0.0063 [-0.0769, +0.0770]   -0.00013 [-0.00106, +0.00069] 
+    K+B            +0.0005 [-0.0032, +0.0042]   -0.0002 [-0.0770, +0.0770]   -0.00004 [-0.00104, +0.00115] 
+    K+B+HR         +0.0010 [-0.0024, +0.0043]   +0.0103 [-0.0385, +0.0770]   -0.00013 [-0.00093, +0.00034] 
+    K+B+HR+hbpμ    +0.0011 [-0.0023, +0.0044]   +0.0075 [-0.0385, +0.0770]   -0.00010 [-0.00091, +0.00035] 
+    ALL4           +0.0009 [-0.0030, +0.0046]   +0.0067 [-0.0769, +0.0770]   -0.00007 [-0.00091, +0.00058] 
+
+§3c  DOES THE SIGN STILL SORT BY FIT WINDOW?
+--------------------------------------------------------------------------------
+The published finding: every evaluation fitted on 2040+2041 was positive and every one fitted on
+2037+2038 or 2042+2043 was negative — one window's evidence counted three times. If the threshold
+were the binding constraint, that sort should break.
+
+  minPA_fit = 1000
+    arm            fit 2037+2038    fit 2040+2041              fit 2042+2043           pos  sorts?
+    K              -0.0003          +0.0000 +0.0003 +0.0004    +0.0000 -0.0005         4/6      no
+    K+B            -0.0002          +0.0001 +0.0004 +0.0005    +0.0001 -0.0006         4/6      no
+    K+B+HR         -0.0004          +0.0045* +0.0045* +0.0015  -0.0017 -0.0009         3/6     YES
+    K+B+HR+hbpμ    -0.0004          +0.0045* +0.0045* +0.0016  -0.0017 -0.0010         3/6     YES
+    ALL4           -0.0005          +0.0050* +0.0048* +0.0015  -0.0023 -0.0012         3/6     YES
+
+  minPA_fit = 250
+    arm            fit 2037+2038    fit 2040+2041              fit 2042+2043           pos  sorts?
+    K              -0.0002          +0.0001 +0.0004 +0.0005    +0.0000 -0.0007         4/6      no
+    K+B            -0.0000          +0.0000 +0.0003 +0.0005    -0.0000 -0.0007         3/6     YES
+    K+B+HR         -0.0002          +0.0038* +0.0038* +0.0010  -0.0025 -0.0013         3/6     YES
+    K+B+HR+hbpμ    -0.0002          +0.0038* +0.0038* +0.0011  -0.0025 -0.0014         3/6     YES
+    ALL4           -0.0003          +0.0042* +0.0042* +0.0009  -0.0029 -0.0015         3/6     YES
+
+§3d  THE SAME TEST AT WIDTH 3 — six panels, two per fit window
+--------------------------------------------------------------------------------
+§3b/§3c vary the threshold at the published WIDTH. This varies the width instead: three-season fit
+windows, two out-of-time evaluations each, so 'does the sign sort by fit window' is still a
+well-posed question (it needs >=2 evaluations per window). Test rows at minPA_eval=1000 throughout.
+
+══ width 3 · minPA_fit = 1000 ══
+
+  fit 2037+2038+2039   → test 2040,2041,2042    n=210 cards=85  deployed wPearson 0.9090
+    K              ΔwPearson +0.0005 [-0.0022, +0.0033]   Δtop26 +0.0055 [-0.0769, +0.0770]  
+    K+B            ΔwPearson +0.0007 [-0.0008, +0.0023]   Δtop26 +0.0052 [-0.0385, +0.0769]  
+    K+B+HR         ΔwPearson -0.0012 [-0.0039, +0.0012]   Δtop26 -0.0149 [-0.0770, +0.0000]  
+    K+B+HR+hbpμ    ΔwPearson -0.0012 [-0.0039, +0.0012]   Δtop26 -0.0149 [-0.0770, +0.0000]  
+    ALL4           ΔwPearson -0.0016 [-0.0046, +0.0012]   Δtop26 -0.0152 [-0.0770, +0.0000]  
+
+  fit 2037+2038+2039   → test 2043              n=126 cards=61  deployed wPearson 0.8772
+    K              ΔwPearson -0.0014 [-0.0059, +0.0027]   Δtop26 -0.0140 [-0.0770, +0.0000]  
+    K+B            ΔwPearson -0.0003 [-0.0028, +0.0021]   Δtop26 -0.0119 [-0.0769, +0.0000]  
+    K+B+HR         ΔwPearson +0.0018 [-0.0012, +0.0050]   Δtop26 -0.0012 [-0.0385, +0.0385]  
+    K+B+HR+hbpμ    ΔwPearson +0.0018 [-0.0012, +0.0050]   Δtop26 -0.0012 [-0.0385, +0.0385]  
+    ALL4           ΔwPearson +0.0020 [-0.0014, +0.0055]   Δtop26 -0.0019 [-0.0385, +0.0385]  
+
+  fit 2040+2041+2042   → test 2037,2038,2039    n=189 cards=84  deployed wPearson 0.9172
+    K              ΔwPearson -0.0002 [-0.0035, +0.0032]   Δtop26 +0.0032 [-0.0769, +0.0769]  
+    K+B            ΔwPearson +0.0002 [-0.0025, +0.0028]   Δtop26 +0.0035 [-0.0385, +0.0769]  
+    K+B+HR         ΔwPearson +0.0026 [+0.0007, +0.0047]*  Δtop26 +0.0092 [-0.0385, +0.0769]  
+    K+B+HR+hbpμ    ΔwPearson +0.0026 [+0.0007, +0.0047]*  Δtop26 +0.0092 [-0.0385, +0.0769]  
+    ALL4           ΔwPearson +0.0029 [+0.0006, +0.0054]*  Δtop26 +0.0103 [-0.0385, +0.0769]  
+
+  fit 2040+2041+2042   → test 2043              n=126 cards=61  deployed wPearson 0.8778
+    K              ΔwPearson -0.0010 [-0.0055, +0.0031]   Δtop26 -0.0055 [-0.0385, +0.0000]  
+    K+B            ΔwPearson -0.0004 [-0.0040, +0.0029]   Δtop26 -0.0016 [-0.0385, +0.0000]  
+    K+B+HR         ΔwPearson +0.0042 [+0.0008, +0.0080]*  Δtop26 +0.0016 [+0.0000, +0.0384]  
+    K+B+HR+hbpμ    ΔwPearson +0.0042 [+0.0008, +0.0080]*  Δtop26 +0.0016 [+0.0000, +0.0384]  
+    ALL4           ΔwPearson +0.0049 [+0.0011, +0.0091]*  Δtop26 +0.0017 [+0.0000, +0.0384]  
+
+  fit 2041+2042+2043   → test 2037,2038,2039    n=189 cards=84  deployed wPearson 0.9209
+    K              ΔwPearson -0.0003 [-0.0039, +0.0031]   Δtop26 -0.0105 [-0.0770, +0.0385]  
+    K+B            ΔwPearson +0.0002 [-0.0013, +0.0016]   Δtop26 -0.0044 [-0.0769, +0.0385]  
+    K+B+HR         ΔwPearson +0.0000 [-0.0027, +0.0027]   Δtop26 -0.0063 [-0.0770, +0.0769]  
+    K+B+HR+hbpμ    ΔwPearson +0.0000 [-0.0027, +0.0027]   Δtop26 -0.0063 [-0.0770, +0.0769]  
+    ALL4           ΔwPearson -0.0002 [-0.0034, +0.0030]   Δtop26 -0.0098 [-0.0770, +0.0769]  
+
+  fit 2041+2042+2043   → test 2040              n=115 cards=62  deployed wPearson 0.8843
+    K              ΔwPearson -0.0003 [-0.0058, +0.0047]   Δtop26 +0.0110 [-0.0385, +0.0770]  
+    K+B            ΔwPearson +0.0001 [-0.0019, +0.0023]   Δtop26 +0.0081 [-0.0385, +0.0769]  
+    K+B+HR         ΔwPearson -0.0035 [-0.0081, +0.0016]   Δtop26 -0.0528 [-0.1539, +0.0000]  
+    K+B+HR+hbpμ    ΔwPearson -0.0035 [-0.0081, +0.0016]   Δtop26 -0.0528 [-0.1539, +0.0000]  
+    ALL4           ΔwPearson -0.0043 [-0.0097, +0.0015]   Δtop26 -0.0579 [-0.1539, +0.0000]  
+
+══ width 3 · minPA_fit = 250 ══
+
+  fit 2037+2038+2039   → test 2040,2041,2042    n=210 cards=85  deployed wPearson 0.9091
+    K              ΔwPearson +0.0005 [-0.0022, +0.0033]   Δtop26 +0.0154 [-0.0385, +0.0770]  
+    K+B            ΔwPearson +0.0006 [-0.0009, +0.0024]   Δtop26 +0.0134 [-0.0384, +0.0770]  
+    K+B+HR         ΔwPearson -0.0015 [-0.0042, +0.0009]   Δtop26 -0.0021 [-0.0385, +0.0385]  
+    K+B+HR+hbpμ    ΔwPearson -0.0015 [-0.0042, +0.0009]   Δtop26 -0.0021 [-0.0385, +0.0385]  
+    ALL4           ΔwPearson -0.0019 [-0.0049, +0.0009]   Δtop26 -0.0052 [-0.0769, +0.0385]  
+
+  fit 2037+2038+2039   → test 2043              n=126 cards=61  deployed wPearson 0.8778
+    K              ΔwPearson -0.0014 [-0.0058, +0.0026]   Δtop26 -0.0063 [-0.0769, +0.0000]  
+    K+B            ΔwPearson -0.0004 [-0.0031, +0.0020]   Δtop26 +0.0012 [+0.0000, +0.0384]  
+    K+B+HR         ΔwPearson +0.0016 [-0.0014, +0.0046]   Δtop26 +0.0092 [+0.0000, +0.0769]  
+    K+B+HR+hbpμ    ΔwPearson +0.0016 [-0.0014, +0.0046]   Δtop26 +0.0092 [+0.0000, +0.0769]  
+    ALL4           ΔwPearson +0.0017 [-0.0015, +0.0051]   Δtop26 +0.0091 [-0.0384, +0.0769]  
+
+  fit 2040+2041+2042   → test 2037,2038,2039    n=189 cards=84  deployed wPearson 0.9176
+    K              ΔwPearson -0.0000 [-0.0033, +0.0032]   Δtop26 +0.0030 [-0.0769, +0.0769]  
+    K+B            ΔwPearson +0.0003 [-0.0021, +0.0027]   Δtop26 +0.0046 [-0.0385, +0.0769]  
+    K+B+HR         ΔwPearson +0.0023 [+0.0004, +0.0043]*  Δtop26 +0.0063 [-0.0385, +0.0769]  
+    K+B+HR+hbpμ    ΔwPearson +0.0023 [+0.0004, +0.0043]*  Δtop26 +0.0063 [-0.0385, +0.0769]  
+    ALL4           ΔwPearson +0.0025 [+0.0001, +0.0051]*  Δtop26 +0.0109 [-0.0385, +0.0770]  
+
+  fit 2040+2041+2042   → test 2043              n=126 cards=61  deployed wPearson 0.8783
+    K              ΔwPearson -0.0009 [-0.0053, +0.0032]   Δtop26 -0.0049 [-0.0385, +0.0000]  
+    K+B            ΔwPearson -0.0003 [-0.0035, +0.0027]   Δtop26 -0.0004 [+0.0000, +0.0000]  
+    K+B+HR         ΔwPearson +0.0038 [+0.0006, +0.0074]*  Δtop26 +0.0013 [+0.0000, +0.0384]  
+    K+B+HR+hbpμ    ΔwPearson +0.0038 [+0.0006, +0.0074]*  Δtop26 +0.0013 [+0.0000, +0.0384]  
+    ALL4           ΔwPearson +0.0045 [+0.0009, +0.0085]*  Δtop26 +0.0042 [+0.0000, +0.0385]  
+
+  fit 2041+2042+2043   → test 2037,2038,2039    n=189 cards=84  deployed wPearson 0.9206
+    K              ΔwPearson -0.0005 [-0.0039, +0.0027]   Δtop26 -0.0029 [-0.0385, +0.0385]  
+    K+B            ΔwPearson +0.0001 [-0.0011, +0.0013]   Δtop26 +0.0003 [-0.0385, +0.0385]  
+    K+B+HR         ΔwPearson +0.0001 [-0.0024, +0.0026]   Δtop26 +0.0042 [-0.0769, +0.0770]  
+    K+B+HR+hbpμ    ΔwPearson +0.0001 [-0.0024, +0.0026]   Δtop26 +0.0042 [-0.0769, +0.0770]  
+    ALL4           ΔwPearson +0.0000 [-0.0029, +0.0029]   Δtop26 +0.0050 [-0.0769, +0.0770]  
+
+  fit 2041+2042+2043   → test 2040              n=115 cards=62  deployed wPearson 0.8830
+    K              ΔwPearson -0.0002 [-0.0057, +0.0048]   Δtop26 +0.0241 [-0.0384, +0.1154]  
+    K+B            ΔwPearson +0.0002 [-0.0016, +0.0020]   Δtop26 +0.0060 [+0.0000, +0.0769]  
+    K+B+HR         ΔwPearson -0.0030 [-0.0075, +0.0016]   Δtop26 -0.0484 [-0.1539, +0.0000]  
+    K+B+HR+hbpμ    ΔwPearson -0.0030 [-0.0075, +0.0016]   Δtop26 -0.0484 [-0.1539, +0.0000]  
+    ALL4           ΔwPearson -0.0036 [-0.0088, +0.0017]   Δtop26 -0.0521 [-0.1539, +0.0000]  
+
+  SIGN-BY-FIT-WINDOW at width 3:
+    minPA_fit = 1000
+      arm            fit 2037-2039        fit 2040-2042        fit 2041-2043          pos  sorts?
+      K              +0.0005 -0.0014      -0.0002 -0.0010      -0.0003 -0.0003        1/6      no
+      K+B            +0.0007 -0.0003      +0.0002 -0.0004      +0.0002 +0.0001        4/6      no
+      K+B+HR         -0.0012 +0.0018      +0.0026* +0.0042*    +0.0000 -0.0035        4/6      no
+      K+B+HR+hbpμ    -0.0012 +0.0018      +0.0026* +0.0042*    +0.0000 -0.0035        4/6      no
+      ALL4           -0.0016 +0.0020      +0.0029* +0.0049*    -0.0002 -0.0043        3/6      no
+    minPA_fit = 250
+      arm            fit 2037-2039        fit 2040-2042        fit 2041-2043          pos  sorts?
+      K              +0.0005 -0.0014      -0.0000 -0.0009      -0.0005 -0.0002        1/6      no
+      K+B            +0.0006 -0.0004      +0.0003 -0.0003      +0.0001 +0.0002        4/6      no
+      K+B+HR         -0.0015 +0.0016      +0.0023* +0.0038*    +0.0001 -0.0030        4/6      no
+      K+B+HR+hbpμ    -0.0015 +0.0016      +0.0023* +0.0038*    +0.0001 -0.0030        4/6      no
+      ALL4           -0.0019 +0.0017      +0.0025* +0.0045*    +0.0000 -0.0036        4/6      no
+
+================================================================================
+§4  CLUSTER INFLATION FACTOR — measured for THESE statistics, on THESE test sets
+--------------------------------------------------------------------------------
+A card contributes two rows (vL and vR) whose errors are correlated, so a row bootstrap understates
+the interval. The factor is NOT a constant: it has measured ~3.1x on one statistic and ~1.07x on
+another in this project. Reported as SD(cluster bootstrap over cid) / SD(iid row bootstrap).
+
+  panel                              role       rows  cards  rows/card   wPearson    top26
+  OOT-BACK-A 2042+2043→2037..        HITTER      252    102       2.47      1.22x    0.95x
+  OOT-BACK-A 2042+2043→2037..        PITCHER     188     78       2.41      1.04x    0.94x
+  OOT-FWD 2040+2041→2042..           HITTER      173     74       2.34      1.15x    1.07x
+  OOT-FWD 2040+2041→2042..           PITCHER     149     67       2.22      1.08x    1.15x
+  OOT-BACK-B 2040+2041→2037..        HITTER      189     84       2.25      1.20x    1.11x
+  OOT-BACK-B 2040+2041→2037..        PITCHER     149     68       2.19      1.02x    0.97x
+
+Every interval in §1-§3 uses the CLUSTER version. Nothing here assumes a factor; the numbers above
+are what these statistics actually carry on these test sets.
+
+READING: on THESE statistics the factor is small — 1.02-1.22x on wPearson and 0.94-1.15x on top-26,
+against 2.2-2.5 rows per card. It is not the ~3.1x seen elsewhere in the project, and on top-26 it
+is essentially 1.0 (a discrete 1/26-grained statistic whose bootstrap spread is dominated by which
+cards land in the top 26, not by within-card correlation). The reason wPearson clusters more than
+top-26: vL and vR of one card share a rating vector, so their prediction ERRORS move together, and
+Pearson integrates every row's error while top-26 only counts membership flips. Nothing in the
+conclusions turns on the factor — it is reported because assuming one would have been wrong in
+both directions depending on which statistic you assumed it for.
+
+================================================================================
+§5  DOES THE SWEEP BEAR ON THE 'NO HEADROOM LEFT' READING?
+--------------------------------------------------------------------------------
+The per-event flex ceiling spends 21 (hitter) / 15 (pitcher) parameters and currently loses to the
+deployed curves out of time on 4 of 10 channels — plausibly a parameter-cost artefact that a larger
+sample would relieve. That reading and this run share one dependency: whether the fit is
+sample-starved. §1's answer to R1 is the direct evidence, and it transfers with a caveat — a
+flexible form has MORE to gain from extra rows than a 5-parameter curve does, so a null here bounds
+but does not settle the ceiling question. What it does settle: if the deployed curves cannot use the
+extra rows at all, 'the ceiling loses on parameter cost' cannot be repaired by lowering the bar
+alone. The ceiling's own threshold sweep is a separate measurement and is NOT run here.
+
