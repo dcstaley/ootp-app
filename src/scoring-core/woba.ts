@@ -59,8 +59,12 @@ export function assembleRawPitchingWoba(e: RawPitching, ssp: number, c: Coeffs):
 // recompute BA/GAP (hitting) or nHH/XBH (pitching). Returns the final component
 // rates; callers assemble wOBA (with or without ssp / HBP / anchor scalar).
 
-export interface HitComponents { BB_fin: number; HR_fin: number; oneB_fin: number; GAP_fin: number }
-export interface PitchComponents { BB_fin: number; HR_fin: number; oneB_fin: number; XBH_fin: number }
+// BIP_fin is returned (not just consumed internally) so a caller that needs to REPORT balls-in-play
+// cannot derive its own. The `/api/debug/card` trace did exactly that and dropped the
+// `era_bip_adj` scaling, printing a BIP 1.4–2.1% off the one that produced the singles/XBH on the
+// same line — on every non-2010 era, i.e. most of the tournament library.
+export interface HitComponents { BB_fin: number; HR_fin: number; oneB_fin: number; GAP_fin: number; BIP_fin: number }
+export interface PitchComponents { BB_fin: number; HR_fin: number; oneB_fin: number; XBH_fin: number; BIP_fin: number }
 
 export function hittingComponents(
   e: RawHitting, sBB: number, sHR: number, bats: number, side: "vR" | "vL", coeffs: Coeffs, derived: Derived,
@@ -98,7 +102,7 @@ export function hittingComponents(
     : Math.max((coeffs.gapLogA ?? 0) + (coeffs.gapLogB ?? 0) * Math.log(Math.max(e.gapSC, 1)), 0);
   const GAP_fin = Math.max(GAP_rate * BA_fin * derived.era_gap * cp(coeffs.park_gap), 0);
   const oneB_fin = Math.max(BA_fin - GAP_fin, 0);
-  return { BB_fin, HR_fin, oneB_fin, GAP_fin };
+  return { BB_fin, HR_fin, oneB_fin, GAP_fin, BIP_fin };
 }
 
 export function pitchingComponents(
@@ -134,7 +138,7 @@ export function pitchingComponents(
   const xbhShare = eventForm ? 0.25 : (coeffs.p_xbh_share ?? 0.25) * (coeffs.p_xbh_norm ?? 1);
   const XBH_fin = nHH_fin * xbhShare * derived.era_gap * cp(coeffs.park_gap);
   const oneB_fin = Math.max(nHH_fin - XBH_fin, 0);
-  return { BB_fin, HR_fin, oneB_fin, XBH_fin };
+  return { BB_fin, HR_fin, oneB_fin, XBH_fin, BIP_fin };
 }
 
 // ── Trusted (calibrated, display) wOBA — getHittingScore / getPitchingScore ──

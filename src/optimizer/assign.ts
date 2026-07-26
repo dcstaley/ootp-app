@@ -145,10 +145,40 @@ export function bestLineupLocked(
   return positions.map((p) => lockedCardAt.get(p) ?? byFreePos.get(p)!);
 }
 
-/** Best lineup as display slots (position + card id). */
-function matchLineup(hitters: HitterCandidate[], positions: string[], side: "R" | "L"): LineupSlot[] | null {
-  const lu = bestLineup(hitters, positions, side);
+/** Best lineup as display slots (position + card id). `capture` is threaded, not defaulted: the
+ *  nine cards SHOWN must be the nine the E[wins] evaluator SCORES, and the evaluator matches at
+ *  ρ (offense.ts via `effectiveWoba`). Matching at ρ=1 here put a different catcher in the
+ *  displayed vR nine than in the scored one on the real roster. */
+function matchLineup(hitters: HitterCandidate[], positions: string[], side: "R" | "L", capture: number): LineupSlot[] | null {
+  const lu = bestLineup(hitters, positions, side, capture);
   return lu && lu.map((c, i) => ({ pos: positions[i]!, id: c.id, title: c.title }));
+}
+
+/**
+ * The displayed H/P value split (SP-7) — ONE producer, shared by `assignRoster` and
+ * `generateFullRoster` so the two roster paths can never print a different balance for the same set.
+ *
+ * BOTH halves are DEPLOYMENT blends, and that is the whole point of the readout: it exists so
+ * cross-pool balance under D2 signed-distance can be watched, and "hitters at their best side vs
+ * pitchers at their realistic role mix" is not a comparison. The hitter half is therefore the same
+ * platoon-weighted ρ-blend the SELECTION objective maximises (roster-lp.ts bench credit) and the
+ * evaluator scores. It used to be `Σ max(valueVR, valueVL)` — a formula nothing else in the app
+ * uses, and 2.1× smaller in magnitude than this one on the real roster (−0.0295 vs −0.0634).
+ *
+ * `isStarter` decides the pitcher's role blend (rotation ⇒ sp, else rp); the two callers derive
+ * the rotation differently (MILP slot vars vs the assignment sort), so it is passed in.
+ */
+export function rosterBalance(
+  hitters: HitterCandidate[], pitchers: PitcherCandidate[], opts: RosterOptimizeOptions,
+  isStarter: (c: PitcherCandidate) => boolean,
+): { hitterValue: number; pitcherValue: number } {
+  const rho = opts.platoonCapture ?? 1;
+  return {
+    hitterValue: hitters.reduce((s, c) =>
+      s + opts.platoonVR * effectiveValue(c, "R", rho) + opts.platoonVL * effectiveValue(c, "L", rho), 0),
+    pitcherValue: pitchers.reduce((s, c) =>
+      s + blendPitch(c.valueVR, c.valueVL, c.throws, isStarter(c) ? "sp" : "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL), 0),
+  };
 }
 
 /**
@@ -157,8 +187,9 @@ function matchLineup(hitters: HitterCandidate[], positions: string[], side: "R" 
  */
 export function assignRoster(hitters: HitterCandidate[], pitchers: PitcherCandidate[], opts: RosterOptimizeOptions): Roster | null {
   const positions = lineupPositions(opts.dh);
-  const lineupVR = matchLineup(hitters, positions, "R");
-  const lineupVL = matchLineup(hitters, positions, "L");
+  const rho = opts.platoonCapture ?? 1; // the evaluator's ρ — see matchLineup
+  const lineupVR = matchLineup(hitters, positions, "R", rho);
+  const lineupVL = matchLineup(hitters, positions, "L", rho);
   if (!lineupVR || !lineupVL) return null;
 
   const vSP = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "sp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
@@ -172,16 +203,12 @@ export function assignRoster(hitters: HitterCandidate[], pitchers: PitcherCandid
   const twoWayIds = new Set(hitters.map((c) => c.id));
   const twoWay = pitchers.filter((c) => twoWayIds.has(c.id)).map((c) => c.id);
   const cost = hitters.reduce((s, c) => s + c.cost, 0) + pitchers.filter((c) => !twoWayIds.has(c.id)).reduce((s, c) => s + c.cost, 0);
-  // SP-7 H/P value split (display parity with generateFullRoster): hitters by best side,
-  // pitchers by deployed-role blend.
-  const vRP = (c: PitcherCandidate) => blendPitch(c.valueVR, c.valueVL, c.throws, "rp", opts.pitchSplit, opts.platoonVR, opts.platoonVL);
-  const hitterValue = hitters.reduce((s, c) => s + Math.max(c.valueVR, c.valueVL), 0);
-  const pitcherValue = pitchers.reduce((s, c) => s + (rotIds.has(c.id) ? vSP(c) : vRP(c)), 0);
 
   return {
     status: "Optimal", objective: 0,
     hitters: hitters.map((c) => c.id), lineupVR, lineupVL,
     pitchers: pitchers.map((c) => c.id), rotation, bullpen,
-    twoWay, cost, balance: { hitterValue, pitcherValue },
+    // SP-7 H/P value split — the ONE producer (above), shared with generateFullRoster.
+    twoWay, cost, balance: rosterBalance(hitters, pitchers, opts, (c) => rotIds.has(c.id)),
   };
 }

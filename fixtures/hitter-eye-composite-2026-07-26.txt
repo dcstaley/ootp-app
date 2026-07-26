@@ -1,0 +1,783 @@
+================================================================================
+THE HITTER EYE AXIS AS A SET — FOUR-LEG CANDIDATE MEASUREMENT — 2026-07-26
+tools/hitter-eye-composite.ts · root 'League Files' · seasons 2037–2043 · MEASUREMENT ONLY
+================================================================================
+
+THE QUESTION NOBODY HAD ANSWERED. On the hitter EYE axis FOUR channels carry CI-clear,
+OPPOSITELY-SIGNED contributions to the composite wOBA bias that CANCEL to nearly zero (per
+rating point, fixtures/hitter-residual-channels-2026-07-25.txt Part 2: K −0.000033, BABIP
++0.000025, HR +0.000019, HBP +0.000004 ⇒ composite +0.000006). Fixing ONE leg was measured
+(fixtures/hitter-eyeaug-2026-07-25.txt): the term worked on its own channel and UNBALANCED the
+set — the conditional composite EYE bias GREW in 3 of 4 panels and became CI-clear where it had
+not been. This artifact fixes all four TOGETHER, plus every intermediate, and judges them ON THE
+COMPOSITE — the standing lesson from that run: a channel-level fix is judged on the deliverable,
+never on its own channel.
+
+THE LADDER (candidates only — production still fits RAWPOLY_HIT; no default changed):
+  deployed     woba·rawpoly               legs: — none —
+  K            woba·rawpoly-eyeaug        legs: K
+  K+B          woba·eyeaxis-kb            legs: K, BABIP
+  K+B+HR       woba·eyeaxis-kbh           legs: K, BABIP, HR
+  K+B+HR+hbpμ  woba·eyeaxis-kbh+hbpmean   legs: K, BABIP, HR, HBP(level only)
+  ALL4         woba·eyeaxis-all4          legs: K, BABIP, HR, HBP(EYE curve)
+
+TWO COMPOSITES, AND THE DIFFERENCE IS LOAD-BEARING. The harness's own target (bakeoff.ts
+actualHitWoba) credits a FIXED 6 HBP/600 on the OBSERVED side as well as the predicted side, so
+the HBP channel CANCELS INSIDE IT and is invisible to every harness metric. The audit's composite
+compares against the card's REAL hit-by-pitches. Reported side by side:
+  TRUE     predicted wOBA (the arm's own HBP) − observed wOBA (the card's OBSERVED HP).
+           The frame the four-leg cancellation was found in. THE HEADLINE.
+  HARNESS  predicted − HITTER.actualWoba (fixed 6 both sides). Directly comparable to the K-only
+           artifact's §8, and the only frame in which ΔwPearson / top-26 / regret are defined.
+
+THE ADOPTION BAR, fixed before the run and identical to the one stuffAug cleared: ΔwPearson
+CONSISTENTLY POSITIVE across all six evaluations and NEVER CI-clear negative, with a coherent
+mechanism (stuffAug: +0.012…+0.033, six of six, four CI-clear). The K-only leg scored ≤0.0005 in
+magnitude on all six and was declined.
+
+EVERY fit passes a FRESH vertex-pin collector — production parity (7dea19a), harness as of 7c8a061.
+EVERY interval is a CLUSTER bootstrap over cid, never over rows (4000 reps on the metrics, 1500 on slopes).
+
+================================================================================
+VERDICT — does fixing the WHOLE EYE-axis set improve the composite, and does it
+clear the adoption bar?
+================================================================================
+
+ADOPTION: NO — the four-leg candidate does NOT clear the bar,
+and it fails for a DIFFERENT reason than the K-only leg did. ΔwPearson vs the deployed form is
+3 of 6 positive, 2 CI-clear positive, 0 CI-clear negative — the bar is CONSISTENTLY positive and
+never CI-clear negative, and an inconsistent set of signs fails it however large the positives
+are. The K-only leg failed as a flat null (every |Δ| ≤ 0.0005). This one is not a null: the
+HR-carrying rungs reach +0.0050, four times the resolution floor, CI-clear twice. What §8b shows is
+that the sign is decided by WHICH WINDOW the terms were fitted on — all three evaluations fitted
+on 2040+2041 are positive (two CI-clear), all three fitted on 2037+2038 or 2042+2043 are negative
+(one nearly CI-clear at -0.0022 [-0.0046, +0.0001]). That is one window's evidence counted three
+times, not three confirmations, and §2 corroborates it from the fit side (ALL4 arm, windows
+2037+2038 / 2040+2041 / 2042+2043):
+  K aux -2.334 / -2.660 / -2.186   HR aux -0.252 / -0.353 / -0.217   BABIP aux -0.162 / -0.172 / -0.673
+A BABIP term that moves four-fold between adjacent windows of ~75 cards is not identified by
+this data, and it is one of the two legs with enough leverage to matter.
+
+ON THE COMPOSITE — the question that was actually asked: completing the set did NOT drive the
+conditional EYE bias toward zero. It left it LARGER in 2 of 4 panels and smaller in 2, and the
+ladder is not monotone in any panel (§4). The cancellation story predicted a march to zero;
+the data refuses it — and the reason is structural, which is the most useful thing here:
+
+THE SET WAS NEVER FOUR-LEGGED — it is SIX. In frame the deployed contributions are
+K -0.001059, BABIP +0.000762, HR +0.000499, HBP +0.000093 — and also
+BB -0.000037 and GAP -0.000199, which the audit ranked but the candidate set never touched.
+With all four legs closed those channels collapse (-0.000028, -0.000254, -0.000107,
++0.000026 — K and HR to ~0, BABIP over-corrected past it) — and BB -0.000037 and GAP -0.000199 stand
+ALONE, so the composite lands at -0.00060 instead of the deployed +0.00006. Removing four
+legs of a six-leg cancellation does not produce zero; it produces whatever the other two carry.
+It did not need a metric to see — it is arithmetic on an exact decomposition (closure 1.7e-16).
+
+THE COMPOSITE, WHICH IS THE QUESTION THAT WAS ASKED (conditional wOBA bias per SD of EYE,
+TRUE frame — the audit's, with the card's real hit-by-pitches; ★ = CI excludes zero):
+  panel                                            deployed            K          K+B       K+B+HR  K+B+HR+hbpμ         ALL4
+  IN FRAME   fit 2042+2043 → measure 2042+2043     +0.00006     +0.00090     +0.00022     -0.00049     -0.00049     -0.00060
+  OUT FRAME  fit 2042+2043 → measure 2037–2041    -0.00087★     -0.00008    -0.00072★    -0.00136★    -0.00136★    -0.00146★
+  OUT FRAME  fit 2037+2038 → measure 2039–2043     +0.00048    +0.00141★    +0.00133★     +0.00048     +0.00048     +0.00036
+  OUT FRAME  fit 2040+2041 → measure 2042+2043    +0.00122★    +0.00218★    +0.00212★     +0.00092     +0.00092     +0.00080
+
+and on the HARNESS frame (fixed 6 HBP both sides — the K-only artifact's §8 numbers live here):
+  panel                                            deployed            K          K+B       K+B+HR  K+B+HR+hbpμ         ALL4
+  IN FRAME   fit 2042+2043 → measure 2042+2043     -0.00003     +0.00081     +0.00012     -0.00058     -0.00058     -0.00069
+  OUT FRAME  fit 2042+2043 → measure 2037–2041    -0.00100★     -0.00022    -0.00085★    -0.00149★    -0.00149★    -0.00160★
+  OUT FRAME  fit 2037+2038 → measure 2039–2043     +0.00036    +0.00129★    +0.00121★     +0.00035     +0.00035     +0.00023
+  OUT FRAME  fit 2040+2041 → measure 2042+2043    +0.00112★    +0.00209★    +0.00203★     +0.00083     +0.00083     +0.00071
+
+ΔwPearson, all six evaluations, every rung (candidate − deployed):
+  K              -0.0003, +0.0001, +0.0000, +0.0004, -0.0005, +0.0003   (4/6 positive, 0 CI-clear+, 0 CI-clear−)
+  K+B            -0.0001, +0.0002, +0.0001, +0.0005, -0.0006, +0.0004   (4/6 positive, 0 CI-clear+, 0 CI-clear−)
+  K+B+HR         -0.0004, +0.0045, -0.0017, +0.0045, -0.0009, +0.0016   (3/6 positive, 2 CI-clear+, 0 CI-clear−)
+  K+B+HR+hbpμ    -0.0004, +0.0045, -0.0017, +0.0044, -0.0010, +0.0017   (3/6 positive, 2 CI-clear+, 0 CI-clear−)
+  ALL4           -0.0005, +0.0050, -0.0022, +0.0048, -0.0012, +0.0016   (3/6 positive, 2 CI-clear+, 0 CI-clear−)
+
+THE SIX PAIRED EVALUATIONS FOR THE FOUR-LEG ARM, with intervals:
+  FORWARD  fit 2037+2038 → test 2039–2043  wPearson -0.0005 [-0.0022, +0.0010]   top26 -0.0006 [-0.0385, +0.0385]   regret -0.00012 [-0.00161, +0.00064] 
+  FORWARD  fit 2040+2041 → test 2042+2043  wPearson +0.0050 [+0.0014, +0.0092]★  top26 -0.0020 [-0.0769, +0.0769]   regret -0.00015 [-0.00156, +0.00083] 
+  BACKWARD fit 2042+2043 → test 2037–2041  wPearson -0.0022 [-0.0046, +0.0001]   top26 +0.0002 [-0.0769, +0.0385]   regret +0.00008 [-0.00050, +0.00146] 
+  BACKWARD fit 2040+2041 → test 2037–2039  wPearson +0.0048 [+0.0019, +0.0079]★  top26 +0.0113 [-0.0385, +0.0769]   regret -0.00028 [-0.00183, +0.00038] 
+  CV       5-fold on 2042+2043 (cid|side)  wPearson -0.0012 [-0.0045, +0.0015]   top26 -0.0075 [-0.0769, +0.0385]   regret -0.00003 [-0.00084, +0.00065] 
+  CV       5-fold on 2040+2041 (cid|side)  wPearson +0.0016 [-0.0026, +0.0059]   top26 +0.0109 [-0.0385, +0.0770]   regret -0.00015 [-0.00122, +0.00041] 
+
+WHAT THE LEGS THEMSELVES DID (§5) — the terms are not wrong about their channels. Conditional
+slope per SD of EYE, deployed→ALL4, on the three OUT-OF-FRAME panels (fit→measure):
+            2042+2043→2037–2041   2037+2038→2039–2043   2040+2041→2042+2043
+  K               +2.380→+0.452         +2.404→+0.015         +2.149→-0.507
+  BABIP           +0.326→-1.056         +1.036→+0.266         +1.992→+1.038
+  HR              +0.276→+0.089         +0.301→+0.052         +0.177→-0.171
+  HBP             +0.116→+0.026         +0.104→+0.001         +0.079→-0.027
+  K and HR are removed cleanly on data the fit never saw. HBP is removed cleanly AND its level
+  bias (+0.85…+0.95/600) collapses to ~0 — it is the best-behaved of the four. BABIP is the
+  exception: it OVERSHOOTS to CI-clear negative in one panel and is only half-removed in
+  another, which is the same weak identification §2 and §8b found in its coefficient.
+
+PARAMETER COST (§9): three aux terms plus an HBP change, fitted on windows of 74–79 distinct
+cards. This is NOT the classic over-fit signature — in-sample and out-of-time ΔwPearson agree in
+SIGN within every window (2040+2041: +0.0026 in, +0.0035 out; 2042+2043: -0.0004 in, -0.0023
+out; 2037+2038: +0.0011 in, -0.0006 out). The terms are not buying in-sample fit and giving it
+back; they are estimating something genuinely different in each window. At ~75 cards per window
+that is exactly what an under-determined term looks like, and it is a reason not to ship one.
+
+HBP, THE LEG THAT IS DIFFERENT IN KIND — decision, justification, and the measurement both ways.
+The form gives every hitter a FIXED 6/600 against an observed 5.15/600: 94% of the composite
+LEVEL bias, and the real rate carries a CI-clear EYE slope no anchor can absorb. It is also the
+leg that WORKS BEST on its own channel — the fitted constant lands at 4.98–5.16/600 across all
+three windows (a stable, well-identified number, unlike the BABIP and HR auxes) and the EYE curve
+takes the channel's out-of-frame slope to zero in every panel.
+MEASURED WITH AND WITHOUT (the two rungs exist for exactly this): K+B+HR+hbpμ vs K+B+HR is a pure
+LEVEL move — identical composite SLOPES to five decimals in all four panels, ΔwPearson identical
+to within 0.0001 — because a constant has no rating pathway and reaches the metrics only through
+the BIP chain. ALL4 vs K+B+HR adds the EYE curve and moves the conditional composite slope by
+  IN FRAME   fit 2042+2043 → measure 2042+2043  -0.00049 → -0.00060   (Δ -0.00011)
+  OUT FRAME  fit 2042+2043 → measure 2037–2041  -0.00136 → -0.00146   (Δ -0.00010)
+  OUT FRAME  fit 2037+2038 → measure 2039–2043  +0.00048 → +0.00036   (Δ -0.00012)
+  OUT FRAME  fit 2040+2041 → measure 2042+2043  +0.00092 → +0.00080   (Δ -0.00012)
+i.e. about 1e-4 wOBA per SD — real, correctly signed, and an order below the composite's own
+noise. THE DECISION: DO NOT correct it, on this evidence. (i) The LEVEL half is anchor-absorbable
+— every per-role anchor removes a constant — and the harness target credits the same fixed 6 on
+the OBSERVED side, so the correction is invisible to every metric we rank on by construction.
+(ii) The SLOPE half is what an anchor cannot absorb, and closing it moves the composite by less
+than the composite's own interval. (iii) Adoption is not free: RawHitting carries no HBP field,
+so a fitted HBP reaches BIP but NOT the wOBA numerator downstream (flagged in raw-poly.ts) — a
+scoring-core change for a benefit measured at zero. If the HBP constant is ever revisited, do it
+as a LEVEL correction on its own merits (calibration honesty), not as part of an EYE-axis fix.
+
+WHAT THIS ARTIFACT SETTLES. The EYE-axis residual family is CLOSED on league data: one leg was
+tried and failed; the intermediates were tried and failed; all four together were tried and
+failed — and the reason is now structural rather than statistical. The composite is a SIX-channel
+cancellation, so a four-leg fix cannot zero it; and the two legs with enough leverage to move the
+deliverable (BABIP, HR) are the two the data cannot pin down at ~75 cards per window. The
+residual finding stands as a true description of where the form misses; it is not a mandate to
+add terms.
+THE ONE THING THAT WOULD CHANGE THE ANSWER, and it is now a sharper ask than after the K-only
+run: not a better metric — MORE CARDS PER WINDOW. The HR leg is the first term in this family
+with real leverage (CI-clear ±0.005 on wPearson); what disqualifies it is that its estimate swings
+-0.22/-0.35 between adjacent windows. If a future retrain widens the window (or the tournament
+corpus supplies cards at this PA bar), re-run THIS ladder first — the machinery is in place and
+the question becomes decidable rather than under-determined. The candidates stay in FORM_ENTRIES
+so every future scoreboard re-measures them; nothing is deployed and no default changed.
+
+DATA LIMITS: 63–103 distinct cards per test block (counts printed beside every n); top-26
+intervals ±0.08–0.12; league coverage unequal by season (2037: 4 leagues; 2039 effectively 4
+after the HD450 exclusion; the rest 5); Old Data 2032–33 never pooled. No interaction claim is
+made anywhere in this artifact, so no permutation null is required.
+
+================================================================================
+§1  DATA AND EXCLUSIONS
+--------------------------------------------------------------------------------
+years present under root: 2032, 2033, 2037, 2038, 2039, 2040, 2041, 2042, 2043
+years USED: 2037, 2038, 2039, 2040, 2041, 2042, 2043   (Old Data 2032–33 excluded — four-season gap, never pooled)
+  2037: 4 league(s) HD450 HD451 HD453 PEL
+  2038: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2039: 4 league(s) HD451 HD452 HD453 PEL   EXCLUDED: HD450
+  2040: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2041: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2042: 5 league(s) HD450 HD451 HD452 HD453 PEL
+  2043: 5 league(s) HD450 HD451 HD452 HD453 PEL
+loader auto-exclusions (corrupt cells): HD450|2039
+  ⇒ the known duplicate-vL/vR cell HD450|2039 is DETECTED AND DROPPED (confirmed).
+validateDataset: 1 error(s), 0 warning(s)
+  ERROR  HD450 2039: vL and vR are identical (PA=71886, BF=74940, rows=870) — one file is a duplicate of the other — EXCLUDED from modeling
+SEASON COVERAGE IS UNEQUAL: 2037 has 4 leagues (no HD452); 2038 and 2040–2043 have 5; 2039 is
+effectively 4 after the HD450 exclusion. Every cross-season claim below is qualified by this.
+
+================================================================================
+§2  THE FITTED LEGS — what each term actually estimates, per window
+--------------------------------------------------------------------------------
+Each aux β is per SD of ln(EYE) in that channel's own units; 'implied/SD raw EYE' converts it to a
+1-SD move in RAW EYE at the window mean, so it is directly comparable to the residual slopes the
+terms exist to remove (K +2.01/600, BABIP +1.07 pts×1000, HR ~+0.3/600 — all per SD of raw EYE).
+SIGN EXPECTED: NEGATIVE on all three. The audit's residuals are PREDICTED − OBSERVED and all three
+are POSITIVE on EYE — the deployed form over-predicts strikeouts, contact rate AND homers for
+high-Eye hitters — so every correcting term must pull its channel DOWN as EYE rises.
+
+window      arm           K aux β  →implied   BABIP aux β  →implied   HR aux β  →implied   HBP fit
+2037+2038   deployed            —         —             —         —          —         —   fixed 6/600
+2037+2038   K              -2.334     -2.37             —         —          —         —   fixed 6/600
+2037+2038   K+B            -2.334     -2.37        -0.062     -0.06          —         —   fixed 6/600
+2037+2038   K+B+HR         -2.334     -2.37        -0.133     -0.13     -0.252     -0.26   fixed 6/600
+2037+2038   K+B+HR+hbpμ    -2.334     -2.37        -0.133     -0.13     -0.252     -0.26   5.06/600 at μEYE (constant)
+2037+2038   ALL4           -2.334     -2.37        -0.162     -0.16     -0.252     -0.26   5.05/600 at μEYE (-0.09/SD)
+2040+2041   deployed            —         —             —         —          —         —   fixed 6/600
+2040+2041   K              -2.660     -2.59             —         —          —         —   fixed 6/600
+2040+2041   K+B            -2.660     -2.59        -0.047     -0.05          —         —   fixed 6/600
+2040+2041   K+B+HR         -2.660     -2.59        -0.143     -0.14     -0.353     -0.34   fixed 6/600
+2040+2041   K+B+HR+hbpμ    -2.660     -2.59        -0.143     -0.14     -0.353     -0.34   4.99/600 at μEYE (constant)
+2040+2041   ALL4           -2.660     -2.59        -0.172     -0.17     -0.353     -0.34   4.98/600 at μEYE (-0.09/SD)
+2042+2043   deployed            —         —             —         —          —         —   fixed 6/600
+2042+2043   K              -2.186     -2.12             —         —          —         —   fixed 6/600
+2042+2043   K+B            -2.186     -2.12        -0.584     -0.57          —         —   fixed 6/600
+2042+2043   K+B+HR         -2.186     -2.12        -0.645     -0.63     -0.217     -0.21   fixed 6/600
+2042+2043   K+B+HR+hbpμ    -2.186     -2.12        -0.645     -0.63     -0.217     -0.21   5.16/600 at μEYE (constant)
+2042+2043   ALL4           -2.186     -2.12        -0.673     -0.65     -0.217     -0.21   5.14/600 at μEYE (-0.09/SD)
+
+NOTE the BABIP aux is in HITS per 600 (the hit.h fit target), not in babip points: divide by the
+mean BIP (~415) and ×1000 for the pts×1000 scale the residual audit reports.
+OBSERVED HBP for reference (PA-weighted, per 600): 5.15 on 2042+2043 — against the form's fixed 6.
+
+================================================================================
+§3  PIN AUDIT — does any leg change WHICH channels pin?
+--------------------------------------------------------------------------------
+This is not boilerplate here. The K leg could not touch pinning (hit.hr is the form's only quad and
+it is fitted BEFORE the BIP chain, on POW alone) — which is why the K-only test was a strict
+one-term contrast. The HR leg CHANGES hit.hr's own design, so it CAN move the vertex, exactly as
+the Stuff aux did to pit.hr on [2042,2043] and cost that comparison its one-term status.
+
+window      arm           pinned channels           hit.hr unconstrained vertex in-domain?
+2037+2038   deployed     — none —                  no (vertex outside the fit domain)
+2037+2038   K            — none —                  no (vertex outside the fit domain)
+2037+2038   K+B          — none —                  no (vertex outside the fit domain)
+2037+2038   K+B+HR       — none —                  no (vertex outside the fit domain)
+2037+2038   K+B+HR+hbpμ  — none —                  no (vertex outside the fit domain)
+2037+2038   ALL4         — none —                  no (vertex outside the fit domain)
+2040+2041   deployed     — none —                  no (vertex outside the fit domain)
+2040+2041   K            — none —                  no (vertex outside the fit domain)
+2040+2041   K+B          — none —                  no (vertex outside the fit domain)
+2040+2041   K+B+HR       — none —                  no (vertex outside the fit domain)
+2040+2041   K+B+HR+hbpμ  — none —                  no (vertex outside the fit domain)
+2040+2041   ALL4         — none —                  no (vertex outside the fit domain)
+2042+2043   deployed     — none —                  no (vertex outside the fit domain)
+2042+2043   K            — none —                  no (vertex outside the fit domain)
+2042+2043   K+B          — none —                  no (vertex outside the fit domain)
+2042+2043   K+B+HR       — none —                  no (vertex outside the fit domain)
+2042+2043   K+B+HR+hbpμ  — none —                  no (vertex outside the fit domain)
+2042+2043   ALL4         — none —                  no (vertex outside the fit domain)
+
+================================================================================
+§4  THE HEADLINE — conditional composite wOBA bias per SD of EYE, per panel
+--------------------------------------------------------------------------------
+Composite residual = predicted wOBA − observed wOBA, per row, PA-weighted; slope per SD of EYE.
+CONDITIONAL holds all five hitter ratings (eye, pow, kRat, babip, gap) — the decisive read, and the
+one the K-only artifact reported. ★ = the cid-cluster interval excludes zero.
+THE PREDICTION UNDER TEST: if the four errors really cancel, completing the set should drive the
+composite bias TOWARD ZERO, and each partial rung should be WORSE than both ends.
+
+IN FRAME   fit 2042+2043 → measure 2042+2043 
+    arm           n/cards   TRUE composite: level      cond. slope/SD EYE            HARNESS: level      cond. slope/SD EYE
+    deployed       173/74           +0.00106   +0.00006 [-0.00094, +0.00099]        +0.00006   -0.00003 [-0.00100, +0.00090] 
+    K              173/74           +0.00107   +0.00090 [-0.00010, +0.00186]        +0.00007   +0.00081 [-0.00016, +0.00176] 
+    K+B            173/74           +0.00106   +0.00022 [-0.00078, +0.00114]        +0.00006   +0.00012 [-0.00084, +0.00105] 
+    K+B+HR         173/74           +0.00105   -0.00049 [-0.00147, +0.00043]        +0.00005   -0.00058 [-0.00154, +0.00033] 
+    K+B+HR+hbpμ    173/74           +0.00006   -0.00049 [-0.00147, +0.00043]        -0.00094   -0.00058 [-0.00154, +0.00033] 
+    ALL4           173/74           +0.00006   -0.00060 [-0.00157, +0.00031]        -0.00094   -0.00069 [-0.00165, +0.00021] 
+
+OUT FRAME  fit 2042+2043 → measure 2037–2041 
+    arm           n/cards   TRUE composite: level      cond. slope/SD EYE            HARNESS: level      cond. slope/SD EYE
+    deployed      252/102           -0.00420   -0.00087 [-0.00166, -0.00022]★       -0.00532   -0.00100 [-0.00179, -0.00033]★
+    K             252/102           -0.00435   -0.00008 [-0.00085, +0.00058]        -0.00547   -0.00022 [-0.00098, +0.00045] 
+    K+B           252/102           -0.00424   -0.00072 [-0.00152, -0.00006]★       -0.00536   -0.00085 [-0.00165, -0.00018]★
+    K+B+HR        252/102           -0.00421   -0.00136 [-0.00219, -0.00069]★       -0.00533   -0.00149 [-0.00234, -0.00081]★
+    K+B+HR+hbpμ   252/102           -0.00520   -0.00136 [-0.00219, -0.00069]★       -0.00632   -0.00149 [-0.00234, -0.00081]★
+    ALL4          252/102           -0.00519   -0.00146 [-0.00230, -0.00079]★       -0.00631   -0.00160 [-0.00245, -0.00092]★
+
+OUT FRAME  fit 2037+2038 → measure 2039–2043 
+    arm           n/cards   TRUE composite: level      cond. slope/SD EYE            HARNESS: level      cond. slope/SD EYE
+    deployed      258/103           +0.00702   +0.00048 [-0.00014, +0.00123]        +0.00594   +0.00036 [-0.00027, +0.00108] 
+    K             258/103           +0.00721   +0.00141 [+0.00080, +0.00217]★       +0.00612   +0.00129 [+0.00069, +0.00203]★
+    K+B           258/103           +0.00719   +0.00133 [+0.00072, +0.00209]★       +0.00611   +0.00121 [+0.00060, +0.00195]★
+    K+B+HR        258/103           +0.00714   +0.00048 [-0.00017, +0.00122]        +0.00605   +0.00035 [-0.00028, +0.00109] 
+    K+B+HR+hbpμ   258/103           +0.00603   +0.00048 [-0.00017, +0.00122]        +0.00495   +0.00035 [-0.00028, +0.00109] 
+    ALL4          258/103           +0.00602   +0.00036 [-0.00030, +0.00110]        +0.00494   +0.00023 [-0.00041, +0.00097] 
+
+OUT FRAME  fit 2040+2041 → measure 2042+2043 
+    arm           n/cards   TRUE composite: level      cond. slope/SD EYE            HARNESS: level      cond. slope/SD EYE
+    deployed       173/74           +0.00518   +0.00122 [+0.00017, +0.00222]★       +0.00418   +0.00112 [+0.00010, +0.00211]★
+    K              173/74           +0.00534   +0.00218 [+0.00113, +0.00320]★       +0.00434   +0.00209 [+0.00106, +0.00309]★
+    K+B            173/74           +0.00533   +0.00212 [+0.00107, +0.00314]★       +0.00433   +0.00203 [+0.00100, +0.00303]★
+    K+B+HR         173/74           +0.00527   +0.00092 [-0.00011, +0.00191]        +0.00428   +0.00083 [-0.00017, +0.00179] 
+    K+B+HR+hbpμ    173/74           +0.00410   +0.00092 [-0.00011, +0.00191]        +0.00310   +0.00083 [-0.00017, +0.00179] 
+    ALL4           173/74           +0.00408   +0.00080 [-0.00024, +0.00179]        +0.00309   +0.00071 [-0.00030, +0.00166] 
+
+MONOTONICITY OF THE LADDER — |conditional TRUE composite slope| as each leg is added:
+    panel                                            deployed            K          K+B       K+B+HR  K+B+HR+hbpμ         ALL4
+    IN FRAME   fit 2042+2043 → measure 2042+2043      0.00006      0.00090      0.00022      0.00049      0.00049      0.00060
+    OUT FRAME  fit 2042+2043 → measure 2037–2041      0.00087      0.00008      0.00072      0.00136      0.00136      0.00146
+    OUT FRAME  fit 2037+2038 → measure 2039–2043      0.00048      0.00141      0.00133      0.00048      0.00048      0.00036
+    OUT FRAME  fit 2040+2041 → measure 2042+2043      0.00122      0.00218      0.00212      0.00092      0.00092      0.00080
+
+Same read on the HARNESS composite (HBP invisible by construction — the K/BABIP/HR legs only):
+    panel                                            deployed            K          K+B       K+B+HR  K+B+HR+hbpμ         ALL4
+    IN FRAME   fit 2042+2043 → measure 2042+2043      0.00003      0.00081      0.00012      0.00058      0.00058      0.00069
+    OUT FRAME  fit 2042+2043 → measure 2037–2041      0.00100      0.00022      0.00085      0.00149      0.00149      0.00160
+    OUT FRAME  fit 2037+2038 → measure 2039–2043      0.00036      0.00129      0.00121      0.00035      0.00035      0.00023
+    OUT FRAME  fit 2040+2041 → measure 2042+2043      0.00112      0.00209      0.00203      0.00083      0.00083      0.00071
+
+DECOMPOSITION CLOSURE: max |Σ channel contributions − composite| over all 5136 rows = 1.73e-16 wOBA
+(the six channel contributions in §6 are an EXACT split of the TRUE composite, so their slopes sum
+to the composite slope — that is what makes the cancellation arithmetic meaningful.)
+
+================================================================================
+§5  EACH CHANNEL'S OWN RESIDUAL — does each leg remove the structure it targets?
+--------------------------------------------------------------------------------
+Native units: K and HR per 600, BABIP in babip points ×1000, HBP per 600. Conditional slope per SD
+of raw EYE (all five ratings held), PA-weighted. IN FRAME the fitted terms suppress their own
+channel BY CONSTRUCTION (least squares against ln(EYE)) — only the OUT-OF-FRAME panels are
+evidence that a term is real rather than an in-sample noise sponge.
+
+IN FRAME   fit 2042+2043 → measure 2042+2043   (173 rows / 74 cards)
+    channel       arm            level     conditional slope per SD EYE
+    K/600         deployed         +0.151   +2.150 [+1.493, +2.918]★
+    K/600         K                +0.122   +0.071 [-0.634, +0.846] 
+    K/600         K+B              +0.122   +0.071 [-0.634, +0.846] 
+    K/600         K+B+HR           +0.122   +0.071 [-0.634, +0.846] 
+    K/600         K+B+HR+hbpμ      +0.122   +0.071 [-0.634, +0.846] 
+    K/600         ALL4             +0.122   +0.071 [-0.634, +0.846] 
+
+    BABIP pts×1000deployed         -0.019   +1.117 [+0.110, +2.090]★
+    BABIP pts×1000K                -0.060   +0.847 [-0.144, +1.815] 
+    BABIP pts×1000K+B              -0.072   -0.157 [-1.147, +0.785] 
+    BABIP pts×1000K+B+HR           -0.078   -0.299 [-1.291, +0.641] 
+    BABIP pts×1000K+B+HR+hbpμ      -0.689   -0.309 [-1.301, +0.631] 
+    BABIP pts×1000ALL4             -0.692   -0.378 [-1.367, +0.562] 
+
+    HR/600        deployed         +0.043   +0.168 [-0.036, +0.388] 
+    HR/600        K                +0.043   +0.168 [-0.036, +0.388] 
+    HR/600        K+B              +0.043   +0.168 [-0.036, +0.388] 
+    HR/600        K+B+HR           +0.040   -0.036 [-0.244, +0.185] 
+    HR/600        K+B+HR+hbpμ      +0.040   -0.036 [-0.244, +0.185] 
+    HR/600        ALL4             +0.040   -0.036 [-0.244, +0.185] 
+
+    HBP/600       deployed         +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K                +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K+B              +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K+B+HR           +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K+B+HR+hbpμ      +0.008   +0.079 [+0.004, +0.169]★
+    HBP/600       ALL4             +0.007   -0.017 [-0.093, +0.071] 
+
+OUT FRAME  fit 2042+2043 → measure 2037–2041   (252 rows / 102 cards)
+    channel       arm            level     conditional slope per SD EYE
+    K/600         deployed         +2.352   +2.380 [+1.862, +2.974]★
+    K/600         K                +2.638   +0.452 [-0.085, +1.001] 
+    K/600         K+B              +2.638   +0.452 [-0.085, +1.001] 
+    K/600         K+B+HR           +2.638   +0.452 [-0.085, +1.001] 
+    K/600         K+B+HR+hbpμ      +2.638   +0.452 [-0.085, +1.001] 
+    K/600         ALL4             +2.638   +0.452 [-0.085, +1.001] 
+
+    BABIP pts×1000deployed         -2.510   +0.326 [-0.416, +0.876] 
+    BABIP pts×1000K                -2.552   +0.080 [-0.670, +0.644] 
+    BABIP pts×1000K+B              -2.393   -0.853 [-1.612, -0.304]★
+    BABIP pts×1000K+B+HR           -2.382   -0.983 [-1.747, -0.440]★
+    BABIP pts×1000K+B+HR+hbpμ      -2.992   -0.992 [-1.757, -0.450]★
+    BABIP pts×1000ALL4             -2.987   -1.056 [-1.822, -0.518]★
+
+    HR/600        deployed         -0.491   +0.276 [+0.134, +0.437]★
+    HR/600        K                -0.491   +0.276 [+0.134, +0.437]★
+    HR/600        K+B              -0.491   +0.276 [+0.134, +0.437]★
+    HR/600        K+B+HR           -0.483   +0.089 [-0.060, +0.248] 
+    HR/600        K+B+HR+hbpμ      -0.483   +0.089 [-0.060, +0.248] 
+    HR/600        ALL4             -0.483   +0.089 [-0.060, +0.248] 
+
+    HBP/600       deployed         +0.954   +0.116 [+0.050, +0.177]★
+    HBP/600       K                +0.954   +0.116 [+0.050, +0.177]★
+    HBP/600       K+B              +0.954   +0.116 [+0.050, +0.177]★
+    HBP/600       K+B+HR           +0.954   +0.116 [+0.050, +0.177]★
+    HBP/600       K+B+HR+hbpμ      +0.111   +0.116 [+0.050, +0.177]★
+    HBP/600       ALL4             +0.120   +0.026 [-0.043, +0.087] 
+
+OUT FRAME  fit 2037+2038 → measure 2039–2043   (258 rows / 103 cards)
+    channel       arm            level     conditional slope per SD EYE
+    K/600         deployed         -2.282   +2.404 [+1.817, +3.118]★
+    K/600         K                -2.569   +0.015 [-0.624, +0.752] 
+    K/600         K+B              -2.569   +0.015 [-0.624, +0.752] 
+    K/600         K+B+HR           -2.569   +0.015 [-0.624, +0.752] 
+    K/600         K+B+HR+hbpμ      -2.569   +0.015 [-0.624, +0.752] 
+    K/600         ALL4             -2.569   +0.015 [-0.624, +0.752] 
+
+    BABIP pts×1000deployed         +3.525   +1.036 [+0.399, +1.707]★
+    BABIP pts×1000K                +3.538   +0.653 [+0.003, +1.310]★
+    BABIP pts×1000K+B              +3.516   +0.529 [-0.122, +1.183] 
+    BABIP pts×1000K+B+HR           +3.492   +0.356 [-0.290, +1.007] 
+    BABIP pts×1000K+B+HR+hbpμ      +2.802   +0.341 [-0.304, +0.994] 
+    BABIP pts×1000ALL4             +2.793   +0.266 [-0.377, +0.917] 
+
+    HR/600        deployed         +0.363   +0.301 [+0.130, +0.474]★
+    HR/600        K                +0.363   +0.301 [+0.130, +0.474]★
+    HR/600        K+B              +0.363   +0.301 [+0.130, +0.474]★
+    HR/600        K+B+HR           +0.350   +0.052 [-0.133, +0.229] 
+    HR/600        K+B+HR+hbpμ      +0.350   +0.052 [-0.133, +0.229] 
+    HR/600        ALL4             +0.350   +0.052 [-0.133, +0.229] 
+
+    HBP/600       deployed         +0.924   +0.104 [+0.063, +0.157]★
+    HBP/600       K                +0.924   +0.104 [+0.063, +0.157]★
+    HBP/600       K+B              +0.924   +0.104 [+0.063, +0.157]★
+    HBP/600       K+B+HR           +0.924   +0.104 [+0.063, +0.157]★
+    HBP/600       K+B+HR+hbpμ      -0.017   +0.104 [+0.063, +0.157]★
+    HBP/600       ALL4             -0.026   +0.001 [-0.040, +0.050] 
+
+OUT FRAME  fit 2040+2041 → measure 2042+2043   (173 rows / 74 cards)
+    channel       arm            level     conditional slope per SD EYE
+    K/600         deployed         -1.101   +2.149 [+1.493, +2.912]★
+    K/600         K                -1.451   -0.507 [-1.225, +0.276] 
+    K/600         K+B              -1.451   -0.507 [-1.225, +0.276] 
+    K/600         K+B+HR           -1.451   -0.507 [-1.225, +0.276] 
+    K/600         K+B+HR+hbpμ      -1.451   -0.507 [-1.225, +0.276] 
+    K/600         ALL4             -1.451   -0.507 [-1.225, +0.276] 
+
+    BABIP pts×1000deployed         +1.659   +1.992 [+1.001, +2.982]★
+    BABIP pts×1000K                +1.586   +1.464 [+0.468, +2.440]★
+    BABIP pts×1000K+B              +1.574   +1.377 [+0.378, +2.348]★
+    BABIP pts×1000K+B+HR           +1.540   +1.131 [+0.121, +2.094]★
+    BABIP pts×1000K+B+HR+hbpμ      +0.807   +1.115 [+0.105, +2.077]★
+    BABIP pts×1000ALL4             +0.797   +1.038 [+0.023, +1.999]★
+
+    HR/600        deployed         +0.624   +0.177 [-0.041, +0.409] 
+    HR/600        K                +0.624   +0.177 [-0.041, +0.409] 
+    HR/600        K+B              +0.624   +0.177 [-0.041, +0.409] 
+    HR/600        K+B+HR           +0.610   -0.171 [-0.391, +0.068] 
+    HR/600        K+B+HR+hbpμ      +0.610   -0.171 [-0.391, +0.068] 
+    HR/600        ALL4             +0.610   -0.171 [-0.391, +0.068] 
+
+    HBP/600       deployed         +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K                +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K+B              +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K+B+HR           +0.851   +0.079 [+0.004, +0.169]★
+    HBP/600       K+B+HR+hbpμ      -0.154   +0.079 [+0.004, +0.169]★
+    HBP/600       ALL4             -0.164   -0.027 [-0.103, +0.061] 
+
+================================================================================
+§6  THE CANCELLATION ITSELF — channel CONTRIBUTIONS to the composite, in wOBA
+--------------------------------------------------------------------------------
+The same six channels as the residual audit, in wOBA per SD of EYE (the audit published per RATING
+POINT; ×SD_EYE converts). They sum EXACTLY to the TRUE composite slope. This is where 'do the four
+errors still cancel, or has each gone to zero' is answered directly.
+
+IN FRAME   fit 2042+2043 → measure 2042+2043 
+    arm                    K      BABIP         HR        HBP         BB        GAP      Σ = composite
+    deployed       -0.001059  +0.000762  +0.000499  +0.000093  -0.000037  -0.000199      +0.000059
+    K              -0.000028  +0.000576  +0.000499  +0.000093  -0.000037  -0.000200      +0.000903
+    K+B            -0.000028  -0.000112  +0.000499  +0.000093  -0.000037  -0.000199      +0.000216
+    K+B+HR         -0.000028  -0.000209  -0.000107  +0.000093  -0.000037  -0.000199      -0.000486
+    K+B+HR+hbpμ    -0.000028  -0.000207  -0.000107  +0.000092  -0.000037  -0.000199      -0.000486
+    ALL4           -0.000028  -0.000254  -0.000107  +0.000026  -0.000037  -0.000199      -0.000599
+
+OUT FRAME  fit 2042+2043 → measure 2037–2041 
+    arm                    K      BABIP         HR        HBP         BB        GAP      Σ = composite
+    deployed       -0.001173  +0.000256  +0.000819  +0.000136  -0.000549  -0.000355      -0.000866
+    K              -0.000218  +0.000089  +0.000819  +0.000136  -0.000550  -0.000355      -0.000079
+    K+B            -0.000215  -0.000549  +0.000818  +0.000136  -0.000551  -0.000355      -0.000716
+    K+B+HR         -0.000214  -0.000638  +0.000265  +0.000136  -0.000551  -0.000355      -0.001358
+    K+B+HR+hbpμ    -0.000213  -0.000636  +0.000265  +0.000134  -0.000552  -0.000355      -0.001357
+    ALL4           -0.000213  -0.000680  +0.000265  +0.000073  -0.000552  -0.000355      -0.001462
+
+OUT FRAME  fit 2037+2038 → measure 2039–2043 
+    arm                    K      BABIP         HR        HBP         BB        GAP      Σ = composite
+    deployed       -0.001201  +0.000648  +0.000891  +0.000122  +0.000247  -0.000229      +0.000477
+    K              -0.000001  +0.000383  +0.000891  +0.000122  +0.000248  -0.000229      +0.001414
+    K+B            -0.000002  +0.000299  +0.000891  +0.000122  +0.000249  -0.000229      +0.001330
+    K+B+HR         -0.000002  +0.000181  +0.000157  +0.000122  +0.000249  -0.000229      +0.000477
+    K+B+HR+hbpμ    -0.000002  +0.000181  +0.000157  +0.000122  +0.000250  -0.000229      +0.000477
+    ALL4           -0.000003  +0.000129  +0.000157  +0.000053  +0.000250  -0.000229      +0.000356
+
+OUT FRAME  fit 2040+2041 → measure 2042+2043 
+    arm                    K      BABIP         HR        HBP         BB        GAP      Σ = composite
+    deployed       -0.001067  +0.001335  +0.000524  +0.000093  +0.000530  -0.000197      +0.001217
+    K              +0.000259  +0.000973  +0.000525  +0.000093  +0.000530  -0.000197      +0.002183
+    K+B            +0.000259  +0.000914  +0.000525  +0.000093  +0.000530  -0.000197      +0.002124
+    K+B+HR         +0.000258  +0.000746  -0.000506  +0.000093  +0.000531  -0.000197      +0.000924
+    K+B+HR+hbpμ    +0.000258  +0.000745  -0.000506  +0.000094  +0.000532  -0.000197      +0.000924
+    ALL4           +0.000257  +0.000693  -0.000506  +0.000022  +0.000532  -0.000197      +0.000800
+
+THE SET WAS NEVER FOUR-LEGGED. BB and GAP are NOT in the candidate set and they do not vanish:
+with K, BABIP, HR and HBP each driven to ~0, whatever those two carry is left standing alone and
+IS the composite. That is visible in every panel above and is the structural reason completing
+the 'four-leg cancellation' cannot zero the composite — it is a SIX-channel cancellation.
+
+(CIs omitted here — the per-channel splits use a 200-replicate bootstrap only for the point-estimate
+machinery; the CI-bearing reads are §4 on the composite and §5 on the native channels.)
+
+================================================================================
+§7  THE BIP CHAIN KNOCK-ON — mechanical echo vs fitted effect on the BABIP leg
+--------------------------------------------------------------------------------
+BIP = 600 − uBB − K − HR − (HBP -1) and non-HR hits recompute from it, so the K, HR and HBP legs
+move the contact-rate channel MECHANICALLY, before any BABIP term is fitted. Separated the way the
+single-channel test did (it found the echo explained 6% of the BABIP finding):
+  MECHANICAL = the DEPLOYED h curve evaluated at the ARM's BIP (bookkeeping only, no refit)
+  TOTAL      = the arm's own fitted h curve at its own BIP (what actually reaches wOBA)
+  FITTED     = TOTAL − MECHANICAL
+
+panel / arm                                        Δbabip pts×1000 vs deployed (slope per SD EYE)
+    arm            MECHANICAL      FITTED        TOTAL       echo share of total
+IN FRAME   fit 2042+2043 → measure 2042+2043 
+    K                  -0.0426      -0.2276      -0.2702             16%
+    K+B                -0.0426      -1.2321      -1.2747              3%
+    K+B+HR             -0.0477      -1.3687      -1.4164              3%
+    K+B+HR+hbpμ        -0.0364      -1.3902      -1.4266              3%
+    ALL4               -0.0386      -1.4570      -1.4956              3%
+
+OUT FRAME  fit 2042+2043 → measure 2037–2041 
+    K                  -0.0294      -0.2169      -0.2464             12%
+    K+B                -0.0294      -1.1494      -1.1788              2%
+    K+B+HR             -0.0326      -1.2769      -1.3095              2%
+    K+B+HR+hbpμ        -0.0213      -1.2974      -1.3188              2%
+    ALL4               -0.0228      -1.3600      -1.3827              2%
+
+OUT FRAME  fit 2037+2038 → measure 2039–2043 
+    K                  -0.1218      -0.2618      -0.3836             32%
+    K+B                -0.1218      -0.3853      -0.5071             24%
+    K+B+HR             -0.1360      -0.5447      -0.6808             20%
+    K+B+HR+hbpμ        -0.1248      -0.5706      -0.6954             18%
+    ALL4               -0.1305      -0.6403      -0.7708             17%
+
+OUT FRAME  fit 2040+2041 → measure 2042+2043 
+    K                  -0.2476      -0.2805      -0.5281             47%
+    K+B                -0.2476      -0.3670      -0.6146             40%
+    K+B+HR             -0.2817      -0.5790      -0.8608             33%
+    K+B+HR+hbpμ        -0.2726      -0.6042      -0.8768             31%
+    ALL4               -0.2829      -0.6708      -0.9537             30%
+
+================================================================================
+§8  THE SIX PAIRED EVALUATIONS — every candidate against the deployed form
+--------------------------------------------------------------------------------
+minN=1000 (PA)  topN=26  k=5-fold  includeVariants=true  foldKey=cid|side  · same folds, same
+pinning discipline, identical curves; the ONLY declared differences are the aux terms. Δ = candidate
+− deployed. ΔwPearson > 0 and Δtop26 > 0 favour the candidate; Δregret < 0 favours it.
+METRICS ARE DATA-LIMITED: 63–103 distinct cards clear the PA bar per block, so top-26 intervals run
+±0.08–0.12 — two to three roster slots out of 26. Ordinal rank is NOT evidence here.
+NOTE the target is HITTER.actualWoba (fixed 6 HBP both sides), so the HBP leg is very nearly
+invisible to these metrics BY CONSTRUCTION — it reaches them only through the BIP chain.
+
+FORWARD  fit 2037+2038 → test 2039–2043   n=258  cards=103   deployed: wPearson 0.9255  top26 0.5769  regret 0.00542
+    arm            ΔwPearson                    Δtop26                       Δregret
+    K              -0.0003 [-0.0027, +0.0021]   +0.0113 [-0.0385, +0.0770]   -0.00033 [-0.00221, +0.00071] 
+    K+B            -0.0001 [-0.0023, +0.0020]   +0.0115 [-0.0385, +0.0770]   -0.00033 [-0.00225, +0.00071] 
+    K+B+HR         -0.0004 [-0.0018, +0.0009]   +0.0006 [-0.0385, +0.0769]   -0.00020 [-0.00219, +0.00074] 
+    K+B+HR+hbpμ    -0.0004 [-0.0018, +0.0009]   +0.0006 [-0.0385, +0.0769]   -0.00020 [-0.00219, +0.00074] 
+    ALL4           -0.0005 [-0.0022, +0.0010]   -0.0006 [-0.0385, +0.0385]   -0.00012 [-0.00161, +0.00064] 
+
+FORWARD  fit 2040+2041 → test 2042+2043   n=173  cards=74   deployed: wPearson 0.8985  top26 0.7692  regret 0.00283
+    arm            ΔwPearson                    Δtop26                       Δregret
+    K              +0.0001 [-0.0033, +0.0037]   +0.0072 [-0.0385, +0.0769]   -0.00016 [-0.00130, +0.00043] 
+    K+B            +0.0002 [-0.0030, +0.0037]   +0.0076 [-0.0385, +0.0769]   -0.00015 [-0.00130, +0.00043] 
+    K+B+HR         +0.0045 [+0.0012, +0.0084]★  -0.0040 [-0.0769, +0.0385]   -0.00001 [-0.00103, +0.00116] 
+    K+B+HR+hbpμ    +0.0045 [+0.0012, +0.0084]★  -0.0040 [-0.0769, +0.0385]   -0.00001 [-0.00103, +0.00116] 
+    ALL4           +0.0050 [+0.0014, +0.0092]★  -0.0020 [-0.0769, +0.0769]   -0.00015 [-0.00156, +0.00083] 
+
+BACKWARD fit 2042+2043 → test 2037–2041   n=252  cards=102   deployed: wPearson 0.9283  top26 0.5769  regret 0.00470
+    arm            ΔwPearson                    Δtop26                       Δregret
+    K              +0.0000 [-0.0023, +0.0023]   -0.0024 [-0.0385, +0.0385]   -0.00003 [-0.00088, +0.00078] 
+    K+B            +0.0001 [-0.0003, +0.0006]   +0.0037 [+0.0000, +0.0385]   -0.00007 [-0.00068, +0.00000] 
+    K+B+HR         -0.0017 [-0.0037, +0.0002]   +0.0004 [-0.0769, +0.0385]   +0.00008 [-0.00048, +0.00145] 
+    K+B+HR+hbpμ    -0.0017 [-0.0037, +0.0002]   +0.0004 [-0.0769, +0.0385]   +0.00008 [-0.00048, +0.00145] 
+    ALL4           -0.0022 [-0.0046, +0.0001]   +0.0002 [-0.0769, +0.0385]   +0.00008 [-0.00050, +0.00146] 
+
+BACKWARD fit 2040+2041 → test 2037–2039   n=189  cards=84   deployed: wPearson 0.9115  top26 0.6538  regret 0.00441
+    arm            ΔwPearson                    Δtop26                       Δregret
+    K              +0.0004 [-0.0032, +0.0038]   +0.0011 [-0.0769, +0.0770]   -0.00005 [-0.00159, +0.00089] 
+    K+B            +0.0005 [-0.0029, +0.0037]   +0.0034 [-0.0769, +0.0770]   -0.00009 [-0.00159, +0.00076] 
+    K+B+HR         +0.0045 [+0.0019, +0.0072]★  +0.0082 [-0.0385, +0.0769]   -0.00021 [-0.00166, +0.00039] 
+    K+B+HR+hbpμ    +0.0044 [+0.0019, +0.0072]★  +0.0082 [-0.0385, +0.0769]   -0.00021 [-0.00166, +0.00039] 
+    ALL4           +0.0048 [+0.0019, +0.0079]★  +0.0113 [-0.0385, +0.0769]   -0.00028 [-0.00183, +0.00038] 
+
+CV       5-fold on 2042+2043 (cid|side)   n=173  cards=74   deployed: wPearson 0.9095  top26 0.7308  regret 0.00269
+    arm            ΔwPearson                    Δtop26                       Δregret
+    K              -0.0005 [-0.0038, +0.0029]   +0.0048 [-0.0385, +0.0769]   -0.00004 [-0.00074, +0.00046] 
+    K+B            -0.0006 [-0.0017, +0.0004]   +0.0017 [+0.0000, +0.0385]   -0.00004 [-0.00043, +0.00020] 
+    K+B+HR         -0.0009 [-0.0036, +0.0014]   -0.0025 [-0.0769, +0.0385]   -0.00007 [-0.00086, +0.00050] 
+    K+B+HR+hbpμ    -0.0010 [-0.0038, +0.0013]   -0.0025 [-0.0769, +0.0385]   -0.00007 [-0.00086, +0.00050] 
+    ALL4           -0.0012 [-0.0045, +0.0015]   -0.0075 [-0.0769, +0.0385]   -0.00003 [-0.00084, +0.00065] 
+
+CV       5-fold on 2040+2041 (cid|side)   n=179  cards=79   deployed: wPearson 0.8881  top26 0.6538  regret 0.00319
+    arm            ΔwPearson                    Δtop26                       Δregret
+    K              +0.0003 [-0.0035, +0.0042]   +0.0027 [-0.0769, +0.0769]   -0.00008 [-0.00089, +0.00063] 
+    K+B            +0.0004 [-0.0032, +0.0041]   +0.0015 [-0.0769, +0.0769]   -0.00007 [-0.00089, +0.00053] 
+    K+B+HR         +0.0016 [-0.0021, +0.0056]   +0.0111 [-0.0385, +0.0770]   -0.00017 [-0.00130, +0.00030] 
+    K+B+HR+hbpμ    +0.0017 [-0.0021, +0.0057]   +0.0095 [-0.0385, +0.0770]   -0.00015 [-0.00122, +0.00030] 
+    ALL4           +0.0016 [-0.0026, +0.0059]   +0.0109 [-0.0385, +0.0770]   -0.00015 [-0.00122, +0.00041] 
+
+ΔwPearson TALLY per arm across the six evaluations:
+    arm            positive  CI-clear+  CI-clear−   values
+    K                4 of 6          0          0   -0.0003, +0.0001, +0.0000, +0.0004, -0.0005, +0.0003
+    K+B              4 of 6          0          0   -0.0001, +0.0002, +0.0001, +0.0005, -0.0006, +0.0004
+    K+B+HR           3 of 6          2          0   -0.0004, +0.0045, -0.0017, +0.0045, -0.0009, +0.0016
+    K+B+HR+hbpμ      3 of 6          2          0   -0.0004, +0.0045, -0.0017, +0.0044, -0.0010, +0.0017
+    ALL4             3 of 6          2          0   -0.0005, +0.0050, -0.0022, +0.0048, -0.0012, +0.0016
+
+(stuffAug's comparator, the bar: +0.012, +0.020, +0.017, +0.023, +0.032, +0.033 — six of six
+positive, four CI-clear, never negative. The K-only leg: -0.0003, +0.0001, +0.0000, +0.0004,
+-0.0005, +0.0003 — declined as a coin flip on numerical noise.)
+
+§8b  THE SIGN PATTERN IS THE FIT WINDOW, NOT NOISE
+--------------------------------------------------------------------------------
+ΔwPearson grouped by the window the terms were FITTED on (★ = that evaluation's CI excludes 0):
+    arm                         fit 2037+2038             fit 2040+2041             fit 2042+2043
+    K                                 -0.0003   +0.0001 +0.0004 +0.0003           +0.0000 -0.0005
+    K+B                               -0.0001   +0.0002 +0.0005 +0.0004           +0.0001 -0.0006
+    K+B+HR                            -0.0004 +0.0045★ +0.0045★ +0.0016           -0.0017 -0.0009
+    K+B+HR+hbpμ                       -0.0004 +0.0045★ +0.0044★ +0.0017           -0.0017 -0.0010
+    ALL4                              -0.0005 +0.0050★ +0.0048★ +0.0016           -0.0022 -0.0012
+
+A term whose VALUE moves with the window it was estimated on is not a term the data has
+identified — and the two CI-clear positives are ONE window's worth of evidence counted three
+times (that window appears in three of the six evaluations), not three independent
+confirmations. The fitted coefficients say the same thing from the fit side (ALL4 arm, windows
+2037+2038 / 2040+2041 / 2042+2043):
+  K aux      -2.334 / -2.660 / -2.186   ← stable within ±11% of its mean
+  HR aux     -0.252 / -0.353 / -0.217
+  BABIP aux  -0.162 / -0.172 / -0.673   ← a FOUR-FOLD swing across adjacent windows
+  HBP const  5.03 / 4.97 / 5.14   (at EYE 110) ← as stable as the K aux
+
+================================================================================
+§9  PARAMETER COST — three aux terms (plus an HBP change) on ~74–103 distinct cards
+--------------------------------------------------------------------------------
+Free parameters ADDED over the deployed form: K aux 1, BABIP aux 1, HR aux 1, HBP 1 (constant) or 2
+(intercept + ln EYE curve). Against fit windows of the size below, that is the honest risk: a term
+can buy in-sample fit and give it back out of time. The out-of-time check is the one that matters —
+an over-fit term shows a POSITIVE in-sample ΔwPearson and a WORSE out-of-time one.
+
+fit window   rows  distinct cards
+2037+2038      159              77
+2040+2041      179              79
+2042+2043      173              74
+
+IN-SAMPLE vs OUT-OF-TIME ΔwPearson (candidate − deployed), same fit window:
+    fit window   arm            in-sample     forward/backward out-of-time
+    2037+2038    K                  +0.0004        -0.0004   (test n=258/103 cards)
+    2037+2038    K+B                +0.0005        -0.0002   (test n=258/103 cards)
+    2037+2038    K+B+HR             +0.0012        -0.0005   (test n=258/103 cards)
+    2037+2038    K+B+HR+hbpμ        +0.0011        -0.0005   (test n=258/103 cards)
+    2037+2038    ALL4               +0.0011        -0.0006   (test n=258/103 cards)
+    2040+2041    K                  +0.0002        +0.0002   (test n=258/106 cards)
+    2040+2041    K+B                +0.0004        +0.0003   (test n=258/106 cards)
+    2040+2041    K+B+HR             +0.0026        +0.0032   (test n=258/106 cards)
+    2040+2041    K+B+HR+hbpμ        +0.0026        +0.0032   (test n=258/106 cards)
+    2040+2041    ALL4               +0.0026        +0.0035   (test n=258/106 cards)
+    2042+2043    K                  -0.0007        +0.0000   (test n=252/102 cards)
+    2042+2043    K+B                +0.0001        +0.0001   (test n=252/102 cards)
+    2042+2043    K+B+HR             -0.0002        -0.0017   (test n=252/102 cards)
+    2042+2043    K+B+HR+hbpμ        -0.0002        -0.0017   (test n=252/102 cards)
+    2042+2043    ALL4               -0.0004        -0.0023   (test n=252/102 cards)
+
+================================================================================
+§10  VERDICT (repeated at the top of this file)
+================================================================================
+
+================================================================================
+VERDICT — does fixing the WHOLE EYE-axis set improve the composite, and does it
+clear the adoption bar?
+================================================================================
+
+ADOPTION: NO — the four-leg candidate does NOT clear the bar,
+and it fails for a DIFFERENT reason than the K-only leg did. ΔwPearson vs the deployed form is
+3 of 6 positive, 2 CI-clear positive, 0 CI-clear negative — the bar is CONSISTENTLY positive and
+never CI-clear negative, and an inconsistent set of signs fails it however large the positives
+are. The K-only leg failed as a flat null (every |Δ| ≤ 0.0005). This one is not a null: the
+HR-carrying rungs reach +0.0050, four times the resolution floor, CI-clear twice. What §8b shows is
+that the sign is decided by WHICH WINDOW the terms were fitted on — all three evaluations fitted
+on 2040+2041 are positive (two CI-clear), all three fitted on 2037+2038 or 2042+2043 are negative
+(one nearly CI-clear at -0.0022 [-0.0046, +0.0001]). That is one window's evidence counted three
+times, not three confirmations, and §2 corroborates it from the fit side (ALL4 arm, windows
+2037+2038 / 2040+2041 / 2042+2043):
+  K aux -2.334 / -2.660 / -2.186   HR aux -0.252 / -0.353 / -0.217   BABIP aux -0.162 / -0.172 / -0.673
+A BABIP term that moves four-fold between adjacent windows of ~75 cards is not identified by
+this data, and it is one of the two legs with enough leverage to matter.
+
+ON THE COMPOSITE — the question that was actually asked: completing the set did NOT drive the
+conditional EYE bias toward zero. It left it LARGER in 2 of 4 panels and smaller in 2, and the
+ladder is not monotone in any panel (§4). The cancellation story predicted a march to zero;
+the data refuses it — and the reason is structural, which is the most useful thing here:
+
+THE SET WAS NEVER FOUR-LEGGED — it is SIX. In frame the deployed contributions are
+K -0.001059, BABIP +0.000762, HR +0.000499, HBP +0.000093 — and also
+BB -0.000037 and GAP -0.000199, which the audit ranked but the candidate set never touched.
+With all four legs closed those channels collapse (-0.000028, -0.000254, -0.000107,
++0.000026 — K and HR to ~0, BABIP over-corrected past it) — and BB -0.000037 and GAP -0.000199 stand
+ALONE, so the composite lands at -0.00060 instead of the deployed +0.00006. Removing four
+legs of a six-leg cancellation does not produce zero; it produces whatever the other two carry.
+It did not need a metric to see — it is arithmetic on an exact decomposition (closure 1.7e-16).
+
+THE COMPOSITE, WHICH IS THE QUESTION THAT WAS ASKED (conditional wOBA bias per SD of EYE,
+TRUE frame — the audit's, with the card's real hit-by-pitches; ★ = CI excludes zero):
+  panel                                            deployed            K          K+B       K+B+HR  K+B+HR+hbpμ         ALL4
+  IN FRAME   fit 2042+2043 → measure 2042+2043     +0.00006     +0.00090     +0.00022     -0.00049     -0.00049     -0.00060
+  OUT FRAME  fit 2042+2043 → measure 2037–2041    -0.00087★     -0.00008    -0.00072★    -0.00136★    -0.00136★    -0.00146★
+  OUT FRAME  fit 2037+2038 → measure 2039–2043     +0.00048    +0.00141★    +0.00133★     +0.00048     +0.00048     +0.00036
+  OUT FRAME  fit 2040+2041 → measure 2042+2043    +0.00122★    +0.00218★    +0.00212★     +0.00092     +0.00092     +0.00080
+
+and on the HARNESS frame (fixed 6 HBP both sides — the K-only artifact's §8 numbers live here):
+  panel                                            deployed            K          K+B       K+B+HR  K+B+HR+hbpμ         ALL4
+  IN FRAME   fit 2042+2043 → measure 2042+2043     -0.00003     +0.00081     +0.00012     -0.00058     -0.00058     -0.00069
+  OUT FRAME  fit 2042+2043 → measure 2037–2041    -0.00100★     -0.00022    -0.00085★    -0.00149★    -0.00149★    -0.00160★
+  OUT FRAME  fit 2037+2038 → measure 2039–2043     +0.00036    +0.00129★    +0.00121★     +0.00035     +0.00035     +0.00023
+  OUT FRAME  fit 2040+2041 → measure 2042+2043    +0.00112★    +0.00209★    +0.00203★     +0.00083     +0.00083     +0.00071
+
+ΔwPearson, all six evaluations, every rung (candidate − deployed):
+  K              -0.0003, +0.0001, +0.0000, +0.0004, -0.0005, +0.0003   (4/6 positive, 0 CI-clear+, 0 CI-clear−)
+  K+B            -0.0001, +0.0002, +0.0001, +0.0005, -0.0006, +0.0004   (4/6 positive, 0 CI-clear+, 0 CI-clear−)
+  K+B+HR         -0.0004, +0.0045, -0.0017, +0.0045, -0.0009, +0.0016   (3/6 positive, 2 CI-clear+, 0 CI-clear−)
+  K+B+HR+hbpμ    -0.0004, +0.0045, -0.0017, +0.0044, -0.0010, +0.0017   (3/6 positive, 2 CI-clear+, 0 CI-clear−)
+  ALL4           -0.0005, +0.0050, -0.0022, +0.0048, -0.0012, +0.0016   (3/6 positive, 2 CI-clear+, 0 CI-clear−)
+
+THE SIX PAIRED EVALUATIONS FOR THE FOUR-LEG ARM, with intervals:
+  FORWARD  fit 2037+2038 → test 2039–2043  wPearson -0.0005 [-0.0022, +0.0010]   top26 -0.0006 [-0.0385, +0.0385]   regret -0.00012 [-0.00161, +0.00064] 
+  FORWARD  fit 2040+2041 → test 2042+2043  wPearson +0.0050 [+0.0014, +0.0092]★  top26 -0.0020 [-0.0769, +0.0769]   regret -0.00015 [-0.00156, +0.00083] 
+  BACKWARD fit 2042+2043 → test 2037–2041  wPearson -0.0022 [-0.0046, +0.0001]   top26 +0.0002 [-0.0769, +0.0385]   regret +0.00008 [-0.00050, +0.00146] 
+  BACKWARD fit 2040+2041 → test 2037–2039  wPearson +0.0048 [+0.0019, +0.0079]★  top26 +0.0113 [-0.0385, +0.0769]   regret -0.00028 [-0.00183, +0.00038] 
+  CV       5-fold on 2042+2043 (cid|side)  wPearson -0.0012 [-0.0045, +0.0015]   top26 -0.0075 [-0.0769, +0.0385]   regret -0.00003 [-0.00084, +0.00065] 
+  CV       5-fold on 2040+2041 (cid|side)  wPearson +0.0016 [-0.0026, +0.0059]   top26 +0.0109 [-0.0385, +0.0770]   regret -0.00015 [-0.00122, +0.00041] 
+
+WHAT THE LEGS THEMSELVES DID (§5) — the terms are not wrong about their channels. Conditional
+slope per SD of EYE, deployed→ALL4, on the three OUT-OF-FRAME panels (fit→measure):
+            2042+2043→2037–2041   2037+2038→2039–2043   2040+2041→2042+2043
+  K               +2.380→+0.452         +2.404→+0.015         +2.149→-0.507
+  BABIP           +0.326→-1.056         +1.036→+0.266         +1.992→+1.038
+  HR              +0.276→+0.089         +0.301→+0.052         +0.177→-0.171
+  HBP             +0.116→+0.026         +0.104→+0.001         +0.079→-0.027
+  K and HR are removed cleanly on data the fit never saw. HBP is removed cleanly AND its level
+  bias (+0.85…+0.95/600) collapses to ~0 — it is the best-behaved of the four. BABIP is the
+  exception: it OVERSHOOTS to CI-clear negative in one panel and is only half-removed in
+  another, which is the same weak identification §2 and §8b found in its coefficient.
+
+PARAMETER COST (§9): three aux terms plus an HBP change, fitted on windows of 74–79 distinct
+cards. This is NOT the classic over-fit signature — in-sample and out-of-time ΔwPearson agree in
+SIGN within every window (2040+2041: +0.0026 in, +0.0035 out; 2042+2043: -0.0004 in, -0.0023
+out; 2037+2038: +0.0011 in, -0.0006 out). The terms are not buying in-sample fit and giving it
+back; they are estimating something genuinely different in each window. At ~75 cards per window
+that is exactly what an under-determined term looks like, and it is a reason not to ship one.
+
+HBP, THE LEG THAT IS DIFFERENT IN KIND — decision, justification, and the measurement both ways.
+The form gives every hitter a FIXED 6/600 against an observed 5.15/600: 94% of the composite
+LEVEL bias, and the real rate carries a CI-clear EYE slope no anchor can absorb. It is also the
+leg that WORKS BEST on its own channel — the fitted constant lands at 4.98–5.16/600 across all
+three windows (a stable, well-identified number, unlike the BABIP and HR auxes) and the EYE curve
+takes the channel's out-of-frame slope to zero in every panel.
+MEASURED WITH AND WITHOUT (the two rungs exist for exactly this): K+B+HR+hbpμ vs K+B+HR is a pure
+LEVEL move — identical composite SLOPES to five decimals in all four panels, ΔwPearson identical
+to within 0.0001 — because a constant has no rating pathway and reaches the metrics only through
+the BIP chain. ALL4 vs K+B+HR adds the EYE curve and moves the conditional composite slope by
+  IN FRAME   fit 2042+2043 → measure 2042+2043  -0.00049 → -0.00060   (Δ -0.00011)
+  OUT FRAME  fit 2042+2043 → measure 2037–2041  -0.00136 → -0.00146   (Δ -0.00010)
+  OUT FRAME  fit 2037+2038 → measure 2039–2043  +0.00048 → +0.00036   (Δ -0.00012)
+  OUT FRAME  fit 2040+2041 → measure 2042+2043  +0.00092 → +0.00080   (Δ -0.00012)
+i.e. about 1e-4 wOBA per SD — real, correctly signed, and an order below the composite's own
+noise. THE DECISION: DO NOT correct it, on this evidence. (i) The LEVEL half is anchor-absorbable
+— every per-role anchor removes a constant — and the harness target credits the same fixed 6 on
+the OBSERVED side, so the correction is invisible to every metric we rank on by construction.
+(ii) The SLOPE half is what an anchor cannot absorb, and closing it moves the composite by less
+than the composite's own interval. (iii) Adoption is not free: RawHitting carries no HBP field,
+so a fitted HBP reaches BIP but NOT the wOBA numerator downstream (flagged in raw-poly.ts) — a
+scoring-core change for a benefit measured at zero. If the HBP constant is ever revisited, do it
+as a LEVEL correction on its own merits (calibration honesty), not as part of an EYE-axis fix.
+
+WHAT THIS ARTIFACT SETTLES. The EYE-axis residual family is CLOSED on league data: one leg was
+tried and failed; the intermediates were tried and failed; all four together were tried and
+failed — and the reason is now structural rather than statistical. The composite is a SIX-channel
+cancellation, so a four-leg fix cannot zero it; and the two legs with enough leverage to move the
+deliverable (BABIP, HR) are the two the data cannot pin down at ~75 cards per window. The
+residual finding stands as a true description of where the form misses; it is not a mandate to
+add terms.
+THE ONE THING THAT WOULD CHANGE THE ANSWER, and it is now a sharper ask than after the K-only
+run: not a better metric — MORE CARDS PER WINDOW. The HR leg is the first term in this family
+with real leverage (CI-clear ±0.005 on wPearson); what disqualifies it is that its estimate swings
+-0.22/-0.35 between adjacent windows. If a future retrain widens the window (or the tournament
+corpus supplies cards at this PA bar), re-run THIS ladder first — the machinery is in place and
+the question becomes decidable rather than under-determined. The candidates stay in FORM_ENTRIES
+so every future scoreboard re-measures them; nothing is deployed and no default changed.
+
+DATA LIMITS: 63–103 distinct cards per test block (counts printed beside every n); top-26
+intervals ±0.08–0.12; league coverage unequal by season (2037: 4 leagues; 2039 effectively 4
+after the HD450 exclusion; the rest 5); Old Data 2032–33 never pooled. No interaction claim is
+made anywhere in this artifact, so no permutation null is required.
+

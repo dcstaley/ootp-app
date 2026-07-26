@@ -15,7 +15,15 @@ export const dot = (b: number[], x: number[]) => b.reduce((s, bi, j) => s + bi *
 // (raw-poly.ts), and the scoring-core recompute (woba.ts, eventForm path) must all
 // derive BIP with the SAME constant or the fitted H-curve is evaluated off its fit
 // convention. Hitting: HBP 6 + SH 3 − SF 4; pitching: HBP 6 (no SH/SF).
-export const HIT_BIP_ADJ = 6 + 3 - 4;
+// HIT_HBP is the form's FIXED hitter hit-by-pitch rate — it appears twice, in the BIP
+// bookkeeping (below) and in the wOBA numerator (forms.ts hitAssembly), so it is named
+// once here. The EYE-axis candidates (forms.ts HitForm.hbpFit) may replace it with a
+// FITTED per-card rate; HIT_SH_MINUS_SF is the part of the adjustment that stays fixed,
+// so a candidate's per-card BIP adjustment is hbp + HIT_SH_MINUS_SF and reduces to
+// HIT_BIP_ADJ exactly when hbp = HIT_HBP (integer arithmetic — bit-identical).
+export const HIT_HBP = 6;
+export const HIT_SH_MINUS_SF = 3 - 4;
+export const HIT_BIP_ADJ = HIT_HBP + HIT_SH_MINUS_SF;
 export const PIT_BIP_ADJ = 6;
 
 // ── Curve = the per-event basis choice ─────────────────────────────────────────
@@ -193,18 +201,35 @@ export interface FittedH {
   rating: CurveFit;
   bip?: CurveFit;   // legacy shape only (fitted BIP curve); absent under perBip
   perBip?: boolean; // true ⇒ unit-elasticity shape (beta is the per-BIP rate curve). The DEPLOYED model leaves this absent (fitted log-BIP); only PERBIP_* / perBip-stored artifacts set it.
+  aux?: { beta: number; mu: number; sd: number }; // OPTIONAL linear z-scored ln(aux-rating) term, exactly as FittedEvent.aux — the EYE leg of the eye-axis candidates. Absent ⇒ hRateAux ≡ hRate, so every existing form/artifact evaluates bit-identically.
 }
 export const rowTerms = (c: Curve, v: number, mu: number, sd: number) => row(c, v, mu, sd).slice(1); // basis minus the shared intercept
 export const hDesign = (r: CurveFit, rv: number, b: CurveFit, bv: number) => [1, ...rowTerms(r.curve, rv, r.mu, r.sd), ...rowTerms(b.curve, bv, b.mu, b.sd)];
-export const hRate = (m: FittedH, rv: number, bv: number) =>
-  m.perBip
-    ? Math.max(dot(m.beta, [1, ...rowTerms(m.rating.curve, rv, m.rating.mu, m.rating.sd)]), 0) * bv
-    : Math.max(dot(m.beta, hDesign(m.rating, rv, m.bip!, bv)), 0);
+/** The H rate BEFORE the ≥0 clamp, with the optional aux added on the same scale the aux
+ *  was fitted (per 600 under the fitted-BIP shape; per BIP under perBip, where it sits
+ *  inside the × BIP so the fit and the evaluation agree). auxV omitted ⇒ no aux term. */
+function hBase(m: FittedH, rv: number, bv: number, auxV?: number): number {
+  const a = m.aux && auxV != null ? m.aux.beta * (m.aux.sd > 1e-9 ? (ln1(auxV) - m.aux.mu) / m.aux.sd : 0) : 0;
+  return m.perBip
+    ? Math.max(dot(m.beta, [1, ...rowTerms(m.rating.curve, rv, m.rating.mu, m.rating.sd)]) + a, 0) * bv
+    : dot(m.beta, hDesign(m.rating, rv, m.bip!, bv)) + a;
+}
+export const hRate = (m: FittedH, rv: number, bv: number) => (m.perBip ? hBase(m, rv, bv) : Math.max(hBase(m, rv, bv), 0));
+/** Like `hRate`, plus the optional aux term (mirrors rateAux on a FittedEvent). Safe to call
+ *  on an aux-free FittedH — it is then hRate exactly. */
+export const hRateAux = (m: FittedH, rv: number, bv: number, auxV: number) =>
+  m.perBip ? hBase(m, rv, bv, auxV) : Math.max(hBase(m, rv, bv, auxV), 0);
 
 // ── Fitted #2 (raw-poly) parameter sets — one per-event Curve fit each ──────────
 // Produced by fitHitForm/fitPitForm (src/training/forms.ts) and consumed at predict
 // time by the deployed raw-poly model + the woba.ts recompute. Carried in config as
 // EventForm (ScoringConfig.eventForm); absent ⇒ the parity log-linear path is used.
-export interface FittedHit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH; xbh: FittedEvent }
+// `hbp` is OPTIONAL and absent on every deployed/trained artifact: the hitter form otherwise
+// assigns EVERY card the fixed HIT_HBP. The eye-axis candidates may fit it (a constant at the
+// observed mean, or a curve on EYE) — see forms.ts HitForm.hbpFit. Read it ONLY through
+// hitHbpRate so the "6 unless the form fitted one" rule has a single home.
+export interface FittedHit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH; xbh: FittedEvent; hbp?: FittedEvent }
 export interface FittedPit { bb: FittedEvent; k: FittedEvent; hr: FittedEvent; h: FittedH }
+/** The hitter HBP/600 a fitted form implies: the fixed HIT_HBP unless the form fitted one. */
+export const hitHbpRate = (m: FittedHit, eye: number) => (m.hbp ? rate(m.hbp, eye) : HIT_HBP);
 export interface EventForm { hit: FittedHit; pit: FittedPit }

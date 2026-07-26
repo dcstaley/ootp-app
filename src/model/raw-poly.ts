@@ -17,7 +17,7 @@
 // hands the model `ratings` + `coeffs`, so the curves are closed over here).
 
 import type { Coeffs } from "../config/types.ts";
-import { rate, rateAux, hRate, HIT_BIP_ADJ, PIT_BIP_ADJ, type EventForm } from "./curves.ts";
+import { rate, rateAux, hRate, hRateAux, hitHbpRate, HIT_SH_MINUS_SF, PIT_BIP_ADJ, type EventForm } from "./curves.ts";
 import type { EventModel, HittingRatings, PitchingRatings, RawHitting, RawPitching } from "./types.ts";
 
 /** Build the deployed #2 event model bound to a fitted form (one per scoring config). */
@@ -26,19 +26,26 @@ export function makeRawPolyModel(form: EventForm): EventModel {
 
   function predictHitting(r: HittingRatings, _c: Coeffs): RawHitting {
     const BB = rate(hit.bb, r.eye);
-    const HR = rate(hit.hr, r.pow);          // quadratic in raw POW
-    // + linear EYE term when the form carries one (the `eyeAug` candidate); rateAux ≡ rate for
-    // a form without it, so every already-trained artifact — including the deployed one, whose
-    // hit.k has no aux — scores bit-identically.
+    // + linear EYE terms wherever the form carries one (the eye-axis candidates: hit.k, hit.hr,
+    // hit.h, plus a fitted HBP); rateAux ≡ rate, hRateAux ≡ hRate and hitHbpRate ≡ 6 for a form
+    // without them, so every already-trained artifact — including the deployed one, which carries
+    // none of them — scores bit-identically.
+    const HR = rateAux(hit.hr, r.pow, r.eye); // quadratic in raw POW
     const SO = rateAux(hit.k, r.kRat, r.eye);
-    // BIP chain mirrors forms.ts predictHitForm exactly (shared HIT_BIP_ADJ).
-    const BIP = Math.max(600 - BB - SO - HR - HIT_BIP_ADJ, 1);
+    // BIP chain mirrors forms.ts predictHitForm exactly (same per-card HBP + SH/SF bookkeeping,
+    // which reduces to HIT_BIP_ADJ when the form leaves HBP at its fixed 6).
+    const HBP = hitHbpRate(hit, r.eye);
+    const BIP = Math.max(600 - BB - SO - HR - (HBP + HIT_SH_MINUS_SF), 1);
     const AB = Math.max(600 - BB - 4 - 3 - 6, 1); // for completeness (unused downstream)
-    const H = hRate(hit.h, r.babip, BIP);    // non-HR hits: perBIP(babip)×BIP (legacy artifacts: fitted BIP term)
+    const H = hRateAux(hit.h, r.babip, BIP, r.eye); // non-HR hits: perBIP(babip)×BIP (legacy artifacts: fitted BIP term)
     const share = rate(hit.xbh, r.gap);      // quadratic XBH-share in raw GAP
     const GAP = Math.max(share * H, 0);
     const oneB = Math.max(H - GAP, 0);
     // Softcap-free: the raw ratings ARE the "softcapped" inputs the recompute reads.
+    // ADOPTION PREREQUISITE if a form with a FITTED HBP is ever deployed: RawHitting has no HBP
+    // field, so the wOBA numerator downstream (woba.ts) still credits coeffs.adv_hbp (6) — the
+    // fitted rate would reach BIP but not wOBA. Deploying `hbpFit` therefore means carrying HBP
+    // through RawHitting into the ONE assembly, not just flipping the form flag.
     return { BB, SO, oneB, GAP, HR, AB, BIP, babipSC: r.babip, gapSC: r.gap };
   }
 

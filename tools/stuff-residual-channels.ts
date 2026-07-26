@@ -1,5 +1,34 @@
-// STUFF-RESIDUAL CHANNEL LOCATOR (Fable follow-up, 2026-07-25). MEASUREMENT ONLY; nothing wired.
-//   run: node tools/stuff-residual-channels.ts > fixtures/stuff-residual-channels-2026-07-25.txt
+// STUFF-RESIDUAL CHANNEL LOCATOR (Fable follow-up, 2026-07-25; REDONE 2026-07-26). MEASUREMENT
+// ONLY; nothing wired.
+//   run: node tools/stuff-residual-channels.ts > fixtures/stuff-residual-channels-REDO-2026-07-26.txt
+//
+// ── WHY THIS WAS REDONE (2026-07-26) ─────────────────────────────────────────────────────────
+// TWO defects in the 2026-07-25 run, one of configuration and one of method:
+//   (1) CONFIG. src/training/residuals.ts named STUFFAUG_PIT while production shipped PARETO_PIT
+//       (switched 2026-07-14). Commit 7c8a061 fixed it via DEPLOYED_FORMS. This tool's Parts 1–6
+//       and 8 read the DEPLOYED ARTIFACT (makeRawPolyModel(trained.eventForm)) and were therefore
+//       ALWAYS correct — verified: re-running the untouched tool after the fix reproduces them
+//       BIT-IDENTICALLY. Only PART 7 (the analyzeResiduals reconciliation) changed. The old
+//       artifact's Part 7 sentence "that module REFITS STUFFAUG_PIT on the window … the deployed
+//       artifact is that fit, frozen" was FALSE from 2026-07-14 onward and is corrected below;
+//       Part 7 now prints BOTH configurations side by side so the damage is visible, not asserted.
+//   (2) METHOD. Every CI here was a ROW bootstrap. The rows are not independent — a card
+//       contributes a vL row and a vR row driven by the same ratings and the same fit error — so
+//       row resampling runs materially too narrow (~3.1× on this data by the standing estimate).
+//       ALL resampling is now CLUSTERED BY CARD (cid in frame; base Card ID out of frame), and
+//       every row count is printed beside its distinct-card count. The permutation nulls gain a
+//       CLUSTER-BLOCK variant alongside the row-shuffle one.
+//
+// ── THE CURVE-FAMILY CORRECTION TO THE STANDING CAVEAT ───────────────────────────────────────
+// The 2026-07-25 caveat was written against the all-log StuffAug form. The DEPLOYED form is
+// PARETO_PIT = { bb: LOG(Control) + ln(Stuff) aux, k: RAWPOLY-2(Stuff), hr: RAWPOLY-2(HRR) +
+// ln(Stuff) aux, h: RAWPOLY-2(pBABIP) + fitted log-BIP }, vertex-pinned. So the CURVE FAMILIES
+// changed (k/hr/h log → raw quadratic) but the DESIGN MEMBERSHIP did not: Stuff still enters
+// pit.bb, pit.k and pit.hr and still NEVER enters pit.h. The "nowhere else to land" argument is a
+// statement about which columns are in each channel's design matrix, not about their functional
+// form, so it survives the form change intact — with one refinement: a quadratic-in-Stuff K curve
+// forces the in-frame K residual orthogonal to BOTH z_stu and z_stu² (the log form only forced
+// the first), which makes pit.k MORE strongly pinned to zero-slope, not less.
 //
 // WHAT CAME BEFORE. The anchor-uniformity audit (tools/anchor-uniformity-audit.ts) found the deployed
 // model's PITCHER wOBA-ALLOWED bias RISES with Stuff (+0.0077 low-Stuff → +0.0120 high-Stuff, slope
@@ -57,7 +86,9 @@ import { PIT_BIP_ADJ } from "../src/model/curves.ts";
 import { loadWindow, type TrainObs } from "../src/training/loader.ts";
 import { PITCHER } from "../src/training/bakeoff.ts";
 import { wls } from "../src/training/fit.ts";
-import { analyzeResiduals } from "../src/training/residuals.ts";
+import { analyzeResiduals, residualModelFor } from "../src/training/residuals.ts";
+import { pitFormModel, STUFFAUG_PIT, DEPLOYED_FORMS } from "../src/training/forms.ts";
+import { validateDataset } from "../src/training/validate.ts";
 import { readFileSync } from "node:fs";
 import { resolveCoeffs, type Model } from "../src/config/coeff-resolve.ts";
 import type { Era, Park, Tournament } from "../src/config/tournament.ts";
@@ -87,8 +118,20 @@ const wbar = 0.75 * W.b1 + 0.25 * W.xbh;                 // blended non-HR-hit w
 
 const TRAIN = ["League Files", "Model 2037 and 2038"].find((d) => existsSync(d))!;
 const win: number[] = Array.isArray(trained.window) && trained.window.length ? trained.window : [];
-const obs = loadWindow(TRAIN, win.length ? win : undefined).observations
+const loaded = loadWindow(TRAIN, win.length ? win : undefined);
+const obs = loaded.observations
   .filter((o: TrainObs) => (trained.includeVariants ?? true) || !o.variant);
+// Provenance for the coverage caveats: which cells the integrity check DROPS (the HD450|2039
+// duplicate-file exclusion lives here — the loader shares corruptCellKeys with validateDataset,
+// so it applies to observations, platoon splits and wOBA weights alike), and which leagues each
+// season in the window actually contributes.
+const allYears = loadWindow(TRAIN).summary;
+const dsAll = validateDataset(allYears);
+const leaguesByYear = new Map<number, Set<string>>();
+for (const c of loaded.summary.cells) {
+  if (loaded.summary.excludedCells.includes(`${c.league}|${c.year}`)) continue;
+  (leaguesByYear.get(c.year) ?? leaguesByYear.set(c.year, new Set()).get(c.year)!).add(c.league);
+}
 const minPA = Math.max(0, Number(trained.minPA ?? 1000) || 1000);
 
 // ── per-row channel residuals (native units) + exact wOBAA contributions ─────
@@ -97,7 +140,7 @@ const CTK = ["BABIP", "HR", "BB", "K", "XBHSHARE", "HBP"] as const;
 type EvK = (typeof EVK)[number]; type CtK = (typeof CTK)[number];
 const AXK = ["stu", "con", "pbabip", "hrr"] as const;
 type AxK = (typeof AXK)[number];
-interface Row { stu: number; r: Record<AxK, number>; w: number; side: string; ev: Record<EvK, number>; ct: Record<CtK, number>; closure: number }
+interface Row { cid: string; stu: number; r: Record<AxK, number>; w: number; side: string; ev: Record<EvK, number>; ct: Record<CtK, number>; closure: number }
 
 function buildRows(minBF: number): Row[] {
 const rows: Row[] = [];
@@ -136,7 +179,7 @@ for (const o of obs.filter((x) => PITCHER.qualifies(x, minBF))) {
   const sum = CTK.reduce((a, k) => a + ct[k], 0);
   if (!Number.isFinite(dW) || EVK.some((k) => !Number.isFinite(ev[k])) || CTK.some((k) => !Number.isFinite(ct[k]))) continue;
   const rr = o.ratings.pitch;
-  rows.push({ stu: rr.stu, r: { stu: rr.stu, con: rr.con, pbabip: rr.pbabip, hrr: rr.hrr }, w: bf, side: String(o.side), ev, ct, closure: sum - dW });
+  rows.push({ cid: o.cid, stu: rr.stu, r: { stu: rr.stu, con: rr.con, pbabip: rr.pbabip, hrr: rr.hrr }, w: bf, side: String(o.side), ev, ct, closure: sum - dW });
 }
 return rows;
 }
@@ -164,6 +207,25 @@ function wpoly(rs: Row[], deg: number, get: (r: Row) => number, zf: (r: Row) => 
   return x;
 }
 let a = 20260725 >>> 0; const rnd = () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// ── CLUSTER (CARD) RESAMPLING — the 2026-07-26 method fix ────────────────────
+// A card contributes a vL row and a vR row (and, when variants are in, base + variant rows)
+// driven by the SAME ratings and the same fitted curves, so its residuals are strongly
+// correlated across rows. Resampling ROWS treats them as independent and returns intervals that
+// are far too narrow. Every bootstrap below instead draws CARDS (cid) with replacement and takes
+// each drawn card's whole row block — the standard cluster bootstrap, with the cluster being the
+// unit the correlation lives at.
+function clustersOf(rs: Row[]): Row[][] {
+  const m = new Map<string, Row[]>();
+  for (const r of rs) (m.get(r.cid) ?? m.set(r.cid, []).get(r.cid)!).push(r);
+  return [...m.values()];
+}
+const nCards = (rs: Row[]) => new Set(rs.map((r) => r.cid)).size;
+/** One cluster-bootstrap resample: draw |clusters| cards with replacement, concat their rows. */
+function cboot(cl: Row[][]): Row[] {
+  const out: Row[] = [];
+  for (let i = 0; i < cl.length; i++) { const c = cl[Math.floor(rnd() * cl.length)]!; for (const r of c) out.push(r); }
+  return out;
+}
 const ci = (xs: number[]) => { const v = [...xs].sort((p, q) => p - q); return { lo: v[Math.floor(0.025 * v.length)]!, hi: v[Math.floor(0.975 * v.length)]! }; };
 const clear = (c: { lo: number; hi: number }) => (c.lo > 0 && c.hi > 0) || (c.lo < 0 && c.hi < 0);
 /** weighted LS slope on a RAW rating axis (default Stuff) — the units of the anchor audit's +0.00007 */
@@ -184,9 +246,10 @@ function axR2(rs: Row[], get: (r: Row) => number, ax: AxK): number {
 const NBOOT = 1200;
 function analyze(rs: Row[], get: (r: Row) => number, ax: AxK = "stu") {
   const zf = zA(ax);
+  const cl = clustersOf(rs);
   const bLin: number[] = [], bCub: number[] = [];
   for (let b = 0; b < NBOOT; b++) {
-    const bs = rs.map(() => rs[Math.floor(rnd() * rs.length)]!);
+    const bs = cboot(cl);                      // CLUSTER (card) bootstrap — see cboot
     bLin.push(wpoly(bs, 1, get, zf)[1]!);
     bCub.push(wpoly(bs, 3, get, zf)[3]!);
   }
@@ -195,7 +258,7 @@ function analyze(rs: Row[], get: (r: Row) => number, ax: AxK = "stu") {
     const s = srt.slice(Math.floor((i / 5) * srt.length), Math.floor(((i + 1) / 5) * srt.length));
     return { lo: s[0]?.r[ax] ?? 0, hi: s[s.length - 1]?.r[ax] ?? 0, resid: wmean(s, get), n: s.length };
   });
-  return { n: rs.length, level: wmean(rs, get), quints, lin: wpoly(rs, 1, get, zf)[1]!, linCI: ci(bLin), cub: wpoly(rs, 3, get, zf)[3]!, cubCI: ci(bCub), raw: rawSlope(rs, get, ax), r2: axR2(rs, get, ax) };
+  return { n: rs.length, nc: nCards(rs), level: wmean(rs, get), quints, lin: wpoly(rs, 1, get, zf)[1]!, linCI: ci(bLin), cub: wpoly(rs, 3, get, zf)[3]!, cubCI: ci(bCub), raw: rawSlope(rs, get, ax), r2: axR2(rs, get, ax) };
 }
 type An = ReturnType<typeof analyze>;
 
@@ -203,14 +266,14 @@ type An = ReturnType<typeof analyze>;
 interface Chan { key: EvK; label: string; unit: string; dec: number; fitted: string }
 const CHANS: Chan[] = [
   { key: "WOBAA", label: "wOBAA COMPOSITE (reference row)", unit: " wOBA", dec: 5, fitted: "assembled — not itself fit" },
-  { key: "HR", label: "HR allowed", unit: "/600", dec: 3, fitted: "pit.hr — FIT on HRR + ln(Stuff) aux ⇒ Stuff-orthogonal by construction" },
-  { key: "BABIP", label: "BABIP allowed (nHH / BIP)", unit: " pts×1000", dec: 3, fitted: "pit.h — FIT on pBABIP + BIP only; STUFF NEVER ENTERS ⇒ structurally free" },
+  { key: "HR", label: "HR allowed", unit: "/600", dec: 3, fitted: "pit.hr — RAW QUADRATIC in HRR + ln(Stuff) aux ⇒ Stuff IS in the design ⇒ orthogonal by construction" },
+  { key: "BABIP", label: "BABIP allowed (nHH / BIP)", unit: " pts×1000", dec: 3, fitted: "pit.h — RAW QUADRATIC in pBABIP + fitted log-BIP; STUFF NEVER ENTERS ⇒ structurally free" },
   { key: "HITS", label: "non-HR hits allowed (nHH)", unit: "/600", dec: 3, fitted: "pit.h (rate) × BIP chain (volume)" },
-  { key: "BB", label: "BB allowed (uBB)", unit: "/600", dec: 3, fitted: "pit.bb — FIT on Control + ln(Stuff) aux ⇒ Stuff-orthogonal by construction" },
-  { key: "K", label: "K (pre-step reference)", unit: "/600", dec: 3, fitted: "pit.k — FIT on Stuff ⇒ Stuff-orthogonal by construction" },
+  { key: "BB", label: "BB allowed (uBB)", unit: "/600", dec: 3, fitted: "pit.bb — LOG in Control + ln(Stuff) aux ⇒ Stuff IS in the design ⇒ orthogonal by construction" },
+  { key: "K", label: "K (pre-step reference)", unit: "/600", dec: 3, fitted: "pit.k — RAW QUADRATIC in Stuff ⇒ orthogonal to BOTH z_stu and z_stu² by construction" },
 ];
 function emit(a: An, label: string, unit: string, dec: number, ax = "Stuff") {
-  say(`  ── ${label}  (N=${a.n} rows, level ${sgn(a.level, dec)}${unit}) ──`);
+  say(`  ── ${label}  (N=${a.n} rows / ${a.nc} distinct cards, level ${sgn(a.level, dec)}${unit}) ──`);
   say(`     ${pad(`${ax} quintile`, 18)} mean resid          n`);
   for (const q of a.quints) say(`     ${pad(`[${f(q.lo, 0)}-${f(q.hi, 0)}]`, 18)} ${rp2(sgn(q.resid, dec), 10)}      ${q.n}`);
   say(`     LINEAR partial (per SD ${ax}): ${sgn(a.lin, dec + 1)} [${sgn(a.linCI.lo, dec + 1)}, ${sgn(a.linCI.hi, dec + 1)}] ${clear(a.linCI) ? "CI-clear" : "covers 0"}`);
@@ -225,8 +288,9 @@ function emit(a: An, label: string, unit: string, dec: number, ax = "Stuff") {
 interface CRow { key: CtK | "TOTAL"; label: string; level: number; slope: number; ci: { lo: number; hi: number }; share: number }
 function contribTable(rs: Row[]): { rowsOut: CRow[]; compSlope: number; compCI: { lo: number; hi: number }; compLevel: number } {
   const compSlope = rawSlope(rs, (r) => r.ev.WOBAA);
+  const cl = clustersOf(rs);
   const draws: Row[][] = [];
-  for (let b = 0; b < NBOOT; b++) draws.push(rs.map(() => rs[Math.floor(rnd() * rs.length)]!));
+  for (let b = 0; b < NBOOT; b++) draws.push(cboot(cl));   // CLUSTER (card) bootstrap, common random numbers
   const bootComp = draws.map((d) => rawSlope(d, (r) => r.ev.WOBAA));
   const labels: Record<CtK, string> = {
     BABIP: "BABIP  (contact-rate leg of hits)", HR: "HR     (direct + BIP-volume)", BB: "BB     (direct + BIP-volume)",
@@ -273,8 +337,24 @@ say("# merely correlates with Stuff? All four axes, the 2-D corners vs a permuta
 say("# marginal-vs-conditional slope both in frame and out of frame (where the effect is CI-clear).");
 say("################################################################################");
 say();
-say(`  model '${trained.id}'  DEPLOYED form  window ${win.join("+") || "all"}  minBF ${minPA}  N=${rows.length} ROWS`);
-say(`  ROW grain = card × deployment side × season-window row, BF-weighted (same grain as the pre-step).`);
+say(`  model '${trained.id}'  DEPLOYED form  window ${win.join("+") || "all"}  minBF ${minPA}`);
+say(`  N = ${rows.length} ROWS over ${nCards(rows)} DISTINCT CARDS (${f(rows.length / Math.max(nCards(rows), 1), 2)} rows per card — the reason every CI here`);
+say(`  is CLUSTERED ON THE CARD, not the row).`);
+say(`  ROW grain = card × deployment side, outcomes summed across the window's leagues/seasons`);
+say(`  (the loader's aggregation grain), BF-weighted.`);
+say();
+say(`  DATA PROVENANCE / COVERAGE CAVEATS`);
+say(`    window seasons + the leagues each actually contributes (coverage is NOT uniform across`);
+say(`    seasons in this corpus, so no cross-season consistency claim may be made without it):`);
+for (const [y, ls] of [...leaguesByYear].sort((p, q) => p[0] - q[0])) say(`      ${y}: ${[...ls].sort().join(", ")}  (${ls.size} leagues)`);
+say(`    cells EXCLUDED by the integrity check in THIS window: ${loaded.summary.excludedCells.length ? loaded.summary.excludedCells.join(", ") : "none"}`);
+say(`    cells the integrity check excludes over the FULL corpus (confirming the loader applies the`);
+say(`    HD450|2039 duplicate-vL/vR exclusion — it is shared by observations, platoon splits and`);
+say(`    wOBA weights alike): ${dsAll.excluded.length ? dsAll.excluded.join(", ") : "none"}`);
+say(`    (the 2042+2043 window does not reach 2039, so that exclusion does not bind this run; it is`);
+say(`    confirmed here only because the brief requires the loader be shown to apply it.)`);
+say(`    'Old Data' 2032–33 sits after a four-season gap from this window and is NOT pooled in — it`);
+say(`    is simply outside the window the deployed artifact was fit on.`);
 say(`  wOBA event weights: ${usingModelWeights ? "THE MODEL'S OWN (trained.wobaWeights, wRAA-derived)" : "DEFAULT_WOBA_WEIGHTS (model carries none)"}`);
 say(`    bb ${f(W.bb, 4)}  hbp ${f(W.hbp, 4)}  1b ${f(W.b1, 4)}  xbh ${f(W.xbh, 4)}  hr ${f(W.hr, 4)}   ⇒ blended hit weight w̄ = ${f(wbar, 4)}`);
 say(`  Stuff over these rows: mean ${f(mu, 1)}, SD ${f(sd, 2)}  (1 SD ≈ ${f(sd, 1)} rating points — the`);
@@ -449,20 +529,40 @@ function emitGrid(rowAx: AxK, colAx: AxK) {
   // PERMUTATION NULL — cells hold only 11–23 rows, so a striking corner can be pure small-cell noise.
   // Shuffle the residual across rows (ratings + weights fixed) and rebuild the grid; the null
   // distribution of max|interaction| says how big a corner chance alone produces.
-  const ys = rows.map(get), idx = new Map(rows.map((r, i) => [r, i])), nullMax: number[] = [];
-  for (let b = 0; b < 600; b++) {
-    const perm = [...ys];
-    for (let i = perm.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [perm[i], perm[j]] = [perm[j]!, perm[i]!]; }
-    const gp = grid(rowAx, colAx, (r) => perm[idx.get(r)!]!);
-    nullMax.push(Math.max(...gp.cells.flat().filter((c) => c.n >= 8).map((c) => Math.abs(c.inter))));
-  }
-  const sorted = [...nullMax].sort((p, q) => p - q);
-  const p95 = sorted[Math.floor(0.95 * sorted.length)]!;
-  const pval = nullMax.filter((v) => v >= obsMax).length / nullMax.length;
-  say(`     PERMUTATION NULL (600 shuffles): max|interaction| under pure noise has 95th pct ${sgn(p95, 5)};`);
-  say(`     observed ${sgn(obsMax, 5)} ⇒ p = ${f(pval, 3)}  ${pval < 0.05 ? "★ the corner structure EXCEEDS chance" : "— the corner structure is WITHIN chance for cells this small (do NOT read the corner as real)"}`);
+  const ys = rows.map(get), idx = new Map(rows.map((r, i) => [r, i]));
+  // CLUSTER-BLOCK variant (2026-07-26): a plain row shuffle breaks the within-card correlation
+  // and so understates the null. The block version permutes whole CARD blocks of residuals
+  // (contiguous, in cluster order) onto the card slots, keeping the within-card structure intact.
+  const clIdx = clustersOf(rows).map((c) => c.map((r) => idx.get(r)!));
+  const flatIdx = clIdx.flat();
+  const run = (blocked: boolean) => {
+    const nullMax: number[] = [];
+    for (let b = 0; b < 600; b++) {
+      let perm: number[];
+      if (!blocked) {
+        perm = [...ys];
+        for (let i = perm.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [perm[i], perm[j]] = [perm[j]!, perm[i]!]; }
+      } else {
+        const order = clIdx.map((_, i) => i);
+        for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j]!, order[i]!]; }
+        const vals: number[] = [];
+        for (const c of order) for (const ri of clIdx[c]!) vals.push(ys[ri]!);
+        perm = new Array(ys.length).fill(0);
+        flatIdx.forEach((ri, k) => { perm[ri] = vals[k]!; });
+      }
+      const gp = grid(rowAx, colAx, (r) => perm[idx.get(r)!]!);
+      nullMax.push(Math.max(...gp.cells.flat().filter((c) => c.n >= 8).map((c) => Math.abs(c.inter))));
+    }
+    const sorted = [...nullMax].sort((p, q) => p - q);
+    return { p95: sorted[Math.floor(0.95 * sorted.length)]!, pval: nullMax.filter((v) => v >= obsMax).length / nullMax.length };
+  };
+  const nRow = run(false), nBlk = run(true);
+  const pval = nBlk.pval;   // the card-clustered null is the one the verdict reads
+  say(`     PERMUTATION NULL (600 shuffles each). ROW shuffle: 95th pct ${sgn(nRow.p95, 5)}, p = ${f(nRow.pval, 3)}.`);
+  say(`     CARD-BLOCK shuffle (the clustered null, the one read): 95th pct ${sgn(nBlk.p95, 5)}, p = ${f(nBlk.pval, 3)}.`);
+  say(`     observed ${sgn(obsMax, 5)} ⇒ ${pval < 0.05 ? "★ the corner structure EXCEEDS chance" : "— the corner structure is WITHIN chance for cells this small (do NOT read the corner as real)"}`);
   say();
-  return { ...g, obsMax, p95, pval };
+  return { ...g, obsMax, p95: nBlk.p95, pval, pvalRow: nRow.pval };
 }
 say("################################################################################");
 say("# PART 5 — 2-D SHAPE READ: is the bias in a rating-SHAPE CORNER or spread along an axis?");
@@ -490,8 +590,9 @@ function design(r: Row, spec: Spec): number[] {
 }
 function coefCI(rs: Row[], get: (r: Row) => number, spec: Spec, idx: number) {
   const fitOn = (s: Row[]) => wls(s.map((r) => design(r, spec)), s.map(get), s.map((r) => r.w))[idx]!;
+  const cl = clustersOf(rs);
   const pt = fitOn(rs), bs: number[] = [];
-  for (let b = 0; b < NBOOT; b++) bs.push(fitOn(rs.map(() => rs[Math.floor(rnd() * rs.length)]!)));
+  for (let b = 0; b < NBOOT; b++) bs.push(fitOn(cboot(cl)));   // CLUSTER (card) bootstrap
   return { pt, ci: ci(bs) };
 }
 say("################################################################################");
@@ -535,11 +636,47 @@ say(`  → XH −3.8"). NOTE two differences from Parts 1–6, both stated so th
 say(`    · SIGN: that module reports valuation error = (actual − pred)×1000 for pitchers, i.e. POSITIVE`);
 say(`      = the model OVER-VALUES the card. That is exactly −1000 × the ΔwOBAA used above. So a`);
 say(`      NEGATIVE stu coefficient there == a POSITIVE (under-credit) Stuff slope here. Same finding.`);
-say(`    · FIT: that module REFITS STUFFAUG_PIT on the window; Parts 1–6 use the DEPLOYED artifact.`);
-say(`      They should agree closely (the deployed artifact is that fit, frozen) but not bit-exactly.`);
+say(`    · FIT — CORRECTED 2026-07-26. The 2026-07-25 artifact said here that "that module REFITS`);
+say(`      STUFFAUG_PIT on the window … the deployed artifact is that fit, frozen". THAT SENTENCE`);
+say(`      WAS FALSE from 2026-07-14 (when production moved STUFFAUG_PIT → PARETO_PIT) until commit`);
+say(`      7c8a061. The module refit a RETIRED form, so its Part-7 numbers described a model nobody`);
+say(`      ships. It now refits DEPLOYED_FORMS.pit = '${residualModelFor("pitcher").name}' with pinning=${String(DEPLOYED_FORMS.pinned)},`);
+say(`      i.e. what the trainer fits — and it is still a REFIT on the window, not the frozen`);
+say(`      artifact, so it need not agree with Parts 1–6 bit-exactly (different vertex pins, and`);
+say(`      the artifact was fit on this same window so they should be very close).`);
 say(`    · WEIGHT: BF^0.75 there vs BF here.`);
 say();
-const ra = analyzeResiduals(obs, "pitcher", minPA, { includeVariants: trained.includeVariants ?? true });
+const raOpts = { includeVariants: trained.includeVariants ?? true, minBucket: 1 };
+const ra = analyzeResiduals(obs, "pitcher", minPA, raOpts);
+// The SAME instrument under the OLD (wrong) configuration, so the config defect is MEASURED here
+// rather than asserted. This is the only place STUFFAUG_PIT appears in this tool, and it is a
+// deliberate historical contrast — never a mirror of production.
+const raOld = analyzeResiduals(obs, "pitcher", minPA, { ...raOpts, model: pitFormModel(STUFFAUG_PIT, DEPLOYED_FORMS.pinned) });
+const cardsOf = (x: typeof ra) => new Map(x.signatures.flatMap((s) => s.members).map((m) => [`${m.cid}|${m.variant ? "V" : "B"}|${m.side}`, m]));
+const cNew = cardsOf(ra), cOld = cardsOf(raOld);
+const rms = (xs: number[]) => Math.sqrt(xs.reduce((s, v) => s + v * v, 0) / Math.max(xs.length, 1));
+const paired = [...cNew.keys()].filter((k) => cOld.has(k));
+const errNew = paired.map((k) => cNew.get(k)!.valErrPts), errOld = paired.map((k) => cOld.get(k)!.valErrPts);
+const dErr = paired.map((k, i) => errNew[i]! - errOld[i]!);
+say(`  ▸ WHAT THE CONFIG FIX DID TO THIS INSTRUMENT (${paired.length} paired card-side rows / ${new Set(paired.map((k) => k.split("|")[0])).size} distinct cards)`);
+say(`     per-card valuation-error RMS: OLD (STUFFAUG_PIT refit) ${f(rms(errOld), 2)} pts  →  NEW (PARETO_PIT refit) ${f(rms(errNew), 2)} pts`);
+say(`     RMS of the per-card CHANGE: ${f(rms(dErr), 2)} pts   (max |change| ${f(Math.max(...dErr.map(Math.abs)), 2)} pts)`);
+say(`     ⇒ the two configurations disagree about individual cards by ~${f(rms(dErr), 1)} points against a`);
+say(`     total error scale of ~${f(rms(errNew), 1)} — material, not cosmetic.`);
+say();
+say(`  ▸ ARCHETYPE COEFFICIENTS, OLD CONFIG → NEW CONFIG (valuation-error points per ±1 SD)`);
+say(`  ${pad("rating", 10)} ${rp2("lin OLD", 10)} ${rp2("lin NEW", 10)}  ${rp2("quad OLD", 10)} ${rp2("quad NEW", 10)}   note`);
+for (const p of ra.residualModel.perRating) {
+  const o = raOld.residualModel.perRating.find((q) => q.rating === p.rating)!;
+  const flip = (a: number, b: number) => a !== 0 && b !== 0 && Math.sign(a) !== Math.sign(b);
+  const notes = [flip(o.linear, p.linear) ? "LINEAR SIGN FLIP" : "", flip(o.quad, p.quad) ? "QUAD SIGN FLIP" : ""].filter(Boolean).join(" + ");
+  say(`  ${pad(p.rating, 10)} ${rp2(sgn(o.linear, 2), 10)} ${rp2(sgn(p.linear, 2), 10)}  ${rp2(sgn(o.quad, 2), 10)} ${rp2(sgn(p.quad, 2), 10)}   ${notes}`);
+}
+say(`     r² OLD ${f(raOld.residualModel.r2, 3)} → NEW ${f(ra.residualModel.r2, 3)}`);
+say(`     interactions OLD → NEW: ${ra.residualModel.interactions.map((i) => `${i.a}×${i.b} ${sgn(raOld.residualModel.interactions.find((q) => q.a === i.a && q.b === i.b)?.coef ?? NaN, 2)}→${sgn(i.coef, 2)}`).join("  ")}`);
+say();
+say(`  Everything below this line is the CORRECTED (deployed-form) fit.`);
+say();
 say(`  systematic r² of the residual meta-model (z + z² + all pairwise interactions): ${f(ra.residualModel.r2, 3)}`);
 say(`    ⇒ ${f(100 * ra.residualModel.r2, 0)}% of the pitcher valuation error is ratings-explainable; the rest is noise.`);
 say();
@@ -607,29 +744,34 @@ const oof = await (async () => {
     const vs = [Number(c[`${col} vR`]), Number(c[`${col} vL`])].filter((x) => Number.isFinite(x) && x > 0);
     return vs.length ? vs.reduce((s, x) => s + x, 0) / vs.length : NaN;
   };
-  interface ORow { r: Record<AxK, number>; y: number; w: number }
+  interface ORow { key: string; r: Record<AxK, number>; y: number; w: number }
   const orows: ORow[] = [];
   for (const rec of sample.recs) {
     if (rec.role !== "pit" || !wellSampled(rec)) continue;
     if (!Number.isFinite(rec.oursDep.woba) || !Number.isFinite(rec.obs.woba!)) continue;
     const rr = Object.fromEntries(AXK.map((k) => [k, ratOf(rec.cid, COL[k])])) as Record<AxK, number>;
     if (AXK.some((k) => !Number.isFinite(rr[k])) || !(rec.sample > 0)) continue;
-    orows.push({ r: rr, y: rec.oursDep.woba! - rec.obs.woba!, w: rec.sample });
+    // CLUSTER KEY = the BASE Card ID. A cwhit rec is per (tier × cid) and cid is `${Card ID}|${vlvl}`,
+    // so one physical card can appear several times (multiple tiers, and its own variant levels)
+    // with the same ratings and the same model error. Those are one cluster, not N observations.
+    orows.push({ key: rec.cid.split("|")[0] ?? rec.cid, r: rr, y: rec.oursDep.woba! - rec.obs.woba!, w: rec.sample });
   }
   if (orows.length < 40) return null;
+  const ocl = (() => { const m = new Map<string, ORow[]>(); for (const o of orows) (m.get(o.key) ?? m.set(o.key, []).get(o.key)!).push(o); return [...m.values()]; })();
+  const ocboot = () => { const out: ORow[] = []; for (let i = 0; i < ocl.length; i++) for (const o of ocl[Math.floor(rnd() * ocl.length)]!) out.push(o); return out; };
   const om = {} as Record<AxK, number>, os = {} as Record<AxK, number>;
   const wm = (g: (o: ORow) => number) => { const sw = orows.reduce((a, o) => a + o.w, 0); return orows.reduce((a, o) => a + o.w * g(o), 0) / sw; };
   for (const k of AXK) { om[k] = wm((o) => o.r[k]); os[k] = Math.sqrt(wm((o) => (o.r[k] - om[k]) ** 2)) || 1; }
   const zz = (o: ORow) => AXK.map((k) => (o.r[k] - om[k]) / os[k]);
   const des = (o: ORow, spec: Spec) => { const v = zz(o); return spec === "marg" ? [1, v[0]!] : spec === "cond" ? [1, ...v] : [1, ...v, v[0]! * v[1]!]; };
   const fit = (s: ORow[], spec: Spec, i: number) => wls(s.map((o) => des(o, spec)), s.map((o) => o.y), s.map((o) => o.w))[i]!;
-  const boot = (spec: Spec, i: number) => { const bs: number[] = []; for (let b = 0; b < NBOOT; b++) bs.push(fit(orows.map(() => orows[Math.floor(rnd() * orows.length)]!), spec, i)); return ci(bs); };
+  const boot = (spec: Spec, i: number) => { const bs: number[] = []; for (let b = 0; b < NBOOT; b++) bs.push(fit(ocboot(), spec, i)); return ci(bs); };   // CLUSTER (base card) bootstrap
   // raw-Stuff-point marginal slope, to reproduce the audit's +0.00007 in its own units
   const swAll = orows.reduce((a, o) => a + o.w, 0);
   const mdS = orows.reduce((a, o) => a + o.w * o.r.stu, 0) / swAll, myS = orows.reduce((a, o) => a + o.w * o.y, 0) / swAll;
   let sxx = 0, sxy = 0; for (const o of orows) { sxx += o.w * (o.r.stu - mdS) ** 2; sxy += o.w * (o.r.stu - mdS) * (o.y - myS); }
   return {
-    n: orows.length, rawStu: sxx > 0 ? sxy / sxx : NaN, sdStu: os.stu,
+    n: orows.length, nc: ocl.length, rawStu: sxx > 0 ? sxy / sxx : NaN, sdStu: os.stu,
     m1: { pt: fit(orows, "marg", 1), ci: boot("marg", 1) },
     m2: { pt: fit(orows, "cond", 1), ci: boot("cond", 1) },
     ix: { pt: fit(orows, "condInt", 1 + AXK.length), ci: boot("condInt", 1 + AXK.length) },
@@ -643,7 +785,9 @@ if (!oof) {
 } else {
   const surv = Math.abs(oof.m2.pt) / Math.max(Math.abs(oof.m1.pt), 1e-12);
   say(`  Instrument: buildCwhitSample + the DEPLOYED line, pitcher rows, well-sampled only (the anchor`);
-  say(`  audit's exact sample). N=${oof.n} cards. Ratings joined from the catalog and side-pooled, as there.`);
+  say(`  audit's exact sample). N=${oof.n} rows / ${oof.nc} DISTINCT BASE CARDS (a rec is per tier × cid and cid`);
+  say(`  carries the variant level, so rows outnumber cards; the bootstrap clusters on the base card).`);
+  say(`  Ratings joined from the catalog and side-pooled, as there.`);
   say();
   say(`  Marginal Stuff slope in the audit's own units: ${sgn(oof.rawStu, 6)} wOBA per Stuff point`);
   say(`  (the audit reported +0.00007 — this reproduces it, confirming the same instrument and sample).`);
@@ -691,7 +835,8 @@ say(`  partially cancel one another. The carrier is the CONTACT RATE, not HR, no
 say();
 say(`  STRENGTH OF THE CLAIM, STATED HONESTLY. Pooled, the BABIP slope's bootstrap CI is`);
 say(`  [${sgn(top.ci.lo, 6)}, ${sgn(top.ci.hi, 6)}] — it ${clear(top.ci) ? "EXCLUDES zero" : "does NOT quite exclude zero at 95%"}, and so does the composite`);
-say(`  it explains (${sgn(pooledCT.compSlope, 6)} [${sgn(pooledCT.compCI.lo, 6)}, ${sgn(pooledCT.compCI.hi, 6)}]). N=${rows.length} rows is a small instrument. So this`);
+say(`  it explains (${sgn(pooledCT.compSlope, 6)} [${sgn(pooledCT.compCI.lo, 6)}, ${sgn(pooledCT.compCI.hi, 6)}]). N=${rows.length} rows over only ${nCards(rows)} CARDS — and the CIs are`);
+say(`  CARD-CLUSTERED, so they are the honest width — is a small instrument. So this`);
 say(`  is a LOCATION result, not a fresh significance result: the audit already established (out of`);
 say(`  frame, larger sample) THAT the Stuff-correlated bias exists and is CI-clear; this measurement`);
 say(`  says WHICH channel it flows through, and the answer is unambiguous by margin (${f(lead, 1)}×) even where`);
@@ -718,8 +863,10 @@ say(`  HR contributes ${sgn(hrRow.slope, 6)} and BB ${sgn(bbRow.slope, 6)};`);
 say(`  ${Math.abs(hrRow.slope) < Math.abs(top.slope) / 3 ? "HR is an order below the carrier ⇒ the HR candidate named in the brief is NOT the seat of the\n  under-credit. Of the two contact-side candidates (pit.pbabip vs pit.hrr), it is pbabip." : "HR is material — a secondary carrier alongside the leader."}`);
 say();
 say(`  READ THE CONSTRUCTION CAVEAT WITH THIS — it is what makes the result both expected and useful.`);
-say(`  pit.bb, pit.k and pit.hr all carry ln(Stuff) in their fitted design (pit.k's driver IS Stuff;`);
-say(`  pit.bb and pit.hr carry the stuffAug linear leg), so their in-frame Stuff slopes are pushed toward`);
+say(`  pit.bb, pit.k and pit.hr all carry Stuff in their fitted design under the DEPLOYED PARETO form`);
+say(`  (pit.k's own driver IS Stuff, as a RAW QUADRATIC — so its residual is orthogonal to z_stu AND`);
+say(`  z_stu²; pit.bb and pit.hr carry the stuffAug ln(Stuff) linear leg on top of log-Control and`);
+say(`  raw-quad-HRR respectively), so their in-frame Stuff slopes are pushed toward`);
 say(`  zero BY LEAST-SQUARES. pit.h does not — Stuff never enters the contact-rate design at all. So this`);
 say(`  measurement does NOT prove BB/HR are innocent OUT of frame. What it does establish is sharper and`);
 say(`  sufficient: (a) the deployed pitcher form has NO STUFF PATHWAY INTO THE CONTACT RATE, a structural`);
@@ -768,7 +915,8 @@ if (oof) {
   say(`   3. CONDITIONING, OUT OF FRAME: unavailable this run — the decisive test could NOT be made.`);
 }
 say(`   4. SHAPE CORNERS, TESTED AGAINST A PERMUTATION NULL. Largest 3×3 interaction cell:`);
-say(`      Stuff×Control ${sgn(maxInterSC, 5)} (p=${f(gSC.pval, 3)}), Stuff×${AXLAB[bestOther].split(" ")[0]} ${sgn(maxInterSO, 5)} (p=${f(gSO.pval, 3)}),`);
+say(`      Stuff×Control ${sgn(maxInterSC, 5)} (card-block p=${f(gSC.pval, 3)}, row-shuffle p=${f(gSC.pvalRow, 3)}),`);
+say(`      Stuff×${AXLAB[bestOther].split(" ")[0]} ${sgn(maxInterSO, 5)} (card-block p=${f(gSO.pval, 3)}, row-shuffle p=${f(gSO.pvalRow, 3)}),`);
 say(`      against a Stuff main-effect quintile spread of only ${sgn(stuMainSpread, 5)}. ${gSC.pval < 0.05 || gSO.pval < 0.05 ? "At least one corner\n      EXCEEDS its noise null ⇒ real 2-way structure." : "NEITHER corner beats its noise\n      null — the cells hold 11–23 rows and corners that large arise by chance. The eye-catching\n      corner is NOT evidence; this is exactly the trap the amendment warns about, and it does not\n      fire here."}`);
 say(`   5. INDEPENDENT INSTRUMENT (Part 7, the old record's own): meta-model systematic r² ${f(ra.residualModel.r2, 3)};`);
 say(`      largest interaction ${biggestIx.a}×${biggestIx.b} ${sgn(biggestIx.coef, 2)} EXCEEDS the largest linear ${biggestLin.rating} ${sgn(biggestLin.linear, 2)},`);

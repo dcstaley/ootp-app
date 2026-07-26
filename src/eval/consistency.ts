@@ -26,7 +26,9 @@
 import type { Coeffs } from "../config/types.ts";
 import type { EventModel } from "../model/types.ts";
 import { HIT_RATINGS, PIT_RATINGS } from "../model/pool-transform.ts";
-import { cardSideWobas, computeUnifiedFieldStats, FIELD_N } from "../scoring-core/pool-stats.ts";
+import { cardSideWobas, productionFieldStats, FIELD_N } from "../scoring-core/pool-stats.ts";
+import { PRESENCE_M } from "../data/variants.ts";
+import type { RatingRef } from "../scoring-core/cohort-select.ts";
 import { n } from "../scoring-core/helpers.ts";
 
 export const CONSISTENCY_EVENTS = ["BB", "K", "HR", "1B", "XBH"] as const;
@@ -61,7 +63,12 @@ export interface ConsistencyReport {
 
 export interface ConsistencyOptions {
   topX?: number;   // default 100 — the optimizer pool convention (top-N by predicted wOBA; role never gates)
-  fieldN?: number; // defaults to FIELD_N — the SAME cohort size the pool transform uses (imported, not repeated)
+  /** The active model's cohort-rule selection refs, threaded STRAIGHT THROUGH to
+   *  `productionFieldStats` — the same `select` production's own field call passes. Absent ⇒
+   *  top-N-by-model-wOBA, which is what a pre-cohort-rule model gets in production too.
+   *  There is deliberately no `fieldN` knob: the field size is `productionFieldStats`' business,
+   *  and letting a caller pick it is how the alarm drifted off production's cohort in the first place. */
+  select?: { hit: RatingRef; pit: RatingRef };
 }
 
 const r3 = (x: number) => Math.round(x * 1e3) / 1e3;
@@ -139,7 +146,9 @@ export function computeConsistency(
   coeffs: Coeffs, model: EventModel, opts: ConsistencyOptions = {},
 ): ConsistencyReport {
   const topX = opts.topX ?? 100;
-  const fieldN = opts.fieldN ?? FIELD_N;   // never a literal: this must track the production cohort size
+  // Reported for the caller only — `productionFieldStats` owns the real number; this must never
+  // become an input again (see ConsistencyOptions).
+  const fieldN = FIELD_N * PRESENCE_M;
 
   const events = readout(
     impliedMeanEvents(poolCards, "hit", coeffs, model, topX),
@@ -150,10 +159,22 @@ export function computeConsistency(
     impliedMeanEvents(refCards, "pit", coeffs, model, topX),
   );
 
-  // Frame gaps — the same unified field stats (and sspFree selection) the server's
-  // pool-transform call sites use, at the same field size. Unified ⇒ vR === vL, read vR.
-  const ref = computeUnifiedFieldStats(refCards, coeffs, model, fieldN, true);
-  const pool = computeUnifiedFieldStats(poolCards, coeffs, model, fieldN, true);
+  // Frame gaps — built through `productionFieldStats`, THE one way production builds a field.
+  //
+  // This used to call `computeUnifiedFieldStats` directly at a bare `fieldN`, i.e. top-50 of the
+  // variant-free base rows. Production's field is the top-(FIELD_N × PRESENCE_M) of a
+  // presence-weighted MIXTURE: 56.3% of catalog cards can carry a variant, and a v5 outranks its own
+  // base on every rating (mean +4.3), so the production cohort is materially v5-weighted and the old
+  // one was not — the two μ vectors could not be equal. That is verbatim the drift
+  // `productionFieldStats`' docstring exists to prevent ("for a few hours the EVAL instrument
+  // measured a different coordinate from the one production scored on … every gate would have
+  // passed, because the gates were computed with the same stale instrument"), and this alarm was the
+  // surviving second copy. An alarm on the wrong coordinate is worse than no alarm.
+  //
+  // Both legs take the SAME `select`, which is the same-construction invariant the frame gap needs.
+  // Unified ⇒ vR === vL, read vR.
+  const ref = productionFieldStats(refCards, coeffs, model, true, undefined, opts.select);
+  const pool = productionFieldStats(poolCards, coeffs, model, true, undefined, opts.select);
   const gapBlock = (keys: readonly string[], r: Record<string, { mu: number }>, p: Record<string, { mu: number }>) => {
     const out: Record<string, ChannelGap> = {};
     for (const k of keys) {

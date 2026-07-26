@@ -22,7 +22,12 @@ export interface Card {
   // Offense split: hit* = Offense (wRAA+BsR, the value metric); hitWoba* = batting-only real wOBA;
   // hitBsr = baserunning runs/600 (side-invariant). Offense = wOBA + BsR.
   hitWobaVL: number; hitWobaVR: number; hitWobaOVR: number; hitBsr: number;
-  pitchVL: number; pitchVR: number; pitchOVR: number; basicPitch: number; basicPitchVL: number; basicPitchVR: number;
+  pitchVL: number; pitchVR: number; basicPitchVL: number; basicPitchVR: number;
+  // Pitcher OVR is ROLE-DEPENDENT (a starter and a reliever face different batter-hand mixes), so
+  // there are genuinely two of them. `pitchSP`/`pitchRP` are both; `pitchOVR`/`basicPitch` are the
+  // one for `pitchRole` — the pre-solve starter-qualification guess — and equal what the roster
+  // page shows for that role. They are NOT the role-agnostic mean the grid used to display.
+  pitchOVR: number; pitchSP: number; pitchRP: number; pitchRole: "sp" | "rp"; basicPitch: number;
   def: Record<string, number>;
   // Low-K-support marker (informational, NON-SCORING): this pitcher's effective Stuff sits below
   // the 5th percentile of the deployed K curve's league training support — the model is

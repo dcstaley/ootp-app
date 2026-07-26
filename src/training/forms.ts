@@ -22,7 +22,8 @@ import { wls } from "./fit.ts";
 import { HITTER, PITCHER, actualHitWoba, actualPitWoba, type BakeoffModel, type BakeoffEntry, type GateStatus } from "./bakeoff.ts";
 import { DEFAULT_WOBA_WEIGHTS } from "../scoring-core/woba-weights.ts";
 import {
-  ln1, dot, baseVal, row, rowTerms, rate, rateRaw, rateAux, capActive, hDesign, hRate, LOG, HIT_BIP_ADJ, PIT_BIP_ADJ,
+  ln1, dot, baseVal, row, rowTerms, rate, rateRaw, rateAux, capActive, hDesign, hRate, hRateAux, hitHbpRate,
+  LOG, HIT_BIP_ADJ, PIT_BIP_ADJ, HIT_HBP, HIT_SH_MINUS_SF,
   inDomainVertex, inDomainVertexH,
   type Curve, type FittedEvent, type CurveFit, type FittedH, type FittedHit, type FittedPit,
 } from "../model/curves.ts";
@@ -31,7 +32,9 @@ import {
 export type { Curve, FittedEvent, FittedHit, FittedPit } from "../model/curves.ts";
 
 // wOBA event weights — the ONE source (scoring-core); must match bakeoff.ts.
-const W_BB = DEFAULT_WOBA_WEIGHTS.bb, W_HBP = DEFAULT_WOBA_WEIGHTS.hbp, W_1B = DEFAULT_WOBA_WEIGHTS.b1, W_XBH = DEFAULT_WOBA_WEIGHTS.xbh, W_HR = DEFAULT_WOBA_WEIGHTS.hr, HBP = 6;
+// HBP = the fixed hit-by-pitch rate both roles' assemblies credit; it is HIT_HBP (curves.ts),
+// which also feeds HIT_BIP_ADJ — one constant, not two copies that can drift apart.
+const W_BB = DEFAULT_WOBA_WEIGHTS.bb, W_HBP = DEFAULT_WOBA_WEIGHTS.hbp, W_1B = DEFAULT_WOBA_WEIGHTS.b1, W_XBH = DEFAULT_WOBA_WEIGHTS.xbh, W_HR = DEFAULT_WOBA_WEIGHTS.hr, HBP = HIT_HBP;
 
 /** Weighted μ/σ of a curve's base term (for z-score conditioning; log needs none). */
 function curveNorm(curve: Curve, vals: number[], w: number[]): { mu: number; sd: number } {
@@ -101,17 +104,31 @@ function fitSatEvent(vals: number[], y: number[], w: number[], auxVals?: number[
 // Σ (w·BIP²)·(H/BIP − f(r))². A fitted BIP coefficient (a Curve bCurve) is nearly
 // unidentified in league data (BIP barely varies across players) and extrapolates
 // badly when extreme eras move BIP ±18% — kept only for explicit bake-off forms.
-function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[], rCurve: Curve, bCurve: Curve | "unit"): FittedH {
+// `auxVals` (optional) appends a linear z-scored ln(aux) column to the H design and splits the
+// fitted coefficient back out into `aux`, exactly as fitEventAux does for a single-input event —
+// one mechanism for auxes, not two. Used by the eye-axis candidates to give EYE a pathway into the
+// contact-RATE channel (hit.h is otherwise fit on the BABIP rating + BIP alone).
+function fitH(ratingVals: number[], bipVals: number[], y: number[], w: number[], rCurve: Curve, bCurve: Curve | "unit", auxVals?: number[]): FittedH {
   const rNorm = curveNorm(rCurve, ratingVals, w);
   const rating = { curve: rCurve, ...rNorm, ...uDomain(rCurve, ratingVals, rNorm.mu, rNorm.sd) }; // stamp the z-domain so the deploy gate can locate an in-domain vertex on a quad H-rating curve
+  // The aux column is z-scored on the SAME weights as the rest of the fit.
+  const W = w.reduce((s, x) => s + x, 0);
+  const la = auxVals ? auxVals.map(ln1) : [];
+  const amu = auxVals ? la.reduce((s, v, i) => s + w[i]! * v, 0) / W : 0;
+  const asd = auxVals ? Math.sqrt(la.reduce((s, v, i) => s + w[i]! * (v - amu) ** 2, 0) / W) || 1 : 1;
+  const auxCol = (i: number) => (auxVals ? [(la[i]! - amu) / asd] : []);
+  const split = (beta: number[]): FittedH["aux"] | undefined => (auxVals ? { beta: beta.pop()!, mu: amu, sd: asd } : undefined);
   if (bCurve === "unit") {
     const yb = y.map((v, i) => v / Math.max(bipVals[i]!, 1));
     const wb = w.map((v, i) => v * bipVals[i]! ** 2);
-    const X = ratingVals.map((rv) => [1, ...rowTerms(rCurve, rv, rating.mu, rating.sd)]);
-    return { beta: wls(X, yb, wb), rating, perBip: true };
+    const X = ratingVals.map((rv, i) => [1, ...rowTerms(rCurve, rv, rating.mu, rating.sd), ...auxCol(i)]);
+    const beta = wls(X, yb, wb), aux = split(beta);
+    return { beta, rating, perBip: true, ...(aux ? { aux } : {}) };
   }
   const bip = { curve: bCurve, ...curveNorm(bCurve, bipVals, w) };
-  return { beta: wls(ratingVals.map((rv, i) => hDesign(rating, rv, bip, bipVals[i]!)), y, w), rating, bip };
+  const beta = wls(ratingVals.map((rv, i) => [...hDesign(rating, rv, bip, bipVals[i]!), ...auxCol(i)]), y, w);
+  const aux = split(beta);
+  return { beta, rating, bip, ...(aux ? { aux } : {}) };
 }
 
 // ── Vertex-pin monotone fallback (bake-off C, 2026-07-21) — the ONE copy ───────
@@ -160,25 +177,35 @@ export function pinQuadAtDomainMax(e: FittedEvent, vals: number[], y: number[], 
 
 /** Same pin for the H event's RATING quad (the BIP term rides along in the joint refit; under
  *  perBip the refit mirrors fitH's algebraically-equivalent per-BIP WLS objective). */
-export function pinHQuadAtDomainMax(h: FittedH, ratingVals: number[], bipVals: number[], y: number[], w: number[]): FittedH {
+export function pinHQuadAtDomainMax(h: FittedH, ratingVals: number[], bipVals: number[], y: number[], w: number[], auxVals?: number[]): FittedH {
   const r = h.rating;
   if (r.curve.kind !== "rawpoly" || r.curve.degree !== 2 || r.uMin == null || r.uMax == null) throw new Error("pinHQuadAtDomainMax: rawpoly-2 rating with a stored fit domain required");
+  if (h.aux && !auxVals) throw new Error("pinHQuadAtDomainMax: H carries an aux term — auxVals required to refit it jointly");
   const zpin = r.uMax;
   const u = ratingVals.map((v) => (r.sd > 1e-9 ? (v - r.mu) / r.sd : 0));
   const target = h.perBip ? y.map((v, i) => v / Math.max(bipVals[i]!, 1)) : y;
   const wgt = h.perBip ? w.map((v, i) => v * bipVals[i]! ** 2) : w;
   const bipTerms = (i: number) => (h.perBip ? [] : rowTerms(h.bip!.curve, bipVals[i]!, h.bip!.mu, h.bip!.sd));
-  let X = u.map((ui, i) => [1, (ui - zpin) ** 2, ...bipTerms(i)]);
+  // The aux rides along in the joint refit on its ALREADY-fitted z-scale (mu/sd from fitH), so the
+  // pinned fit and the unconstrained one describe the aux in the same units.
+  const za = h.aux && auxVals ? auxVals.map((v) => (h.aux!.sd > 1e-9 ? (ln1(v) - h.aux!.mu) / h.aux!.sd : 0)) : null;
+  const auxCol = (i: number) => (za ? [za[i]!] : []);
+  let X = u.map((ui, i) => [1, (ui - zpin) ** 2, ...bipTerms(i), ...auxCol(i)]);
   let beta = wls(X, target, wgt);
+  let auxB = za ? beta.pop()! : 0;
   let c0 = beta[0]!, c2 = beta[1]!, tail = beta.slice(2);
   const b1 = h.beta[1] ?? 0, b2 = h.beta[2] ?? 0;
   const dirUp = b1 * (r.uMax - r.uMin) + b2 * (r.uMax * r.uMax - r.uMin * r.uMin) > 0;
   if (c2 !== 0 && (c2 < 0) !== dirUp) {
-    X = u.map((_, i) => [1, ...bipTerms(i)]);
+    X = u.map((_, i) => [1, ...bipTerms(i), ...auxCol(i)]);
     beta = wls(X, target, wgt);
+    auxB = za ? beta.pop()! : 0;
     c0 = beta[0]!; c2 = 0; tail = beta.slice(1);
   }
-  return { ...h, beta: [c0 + c2 * zpin * zpin, -2 * c2 * zpin, c2, ...tail] };
+  return {
+    ...h, beta: [c0 + c2 * zpin * zpin, -2 * c2 * zpin, c2, ...tail],
+    ...(h.aux ? { aux: { beta: auxB, mu: h.aux.mu, sd: h.aux.sd } } : {}),
+  };
 }
 
 /** Pin one event when the caller collects pins AND the unconstrained vertex is in-domain;
@@ -189,9 +216,9 @@ function pinEvent(pins: VertexPin[] | undefined, channel: string, e: FittedEvent
   pins.push({ channel, pinZ: pinned.uMax! });
   return pinned;
 }
-function pinH(pins: VertexPin[] | undefined, channel: string, h: FittedH, ratingVals: number[], bipVals: number[], y: number[], w: number[]): FittedH {
+function pinH(pins: VertexPin[] | undefined, channel: string, h: FittedH, ratingVals: number[], bipVals: number[], y: number[], w: number[], auxVals?: number[]): FittedH {
   if (!pins || inDomainVertexH(h) == null) return h;
-  const pinned = pinHQuadAtDomainMax(h, ratingVals, bipVals, y, w);
+  const pinned = pinHQuadAtDomainMax(h, ratingVals, bipVals, y, w, auxVals);
   pins.push({ channel, pinZ: pinned.rating.uMax! });
   return pinned;
 }
@@ -210,7 +237,33 @@ function pinH(pins: VertexPin[] | undefined, channel: string, h: FittedH, rating
 // so it is not a proxy), r = 0.525, the largest of 24 structurally-free cells, family-wise
 // p = 0.000, CI-clear in 7 of 7 seasons. Mechanism: plate appearances resolve SEQUENTIALLY, so
 // a patient hitter works counts and strikes out less than his contact rating alone implies.
-export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve | "unit"; eyeAug?: boolean }
+//
+// THE EYE AXIS HAS FOUR LEGS, NOT ONE (fixtures/hitter-residual-channels-2026-07-25.txt Part 2).
+// On EYE the deployed form carries FOUR CI-clear, oppositely-signed channel biases that CANCEL in
+// the composite (per rating point: K −0.000033, BABIP +0.000025, HR +0.000019, HBP +0.000004; sum
+// +0.000006). Fixing the K leg ALONE was measured (fixtures/hitter-eyeaug-2026-07-25.txt) and
+// declined: it removed 81–99% of the K residual out of frame and made the composite EYE bias
+// WORSE in 3 of 4 panels, because it broke the cancellation. These flags exist so the whole set
+// can be closed at once — the only version of the fix the cancellation story says can pay:
+//   · `eyeAug`    ln(EYE) aux on hit.k     (the K leg — already measured on its own)
+//   · `eyeAugH`   ln(EYE) aux on hit.h     (the BABIP/contact-RATE leg)
+//   · `eyeAugHr`  ln(EYE) aux on hit.hr    (the HR leg; hit.hr is the form's one QUAD channel, so
+//                                           unlike the K leg this one can move the vertex — audit it)
+//   · `hbpFit`    the HBP leg, different in kind: the form gives EVERY card a fixed HIT_HBP/600
+//                 (94% of the composite LEVEL bias) and the real rate has a CI-clear EYE slope no
+//                 anchor can absorb. "mean" = fit the constant (level only); "eye" = fit a curve on
+//                 EYE (level + slope). Absent ⇒ the fixed constant, bit-identical.
+// All four default OFF; production fits RAWPOLY_HIT, which sets none of them.
+export interface HitForm { name: string; bb: Curve; k: Curve; hr: Curve; xbh: Curve; h: Curve; hBip?: Curve | "unit"; eyeAug?: boolean; eyeAugH?: boolean; eyeAugHr?: boolean; hbpFit?: "mean" | "eye" }
+
+/** The HBP leg's fit. "eye" = a log curve on EYE (level + slope). "mean" = the weight-mean rate
+ *  stored as a ONE-element beta: `dot` iterates over beta, so the design's rating column is never
+ *  reached and the rate is exactly constant — a level correction with no rating pathway. */
+function fitHbp(mode: "mean" | "eye", eye: number[], hp: number[], w: number[]): FittedEvent {
+  if (mode === "eye") return fitEvent(LOG, eye, hp, w);
+  const W = w.reduce((s, x) => s + x, 0);
+  return { beta: [hp.reduce((s, v, i) => s + w[i]! * v, 0) / W], mu: 0, sd: 1, curve: LOG };
+}
 
 // `pins` (optional) = the vertex-pin collector: when passed (the production trainer path), any
 // quad channel whose unconstrained vertex lands in-domain is refit vertex-pinned (see the
@@ -229,38 +282,50 @@ export function fitHitForm(form: HitForm, obs: TrainObs[], fitExp = 0.75, pins?:
   const pow = obs.map((p) => p.ratings.hit.pow), gap = obs.map((p) => p.ratings.hit.gap);
   const babip = obs.map((p) => p.ratings.hit.babip);
 
+  // The HBP leg is fitted FIRST because it enters the BIP bookkeeping every later channel reads.
+  const HP = per600((p) => p.hit.HP);
+  const hbp = form.hbpFit ? fitHbp(form.hbpFit, eye, HP, w) : undefined;
+  const hbpOf = (i: number) => (hbp ? rate(hbp, eye[i]!) : HBP);
+
   const bb = pinEvent(pins, "hit.bb", fitEvent(form.bb, eye, BB, w), eye, BB, w);
   // K carries the optional EYE aux (see HitForm.eyeAug) — jointly fitted, exactly as the
   // pitcher's Stuff aux is on pit.bb/pit.hr, so the primary AvoidK curve and the aux are
   // estimated in one WLS rather than sequentially.
   const k = pinEvent(pins, "hit.k", form.eyeAug ? fitEventAux(form.k, kr, eye, K, w) : fitEvent(form.k, kr, K, w), kr, K, w, form.eyeAug ? eye : undefined);
-  const hr = pinEvent(pins, "hit.hr", fitEvent(form.hr, pow, HR, w), pow, HR, w);
-  // Predicted BB/K/HR drive BIP — training mirrors inference (S6.2); pinned rates when pinned.
-  // rateAux ≡ rate when the event has no aux, so the no-aux forms stay bit-identical.
-  const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rateAux(k, kr[i]!, eye[i]!) - rate(hr, pow[i]!) - HIT_BIP_ADJ, 1));
-  const h = pinH(pins, "hit.h", fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG), babip, bip, nonHRH, w);
-  const hP = obs.map((_, i) => hRate(h, babip[i]!, bip[i]!));
+  // HR takes the same aux treatment under `eyeAugHr`. This is the form's ONLY quad channel, so
+  // the aux CAN change where the vertex lands — the pin collector sees the aux-carrying fit.
+  const hr = pinEvent(pins, "hit.hr", form.eyeAugHr ? fitEventAux(form.hr, pow, eye, HR, w) : fitEvent(form.hr, pow, HR, w), pow, HR, w, form.eyeAugHr ? eye : undefined);
+  // Predicted BB/K/HR (+ the per-card HBP when fitted) drive BIP — training mirrors inference
+  // (S6.2); pinned rates when pinned. rateAux ≡ rate when the event has no aux and hbpOf ≡ HBP
+  // when the form fits no HBP, so the no-aux forms stay bit-identical.
+  const bip = obs.map((_, i) => Math.max(600 - rate(bb, eye[i]!) - rateAux(k, kr[i]!, eye[i]!) - rateAux(hr, pow[i]!, eye[i]!) - (hbpOf(i) + HIT_SH_MINUS_SF), 1));
+  const hAux = form.eyeAugH ? eye : undefined;
+  const h = pinH(pins, "hit.h", fitH(babip, bip, nonHRH, w, form.h, form.hBip ?? LOG, hAux), babip, bip, nonHRH, w, hAux);
+  const hP = obs.map((_, i) => hRateAux(h, babip[i]!, bip[i]!, eye[i]!));
   const share = obs.map((_, i) => (hP[i]! > 1 ? XBH[i]! / hP[i]! : 0));
   const xbh = pinEvent(pins, "hit.xbh", fitEvent(form.xbh, gap, share, w), gap, share, w);
-  return { bb, k, hr, h, xbh };
+  return { bb, k, hr, h, xbh, ...(hbp ? { hbp } : {}) };
 }
 
 // Predict-side assembly chain (BIP → H → XBH-split → wOBA) given the three fitted
 // count RATES — the ONE copy shared by the standard curve forms and the matchup-K
 // hybrid (which swaps only how the K rate is produced). Same operation order as the
 // pre-refactor inline chain, so predictions are bit-identical.
-function hitAssembly(bb: number, k: number, hr: number, h: FittedH, xbh: FittedEvent, babip: number, gap: number): number {
-  const bip = Math.max(600 - bb - k - hr - HIT_BIP_ADJ, 1);
-  const hn = hRate(h, babip, bip);
+// `hbpV` = the card's HBP/600 (the fixed HBP unless the form fitted one) and `eyeAuxV` = the H
+// channel's aux rating; both are no-ops for a form that declares neither, so every existing form
+// assembles bit-identically (hbp + HIT_SH_MINUS_SF === HIT_BIP_ADJ in integer arithmetic).
+function hitAssembly(bb: number, k: number, hr: number, h: FittedH, xbh: FittedEvent, babip: number, gap: number, hbpV = HBP, eyeAuxV = 0): number {
+  const bip = Math.max(600 - bb - k - hr - (hbpV + HIT_SH_MINUS_SF), 1);
+  const hn = hRateAux(h, babip, bip, eyeAuxV);
   const x = Math.max(rate(xbh, gap) * hn, 0); // xbh curve gives the share of h
   const oneB = Math.max(hn - x, 0);
-  return (W_BB * bb + W_BB * HBP + W_1B * oneB + W_XBH * x + W_HR * hr) / 600;
+  return (W_BB * bb + W_BB * hbpV + W_1B * oneB + W_XBH * x + W_HR * hr) / 600;
 }
 export function predictHitForm(m: FittedHit, o: TrainObs): number {
   const r = o.ratings.hit;
-  // K reads the EYE aux when the fitted event carries one (rateAux ≡ rate otherwise), mirroring
+  // K/HR read the EYE aux when the fitted event carries one (rateAux ≡ rate otherwise), mirroring
   // the pitcher side's rateAux(bb, con, stu) — so a no-aux FittedHit predicts bit-identically.
-  return hitAssembly(rate(m.bb, r.eye), rateAux(m.k, r.kRat, r.eye), rate(m.hr, r.pow), m.h, m.xbh, r.babip, r.gap);
+  return hitAssembly(rate(m.bb, r.eye), rateAux(m.k, r.kRat, r.eye), rateAux(m.hr, r.pow, r.eye), m.h, m.xbh, r.babip, r.gap, hitHbpRate(m, r.eye), r.eye);
 }
 
 // ── Pitching form ──────────────────────────────────────────────────────────────
@@ -668,6 +733,22 @@ export const RAWPOLY_HIT: HitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr
 // one-term contrast under identical curves, pinning discipline and folds. NOT deployed: the
 // production trainer (server.saveTrainedModel) still fits RAWPOLY_HIT.
 export const RAWPOLY_EYEAUG_HIT: HitForm = { ...RAWPOLY_HIT, name: "woba·rawpoly-eyeaug", eyeAug: true };
+// THE EYE-AXIS SET (2026-07-26) — the four-leg version of the same candidate, plus the
+// intermediates. The K-only term above was declined because it broke a CANCELLATION: on EYE the
+// deployed form's K, BABIP, HR and HBP channel biases are individually CI-clear and oppositely
+// signed, and they sum to ~0. Completing the set is the only version of the fix that the
+// cancellation story says can improve the composite, so the set is built as a LADDER — each rung
+// adds one leg — and judged on the COMPOSITE, never on its own channel (the standing lesson from
+// the K-only test). Curves, pinning discipline and folds are the deployed form's throughout; the
+// ONLY declared differences are the aux terms named in each form. Nothing here is deployed.
+export const EYEAXIS_KB_HIT: HitForm = { ...RAWPOLY_HIT, name: "woba·eyeaxis-kb", eyeAug: true, eyeAugH: true };
+export const EYEAXIS_KBH_HIT: HitForm = { ...RAWPOLY_HIT, name: "woba·eyeaxis-kbh", eyeAug: true, eyeAugH: true, eyeAugHr: true };
+// The HBP leg in its two forms: the LEVEL-only correction (fit the constant at the observed mean —
+// no rating pathway, so it cannot touch any slope) and the full one (a curve on EYE, which also
+// carries the CI-clear EYE slope an anchor cannot absorb). Reported separately because the HBP leg
+// is different in kind from the other three and may well behave differently.
+export const EYEAXIS_KBH_HBPMEAN_HIT: HitForm = { ...EYEAXIS_KBH_HIT, name: "woba·eyeaxis-kbh+hbpmean", hbpFit: "mean" };
+export const EYEAXIS_ALL4_HIT: HitForm = { ...EYEAXIS_KBH_HIT, name: "woba·eyeaxis-all4", hbpFit: "eye" };
 export const RAWPOLY_PIT: PitForm = { name: "woba·rawpoly", bb: LOG, k: LOG, hr: { kind: "rawpoly", degree: 2 }, h: LOG };
 // DEPLOYED pitching form: log baseline + a linear Stuff term on BB and HR (fixes the
 // low-Stuff over-rating; validated OOT — beats plain LOG forward & backward).
@@ -891,6 +972,9 @@ export const FORM_ENTRIES: BakeoffEntry[] = [
   // HITTER CANDIDATE (2026-07-25): the deployed hitter form + a ln(EYE) aux on K. Hitter-only —
   // there is no pitcher counterpart (the pitcher K channel already reads Stuff as its primary).
   hitEntry(RAWPOLY_EYEAUG_HIT),
+  // THE EYE-AXIS LADDER (2026-07-26): the K leg above plus the other three legs of the same
+  // cancellation, one rung at a time. Candidates only — no default changed.
+  hitEntry(EYEAXIS_KB_HIT), hitEntry(EYEAXIS_KBH_HIT), hitEntry(EYEAXIS_KBH_HBPMEAN_HIT), hitEntry(EYEAXIS_ALL4_HIT),
   hitEntry(LOGCUBIC_HIT), pitEntry(LOGCUBIC_PIT),   // #1 cubic-in-log
   hitEntry(RAWLIN_HIT), pitEntry(RAWLIN_PIT),       // curve family — is log the right curve?
   hitEntry(RAWQUAD_HIT), pitEntry(RAWQUAD_PIT),

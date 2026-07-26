@@ -31,7 +31,15 @@ const COLS: Record<string, Col> = {
   basicHit: { key: "basicHit", label: "Basic Hit", align: "r", get: (c) => c.basicHit, fmt: "basic" },
   basicHitVL: { key: "basicHitVL", label: "Basic Hit vL", align: "r", get: (c) => c.basicHitVL, fmt: "basic" },
   basicHitVR: { key: "basicHitVR", label: "Basic Hit vR", align: "r", get: (c) => c.basicHitVR, fmt: "basic" },
+  // Pitcher OVR is ROLE-DEPENDENT — a starter and a reliever face different batter-hand mixes, so
+  // the same arm has two correct OVRs. "Pitch wOBA" is the one for the card's likely role (the
+  // starter-qualification guess, shown in "Role"), which is the number the roster page prints once
+  // the optimizer deploys it there; SP/RP show both so the difference is visible rather than
+  // silently baked into one blended figure.
   pitchOVR: { key: "pitchOVR", label: "Pitch wOBA", align: "r", get: (c) => c.pitchOVR, fmt: "woba" },
+  pitchRole: { key: "pitchRole", label: "Role", align: "c", get: (c) => (c.pitchRole ?? "").toUpperCase(), sort: (c) => c.pitchRole ?? "" },
+  pitchSP: { key: "pitchSP", label: "Pitch SP", align: "r", get: (c) => c.pitchSP, fmt: "woba" },
+  pitchRP: { key: "pitchRP", label: "Pitch RP", align: "r", get: (c) => c.pitchRP, fmt: "woba" },
   pitchVL: { key: "pitchVL", label: "Pitch vL", align: "r", get: (c) => c.pitchVL, fmt: "woba" },
   pitchVR: { key: "pitchVR", label: "Pitch vR", align: "r", get: (c) => c.pitchVR, fmt: "woba" },
   basicPitch: { key: "basicPitch", label: "Basic Pitch", align: "r", get: (c) => c.basicPitch, fmt: "basic" },
@@ -66,7 +74,7 @@ for (const p of POSNS) {
 const DEF = ["ifR", "ifE", "ifA", "dp", "cAb", "cFr", "cAr", "ofR", "ofE", "ofA"];
 const PRESETS: Record<string, { cols: string[]; sort: string; dir: 1 | -1 }> = {
   Hitting: { cols: ["title", "variant", "bats", "value", "owned", "hitOVR", "hitWobaOVR", "hitBsr", "hitVL", "hitVR", "basicHit", "basicHitVL", "basicHitVR", ...FIELD_POS, ...DEF], sort: "hitOVR", dir: -1 },
-  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR", "stamina", "pitches", "lowK", "kSupportPct"], sort: "pitchOVR", dir: 1 },
+  Pitching: { cols: ["title", "variant", "throws", "value", "owned", "pitchOVR", "pitchRole", "pitchSP", "pitchRP", "pitchVL", "pitchVR", "basicPitch", "basicPitchVL", "basicPitchVR", "stamina", "pitches", "lowK", "kSupportPct"], sort: "pitchOVR", dir: 1 },
 };
 
 const isNumeric = (col: Col) => !!col.fmt;

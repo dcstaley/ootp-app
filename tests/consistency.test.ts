@@ -8,7 +8,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { computeConsistency, CONSISTENCY_EVENTS } from "../src/eval/consistency.ts";
-import { makeRawPolyModel, type Coeffs } from "../src/scoring-core/index.ts";
+import { makeRawPolyModel, FIELD_N, type Coeffs } from "../src/scoring-core/index.ts";
+import { PRESENCE_M } from "../src/data/variants.ts";
 import type { EventForm } from "../src/model/curves.ts";
 
 // The committed frozen #2 form + neutralized capture coeffs (same recipe as
@@ -61,8 +62,10 @@ describe("cross-role consistency alarm", () => {
   const model = makeRawPolyModel(form);
   const strong = makeCards(160, 1);
   const weak = makeCards(160, 0.5);
-  const rStrong = computeConsistency(strong, strong, coeffs, model, { topX: 100, fieldN: 50 });
-  const rWeak = computeConsistency(weak, strong, coeffs, model, { topX: 100, fieldN: 50 });
+  // No `fieldN` knob any more — the field construction is `productionFieldStats`' business (see
+  // the alarm-cohort test in tests/consistency-field.test.ts for why).
+  const rStrong = computeConsistency(strong, strong, coeffs, model, { topX: 100 });
+  const rWeak = computeConsistency(weak, strong, coeffs, model, { topX: 100 });
 
   it("(a) in-frame pool: hitter- and pitcher-implied totals agree within tolerance", () => {
     // Loose bounds on purpose (proxy identity — deployment weights differ; see module header).
@@ -99,7 +102,8 @@ describe("cross-role consistency alarm", () => {
   it("report shape: all five events present, counts + sizes carried through", () => {
     expect(Object.keys(rWeak.events).sort()).toEqual([...CONSISTENCY_EVENTS].sort());
     expect(rWeak.topX).toBe(100);
-    expect(rWeak.fieldN).toBe(50);
+    expect(rWeak.fieldN).toBe(FIELD_N * PRESENCE_M); // production's cohort size, not a caller's
+
     expect(rWeak.poolCards).toBe(160);
     expect(rWeak.refCards).toBe(160);
   });

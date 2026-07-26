@@ -58,7 +58,9 @@ export interface PitcherOptimizeOptions {
   bullpenWeight?: number;          // weight on rostered non-starters (default 0.15)
 }
 
-export const qualifiesStarter = (p: PitcherCandidate, minStam: number, minTypes: number): boolean =>
+/** Starter-qualified? Takes only the two fields it reads, so callers that hold a raw catalog row
+ *  (the server's grid + Next Best pool) can use THIS rather than re-writing the comparison. */
+export const qualifiesStarter = (p: Pick<PitcherCandidate, "stamina" | "pitchTypes">, minStam: number, minTypes: number): boolean =>
   p.stamina >= minStam && p.pitchTypes >= minTypes;
 
 // ── Pitcher platoon collapse (M6) ───────────────────────────────────────────

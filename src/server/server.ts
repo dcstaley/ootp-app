@@ -28,12 +28,12 @@ import { computeHitTail, PINNED_HIT_TAIL, type HitTail } from "../scoring-core/h
 import type { KSpread as KSpreadCfg } from "../config/types.ts"; // K + BUILD-3 pitcher per-channel spread fields
 import { pitchingComponents, hittingComponents } from "../scoring-core/woba.ts"; // debug/card event trace only
 import { computeConsistency } from "../eval/consistency.ts";                      // debug/consistency readout only
-import { HIT_BIP_ADJ, PIT_BIP_ADJ, formVertexOffenders } from "../model/curves.ts";  // BIP convention, for the trace + the deploy-time vertex gate
+import { formVertexOffenders } from "../model/curves.ts";  // deploy-time vertex gate (the BIP convention is the core's — see hittingComponents)
 import { makeMatchupModel, matchupShift } from "../model/matchup.ts";              // Phase-0 matchup reparametrization
 // C4 low-K-support DISPLAY FLAG — informational only; never read by scoring/optimizer (see k-support.ts).
 import { computeKSupport, effectiveStuff, isLowKSupport, pitcherSideWeights, supportPercentile, type KSupport } from "../model/k-support.ts";
 import { cp, getParkFactor } from "../scoring-core/helpers.ts";                   // park factors, for the trace
-import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
+import { generateFullRoster, bestLineupValue, cumulativeSlotLimits, blendPitch, qualifiesStarter, type MatchHitter, type HitterCandidate, type PitcherCandidate, type RosterOptimizeOptions, type Roster, type PitchSplit, type PitchRole } from "../optimizer/index.ts";
 import { DEFAULT_WIN_PARAMS, buildUsage, setExpectedWins, winPctFromRuns, computeBaseline, deploymentFrom, applyDeployment, EXPOSURE_N, exposureFieldMembers, realizedSplitsOf, leaguePlayedPopulation, type WinParams, type FieldMember, type ExposureBaseline, type DeploymentShift, type EffectiveExposure, type RealizedSplits } from "../eval/index.ts";
 import type { Tournament, Era, Park } from "../config/tournament.ts";
 import { resolveTournamentAdjustment } from "../config/tournament.ts";
@@ -172,10 +172,44 @@ const pitchCount = (c: Record<string, unknown>) => PITCH_TYPES.filter((p) => n(c
 // (the hitter-tail pool below takes its complement, and the C4 display flag only marks pitchers).
 const isPitcherCard = (c: Record<string, unknown>) => n(c["Pitcher Role"]) > 0 || String(c["Position"]).trim() === "1";
 
+// ── Pitcher OVR: the DISPLAY collapse (one copy, shared with the roster page) ────────────────
+//
+// A pitcher can't be assigned to a platoon side, so its two per-side numbers must collapse to one.
+// The roster page collapses with `blendPitch` at the (hand, DEPLOYED ROLE) exposure. The cards grid
+// used score-card's own `blend`, which weights by `coeffs.r_pitch_split` — the unweighted SP/RP MEAN
+// (exposure.ts applyDeployment) — a deployment no arm actually gets. Measured on the live catalog the
+// two differ by ~0.0005 wOBA and the ORDER CAN FLIP (Hudson/Yates tie at 0.3349 on the grid, separate
+// as relievers), so the same two arms could rank differently on two pages of the same session.
+//
+// The roster path is the one that drives decisions, so the grid agrees with IT: same `blendPitch`
+// primitive, same role. Pre-solve the role is unknown, so it is GUESSED from starter qualification —
+// the identical guess the Next Best pool already makes (`rosterCandidates`), via one function.
+// (`score-card`'s `blend` is deliberately untouched: `basic_ovr` feeds `calibrateBasic`, so changing
+// it would move scoring, not display.)
+type PitchOvrCtx = { split: PitchSplit | undefined; platoonVR: number; platoonVL: number; minStarterStamina: number; minPitchTypes: number };
+
+/** The pre-solve role GUESS for a pitcher — starter-qualified ⇒ "sp", else "rp". */
+const guessPitchRole = (stamina: number, pitchTypes: number, p: { minStarterStamina: number; minPitchTypes: number }): PitchRole =>
+  qualifiesStarter({ stamina, pitchTypes }, p.minStarterStamina, p.minPitchTypes) ? "sp" : "rp";
+
+/** Collapse a pitcher's two per-side DISPLAY numbers (allowed wOBA, or basic) to one, per role.
+ *  `blendPitch` is a weighted mean, so it applies to the display scale exactly as it does to the
+ *  D2 signed-distance values the optimizer feeds it — the pScore reconstruction is its own inverse. */
+const pitchOvrFor = (vR: number, vL: number, throws: number, role: PitchRole, p: PitchOvrCtx) =>
+  blendPitch(vR, vL, throws, role, p.split, p.platoonVR, p.platoonVL);
+
+/** Team platoon exposure (weights the vR/vL hitter lineups, and the legacy no-pitchSplit collapse).
+ *  ONE copy: `rosterOptions` and the grid's display collapse must not disagree about it. */
+const teamExposure = (exp: EffectiveExposure | null | undefined, t: Tournament) =>
+  ({ platoonVR: exp?.platoonVR ?? t.platoonVR ?? 0.62, platoonVL: exp?.platoonVL ?? t.platoonVL ?? 0.38 });
+
 type ScoreCtx = {
   config: Parameters<typeof scoreCard>[1];
   basicConfig: Parameters<typeof scoreCard>[1];
   isEligible: (c: Record<string, unknown>) => boolean;
+  // DISPLAY-ONLY pitcher collapse (see above). Like `kSupport` it is deliberately NOT part of
+  // `config`/`basicConfig`, so it cannot reach scoreCard, valueFor, a pool statistic or the optimizer.
+  pitchOvr: PitchOvrCtx;
   // C4 low-K-support DISPLAY reference (model-scoped; null ⇒ the flag is simply not shown).
   // DISPLAY-ONLY: it is deliberately NOT part of `config`/`basicConfig`, so it cannot reach
   // scoreCard, valueFor, a pool statistic, a ramp or the optimizer. Do not move it there.
@@ -197,6 +231,11 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
   for (const [col, pos] of LEARN) learn[pos] = n(c[col]);
   const def: Record<string, number> = {};
   for (const k of DEF_COLS) def[k] = n(c[k]);
+  // Role-aware pitcher OVR (see PitchOvrCtx): both role blends are emitted so the grid can SHOW
+  // that "the OVR" is two numbers for an arm the optimizer might deploy either way, and `pitchOVR`
+  // is the guessed-role one — the same number the roster page prints for that role.
+  const pRole = guessPitchRole(n(c["Stamina"]), pitchCount(c), ctx.pitchOvr);
+  const pOvr = (vR: number, vL: number, role: PitchRole) => pitchOvrFor(vR, vL, w.throws, role, ctx.pitchOvr);
   return {
     id: String(w.cardId),
     variant: String(c["Variant"] ?? "").toUpperCase() === "Y" ? "Y" : "",
@@ -208,8 +247,11 @@ function toRow(c: Record<string, unknown>, ctx: ScoreCtx) {
     hitWobaVL: round(w.hit.woba_vL), hitWobaVR: round(w.hit.woba_vR), hitWobaOVR: round(w.hit.woba_ovr),
     hitBsr: Math.round(w.hit.bsr600 * 10) / 10,
     basicHit: round(b.hit.basic_ovr), basicHitVL: round(b.hit.basic_vL), basicHitVR: round(b.hit.basic_vR),
-    pitchVL: round(w.pitch.woba_vL), pitchVR: round(w.pitch.woba_vR), pitchOVR: round(w.pitch.woba_ovr),
-    basicPitch: round(b.pitch.basic_ovr), basicPitchVL: round(b.pitch.basic_vL), basicPitchVR: round(b.pitch.basic_vR),
+    pitchVL: round(w.pitch.woba_vL), pitchVR: round(w.pitch.woba_vR),
+    pitchOVR: round(pOvr(w.pitch.woba_vR, w.pitch.woba_vL, pRole)),
+    pitchSP: round(pOvr(w.pitch.woba_vR, w.pitch.woba_vL, "sp")), pitchRP: round(pOvr(w.pitch.woba_vR, w.pitch.woba_vL, "rp")),
+    pitchRole: pRole,
+    basicPitch: round(pOvr(b.pitch.basic_vR, b.pitch.basic_vL, pRole)), basicPitchVL: round(b.pitch.basic_vL), basicPitchVR: round(b.pitch.basic_vR),
     def,
     // C4: informational low-training-support marker + where the card's effective Stuff sits in
     // that support (whole percent). Never an input to anything — display only.
@@ -473,7 +515,12 @@ function scoreTournament(t: Tournament): Scored {
     return (lo == null || v >= lo) && (hi == null || v <= hi);
   };
   const isEligible = (c: Record<string, unknown>) => inValueRange(c) && rowEligible(c as any, t);
-  const ctx: ScoreCtx = { config, basicConfig, isEligible, kSupport: activeKSupport() };
+  // Display collapse context. Built from the exposure resolved just above rather than via
+  // `exposureFor(t)` — that reads the tournament cache this function is still populating.
+  const ctx: ScoreCtx = { config, basicConfig, isEligible, kSupport: activeKSupport(), pitchOvr: {
+    split: pitchSplitFrom(exposure, t), ...teamExposure(sp, t),
+    minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
+  } };
 
   return { rows: catalog.cards.map((c) => toRow(c, ctx)), ctx, eligibleCount: pool.length, exposure };
 }
@@ -707,9 +754,10 @@ function rosterCandidates(
     const positions = [...LEARN.filter(([col]) => n(c0[col]) === 1).map(([, p]) => p), "DH"];
     const pitVR = pitVal(sc, "vR");
     const pitVL = pitVal(sc, "vL");
-    // Single representative OVR (next-best ranking + upgrade input): role unknown
-    // pre-solve, so guess from starter-qualification (stamina + pitch types).
-    const pRole: PitchRole = n(c0["Stamina"]) >= t.min_starter_stamina && pitchCount(c0) >= t.min_pitch_types ? "sp" : "rp";
+    // Single representative OVR (next-best ranking + upgrade input): role unknown pre-solve, so
+    // guess from starter-qualification — the ONE guess (guessPitchRole), shared with the grid so
+    // the two views can't rank the same arm differently.
+    const pRole = guessPitchRole(n(c0["Stamina"]), pitchCount(c0), ctx.pitchOvr); // ctx is this tournament's
     entries.push({
       dispId,
       hitVR: hitVal(sc, "vR"), hitVL: hitVal(sc, "vL"), hitBsr: Math.round(sc.hit.bsr600 * 10) / 10,
@@ -899,8 +947,10 @@ function resolveExposure(t: Tournament, coeffs: Coeffs, model: EventModel, baseP
  *  in scoreTournament and cached on its Scored context. */
 function exposureFor(t: Tournament): ExposureResolved | null { return scoredFor(t.id).s.exposure; }
 
-function resolvePitchSplit(t: Tournament): PitchSplit | undefined {
-  const exp = exposureFor(t);
+/** The (hand, role) pitcher batter-hand exposure from an ALREADY-RESOLVED exposure. Split out from
+ *  `resolvePitchSplit` so `scoreTournament` — which is what populates the cache `exposureFor` reads —
+ *  can build the grid's display collapse from the same one rule instead of a second copy. */
+function pitchSplitFrom(exp: ExposureResolved | null, t: Tournament): PitchSplit | undefined {
   if (exp) { const e = exp.effective; return { sp: { r: e.r_pitch_split_sp, l: e.l_pitch_split_sp }, rp: { r: e.r_pitch_split_rp, l: e.l_pitch_split_rp } }; }
   // Legacy fallback (no #2 model): tournament field → model role split → role-blind split.
   const p = t.platoon;
@@ -911,13 +961,14 @@ function resolvePitchSplit(t: Tournament): PitchSplit | undefined {
   if (spR == null || spL == null || rpR == null || rpL == null) return undefined;
   return { sp: { r: spR, l: spL }, rp: { r: rpR, l: rpL } };
 }
+const resolvePitchSplit = (t: Tournament): PitchSplit | undefined => pitchSplitFrom(exposureFor(t), t);
 
 function rosterOptions(t: Tournament): RosterOptimizeOptions {
   const exp = exposureFor(t)?.effective;
   return {
     nHitters: t.hitters, nPitchers: t.pitchers, dh: t.dh,
     minStarters: t.min_starters, minStarterStamina: t.min_starter_stamina, minPitchTypes: t.min_pitch_types,
-    platoonVR: exp?.platoonVR ?? t.platoonVR ?? 0.62, platoonVL: exp?.platoonVL ?? t.platoonVL ?? 0.38, // team exposure: weights the vR/vL HITTER lineups
+    ...teamExposure(exp, t), // team exposure: weights the vR/vL HITTER lineups (one copy — see teamExposure)
     // ρ from the tournament's OWN WinParams — the same source (and the same resolution order:
     // t.tuning override over the model default) the E[wins] evaluator reads. Set here rather than
     // in ewinsInputs because the defect is mode-independent: non-cap builds no WinParams at all,
@@ -2012,14 +2063,17 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       const sFinal = vR ? (cs?.pitchScaleVR ?? 1) : (cs?.pitchScaleVL ?? 1);
       const k = pitchingComponents(e, sBB, sHR, side, co, dv, ef);
       const K_fin = e.K * co.era_k;
-      const BIP_fin = ef ? Math.max(600 - k.BB_fin - K_fin - k.HR_fin - PIT_BIP_ADJ, 1)
-        : Math.max(600 - k.BB_fin - (co.adv_hbp ?? 6) - K_fin - k.HR_fin, 1);
       return {
         effRatings: { con: r4(eR.con), stu: r4(eR.stu), pbabip: r4(eR.pbabip), hrr: r4(eR.hrr) },
         baseEvents_per600: { BB: r4(e.BB), K: r4(e.K), HR: r4(e.HR) },
-        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: r4(dv.era_gap), park_hr: r4(cp(vR ? co.park_hr_r : co.park_hr_l)), park_avg: r4(cp(vR ? co.park_avg_r : co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
+        // era_bip_adj listed like every other env factor: it scales PIT_BIP_ADJ inside the core's
+        // BIP, so a reader could not otherwise reconcile the BIP printed below with the line.
+        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: r4(dv.era_gap), era_bip_adj: r4(dv.era_bip_adj), park_hr: r4(cp(vR ? co.park_hr_r : co.park_hr_l)), park_avg: r4(cp(vR ? co.park_avg_r : co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
         calScales: { pBBScale: r4(sBB), pHRScale: r4(sHR), pitchScale: r4(sFinal) },
-        finalEvents_per600: { BB: r4(k.BB_fin), K: r4(K_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.XBH_fin), BIP: r4(BIP_fin) },
+        // BIP comes OFF the core's own components, like every other number on this line. It was
+        // re-derived here without `era_bip_adj` and printed 1.4–2.1% off the BIP that produced the
+        // single/XBH beside it on every non-2010 era — a trace that disagreed with itself.
+        finalEvents_per600: { BB: r4(k.BB_fin), K: r4(K_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.XBH_fin), BIP: r4(k.BIP_fin) },
       };
     };
     // Hitter event trace (per side), mirroring the pitcher one: effective ratings →
@@ -2035,14 +2089,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       const sFinal = vR ? (cs?.hitScaleVR ?? 1) : (cs?.hitScaleVL ?? 1);
       const k = hittingComponents(e, sBB, sHR, bats, side, co, dv, ef);
       const SO_fin = e.SO * co.era_k;
-      const BIP_fin = ef ? Math.max(600 - k.BB_fin - SO_fin - k.HR_fin - HIT_BIP_ADJ, 1)
-        : Math.max(600 - k.BB_fin - (co.adv_hbp ?? 6) - (co.adv_sh ?? 0) - SO_fin - k.HR_fin, 1);
       return {
         effRatings: { eye: r4(eR.eye), pow: r4(eR.pow), kRat: r4(eR.kRat), babip: r4(eR.babip), gap: r4(eR.gap) },
         baseEvents_per600: { BB: r4(e.BB), SO: r4(e.SO), HR: r4(e.HR) },
-        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: r4(dv.era_gap), park_hr: r4(getParkFactor(bats, vR, co.park_hr_r, co.park_hr_l)), park_avg: r4(getParkFactor(bats, vR, co.park_avg_r, co.park_avg_l)), park_gap: r4(cp(co.park_gap)) },
+        envFactors: { era_bb: co.era_bb, era_k: co.era_k, era_h: r4(dv.era_h), era_effective_hr: r4(dv.era_effective_hr), era_gap: r4(dv.era_gap), era_bip_adj: r4(dv.era_bip_adj), park_hr: r4(getParkFactor(bats, vR, co.park_hr_r, co.park_hr_l)), park_avg: r4(getParkFactor(bats, vR, co.park_avg_r, co.park_avg_l)), park_gap: r4(cp(co.park_gap)) }, // era_bip_adj: see pitTrace
         calScales: { hitBBScale: r4(sBB), hitHRScale: r4(sHR), hitScale: r4(sFinal) },
-        finalEvents_per600: { BB: r4(k.BB_fin), SO: r4(SO_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.GAP_fin), BIP: r4(BIP_fin) },
+        finalEvents_per600: { BB: r4(k.BB_fin), SO: r4(SO_fin), HR: r4(k.HR_fin), single: r4(k.oneB_fin), XBH: r4(k.GAP_fin), BIP: r4(k.BIP_fin) }, // BIP off the core (see pitTrace)
       };
     };
     const out: any[] = [];
@@ -2099,7 +2151,9 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     const ef = s.ctx.config.eventForm;
     if (!ef) return json(res, { tournament: t.name, active: false, note: "no #2 model active — the consistency readout needs the event model" });
     const basePool = buildEligiblePool(catalog.cards, t).filter(isBaseCard);
-    const report = computeConsistency(basePool, catalog.cards.filter(isBaseCard), s.ctx.config.coeffs, makeRawPolyModel(ef), { fieldN: FIELD_N });
+    // `select` = the active model's cohort refs — the same one scoreTournament hands
+    // productionFieldStats, so the alarm measures the coordinate production scores on.
+    const report = computeConsistency(basePool, catalog.cards.filter(isBaseCard), s.ctx.config.coeffs, makeRawPolyModel(ef), { select: activeCohortSelect });
     return json(res, { tournament: t.name, active: true, ...report });
   }
   // EVALUATION-ONLY tournament outcomes: load the combined-line CSVs under `dir` (a subdir of

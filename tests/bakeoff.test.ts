@@ -62,9 +62,11 @@ describe.skipIf(!existsSync(FIXTURE))("buildScoreboard — baseline on the 37-38
   // forms adopted/evaluated after the original bake-off. They have no hitter counterpart, so the
   // field is deliberately asymmetric.
   const PIT_ONLY = ["woba·pareto", "woba·pareto-noaug", "woba·stuffaug", "woba·satbb"];
-  // Hitter-ONLY candidate (2026-07-25): the deployed hitter form + a ln(EYE) aux on K. The
-  // pitcher K channel already has Stuff as its PRIMARY rating, so there is no counterpart.
-  const HIT_ONLY = ["woba·rawpoly-eyeaug"];
+  // Hitter-ONLY candidates: the deployed hitter form + ln(EYE) aux terms. The pitcher K channel
+  // already has Stuff as its PRIMARY rating, so there is no counterpart. `rawpoly-eyeaug`
+  // (2026-07-25) is the K leg alone; the `eyeaxis-*` ladder (2026-07-26) closes the rest of the
+  // EYE-axis cancellation one leg at a time (K → +BABIP → +HR → +HBP).
+  const HIT_ONLY = ["woba·rawpoly-eyeaug", "woba·eyeaxis-kb", "woba·eyeaxis-kbh", "woba·eyeaxis-kbh+hbpmean", "woba·eyeaxis-all4"];
   it("covers the baselines + candidate forms × roles × {in-sample, cv} (no OOT: the fixture has no out-of-window year)", () => {
     expect(sb.years).toEqual([2037, 2038]);
     expect(new Set(sb.rows.map((r) => r.evaluation))).toEqual(new Set(["in-sample", "cv"]));
