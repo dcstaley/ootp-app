@@ -1656,6 +1656,54 @@ From the 2026-07-16 session. Each is a marker, not a decision; do not treat any 
 >   §15.8's **wrong-sample** limb (Section A, N=26–36, three-way + range-restricted) does apply to any
 >   cwhit-side figure quoted at pin date. Treat 1.15 as directional only, as the original bullet already says.
 
+> **⚠⚠ AMENDMENT 2 (2026-07-26) — §15.8 EXHIBIT SIX: THE WRONG-FORM DEFECT. The 2026-07-20 audit
+> above is CORRECT AND ORTHOGONAL. The CEILING stands; the HEADROOM does not.** (Fable ruling,
+> 2026-07-26; evidence commit `990e385`, `docs/STALE_FORM_AUDIT_2026-07-26.md`.)
+>
+> **THE §15.5-vs-§0 DEFECT DISTINCTION.** §15.8 as audited on 2026-07-20 is a **NOISE-ARITHMETIC**
+> defect — the variance convention, the closed form `cwhit-scorecard.ts:119` wrongly declared absent.
+> Amendment 1 cleared the ceiling against it correctly: all four tools carry an independent `seW`
+> implementing the multinomial weighted-sum variance, and the defect never left the scorecard.
+> **Exhibit six is a different class entirely: the WRONG FORM.** The tools fitted `STUFFAUG_PIT`
+> (retired 2026-07-14, superseded by `PARETO_PIT` in `e771a46`) and fitted it **UNPINNED**, while
+> production fits pareto WITH a vertex-pin collector. No amount of correct variance arithmetic
+> detects that — it is a defect in WHICH MODEL was measured, not in HOW the measurement was reduced.
+> Amendment 1 could not have cleared it and did not claim to.
+>
+> **WHAT SURVIVES AND WHAT DIES — the split is not where I first reported it.**
+> - **THE CEILING (~0.78) STANDS, independently re-confirmed.** Amendment 1's clearance holds, and a
+>   fresh run measures production itself at **0.78 [0.69, 0.88]** (RP 0.79). "FORM decisions may
+>   continue to lean on ~0.78 as the in-frame yardstick" remains TRUE.
+> - **THE HEADROOM IS DEAD.** `ceiling-test.ts`'s row labelled "deployed (StuffAug)" read **0.64** —
+>   a retired form. **PRODUCTION IS AT THE CEILING, NOT 0.14 BELOW IT.** The gap that motivated
+>   further form work never existed. §15.5's "form is maxed" marker moves from *under re-test* to
+>   *supported on the deployed form* — with the original caveat intact, since this says production
+>   reaches the ceiling, NOT whether that ceiling is the form family's limit or information-theoretic.
+>   (Corroborating, `b793ab0`: an unconstrained per-event flex ceiling BEATS the deployed curves on
+>   only 6 of 10 channels and is BEATEN out of time on 4.)
+> - **§11.28's headroom is 3.5× overstated**: Δ +0.192 [0.157, 0.233] → **+0.055 [0.031, 0.081]**
+>   against the deployed baseline. Still CI-clear; a fraction of the record.
+> - **RE-READ ANY PRIORITISATION LEANING ON THE 0.14.** Ruled: the takeover roadmap's two model fixes
+>   are DEAD — hand-conditioned K WITHDRAWN, EYE-axis DECLINED, Stuff CONFOUNDED. K's residual cubic
+>   FOLDS INTO the elite-tail residual. The frontier is the shape-level result (`b793ab0` §6).
+>
+> **THREE CONFIRMATIONS (Fable requested; all verified in code, not inferred):**
+> 1. **Pareto adoption PREDATES the FORM_ENTRIES drift** — `e771a46` wired `PARETO_PIT` into the
+>    TRAINING path without adding it to the candidate registry. The drift began at adoption; the
+>    registry was never wrong about a form it had, it was silent about the one that shipped.
+> 2. **The vertex-pin bake-off WAS pins-aware** — `tools/pithr-form-bakeoff.ts:74-75` passes a live
+>    `VertexPin[]` collector to `fitPitForm(PARETO_PIT, …)`, commented as "exactly what
+>    server.saveTrainedModel now does." Its conclusion is NOT exposed.
+> 3. **The scorecard is clean BY CONSTRUCTION** — `tools/cwhit-mission-scorecard-v2.ts:87-88` reads
+>    `trained.eventForm` off the active artifact and calls `makeRawPolyModel(...)`. It never fits a
+>    form, so it scores the deployed frozen betas and cannot carry this defect.
+>
+> **STRUCTURAL LESSON (adopted to method canon).** The tools were CORRECT WHEN THEY RAN — their forms
+> matched what was deployed at the time. What drifted is a stale **LABEL** that got transcribed into
+> this document and outlived the code. **The guard belongs on the CLAIM in the plan, not on the fit
+> call in the tool.** `DEPLOYED_FORMS` + source-level assertions (`7c8a061`, `990e385`) close the code
+> side; this amendment closes the document side.
+
 ### 15.6 Solid results the next session may build on
 
 - **The benchmark scorecard exists** (`tools/cwhit-scorecard.ts` + `src/eval/cwhit/scorecard.ts`, fixtures
