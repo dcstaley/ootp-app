@@ -1,0 +1,657 @@
+################################################################################
+# SHAPE-ERROR STABILITY — is the hi-EYE/hi-POW composite error identified? — 2026-07-26
+# tools/shape-error-stability.ts · MEASUREMENT ONLY — no production default changed, no
+# correction fitted or proposed, nothing wired, nothing committed.
+################################################################################
+
+  THE FINDING UNDER TEST (fixtures/per-event-headroom-2026-07-26.txt, Part 3): where the
+  per-channel cancellation FAILS it concentrates on one hitter shape — hi EYE / hi POW — with a
+  per-card wOBA error of -0.00183 [-0.00364,-0.00026] vs the rest of the pool, supplying 9 of the
+  model's 12 false top-26 picks from 30% of the pool.
+
+  THE ONE QUESTION: is that error STABLE ACROSS FIT WINDOWS, or does it SORT BY WINDOW? The
+  standard is the one that killed the EYE-axis correction — a quantity is identified if it does
+  not move when re-estimated on a different slice of the same league AND its apparent
+  identification does not flip direction with a nuisance knob.
+     comparator IDENTIFIED    : K aux, swing 1.01-1.14x in every cell of every table
+     comparator NOT IDENTIFIED: BABIP aux, swing 4.16x across the three published windows, and
+                                a swing-of-swing that FLIPS with minPA (1.77→1.24x at 250,
+                                1.06→1.58x at 1000)
+
+  model 'league-42-43'  deployed window 2042+2043  minPA 1000 (window SUM)  root 'League Files'
+  deployed forms: hit 'woba·rawpoly'  vertex-pinned true
+  wOBA weights: THE MODEL'S OWN (trained.wobaWeights), HELD FIXED in every cell below
+    bb 0.7083  hbp 0.7391  1b 0.8992  xbh 1.3000  hr 2.0508
+  variants: INCLUDED (as the model trains them)
+
+################################################################################
+# VERDICT
+################################################################################
+
+  SORTS BY WINDOW.
+
+  THE ONE QUESTION, ANSWERED. Fitting DEPLOYED_FORMS on each of the three published disjoint
+  windows and evaluating out of frame on every season the window does not contain, the
+  hi-EYE/hi-POW composite contrast comes out (FIXED cell, minPA 1000, both directions pooled):
+     fit 2037+2038    → test 2039,2040,2041,2042,2043 +0.00188 [+0.00001, +0.00355] ★  (258 rows / 103 cards)
+     fit 2040+2041    → test 2037,2038,2039,2042,2043 +0.00417 [+0.00251, +0.00596] ★  (258 rows / 106 cards)
+     fit 2042+2043    → test 2037,2038,2039,2040,2041 -0.00123 [-0.00295, +0.00031]  (252 rows / 102 cards)  ← the published window
+  On the published POOL-median construction: +0.00195 / +0.00421 / -0.00183.
+
+  THE SWING RATIO, BESIDE ITS COMPARATORS.
+     shape error, three published windows, FIXED cell : 3.39x   signs ++−
+     shape error, three published windows, POOL cell  : 2.30x   signs ++−
+     over ALL 24 cells (arm x cell-def x minPA x width)        : 1.65x - 5.40x
+     12 of 12 swept cells CHANGE SIGN across the three windows.
+     ── comparator, IDENTIFIED     : K aux     1.01x - 1.14x in every cell, sign constant
+     ── comparator, NOT IDENTIFIED : BABIP aux 4.16x across the same three windows, with a
+                                     swing-of-swing that flips direction with minPA
+  The swing UNDERSTATES it. A swing ratio is a magnitude statistic and assumes a constant sign;
+  here the sign itself turns over in 12 of 12 swept cells, with the CI CLEAR ON BOTH SIDES
+  (2040+2041 clears positive, the deployed window clears negative). The BABIP aux at least kept
+  its sign. This is a worse failure of identification than the one that killed the EYE axis.
+
+  IT IS NOT CARD NOISE, AND THAT IS THE POINT. §5 splits each window's evaluation pool into two
+  DISJOINT halves of cards: 3 of 3 windows have both halves agreeing in sign, with half-vs-half
+  swings of 1.15x / 1.47x / 1.61x. So WITHIN a window the contrast is a stable property of the pool;
+  it is the FIT WINDOW that turns it over. The instability is in the estimate, not in the sample.
+
+  THE OBVIOUS MECHANISM WAS TESTED AND REFUTED (§4c) — the sort is real, not an artifact of the
+  level. The pool LEVEL bias sorts by window for a known reason (cards improve every season, so
+  an early fit over-predicts a later block and a late fit under-predicts an earlier one), and
+  the shape contrast carries the SAME SIGN as the level in all three windows:
+     fit 2037+2038   level +0.00709   shape contrast +0.00188   (same sign)
+     fit 2040+2041   level +0.00139   shape contrast +0.00417   (same sign)
+     fit 2042+2043   level -0.00414   shape contrast -0.00123   (same sign)
+  Since hi-EYE/hi-POW cards ARE the high-wOBA cards, a MULTIPLICATIVE frame would manufacture
+  exactly this out of a pure level phenomenon with no shape content. Tested by dividing out one
+  pool-wide multiplicative scalar λ = Σw·wOBApred ÷ Σw·wOBAobs — an operation an additive
+  contrast is blind to. The contrast barely moves: +0.00165 / +0.00412 / -0.00113, signs
+  ++−, swing 3.65x — only 1-12% of it removed.
+  So the level CO-MOVES with the contrast but does not carry it, and the window sort stays
+  UNEXPLAINED. That is the honest state: a candidate mechanism was pre-specified, tested, and
+  failed, which removes the most comfortable reading rather than supplying one.
+
+  AND THE SURFACE SORTS TOO (§6d), which closes the STABLE branch's escape hatch. Refitting the
+  8-term conditional surface one window at a time, the linear EYE and linear POW coefficients
+  BOTH change sign across the three windows (EYE ++−, swing 7.8x; POW ++−, swing 1.3x) — and
+  each is CI-clear in the window where it is negative. Only the EYE×POW INTERACTION keeps its
+  sign (+++ , swing 1.5x, CI-clear in 2 of 3 windows), so if anything on this plane is real it
+  is the interaction and not the gradient. But the size forecloses it either way: the FULL
+  8-term surface explains R² 0.0497 of the centred per-card error pooled (§6c), a single scalar
+  on the (EYE,POW) gradient 0.0129, and the 2x2 cell indicator 0.0138. Even a perfectly
+  identified composite-layer term keyed to these two ratings could address ~1-5% of the error.
+
+  THE TOP-N COST — reported on both branches, as required, AT THE ROSTER-RELEVANT CUT. topN=26 is
+  hardcoded through src/training/evaluate.ts, but 26 is the ROSTER size and the bake-off scores
+  PER ROLE: 33 of the 48 tournament configs in this repo roster 14/12, so the modal HITTER
+  count is 14, not 26. Card grain, mean over the three windows' held-out blocks:
+
+                                     TOP-14 (roster)   top-26 (incumbent)
+     false picks                           3.7 of 14            4.0 of 26
+     overlap rate                       0.738 ±0.226         0.846 ±0.128
+     value given up per slot       +0.00200 ±0.00261    +0.00208 ±0.00183
+     value given up, whole roster             +0.02796             +0.05398
+     paired displacement gap                +0.00735             +0.01406
+     true rank of the false picks                   26                   50
+     shape enrichment                          0.93x                1.07x
+
+  DOES THE PICTURE GET BETTER OR WORSE AT THE TIGHTER CUT? The two statistics disagree, and the
+  disagreement is the answer. The MISS RATE gets clearly WORSE: 0.738 overlap at top-14 against
+  0.846 at top-26, i.e. 26% of roster-relevant picks wrong versus 15%. The per-slot
+  VALUE cost is FLAT: +0.00200 vs +0.00208 (0.96x), far inside its own interval.
+  The reconciliation is the displacement gap, which HALVES at the tighter cut (+0.00735 vs
+  +0.01406): near the top of the pool the cards are densely packed, so the model gets a larger
+  FRACTION of its roster-relevant picks wrong but each mistake costs less, and the two effects
+  cancel in value terms. The false picks at top-14 sit at true rank 26 on average — they
+  genuinely belong just outside the roster, not deep in the pool.
+  Across the full sensitivity ladder (§7c) the per-slot cost runs +0.00253 / +0.00200 / +0.00247 / +0.00208
+  at top-10/14/20/26 — FLAT within resolution, so the error is spread through the pool rather
+  than concentrated at the sharp end. That weakens, not strengthens, the case for a correction.
+
+  FLAGGED EXPLICITLY, AS ASKED: THE INTERVAL DOES NOT NARROW AT THE TIGHTER CUT. Cost-per-slot
+  half-width goes ±0.00183 at top-26 → ±0.00261 at top-14 (1.42x — WIDER), and the overlap-rate
+  half-width goes ±0.128 → ±0.226 (1.76x — also wider). The overlap comparison is
+  confounded (a count out of K resolves only to 1/K, so top-14 moves in steps of 0.071 against
+  0.038 and granularity alone would widen it) — but the COST statistic is continuous, has no
+  such floor, and it widens too. So the hypothesis that the top-26 metric's ±0.08-0.19 width is
+  partly SELF-INFLICTED by scoring 12 decision-irrelevant slots is NOT SUPPORTED: the width is
+  driven by how few units enter the statistic, and cutting to 14 removes units rather than
+  noise. That is a transferable methodological result independent of this finding, and it is a
+  NEGATIVE one — re-cutting the metric to 14 would sharpen what it MEANS, not what it RESOLVES.
+
+  THE RELIABILITY CEILING (§7e) bounds all of it: the OBSERVED ranking disagrees with ITSELF
+  across two disjoint season halves, so a large share of any top-N mismatch is sampling noise
+  in the target rather than model error, at every cut.
+
+  THE CONCENTRATION CLAIM DOES NOT SURVIVE ITS OWN NULL, AT EITHER CUT. The published
+  construction (row grain, POOL cell, top-26) reproduces here — 12 false picks and
+  9 of them carrying the shape. But "30% of the pool supplies 75% of the false picks"
+  uses the POOL as the baseline, and the shape is SELECTED for being good cards: it is already
+  65% of the model's OWN top-26 on that same construction. Against the correct null the
+  enrichment is 1.15x there, 0.93x at the roster cut and 1.07x at 26 (card grain). The
+  model's mistaken picks are NOT concentrated in this shape beyond what the shape's presence at
+  the top of the pool already implies.
+
+################################################################################
+# §0 — PROVENANCE, GRAIN, THE MEASURED CLUSTER INFLATION, AND WHAT THE DESIGN CANNOT DO
+################################################################################
+
+  0a. SEASONS AND LEAGUE COVERAGE (each season loaded on its own; the loader's corrupt-cell
+  detector runs on every load and its exclusions are printed from the summary, not asserted):
+
+  season     leagues                             hit rows/cards @400  excluded cells
+  2037       HD450,HD451,HD453,PEL                            158/75  []
+  2038       HD450,HD451,HD452,HD453,PEL                      180/82  []
+  2039       HD450,HD451,HD452,HD453,PEL                      171/76  ["HD450|2039"]
+  2040       HD450,HD451,HD452,HD453,PEL                      192/84  []
+  2041       HD450,HD451,HD452,HD453,PEL                      191/78  []
+  2042       HD450,HD451,HD452,HD453,PEL                      184/79  []
+  2043       HD450,HD451,HD452,HD453,PEL                      192/80  []
+  ⇒ HD450 | 2039 is the known duplicate-vL/vR cell and the loader DOES drop it (visible above);
+    2037 carries 4 leagues, 2039 effectively 4 after the exclusion, the rest 5.
+  ⇒ Old Data 2032/2033 sits after a four-season gap and is EXCLUDED from every read here.
+
+  0b. GRAIN. loadWindow SUMS a card's seasons into ONE row per (card x side) over the window —
+  the units the deployed curves were fit on. Every N is rows; the DISTINCT-CARD count is printed
+  beside it because the card count is the binding sample size.
+
+  0c. THE THREE PUBLISHED FIT WINDOWS are mutually DISJOINT, which is what makes a swing across
+  them meaningful — overlapping windows share seasons and must agree:
+     fit 2037+2038    → OUT-OF-FRAME test 2039,2040,2041,2042,2043
+     fit 2040+2041    → OUT-OF-FRAME test 2037,2038,2039,2042,2043
+     fit 2042+2043    → OUT-OF-FRAME test 2037,2038,2039,2040,2041
+  (For the 2042+2043 window the held-out block is entirely BACKWARD in time and for 2037+2038
+  entirely FORWARD; the middle window straddles. Direction is reported separately in §2b so a
+  forward/backward asymmetry cannot be mistaken for a window effect.)
+
+  0d. THE MEASURED CLUSTER-INFLATION FACTOR (not assumed — it has come out 3.1x, 1.07x and
+  1.02-1.22x on different statistics in this project, so it is measured for the statistic used
+  here):
+
+  statistic                                                 cluster width    row width  inflation
+  shape contrast, deployed artifact OOF, POOL cell                3.31e-3      3.34e-3      0.99x
+  shape contrast, deployed artifact OOF, FIXED cell               3.36e-3      3.28e-3      1.02x
+  shape contrast, 2037+2038 fit OOF, FIXED cell                   3.50e-3      3.33e-3      1.05x
+
+  Every interval in this artifact is the CLUSTER one.
+
+  0e. OUT-OF-TIME IS NOT OUT-OF-CARD — WHAT THIS DESIGN CAN AND CANNOT CLAIM.
+  The same cards recur across seasons (residuals correlate r=0.94 over 99% shared BF), so the
+  three window estimates below are NOT three independent samples of the shape error. Measured:
+
+  fit window        test rows/cards  cards also in fit   share of test PA
+  2037+2038                 258/103           72 (70%)                86%
+  2040+2041                 258/106           79 (75%)                96%
+  2042+2043                 252/102           64 (63%)                95%
+
+  CONSEQUENCE, stated before any result: what varies across the three windows is (i) the fitted
+  COEFFICIENTS and (ii) the season mix of the held-out block — NOT the card population. So this
+  design is ASYMMETRIC evidence:
+     · a SORTS-BY-WINDOW result is STRONG — the estimate moved even though the cards barely did;
+     · a STABLE result is WEAK on its own — heavily shared cards would produce agreement even
+       from a pure card-level idiosyncrasy that no rating-based term could ever carry.
+  §5 therefore adds the one genuinely out-of-CARD read available: a disjoint CARD split of a
+  single evaluation pool. A shape effect that is real must survive it; a card-idiosyncrasy
+  masquerading as a shape effect will not. No claim of replication is made beyond that.
+
+################################################################################
+# §1 — REPRODUCTION OF THE PUBLISHED CELL (the control: this artifact must match)
+################################################################################
+
+  The published number used the DEPLOYED ARTIFACT (trained.eventForm) predicting 2037-2041, with
+  the cell defined by median splits of EYE and POW ON THAT POOL. Reproduced first, then repeated
+  with a same-window REFIT (fitHitForm on 2042+2043, fresh pins) to establish that a refit is a
+  faithful stand-in for the artifact — every other window below can only be a refit.
+
+  source                                 rows/cards     in shape    contrast                   95% CI
+  DEPLOYED ARTIFACT (published)             252/102        76/40    -0.00183     [-0.00361, -0.00016] ★
+  REFIT on 2042+2043 (same window)          252/102        76/40    -0.00183     [-0.00361, -0.00030] ★
+  published value for reference             252/102        76/40    -0.00183     [-0.00364, -0.00026] ★
+
+  shape cell thresholds — POOL: EYE ≥ 101, POW ≥ 104;  FIXED (deployed pool): EYE ≥ 107, POW ≥ 114
+  refit-vs-artifact agreement: 0.0% of the point estimate. A refit is a faithful stand-in.
+
+################################################################################
+# §2 — THE STABILITY TEST: the shape error fitted on each of the three published windows
+################################################################################
+
+  Each row: DEPLOYED_FORMS refit on that window (fresh vertex-pin collector), evaluated on EVERY
+  season the window does not contain. Contrast = weighted-mean ΔwOBA (predicted − observed)
+  inside the hi-EYE/hi-POW cell MINUS the same outside it. Differencing removes any common
+  level, so the statistic is anchor-neutral by construction (see §4).
+  NEGATIVE = the model credits the shape LESS than the observed line says it earned.
+
+  ══ cell definition: POOL medians (published construction; membership drifts with the pool) ══
+  fit window    held-out test             rows/cards    in shape    contrast                   95% CI  unweighted
+  2037+2038     2039,2040,2041,2042,2043       258/103       80/42    +0.00195     [+0.00020, +0.00365]★    +0.00398
+  2040+2041     2037,2038,2039,2042,2043       258/106       79/43    +0.00421     [+0.00235, +0.00592]★    +0.00649
+  2042+2043     2037,2038,2039,2040,2041       252/102       76/40    -0.00183     [-0.00367, -0.00025]★    -0.00087
+  ⇒ signs + + −   DO NOT AGREE — the estimate changes SIGN across windows
+  ⇒ SWING RATIO max|contrast| / min|contrast| = 2.30x   (K aux 1.01-1.14x = identified; BABIP aux 4.16x = not)
+
+  ══ cell definition: FIXED medians (deployed pool; membership constant) ══
+  fit window    held-out test             rows/cards    in shape    contrast                   95% CI  unweighted
+  2037+2038     2039,2040,2041,2042,2043       258/103       75/40    +0.00188     [+0.00001, +0.00355]★    +0.00371
+  2040+2041     2037,2038,2039,2042,2043       258/106       73/40    +0.00417     [+0.00251, +0.00596]★    +0.00664
+  2042+2043     2037,2038,2039,2040,2041       252/102       61/32    -0.00123     [-0.00295, +0.00031]     -0.00130
+  ⇒ signs + + −   DO NOT AGREE — the estimate changes SIGN across windows
+  ⇒ SWING RATIO max|contrast| / min|contrast| = 3.39x   (K aux 1.01-1.14x = identified; BABIP aux 4.16x = not)
+
+  §2b DIRECTION CONTROL. The 2042+2043 window is tested entirely BACKWARD and 2037+2038 entirely
+  FORWARD, so a forward/backward asymmetry could imitate a window effect. The middle window
+  (2040+2041) can be read both ways on the SAME fit — if direction were the driver, its two arms
+  would split:
+
+  fit window    arm                           rows/cards    contrast                   95% CI
+  2040+2041     forward 2042,2043                 173/74    +0.00497     [+0.00341, +0.00640] ★
+  2040+2041     backward 2037,2038,2039           189/84    +0.00297     [+0.00066, +0.00507] ★
+
+  §2c IN-FRAME FLOOR. In-sample residuals are shrunk toward zero, so the in-frame contrast is a
+  FLOOR, not an estimate. Printed so the out-of-frame numbers can be read against it:
+
+  fit window    frame                 rows/cards    contrast                   95% CI
+  2037+2038     IN FRAME                  159/77    -0.00017     [-0.00258, +0.00187]
+  2040+2041     IN FRAME                  179/79    +0.00159     [-0.00039, +0.00320]
+  2042+2043     IN FRAME                  173/74    +0.00141     [-0.00015, +0.00298]
+
+################################################################################
+# §3 — THE NUISANCE-KNOB TEST: does the magnitude or the SIGN move with minPA and width?
+################################################################################
+
+  Stability under a nuisance knob is the bar, not significance in any one cell. Two arms, because
+  minPA is two knobs in one:
+     ARM A (FIT ONLY)  — the threshold moves the FIT; the evaluation pool is PINNED at 1000, so
+                         every cell of a column is scored on byte-identical rows. This isolates
+                         the coefficient effect and is the identification-relevant arm.
+     ARM B (BOTH)      — the threshold moves the fit AND the evaluation pool, which also changes
+                         the POPULATION (lower-PA cards are noisier and a different card mix).
+
+  ══ ARM A (fit only, eval pinned) · cell POOL · width 2 · the three published windows ══
+  minPA    contrast per fit window (2037+38 / 2040+41 / 2042+43)   signs    swing               fit rows
+  250      +0.00194 / +0.00397 / -0.00154                   ++−     2.57            267/273/278
+  500      +0.00192 / +0.00413 / -0.00139                   ++−     2.96            207/229/225
+  1000     +0.00195 / +0.00421 / -0.00183                   ++−     2.30            159/179/173
+
+  ══ ARM A (fit only, eval pinned) · cell FIXED · width 2 · the three published windows ══
+  minPA    contrast per fit window (2037+38 / 2040+41 / 2042+43)   signs    swing               fit rows
+  250      +0.00186 / +0.00393 / -0.00091                   ++−     4.32            267/273/278
+  500      +0.00185 / +0.00410 / -0.00076                   ++−     5.40            207/229/225
+  1000     +0.00188 / +0.00417 / -0.00123                   ++−     3.39            159/179/173
+
+  ══ ARM B (fit + eval) · cell POOL · width 2 · the three published windows ══
+  minPA    contrast per fit window (2037+38 / 2040+41 / 2042+43)   signs    swing               fit rows
+  250      +0.00146 / +0.00355 / -0.00149                   ++−     2.44            267/273/278
+  500      +0.00149 / +0.00364 / -0.00134                   ++−     2.73            207/229/225
+  1000     +0.00195 / +0.00421 / -0.00183                   ++−     2.30            159/179/173
+
+  ══ ARM B (fit + eval) · cell FIXED · width 2 · the three published windows ══
+  minPA    contrast per fit window (2037+38 / 2040+41 / 2042+43)   signs    swing               fit rows
+  250      +0.00181 / +0.00389 / -0.00088                   ++−     4.44            267/273/278
+  500      +0.00181 / +0.00401 / -0.00076                   ++−     5.29            207/229/225
+  1000     +0.00188 / +0.00417 / -0.00123                   ++−     3.39            159/179/173
+
+  §3b WIDTH, CONTROLLED. A max/min over three draws is mechanically larger than over two, and
+  overlapping windows must agree — so the width contrast uses TWO MUTUALLY DISJOINT windows on
+  the SAME anchors and changes only the width (the construction §3a of the threshold sweep used):
+     width 2:  2037+2038          vs  2040+2041
+     width 3:  2037+2038+2039     vs  2040+2041+2042
+  Two disjoint FOUR-season windows do not exist in 2037-2043, so width 3 is the widest reachable.
+
+  ══ cell POOL · ARM A (eval pinned at 1000) ══
+  configuration              contrast per window              signs    swing
+  width 2 · minPA 250        +0.00194 / +0.00397                 ++     2.05
+  width 3 · minPA 250        +0.00156 / +0.00259                 ++     1.66
+  width 2 · minPA 500        +0.00192 / +0.00413                 ++     2.15
+  width 3 · minPA 500        +0.00157 / +0.00259                 ++     1.65
+  width 2 · minPA 1000       +0.00195 / +0.00421                 ++     2.15
+  width 3 · minPA 1000       +0.00163 / +0.00270                 ++     1.66
+
+  ══ cell FIXED · ARM A (eval pinned at 1000) ══
+  configuration              contrast per window              signs    swing
+  width 2 · minPA 250        +0.00186 / +0.00393                 ++     2.11
+  width 3 · minPA 250        +0.00151 / +0.00255                 ++     1.69
+  width 2 · minPA 500        +0.00185 / +0.00410                 ++     2.21
+  width 3 · minPA 500        +0.00152 / +0.00255                 ++     1.68
+  width 2 · minPA 1000       +0.00188 / +0.00417                 ++     2.22
+  width 3 · minPA 1000       +0.00158 / +0.00267                 ++     1.69
+
+  §3c THE SWING OF THE SWING — the exact test that condemned the BABIP aux. If widening the
+  window steadies the estimate at one threshold and destabilises it at another, the apparent
+  identification depends on which knob was turned and the quantity is NOT identified:
+
+  cell def   minPA      width 2   width 3  direction
+  POOL       250           2.05      1.66  steadier at 3
+  POOL       500           2.15      1.65  steadier at 3
+  POOL       1000          2.15      1.66  steadier at 3
+  FIXED      250           2.11      1.69  steadier at 3
+  FIXED      500           2.21      1.68  steadier at 3
+  FIXED      1000          2.22      1.69  steadier at 3
+
+  §3d THE HEADLINE STATISTIC, next to its comparators. Every swing computed above, over every
+  arm x cell-definition x threshold x width in this artifact:
+
+     shape-error swing, range over all 24 cells : 1.65x - 5.40x
+     sign consistency across windows              : 12 of 12 width-2 cells CHANGE SIGN across windows
+     comparator — K aux (IDENTIFIED)              : 1.01x - 1.14x, sign constant
+     comparator — BABIP aux (NOT IDENTIFIED)      : 4.16x on the three published windows
+
+################################################################################
+# §4 — LEVEL vs SHAPE, AND THE HBP ACCOUNTING RawHitting FORCES
+################################################################################
+
+  A LEVEL shift is absorbed by the anchor/baseline and cannot reshuffle a roster, so it is not
+  the thing to correct. The contrast statistic used throughout is a DIFFERENCE of two group
+  means, so any common level cancels exactly — the table below shows that directly: the raw cell
+  mean moves with the level, the contrast does not.
+
+  fit window      pool LEVEL  cell raw mean  rest raw mean    CONTRAST  |contrast|/|level|
+  2037+2038         +0.00709       +0.00845       +0.00657    +0.00188                0.27
+  2040+2041         +0.00139       +0.00445       +0.00028    +0.00417                3.01
+  2042+2043         -0.00414       -0.00505       -0.00382    -0.00123                0.30
+
+  VARIANCE SHARE — how much of the centred per-card error the cell indicator actually carries.
+  This is the ceiling on what ANY correction keyed to this one 2x2 cell could remove:
+
+  fit window      SD of centred ΔwOBA    cell R²   (EYE,POW) linear R²   +quad+inter R²
+  2037+2038                   0.00476     0.0310                0.0218           0.0896
+  2040+2041                   0.00521     0.1249                0.1681           0.1901
+  2042+2043                   0.00486     0.0123                0.0453           0.0775
+
+  §4b THE HBP LEG. RawHitting has NO HBP field, so the deployed hitter HBP is a CONSTANT 6/600 in
+  the wOBA numerator (src/model/raw-poly.ts) while the observed side carries the card's real
+  hit-by-pitches. That leg is therefore a real per-card wOBA error with no rating-based remedy,
+  and — being a fixed 6 on BOTH sides of the HARNESS target — it is invisible to every harness
+  metric. If the shape error is largely HBP, no composite-layer term keyed to (EYE,POW) can
+  legitimately carry it. Measured both ways:
+
+  fit window      TRUE frame   HARNESS frame   HBP leg alone  HBP share of contrast
+  2037+2038         +0.00188        +0.00168        +0.00020                    11%
+  2040+2041         +0.00417        +0.00396        +0.00021                     5%
+  2042+2043         -0.00123        -0.00135        +0.00012                   -10%
+
+  §4c MECHANISM PROBE — IS THE SHAPE CONTRAST A PROPORTIONAL SHADOW OF THE LEVEL DRIFT?
+  The level column above is not noise: cards improve every season, so a model fit on an EARLY
+  window over-predicts a LATER block and one fit on a late window under-predicts an earlier one
+  (the standing league-frame result). That level is absorbed by the anchor — but only if it is
+  ADDITIVE. If the frame acts MULTIPLICATIVELY on wOBA, the same proportional miss produces a
+  LARGER ABSOLUTE error for the high-wOBA cards, and hi-EYE/hi-POW cards ARE the high-wOBA cards.
+  That would manufacture a shape contrast whose SIGN follows the level's sign — exactly the
+  pattern §2 found — out of a pure level phenomenon with no shape content at all.
+  Test: rescale the predicted line by the pool-wide multiplicative level λ = Σw·wOBApred ÷
+  Σw·wOBAobs (one scalar per window, fit on the pool, NOT on the cell) and re-measure. Removing
+  an ADDITIVE level cannot change a contrast at all — the difference of two group means already
+  cancels it — so any movement here is attributable to the multiplicative form alone.
+
+  fit window     λ (mult level)  additive contrast  MULTIPLICATIVE                   95% CI   removed
+  2037+2038             1.02191           +0.00188        +0.00165     [-0.00007, +0.00331]        12%
+  2040+2041             1.00429           +0.00417        +0.00412     [+0.00234, +0.00606]★        1%
+  2042+2043             0.98724           -0.00123        -0.00113     [-0.00284, +0.00051]         8%
+  ⇒ after the multiplicative level is removed: signs + + − (still disagree), swing 3.65x
+
+################################################################################
+# §5 — CARD-SPLIT REPLICATION (the one genuinely out-of-CARD read available)
+################################################################################
+
+  §0e established that the three window estimates share almost all their cards, so agreement
+  across them is weak evidence. Here the SAME fit and the SAME evaluation seasons are split into
+  two DISJOINT halves of CARDS (deterministic hash of cid, so the split is reproducible and
+  independent of any outcome). A shape effect that is a property of the rating shape must appear
+  in both halves. A card-level idiosyncrasy that happens to sit in the cell will not.
+
+  fit window    half          rows/cards    in shape    contrast                   95% CI
+  2037+2038     A (even)          136/54       44/23    +0.00208     [-0.00121, +0.00503]
+                B (odd)           122/49       31/17    +0.00181     [-0.00070, +0.00354]
+  2040+2041     A (even)          137/54       45/24    +0.00343     [+0.00019, +0.00689] ★
+                B (odd)           121/52       28/16    +0.00503     [+0.00332, +0.00674] ★
+  2042+2043     A (even)          132/51       34/17    -0.00157     [-0.00466, +0.00137]
+                B (odd)           120/51       27/15    -0.00097     [-0.00310, +0.00082]
+
+  ⇒ 3 of 3 windows have the two card halves agreeing in SIGN.
+  ⇒ half-vs-half swing per window: 1.15x, 1.47x, 1.61x
+  A card split halves the cards in each arm, so the intervals must widen — the sign agreement,
+  not the interval, is the readable quantity here.
+
+################################################################################
+# §6 — THE FUNCTIONAL SHAPE OVER THE (EYE, POW) PLANE — CHARACTERISED, NOT FITTED
+################################################################################
+
+  This section exists because the STABLE branch would need it, and because it is diagnostic
+  either way: a real shape effect has a coherent surface, a cell artifact does not. NOTHING IS
+  PROPOSED — no correction is fitted, no term is added to any form, and the coefficients printed
+  are descriptive statistics of the residual, not candidates.
+
+  §6a THE SURFACE. Weighted-mean ΔwOBA over a 3x3 tercile grid in (EYE, POW), pooled over the
+  three windows' out-of-frame blocks (each row weighted by PA; a card appearing under several
+  windows contributes once per window, which is stated rather than corrected — the grid is a
+  DESCRIPTION, no interval is claimed from it):
+
+     EYE terciles at 91 / 120;  POW terciles at 96 / 123.  Cells are ΔwOBA centred on the pool level (+0.00152).
+
+                        POW lo      POW mid       POW hi
+     EYE hi       -0.00163 (47) -0.00128 (73) +0.00190 (140)
+     EYE mid      -0.00105 (93) +0.00065 (96) +0.00040 (63)
+     EYE lo       +0.00094 (113) -0.00140 (82) -0.00091 (61)
+
+  §6b IS IT A CORNER, A GRADIENT, OR AN INTERACTION? Conditional weighted fit of ΔwOBA on the
+  z-scored ratings plus the two curvature terms and the interaction, ALL FIVE RATINGS HELD.
+  A pure CORNER needs the EYE×POW interaction; a monotone GRADIENT needs only the linears.
+
+  term             coef (wOBA per SD)                   95% CI
+  EYE                        +0.00010     [-0.00062, +0.00101]
+  POW                        +0.00085     [-0.00006, +0.00181]
+  AvoidK                     -0.00021     [-0.00095, +0.00032]
+  BABIP(rat)                 +0.00099     [+0.00044, +0.00179] ★
+  GAP                        -0.00010     [-0.00088, +0.00054]
+  EYE²                       -0.00007     [-0.00054, +0.00056]
+  POW²                       +0.00023     [-0.00016, +0.00083]
+  EYE×POW                    +0.00070     [+0.00005, +0.00147] ★
+
+  §6c COULD A SINGLE SCALAR ON ONE SHAPE INDEX CARRY IT? The index is the unit vector along the
+  fitted (EYE,POW) gradient, s = 0.119·zEYE + 0.993·zPOW. Weighted R² of the centred
+  per-card residual (the whole target a composite-layer correction could address):
+
+     single scalar on s                      R² 0.0129
+     s + s² (curvature on the same index)    R² 0.0212
+     free zEYE + zPOW                        R² 0.0147
+     full 8-term surface (all ratings held)  R² 0.0497
+     the 2x2 cell indicator alone            R² 0.0138
+
+  READ: if the single index recovers essentially all of what the free linear pair does, ONE
+  scalar is the right complexity for the (EYE,POW) part; if the interaction and the quadratics
+  are CI-clear and add materially, it is a corner and one scalar cannot carry it. Either way
+  the ABSOLUTE R² is the binding number — it bounds what any composite-layer correction keyed to
+  these two ratings could remove from the per-card error, before any question of whether the
+  coefficient is identified.
+
+  §6d DOES THE SURFACE ITSELF SORT BY WINDOW? §6a-c pool the three out-of-frame blocks, which
+  MIXES the three window estimates §2 showed to disagree — so the pooled surface is a mixture
+  and its coefficients must be checked per window before any of them is read as a shape. The
+  same 8-term conditional fit, one window at a time:
+
+  term                      2037+2038             2040+2041             2042+2043   signs    swing
+  EYE                       +0.00017              +0.00082              -0.00132★     ++−     7.81
+  POW                       +0.00100★             +0.00135★             -0.00118★     ++−     1.34
+  AvoidK                    -0.00025              -0.00068★             -0.00072★     −−−     2.91
+  BABIP(rat)                +0.00143★             +0.00049              +0.00015      +++     9.75
+  GAP                       +0.00009              -0.00032              -0.00034      +−−     3.94
+  EYE²                      -0.00026              -0.00011              +0.00023      −−+     2.40
+  POW²                      +0.00052★             +0.00026              -0.00027      ++−     2.00
+  EYE×POW                   +0.00090★             +0.00061              +0.00079★     +++     1.46
+
+  (★ = that window's own cluster-bootstrap CI excludes zero. A term whose SIGN differs across
+  the three windows describes the window, not the rating shape.)
+
+################################################################################
+# §7 — THE TOP-N COST AT THE ROSTER-RELEVANT CUT (needed on BOTH branches)
+################################################################################
+
+  THE CUT IS WRONG IN THE INCUMBENT METRIC, AND IT IS WORTH SAYING BEFORE THE NUMBERS. topN=26 is
+  the hardcoded default throughout src/training/evaluate.ts (lines 39, 59, 67, 93) and inside
+  evalMetrics. 26 is the ROSTER SIZE — every tournament in data/tournaments/ carries 26 cards. But
+  the bake-off evaluates PER ROLE, with separate HITTER and PITCHER specs, and a roster is not 26
+  of EITHER. Counted from the tournament configs in this repo:
+     48 tournament configs read: 14/12 (33), 16/10 (7), 15/11 (6), 18/8 (1), 13/13 (1)   [hitters/pitchers]
+  ⇒ the MODAL hitter count is 14, not 26. A "top-26 hitters" overlap therefore scores against
+  nearly twice as many hitters as anyone rosters: roughly half the metric is cards with no
+  decision consequence, and the 22nd-best hitter counts exactly as much as the 3rd. That dilutes
+  sensitivity to precisely the errors that decide a roster.
+
+  So the HEADLINE cut below is TOP-14 (the modal hitter slot count). Top-26 is reported beside it
+  for comparability with every prior figure in this project — including the "9 of 12 false top-26
+  picks" that motivated this task — and top-10 / top-20 fill in the sensitivity. Grain: CARD (a
+  card's vL and vR rows pooled by PA into one card-level wOBA — a roster picks cards, not
+  card-sides) is the headline; ROW grain is the published construction and is printed too.
+
+  fit window    grain    cut   pool  false picks   overlap     overlap 95% CI    ±half   cost/slot         cost/slot CI  paired gap  true rank of false
+  2037+2038     card      10     103         2/10     0.800     [0.500, 1.000]   ±0.250    +0.00297 [+0.00000, +0.00753]    +0.01487                40.5
+                          14◀    103         4/14     0.714     [0.500, 0.929]   ±0.214    +0.00252 [+0.00036, +0.00670]    +0.00884                29.0
+                          20     103         4/20     0.800     [0.600, 0.950]   ±0.175    +0.00258 [+0.00042, +0.00518]    +0.01289                43.8
+                          26     103         3/26     0.885     [0.731, 0.962]   ±0.115    +0.00216 [+0.00041, +0.00411]    +0.01869                67.7
+                row       10     258         4/10     0.600     [0.200, 0.800]   ±0.300    +0.00425 [+0.00136, +0.01268]    +0.01062                20.8
+                          14◀    258         7/14     0.500     [0.286, 0.786]   ±0.250    +0.00635 [+0.00166, +0.01079]    +0.01271                42.1
+                          20     258         8/20     0.600     [0.350, 0.750]   ±0.200    +0.00593 [+0.00228, +0.01113]    +0.01483                52.9
+                          26     258        12/26     0.538     [0.385, 0.731]   ±0.173    +0.00594 [+0.00288, +0.00981]    +0.01288                53.9
+  2040+2041     card      10     106         3/10     0.700     [0.500, 1.000]   ±0.250    +0.00348 [+0.00000, +0.00730]    +0.01161                34.3
+                          14◀    106         4/14     0.714     [0.429, 0.929]   ±0.250    +0.00254 [+0.00036, +0.00667]    +0.00890                31.8
+                          20     106         6/20     0.700     [0.500, 0.850]   ±0.175    +0.00316 [+0.00090, +0.00599]    +0.01053                40.8
+                          26     106         5/26     0.808     [0.615, 0.885]   ±0.135    +0.00230 [+0.00090, +0.00503]    +0.01195                46.6
+                row       10     258         5/10     0.500     [0.100, 0.700]   ±0.300    +0.00442 [+0.00125, +0.01421]    +0.00884                23.2
+                          14◀    258         7/14     0.500     [0.214, 0.714]   ±0.250    +0.00638 [+0.00183, +0.01134]    +0.01275                43.6
+                          20     258         9/20     0.550     [0.350, 0.700]   ±0.175    +0.00545 [+0.00248, +0.01061]    +0.01212                46.8
+                          26     258        10/26     0.615     [0.423, 0.731]   ±0.154    +0.00578 [+0.00278, +0.00933]    +0.01503                64.0
+  2042+2043     card      10     102         3/10     0.700     [0.500, 1.000]   ±0.250    +0.00115 [-0.00000, +0.00280]    +0.00382                15.3
+                          14◀    102         3/14     0.786     [0.500, 0.929]   ±0.214    +0.00092 [+0.00015, +0.00315]    +0.00431                17.7
+                          20     102         5/20     0.750     [0.600, 0.900]   ±0.150    +0.00168 [+0.00029, +0.00346]    +0.00671                25.8
+                          26     102         4/26     0.846     [0.654, 0.923]   ±0.135    +0.00177 [+0.00038, +0.00354]    +0.01153                36.0
+                row       10     252         6/10     0.400     [0.100, 0.700]   ±0.300    +0.00636 [+0.00175, +0.01089]    +0.01060                21.0
+                          14◀    252         7/14     0.500     [0.214, 0.714]   ±0.250    +0.00593 [+0.00261, +0.01055]    +0.01186                25.4
+                          20     252         8/20     0.600     [0.350, 0.750]   ±0.200    +0.00567 [+0.00228, +0.00938]    +0.01416                38.1
+                          26     252        12/26     0.538     [0.462, 0.769]   ±0.154    +0.00506 [+0.00214, +0.00817]    +0.01096                38.3
+
+  READING IT. "overlap" = (K − false picks)/K, the project's standing top-N metric, put on a RATE
+  so the cuts are comparable. "cost/slot" = [observed wOBA of the true top-K − observed wOBA of
+  the model's top-K] ÷ K — the value each roster slot gives up, again comparable across cuts.
+  "paired gap" pairs each missed card with the false pick that displaced it (both ordered by
+  observed value) and averages the difference — how far the displaced cards sit from the ones
+  chosen. "true rank of false" = where the model's mistaken picks actually belong; a number just
+  past K means near-misses, a large number means real errors. ◀ marks the roster-relevant cut.
+
+  §7b DOES THE INTERVAL NARROW AT THE TIGHTER CUT? This is a methodological question independent
+  of the shape finding: if the incumbent top-26 metric is partly self-inflicted noise from
+  scoring 12 decision-irrelevant slots, the tighter cut should be SHARPER, not just smaller.
+  Half-widths of the overlap interval, averaged over the three windows:
+
+  grain          top-10      top-14      top-20      top-26   direction
+  card           ±0.250      ±0.226      ±0.167      ±0.128   WIDER at the roster cut
+  row            ±0.300      ±0.250      ±0.192      ±0.160   WIDER at the roster cut
+
+  The same for the value statistic (cost per slot), where a narrower interval is the stronger
+  claim because the quantity is continuous rather than a count out of K:
+
+  grain            top-10        top-14        top-20        top-26
+  card           ±0.00294      ±0.00261      ±0.00217      ±0.00183
+  row            ±0.00557      ±0.00443      ±0.00401      ±0.00325
+
+  CAVEAT, stated so the result is not over-read: a count out of K has a floor on its resolution of
+  1/K, so a top-14 overlap moves in steps of 0.071 against 0.038 for top-26. A GRANULARITY effect
+  can therefore widen the tighter cut's interval even when the underlying decision problem is
+  cleaner. That is why the cost-per-slot table is printed beside it — cost is continuous and has
+  no such floor, so it is the honest test of the "is the metric self-inflicted" question.
+
+  §7c DOES THE COST CONCENTRATE AT THE TOP? If the per-slot cost RISES as the cut tightens, the
+  error is concentrated where roster decisions are made and it matters more than the raw top-26
+  count suggests. If it is FLAT, the error is spread through the pool and matters less.
+
+  fit window    grain    cost/slot @10  cost/slot @14  cost/slot @20  cost/slot @26   profile
+  2037+2038     card          +0.00297       +0.00252       +0.00258       +0.00216   flat within resolution
+                row           +0.00425       +0.00635       +0.00593       +0.00594   flat within resolution
+  2040+2041     card          +0.00348       +0.00254       +0.00316       +0.00230   flat within resolution
+                row           +0.00442       +0.00638       +0.00545       +0.00578   flat within resolution
+  2042+2043     card          +0.00115       +0.00092       +0.00168       +0.00177   flat within resolution
+                row           +0.00636       +0.00593       +0.00567       +0.00506   flat within resolution
+
+  Every cell reads "flat within resolution" and that is the honest verdict, not a hedge: the
+  cost-per-slot half-widths in §7b are ±0.002-0.006 on a quantity of ~0.002-0.006, so this data
+  CANNOT resolve a top-concentration profile even if one exists. What it does exclude is a LARGE
+  one — a cost that doubled at the roster cut would be visible here and is not. Read this as
+  "no evidence the error concentrates where roster decisions are made", which is the direction
+  that weakens the case for a correction, and not as "proved flat".
+
+  §7d THE ENRICHMENT BASELINE — is the shape's share of the false picks a CONCENTRATION, or is it
+  what the shape's presence at the top of the pool would produce anyway? The shape is SELECTED for
+  being GOOD cards (high EYE and high POW), so its share of the POOL is the wrong null. The right
+  null is its share of the model's OWN top-K. Shown at the roster cut and at 26; the ROW grain +
+  POOL cell + top-26 line is the exact construction behind the published "9 of 12 ... from 30% of
+  the pool" claim.
+
+  fit window    grain  cell     cut  shape % of pool   % of model top-K   % of true top-K  false picks w/ shape  enrichment
+  2037+2038     card   POOL      14              21%                36%               36%             1/4 (25%)       0.70x
+  2037+2038     card   FIXED     14              19%                36%               29%             1/4 (25%)       0.70x
+  2037+2038     card   POOL      26              21%                31%               27%             1/3 (33%)       1.08x
+  2037+2038     card   FIXED     26              19%                27%               23%             1/3 (33%)       1.24x
+  2037+2038     row    POOL      14              31%                86%               50%            7/7 (100%)       1.17x
+  2037+2038     row    FIXED     14              29%                79%               50%             6/7 (86%)       1.09x
+  2037+2038     row    POOL      26              31%                77%               54%            9/12 (75%)       0.97x
+  2037+2038     row    FIXED     26              29%                73%               50%            9/12 (75%)       1.03x
+  2040+2041     card   POOL      14              23%                43%               36%             2/4 (50%)       1.17x
+  2040+2041     card   FIXED     14              20%                36%               36%             1/4 (25%)       0.70x
+  2040+2041     card   POOL      26              23%                42%               38%             2/5 (40%)       0.95x
+  2040+2041     card   FIXED     26              20%                35%               31%             2/5 (40%)       1.16x
+  2040+2041     row    POOL      14              31%                86%               57%            7/7 (100%)       1.17x
+  2040+2041     row    FIXED     14              28%                79%               57%             6/7 (86%)       1.09x
+  2040+2041     row    POOL      26              31%                77%               58%            7/10 (70%)       0.91x
+  2040+2041     row    FIXED     26              28%                73%               54%            7/10 (70%)       0.96x
+  2042+2043     card   POOL      14              23%                29%               29%             1/3 (33%)       1.17x
+  2042+2043     card   FIXED     14              17%                29%               29%             1/3 (33%)       1.17x
+  2042+2043     card   POOL      26              23%                27%               27%             1/4 (25%)       0.93x
+  2042+2043     card   FIXED     26              17%                23%               23%             1/4 (25%)       1.08x
+  2042+2043     row    POOL      14              30%                64%               43%             5/7 (71%)       1.11x
+  2042+2043     row    FIXED     14              24%                50%               36%             4/7 (57%)       1.14x
+  2042+2043     row    POOL      26              30%                65%               46%            9/12 (75%)       1.15x
+  2042+2043     row    FIXED     26              24%                50%               42%            6/12 (50%)       1.00x
+
+  Enrichment = (% of false picks carrying the shape) ÷ (% of the model's top-K carrying it). 1.0x
+  means the false picks are a RANDOM sample of the model's own top-K with respect to this shape —
+  i.e. the shape is not what makes them wrong, it is merely what the top of the pool looks like.
+
+  §7e THE RELIABILITY CEILING — how many of those "false picks" are noise in the OBSERVED ranking
+  rather than model error? The observed line is itself a finite sample, so a perfect model would
+  still miss some of the observed top-K. Measured by splitting the held-out block into two
+  disjoint SEASON halves, restricting to cards present in both, and comparing OBSERVED-to-
+  OBSERVED top-K overlap. That is a ceiling on how well ANY model could agree with one sample:
+
+  held-out block           half A       half B         cards         top-10        top-14        top-20        top-26
+  2037,2038,2039,2040,2041 2037+2038    2040+2041         64           8/10         11/14         18/20         20/26
+  2039,2040,2041,2042,2043 2039+2040    2042+2043         58           6/10         10/14         14/20         19/26
+
+  The season halves hold different league counts and different card mixes, so this is a ROUGH
+  ceiling, not a calibrated one. It is reported because a top-N error count read without it
+  invites the reading that every mismatch is a model defect, and a large share of it is not.
+
+################################################################################
+# §8 — WHAT THIS DOES NOT SAY
+################################################################################
+
+  · No correction is proposed, fitted, or wired. §6's coefficients are descriptive statistics of
+    the residual surface, printed because the STABLE branch would need the surface characterised;
+    they are not candidate terms and no adoption decision follows from them.
+  · The three window estimates share most of their CARDS (§0e). Agreement across them is NOT
+    independent replication; §5 is the only out-of-card read here and it halves the sample.
+  · The 2x2 cell is a construction. A tercile grid or a fitted surface would name a related but
+    not identical region (§6a shows the surface so the construction-dependence is visible). At
+    20-40 cards per cell the boundaries cannot be sharp.
+  · Every number is at the deployed variant policy and the deployed wOBA weights, held fixed.
+    Per-window weight re-derivation was deliberately suppressed so it could not masquerade as
+    instability; that also means the level readings in §4 are not the production levels.
+  · minPA is a fit knob AND a population knob (§3 arm A vs arm B). Arm B's cells change the card
+    population, so a difference between the arms is informative but neither arm alone is "the"
+    threshold effect.
+  · §7's cut correction is an OBSERVATION ABOUT THE METRIC, not a change to it. Nothing in
+    src/training/evaluate.ts was touched and topN=26 is still the production default; the
+    top-14 figures here are computed inside this tool. Whether the incumbent metric should be
+    re-cut is a separate decision on separate evidence, and this artifact does not make it.
+  · The roster-relevant cut is the MODAL split (14/12, 33 of 48 configs), not a universal one —
+    15 configs roster a different number of hitters, and a pitcher-side cut would be 12, not 14.
+    This artifact measures the HITTER side only, so no pitcher cut is claimed.
+
