@@ -1,0 +1,614 @@
+################################################################################
+# BABIP COORDINATE SEARCH — what property does the pitcher-BABIP correction respond to?
+# tools/babip-coordinate.ts · 2026-07-26 · MEASUREMENT AND STRUCTURE ONLY.
+# NOTHING IS FITTED. No constant, no default, no wiring, no commit. Amendment 2 stands, and the
+# pending 4-week pull is a REQUIRED out-of-sample validation before anything is fitted at all.
+################################################################################
+
+## VERDICT
+
+  THE CANDIDATE PUT FORWARD, AND WHAT HAPPENED TO IT: CHANNEL DECOUPLING — the signed divergence
+  between the ONE opposing channel a correction's gap coordinate reads and the pool's COMPOSITE
+  gap position over its whole rating vector. For BABIP that is `decoup_babip` = z(hitter-BABIP
+  gap) − mean over all five hitter channels of their standardized gaps. Continuous, ex ante,
+  from eligible-pool ratings + the artifact's training means only — no card type, no pool
+  identity, no value window, and one channel measured against a composite rather than against
+  another single rating.
+
+  ANSWER TO THE HEADLINE QUESTION: NO PROPERTY IN THIS CLASS ORDERS THE NEED, BECAUSE ON TODAY'S
+  SHIPPED LINE THE BABIP NEED HAS NO MEASURABLE HETEROGENEITY TO ORDER.
+  · Five-Quick baseline: needs span 0.91–1.38, but the INTERSECTION of all five 95% CIs is
+    [1.05, 1.41] — NON-EMPTY. A ZERO-parameter constant (1.24 ± 0.09) passes through every one.
+    Q = 2.96 on 4 df, I2 = 0%, p = 0.567. Adding the high-divergence point, then
+    stratum B, then stratum C never empties the intersection (1.13–1.30 at all 14).
+  · THIS IS NOT A POWER FAILURE, AND THE RUN PROVES IT WITH A POSITIVE CONTROL. The SAME
+    instrument, same formats, same bar, same card-clustered bootstrap, pointed at the K channel
+    on the same shipped line: Q = 51.96 on 4 df, I2 = 92%, p = 0.000, CI intersection EMPTY.
+    The method detects real between-format heterogeneity in this corpus at these sample sizes. It
+    finds none in BABIP.
+
+  MECHANISTIC OR COINCIDENTAL: THE MECHANISM IS ESTABLISHED, THE ORDERING IS COINCIDENTAL.
+  · The mechanism is not speculative. buildFrameShift builds the BABIP coordinate exactly as it
+    builds the K coordinate — pit.pbabip's shift IS train.hit.babip − pool.hit.babip, one
+    opposing channel read alone (src/scoring-core/pool-stats.ts:236,242-244). Whatever made the K
+    coordinate misread a rating-SHAPE difference as a level difference is structurally present in
+    the BABIP coordinate. That is a code fact, not an inference from fourteen samples.
+  · The decoupling is real and it is largest where the K story says: |decoup_kRat| runs
+    0.011–0.657 across the corpus; within the clean stratum the largest is liveopendaily at
+    0.471, 2.2x the Quick-baseline mean, and it is the ONLY format in the clean stratum whose
+    avoid-K channel sits AHEAD of its composite by more than 0.1 (+0.471 vs -0.55, -0.29, -0.13, +0.01, +0.09).
+    (Corpus-wide the largest |decoup_kRat| is an env-modified format, which is why the clean
+    stratum is where the statement is made.) That measured number — not what kind of cards the
+    format admits — is the ground for treating it as a divergence point rather than a baseline.
+  · But its ORDERING of the BABIP need is Spearman 0.486, and propagating the needs' own
+    card-clustered uncertainty gives [-0.37, 0.83] — a CI that spans zero and most of the
+    negative range. There is no ordering evidence here in either direction.
+  · The family's BEST ordering is predbab_sd at Spearman -1.000 (permutation p = 0.043 for the
+    family maximum). DO NOT READ THAT AS A FINDING. Its own bootstrap CI is [-1.00, 0.03]: it orders
+    perfectly a set of six numbers that are statistically indistinguishable from six copies of
+    one constant. A perfect ordering of noise is still an ordering of noise, and the permutation
+    test — which permutes the point estimates and cannot see their CIs — is blind to that.
+    (It is also the least surprising candidate imaginable: a spread correction's need is the
+    ratio of true spread to PREDICTED spread, so the predicted spread is its own denominator.)
+
+  THE MOTIVATING NUMBER WAS NEVER CI-ESTABLISHED — and this is arithmetic on BUILD-3's own four
+  published intervals, independent of everything else here (§5). iron [0.98,1.38], bronze
+  [1.17,2.00], silver [0.81,1.30], gold [0.63,1.39]: max(lo) = 1.17, min(hi) = 1.30, so the
+  intersection is [1.17, 1.30] and NON-EMPTY. A flat scalar in that band satisfies every tier
+  BUILD-3 measured, bronze included. The "bronze 1.48 vs silver/gold 1.0" heterogeneity was read
+  off POINT ESTIMATES. What failed its G1 gate was the FITTED value: its family is essentially
+  constant over the observed gaps and its precision-weighted A landed at s ~ 1.15, just BELOW
+  that band. ⇒ Read the BUILD-3 verdict as a FIT-SELECTION shortfall, not as evidence that this
+  channel is tier-heterogeneous. On today's line bronze reads 1.32 [0.94, 1.67].
+
+  IS THE 1.48 CONFOUNDED? NOT on the axis the stratification asked about — BUILD-3's §1 table is
+  the Quick ladder, i.e. neutral env and no budget, so it is clean on environment and on budget,
+  and this run confirms that by re-deriving both classifications from the configs. It IS
+  confounded on the MEASUREMENT axes: corpus (legacy top-100, a different capture window), bar
+  (MIN_IP 1000 = BF 4300 vs BF 600), model artifact (league-41-42 pre-C1/C2' vs league-42-43
+  post), and baseline corrections (a since-retired saturating K ramp vs the shipped C3 K + C6 HR
+  ramps). §5 moves the reachable ones one at a time; the artifact and coordinate cannot be rolled
+  back, so 1.48 is not recoverable on any configuration available today.
+
+  IS IT A TIER INDEX IN DISGUISE? YES — INCLUDING THE DECOUPLING CANDIDATE, INSIDE THE BASELINE.
+  This is the run's strongest structural result and it goes AGAINST the hypothesis. The five Quick
+  windows are NESTED (<=59 c <=69 c <=79 c <=89 c <=99), so every eligible-pool statistic that
+  moves with the window is monotone in valueMax by construction. Measured (§6): on the five-Quick
+  baseline decoup_babip reads |rho| = 1.000 against valueMax — subtracting the composite does
+  NOT rescue separability when every pool in the set is a prefix of the next. It only falls to
+  |rho| = 0.66 once the one non-nested format is added. So the decoupling axis, on this corpus,
+  is identified by exactly ONE point of leverage — and one point cannot identify a response.
+
+  STOP RECOMMENDATION. Do not fit a BABIP coordinate on this corpus, and do not ship the BUILD-3
+  constants. Keep the channel HELD, and RE-FILE THE REASON in the doc: it is held because no
+  heterogeneity is measurable at this resolution — not because a bronze-shaped defect defies a
+  monotone ramp, which its own published intervals never established.
+  CARRY FORWARD, PRE-REGISTERED, NOT FITTED: channel decoupling stays the best-motivated candidate
+  because its MECHANISM is a code fact and because it is composite-referenced, so it is the one
+  construction here that cannot be fooled by a uniform level shift. It is NOT carried forward on
+  ordering evidence — it has none — and NOT on separability inside the baseline, where it is fully
+  tier-collinear. It should be pre-registered against the K channel first, where heterogeneity
+  demonstrably exists (I2 92%), and only then asked of BABIP.
+
+## 0. HEADER
+  model        'league-42-43' (raw-poly, own-gap path)   cohortRule 'model-woba'
+  catalog      'cdmx' — 3708 base cards
+  corpus       fixtures/cwhit-capture-2026-07-21 (buildCwhitSample DEFAULT_SOURCE), 14 formats by tournamentId
+  baseline     THE SHIPPED LINE — C3 K ramp ON {A 0.6668, q 2.40, gMax 22.25} + C6 HR ramp ON
+               {A 0.1135, q 0.54, gMax 44.56}, sPitBab NEVER SET (production's held state)
+  need         slope(obs ~ our RAW predicted), pitchers, BF >= 600 — the BUILD-3 estimand, so the
+               numbers are directly comparable with its 1.48 / 1.06 / 0.97
+  uncertainty  B = 2000 bootstrap, CLUSTERED BY CARD (a card contributes a base row and a v5 row)
+  inflation    MEASURED, not assumed: mean cluster-SE / row-SE = 1.017x over 28 format x channel cells,
+               range 0.87-1.16x. It is near 1 because most judged cards contribute ONE row
+               (base or v5, rarely both) once the BF floor is applied — so clustering costs little here,
+               which is a measured fact about this corpus and not a general licence to skip it.
+  presence     PRESENCE_P 0.3, PRESENCE_M 20, FIELD_N 50
+
+## 1. THE THREE AXES, READ OFF THE CONFIGS
+
+  format            tournamentId        era       park      budget  stratum  |decoup_kRat| |decoup_babip|
+  ironquick         iron-quick          era-2010  park-1    none    A                0.553          0.648
+  bronzequick       bronze-quick        era-2010  park-1    none    A                0.293          0.415
+  silverquick       silver-quick        era-2010  park-1    none    A                0.128          0.281
+  goldquick         gold-quick          era-2010  park-1    none    A                0.011          0.233
+  diamondquick      diamond-quick       era-2010  park-1    none    A                0.087          0.193
+  bronzeheart       bronze-heart        era-1939  park-191  none    B                0.657          0.609
+  earlygold         early-gold          era-1920  park-169  none    B                0.011          0.233
+  diamondheart      diamond-heart       era-1958  park-156  none    B                0.036          0.412
+  latebronze        late-bronze         era-1979  park-114  none    B                0.293          0.415
+  diamondcapdaily   diamond-cap-daily   era-1998  park-101  cap     B+C              0.087          0.193
+  goldcapdaily      gold-cap            era-2010  park-156  cap     B+C              0.011          0.233
+  bronzecapweekly   bronze-cap-weekly   era-2010  park-1    cap     C                0.293          0.415
+  goldslotsdaily    gold-slots          era-2010  park-1    slots   C                0.011          0.233
+  liveopendaily     live-open-daily     era-2010  park-1    none    A                0.471          0.341
+
+  A = neutral env (era-2010 AND park-1) AND no budget.  B = env-modified, no budget.
+  C = neutral env, budget.  B+C = both (cannot separate the two axes on its own).
+
+  THE BASELINE IS THE FIVE QUICK TIERS. `liveopendaily` is stratum A by env and budget, but it is
+  carried as the HIGH-DIVERGENCE MEASUREMENT POINT rather than as a baseline member, on two
+  measured grounds: its |decoup_kRat| is 0.471 against a Quick-baseline mean of
+  0.214 — the largest in the corpus — and its judged pitcher cell is 42 rows, the
+  thinnest load-bearing cell here. Both grounds are numbers in this table. Neither is a statement
+  about what kind of cards the format admits, which would not be a permissible ground.
+
+## 2. CHANNEL DECOUPLING — the construction, and what it measures
+
+  For each channel c of the OPPOSING role's rating vector:
+      z_c        = (trainingMean_c - poolCohortMean_c) / catalogSD_c
+      composite  = mean over ALL FIVE hitter channels of z_c        <- the whole rating vector
+      decoup_c   = z_c - composite                                  <- one channel vs the composite
+  The composite is the point of the construction: contrasting ONE channel against a COMPOSITE is
+  what makes this a decoupling. If both sides were single ratings it would be a correlation
+  between two ratings and would rebuild the very defect it exists to escape.
+
+  format                z_eye    z_pow   z_kRat  z_babip    z_gap  composite  shape_div   d_kRat  d_babip
+  ironquick             1.547    1.437    0.825    2.026    1.058      1.379      0.415   -0.553   +0.648
+  bronzequick           0.953    1.069    0.753    1.461    0.994      1.046      0.233   -0.293   +0.415
+  silverquick           0.653    0.788    0.646    1.055    0.727      0.774      0.150   -0.128   +0.281
+  goldquick             0.458    0.462    0.546    0.768    0.441      0.535      0.122   +0.011   +0.233
+  diamondquick          0.076    0.142    0.378    0.485    0.376      0.291      0.155   +0.087   +0.193
+  bronzeheart           1.296    1.297    0.573    1.839    1.144      1.230      0.405   -0.657   +0.609
+  earlygold             0.458    0.462    0.546    0.768    0.441      0.535      0.122   +0.011   +0.233
+  diamondheart          0.339    0.396    0.505    0.953    0.510      0.541      0.216   -0.036   +0.412
+  latebronze            0.953    1.069    0.753    1.461    0.994      1.046      0.233   -0.293   +0.415
+  diamondcapdaily       0.076    0.142    0.378    0.485    0.376      0.291      0.155   +0.087   +0.193
+  goldcapdaily          0.458    0.462    0.546    0.768    0.441      0.535      0.122   +0.011   +0.233
+  bronzecapweekly       0.953    1.069    0.753    1.461    0.994      1.046      0.233   -0.293   +0.415
+  goldslotsdaily        0.458    0.462    0.546    0.768    0.441      0.535      0.122   +0.011   +0.233
+  liveopendaily         0.846    0.724    1.612    1.482    1.040      1.141      0.349   +0.471   +0.341
+
+  READ: a pool is NOT described here as strong or weak. `composite` is where its whole rating
+  vector sits relative to the training frame; `decoup_c` is how far ONE channel departs from that
+  — a SHAPE statement. A pool can sit ahead of the frame on four channels and behind on the fifth;
+  that is a shape, and it is exactly what a single-channel gap coordinate cannot represent.
+
+## 3. THE MEASURED NEED — BASELINE FIRST, then each addition
+
+  format            str     N  cards    need       [ 95% CI ]     se   infl  free-s  corr
+  -- BASELINE: the five Quick tiers --
+  silverquick       A     121     83   1.377     [1.05, 1.68]  0.164   0.91   1.409  0.55
+  bronzequick       A     156    119   1.325     [0.94, 1.67]  0.187   1.12   1.503  0.51
+  ironquick         A     142    114   1.245     [0.97, 1.57]  0.156   1.00   1.110  0.47
+  goldquick         A      91     71   1.009     [0.60, 1.41]  0.204   0.97   1.020  0.50
+  diamondquick      A      36     29   0.911     [0.42, 1.90]  0.369   1.16   0.787  0.40
+  -- the high-divergence measurement point --
+  liveopendaily     A      42     42   1.784     [1.13, 2.47]  0.333   0.99   1.331  0.64
+  -- stratum B (env-modified) --
+  latebronze        B      34     27   1.885     [0.81, 2.95]  0.542   1.07   1.880  0.46
+  earlygold         B      99     82   1.351     [1.06, 1.65]  0.152   1.03   1.382  0.62
+  bronzeheart       B      48     35   1.269     [0.59, 1.93]  0.341   1.02   1.280  0.54
+  diamondheart      B      67     48   0.863     [0.50, 1.30]  0.204   1.04   1.114  0.46
+  -- stratum C / B+C (budget) --
+  goldslotsdaily    C     109     85   1.365     [1.08, 1.65]  0.143   0.92   1.261  0.59
+  goldcapdaily      B+C   114     95   1.227     [0.99, 1.46]  0.121   0.93   1.145  0.60
+  diamondcapdaily   B+C    26     23   0.925     [0.51, 1.35]  0.209   0.94   1.150  0.60
+  bronzecapweekly   C      42     36   0.922     [0.27, 1.63]  0.344   0.99   1.025  0.39
+
+  'need' = slope(obs ~ pred): 1.0 calibrated; >1 = the predicted SPREAD is too narrow by that
+  factor. 'free-s' = the precision-weighted free-level spread slope (the C3/C6 estimand) — a
+  cross-check on a different estimand, not a second answer.
+
+  STEP-BY-STEP: does adding a stratum MOVE the pooled need? Any movement is environment or
+  deployment, not the BABIP channel, and must not enter a coordinate.
+    set                                             k   pooled      se       Q  df    I2      pQ  CI-intersection
+    A-baseline: the five Quick tiers                5    1.238   0.085    2.96   4    0%   0.567  [1.05, 1.41] NON-EMPTY
+    A-baseline + the high-divergence point          6    1.272   0.082    5.48   5    9%   0.360  [1.13, 1.41] NON-EMPTY
+    + stratum B (env-modified)                     10    1.253   0.066   10.96   9   18%   0.278  [1.13, 1.30] NON-EMPTY
+    + stratum C (budget) = all 14                  14    1.235   0.052   14.88  13   13%   0.315  [1.13, 1.30] NON-EMPTY
+
+  A NON-EMPTY CI-INTERSECTION IS THE DECISIVE READ: one constant is consistent with every format
+  in the set, so no coordinate is IDENTIFIED — which is not the same as none existing. An EMPTY
+  intersection is what BUILD-3 faced and is what would justify a coordinate search at all.
+
+  THE SAME READ FOR THE K CHANNEL (post-C3, for the residual comparison):
+    K channel, five Quick tiers (post-C3)           5    0.988   0.016   51.96   4   92%   0.000  EMPTY — real heterogeneity
+    K channel, + the high-divergence point          6    0.944   0.015  141.50   5   96%   0.000  EMPTY — real heterogeneity
+
+## 4. THE ANALOGY, ASKED DIRECTLY
+
+  Q1. Is the BABIP coordinate built the same way as the K coordinate — one opposing channel?
+      YES, and this is a code fact. src/scoring-core/pool-stats.ts buildFrameShift:
+        pit.stu    = train.hit.kRat  - pool.hit.kRat     <- the K ramp's gap
+        pit.pbabip = train.hit.babip - pool.hit.babip    <- the BABIP need's gap
+      Identical construction. Any failure mode of the first is structurally available to the second.
+
+  Q2. Does the hitter-BABIP channel decouple from the composite the way avoid-K does?
+      PARTLY, and less. Across all 14 formats |decoup_kRat| spans 0.011-0.657 while |decoup_babip|
+      spans 0.193-0.648. Correlation between the two divergences across formats:
+      Spearman -0.859.
+
+  Q3. Do the formats where it decouples depart from the flat prediction?
+      format               d_babip    need  dep. from flat    d_kRat  K need    K dep.
+      diamondquick          +0.193    0.91           -0.33    +0.087    0.91     -0.08
+      goldquick             +0.233    1.01           -0.23    +0.011    1.34     +0.35
+      silverquick           +0.281    1.38           +0.14    -0.128    0.98     -0.01
+      liveopendaily         +0.341    1.78           +0.55    +0.471    0.49     -0.50
+      bronzequick           +0.415    1.32           +0.09    -0.293    0.94     -0.05
+      ironquick             +0.648    1.25           +0.01    -0.553    0.97     -0.02
+      Spearman(decoup_babip, BABIP need)  = 0.486 [-0.37, 0.83]
+      Spearman(decoup_kRat,  K need)      = -0.486 [-0.66, 0.09]
+      'departure from flat' = need - the baseline's precision-weighted pooled need. A coordinate
+      earns its place by ordering THIS column; a constant already explains the rest.
+
+  Q4. Is the answer ONE PROBLEM ON ONE PROPERTY?
+      NOT ESTABLISHED, and this run cannot establish it. The K channel is where the property was
+      born and where its extreme point lives; the BABIP channel currently shows no departure for
+      it to order. The honest position is that the decoupling property remains the best-motivated
+      pre-registrable coordinate for BOTH channels, and that the BABIP leg of the claim is
+      untestable until the need CIs separate.
+
+## 5. ATTRIBUTION — why BUILD-3's 1.48 does not reproduce (Quick ladder = BUILD-3's own stratum)
+
+  arm                                        iron         bronze         silver           gold        diamond
+  shipped / capture / BF>=600          1.25 (142)     1.32 (156)     1.38 (121)      1.01 (91)      0.91 (36)
+  K+HR ramps OFF / capture             1.27 (142)     1.39 (156)     1.38 (121)      1.01 (91)      0.91 (36)
+  K only / capture                     1.25 (142)     1.33 (156)     1.38 (121)      1.01 (91)      0.91 (36)
+  shipped / LEGACY top-100              1.12 (98)      1.27 (98)      1.12 (96)      1.28 (67)      0.94 (40)
+  shipped / LEGACY / BF>=4300           1.06 (44)      1.32 (52)      0.92 (22)      0.96 (15)            n/a
+  BUILD-3 published (2026-07-17)             1.11           1.48           1.06           0.97            n/m
+
+    shipped / capture / BF>=600      the primary measurement — production's residual BABIP defect today
+    K+HR ramps OFF / capture         the K/HR ramps' own contribution: both are applied PRE-BIP and BIP = 600−BB−K−HR, so they move predicted BABIP
+    K only / capture                 isolates the HR leg's contribution
+    shipped / LEGACY top-100         corpus swap — different capture WINDOW as well as depth
+    shipped / LEGACY / BF>=4300      BUILD-3's corpus AND its old MIN_IP=1000 bar (= BF 4300)
+
+  WHAT THE LEGS SHOW (read off the table above, not asserted):
+   · THE RAMPS move the need by at most 0.061 per tier (mean -0.018). Real, and mechanically
+     necessary, but far too small to be the whole difference from BUILD-3.
+   · THE CORPUS moves it by up to 0.27 per tier and THE BAR by up to 0.32 — an order of magnitude
+     more. The legacy top-100 at the old BF>=4300 bar retains only
+     44/52/22/15/1 judged rows against 142/156/121/91/36 today.
+   · THE TIER-TO-TIER SPREAD OF THE POINT ESTIMATES: shipped/capture 0.47 · legacy top-100
+     0.33 · legacy at the old bar 0.40 · BUILD-3 published 0.51. No leg reproduces the
+     published bronze peak, and the axes that remain (the model artifact and the C1/C2'
+     coordinate move) cannot be rolled back from here — the old artifact and the retired
+     saturating ramp are gone. So 1.48 is not recoverable on any configuration reachable today.
+
+  AND THE FINDING THAT MATTERS MOST HERE — APPLY THIS RUN'S OWN TEST TO BUILD-3'S OWN NUMBERS:
+    iron 1.11 [0.98, 1.38]   bronze 1.48 [1.17, 2.00]   silver 1.06 [0.81, 1.30]   gold 0.97 [0.63, 1.39]
+    max(lo) = 1.17 (bronze), min(hi) = 1.30 (silver)  ⇒  CI intersection [1.17, 1.30] — NON-EMPTY.
+    BUILD-3'S PUBLISHED CIs ADMIT A COMMON CONSTANT. The heterogeneity that motivated holding
+    the channel — and that motivated this whole coordinate search — was read off POINT
+    ESTIMATES (1.48 vs ~1.0), and it was never established against the intervals BUILD-3
+    itself published. A flat scalar anywhere in that band satisfies every tier it measured,
+    bronze included. What actually failed BUILD-3's G1 gate was its FITTED value: the family
+    it used (1 + A(1 − e^(−g/G)) pinned at G = g_min/3) is essentially constant over the
+    observed gaps and its precision-weighted A landed at s ≈ 1.15 — just BELOW the
+    [1.17, 1.30] band, which is exactly why bronze read CI-clear-above-1 after correction.
+    ⇒ The BUILD-3 verdict is better described as a FIT-SELECTION shortfall than as evidence
+    that the BABIP channel is tier-heterogeneous. That reframing is independent of everything
+    else in this run: it is arithmetic on four published intervals.
+
+  THE ONE MECHANICALLY CERTAIN STATEMENT THIS SUPPORTS: the BABIP need is NOT independent of the
+  other two channels' corrections. K and HR are applied PRE-BIP, BIP = 600 - BB - K - HR, and the
+  raw line re-derives non-HR hits from the corrected BIP — so re-spacing K and HR re-spaces every
+  card's BIP and therefore its predicted BABIP. A BABIP coordinate fitted against a stale K/HR
+  baseline is measuring a different quantity from one fitted against the shipped baseline.
+
+## 6. TIER-INDEX COLLINEARITY INSIDE THE FIVE-QUICK BASELINE
+
+  The Quick windows are NESTED, so any eligible-pool statistic that grows with the window is
+  monotone in valueMax by construction and is indistinguishable from the tier index here.
+
+  candidate               |rho| 5 quicks   |rho| +div.pt  reading
+  bip_mu                           0.700           0.029  SEPARABLE on both
+  predbab_sd                       0.600           0.086  SEPARABLE on both
+  predbab_cv                       0.600           0.086  SEPARABLE on both
+  hr_mu                            0.900           0.086  SEPARABLE on both
+  gap_kRat_channel                 1.000           0.143  tier index in costume on the baseline; separated ONLY by the divergence point
+  pbab_sd                          1.000           0.143  tier index in costume on the baseline; separated ONLY by the divergence point
+  pbab_p90_p10                     1.000           0.143  tier index in costume on the baseline; separated ONLY by the divergence point
+  hbab_sd                          1.000           0.143  tier index in costume on the baseline; separated ONLY by the divergence point
+  shape_div_hit                    0.700           0.257  SEPARABLE on both
+  s_K                              1.000           0.290  tier index in costume on the baseline; separated ONLY by the divergence point
+  decoup_kRat_abs                  0.900           0.371  SEPARABLE on both
+  shape_div_pit                    0.100           0.371  SEPARABLE on both
+  composite_hit                    1.000           0.429  tier index in costume on the baseline; separated ONLY by the divergence point
+  gap_babip_channel                1.000           0.429  tier index in costume on the baseline; separated ONLY by the divergence point
+  poolN_pit                        1.000           0.429  tier index in costume on the baseline; separated ONLY by the divergence point
+  decoup_pbabip_own                0.100           0.486  SEPARABLE on both
+  decoup_babip                     1.000           0.657  tier index in costume on the baseline; separated ONLY by the divergence point
+  decoup_babip_abs                 1.000           0.657  tier index in costume on the baseline; separated ONLY by the divergence point
+  composite_pit                    1.000           0.657  tier index in costume on the baseline; separated ONLY by the divergence point
+  gap_eye_channel                  1.000           0.657  tier index in costume on the baseline; separated ONLY by the divergence point
+  gap_pit_pbabip                   1.000           0.657  tier index in costume on the baseline; separated ONLY by the divergence point
+  predbab_mu                       1.000           0.657  tier index in costume on the baseline; separated ONLY by the divergence point
+  bb_mu                            1.000           0.657  tier index in costume on the baseline; separated ONLY by the divergence point
+  gap_pow_channel                  1.000           0.829  tier index in costume on the baseline; separated ONLY by the divergence point
+  pbab_mu                          1.000           0.829  tier index in costume on the baseline; separated ONLY by the divergence point
+  s_HR                             1.000           0.829  tier index in costume on the baseline; separated ONLY by the divergence point
+  k_mu                             0.800           0.886  partly separable
+  hbab_mu                          1.000           0.943  tier index in costume on BOTH sets
+  bip_sd                           0.900           0.943  partly separable
+  decoup_kRat                      1.000           1.000  tier index in costume on BOTH sets
+  pbab_skew                        1.000           1.000  tier index in costume on BOTH sets
+  hitspread_600                    1.000           1.000  tier index in costume on BOTH sets
+  valueMax                         1.000           1.000  tier index in costume on BOTH sets
+  windowWidth                      1.000           1.000  tier index in costume on BOTH sets
+  capTight                         const           const  no variation on this set — carries no information here
+  forcedCheap                      const           const  no variation on this set — carries no information here
+  era_h                            const           const  no variation on this set — carries no information here
+  era_k                            const           const  no variation on this set — carries no information here
+  park_avg                         const           const  no variation on this set — carries no information here
+
+  WHAT THE TABLE ACTUALLY SAYS — and it contradicts the hypothesis's own expectation, so it is
+  stated in the data's favour:
+   · ON THE FIVE-QUICK BASELINE ALONE, 24 of the 34 candidates with any variation read
+     |rho| = 1.000 against valueMax — DECOUPLING INCLUDED (decoup_babip 1.000). The five windows
+     are nested, so a shape statistic is monotone in the window too. Subtracting the composite
+     does NOT rescue separability when every pool in the set is a prefix of the next.
+   · SEPARATION ONLY APPEARS WHEN THE ONE NON-NESTED FORMAT IS ADDED: decoup_babip falls to
+     0.657 on the six-format set. So the decoupling axis is identified by exactly ONE point of
+     leverage, and that point is also the corpus's thinnest judged cell.
+   · Only shape_div_pit, decoup_pbabip_own break the nesting on the baseline itself,
+     and they are among the weakest orderings of the need in §7.
+  ⇒ The correct structural statement is NOT 'decoupling breaks the collinearity'. It is: almost
+    nothing breaks it inside the nested ladder, and the only leverage available comes from a
+    single non-nested format. One point cannot identify a response curve.
+
+## 7. ORDERING RESULTS
+
+  (a) BASELINE — the five Quick tiers only. Five points; a Spearman over five points has three
+      distinct achievable magnitudes above 0.7, so this table is reported for completeness and
+      should not be read as evidence in either direction.
+  candidate               spearman        [boot CI]  wPearson     mono-feas   slack
+  predbab_sd                -1.000    [-1.00, 0.30]    -0.946    YES (desc)   0.603
+  predbab_cv                -1.000    [-1.00, 0.30]    -0.831    YES (desc)   0.603
+  bip_sd                     0.700    [-0.50, 1.00]     0.613     YES (asc)   0.522
+  decoup_babip               0.600    [-0.60, 1.00]     0.263     YES (asc)   0.522
+  decoup_babip_abs           0.600    [-0.40, 1.00]     0.263     YES (asc)   0.522
+  decoup_kRat               -0.600    [-1.00, 0.50]    -0.400    YES (desc)   0.522
+  composite_hit              0.600    [-0.50, 0.90]     0.477     YES (asc)   0.522
+  composite_pit              0.600    [-0.60, 0.90]     0.506     YES (asc)   0.522
+  gap_babip_channel          0.600    [-0.50, 0.90]     0.409     YES (asc)   0.522
+  gap_kRat_channel           0.600    [-0.50, 1.00]     0.598     YES (asc)   0.522
+  gap_pow_channel            0.600    [-0.60, 1.00]     0.527     YES (asc)   0.522
+  gap_eye_channel            0.600    [-0.50, 0.90]     0.371     YES (asc)   0.522
+  family-wise permutation null: max |rho| = 1.000, p = 0.154
+
+  (b) BASELINE + the high-divergence measurement point (the primary ordering read).
+  candidate               spearman        [boot CI]  wPearson     mono-feas   slack  rho|tier
+  predbab_sd                -1.000    [-1.00, 0.03]    -0.747    YES (desc)   0.603     -0.77
+  predbab_cv                -1.000    [-1.00, 0.03]    -0.726    YES (desc)   0.603     -0.77
+  gap_kRat_channel           0.771    [-0.09, 0.94]     0.805     YES (asc)   0.522      0.77
+  pbab_sd                   -0.771    [-0.94, 0.26]    -0.841    YES (desc)   0.522     -0.77
+  pbab_p90_p10              -0.771    [-0.94, 0.26]    -0.814    YES (desc)   0.522     -0.77
+  hbab_sd                   -0.771    [-1.00, 0.09]    -0.718    YES (desc)   0.522     -0.77
+  decoup_pbabip_own          0.714    [-0.09, 0.94]     0.339     YES (asc)   0.439      0.60
+  bip_mu                     0.714    [-0.20, 0.94]     0.569     YES (asc)   0.468      0.71
+  s_K                        0.696    [-0.12, 0.93]     0.571     YES (asc)   0.522      0.77
+  composite_hit              0.600    [-0.26, 0.94]     0.443     YES (asc)   0.439      0.77
+  gap_babip_channel          0.600    [-0.26, 0.94]     0.344     YES (asc)   0.439      0.77
+  hr_mu                     -0.600    [-0.94, 0.26]    -0.324    YES (desc)   0.358     -0.37
+  poolN_pit                 -0.600    [-0.94, 0.26]    -0.436    YES (desc)   0.439     -0.71
+  decoup_kRat_abs            0.543    [-0.09, 0.94]     0.377     YES (asc)   0.439      0.49
+  decoup_babip               0.486    [-0.37, 0.83]     0.131     YES (asc)   0.439      0.14
+  decoup_babip_abs           0.486    [-0.37, 0.83]     0.131     YES (asc)   0.439      0.14
+  composite_pit              0.486    [-0.43, 0.83]     0.321     YES (asc)   0.439      0.77
+  gap_eye_channel            0.486    [-0.43, 0.83]     0.247     YES (asc)   0.439      0.60
+  gap_pit_pbabip             0.486    [-0.43, 0.83]     0.471     YES (asc)   0.439      0.83
+  predbab_mu                -0.486    [-0.83, 0.43]    -0.632    YES (desc)   0.439     -0.83
+  bb_mu                     -0.486    [-0.83, 0.37]    -0.484    YES (desc)   0.439     -0.83
+  gap_pow_channel            0.429    [-0.54, 0.77]     0.289     YES (asc)   0.439      0.77
+  pbab_mu                   -0.429    [-0.77, 0.43]    -0.220    YES (desc)   0.439     -0.71
+  s_HR                       0.429    [-0.43, 0.77]     0.372     YES (asc)   0.439      0.77
+  shape_div_hit              0.314    [-0.20, 0.83]     0.273     YES (asc)   0.439      0.14
+  hbab_mu                   -0.200    [-0.66, 0.66]    -0.110     YES (asc)   0.358     -0.31
+  shape_div_pit             -0.143    [-0.71, 0.49]     0.023    YES (desc)   0.358      0.03
+  decoup_kRat                0.086    [-0.43, 0.66]     0.195     YES (asc)   0.358      0.94
+  pbab_skew                  0.086    [-0.60, 0.71]     0.117     YES (asc)   0.358      0.49
+  k_mu                      -0.086    [-0.60, 0.60]    -0.236    YES (desc)   0.358     -0.54
+  hitspread_600             -0.086    [-0.66, 0.66]    -0.181    YES (desc)   0.358     -0.71
+  valueMax                   0.086    [-0.60, 0.71]    -0.032     YES (asc)   0.358       n/a
+  windowWidth                0.086    [-0.66, 0.66]    -0.032     YES (asc)   0.358       n/a
+  bip_sd                    -0.029    [-0.66, 0.66]    -0.057    YES (desc)   0.358     -0.54
+
+  Family-wise permutation null over all 39 candidates, 6 formats: max |rho| = 1.000, p = 0.043.
+  ⇒ the leading ordering beats the family's own noise ceiling
+
+  EVERY candidate is monotone-FEASIBLE, and that is not a pass — it follows directly from the
+  non-empty CI intersection in §3. When a constant fits every CI, every ordering trivially admits
+  a monotone curve. Feasibility discriminates only when the intersection is EMPTY.
+
+## 8. THE SAME SEARCH POOLED ACROSS ALL 14 FORMATS — REPORTED, NOT TRUSTED
+
+  What the search would have concluded WITHOUT the stratification. Printed so the confound is
+  visible, not so it can be used: the env and budget formats move the need for reasons that are
+  not the BABIP channel.
+  candidate               spearman        [boot CI]  rho|tier rho w/ tier
+  predbab_sd                -0.650   [-0.80, -0.09]     -0.44        0.30
+  predbab_cv                -0.619   [-0.80, -0.02]     -0.44        0.26
+  hbab_sd                   -0.606   [-0.78, -0.12]     -0.48        0.56
+  gap_kRat_channel           0.588     [0.10, 0.77]      0.46       -0.56
+  s_K                        0.575     [0.09, 0.78]      0.24       -0.59
+  pbab_sd                   -0.561   [-0.77, -0.06]     -0.44        0.39
+  pbab_p90_p10              -0.561   [-0.80, -0.06]     -0.44        0.39
+  pbab_mu                   -0.476    [-0.68, 0.01]     -0.18        0.86
+  gap_pit_pbabip             0.463    [-0.02, 0.68]      0.27       -0.82
+  gap_eye_channel            0.454    [-0.05, 0.72]      0.26       -0.82
+  gap_pow_channel            0.449    [-0.08, 0.67]      0.15       -0.86
+  s_HR                       0.449    [-0.08, 0.72]      0.21       -0.86
+  ... 27 more omitted. Permutation null: max |rho| = 0.650, p = 0.172.
+  Pooled heterogeneity: Q = 14.88 on 13 df, I2 = 13%, p = 0.315; CI intersection [1.13, 1.30] still NON-EMPTY.
+
+## 9. CANDIDATE VALUES, ALL 14 FORMATS (ex ante from catalog + config)
+
+  format            str      decoup_babip decoup_babip_ab     decoup_kRat decoup_kRat_abs   shape_div_hit   composite_hit   composite_pit
+  ironquick         A              0.6477          0.6477         -0.5534          0.5534          0.4148            1.38            1.77
+  bronzequick       A              0.4154          0.4154         -0.2933          0.2933          0.2326            1.05            1.43
+  silverquick       A              0.2808          0.2808         -0.1275          0.1275          0.1497          0.7738            1.09
+  goldquick         A              0.2326          0.2326          0.0107          0.0107          0.1218          0.5350          0.7916
+  diamondquick      A              0.1933          0.1933          0.0870          0.0870          0.1553          0.2914          0.5125
+  bronzeheart       B              0.6091          0.6091         -0.6566          0.6566          0.4046            1.23            1.54
+  earlygold         B              0.2326          0.2326          0.0107          0.0107          0.1218          0.5350          0.7916
+  diamondheart      B              0.4124          0.4124         -0.0357          0.0357          0.2162          0.5406          0.8189
+  latebronze        B              0.4154          0.4154         -0.2933          0.2933          0.2326            1.05            1.43
+  diamondcapdaily   B+C            0.1933          0.1933          0.0870          0.0870          0.1553          0.2914          0.5125
+  goldcapdaily      B+C            0.2326          0.2326          0.0107          0.0107          0.1218          0.5350          0.7916
+  bronzecapweekly   C              0.4154          0.4154         -0.2933          0.2933          0.2326            1.05            1.43
+  goldslotsdaily    C              0.2326          0.2326          0.0107          0.0107          0.1218          0.5350          0.7916
+  liveopendaily     A              0.3412          0.3412          0.4709          0.4709          0.3489            1.14            1.16
+
+  format            str     shape_div_pit decoup_pbabip_o gap_babip_chann gap_kRat_channe gap_pow_channel gap_eye_channel  gap_pit_pbabip
+  ironquick         A              0.3538          0.1141           50.27           22.78           44.23           41.47           44.66
+  bronzequick       A              0.6159          0.3461           36.25           20.78           32.90           25.55           42.00
+  silverquick       A              0.5060          0.3438           26.16           17.84           24.26           17.51           34.05
+  goldquick         A              0.4055          0.2722           19.04           15.07           14.24           12.28           25.18
+  diamondquick      A              0.4213          0.2732           12.02           10.45            4.37            2.05           18.60
+  bronzeheart       B              0.4826          0.2217           45.62           15.83           39.93           34.73           41.81
+  earlygold         B              0.4055          0.2722           19.04           15.07           14.24           12.28           25.18
+  diamondheart      B              0.4053          0.1455           23.64           13.94           12.20            9.09           22.83
+  latebronze        B              0.6159          0.3461           36.25           20.78           32.90           25.55           42.00
+  diamondcapdaily   B+C            0.4213          0.2732           12.02           10.45            4.37            2.05           18.60
+  goldcapdaily      B+C            0.4055          0.2722           19.04           15.07           14.24           12.28           25.18
+  bronzecapweekly   C              0.6159          0.3461           36.25           20.78           32.90           25.55           42.00
+  goldslotsdaily    C              0.4055          0.2722           19.04           15.07           14.24           12.28           25.18
+  liveopendaily     A              0.2632          0.3568           36.76           44.50           22.30           22.67           35.97
+
+  format            str           pbab_mu         pbab_sd       pbab_skew    pbab_p90_p10         hbab_mu         hbab_sd      predbab_mu
+  ironquick         A               77.42           18.65          0.5496           42.90           66.13           17.04          0.3028
+  bronzequick       A               79.70           18.75          0.5594           44.70           68.99           18.29          0.3028
+  silverquick       A               81.37           19.22          0.6361           47.00           72.13           19.66          0.3046
+  goldquick         A               83.23           20.48          0.7450           50.00           74.38           20.85          0.3066
+  diamondquick      A               84.50           21.51          0.7962           53.00           76.77           21.89          0.3081
+  bronzeheart       B               80.71           25.32          0.6055           63.00           65.37           19.77          0.3029
+  earlygold         B               83.23           20.48          0.7450           50.00           74.38           20.85          0.3066
+  diamondheart      B               86.48           26.24          0.4733           68.00           73.61           22.42          0.3062
+  latebronze        B               79.70           18.75          0.5594           44.70           68.99           18.29          0.3028
+  diamondcapdaily   B+C             84.50           21.51          0.7962           53.00           76.77           21.89          0.3081
+  goldcapdaily      B+C             83.23           20.48          0.7450           50.00           74.38           20.85          0.3066
+  bronzecapweekly   C               79.70           18.75          0.5594           44.70           68.99           18.29          0.3028
+  goldslotsdaily    C               83.23           20.48          0.7450           50.00           74.38           20.85          0.3066
+  liveopendaily     A               82.24            9.97          0.9631           23.00           75.11           13.88          0.3031
+
+  format            str        predbab_sd      predbab_cv          bip_mu          bip_sd            k_mu           bb_mu           hr_mu
+  ironquick         A             7.23e-3          0.0239           415.6           24.27           107.8           51.38           19.16
+  bronzequick       A             7.23e-3          0.0239           406.6           24.39           111.8           54.21           21.36
+  silverquick       A             7.16e-3          0.0235           412.3           21.76           104.6           54.98           22.09
+  goldquick         A             7.36e-3          0.0240           410.1           20.23           103.7           58.26           21.93
+  diamondquick      A             7.55e-3          0.0245           406.3           18.53           104.4           61.13           22.23
+  bronzeheart       B             9.23e-3          0.0305           412.6           24.09           109.2           51.94           20.24
+  earlygold         B             7.36e-3          0.0240           410.1           20.23           103.7           58.26           21.93
+  diamondheart      B             9.32e-3          0.0304           412.2           23.61           103.5           57.78           20.47
+  latebronze        B             7.23e-3          0.0239           406.6           24.39           111.8           54.21           21.36
+  diamondcapdaily   B+C           7.55e-3          0.0245           406.3           18.53           104.4           61.13           22.23
+  goldcapdaily      B+C           7.36e-3          0.0240           410.1           20.23           103.7           58.26           21.93
+  bronzecapweekly   C             7.23e-3          0.0239           406.6           24.39           111.8           54.21           21.36
+  goldslotsdaily    C             7.36e-3          0.0240           410.1           20.23           103.7           58.26           21.93
+  liveopendaily     A             3.60e-3          0.0119           424.9           16.75           95.89           54.34           18.86
+
+  format            str     hitspread_600        valueMax     windowWidth       poolN_pit        capTight     forcedCheap           era_h
+  ironquick         A                8.24           59.00           19.00           542.0               0               0            1.00
+  bronzequick       A                8.16           69.00           29.00           944.0               0               0            1.00
+  silverquick       A                7.36           79.00           39.00          1238.0               0               0            1.00
+  goldquick         A                6.94           89.00           49.00          1431.0               0               0            1.00
+  diamondquick      A                6.52           99.00           59.00          1546.0               0               0            1.00
+  bronzeheart       B                8.55           69.00           29.00           251.0               0               0          0.9662
+  earlygold         B                6.94           89.00           49.00          1431.0               0               0          0.9740
+  diamondheart      B                8.34           99.00           59.00           351.0               0               0          0.9308
+  latebronze        B                8.16           69.00           29.00           944.0               0               0          0.9621
+  diamondcapdaily   B+C              6.52           99.00           59.00          1546.0          0.3182          0.5385            1.01
+  goldcapdaily      B+C              6.94           89.00           49.00          1431.0          0.3172          0.5769            1.00
+  bronzecapweekly   C                8.16           69.00           29.00           944.0          0.2581          0.6154            1.00
+  goldslotsdaily    C                6.94           89.00           49.00          1431.0          0.1124          0.2308            1.00
+  liveopendaily     A                5.37           100.0           60.00           659.0               0               0            1.00
+
+  format            str             era_k        park_avg             s_K            s_HR
+  ironquick         A                1.00            1.00            1.86            1.17
+  bronzequick       A                1.00            1.00            1.73            1.15
+  silverquick       A                1.00            1.00            1.51            1.13
+  goldquick         A                1.00            1.00            1.34            1.09
+  diamondquick      A                1.00            1.00            1.14            1.05
+  bronzeheart       B              0.4110          0.9700            1.38            1.16
+  earlygold         B              0.3516            1.04            1.34            1.09
+  diamondheart      B              0.7021            1.05            1.28            1.09
+  latebronze        B              0.6749          0.9885            1.73            1.15
+  diamondcapdaily   B+C            0.9165            1.03            1.14            1.05
+  goldcapdaily      B+C              1.00            1.05            1.34            1.09
+  bronzecapweekly   C                1.00            1.00            1.73            1.15
+  goldslotsdaily    C                1.00            1.00            1.34            1.09
+  liveopendaily     A                1.00            1.00            1.86            1.12
+
+## 10. WHAT EACH CANDIDATE IS, AND WHETHER IT READS ONE CHANNEL OR A COMPOSITE
+
+  decoup_babip         LEAD. z(hitter BABIP gap) − composite: how far the ONE channel the BABIP correction reads sits from the pool's whole-rating-vector gap position. Signed; >0 = that channel's gap runs ahead of the composite.
+  decoup_babip_abs     |decoup_babip| — divergence magnitude, direction-free.
+  decoup_kRat          the SAME construction for the channel the K ramp reads (hitter avoid-K). Present so the two channels' decoupling can be compared on one scale.
+  decoup_kRat_abs      |decoup_kRat|.
+  shape_div_hit        SD across ALL FIVE hitter channels of the standardized gaps — how far this pool's gap VECTOR departs from a uniform shift. Channel-agnostic; a pure shape statistic.
+  composite_hit        COMPOSITE gap position: mean over all five hitter channels of the standardized (train − pool) gap. The whole rating vector, never one rating standing in for quality.
+  composite_pit        the same composite over the four pitcher channels.
+  shape_div_pit        SD across the four pitcher channels of the standardized gaps.
+  decoup_pbabip_own    z(pitcher pBABIP gap) − composite_pit — the own-side analogue, for completeness.
+  gap_babip_channel    INCUMBENT for BABIP. buildFrameShift's pit.pbabip = train.hit.babip − pool.hit.babip, i.e. the OPPOSING-HITTER BABIP rating gap READ ALONE. Single-channel by construction — the same shape as the K coordinate.
+  gap_kRat_channel     the K ramp's coordinate = train.hit.kRat − pool.hit.kRat, opposing avoid-K READ ALONE.
+  gap_pow_channel      the HR ramp's coordinate = train.hit.pow − pool.hit.pow.
+  gap_eye_channel      the control channel's coordinate = train.hit.eye − pool.hit.eye.
+  gap_pit_pbabip       buildFrameShift's hit.babip = train.pit.pbabip − pool.pit.pbabip (the pitcher-side pBABIP gap; it re-bases HITTERS, listed for completeness).
+  pbab_mu              mean pBABIP rating of the eligible pitchers (a level on one channel — reported, never a quality claim).
+  pbab_sd              SD of the eligible pitchers' pBABIP rating — the spread a spread-scalar would act on.
+  pbab_skew            skew of that distribution.
+  pbab_p90_p10         its interdecile range.
+  hbab_mu              mean BABIP rating of the eligible hitters.
+  hbab_sd              SD of the eligible hitters' BABIP rating.
+  predbab_mu           pool-mean PREDICTED pitcher BABIP on the own-gap line — the pivot a spread scalar uses.
+  predbab_sd           pool SD of predicted pitcher BABIP — the predicted spread a scalar rescales.
+  predbab_cv           predicted-BABIP coefficient of variation.
+  bip_mu               pool-mean predicted BIP per 600 on the SHIPPED line. BABIP is a rate on balls in play and BIP is DERIVED as 600 − BB − K − HR, so a pool with a different channel MIX has a different BIP base — which no single-channel gap can see.
+  bip_sd               pool SD of predicted BIP per 600.
+  k_mu                 pool-mean predicted K per 600 on the shipped line (post K-ramp).
+  bb_mu                pool-mean predicted BB per 600.
+  hr_mu                pool-mean predicted HR per 600 on the shipped line (post HR-ramp).
+  hitspread_600        SD across the pool of (predicted BABIP × predicted BIP) — the channel's spread in EVENT (hits per 600) space rather than rate space.
+  valueMax             the format's card-value ceiling — THE TIER INDEX ITSELF. A pure identity control, present so anything tracking it is caught.
+  windowWidth          valueMax − valueMin (VAL 40 is the game's floor).
+  poolN_pit            eligible pitcher count.
+  capTight             budget tightness = 1 − total_cap / cost of the most expensive legal roster (tools/cap-tightness.ts, the one definition). 0 uncapped.
+  forcedCheap          share of a legal roster that must sit below the pool's own affordability line.
+  era_h                era HIT factor VALUE (derived) — environment axis, diagnostic only.
+  era_k                era K factor VALUE — environment axis, diagnostic only.
+  park_avg             park average-hits factor, hand-averaged (compressed, cp 0.26) — environment axis, diagnostic only.
+  s_K                  the shipped K-ramp scalar at this format's gap.
+  s_HR                 the shipped HR-ramp scalar at this format's gap.
+
+  SINGLE-CHANNEL EXPOSURE, stated per family — the defect being diagnosed is single-channel
+  reading, so every candidate must declare whether it is exposed to it:
+   · DECOUPLING (decoup_*, shape_div_*, composite_*) — reads ONE channel AGAINST A COMPOSITE over
+     the whole rating vector. NOT exposed: a pool that moves uniformly on every channel has
+     decoup = 0 by construction, so no uniform level difference can be misread as shape.
+   · SINGLE-CHANNEL GAPS (gap_*_channel) — reads ONE channel, full stop. FULLY EXPOSED. This is
+     the incumbent BABIP coordinate, and it is the K coordinate's known failure mode verbatim:
+     a pool whose rating vector is ahead of the frame on four channels and behind on the fifth
+     reads, through a single-channel gap, exactly like a pool that is behind on everything.
+   · OWN-POOL RATING SHAPE (pbab_*, hbab_*) — single-channel levels/spreads. EXPOSED, and on this
+     corpus additionally indistinguishable from the value window.
+   · BIP VOLUME (bip_*, k_mu, bb_mu, hr_mu, hitspread_600) — derived from THREE channels at once
+     (BB, K, HR) plus the BABIP rate. PARTLY protected: it cannot be moved by one channel alone,
+     but it is not composite-referenced either, so a coordinated shift in all three still moves it.
+   · WINDOW/SIZE (valueMax, windowWidth, poolN_pit) — NO mechanism. Controls only.
+   · BUDGET (capTight, forcedCheap) — a real mechanism on AXIS 2, and the baseline contains no
+     budget variation at all, so it is unmeasurable there by construction.
+   · ENVIRONMENT (era_*, park_avg) — a real mechanism on AXIS 1. Excluded from the baseline ranking.
+
+## 11. WHAT WOULD SETTLE IT (design, not statistics)
+
+  The binding constraint is DESIGN, not statistics. Inside the five-Quick baseline nearly every
+  candidate — the decoupling family included (§6) — reads |rho| ~ 1 against the value window,
+  because the windows are nested. The corpus cannot separate a pool property from the value
+  window even in principle. Three things break that, in order of value:
+   (a) NEUTRAL, NON-BUDGET formats with NON-NESTED windows — a floor-bearing window (valueMin > 40)
+       on era-2010/park-1 gives a pool whose rating shape is not a prefix of another's.
+       `high-iron-floor-gold-ceiling` (50-89) has exactly this shape but is capped, so it lands in
+       B+C; an UNCAPPED min-bearing neutral format is the ask.
+   (b) FORMATS SPREAD ALONG THE DECOUPLING AXIS. Today the axis has a dense cluster and one
+       extreme point (|decoup_kRat| 0.214 baseline mean vs 0.471). One point cannot
+       identify a response. Intermediate-divergence formats are the discriminating capture, and
+       they should be selected BY THEIR COMPUTED DIVERGENCE, which is available ex ante for all 48
+       configured tournaments without any new data.
+   (c) DEPTH. Baseline need-SEs are 0.16-0.37. Separating a coordinate from a constant needs
+       the CI intersection to go EMPTY, which at these spreads needs roughly a halving of the SEs,
+       i.e. about 4x the judged rows per format. The 4-week pull is the natural instrument.
+

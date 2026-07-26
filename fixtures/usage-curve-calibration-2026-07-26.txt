@@ -1,0 +1,707 @@
+USAGE-CURVE CALIBRATION — realised playing time vs the app's usage model
+Corpus: Tournament Data/ — 34 exports, 5 event folders   |   2026-07-26   |   HEAD cd486db
+MEASUREMENT ONLY. Nothing fitted, no default touched, nothing wired, no parameter proposed.
+
+┌─ VERDICT ─────────────────────────────────────────────────────────────────────────────────────┐
+
+TWO CORRECTIONS COME FIRST, BOTH STATED BEFORE ANY NUMBER.
+
+(1) SURVIVORSHIP — handled by STRATIFICATION, not bounding. Run depth is DIRECTLY OBSERVABLE here:
+    exactly one pitcher starts each team-game, so a team's games = ΣGS_1 over its rows. No proxy is
+    used or needed, and the conditional distribution is exact. Bounding would have been strictly
+    weaker. It matters: the deepest 10% of teams supply 26.3% of all hitter PA and the deepest
+    quarter supply 50.0%. And the shape MOVES with depth — N_eff 10.68 at 1–5 games rising to 12.28
+    at 15+. Crucially it moves in BOTH directions depending on the quantity: it makes the lineup-
+    curve failure LARGER, and it turns an apparent rotation-curve failure into a PASS (short runs
+    censor SP4/SP5 out of existence). Every verdict below is taken from the DEEP stratum.
+
+(2) FORMAT — the five folders are NOT interchangeable, and each was resolved against
+    data/tournaments/ independently (§0b). Four map to budget_mode:none, era-2010/park-1 NEUTRAL,
+    DH formats with min_starters 5, and they measure ALIKE on every quantity here despite spanning
+    card-value windows ≤69 / ≤89 / uncapped (§1c) — those four, and only those four, are pooled.
+    The fifth, Early Gold, is env-modified (era-1920/park-169), NO-DH, min_starters 4, and is a
+    different regime on the pitching side (rotation BF share 88.4% vs 66.2%); it is reported
+    SEPARATELY throughout and never pooled.
+    SCOPE HOLE, up front: all five are budget_mode:none with total_cap null. The corpus contains NO
+    cap and NO slots format. A budget forces a few expensive cards plus cheap filler, which
+    reallocates playing time across a roster — the exact estimand — so NOTHING here transfers to
+    capped or slots play, and cap/slots is the main consumer of these parameters.
+
+WHAT THE DATA SUPPORTS (3 of the model's assumptions).
+  • rotationStarts — the format-derived rotation-slot curve, and the only usage component that was
+    DERIVED rather than hand-set. At depth it is confirmed in both a 5-man DH format and a 4-man
+    no-DH one: neutral 15+ games 0.237 0.221 0.203 0.184 0.153 vs rotationStarts(bo7,k5)
+    0.224 0.216 0.204 0.191 0.164 (max per-slot deviation 0.012); Early Gold 15+ 0.267 0.256 0.247 0.193 vs
+    rotationStarts(bo5,k4) 0.277 0.264 0.252 0.206 (deviation 0.013). rotationDecay = 0 is
+    correspondingly vindicated: no extra manual tilt is needed on top of the format curve. CAVEAT:
+    `bestOf` is NOT observable in the export, so the comparator was CHOSEN as the best-fitting
+    member of {3,5,7} — the FORM is supported, the bestOf ARGUMENT is not verified (§3a).
+  • THE ~9-MAN EVERYDAY CORE. 9.5 hitters clear half a full-time share (10.1 at depth) — the model's
+    nine-man lineup is the right description of the CORE. What it lacks is everything below it.
+  • THE BULLPEN PREMIUM'S LEVEL, under the leverage-weighted reading only: realised RP1 = 0.322
+    and RP2 = 0.211 of leverage-weighted innings against the model's 0.278 / 0.167.
+
+WHAT THE DATA REFUTES.
+  • THE LINEUP CURVE'S SUPPORT — the largest and most consequential miss, and the one survivorship
+    makes WORSE. The model gives PA to exactly 9 hitters and zero to the rest; the bench enters only
+    through fullStrengthShare, worth 4.44% of lineup PA. Realised in the neutral pool: the top
+    nine take 84.5% of hitter PA (79.4% at depth), 13.2 hitters get a PA (13.7 at depth), 11.9
+    clear a quarter-share, and N_eff is 11.39 pooled / 12.28 at depth against a model value of
+    8.93 — at most 9.77 even if the entire substitution allowance is spread perfectly over
+    the bench. The model under-spreads by ≈2.5 effective hitters at the depth that matters.
+  • rotationShare 0.62 IS TOO LOW, AND IS NOT ONE NUMBER. Neutral pool 66.2% (+4.2%); Early Gold
+    88.4% (+26.4%). The swingman attribution band is under 1pp wide, so this is not an
+    artefact of how BF was split. Early Gold's starters carry BF-weighted stamina
+    88.4 vs 74.7 and go 34.5 BF/start vs 25.3 — the driver is which cards the format makes
+    ELIGIBLE, so a single global rotationShare cannot be right across formats.
+  • THE BULLPEN'S FLAT TAIL, under BOTH readings of the parameter — and the parameter turns out to be
+    AMBIGUOUS, which is the real finding (§3b). `bullpenLeverage` multiplies plain `bullpenBF`, but
+    the code comment calls it 'leverage-weighted'. Read as plain BF ranked by leverage ROLE,
+    realised is FLAT (0.14 0.14 0.14 0.14 0.14 0.14 0.12; RP1/RP7 = 1.12) and the 2.5× premium is
+    refuted. Read as leverage-weighted innings, the premium is fine but the tail keeps falling
+    (0.154 0.118 0.087 0.062 0.037; RP1/RP7 = 8.7 vs 2.50) and the flat tail is refuted.
+    Exactly one of the two claims survives under each reading, never the same one. Underneath, the
+    leverage index itself declines smoothly 2.43 → 0.43 from closer to 7th man with no flat
+    region, and a [premium, premium, flat…] shape cannot represent that at any two values.
+  • fullStrengthShare 0.6's IMPLICATION — a FORM failure, not a value failure. The rule requires the
+    nine to take 95.6% of lineup starts. Realised is 86.3% pooled and 80.5% at depth,
+    inverting to f0 = -0.24 and -0.75 — outside [0,1], so NO value of f0 can express the
+    observed churn. Real rosters rotate a 14-man batting group; 'nine starters, one occasionally
+    missing' is the wrong shape. This is confounded (rest / platooning / blowouts all enter, §4b),
+    so it refutes the RULE, not any particular value — and it says bench depth is used MORE than the
+    model allows, not less, so it does not undercut the reason offense.ts values a bench at all.
+  • THE ORDER TILT'S MAGNITUDE (minor). Realised slot-1:slot-9 PA ratio 1.61 vs the model's 1.32;
+    the direction is right, the steepness is understated. Small next to the support failure.
+
+WHAT THIS CORPUS CANNOT ANSWER.
+  • platoonCapture ρ = 0.80: NOT MEASURABLE, and no proxy is offered. Every realised statistic in
+    the export is an undifferentiated total; the vL/vR columns are RATINGS, not splits. Only the
+    handedness SUPPLY is measurable (§4a) and supply is not capture.
+  • fullStrengthShare as a VALUE — only its shape is testable, and its shape fails.
+  • Anything about CAPPED or SLOTS formats — none are present.
+  • Anything about what a roster COULD be — these rosters are ownership-shaped.
+
+NOTHING WAS FITTED. No parameter is proposed, no default touched. A calibration built on this would
+need its own pre-registration, and would have to be per-format at least for rotationShare.
+
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§0a.  PROVENANCE, DROPS, JOIN RATE
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+folder                   files    rows  teams  live   CID join
+Quicks - Bronze              9    3516    144   144     100.0%
+Quicks - Gold                8    3006    126   126     100.0%
+Quicks - Open                7    2669    103    97     100.0%
+Return of the Bronze         3    9598    380   380     100.0%
+Early Gold                   7   18719    853   848     100.0%
+
+raw rows read                     : 37992
+dropped — ghost/partial-export org: 484 rows  (src/eval/tournament-clean.ts PA−BF ledger — the project's established detector, not a new rule)
+dropped — blank ORG               : 0 rows
+dropped — multi-entry ORG (>30 rows) : 11 teams — one ORG STRING fielding several rosters. ORG is a
+                                    team NAME, not an id, and tournament-clean.ts documents the case. Every
+                                    mapped config has roster_size 26, so >30 rows cannot be one roster, and a
+                                    pooled 2-roster group would inflate exactly the concentration statistics
+                                    this study reports. All 11 are ONE manager multi-entering:
+                                    · Freedom Grabbers - HotL  [Early Gold]        5 entries, rows 45/47/42/38/42
+                                    · Freedom Grabbers - HotL  [Quicks - Open]     6 entries, rows 52/71/72/72/49/47
+dropped — team with 0 games played: 0 teams
+teams retained                    : 1595
+
+SENSITIVITY to the multi-entry drop — headline mean N_eff over ALL teams: 11.149 with them dropped,
+11.224 with them left in (0.075). The guard is correct in principle and immaterial in practice;
+it is applied anyway so no headline rests on a pooled-roster artefact.
+
+Per-instance ledger status (every removal is a partial-export org, named):
+  Early Gold / Early Gold July 10.csv                cleaned   ledger   848 → residual     8  removed: Lexington Minutemen, Silver Spring Penguins, Tuscaloosa Thunderbirds, Big Yahoo Ball Club
+  Early Gold / Early Gold July 11.csv                cleaned   ledger   675 → residual     9  removed: Houston Harambanators, West Valley Wazzirds, Charlotte Phighters
+  Early Gold / Early Gold July 5.csv                 cleaned   ledger   228 → residual     3  removed: Sacramento Athletics
+  Early Gold / Early Gold July 6.csv                 cleaned   ledger   647 → residual    25  removed: Lexington Bombers, K-STATE BATCATS, Great Lakes Pontooners
+  Early Gold / Early Gold July 7.csv                 cleaned   ledger   454 → residual     7  removed: Brooklyn Tip-Tops, Detroit Sushi Cats
+  Early Gold / Early Gold July 8.csv                 cleaned   ledger   475 → residual     6  removed: Sterling Park Commodores, Scottish Claymores
+  Early Gold / Early Gold July 9.csv                 cleaned   ledger   855 → residual    40  removed: B-Town Nasty Boyz, Pallenville Sleepers, Alpine Strangers, Compton Corgis - HotL
+  Quicks - Bronze / Quicks - Bronze 923.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 924.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 925.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 927.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 931.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 933.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 934.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 939.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Bronze / Quicks - Bronze 952.csv          clean     ledger     0 → residual     0  removed: —
+  Quicks - Gold / Quicks - Gold 3238.csv             cleaned   ledger   240 → residual    22  removed: Ann Arbor Blue - CG
+  Quicks - Gold / Quicks - Gold 3239.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Gold / Quicks - Gold 3240.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Gold / Quicks - Gold 3241.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Gold / Quicks - Gold 3242.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Gold / Quicks - Gold 3243.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Gold / Quicks - Gold 3245.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Gold / Quicks - Gold 3251.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Open / Quicks - Open 1303.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Open / Quicks - Open 1304.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Open / Quicks - Open 1305.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Open / Quicks - Open 1306.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Open / Quicks - Open 1307.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Open / Quicks - Open 1309.csv             clean     ledger     0 → residual     0  removed: —
+  Quicks - Open / Quicks - Open 1310.csv             clean     ledger     0 → residual     0  removed: —
+  Return of the Bronze / Return of the Bronze 11 July.csv clean     ledger     0 → residual     0  removed: —
+  Return of the Bronze / Return of the Bronze 5 July.csv cleaned   ledger   405 → residual    91  removed: DC Capital Giants
+  Return of the Bronze / Return of the Bronze 7 July.csv cleaned   ledger   360 → residual   -41  removed: Portsmouth Wunderfunk
+
+CID → catalog (data/imports/cdmx.csv, 'Card ID'): DIAGNOSTIC ONLY. Nothing in this study needs the
+catalog — every quantity comes from the export's own columns — so a join miss drops no row.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§0b.  FORMAT RESOLUTION — every folder matched against data/tournaments/  (the FORMAT correction)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Resolved independently, on config fields that leave an observable fingerprint in the export.
+
+Early Gold              →  early-gold
+  budget_mode none   total_cap null   VAL≤89    dh false  era-1920  park-169  min_starters 4  roster 26 (16H/10P)  ENV: MODIFIED
+  basis: name; VAL≤89 observed = card_value_max 89; NO DH observed (8.7% of PA by pitchers) = dh:false; min_starters 4 matches observed k≈4.1
+
+Quicks - Bronze         →  bronze-quick
+  budget_mode none   total_cap null   VAL≤69    dh true   era-2010  park-1    min_starters 5  roster 26 (14H/12P)  ENV: NEUTRAL
+  basis: name; VAL≤69 observed = card_value_max 69; DH observed
+
+Quicks - Gold           →  gold-quick
+  budget_mode none   total_cap null   VAL≤89    dh true   era-2010  park-1    min_starters 5  roster 26 (14H/12P)  ENV: NEUTRAL
+  basis: name; VAL≤89 observed = card_value_max 89; DH observed
+
+Quicks - Open           →  **UNMAPPED**
+  basis: NO registry entry matches. Observed VAL to 101 (Perfect/Diamond tiers) ⇒ card_value_max null; DH observed; roster 26. The registry has no `open-quick`; `live-open-daily` and `ptcs-open` are the only uncapped-window entries and neither is this event by name. Treated as UNCAPPED, unrestricted-VAL, DH — which is all the analysis below needs — and its ENV is asserted, not resolved.
+
+Return of the Bronze    →  bronze-return
+  budget_mode none   total_cap null   VAL≤69    dh true   era-2010  park-1    min_starters 5  roster 26 (14H/12P)  ENV: NEUTRAL
+  basis: name; VAL≤69 observed = card_value_max 69; DH observed; variants_allowed:false
+
+THE BUDGET AXIS — the one that would matter most, and the corpus is silent on it:
+  budget_mode across the four mapped configs: none, none, none, none — all 'none', total_cap null.
+  Quicks - Open is unmapped but is observably uncapped in card value and shows the same roster
+  size (26) and DH as the others. So: ZERO cap formats, ZERO slots formats in this corpus. A cap
+  buys a few expensive cards and fills the rest cheaply, which reallocates playing time across the
+  roster — the exact estimand here. NOTHING below transfers to a capped or slots format, and the
+  cap/slots objective is precisely where the usage model is consumed. This is a scope hole in the
+  data, not a finding, and it cannot be closed from these files.
+
+THE ENVIRONMENT AXIS — checked, not assumed:
+  Four folders resolve to era-2010/park-1 (neutral). Early Gold is era-1920/park-169. Env scales
+  event RATES; the prior is that it should not reallocate PLAYING TIME. The check available here:
+  the four neutral formats span card-value windows ≤69, ≤89 and uncapped — a wide POOL-STRENGTH
+  range at constant env — and their usage curves are alike (§1c). Early Gold, the one env-modified
+  format, diverges hugely on the pitching side. But Early Gold ALSO differs on TWO rule axes
+  (dh:false, min_starters 4) and, decisively, on POOL COMPOSITION: era-1920 eligibility loads the
+  pool with dead-ball starters. §5 measures the stamina of the arms that actually started, which
+  separates 'the environment reallocated innings' from 'the eligible cards are different'.
+  ATTRIBUTION IS NOT IDENTIFIED from one env-modified format; the conclusion drawn is only the
+  weak one — a single usage parameter set cannot describe both — which does not need attribution.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§1a.  PLAYING-TIME FIELDS THAT ACTUALLY EXIST (inspected, not assumed)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+All 34 files share one identical header. The realised playing-time columns are:
+  BATTING   G, GS, PA, AB                       GS = games started in the batting order
+  PITCHING  G_1, GS_1, W, L, HLD_1, SD, MD, IP, BF, pLi, PI, GF, IR, IRS
+                                                GS_1 = mound starts; pLi = average leverage index
+  FIELDING  G_2, GS_2, TC, A, PO, E, DP_1, TP, RNG, ZR, EFF, SBA, RTO, IP_1, PB, CER,
+            BIZ-{R,Rm,L,Lm,E,Em,U,Um,Z,Zm}, FRM, ARM
+There is NO by-opponent-handedness split of any realised statistic, and no game-by-game or
+by-lineup-slot breakdown. Everything below is built from the columns above and nothing else.
+
+IP is printed base-3 in the fraction ("13.2" = 13⅔ innings). Every innings share below is computed
+from BF, a plain integer, so that trap cannot contaminate a result.
+
+THE EXPORT LISTS ONLY CARDS THAT APPEARED. Rows with G = G_1 = G_2 = 0: 0 of 37,992. So an unused
+bench card is INVISIBLE here, and every count below is an APPEARANCE count, never a roster count.
+This does not touch any statistic in this file (all are conditional on PA>0 or GS>0, and a zero-PA
+card contributes nothing to N_eff), but it does mean no claim here is a claim about roster
+CONSTRUCTION — only about how playing time was distributed among the cards that played.
+
+VALIDATION OF THE RUN-DEPTH IDENTITY (team games = ΣGS_1). Exactly one pitcher starts each game, so
+ΣGS_1 should equal team games, and max(G, G_1) over the roster is a LOWER BOUND on it (some player
+usually, but not always, appears in every game). The identity therefore predicts ΣGS_1 ≥ max(G,G_1)
+with NO exceptions, and equality whenever any one card played every game. Measured:
+  ΣGS_1 ≥ max(G,G_1): 1595/1595 teams (100.0%) — ZERO violations, as predicted.
+  ΣGS_1 = max(G,G_1): 1377/1595 (86.3%); where it exceeds, the gap is median 1, p99 4,
+  and it GROWS with run length as rest days predict — mean gap 0.01 at ≤7 games, 0.90 at 15+.
+  A missing-starter-row defect would produce ΣGS_1 BELOW max(G,G_1); none occurs anywhere. (max must
+  NOT include G_2: the fielding table is per-POSITION, so a card that changes position mid-game
+  books two fielding games — which is why the naive three-way max disagrees 61% of the time.)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§1b.  SURVIVORSHIP — QUANTIFIED, THEN STRATIFIED (the choice, stated before any headline)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+THE PROBLEM. Losers are eliminated, so a deep-running team contributes many more card-games than a
+round-1 exit. Playing-time distribution IS the estimand, so this sits ON the estimand.
+
+THE CHOICE: **STRATIFY**. Run depth is DIRECTLY OBSERVABLE — exactly one pitcher starts each
+team-game, so a team's games = ΣGS_1 over its rows. No proxy is used or needed. Bounding would be
+strictly weaker: it would discard an observable. So the conditional distribution is reported at
+every headline and the reader can see whether the SHAPE moves with depth (it does — §2c).
+
+group                     teams       1–5 g     6–9 g   10–14 g     15+ g  PA in 15+  PA top-decile
+Quicks - Bronze             144      72/26%    35/26%    21/24%    16/24%      24.0%          21.1%
+Quicks - Gold               126      63/27%    30/24%    16/19%    17/30%      29.8%          23.3%
+Quicks - Open                97      49/27%    24/26%    14/24%    10/24%      23.6%          23.6%
+Return of the Bronze        380       75/8%   122/19%    97/27%    86/46%      46.3%          26.1%
+Early Gold                  848     424/25%   189/22%   135/23%   100/30%      30.0%          26.6%
+POOL: 4 neutral DH fmts     747     259/15%   211/21%   148/25%   129/38%      38.3%          25.9%
+
+(cell = team count / that group's share of hitter PA)   games played: min 3, median 7, p90 17, max 43
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§1c.  ALIKENESS — which formats may be pooled, tested before pooling
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Per-format point estimates with 95% CIs from an INSTANCE-clustered bootstrap (B=2000). Pooling is
+licensed only where the CIs overlap.
+
+format                      N_eff            95% CI  rot BF share            95% CI k(starters)
+Quicks - Bronze             11.41    [11.22, 11.59]         65.4%    [64.5%, 66.4%]        4.45
+Quicks - Gold               11.04    [10.84, 11.24]         66.8%    [65.7%, 67.9%]        4.42
+Quicks - Open               10.77    [10.57, 10.96]         67.7%    [66.1%, 69.3%]        4.36
+Return of the Bronze        11.65    [11.53, 11.78]         66.1%    [65.5%, 66.7%]        4.90
+Early Gold                  10.94    [10.84, 11.03]         88.4%    [87.8%, 89.0%]        4.05
+POOL: 4 neutral DH fmts     11.39    [11.19, 11.58]         66.2%    [65.8%, 66.7%]        4.66
+
+READ: the four neutral formats sit inside one another's intervals on both axes (N_eff 11.0–11.7,
+rotation share 65.4–67.6%) despite spanning card-value windows ≤69 / ≤89 / uncapped. Early Gold is
+22 points away on rotation share — not a wide interval, a different regime. POOLING DECISION:
+pool the four neutral DH formats; report Early Gold alone, everywhere.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§1d.  CLUSTER STRUCTURE — the variance inflation factor, MEASURED not assumed
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Two candidate units: the TEAM (one roster) and the INSTANCE (one whole running, 15–128 teams that
+all played each other, sharing an opponent pool, park, era and meta). Inflation =
+SE(instance-clustered bootstrap) / SE(team-clustered bootstrap), B=2000, same seed.
+
+statistic                     group                         point   SE team   SE inst  inflation
+mean N_eff (hitter PA)        POOL: 4 neutral DH fmts     11.3876    0.0439    0.0992      2.26×
+mean N_eff (hitter PA)        Early Gold                  10.9388    0.0479    0.0270      0.56×
+rotation BF share (per-GS)    POOL: 4 neutral DH fmts      0.6622    0.0024    0.0020      0.85×
+rotation BF share (per-GS)    Early Gold                   0.8843    0.0031    0.0012      0.39×
+top-9 lineup-start share      POOL: 4 neutral DH fmts      0.8626    0.0027    0.0055      2.04×
+top-9 lineup-start share      Early Gold                   0.9154    0.0027    0.0018      0.68×
+bullpen RP1 BF share (pLi)    POOL: 4 neutral DH fmts      0.1517    0.0032    0.0044      1.40×
+bullpen RP1 BF share (pLi)    Early Gold                   0.3680    0.0097    0.0102      1.05×
+
+Inflation is real, statistic-dependent, and NOT always >1 — consistent with this project's history
+of 3.1× / 1.07× / 1.02–1.22× / 0.99–1.05× on different statistics. Where it falls BELOW 1 (Early
+Gold, every statistic) the reading is that the seven Early Gold runnings are near-identical to one
+another, so resampling whole runnings moves the estimate LESS than resampling teams independently;
+that is a real property of the design, not a bug. Because the conservative cluster is therefore not
+known a priori, EVERY CI in this file uses max(SE_instance, SE_team) rather than assuming one.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§2.  QUESTION 1 — THE HITTER PLAYING-TIME DISTRIBUTION
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+DEFINITIONS. A row is a pitcher-row iff BF>0. HITTER PA = PA on non-pitcher rows, so pitcher
+batting (real in the no-DH Early Gold) is excluded and reported separately. Per team the hitter PA
+vector is sorted descending; rank k = 'the k-th most-used hitter' — the same ordering the model's
+curve uses (lineupWraa sorts wOBA desc against lineupPA). N_eff = 1 / Σ sᵢ² on those shares: the
+number of EQUALLY-used hitters producing the same concentration. Nine everyday players and a dead
+bench scores exactly 9.0. 'Full-time share' = 1/L of team hitter PA, L = the format's lineup size.
+
+MODEL BASELINE   lineupPA (1−0.03·slot):  9 slots → N_eff 8.931   8 slots → N_eff 7.953
+                 9-slot shares: 0.1263  0.1225  0.1187  0.1149  0.1111  0.1073  0.1035  0.0997  0.0960
+                 slot-1 : slot-9 = 1.316
+                 The bench enters ONLY via fullStrengthShare (offense.ts): at f0=0.6 each starter
+                 plays 0.9556 of games and ALL substitutes together take 4.44% of lineup PA.
+                 Spreading that allowance evenly over the whole bench — the most generous possible
+                 reading of the model — the implied roster-wide N_eff still only reaches:
+                    bench of  4 → N_eff 9.734
+                    bench of  8 → N_eff 9.757
+                    bench of 13 → N_eff 9.766
+                    bench of 17 → N_eff 9.770
+                 So ~9.77 is the model's CEILING on hitter spread. Everything above it is a miss.
+
+── 2a. per format (per format FIRST; the pool is licensed by §1c) ───────────
+
+group                      L teams   N_eff          95% CI   w/PA   ≥½sh   ≥¼sh  topL PA  pit.bat
+Quicks - Bronze            9   144   11.41   [11.22,11.59]   13.3    9.5   12.0    84.4%     0.6%
+Quicks - Gold              9   126   11.04   [10.84,11.24]   13.0    9.3   11.4    86.8%     0.5%
+Quicks - Open              9    97   10.77   [10.57,10.96]   12.7    9.2   11.1    88.2%     0.6%
+Return of the Bronze       9   380   11.65   [11.53,11.78]   13.3    9.7   12.2    82.9%     1.0%
+Early Gold                 8   848   10.94   [10.84,11.03]   14.4    8.1   10.6    81.4%     8.6%
+POOL: 4 neutral DH fmts    9   747   11.39   [11.19,11.58]   13.2    9.5   11.9    84.5%     0.8%
+
+  L = format lineup size (Early Gold is no-DH ⇒ 8 non-pitcher slots) · w/PA = mean hitters with ≥1 PA
+  ≥½sh / ≥¼sh = count at ≥50% / ≥25% of a full-time share · topL = share of hitter PA taken by the top L
+
+── 2b. per-rank share curve (mean over teams) ───────────────────────────────
+
+group                       r1    r2    r3    r4    r5    r6    r7    r8    r9   r10   r11   r12   r13   r14   r15
+MODEL (9 slots)          0.126 0.122 0.119 0.115 0.111 0.107 0.104 0.100 0.096 0.000 0.000 0.000 0.000 0.000 0.000
+MODEL (8 slots, no-DH)   0.140 0.135 0.131 0.127 0.123 0.119 0.115 0.110 0.000 0.000 0.000 0.000 0.000 0.000 0.000
+Quicks - Bronze          0.114 0.109 0.104 0.101 0.095 0.089 0.083 0.077 0.071 0.047 0.039 0.032 0.023 0.014 0.000
+Quicks - Gold            0.115 0.111 0.107 0.103 0.098 0.093 0.088 0.082 0.072 0.044 0.033 0.025 0.018 0.009 0.001
+Quicks - Open            0.116 0.113 0.109 0.106 0.100 0.095 0.090 0.081 0.070 0.043 0.032 0.023 0.015 0.005 0.000
+Return of the Bronze     0.113 0.106 0.102 0.097 0.093 0.088 0.083 0.078 0.071 0.052 0.043 0.035 0.027 0.014 0.000
+Early Gold               0.124 0.117 0.111 0.105 0.100 0.094 0.087 0.078 0.050 0.039 0.031 0.025 0.018 0.012 0.006
+POOL: 4 neutral DH fmts  0.114 0.108 0.104 0.100 0.095 0.090 0.084 0.079 0.071 0.049 0.039 0.031 0.023 0.012 0.000
+
+NEUTRAL POOL   r1:r9 = 1.61 (model 1.32)   r1:r13 = 4.86   cum top-9 84.5%, top-11 93.3%, top-13 98.8%
+EARLY GOLD     r1:r8 = 1.59 (model 8-slot 1.27)   cum top-8 81.4%, top-11 93.4%, top-13 97.6%
+
+The shape is not the model's shape. Realised PA declines gently through the lineup and then
+BREAKS at r9/r10 into a long, substantial part-time tail the model has no slot for at all.
+
+── 2c. SURVIVORSHIP STRATIFICATION — does the shape move with run depth? ────
+
+  POOL: 4 neutral DH fmts
+  stratum       teams   PA wt   N_eff     ±CI   w/PA   ≥½sh  topL PA   per-rank r1..r12
+  1–5 g           259   15.3%   10.68   ±0.13   12.6    9.2    88.6%   0.119 0.114 0.110 0.106 0.100 0.095 0.088 0.081 0.072 0.041 0.030 0.022
+  6–9 g           211   21.3%   11.44   ±0.17   13.3    9.5    84.1%   0.114 0.108 0.104 0.100 0.095 0.089 0.083 0.078 0.070 0.049 0.040 0.033
+  10–14 g         148   25.2%   11.77   ±0.16   13.5    9.8    82.5%   0.110 0.105 0.100 0.096 0.092 0.088 0.084 0.079 0.072 0.053 0.044 0.036
+  15+ g           129   38.3%   12.28   ±0.14   13.7   10.1    79.4%   0.107 0.100 0.097 0.093 0.088 0.084 0.080 0.075 0.070 0.057 0.050 0.042
+
+  Early Gold
+  stratum       teams   PA wt   N_eff     ±CI   w/PA   ≥½sh  topL PA   per-rank r1..r12
+  1–5 g           424   24.9%   10.32   ±0.11   13.7    8.0    84.7%   0.128 0.122 0.116 0.110 0.104 0.098 0.090 0.079 0.046 0.034 0.026 0.019
+  6–9 g           189   21.7%   11.17   ±0.20   14.9    8.2    80.0%   0.123 0.115 0.108 0.103 0.097 0.092 0.085 0.077 0.050 0.042 0.034 0.027
+  10–14 g         135   23.4%   11.52   ±0.27   15.2    8.1    78.5%   0.119 0.111 0.105 0.101 0.097 0.091 0.086 0.076 0.053 0.042 0.034 0.029
+  15+ g           100   30.0%   12.36   ±0.25   15.7    8.3    74.2%   0.111 0.105 0.100 0.094 0.090 0.086 0.081 0.075 0.058 0.048 0.042 0.036
+
+  THE SHAPE MOVES, AND IT MOVES AGAINST THE MODEL. Deeper runs spread playing time MORE, not less:
+  survivorship is biasing the pooled N_eff DOWNWARD relative to the deep-run rosters the optimizer
+  actually cares about. So the model's under-spread is understated by the pooled figure — the
+  survivorship correction makes the failure larger, not smaller. The mechanism is mundane: more
+  games means more rest days, more blowouts and more matchup substitution reaching the bench.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§3.  QUESTION 2 — ROTATION / BULLPEN SPLIT AND THE LEVERAGE CURVE
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+THE IDENTIFICATION PROBLEM, STATED. BF is a whole-event total; the export does NOT split a
+pitcher's BF between his starts and his relief outings, so a SWINGMAN (GS_1>0, G_1>GS_1) is
+ambiguous. Three estimates; the gap between them IS the ambiguity:
+   LOWER   BF of PURE starters (GS_1=G_1) / team BF           — swingman relief counted as bullpen
+   UPPER   BF of every GS_1>0 row / team BF                   — swingman relief counted as rotation
+   PER-GS  (BF per start among pure starters × team games) / team BF   ← the identified estimate:
+           prices a start off unambiguous starters, multiplies by the observed start count
+
+group                      lower   PER-GS           95% CI   upper  swingBF  BF/start  SP stamina   model      gap
+Quicks - Bronze            65.4%    65.4%    [64.5%,66.4%]   65.4%     0.0%     24.93        70.0     62%    +3.4%
+Quicks - Gold              65.6%    66.8%    [65.7%,67.9%]   66.1%     0.6%     25.65        82.2     62%    +4.8%
+Quicks - Open              65.8%    67.7%    [66.1%,69.3%]   66.7%     0.9%     25.74        92.6     62%    +5.7%
+Return of the Bronze       65.4%    66.1%    [65.5%,66.7%]   66.3%     0.9%     25.31        71.2     62%    +4.1%
+Early Gold                 87.9%    88.4%    [87.8%,89.0%]   88.5%     0.7%     34.53        88.4     62%   +26.4%
+POOL: 4 neutral DH fmts    65.5%    66.2%    [65.8%,66.7%]   66.2%     0.7%     25.34        74.7     62%    +4.2%
+
+  BF/start = batters faced per start among pure starters (a full 9-inning start ≈ 38 BF)
+  SP stamina = BF-weighted mean STM rating of the arms that actually started
+
+THE ENV-vs-POOL DISCRIMINATOR. Early Gold's starters carry a BF-weighted mean stamina of
+88.4 against 74.7 in the neutral pool, and go 34.5 BF per start against 25.3. Its rotation
+share is high because era-1920 ELIGIBILITY loads the pool with complete-game starters — a POOL-
+COMPOSITION effect, not the era run-environment scalar reallocating innings. That distinction
+matters for what generalises: a format's rotation share follows the stamina of the cards it makes
+eligible, so it is a per-format quantity in principle, not just in this sample.
+
+── 3a. rotation-slot start curve ────────────────────────────────────────────
+
+Rotation slots ranked by GS_1 desc within a team, averaged across teams as SHARES of team starts.
+Compared to `rotationStarts(bestOf, k)` — the model's own format-derived curve. rotationDecay=0 is
+a NO-EXTRA-TILT flag, so what is really under test is that format curve.
+
+group / model                   k(≥1GS)  k(≥2GS)      SP1    SP2    SP3    SP4    SP5    SP6    SP7
+MODEL rotationStarts(bo=3,k=5)        5        —    0.230  0.224  0.216  0.197  0.133  0.000  0.000
+MODEL rotationStarts(bo=5,k=5)        5        —    0.243  0.243  0.243  0.182  0.088  0.000  0.000
+MODEL rotationStarts(bo=7,k=5)        5        —    0.224  0.216  0.204  0.191  0.164  0.000  0.000
+MODEL rotationStarts(bo=5,k=4)        4        —    0.277  0.264  0.252  0.206  0.000  0.000  0.000
+Quicks - Bronze                    4.45     1.98    0.253  0.250  0.238  0.177  0.082  0.000  0.000
+Quicks - Gold                      4.42     1.99    0.258  0.251  0.243  0.163  0.085  0.000  0.000
+Quicks - Open                      4.36     1.94    0.265  0.258  0.242  0.150  0.082  0.002  0.000
+Return of the Bronze               4.90     2.92    0.261  0.223  0.191  0.179  0.146  0.000  0.000
+Early Gold                         4.05     2.00    0.285  0.259  0.252  0.167  0.036  0.000  0.000
+POOL: 4 neutral DH fmts            4.66     2.45    0.259  0.238  0.215  0.172  0.115  0.001  0.000
+
+  by depth stratum (a 3-game team CANNOT show a 5-man rotation — this is where survivorship bites
+  the rotation curve hardest, so the STRATA are the answer and the pooled row is not):
+
+  POOL: 4 neutral DH fmts
+  stratum       teams   k(≥1)   k(≥2)      SP1    SP2    SP3    SP4    SP5    SP6    SP7
+  1–5 g           259    4.19    0.04    0.254  0.246  0.246  0.174  0.081  0.000  0.000
+  6–9 g           211    4.80    2.34    0.288  0.244  0.193  0.159  0.115  0.001  0.000
+  10–14 g         148    4.97    4.70    0.248  0.229  0.205  0.175  0.142  0.001  0.000
+  15+ g           129    5.04    4.91    0.237  0.221  0.203  0.184  0.153  0.002  0.000
+
+  Early Gold
+  stratum       teams   k(≥1)   k(≥2)      SP1    SP2    SP3    SP4    SP5    SP6    SP7
+  1–5 g           424    3.87    0.19    0.294  0.258  0.256  0.156  0.037  0.000  0.000
+  6–9 g           189    4.14    3.43    0.285  0.262  0.255  0.169  0.028  0.000  0.000
+  10–14 g         135    4.30    4.05    0.272  0.261  0.242  0.181  0.044  0.000  0.000
+  15+ g           100    4.30    4.21    0.267  0.256  0.247  0.193  0.036  0.000  0.000
+
+  THE STRATIFICATION REVERSES THE POOLED READING — this is the clearest single demonstration in
+  this file of why the survivorship guard was mandatory. Pooled, the realised rotation looks like a
+  broken 4.7-man staff whose SP5 (0.115) is far under the model's 0.164, and the naive conclusion
+  is 'the format curve is wrong'. But a team that played 3 games CANNOT show five starters: the
+  shortfall is a censoring artefact of shallow runs, not a usage fact. Conditional on run depth:
+
+     neutral pool, 15+ games (k=5.04):  0.237  0.221  0.203  0.184  0.153
+     MODEL rotationStarts(bo=7, k=5):    0.224  0.216  0.204  0.191  0.164
+     max per-slot deviation: 0.012
+
+     Early Gold, 15+ games (k=4.30):     0.267  0.256  0.247  0.193   [SP5 0.036]
+     MODEL rotationStarts(bo=5, k=4):    0.277  0.264  0.252  0.206   (k=4 = early-gold's own min_starters)
+     max per-slot deviation over the four modelled slots: 0.013
+     (realised SP5 usage 0.036 is a small residual the 4-man curve has no slot for at all)
+
+  CAVEAT, AND IT IS A REAL ONE: `bestOf` IS NOT OBSERVABLE in the export. The comparator above was
+  CHOSEN as the best-fitting member of {3,5,7}, so the agreement is 'the realised curve lies inside
+  the family rotationStarts generates', not 'the model's bestOf setting is verified'. The full
+  selection is shown so the reader can discount it:
+
+  neutral pool 15+ games vs …            SP1     SP2     SP3     SP4     SP5   max dev
+  REALISED                             0.237   0.221   0.203   0.184   0.153         —
+  rotationStarts(bo=3, k=5)            0.230   0.224   0.216   0.197   0.133     0.019
+  rotationStarts(bo=5, k=5)            0.243   0.243   0.243   0.182   0.088     0.065
+  rotationStarts(bo=7, k=5)            0.224   0.216   0.204   0.191   0.164     0.012
+
+  Even the WORST member of the family (bo=5, max dev 0.063) is far closer than the pooled reading
+  suggested, and bo=3 and bo=7 both land inside 0.02. So `rotationStarts` — the one piece of the
+  usage model that was DERIVED rather than hand-set — is SUPPORTED as a functional form, in both a
+  5-man DH format and a 4-man no-DH format, once the censoring is removed; its bestOf ARGUMENT is
+  not verified here and cannot be from these files. The 4/5 'cliff' in the pooled row is
+  survivorship, not behaviour.
+
+── 3b. bullpen leverage — is a two-number model enough? ─────────────────────
+
+`bullpenLeverage [2.5,1.5]` reweights bullpen BF: top arm 2.5× a filler arm, 2nd 1.5×, everyone
+from the 3rd down EXACTLY 1.0×. Two separable claims:
+  (i)  the LEVEL of the slot-1/slot-2 premium;
+  (ii) the FLAT-FROM-SLOT-3 claim — which is the actual content of 'a two-number model'.
+
+Relievers = pure relief rows (GS_1=0, G_1>0). THE ORDERING IS ITSELF A MODELLING CHOICE and one
+candidate is circular, so all three are shown:
+  by BF   ranks arms by the very quantity measured. Mechanically maximal concentration — an UPPER
+          BOUND on how peaked any leverage rule could look. NOT the curve.
+  by pLi  ranks by realised average LEVERAGE INDEX, i.e. by ROLE (closer / setup / mop-up). This is
+          what bullpenLeverage means, and it is not circular in BF.  ← the comparison that counts
+  BF×pLi  leverage-weighted innings — the quantity the code comment says it models.
+
+AND: the tail comparison is restricted to teams that ACTUALLY CARRY ≥7 relievers. Averaging a
+7-slot share vector over teams with 3 relievers pads the tail with structural zeros and manufactures
+a decline. Both the all-teams and the ≥7-arm rows are shown so the padding artefact is visible.
+
+  BF, ranked by BF (upper bound, circular)
+  group                               arms      RP1    RP2    RP3    RP4    RP5    RP6    RP7    RP8   RP1/RP7
+  MODEL [2.5,1.5,1,1,1,1,1]              7    0.278  0.167  0.111  0.111  0.111  0.111  0.111             2.50
+  Quicks - Bronze  [all teams]        6.68    0.265  0.200  0.169  0.132  0.105  0.074  0.045  0.010      5.89
+  Quicks - Bronze  [≥7 arms]          7.27    0.239  0.183  0.161  0.135  0.112  0.091  0.065  0.014      3.70
+  Quicks - Gold  [all teams]          6.40    0.282  0.201  0.165  0.132  0.101  0.070  0.040  0.010      7.12
+  Quicks - Gold  [≥7 arms]            7.32    0.232  0.184  0.158  0.131  0.113  0.095  0.069  0.017      3.35
+  Quicks - Open  [all teams]          6.70    0.289  0.204  0.164  0.128  0.098  0.066  0.038  0.013      7.54
+  Quicks - Open  [≥7 arms]            7.48    0.248  0.187  0.154  0.131  0.110  0.086  0.062  0.021      4.01
+  Return of the Bronze  [all teams]   7.07    0.238  0.191  0.161  0.136  0.112  0.087  0.058  0.014      4.13
+  Return of the Bronze  [≥7 arms]     7.35    0.228  0.184  0.158  0.135  0.114  0.094  0.069  0.016      3.31
+  Early Gold  [all teams]             3.33    0.518  0.242  0.121  0.051  0.019  0.005  0.001  0.000    352.03
+  Early Gold  [≥7 arms]               7.32    0.284  0.214  0.151  0.122  0.096  0.073  0.050  0.008      5.69
+  POOL: 4 neutral DH fmts  [all teams]  6.84    0.257  0.196  0.164  0.134  0.107  0.079  0.050  0.012      5.18
+  POOL: 4 neutral DH fmts  [≥7 arms]  7.35    0.233  0.184  0.158  0.134  0.113  0.093  0.067  0.017      3.46
+
+  BF, ranked by pLi (ROLE order) ← the one that counts
+  group                               arms      RP1    RP2    RP3    RP4    RP5    RP6    RP7    RP8   RP1/RP7
+  MODEL [2.5,1.5,1,1,1,1,1]              7    0.278  0.167  0.111  0.111  0.111  0.111  0.111             2.50
+  Quicks - Bronze  [all teams]        6.68    0.158  0.153  0.163  0.158  0.148  0.121  0.079  0.020      1.99
+  Quicks - Bronze  [≥7 arms]          7.27    0.144  0.132  0.143  0.148  0.147  0.142  0.114  0.029      1.26
+  Quicks - Gold  [all teams]          6.40    0.170  0.174  0.164  0.155  0.142  0.104  0.073  0.018      2.31
+  Quicks - Gold  [≥7 arms]            7.32    0.136  0.149  0.141  0.147  0.138  0.130  0.128  0.032      1.06
+  Quicks - Open  [all teams]          6.70    0.154  0.169  0.167  0.164  0.138  0.106  0.074  0.027      2.07
+  Quicks - Open  [≥7 arms]            7.48    0.134  0.142  0.149  0.142  0.132  0.137  0.120  0.043      1.12
+  Return of the Bronze  [all teams]   7.07    0.143  0.141  0.147  0.148  0.145  0.139  0.105  0.029      1.36
+  Return of the Bronze  [≥7 arms]     7.35    0.137  0.136  0.138  0.143  0.141  0.143  0.125  0.035      1.09
+  Early Gold  [all teams]             3.33    0.368  0.282  0.172  0.088  0.034  0.011  0.002  0.000    148.15
+  Early Gold  [≥7 arms]               7.32    0.155  0.163  0.175  0.173  0.106  0.127  0.084  0.015      1.84
+  POOL: 4 neutral DH fmts  [all teams]  6.84    0.152  0.153  0.155  0.153  0.144  0.126  0.091  0.025      1.67
+  POOL: 4 neutral DH fmts  [≥7 arms]  7.35    0.138  0.138  0.140  0.145  0.141  0.141  0.123  0.034      1.12
+
+  BF×pLi, ranked by BF×pLi
+  group                               arms      RP1    RP2    RP3    RP4    RP5    RP6    RP7    RP8   RP1/RP7
+  MODEL [2.5,1.5,1,1,1,1,1]              7    0.278  0.167  0.111  0.111  0.111  0.111  0.111             2.50
+  Quicks - Bronze  [all teams]        6.68    0.356  0.220  0.158  0.111  0.077  0.049  0.024  0.004     15.09
+  Quicks - Bronze  [≥7 arms]          7.27    0.322  0.208  0.157  0.119  0.091  0.063  0.034  0.006      9.48
+  Quicks - Gold  [all teams]          6.39    0.374  0.222  0.154  0.107  0.072  0.044  0.022  0.005     16.96
+  Quicks - Gold  [≥7 arms]            7.31    0.320  0.206  0.152  0.119  0.092  0.064  0.039  0.009      8.30
+  Quicks - Open  [all teams]          6.69    0.397  0.227  0.150  0.105  0.065  0.034  0.016  0.005     24.32
+  Quicks - Open  [≥7 arms]            7.48    0.355  0.217  0.154  0.118  0.074  0.048  0.026  0.008     13.45
+  Return of the Bronze  [all teams]   7.07    0.329  0.217  0.154  0.115  0.084  0.058  0.033  0.007      9.92
+  Return of the Bronze  [≥7 arms]     7.35    0.317  0.212  0.154  0.117  0.088  0.064  0.040  0.008      7.95
+  Early Gold  [all teams]             3.33    0.639  0.209  0.075  0.026  0.008  0.002  0.000  0.000   1664.61
+  Early Gold  [≥7 arms]               7.32    0.433  0.245  0.153  0.080  0.046  0.027  0.013  0.002     33.29
+  POOL: 4 neutral DH fmts  [all teams]  6.83    0.351  0.220  0.154  0.112  0.078  0.051  0.027  0.006     12.86
+  POOL: 4 neutral DH fmts  [≥7 arms]  7.34    0.322  0.211  0.154  0.118  0.087  0.062  0.037  0.008      8.68
+
+  realised pLi BY SLOT (the leverage index itself, ranked desc — a direct read on 'how much more
+  leverage does the closer see than the 7th man', with no BF circularity whatsoever):
+  group                                   RP1    RP2    RP3    RP4    RP5    RP6    RP7    RP8   RP1/RP7
+  Quicks - Bronze  [all teams]           2.28   1.63   1.29   1.00   0.79   0.62   0.44   0.30      5.19
+  Quicks - Bronze  [≥7 arms]             2.40   1.77   1.43   1.14   0.93   0.68   0.44   0.30      5.46
+  Quicks - Gold  [all teams]             2.29   1.60   1.27   0.95   0.78   0.63   0.49   0.40      4.69
+  Quicks - Gold  [≥7 arms]               2.38   1.76   1.41   1.16   0.98   0.75   0.49   0.40      4.88
+  Quicks - Open  [all teams]             2.35   1.53   1.11   0.81   0.59   0.42   0.32   0.23      7.34
+  Quicks - Open  [≥7 arms]               2.59   1.70   1.29   0.96   0.71   0.49   0.32   0.23      8.08
+  Return of the Bronze  [all teams]      2.38   1.69   1.28   1.01   0.77   0.58   0.43   0.31      5.55
+  Return of the Bronze  [≥7 arms]        2.42   1.75   1.35   1.08   0.83   0.63   0.43   0.31      5.65
+  Early Gold  [all teams]                1.84   0.89   0.54   0.34   0.27   0.26   0.22   0.14      8.41
+  Early Gold  [≥7 arms]                  2.75   1.83   1.20   0.72   0.51   0.34   0.22   0.14     12.55
+  POOL: 4 neutral DH fmts  [all teams]     2.34   1.64   1.26   0.97   0.75   0.58   0.43   0.31      5.49
+  POOL: 4 neutral DH fmts  [≥7 arms]     2.43   1.75   1.37   1.09   0.85   0.64   0.43   0.31      5.70
+
+VERDICT — AND THE PARAMETER TURNS OUT TO BE AMBIGUOUS, WHICH IS THE REAL FINDING.
+
+`bullpenLeverage` multiplies `bullpenBF`, and `bullpenBF` is consumed in defenseRunsAboveAvg as a
+straight BATTERS-FACED weight. But the code comment calls it 'leverage-weighted bullpen BF'. Those
+are two different quantities and the data answers them OPPOSITELY, so the parameter cannot be
+right under both readings and it is not clear which one it is meant to be.
+
+  READING A — plain BF, i.e. 'the closer FACES MORE BATTERS than the 7th man'.
+     realised (role order, ≥7-arm neutral teams):  0.138  0.138  0.140  0.145  0.141  0.141  0.123
+     model:                                        0.278  0.167  0.111  0.111  0.111  0.111  0.111
+     Realised bullpen BF is FLAT across leverage roles — RP1/RP7 = 1.12, against the model's 2.50.
+     The high-leverage arm does NOT throw more; it throws the same amount in tighter spots. Under
+     this reading the FLAT-TAIL claim is right and the PREMIUM is refuted — the model over-
+     concentrates the top slot by 2.0×.
+
+  READING B — leverage-weighted innings (BF × pLi), what the comment says.
+     realised (≥7-arm neutral teams):              0.322  0.211  0.154  0.118  0.087  0.062  0.037
+     model:                                        0.278  0.167  0.111  0.111  0.111  0.111  0.111
+     Now RP1 (0.322) and RP2 (0.211) are in the model's neighbourhood (0.278 / 0.167) — the
+     PREMIUM'S LEVEL is defensible — but the tail keeps falling (0.154 0.118 0.087 0.062 0.037) where the
+     model holds it flat at 0.111, and RP1/RP7 is 8.7 against 2.50. Under this reading the
+     PREMIUM holds and the FLAT TAIL is refuted — the model under-concentrates overall.
+
+  EXACTLY ONE of the two claims survives under each reading, and never the same one. The
+  underlying driver is visible with no BF circularity at all: the leverage index itself falls
+  monotonically 2.43 → 0.43 from closer to 7th man, with no flat region anywhere. A
+  two-number [premium, premium, flat…] shape cannot represent a smooth monotone decline no matter
+  what the two numbers are. NOTE the ordering matters enormously and the intuitive one is wrong:
+  ranking arms by their own BF gives RP1/RP7 = 3.46, but that ranks arms by the very quantity
+  being measured and is circular — it is an upper bound on peakedness, not an estimate of it.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§4.  QUESTION 3 — fullStrengthShare AND platoonCapture
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+── 4a. platoonCapture — THE EXPORTS CANNOT ADDRESS IT ───────────────────────
+
+ρ is 'how often a FIELDED CARD gets its favourable matchup'. Identifying it needs each hitter's PA
+split by opposing-pitcher handedness. The export carries vL/vR columns for RATINGS only (BA vL,
+POW vR, STU vL, …); every realised statistic — PA, AB, H, HR, BB, K, IP, BF — is a single
+undifferentiated total. No PA-vs-LHP column, no split table, no game log. ρ is NOT MEASURABLE from
+this corpus and NO PROXY IS OFFERED.
+
+What IS measurable is the handedness SUPPLY — the exposure under zero platoon deployment:
+
+  group                      BF by RHP   BF by LHP   LHP share
+  Quicks - Bronze                26944       14816       35.5%
+  Quicks - Gold                  22817       14235       38.4%
+  Quicks - Open                  16797       10200       37.8%
+  Return of the Bronze          104958       59057       36.0%
+  Early Gold                    190085       76925       28.8%
+  POOL: 4 neutral DH fmts       171516       98308       36.4%
+
+  In the neutral pool 36.4% of BF come from LHP, so a randomly-deployed LH hitter meets its
+  favourable side 63.6% of the time and a RH hitter 36.4%. These are SUPPLY numbers and they
+  bound nothing about ρ, because ρ is the manager's deployment ON TOP of supply — exactly what the
+  export does not record. Quoted only so nobody mistakes supply for capture.
+
+── 4b. fullStrengthShare — its SHAPE is testable; its VALUE is not ──────────
+
+f0 = 'fraction of games fielded at the best nine AVAILABLE'. Availability (injury, fatigue) is not
+exported and 'best' is a model judgement, so f0 is not identified. But it has ONE implication that
+does live in the data: in offense.ts, with probability (1−f0) exactly ONE of the L starters is
+replaced, so the L starters must collectively take (L−1+f0)/L of all lineup starts. GS (batting
+games started) is exported, so that share is directly measurable.
+
+CONFOUND, NAMED: the measured churn conflates unavailability with deliberate platooning, rest,
+blowout substitution and manager preference — the model attributes ALL of it to f0. So this is an
+implication test of the RULE'S SHAPE, not an estimate of f0.
+
+group                      L  topL GS%           95% CI model needs  f0 implied  hitters w/GS
+Quicks - Bronze            9     86.4%    [85.2%,87.6%]       95.6%       -0.22          12.7
+Quicks - Gold              9     88.6%    [87.3%,89.8%]       95.6%       -0.03          12.3
+Quicks - Open              9     88.9%    [87.6%,90.1%]       95.6%       -0.00          12.1
+Return of the Bronze       9     84.8%    [84.1%,85.5%]       95.6%       -0.37          12.9
+Early Gold                 8     87.5%    [86.9%,88.1%]       95.0%        0.00          11.7
+POOL: 4 neutral DH fmts    9     86.3%    [85.2%,87.3%]       95.6%       -0.24          12.7
+
+  f0 implied = L·(topL GS%) − (L−1): f0 inverted THROUGH the model's own substitution rule.
+  A value ≤0 means the observed churn exceeds anything the one-starter-out rule can express at any f0.
+
+  POOL: 4 neutral DH fmts — by depth stratum:
+  stratum       teams  topL GS%  f0 implied  hitters w/GS
+  1–5 g           259     90.9%        0.18          11.6
+  6–9 g           211     85.7%       -0.29          13.0
+  10–14 g         148     83.9%       -0.45          13.3
+  15+ g           129     80.5%       -0.75          13.6
+
+  Early Gold — by depth stratum:
+  stratum       teams  topL GS%  f0 implied  hitters w/GS
+  1–5 g           424     91.9%        0.35          10.3
+  6–9 g           189     85.3%       -0.18          12.4
+  10–14 g         135     83.1%       -0.35          13.5
+  15+ g           100     79.0%       -0.68          14.3
+
+  The implied f0 goes MORE negative with depth. The failure is structural: real rosters rotate a
+  10–14 man batting group, which a 'nine starters, one occasionally missing' rule cannot represent
+  at any parameter value. Note this refutes the RULE, not the IDEA that bench depth has value —
+  the data says bench depth is used far MORE than the rule allows, not less.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+§5.  QUESTION 4 — DIRECT COMPARISON, MODEL vs REALISED
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Columns: the neutral pool pooled over depth, the neutral pool's DEEPEST stratum (15+ games — the
+survivorship-corrected read, and the run depth the optimizer's use-case is about), and Early Gold
+alone. Verdicts are taken from the DEEP column where the two disagree.
+
+quantity                            MODEL            neutral   neut 15+  EarlyGold  verdict
+────────────────────────────────────────────────────────────────────────────────────────────────────
+hitter concentration N_eff          8.93 (≤9.77)     11.39     12.28     10.94      REFUTED — model under-spreads by 2.5 effective hitters at depth
+hitters receiving any PA            9                13.2      13.7      14.4       REFUTED — an entire part-time tier the model has no slot for
+hitters at ≥¼ full-time share       9                11.9      13.1      10.6       REFUTED — same
+hitters at ≥½ full-time share       9                9.5       10.1      8.1        HOLDS — the everyday core really is ~9
+top-L share of hitter PA            100%             84.5%     79.4%     81.4%      REFUTED — bench takes ~1 PA in 5 at depth; model gives it 0
+slot-1 : slot-L PA ratio            1.32/1.27        1.61      1.53      1.59       REFUTED (mild) — realised tilt ~1.2–1.5× the model's
+rotation BF share                   62.0%            66.2%     66.9%     88.4%      REFUTED — low by 4.2% (neutral) / 26.4% (Early Gold); format-dependent
+rotation size actually used         5 / 4 (cfg)      4.66      5.04      4.30*      HOLDS at depth — the pooled 4.7 is survivorship censoring
+SP1 share of starts                 0.224 (bo7)      0.259     0.237     0.267*     HOLDS at depth — within 0.014 of the derived curve
+SP5 share of starts                 0.164 (bo7)      0.115     0.153     0.036*     HOLDS at depth in the k=5 formats — pooled gap was censoring
+bullpen RP1, plain BF by role       0.278            0.138     —         —          REFUTED — realised is FLAT (RP1/RP7 1.12); model over-concentrates
+bullpen RP1, leverage-wtd (BF×pLi)  0.278            0.322     —         —          HOLDS — the premium's LEVEL is defensible under this reading
+bullpen RP3..RP7 flat tail          0.111 ×5 (flat)  see →     —         —          REFUTED under BOTH readings — lev-wtd 0.154 0.118 0.087 0.062 0.037, monotone
+top-L share of lineup starts        95.6%            86.3%     80.5%     87.5%      REFUTED — inverts to f0 -0.24 pooled, -0.75 at depth: outside [0,1]
+platoon capture ρ                   0.80             —         —         —          NOT MEASURABLE — no handedness split of any realised stat
+budget-constrained roster usage     cap/slots input  —         —         —          NO DATA — corpus has zero cap and zero slots formats
+
+  * = Early Gold's 15+ game stratum (its rotation comparator is the k=4 curve, not the k=5 one).
+
+Reading the table: THREE of the model's assumptions survive (the ~9-man everyday core, the derived
+rotationStarts curve, and the bullpen premium's level under the leverage-weighted reading). The
+rest fail, and the two biggest failures — the lineup curve's SUPPORT and rotationShare — are both
+failures the survivorship correction makes WORSE, not better.
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+SCOPE NOTES, KEPT AT THE END BUT NOT BURIED — every one of them constrains the table above.
+  1. OWNERSHIP SHAPING. These rosters are built from cards people own; composition reflects
+     collections and the market. Nothing here supports a claim about what a roster COULD be. Every
+     claim is about how playing time distributes ACROSS A ROSTER THAT EXISTS — which is what the
+     usage model consumes, so the shaping does not touch the estimand.
+  2. NO CAP, NO SLOTS. All five formats are budget_mode:none. The cap/slots objective is the main
+     consumer of these parameters and the corpus cannot speak to it.
+  3. ONE ENV-MODIFIED FORMAT. Early Gold's divergence cannot be attributed between environment,
+     no-DH, min_starters 4 and era-1920 pool composition from n=1 format. §3's stamina measurement
+     points at pool composition; that is a lead, not a result.
+  4. DESCRIPTIVE ONLY. No curve was fitted, no parameter proposed, no default touched. A
+     calibration built on this would need its own pre-registration.
+════════════════════════════════════════════════════════════════════════════════════════════════════
