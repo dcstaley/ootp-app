@@ -51,3 +51,13 @@ roster dataset (487 rosters) lived in the deprecated folder ⇒ the usage-model 
 is PARKED pending one recon question: does cwhit expose per-team rosters with playing
 time? Yes ⇒ capture target, calibration revives; no ⇒ usage model stays as-is,
 refutation noted as historical context.
+
+FINAL RULE (2026-07-26, Derek — supersedes both notes above on this topic):
+`Tournament Data/` (Derek's old manual exports) is NOT dead — it is RESTRICTED: use it
+ONLY for usage-model work or for data genuinely unavailable from the cwhit site. For
+everything else, cwhit fixtures are the sole tournament source.
+PRIORITY RULE: the usage model and ANYTHING ELSE related to CAPS AND SLOTS (the deployment
+layer, the cap/slots double-count fix, cap-tightness instruments, budget-pair fits) sits
+BELOW the DEFENSE frontier in the roadmap. Order: current measurement work → era +
+composition (non-budget parts: decoupling, gold, live, hitter tail) → DEFENSE → then
+caps/slots/usage.
