@@ -38,9 +38,15 @@
  * ========================================================================== */
 window.capture = async function capture(role /* 'pit' | 'hit' */) {
   const $ = window.jQuery;
+  // COLUMN SIGNATURE — the finder's whole contract. NOTE the HITTER table carries POS at
+  // index 1 ("Name, POS, VAL, VLvl, Hand, PA, ..."); the pitcher table has no POS. Getting
+  // this wrong does NOT fail loudly — the finder simply returns undefined and throws
+  // "table not found", which reads exactly like a Shiny render failure and sent a capture
+  // run hunting a non-existent rendering bug (2026-07-27). `parse.ts` always expected POS;
+  // only this signature was wrong.
   const sig = role === "pit"
     ? ["Name", "VAL", "VLvl", "Hand", "IP"]
-    : ["Name", "VAL", "VLvl", "Hand", "PA"];
+    : ["Name", "POS", "VAL", "VLvl", "Hand", "PA"];
   const tb = [...document.querySelectorAll("table.dataTable")]
     .filter((t) => t.id && $.fn.DataTable.isDataTable(t))
     .find((t) => {
@@ -77,10 +83,18 @@ window.capture = async function capture(role /* 'pit' | 'hit' */) {
     recordsTotal: dt.page.info().recordsTotal, rows: data.length,
   };
 
-  const slug = (prov.tourneyKey || "table").replace(/[^a-z0-9]+/gi, "").toLowerCase();
-  const blob = new Blob([tsv], { type: "text/tab-separated-values" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url; a.download = `cap_${slug}_${role}.tsv`;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  // AGENT PATH (primary, 2026-07-27): NO DOWNLOAD. Stash the payload on window and return
+  // only the provenance. The agent then reads window.__cap.tsv in slices via javascript_tool
+  // (e.g. window.__cap.tsv.slice(0, 50000)) and Writes the fixture file itself. The blob
+  // download below is the HUMAN-console fallback only — from the agent browser it goes
+  // nowhere useful and chasing the file wastes the session.
+  window.__cap = { tsv, prov, len: tsv.length };
+  try {
+    const slug = (prov.tourneyKey || "table").replace(/[^a-z0-9]+/gi, "").toLowerCase();
+    const blob = new Blob([tsv], { type: "text/tab-separated-values" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `cap_${slug}_${role}.tsv`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  } catch (e) { /* download is optional; __cap is the real output */ }
   return prov;
 };
