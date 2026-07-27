@@ -110,9 +110,12 @@ captures are prioritized.
 
 Same machinery class (property-conditioned adjustments in the one pipeline), different
 coordinate SOURCES:
-- ERA layer: coordinate = the era's factor VALUES from config (exact, known). Known open
-  defect: era_k compresses predicted K spread in extreme eras (EG 1.53 / BH 1.64 / LB G2);
-  fix shape = spread scale as a function of factor values. Stratum B.
+- ERA layer: coordinate = the era's factor VALUES from config (exact, known). TWO named
+  open defects (both stratum B, both post-pull fits): (1) era_k compresses predicted K
+  spread in extreme eras (EG 1.53 / BH 1.64 / LB G2); fix shape = spread scale as a
+  function of factor values. (2) hitter GAP level miss — A-null, all four B formats
+  under-predict CI-clear (−2.3..−4.6/600, 2026-07-26 sweep); supersedes the old deferred
+  gap/2B/3B review, which now has a measured defect to be about.
 - COMPOSITION layer: coordinate = measured properties of the eligible pool's rating
   distribution (catalog, ex-ante; e.g. channel-decoupling). Owns: gold K residual,
   live-pool residual, hitter-tail redesign. Stratum C (with deployment).
@@ -135,9 +138,14 @@ quicks = core; B = env dailies; C = budget/restricted).
   is judged on the COMPOSITE; a cancelling set cannot be partially closed.
 - stuffAug: VALIDATED, keep. Chaining plausible; cross-channel aux terms are not
   automatically artifacts.
-- pit BABIP heterogeneity: DOES NOT EXIST (I²=0; tier CIs intersect [1.05,1.41]). The old
-  "bronze 1.48 vs silver/gold 1.0" was a POINT-ESTIMATE over-read. What may exist: a
-  modest COMMON under-spread — a flat scalar is the candidate, fit only post-pull.
+- pit BABIP heterogeneity: DOES NOT EXIST **on the GATE estimand** (unweighted free-slope:
+  I²=0; tier CIs intersect [1.05,1.41]). On the FIT estimand (precision-weighted) I²=71% —
+  an OPEN fit/gate estimand misalignment (intent-contract rule 3), resolved by pre-fit
+  check (1a) at post-pull depth (branches pre-committed; Kish/survivorship evidence decides
+  which estimand governs). The old "bronze 1.48 vs silver/gold 1.0" was a POINT-ESTIMATE
+  over-read (and used yet another estimand — never compare across estimands). Candidate: a
+  modest COMMON scalar (~1.275 [1.18,1.38] current-estimand, stale on any ramp refit), fit
+  only post-pull, wrapped as the C3 family's constant limit so s(g≤0)=1 holds exactly.
 - Six published residuals, tracked with gold semantics (re-measured every sweep; CI-clear
   growth blocks). Ledger discipline: a 7th requires an explicit STOP; residual = a
   CHARACTERISED defect we choose to carry, never "measured-and-not-identified".
