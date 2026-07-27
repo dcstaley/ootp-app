@@ -1,0 +1,339 @@
+################################################################################
+# PIT-BABIP COMMON SCALAR — the pooled estimate of the ONE surviving candidate
+# tools/babip-common-scalar.ts · 2026-07-26 · MEASUREMENT ONLY.
+# NOTHING IS FITTED, WIRED, DEFAULTED OR COMMITTED. This is a PRE-REGISTRATION INPUT for a
+# POST-PULL fit; all fits on cwhit data remain blocked until the wide re-pull.
+################################################################################
+
+## THE ANSWER
+
+  ONE FLAT COMMON PIT-BABIP SPREAD SCALAR, stratum A (the five neutral quicks), BF >= 600,
+  FREE-SLOPE estimand (precision-weighted free level = the C3/C6 FIT objective):
+
+      s_babip = 1.275   bootstrap 95% CI [1.180, 1.383]   (analytic +-1.96se: [1.171, 1.379], se 0.053)
+
+  On the GATE estimand (unweighted OLS obs~pred, free intercept — the babip-coordinate run's
+  `need` column, so directly comparable with its 1.238 [1.05, 1.41]):
+      s_babip = 1.238   bootstrap 95% CI [1.073, 1.410]
+
+  DO THE STRATA MOVE IT? (primary estimand, primary bar)
+      A alone (five neutral quicks)      k=5  s = 1.275  [1.180, 1.383]  se 0.053
+      A + B (quicks + env dailies)       k=9  s = 1.284  [1.193, 1.371]  se 0.045
+      ALL (A + B + C, live EXCLUDED)     k=13  s = 1.254  [1.181, 1.331]  se 0.037
+      ⇒ total movement across the three sets = 0.030, against a smallest-set SE of 0.053
+        (INSIDE one SE of the narrowest-stratum estimate — environment and budget do NOT move the scalar)
+
+  DECOUPLED, REPORTED SEPARATELY, NEVER POOLED (FORMAT_FACTS): live-open-daily
+      s = 1.331  [0.905, 1.740]  on 42 rows / 42 cards
+      gate estimand 1.784 [1.131, 2.468]. This is a MEASUREMENT POINT, not a baseline member.
+
+  HETEROGENEITY — RE-CONFIRMATION ATTEMPTED, AND IT IS ESTIMAND-DEPENDENT. READ THIS BEFORE
+  USING THE NUMBER ABOVE.
+
+    GATE estimand (what the established position was measured on) — REPRODUCES EXACTLY:
+      A alone (five neutral quicks)      Q =  2.96 / 4 df · I2 =   0% · p = 0.567 · intersection [1.05, 1.41] NON-EMPTY
+      A + B (quicks + env dailies)       Q =  8.31 / 8 df · I2 =   4% · p = 0.404 · intersection [1.06, 1.30] NON-EMPTY
+      ALL (A + B + C, live EXCLUDED)     Q = 12.10 / 12 df · I2 =   1% · p = 0.438 · intersection [1.08, 1.30] NON-EMPTY
+      Stratum A reads Q = 2.96 / 4 df, I2 = 0%, intersection [1.05, 1.41] — the coordinate run's
+      2.96 / 0% / [1.05, 1.41] to the digit. The instrument is the same instrument. THE ESTABLISHED
+      POSITION IS NOT DISTURBED ON ITS OWN ESTIMAND.
+
+    PRIMARY (FIT) estimand — DOES NOT REPRODUCE THE NULL:
+      A alone (five neutral quicks)      Q = 13.70 / 4 df · I2 =  71% · p = 0.008 · intersection [1.25, 1.32] NON-EMPTY
+      A + B (quicks + env dailies)       Q = 17.62 / 8 df · I2 =  55% · p = 0.024 · intersection [1.25, 1.32] NON-EMPTY
+      ALL (A + B + C, live EXCLUDED)     Q = 20.12 / 12 df · I2 =  40% · p = 0.065 · intersection [1.25, 1.32] NON-EMPTY
+      Stratum A reads I2 = 71% at p = 0.008. The intersection is still non-empty, but only
+      just — [1.25, 1.32] is 0.07 wide — and at BF >= 1000 it goes EMPTY (§3).
+
+    WHY THE TWO DISAGREE, mechanically: the point estimates are not the issue, the PRECISION is.
+    The weighted estimator's SEs are roughly HALF the unweighted ones on the same rows, so the same
+    dispersion of point estimates crosses from 'inside the noise' to 'outside it'. Q is a
+    signal-to-noise statistic; halving the noise while holding the signal quadruples Q.
+
+    WHAT THIS DOES AND DOES NOT LICENCE:
+      · It does NOT overturn the established null, which is a statement about the gate estimand and
+        reproduces exactly. It is not re-litigated here and this run produces no coordinate evidence.
+      · It DOES mean the pooling licence is conditional on the estimand, and the estimand a fit
+        would MINIMISE is the one that fails. Filed in the PRE-REGISTRATION section as a required
+        pre-fit check, not as a finding about the channel.
+      · The pooled POINT ESTIMATE is robust to all of this: 1.22–1.28 across every set, both bars
+        and both estimands. What is fragile is the claim that one number is ENOUGH.
+
+## 0. HEADER — WHAT THIS IS CONDITIONED ON
+  model        'league-42-43' (raw-poly, own-gap path)   cohortRule 'model-woba'
+  catalog      'cdmx' — 3708 base cards
+  corpus       buildCwhitSample DEFAULT_SOURCE (fixtures/cwhit-capture-2026-07-21), 14 formats by tournamentId
+  K/HR CONFIG  THE SHIPPED LINE, and this is load-bearing (SYSTEM_MAP §1):
+                 C3 K ramp ON  {A 0.6668, q 2.4, G0 20, gMax 22.25}
+                 C6 HR ramp ON {A 0.1135, q 0.54, G0 20, gMax 44.56}
+                 sPitBab NEVER SET — production's held state, so this measures the RESIDUAL need.
+               BIP = 600 − BB − K − HR − BIP_ADJ and hits recompute from BIP, so K and HR are
+               applied PRE-BIP and MOVE predicted BABIP. A scalar measured against a different
+               K/HR baseline is a DIFFERENT QUANTITY. If either ramp is re-fitted, this number is
+               STALE and must be re-measured — it cannot be rescaled.
+  estimand     PRIMARY = free-level slope with per-card noise weights (tools/fit-kspread-c3.ts /
+               tools/fit-hrspread-c6.ts objective, ruling (z): a free level leaves the pivot
+               unidentified so s is a PURE SPREAD response; level belongs to the anchor layer).
+               SECONDARY = unweighted OLS obs~pred with a free intercept = mmse().slope, the
+               estimand the C3/C6 GATES score and the babip-coordinate run published.
+  bars         PRIMARY BF >= 600 (= MIN_BF, symmetric with PA >= 500) · SENSITIVITY BF >= 1000
+  grain        OBSERVED STATISTIC AT ROW GRAIN — a row is (card × variant level); a card can
+               contribute a base row and a v5 row. Pool constants (K̄/HR̄/BAB̄, gaps) are CARD grain.
+               INFERENCE IS CLUSTERED AT CARD GRAIN, and the inflation factor is MEASURED per cell
+               below (this corpus has produced 3.1x / 1.07x / 1.02-1.22x / 0.99-1.05x / 1.017x on
+               different statistics — it is never assumed).
+  uncertainty  B = 2000 bootstrap, SEED = 20260726. Cluster bootstrap = resample CARDS with
+               replacement, take all their rows. Row bootstrap is run in parallel ONLY to measure
+               the inflation, never to make a CI.
+  presence     PRESENCE_P 0.3, PRESENCE_M 20, FIELD_N 50
+  flags        THIN = N < 15 judged rows ⇒ EXCLUDED from every pool (no verdict from a thin cell).
+               UNREL = bootstrap 97.5th pct of the noise share >= 100%. The SLOPE is noise-immune
+               so an UNREL cell still carries a slope, but its spread statistics do not.
+
+## 1. THE PER-FORMAT INPUTS — BF >= 600 (PRIMARY)
+
+  format            str   rows  cards  r/c  kish   free-s   [ 95% CI ]      se   rowSE   infl    gate-s   [ 95% CI ]      se   infl   corr  nsHi  flags
+  -- STRATUM A: the five neutral quicks (core) --
+  ironquick         A      142    114  1.25  0.36   1.110 [0.94, 1.33]   0.099  0.100  0.994   1.245 [0.97, 1.57]   0.156 0.997   0.47  0.65  —
+  bronzequick       A      156    119  1.31  0.31   1.503 [1.25, 1.75]   0.130  0.122  1.063   1.325 [0.94, 1.67]   0.187 1.123   0.51  0.76  —
+  silverquick       A      121     83  1.46  0.36   1.409 [1.25, 1.57]   0.084  0.094  0.887   1.377 [1.05, 1.68]   0.164 0.913   0.55  0.88  —
+  goldquick         A       91     71  1.28  0.34   1.020 [0.72, 1.32]   0.153  0.146  1.050   1.009 [0.60, 1.41]   0.204 0.966   0.50  0.96  —
+  diamondquick      A       36     29  1.24  0.70   0.787 [0.39, 1.60]   0.308  0.268  1.151   0.911 [0.42, 1.90]   0.369 1.159   0.40  2.21  UNREL
+  -- STRATUM B: env-bearing uncapped dailies --
+  bronzeheart       B       48     35  1.37  0.59   1.280 [0.83, 1.79]   0.245  0.246  0.997   1.269 [0.59, 1.93]   0.341 1.024   0.54  1.16  UNREL
+  earlygold         B       99     82  1.21  0.22   1.382 [1.12, 1.54]   0.112  0.096  1.163   1.351 [1.06, 1.65]   0.152 1.028   0.62  0.80  —
+  diamondheart      B       67     48  1.40  0.28   1.114 [0.80, 1.37]   0.150  0.143  1.053   0.863 [0.50, 1.30]   0.204 1.045   0.46  0.85  —
+  latebronze        B       34     27  1.26  0.68   1.880 [0.98, 2.71]   0.440  0.406  1.084   1.885 [0.81, 2.95]   0.542 1.069   0.46  1.01  UNREL
+  -- STRATUM C: budget / restricted / decoupled --
+  diamondcapdaily   C       26     23  1.13  0.56   1.150 [0.65, 1.47]   0.211  0.222  0.951   0.925 [0.51, 1.35]   0.209 0.944   0.60  2.22  UNREL
+  goldcapdaily      C      114     95  1.20  0.45   1.145 [0.97, 1.37]   0.102  0.114  0.891   1.227 [0.99, 1.46]   0.121 0.933   0.60  0.80  —
+  bronzecapweekly   C       42     36  1.17  0.84   1.025 [0.49, 1.65]   0.284  0.302  0.939   0.922 [0.27, 1.63]   0.344 0.987   0.39  0.84  —
+  goldslotsdaily    C      109     85  1.28  0.35   1.261 [1.10, 1.47]   0.097  0.106  0.911   1.365 [1.08, 1.65]   0.143 0.924   0.59  0.81  —
+  liveopendaily     C       42     42  1.00  0.37   1.331 [0.91, 1.74]   0.204  0.198  1.032   1.784 [1.13, 2.47]   0.333 0.991   0.64  1.32  UNREL   <- DECOUPLED, never pooled
+
+  'free-s' = precision-weighted free-level slope (PRIMARY). 'gate-s' = unweighted OLS free-intercept
+  slope (the C3/C6 gate need). 'infl' = MEASURED cluster-SE / row-SE for THAT statistic. 'r/c' = rows
+  per card. 'kish' = Kish effective-N of the precision weights as a SHARE of rows — how much of the
+  cell the weighted estimate actually rests on. 'nsHi' = bootstrap 97.5th pct noise share.
+
+  PROVENANCE CHECK — this instrument reproduces the established run cell for cell. Both columns match
+  fixtures/babip-coordinate-2026-07-26.txt §3 exactly (its `need` = gate-s, its `free-s` = free-s):
+  iron 1.245/1.110 · bronze 1.325/1.503 · silver 1.377/1.409 · gold 1.009/1.020 · diamond 0.911/0.787.
+  So the divergence reported in THE ANSWER is between two estimands, not between two instruments.
+
+  CLUSTER INFLATION FOR THIS STATISTIC, MEASURED (never assumed):
+    free-s   mean 1.012x  range 0.89–1.16x over 14 non-thin cells
+    gate-s   mean 1.007x  range 0.91–1.16x
+    WHY it is near 1: rows per card is 1.00–1.46 (mean 1.25) once the BF floor
+    is applied — most judged cards contribute ONE row, so there is little cluster structure LEFT to
+    inflate. That is a measured property of THIS corpus at THIS bar, not a licence to skip clustering:
+    every CI below is still the CLUSTERED one.
+
+## 2. THE POOLED SCALAR BY STRATUM SET — BF >= 600 (PRIMARY)
+
+  Pooling is licensed by the established position (fixtures/babip-coordinate-2026-07-26.txt, cdffeef:
+  I2 = 0%, Q = 2.96/4 df, intersection [1.05, 1.41], with a K-channel positive control at I2 = 92% and
+  an EMPTY intersection). The Q/I2/intersection columns below are a RE-CONFIRMATION on this run's own
+  estimands and bars, NOT an assumption carried over — and the re-confirmation SUCCEEDS on the gate
+  estimand and FAILS to reproduce on the primary one. Both are printed. See THE ANSWER for the read.
+
+  PRIMARY ESTIMAND — precision-weighted free-level slope (the C3/C6 fit objective)
+    set                                  k   pooled   [boot 95% CI]      se       Q  df    I2      pQ  CI-intersection
+    A alone (five neutral quicks)       5    1.275   [1.180, 1.383]   0.053   13.70   4   71%   0.008  [1.25, 1.32] NON-EMPTY
+    A + B (quicks + env dailies)        9    1.284   [1.193, 1.371]   0.045   17.62   8   55%   0.024  [1.25, 1.32] NON-EMPTY
+    ALL (A + B + C, live EXCLUDED)     13    1.254   [1.181, 1.331]   0.037   20.12  12   40%   0.065  [1.25, 1.32] NON-EMPTY
+    live-open-daily [DECOUPLED, separate]  1    1.331   [0.905, 1.740]   0.204       —   —     —       —  single format
+
+  GATE ESTIMAND — unweighted OLS free-intercept slope (what the C3/C6 gates score)
+    set                                  k   pooled   [boot 95% CI]      se       Q  df    I2      pQ  CI-intersection
+    A alone (five neutral quicks)       5    1.238   [1.073, 1.410]   0.085    2.96   4    0%   0.567  [1.05, 1.41] NON-EMPTY
+    A + B (quicks + env dailies)        9    1.231   [1.103, 1.368]   0.068    8.31   8    4%   0.404  [1.06, 1.30] NON-EMPTY
+    ALL (A + B + C, live EXCLUDED)     13    1.222   [1.115, 1.328]   0.052   12.10  12    1%   0.438  [1.08, 1.30] NON-EMPTY
+    live-open-daily [DECOUPLED, separate]  1    1.784   [1.131, 2.468]   0.333       —   —     —       —  single format
+
+  LEAVE-ONE-FORMAT-OUT ON THE HETEROGENEITY READ (primary estimand, BF >= 600). A verdict carried by
+  ONE cell is a property of that cell — and this corpus's thinnest cells are the ones most able to
+  carry one (FORMAT_FACTS flags diamond as historically thin, ~N=36 at this bar).
+    drop from stratum A     N   pooled       Q    I2   intersection
+      ironquick             142   1.341    9.83   69% [1.25, 1.32] NON-EMPTY
+      bronzequick           156   1.230   10.00   70% [1.25, 1.32] NON-EMPTY
+      silverquick           121   1.185    9.39   68% [1.25, 1.32] NON-EMPTY
+      goldquick              91   1.309   10.57   72% [1.25, 1.33] NON-EMPTY
+      diamondquick           36   1.290   11.12   73% [1.25, 1.32] NON-EMPTY
+    READ, AND IT CUTS AGAINST THE COMFORTABLE ANSWER: I2 stays 68–73% whichever format is
+    dropped. The primary-estimand dispersion at BF >= 600 is NOT carried by one cell — it is a
+    property of the set. (Contrast the BF >= 1000 empty intersection in §3, which IS one cell.)
+    The pooled point estimate meanwhile moves only 1.19–1.34, so the SCALAR is LOO-robust even where
+    the adequacy of a single scalar is not.
+
+  READING THE STRATA. If the pooled scalar moves materially from A to A+B to ALL, the movement is
+  ENVIRONMENT (B) or BUDGET/DEPLOYMENT (C), not the BABIP channel, and it must not be absorbed into
+  a channel constant. Movement measured above; the A-alone estimate is the one a core-layer constant
+  would be pre-registered against, with A+B and ALL as coherence checks.
+
+## 3. SENSITIVITY ARM — BF >= 1000
+
+  format            str   rows  cards  r/c  kish   free-s   [ 95% CI ]      se   rowSE   infl    gate-s   [ 95% CI ]      se   infl   corr  nsHi  flags
+  ironquick         A      112     89  1.26  0.42   1.092 [0.93, 1.30]   0.093  0.098  0.949   1.158 [0.92, 1.43]   0.130 0.976   0.56  0.63  —
+  bronzequick       A      122     96  1.27  0.36   1.522 [1.27, 1.77]   0.129  0.123  1.050   1.395 [1.08, 1.70]   0.157 1.095   0.63  0.70  —
+  silverquick       A       96     70  1.37  0.42   1.426 [1.27, 1.60]   0.084  0.098  0.859   1.521 [1.24, 1.83]   0.155 0.894   0.70  0.87  —
+  goldquick         A       68     56  1.21  0.41   1.017 [0.72, 1.34]   0.160  0.154  1.039   0.970 [0.54, 1.39]   0.218 0.996   0.52  0.79  —
+  diamondquick      A       19     16  1.19  0.76   0.475 [-0.01, 1.15]   0.283  0.265  1.066   0.382 [-0.08, 1.11]   0.304 1.041   0.23  4.97  UNREL
+  bronzeheart       B       39     31  1.26  0.66   1.254 [0.76, 1.75]   0.257  0.239  1.078   1.175 [0.43, 1.87]   0.360 1.150   0.61  1.15  UNREL
+  earlygold         B       72     60  1.20  0.28   1.360 [1.07, 1.52]   0.116  0.097  1.193   1.330 [1.06, 1.60]   0.138 1.037   0.71  0.63  —
+  diamondheart      B       59     44  1.34  0.31   1.115 [0.80, 1.38]   0.148  0.144  1.028   0.872 [0.54, 1.26]   0.183 0.975   0.53  0.80  —
+  latebronze        B       22     17  1.29  0.78   1.930 [1.05, 2.87]   0.466  0.435  1.072   2.002 [0.88, 3.13]   0.594 1.062   0.70  1.45  UNREL
+  diamondcapdaily   C       14     14  1.00  0.63   1.363 [0.80, 1.80]   0.248  0.239  1.040   1.396 [0.76, 1.80]   0.270 1.029   0.80  1.81  THIN,UNREL
+  goldcapdaily      C       70     57  1.23  0.55   1.123 [0.95, 1.37]   0.107  0.125  0.861   1.183 [0.99, 1.41]   0.106 0.843   0.71  0.58  —
+  bronzecapweekly   C       11     11  1.00  0.91   1.091 [0.44, 1.93]   0.381  0.363  1.048   1.042 [0.46, 1.95]   0.395 1.041   0.67  1.39  THIN,UNREL
+  goldslotsdaily    C       75     56  1.34  0.43   1.240 [1.07, 1.44]   0.092  0.108  0.855   1.246 [0.99, 1.49]   0.128 0.839   0.69  0.76  —
+  liveopendaily     C       34     34  1.00  0.45   1.284 [0.88, 1.64]   0.192  0.202  0.951   1.410 [0.76, 1.96]   0.303 0.961   0.61  1.03  UNREL   <- DECOUPLED
+
+  PRIMARY ESTIMAND at BF >= 1000
+    set                                  k   pooled   [boot 95% CI]      se       Q  df    I2      pQ  CI-intersection
+    A alone (five neutral quicks)       5    1.261   [1.165, 1.368]   0.052   21.30   4   81%   0.000  [1.27, 1.15] EMPTY
+    A + B (quicks + env dailies)        9    1.268   [1.181, 1.349]   0.044   25.03   8   68%   0.002  [1.27, 1.15] EMPTY
+    ALL (A + B + C, live EXCLUDED)     11    1.246   [1.175, 1.321]   0.037   26.60  10   62%   0.003  [1.27, 1.15] EMPTY
+      dropped as THIN (N < 15): diamondcapdaily(N=14), bronzecapweekly(N=11)
+    live-open-daily [DECOUPLED, separate]  1    1.284   [0.878, 1.645]   0.192       —   —     —       —  single format
+
+
+  THE BF >= 1000 INTERSECTION IS EMPTY ON THE PRIMARY ESTIMAND — AND IT IS ONE CELL. Leave-one-out:
+    drop from stratum A     N   pooled       Q    I2   intersection
+      ironquick             112   1.339   16.46   82% [1.27, 1.15] EMPTY
+      bronzequick           122   1.211   16.46   82% [1.27, 1.15] EMPTY
+      silverquick            96   1.158   15.04   80% [1.27, 1.15] EMPTY
+      goldquick              68   1.290   18.69   84% [1.27, 1.15] EMPTY
+      diamondquick           19   1.289   13.30   77% [1.27, 1.30] NON-EMPTY
+    Diamond at this bar is N=19 / 16 cards with corr 0.23 and a noise-share upper of ~5 — it is the
+    cell FORMAT_FACTS warns about, sitting just over the THIN line rather than under it. Read the
+    empty intersection as 'the tightest bar puts the thinnest cell in charge', which is a DEPTH
+    statement about the corpus. It is NOT evidence of tier heterogeneity and is not offered as any.
+
+  BAR MOVEMENT (BF>=1000 minus BF>=600), primary estimand:
+    A alone (five neutral quicks)      -0.013   (BF>=600 se 0.053, BF>=1000 se 0.052)
+    A + B (quicks + env dailies)       -0.016   (BF>=600 se 0.045, BF>=1000 se 0.044)
+    ALL (A + B + C, live EXCLUDED)     -0.008   (BF>=600 se 0.037, BF>=1000 se 0.037)
+  A tighter bar buys precision only if it does not cost more rows than it removes noise; here it
+  moves the point estimate by 0.016 at most while WIDENING the SE, which is the expected
+  direction and is why BF >= 600 is the primary bar rather than a compromise.
+
+## 4. WHAT WOULD FALSIFY THE FLAT SCALAR (stated so the null is not unfalsifiable)
+
+  A flat scalar dies when the per-format CI intersection goes EMPTY on an estimand and bar where the
+  cell driving it is NOT the thinnest one — i.e. when leave-one-out cannot restore it. On the gate
+  estimand it survives comfortably at both bars. On the primary estimand it survives at BF >= 600
+  with almost no slack and fails at BF >= 1000 on a single N=19 cell that LOO restores.
+
+  BUT DO NOT TAKE THE LOO RESCUE AS AN ALL-CLEAR. The BF >= 1000 INTERSECTION is one cell; the
+  BF >= 600 primary-estimand I2 is NOT (§2 LOO: 68–73% whichever format is dropped). Those are two
+  different statistics and only the first is a thin-cell artefact. What survives depth-scepticism is
+  'the intersection has not been shown empty', not 'the formats agree'.
+
+  SO THE HONEST STATE IS: NOT FALSIFIED, AND NO LONGER COMFORTABLE. Both readings are one depth
+  increment from being decidable — stratum A primary-estimand SEs run 0.08–0.31, and the
+  question is settled by roughly a halving of them, i.e. ~4x the judged rows per format. That is the
+  SAME depth requirement the coordinate run named in its §11(c), reached from a different direction,
+  and it is exactly why this estimate is an INPUT to a post-pull fit rather than a fit.
+
+  ONE MISREADING TO KILL BEFORE IT STARTS. bronzequick reads 1.503 on the primary estimand, which
+  is close to BUILD-3's famous 1.48. THAT IS A COINCIDENCE OF TWO DIFFERENT ESTIMANDS, NOT A
+  REPRODUCTION. BUILD-3's published per-tier BABIP slopes are mmse().slope — the UNWEIGHTED
+  free-intercept slope (tools/fit-pitspread-hrbab.ts, `mBab.slope.est`), i.e. this run's GATE
+  column, where bronze reads 1.325. The coordinate run's finding that 1.48 is not recoverable
+  on any configuration reachable today stands, and nothing here revives it.
+
+## PRE-REGISTRATION INPUT
+
+  Filed BEFORE the wide re-pull, so the post-pull run is a test and not a search. Nothing here is
+  fitted, wired, defaulted or committed by this tool.
+
+  (1) WHAT WOULD BE FIT — exactly one number.
+      A SINGLE, FORMAT-INDEPENDENT pitcher-BABIP spread scalar. ZERO coordinate parameters: no gap
+      response, no tier index, no pool property, no card type. The heterogeneity that would have
+      justified a coordinate is refuted ON THE GATE ESTIMAND (I2 = 0%, non-empty CI intersection,
+      positive control alive on K at I2 = 92%), so a coordinate search is NOT re-opened by this fit
+      and a fitted coordinate would be rejected on identification grounds regardless of its SSE —
+      the coordinate corpus is tier-collinear (coordinate run §6) and no amount of depth fixes that.
+
+  (1a) THE PRE-FIT CHECK THIS RUN ADDS, AND IT IS BLOCKING.
+      Before the single scalar is fit, RE-RUN THE HETEROGENEITY READ ON THE ESTIMAND BEING
+      MINIMISED, at the post-pull depth. Today the two estimands disagree:
+        gate    stratum A  I2 0%  intersection [1.05, 1.41]  — comfortable
+        primary stratum A  I2 71%  intersection [1.25, 1.32]  — 0.07 wide, and EMPTY at BF >= 1000
+      DECIDED NOW, so it cannot be decided by whichever answer is convenient later:
+        · post-pull PRIMARY-estimand intersection NON-EMPTY with LOO-stable I2 below ~50%
+          ⇒ the single scalar is adequate; fit it. (Today stratum A reads LOO-stable 68–73%, so this
+            branch is NOT the one currently indicated — it is stated first only because it is the
+            branch the established position predicts.)
+        · post-pull PRIMARY-estimand intersection EMPTY and NOT restored by leave-one-out
+          ⇒ THE SINGLE SCALAR IS INADEQUATE. Do not fit it and do not widen its interval to cover
+            the spread. STOP, and re-file: the channel goes back to HELD with a NEW reason (real
+            dispersion at depth), which is a different reason from today's (nothing measurable).
+        · the two estimands still disagree at depth ⇒ that is an INSTRUMENT finding, and SYSTEM_MAP
+          §7's shared-instrument rule applies: resolve the estimand before reading either as a
+          statement about the channel. The named suspect is the weighting itself — precision weights
+          concentrate the estimate on the highest-BF rows, and high BF is high USAGE, which the
+          survivorship fact makes a non-random slice of each format. The Kish column in §1 is the
+          measurement of that concentration and is there to be used, not admired.
+
+  (2) THE FORM IT MUST TAKE — and the hMul constraint DECIDES this, it is not a style choice.
+      src/model/pool-transform.ts applyPitSpread leg 3 is the only place a pitcher-BABIP spread
+      correction exists. It:
+        · measures bab0 = nHH / BIP0 on the ORIGINAL BIP
+          (BIP0 = 600 − BB − K − HR − BIP_ADJ, i.e. AFTER the K and HR legs have already moved BIP);
+        · applies bab2 = clamp(BAB̄_pool + s·(bab0 − BAB̄_pool), 0, 0.6)  — a RATE-space pivot about
+          the pool mean from poolPitMeansOwn(...).bab;
+        · rides the RATE MULTIPLIER: e.hMul *= bab2/bab0. THIS IS THE BINDING CONSTRAINT.
+          pitchingComponents re-derives nHH from the rating, so a COUNT-only change is DISCARDED by
+          the BIP recompute (the RawHitting.hMul lesson). A hit-RATE correction that does not ride
+          hMul is not a correction at all — it is a no-op with a plausible-looking fit behind it.
+        · then rescales nHH/XBH mix-preserving on the NEW BIP.
+      ⇒ THE FITTED OBJECT IS A RATE-SPACE SPREAD MULTIPLIER ABOUT BAB̄_pool, applied PRE-BIP and
+        PRE-ERA. It is NOT a level shift (the anchor owns level, SYSTEM_MAP §2), NOT a count
+        correction, and NOT a per-hand or per-role quantity.
+
+      THE FUNCTIONAL WRAPPER: the C3 family at its constant limit, NOT a bare number.
+          s(g) = 1 + A·(g/G0)^q,  G0 = 20,  q -> 0  ⇒  s(g) = 1 + A for every g > 0, s(g<=0) = 1 EXACTLY.
+      Two reasons this wrapper and not a literal constant: (a) s(g<=0) = 1 is the one principled part
+      of the gap machinery (SYSTEM_MAP §3) — in-frame the model is calibrated by construction, so a
+      correction must vanish there, and a bare constant would amplify an in-frame pool; (b) the C6 HR
+      ramp already set the precedent that this family CONTAINS the constant (q -> 0) and the ramp
+      (q > 0), so declaring the constant inside it does not pre-judge the geometry — the
+      deliverable-space selection is free to reject it. A post-pull fit that lands at low q with the
+      equivalence set touching the low-q edge is the STRUCTURAL-LIMIT constant closure, exactly as
+      C6 recorded it, and is the PREDICTED outcome here.
+
+  (3) THE BAR AND THE GRAIN.
+      BF >= 600 primary (= MIN_BF, symmetric with the hitter PA >= 500 bar; the old MIN_IP=1000
+      convention was BF >= 4300 and is retired). BF >= 1000 reported as a sensitivity arm, never as
+      the decision bar. Observed statistic at ROW grain = (card × variant level). Inference CLUSTERED
+      at CARD grain, with the inflation factor RE-MEASURED on the post-pull corpus — the deeper corpus
+      will have MORE rows per card, so today's near-1 inflation must not be assumed forward.
+      Cells with N < 15 judged rows are THIN and carry no verdict.
+
+  (4) THE POINT ESTIMATE AND INTERVAL THIS RUN FILES.
+      Stratum A, BF >= 600, free-slope:  s = 1.275  [1.180, 1.383]
+      All formats (live excluded):          s = 1.254  [1.181, 1.331]
+      A post-pull estimate landing INSIDE this interval is a replication. Landing OUTSIDE it is a
+      finding that must be explained before anything ships — most likely by the K/HR baseline having
+      moved, which is checkable and must be checked FIRST (SYSTEM_MAP §7: shared-instrument rule).
+
+  (5) WHAT WOULD BLOCK THE FIT, decided now.
+      · Either shipped pitcher ramp (C3 K or C6 HR) being re-fitted between this filing and the
+        post-pull run ⇒ this interval is STALE and must be re-measured, not rescaled: K and HR are
+        PRE-BIP so they move predicted BABIP, and the coordinate run showed the ramps' own
+        contribution to the BABIP need is real (up to 0.061 per tier).
+      · A retrain moving the cohort rule or the training means ⇒ same class, same remedy.
+      · The post-pull per-format CI intersection going EMPTY ⇒ the flat-scalar candidate is dead and
+        the coordinate question re-opens — pre-registered against the K channel FIRST, where
+        heterogeneity demonstrably exists, per the coordinate run's carry-forward.
+      · live-open-daily must NEVER be pooled in, at any depth. It is the decoupled measurement point
+        (FORMAT_FACTS) and its inclusion would import the composition-layer residual into a
+        core-layer constant.
+
+  (6) WHAT THIS RUN DOES NOT CLAIM.
+      It does not claim the scalar is >1 with the channel's residual thereby closed; it does not
+      claim a mechanism; it does not re-open the coordinate search; it does not touch the six
+      published residuals; and it creates no seventh. It reports one number, its interval, and the
+      conditions under which that number means anything.
