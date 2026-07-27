@@ -58,3 +58,23 @@ Routine re-pulls = OBSERVED tables only (projections are on-demand, coverage-mat
 full-pool-reduced-formats, never pwOBA-truncated). Fits on captures stay blocked until the
 wide re-pull is declared complete by Derek. Every capture directory gets a date tag; never
 overwrite a prior capture directory.
+
+## DATE RANGE — read before touching it (added 2026-07-27 after a burned session)
+
+THE PROVEN PROCEDURE NEVER CHANGES THE DATES. The July pull captured at the site's DEFAULT
+window (a rolling ~2 weeks). The snippet READS the dates into provenance; it never sets
+them. Default-window pulls are always valid fresh slices and are THE routine pull.
+
+WIDE-WINDOW pulls (older start date) are DEREK-ASSISTED, by rule:
+1. Derek keeps the Browser pane OPEN AND VISIBLE (a hidden pane stops compositing, which
+   kills BOTH screenshots and real-click input dispatch — "not compositing frames" means
+   ask Derek to open the pane, not debug the page).
+2. Derek clicks the start date in the calendar himself (one click).
+3. Agent runs the PROPAGATION GATE before proceeding: recordsTotal must MOVE vs the
+   default-window value for the same table (display changing is NOT propagation — Shiny's
+   date binding ignores synthetic events; four programmatic routes are known-dead:
+   typed input, bsDatepicker('update'), trigger('changeDate'), Shiny.setInputValue).
+4. Then the whole multi-format run proceeds agent-side in that session, checking
+   prov.dateStart/dateEnd per table.
+FURTHER DATEPICKER AUTOMATION ATTEMPTS ARE PROHIBITED — the cost-benefit is one human
+click versus session-burning archaeology.
