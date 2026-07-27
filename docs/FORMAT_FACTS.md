@@ -49,3 +49,11 @@ DATA PROVENANCE + PRIORITY (2026-07-26, Derek — final; supersedes earlier note
   non-budget composition (decoupling, gold, live, hitter tail) -> DEFENSE -> caps/slots/
   usage cluster (Tournament Data/ available to it under the restricted rule).
 - All fits on cwhit data remain blocked until the wide re-pull (Derek's action).
+
+PROJECTION PULL RULE (2026-07-26): projections feed ONLY the benchmark duels (weight-zero
+data; no fit or measurement consumes them). Routine re-pulls = OBSERVED tables only.
+Projection pulls happen on-demand when a scorecard/duel refresh is planned (i.e., after
+our shipped state changes): coverage-matched to the observed well-sampled card list where
+the site allows (~100-200/format, unbiased by construction); else FULL POOL for a reduced
+format set (5 quicks + 2-3 stratum-B/C representatives). NEVER top-N-by-pwOBA — partial
+pwOBA-sorted pulls resurrect the double-selection bias the full-pool pulls eliminated.
