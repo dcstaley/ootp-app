@@ -55,9 +55,10 @@ failure and burned the 2026-07-27 run for a session).
 ## Scope rules (see FORMAT_FACTS)
 
 Routine re-pulls = OBSERVED tables only (projections are on-demand, coverage-matched or
-full-pool-reduced-formats, never pwOBA-truncated). Fits on captures stay blocked until the
-wide re-pull is declared complete by Derek. Every capture directory gets a date tag; never
-overwrite a prior capture directory.
+full-pool-reduced-formats, never pwOBA-truncated). Fits on captures stay blocked until a
+FRESH FULL-CORPUS OBSERVED PULL is complete and Derek declares it (the DEFAULT-window pull
+qualifies — 2026-07-27 ruling; a wide window is not required to unblock fits). Every
+capture directory gets a date tag; never overwrite a prior capture directory.
 
 ## DATE RANGE — read before touching it (added 2026-07-27 after a burned session)
 
